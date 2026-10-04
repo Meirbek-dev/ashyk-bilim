@@ -104,6 +104,10 @@
     {
       "operation": "rank",
       "reason": "the viewer's rank comes with the dashboard (Dashboard.user_rank); no screen reads it alone"
+    },
+    {
+      "operation": "setFeatureSwitch",
+      "reason": "consumer pending: S-GAPS runtime AI switch (server 2026-10-04); the admin AI settings toggle is not built yet - drop this entry when it is"
     }
   ]
 }

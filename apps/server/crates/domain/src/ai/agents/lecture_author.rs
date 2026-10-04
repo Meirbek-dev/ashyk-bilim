@@ -81,7 +81,7 @@ impl AiService {
         activity_id: Option<ActivityId>,
         language: &str,
     ) -> Result<LectureReviewRow> {
-        self.require_feature(AiFeature::LectureAuthoring)?;
+        self.require_feature(AiFeature::LectureAuthoring).await?;
         let course = self.visible_course(actor, course_id).await?;
         policy::require_course_update(actor, &course)?;
         self.budget
@@ -124,7 +124,7 @@ impl AiService {
         activity_id: Option<ActivityId>,
         language: &str,
     ) -> Result<RunRow> {
-        self.require_feature(AiFeature::LectureAuthoring)?;
+        self.require_feature(AiFeature::LectureAuthoring).await?;
         let course = self.visible_course(actor, course_id).await?;
         policy::require_course_update(actor, &course)?;
         self.budget

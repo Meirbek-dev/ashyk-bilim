@@ -135,6 +135,19 @@ pub fn safe_run_context(metadata: &serde_json::Value) -> serde_json::Value {
     )
 }
 
+/// One feature flag as the admin sees it (S-GAPS).
+#[derive(Debug, Clone)]
+pub struct FeatureState {
+    pub feature: AiFeature,
+    /// The environment flag lowered by the runtime switch (the master
+    /// switch not applied).
+    pub enabled: bool,
+    /// The environment allows it: a runtime switch can turn it on and off.
+    pub editable: bool,
+    /// A runtime switch is stored for it.
+    pub switched: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct AdminSettings {
     pub ai_enabled: bool,
@@ -144,8 +157,8 @@ pub struct AdminSettings {
     pub max_tokens_per_request: u32,
     pub max_output_tokens: u32,
     pub draft_mode_enabled: bool,
-    /// `(feature key, enabled)` in the legacy order.
-    pub features: Vec<(AiFeature, bool)>,
+    /// Every feature in the legacy order.
+    pub features: Vec<FeatureState>,
     /// The whole section, secrets redacted.
     pub effective: serde_json::Value,
 }
@@ -669,8 +682,9 @@ impl AiService {
 
     // ── Admin surface (`platform:read:platform`) ────────────────────────
 
-    pub fn admin_settings(&self, actor: &Actor) -> Result<AdminSettings> {
+    pub async fn admin_settings(&self, actor: &Actor) -> Result<AdminSettings> {
         require_admin(actor)?;
+        let switches = self.feature_switches().await?;
         let c = &self.config;
         let model = if c.openai_api_key.is_some() {
             c.openai_model.clone()
@@ -687,7 +701,12 @@ impl AiService {
             AiFeature::SemanticMemory,
         ]
         .into_iter()
-        .map(|f| (f, c.feature_enabled(f)))
+        .map(|feature| FeatureState {
+            feature,
+            enabled: self.feature_flag(&switches, feature),
+            editable: c.feature_enabled(feature),
+            switched: switches.0.contains_key(&feature),
+        })
         .collect();
         Ok(AdminSettings {
             ai_enabled: c.ai_enabled,
@@ -700,6 +719,31 @@ impl AiService {
             features,
             effective: c.redacted(),
         })
+    }
+
+    /// S-GAPS: turn one feature on or off at runtime (platform admins,
+    /// `platform:update:platform`; audited). `key` is the flag key the
+    /// settings show; the environment stays the ceiling, so switching on a
+    /// feature the environment disables changes nothing.
+    pub async fn set_feature_switch(
+        &self,
+        actor: &Actor,
+        key: &str,
+        enabled: bool,
+    ) -> Result<AdminSettings> {
+        crate::catalog::PlatformService::require_update(actor)?;
+        let feature = AiFeature::parse(key).ok_or_else(|| Error::not_found("AI feature"))?;
+        ab_db::ai::set_feature_switch(&self.pool, feature.as_str(), enabled, actor.user_id).await?;
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(actor.user_id),
+            "ai-feature-switched",
+            None,
+            None,
+            serde_json::json!({ "feature": feature.as_str(), "enabled": enabled, "by": actor.user_id }),
+        )
+        .await?;
+        self.admin_settings(actor).await
     }
 
     /// Keyset page of runs; `(rows, next_cursor)`.

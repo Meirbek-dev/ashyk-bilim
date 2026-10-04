@@ -52,6 +52,8 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("POST", "/api/v2/courses"),
     // course:create:platform + write access to the source.
     ("POST", "/api/v2/courses/{course_id}/duplicate"),
+    // S-GAPS: platform:update:platform.
+    ("PUT", "/api/v2/ai/admin/settings/features/{key}"),
     ("PATCH", "/api/v2/courses/{course_id}"),
     ("POST", "/api/v2/courses/{course_id}/lifecycle"),
     ("DELETE", "/api/v2/courses/{course_id}"),

@@ -22,8 +22,8 @@ use futures::Stream;
 use crate::detach::detached;
 use crate::dto::ai::{
     AdminRun, AdminRunDetail, AdminRunPage, AdminRunsQuery, AdminSettings, CapabilitiesQuery,
-    EvalDashboard, RunArtifact, RunEvent, RunStatus, RunStreamRequest, ScopeCapabilities,
-    UsageSummary,
+    EvalDashboard, FeatureSwitchRequest, RunArtifact, RunEvent, RunStatus, RunStreamRequest,
+    ScopeCapabilities, UsageSummary,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson};
@@ -330,7 +330,42 @@ pub async fn admin_settings(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<AdminSettings>> {
-    Ok(Json(state.ai.admin_settings(&actor)?.into()))
+    Ok(Json(state.ai.admin_settings(&actor).await?.into()))
+}
+
+/// Turn one AI feature on or off at runtime, without a redeploy.
+///
+/// Platform admins (`platform:update:platform`); audited as
+/// `ai-feature-switched`. `key` is a `features[].key` of the settings. The environment flag stays
+/// the ceiling: a feature it disables stays off (`editable: false`).
+#[utoipa::path(
+    put, path = "/ai/admin/settings/features/{key}", tag = "ai",
+    params(("key" = String, Path, description = "Feature flag key, e.g. `course_qa_enabled`")),
+    request_body = FeatureSwitchRequest,
+    responses(
+        (status = 200, description = "Effective AI settings after the change", body = AdminSettings),
+        (status = 403, description = "Not a platform admin", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown feature key", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn set_feature_switch(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(key): Path<String>,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<AdminSettings>> {
+    // UX-311: permission before the body.
+    ab_domain::catalog::PlatformService::require_update(&actor)?;
+    let request = ValidJson::<FeatureSwitchRequest>::parse(&body)?;
+    Ok(Json(
+        state
+            .ai
+            .set_feature_switch(&actor, &key, request.enabled)
+            .await?
+            .into(),
+    ))
 }
 
 /// Recent runs, newest first, keyset-paged.

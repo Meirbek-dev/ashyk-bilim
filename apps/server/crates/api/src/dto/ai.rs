@@ -737,10 +737,22 @@ impl From<domain::ScopeCapabilities> for ScopeCapabilities {
 pub struct FeatureSetting {
     /// The legacy flag key (`course_qa_enabled`, …).
     pub key: String,
+    /// The environment flag lowered by the runtime switch (the master
+    /// switch not applied).
     pub enabled: bool,
-    /// Flags come from the environment; there is no runtime toggle.
+    /// The environment allows the feature, so the runtime switch
+    /// (`PUT /ai/admin/settings/features/{key}`) turns it on and off.
     pub editable: bool,
+    /// `runtime` when a runtime switch is stored, else `environment`.
     pub source: String,
+}
+
+/// `PUT /ai/admin/settings/features/{key}`.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FeatureSwitchRequest {
+    #[garde(skip)]
+    pub enabled: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -771,11 +783,11 @@ impl From<domain::AdminSettings> for AdminSettings {
             features: s
                 .features
                 .into_iter()
-                .map(|(key, enabled)| FeatureSetting {
-                    key: key.as_str().to_owned(),
-                    enabled,
-                    editable: false,
-                    source: "environment".into(),
+                .map(|f| FeatureSetting {
+                    key: f.feature.as_str().to_owned(),
+                    enabled: f.enabled,
+                    editable: f.editable,
+                    source: if f.switched { "runtime" } else { "environment" }.into(),
                 })
                 .collect(),
             effective: s.effective,

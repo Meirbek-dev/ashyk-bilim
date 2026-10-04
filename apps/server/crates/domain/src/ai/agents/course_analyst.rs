@@ -83,7 +83,7 @@ impl AiService {
         course_id: CourseId,
         language: &str,
     ) -> Result<CourseAnalysisRow> {
-        self.require_feature(AiFeature::CourseAnalysis)?;
+        self.require_feature(AiFeature::CourseAnalysis).await?;
         let course = self.visible_course(actor, course_id).await?;
         policy::require_course_update(actor, &course)?;
         self.budget
@@ -130,7 +130,7 @@ impl AiService {
         course_id: CourseId,
         language: &str,
     ) -> Result<RunRow> {
-        self.require_feature(AiFeature::CourseAnalysis)?;
+        self.require_feature(AiFeature::CourseAnalysis).await?;
         let course = self.visible_course(actor, course_id).await?;
         policy::require_course_update(actor, &course)?;
         self.budget

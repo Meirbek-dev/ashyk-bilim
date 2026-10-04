@@ -1816,3 +1816,34 @@ pub async fn items_context(
     .await?;
     Ok(rows)
 }
+
+// ── Runtime feature switches (S-GAPS) ───────────────────────────────────────
+
+/// Every stored switch as `(flag key, enabled)`; a key missing here follows
+/// the environment.
+pub async fn feature_switches(pool: &PgPool) -> Result<Vec<(String, bool)>> {
+    let rows = sqlx::query!("SELECT feature, enabled FROM ai_feature_switches")
+        .fetch_all(pool)
+        .await?;
+    Ok(rows.into_iter().map(|r| (r.feature, r.enabled)).collect())
+}
+
+/// Set one switch (`feature` is the flag key).
+pub async fn set_feature_switch(
+    pool: &PgPool,
+    feature: &str,
+    enabled: bool,
+    by: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO ai_feature_switches (feature, enabled, updated_by) VALUES ($1, $2, $3)
+         ON CONFLICT (feature) DO UPDATE
+             SET enabled = EXCLUDED.enabled, updated_by = EXCLUDED.updated_by, updated_at = now()",
+        feature,
+        enabled,
+        by.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}

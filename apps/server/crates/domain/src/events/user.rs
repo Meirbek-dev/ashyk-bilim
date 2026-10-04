@@ -181,11 +181,10 @@ pub async fn publish(events: Vec<(UserId, UserEvent)>) {
 
 /// `grading.updated` to the course's graders.
 ///
-/// Its creator and active writing co-authors - the people its grading
-/// stream serves. Platform-wide
-/// graders (admins) keep the course stream; they are not fanned out to.
+/// Its creator, active writing co-authors and the platform-wide graders
+/// (admins, maintainers; S-GAPS) - everyone its grading stream serves.
 pub async fn grading(pool: &PgPool, payload: GradingUpdated) {
-    let graders = match ab_db::notifications::course_authors(pool, payload.course_id).await {
+    let graders = match ab_db::notifications::course_graders(pool, payload.course_id).await {
         Ok(graders) => graders,
         Err(err) => {
             tracing::warn!(%err, "grading fan-out: graders not resolved");

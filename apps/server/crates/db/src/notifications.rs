@@ -158,14 +158,21 @@ pub async fn prune(pool: &PgPool, days: i32) -> Result<u64> {
 
 // ── Recipient sets ─────────────────────────────────────────────────────────
 
-/// The course's creator and active writing co-authors (its graders - the
-/// `:own` scope of `Course::is_author`).
-pub async fn course_authors(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
+/// Everyone who grades the course: its authors plus the platform-wide
+/// graders (`assessment:grade` at platform scope, wildcards included, as
+/// `Grant::grants` reads them - admins and maintainers).
+pub async fn course_graders(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
            UNION
            SELECT user_id FROM resource_authors
-           WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'"#,
+           WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'
+           UNION
+           SELECT ur.user_id FROM user_roles ur
+           JOIN role_permissions rp ON rp.role_id = ur.role_id
+           WHERE split_part(rp.permission, ':', 1) IN ('*', 'assessment')
+             AND split_part(rp.permission, ':', 2) IN ('*', 'grade')
+             AND split_part(rp.permission, ':', 3) IN ('', '*', 'platform', 'all')"#,
         course_id.0
     )
     .fetch_all(pool)

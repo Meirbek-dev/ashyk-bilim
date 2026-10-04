@@ -141,6 +141,18 @@ pub struct Stats {
     /// Percent of graded work at or above the passing score.
     pub pass_rate: Option<f64>,
     pub distribution: Vec<ScoreBucket>,
+    /// The `group_id` filter these numbers are for; absent without one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub group_id: Option<ab_core::id::UsergroupId>,
+}
+
+/// `GET /assessments/{id}/submissions/stats`.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+pub struct StatsQuery {
+    /// Members of this usergroup only.
+    pub group_id: Option<ab_core::id::UsergroupId>,
 }
 
 impl From<domain::Stats> for Stats {
@@ -155,6 +167,7 @@ impl From<domain::Stats> for Stats {
             avg_score: s.avg_score,
             pass_rate: s.pass_rate,
             distribution: s.distribution,
+            group_id: s.group_id,
         }
     }
 }

@@ -7565,10 +7565,11 @@ expression: json
       "FeatureSetting": {
         "properties": {
           "editable": {
-            "description": "Flags come from the environment; there is no runtime toggle.",
+            "description": "The environment allows the feature, so the runtime switch\n(`PUT /ai/admin/settings/features/{key}`) turns it on and off.",
             "type": "boolean"
           },
           "enabled": {
+            "description": "The environment flag lowered by the runtime switch (the master\nswitch not applied).",
             "type": "boolean"
           },
           "key": {
@@ -7576,6 +7577,7 @@ expression: json
             "type": "string"
           },
           "source": {
+            "description": "`runtime` when a runtime switch is stored, else `environment`.",
             "type": "string"
           }
         },
@@ -7584,6 +7586,19 @@ expression: json
           "enabled",
           "editable",
           "source"
+        ],
+        "type": "object"
+      },
+      "FeatureSwitchRequest": {
+        "additionalProperties": false,
+        "description": "`PUT /ai/admin/settings/features/{key}`.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ],
         "type": "object"
       },
@@ -11028,7 +11043,7 @@ expression: json
             "type": "object"
           },
           {
-            "description": "A teacher extended the recipient's deadline.",
+            "description": "A teacher extended the recipient's deadline: `assessment_id` for an\nassessment, `file_submission_id` for a file submission (S-GAPS;\nrows stored before it carry `assessment_id` only).",
             "properties": {
               "activity_id": {
                 "$ref": "#/components/schemas/ActivityId"
@@ -11037,7 +11052,14 @@ expression: json
                 "type": "string"
               },
               "assessment_id": {
-                "$ref": "#/components/schemas/AssessmentId"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AssessmentId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "course_id": {
                 "$ref": "#/components/schemas/CourseId"
@@ -11047,6 +11069,16 @@ expression: json
               },
               "due_at_unix": {
                 "$ref": "#/components/schemas/UnixTime"
+              },
+              "file_submission_id": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FileSubmissionId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": {
                 "enum": [
@@ -11060,9 +11092,10 @@ expression: json
               "course_name",
               "activity_id",
               "activity_name",
-              "assessment_id",
               "due_at_unix",
-              "type"
+              "type",
+              "assessment_id",
+              "file_submission_id"
             ],
             "type": "object"
           },
@@ -15397,6 +15430,10 @@ expression: json
           "graded": {
             "type": "integer"
           },
+          "group_id": {
+            "$ref": "#/components/schemas/UsergroupId",
+            "description": "The `group_id` filter these numbers are for; absent without one."
+          },
           "late": {
             "type": "integer"
           },
@@ -19488,6 +19525,69 @@ expression: json
             "description": "Not a platform reader"
           }
         },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/admin/settings/features/{key}": {
+      "put": {
+        "description": "Platform admins (`platform:update:platform`); audited as\n`ai-feature-switched`. `key` is a `features[].key` of the settings. The environment flag stays\nthe ceiling: a feature it disables stays off (`editable: false`).",
+        "operationId": "set_feature_switch",
+        "parameters": [
+          {
+            "description": "Feature flag key, e.g. `course_qa_enabled`",
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeatureSwitchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSettings"
+                }
+              }
+            },
+            "description": "Effective AI settings after the change"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown feature key"
+          }
+        },
+        "summary": "Turn one AI feature on or off at runtime, without a redeploy.",
         "tags": [
           "ai"
         ]
@@ -25401,6 +25501,22 @@ expression: json
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "description": "Members of this usergroup only.",
+            "in": "query",
+            "name": "group_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/UsergroupId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         ],

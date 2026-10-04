@@ -1235,6 +1235,13 @@ export const vAdminSettings = v.object({
 });
 
 /**
+ * `PUT /ai/admin/settings/features/{key}`.
+ */
+export const vFeatureSwitchRequest = v.strictObject({
+    enabled: v.boolean()
+});
+
+/**
  * The auto-grader's verdict codes (`GradedItem.feedback_code`).
  */
 export const vFeedbackCode = v.picklist([
@@ -3108,18 +3115,6 @@ export const vAssessmentSloSnapshot = v.object({
 
 export const vSortOrder = v.picklist(['asc', 'desc']);
 
-export const vStats = v.object({
-    avg_score: v.nullable(v.number()),
-    distribution: v.array(vScoreBucket),
-    graded: v.pipe(v.number(), v.integer()),
-    late: v.pipe(v.number(), v.integer()),
-    needs_grading: v.pipe(v.number(), v.integer()),
-    pass_rate: v.nullable(v.number()),
-    published: v.pipe(v.number(), v.integer()),
-    returned: v.pipe(v.number(), v.integer()),
-    total: v.pipe(v.number(), v.integer())
-});
-
 /**
  * Streak kinds (legacy `StreakType`).
  */
@@ -4770,10 +4765,11 @@ export const vNotificationPayload = v.union([
     v.object({
         activity_id: vActivityId,
         activity_name: v.string(),
-        assessment_id: vAssessmentId,
+        assessment_id: v.nullable(vAssessmentId),
         course_id: vCourseId,
         course_name: v.string(),
         due_at_unix: vUnixTime,
+        file_submission_id: v.nullable(vFileSubmissionId),
         type: v.picklist(['deadline_extended'])
     }),
     v.object({
@@ -5270,6 +5266,19 @@ export const vSetAccessRequest = v.strictObject({
     mode: vAccessMode,
     user_ids: v.optional(v.pipe(v.array(vUserId), v.maxLength(500))),
     usergroup_ids: v.optional(v.pipe(v.array(vUsergroupId), v.maxLength(100)))
+});
+
+export const vStats = v.object({
+    avg_score: v.nullable(v.number()),
+    distribution: v.array(vScoreBucket),
+    graded: v.pipe(v.number(), v.integer()),
+    group_id: v.optional(vUsergroupId),
+    late: v.pipe(v.number(), v.integer()),
+    needs_grading: v.pipe(v.number(), v.integer()),
+    pass_rate: v.nullable(v.number()),
+    published: v.pipe(v.number(), v.integer()),
+    returned: v.pipe(v.number(), v.integer()),
+    total: v.pipe(v.number(), v.integer())
 });
 
 export const vTeacherAssessmentDetailResponse = v.object({
@@ -5902,6 +5911,17 @@ export const vAdminRunDetailResponse = vAdminRunDetail;
  * Effective AI settings
  */
 export const vAdminSettingsResponse = vAdminSettings;
+
+export const vSetFeatureSwitchBody = vFeatureSwitchRequest;
+
+export const vSetFeatureSwitchPath = v.object({
+    key: v.string()
+});
+
+/**
+ * Effective AI settings after the change
+ */
+export const vSetFeatureSwitchResponse = vAdminSettings;
 
 export const vScopeCapabilitiesPath = v.object({
     course_id: vCourseId
@@ -6997,6 +7017,10 @@ export const vMySubmissionsResponse = v.array(vStudentSubmission);
 
 export const vStatsPath = v.object({
     assessment_id: vAssessmentId
+});
+
+export const vStatsQuery = v.object({
+    group_id: v.nullish(vUsergroupId)
 });
 
 /**

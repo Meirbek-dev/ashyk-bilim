@@ -21,7 +21,7 @@ use crate::dto::file_submissions::BulkGradeSummary;
 use crate::dto::grading::{
     BulkAction, DeadlineExtensionRequest, GradeRequest, GradebookPage, GradebookQuery,
     GradebookStatus, GradingEntry, ItemAnalytics, PublishSummary, ReturnGradesRequest, ReviewPage,
-    ReviewQuery, SortOrder, Stats, TeacherSubmission,
+    ReviewQuery, SortOrder, Stats, StatsQuery, TeacherSubmission,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
@@ -95,15 +95,22 @@ pub async fn review_queue(
 /// Counts, average, pass rate and a ten-bucket score distribution.
 #[utoipa::path(
     get, path = "/assessments/{assessment_id}/submissions/stats", tag = "grading",
-    params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    params(("assessment_id" = AssessmentId, Path, description = "Assessment id"), StatsQuery),
     responses((status = 200, description = "Stats", body = Stats)),
 )]
 pub async fn stats(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    Query(query): Query<StatsQuery>,
 ) -> ApiResult<Json<Stats>> {
-    Ok(Json(state.grading.stats(&actor, id).await?.into()))
+    Ok(Json(
+        state
+            .grading
+            .stats(&actor, id, query.group_id)
+            .await?
+            .into(),
+    ))
 }
 
 /// Per-item response counts, average score, correctness and discrimination.

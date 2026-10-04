@@ -65,7 +65,7 @@ impl AiService {
         subject_id: AiSubjectId,
         language: &str,
     ) -> Result<SubmissionAnalysisRow> {
-        self.require_feature(AiFeature::SubmissionAnalysis)?;
+        self.require_feature(AiFeature::SubmissionAnalysis).await?;
         let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
@@ -111,7 +111,7 @@ impl AiService {
         subject_id: AiSubjectId,
         language: &str,
     ) -> Result<RunRow> {
-        self.require_feature(AiFeature::SubmissionAnalysis)?;
+        self.require_feature(AiFeature::SubmissionAnalysis).await?;
         let subject = self.accessible_subject(actor, subject_id).await?;
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)

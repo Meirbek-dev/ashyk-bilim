@@ -1856,6 +1856,26 @@ impl FileSubmissionsService {
             )
             .await;
         }
+        // S-GAPS: the notification follows the event (best effort).
+        if let Some((course_id, course_name, activity_name)) =
+            crate::notifications::activity_names(&self.pool, row.activity_id).await
+        {
+            crate::notifications::notify(
+                &self.pool,
+                &targets,
+                &crate::notifications::NotificationPayload::DeadlineExtended {
+                    course_id,
+                    course_name,
+                    activity_id: row.activity_id,
+                    activity_name,
+                    assessment_id: None,
+                    file_submission_id: Some(id),
+                    due_at_unix: new_due_at,
+                },
+                None,
+            )
+            .await;
+        }
         Ok(BulkGradeSummary {
             done_count: i64::try_from(targets.len()).unwrap_or(i64::MAX),
             skipped_count: 0,

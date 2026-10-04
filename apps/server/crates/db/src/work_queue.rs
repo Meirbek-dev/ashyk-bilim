@@ -222,7 +222,7 @@ pub struct DeadlineRow {
 /// (run ∧ ¬staff, course not archived); assessments must be published and
 /// reach the learner (course-wide or on an allowlist, direct or via a
 /// group); the override's due date applies while in force or when it is an
-/// extension.
+/// extension; a file submission's per-learner due date always applies (S-GAPS).
 pub async fn upcoming_deadlines(
     pool: &PgPool,
     user_id: Option<UserId>,
@@ -257,9 +257,12 @@ pub async fn upcoming_deadlines(
                              JOIN usergroup_members gm ON gm.usergroup_id = g.usergroup_id
                              WHERE g.assessment_id = s.id AND gm.user_id = m.user_id)
                UNION ALL
-               SELECT m.user_id, m.course_id, f.activity_id, NULL, f.id, f.due_at, f.late_cutoff_at
+               SELECT m.user_id, m.course_id, f.activity_id, NULL, f.id,
+                      COALESCE(fo.due_at, f.due_at), f.late_cutoff_at
                FROM members m
                JOIN file_submissions f ON f.course_id = m.course_id AND f.lifecycle = 'published'
+               LEFT JOIN file_submission_overrides fo
+                      ON fo.file_submission_id = f.id AND fo.user_id = m.user_id
            )
            SELECT w.user_id AS "user_id!: UserId", w.course_id AS "course_id!: CourseId",
                   c.name AS course_name, w.activity_id AS "activity_id!: ActivityId",

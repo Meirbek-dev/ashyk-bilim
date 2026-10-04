@@ -148,6 +148,7 @@ fn ai_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::ai::stream_run))
         .routes(routes!(routes::ai::scope_capabilities))
         .routes(routes!(routes::ai::admin_settings))
+        .routes(routes!(routes::ai::set_feature_switch))
         .routes(routes!(routes::ai::admin_runs))
         .routes(routes!(routes::ai::admin_run_detail))
         .routes(routes!(routes::ai::admin_evals))

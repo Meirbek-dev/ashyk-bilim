@@ -9,9 +9,9 @@ use ab_core::Result;
 use ab_core::ai::{AiFeature, AiThreadRole};
 use ab_core::id::{ActivityId, CourseId};
 
-use super::AiService;
 use super::context;
 use super::policy;
+use super::{AiService, FeatureSwitches};
 use crate::identity::Actor;
 
 /// Which client screen is asking (legacy `AISurface`).
@@ -78,8 +78,12 @@ impl ScopeCapabilities {
 }
 
 impl AiService {
-    fn feature_capability(&self, feature: AiFeature) -> FeatureCapability {
-        let enabled = self.feature_available(feature);
+    fn feature_capability(
+        &self,
+        switches: &FeatureSwitches,
+        feature: AiFeature,
+    ) -> FeatureCapability {
+        let enabled = self.feature_available(switches, feature);
         FeatureCapability {
             feature,
             enabled,
@@ -134,6 +138,7 @@ impl AiService {
             source_count: bundle.sources.len(),
         };
 
+        let switches = self.feature_switches().await?;
         let features = [
             AiFeature::CourseQa,
             AiFeature::StudyCompanion,
@@ -143,24 +148,28 @@ impl AiService {
             AiFeature::LectureAuthoring,
         ]
         .into_iter()
-        .map(|f| self.feature_capability(f))
+        .map(|f| self.feature_capability(&switches, f))
         .collect();
 
         let ai_enabled = self.config.ai_enabled;
         let mut modes: Vec<&'static str> = Vec::new();
         if ai_enabled && !restricted {
-            if self.feature_available(AiFeature::CourseQa) {
+            if self.feature_available(&switches, AiFeature::CourseQa) {
                 modes.push("ask");
             }
-            if role == AiThreadRole::Student && self.feature_available(AiFeature::StudyCompanion) {
+            if role == AiThreadRole::Student
+                && self.feature_available(&switches, AiFeature::StudyCompanion)
+            {
                 modes.extend(["explain", "practice"]);
             }
         }
         if ai_enabled && role != AiThreadRole::Student {
-            if surface == Surface::CoursePage && self.feature_available(AiFeature::CourseAnalysis) {
+            if surface == Surface::CoursePage
+                && self.feature_available(&switches, AiFeature::CourseAnalysis)
+            {
                 modes.push("analyze");
             }
-            if self.feature_available(AiFeature::CourseQa) && !modes.contains(&"ask") {
+            if self.feature_available(&switches, AiFeature::CourseQa) && !modes.contains(&"ask") {
                 modes.push("ask");
             }
         }

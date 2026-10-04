@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH members AS (\n               SELECT DISTINCT r.user_id, r.course_id FROM trail_runs r\n               JOIN courses c ON c.id = r.course_id\n               WHERE c.archived_at IS NULL\n                 AND ($1::uuid IS NULL OR r.user_id = $1)\n                 AND NOT is_course_staff(r.course_id, r.user_id)\n           ),\n           work AS (\n               SELECT m.user_id, m.course_id, s.activity_id, s.id AS assessment_id,\n                      NULL::uuid AS file_submission_id,\n                      COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now()\n                                         OR o.due_extended\n                                    THEN o.due_at_override END,\n                               s.due_at) AS due_at,\n                      s.late_cutoff_at AS cutoff_at\n               FROM members m\n               JOIN assessments s ON s.course_id = m.course_id AND s.lifecycle = 'published'\n               LEFT JOIN assessment_overrides o\n                      ON o.assessment_id = s.id AND o.user_id = m.user_id\n               WHERE s.access_mode = 'all_course_learners'\n                  OR EXISTS (SELECT 1 FROM assessment_access_users u\n                             WHERE u.assessment_id = s.id AND u.user_id = m.user_id)\n                  OR EXISTS (SELECT 1 FROM assessment_access_usergroups g\n                             JOIN usergroup_members gm ON gm.usergroup_id = g.usergroup_id\n                             WHERE g.assessment_id = s.id AND gm.user_id = m.user_id)\n               UNION ALL\n               SELECT m.user_id, m.course_id, f.activity_id, NULL, f.id,\n                      COALESCE(fo.due_at, f.due_at), f.late_cutoff_at\n               FROM members m\n               JOIN file_submissions f ON f.course_id = m.course_id AND f.lifecycle = 'published'\n               LEFT JOIN file_submission_overrides fo\n                      ON fo.file_submission_id = f.id AND fo.user_id = m.user_id\n           )\n           SELECT w.user_id AS \"user_id!: UserId\", w.course_id AS \"course_id!: CourseId\",\n                  c.name AS course_name, w.activity_id AS \"activity_id!: ActivityId\",\n                  a.name AS activity_name, a.activity_type,\n                  w.assessment_id AS \"assessment_id: ab_core::id::AssessmentId\",\n                  w.file_submission_id AS \"file_submission_id: ab_core::id::FileSubmissionId\",\n                  (extract(epoch FROM w.due_at))::bigint AS \"due_at!\",\n                  (extract(epoch FROM w.cutoff_at))::bigint AS \"cutoff_at?\",\n                  COALESCE(p.state, 'not_started') AS \"state!: ActivityProgressState\"\n           FROM work w\n           JOIN activities a ON a.id = w.activity_id AND a.published\n           JOIN courses c ON c.id = w.course_id\n           LEFT JOIN activity_progress p\n                  ON p.activity_id = w.activity_id AND p.user_id = w.user_id\n           WHERE w.due_at > to_timestamp($2::bigint) AND w.due_at <= to_timestamp($3::bigint)\n           ORDER BY w.due_at, w.activity_id, w.user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "course_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id!: ActivityId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "activity_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "activity_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "activity_type"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "assessment_id: ab_core::id::AssessmentId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "file_submission_id: ab_core::id::FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "due_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "cutoff_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "state!: ActivityProgressState",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      false,
+      null,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "849707870ced5ad9c1325d3508aa41cd53dc9ff106375eaaa9965baeb44233cd"
+}

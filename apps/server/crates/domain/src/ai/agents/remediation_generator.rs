@@ -122,7 +122,7 @@ impl AiService {
         gate_mode: bool,
         language: &str,
     ) -> Result<RemediationSessionRow> {
-        self.require_feature(AiFeature::Remediation)?;
+        self.require_feature(AiFeature::Remediation).await?;
         let subject = self.accessible_subject(actor, subject_id).await?;
         self.require_gate_rights(actor, &subject, gate_mode).await?;
         self.budget
@@ -211,7 +211,7 @@ impl AiService {
         gate_mode: bool,
         language: &str,
     ) -> Result<RunRow> {
-        self.require_feature(AiFeature::Remediation)?;
+        self.require_feature(AiFeature::Remediation).await?;
         let subject = self.accessible_subject(actor, subject_id).await?;
         self.require_gate_rights(actor, &subject, gate_mode).await?;
         self.budget

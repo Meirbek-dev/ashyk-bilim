@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT count(*) FILTER (WHERE status <> 'draft') AS \"total!\",\n                  count(*) FILTER (WHERE status = 'pending') AS \"pending!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'published') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE status <> 'draft' AND is_late) AS \"late!\"\n           FROM submissions WHERE assessment_id = $1 AND NOT preview",
+  "query": "SELECT count(*) FILTER (WHERE status <> 'draft') AS \"total!\",\n                  count(*) FILTER (WHERE status = 'pending') AS \"pending!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'published') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE status <> 'draft' AND is_late) AS \"late!\"\n           FROM submissions s WHERE assessment_id = $1 AND NOT preview\n             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -54,5 +55,5 @@
       null
     ]
   },
-  "hash": "9d8dafacad792c94d9c9e664cc668c43829e4021e918e0fbf3986abad89a9e35"
+  "hash": "e403a8dfbeefaaa253a1a2b83fb24c2038c4b28218d524b229ad3fca4ccd2819"
 }

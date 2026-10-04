@@ -338,7 +338,7 @@ impl AiService {
         course_id: CourseId,
         request: QaRequest<'_>,
     ) -> Result<QaSession> {
-        self.require_feature(AiFeature::CourseQa)?;
+        self.require_feature(AiFeature::CourseQa).await?;
         let question = validate_question(request.question)?;
         let course = self.visible_course(actor, course_id).await?;
         let role = policy::derive_course_role(actor, &course);

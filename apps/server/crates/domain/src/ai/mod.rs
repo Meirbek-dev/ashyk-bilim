@@ -40,14 +40,19 @@ pub use agents::course_qa::{QaReplay, QaRequest, QaSession, QaStream, QaTurn};
 pub use budget::TokenBudget;
 pub use capabilities::{ContextSummary, FeatureCapability, ScopeCapabilities, Surface};
 pub use runs::{
-    AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, RunDetail, RunListQuery,
-    UsageSummary,
+    AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, FeatureState, RunDetail,
+    RunListQuery, UsageSummary,
 };
 
 use crate::catalog::courses::CoursesService;
 use crate::events::AiEvents;
 use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
+
+/// Runtime AI feature switches (`ai_feature_switches`); a feature not in
+/// the map follows the environment.
+#[derive(Debug, Clone, Default)]
+pub struct FeatureSwitches(pub std::collections::HashMap<AiFeature, bool>);
 
 #[derive(Clone)]
 pub struct AiService {
@@ -107,16 +112,35 @@ impl AiService {
         self.llm.as_ref().filter(|llm| llm.is_enabled())
     }
 
+    /// The stored runtime switches (S-GAPS).
+    // ponytail: one read of a seven-row table per AI entry point, no cache
+    // (the model call dwarfs it); add a short TTL cache if it ever shows.
+    pub(crate) async fn feature_switches(&self) -> Result<FeatureSwitches> {
+        Ok(FeatureSwitches(
+            ab_db::ai::feature_switches(&self.pool)
+                .await?
+                .into_iter()
+                .filter_map(|(key, on)| AiFeature::parse(&key).map(|f| (f, on)))
+                .collect(),
+        ))
+    }
+
+    /// The feature's flag: the environment, lowered by a runtime switch
+    /// (the environment is the ceiling; the master switch is separate).
+    pub(crate) fn feature_flag(&self, switches: &FeatureSwitches, feature: AiFeature) -> bool {
+        self.config.feature_enabled(feature) && switches.0.get(&feature).copied().unwrap_or(true)
+    }
+
     /// Legacy `_require_enabled`: master switch, then the feature flag.
     /// Both answer 503 `ai-disabled` (the legacy used 403).
-    pub(crate) fn require_feature(&self, feature: AiFeature) -> Result<()> {
+    pub(crate) async fn require_feature(&self, feature: AiFeature) -> Result<()> {
         if !self.config.ai_enabled {
             return Err(Error::app(
                 ErrorCode::AiDisabled,
                 "AI features are disabled",
             ));
         }
-        if !self.config.feature_enabled(feature) {
+        if !self.feature_flag(&self.feature_switches().await?, feature) {
             return Err(Error::app_with_details(
                 ErrorCode::AiDisabled,
                 format!("AI feature is disabled: {}", feature.as_str()),
@@ -128,8 +152,8 @@ impl AiService {
 
     /// Whether `feature` is usable right now (capabilities view).
     #[must_use]
-    pub fn feature_available(&self, feature: AiFeature) -> bool {
-        self.config.ai_enabled && self.config.feature_enabled(feature)
+    pub fn feature_available(&self, switches: &FeatureSwitches, feature: AiFeature) -> bool {
+        self.config.ai_enabled && self.feature_flag(switches, feature)
     }
 
     /// The user's UI locale, for prompt selection.

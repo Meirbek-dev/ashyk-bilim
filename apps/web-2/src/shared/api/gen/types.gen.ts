@@ -2533,15 +2533,30 @@ export type FeatureCapability = {
 
 export type FeatureSetting = {
     /**
-     * Flags come from the environment; there is no runtime toggle.
+     * The environment allows the feature, so the runtime switch
+     * (`PUT /ai/admin/settings/features/{key}`) turns it on and off.
      */
     editable: boolean;
+    /**
+     * The environment flag lowered by the runtime switch (the master
+     * switch not applied).
+     */
     enabled: boolean;
     /**
      * The legacy flag key (`course_qa_enabled`, …).
      */
     key: string;
+    /**
+     * `runtime` when a runtime switch is stored, else `environment`.
+     */
     source: string;
+};
+
+/**
+ * `PUT /ai/admin/settings/features/{key}`.
+ */
+export type FeatureSwitchRequest = {
+    enabled: boolean;
 };
 
 /**
@@ -3657,10 +3672,11 @@ export type NotificationPayload = {
 } | {
     activity_id: ActivityId;
     activity_name: string;
-    assessment_id: AssessmentId;
+    assessment_id: AssessmentId | null;
     course_id: CourseId;
     course_name: string;
     due_at_unix: UnixTime;
+    file_submission_id: FileSubmissionId | null;
     type: 'deadline_extended';
 } | {
     activity_id: ActivityId;
@@ -5151,6 +5167,10 @@ export type Stats = {
     avg_score: number | null;
     distribution: Array<ScoreBucket>;
     graded: number;
+    /**
+     * The `group_id` filter these numbers are for; absent without one.
+     */
+    group_id?: UsergroupId;
     late: number;
     needs_grading: number;
     /**
@@ -6616,6 +6636,40 @@ export type AdminSettingsResponses = {
 };
 
 export type AdminSettingsResponse = AdminSettingsResponses[keyof AdminSettingsResponses];
+
+export type SetFeatureSwitchData = {
+    body: FeatureSwitchRequest;
+    path: {
+        /**
+         * Feature flag key, e.g. `course_qa_enabled`
+         */
+        key: string;
+    };
+    query?: never;
+    url: '/api/v2/ai/admin/settings/features/{key}';
+};
+
+export type SetFeatureSwitchErrors = {
+    /**
+     * Not a platform admin
+     */
+    403: Problem;
+    /**
+     * Unknown feature key
+     */
+    404: Problem;
+};
+
+export type SetFeatureSwitchError = SetFeatureSwitchErrors[keyof SetFeatureSwitchErrors];
+
+export type SetFeatureSwitchResponses = {
+    /**
+     * Effective AI settings after the change
+     */
+    200: AdminSettings;
+};
+
+export type SetFeatureSwitchResponse = SetFeatureSwitchResponses[keyof SetFeatureSwitchResponses];
 
 export type ScopeCapabilitiesData = {
     body?: never;
@@ -9723,7 +9777,12 @@ export type StatsData = {
          */
         assessment_id: AssessmentId;
     };
-    query?: never;
+    query?: {
+        /**
+         * Members of this usergroup only.
+         */
+        group_id?: UsergroupId | null;
+    };
     url: '/api/v2/assessments/{assessment_id}/submissions/stats';
 };
 

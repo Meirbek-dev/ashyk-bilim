@@ -869,7 +869,12 @@ pub struct SubmissionStats {
     pub late: i64,
 }
 
-pub async fn stats(pool: &PgPool, assessment_id: AssessmentId) -> Result<SubmissionStats> {
+/// `group_id`: members of that usergroup only (S-GAPS).
+pub async fn stats(
+    pool: &PgPool,
+    assessment_id: AssessmentId,
+    group_id: Option<UsergroupId>,
+) -> Result<SubmissionStats> {
     let row = sqlx::query!(
         r#"SELECT count(*) FILTER (WHERE status <> 'draft') AS "total!",
                   count(*) FILTER (WHERE status = 'pending') AS "pending!",
@@ -877,8 +882,11 @@ pub async fn stats(pool: &PgPool, assessment_id: AssessmentId) -> Result<Submiss
                   count(*) FILTER (WHERE status = 'published') AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE status <> 'draft' AND is_late) AS "late!"
-           FROM submissions WHERE assessment_id = $1 AND NOT preview"#,
-        assessment_id.0
+           FROM submissions s WHERE assessment_id = $1 AND NOT preview
+             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))"#,
+        assessment_id.0,
+        group_id.map(|g| g.0)
     )
     .fetch_one(pool)
     .await?;
@@ -893,12 +901,19 @@ pub async fn stats(pool: &PgPool, assessment_id: AssessmentId) -> Result<Submiss
 }
 
 /// Final scores of graded/published work (for pass rate + distribution).
-pub async fn graded_scores(pool: &PgPool, assessment_id: AssessmentId) -> Result<Vec<f64>> {
+pub async fn graded_scores(
+    pool: &PgPool,
+    assessment_id: AssessmentId,
+    group_id: Option<UsergroupId>,
+) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
-        r#"SELECT final_score AS "final_score!" FROM submissions
+        r#"SELECT final_score AS "final_score!" FROM submissions s
            WHERE assessment_id = $1 AND status IN ('graded', 'published')
-             AND final_score IS NOT NULL AND NOT preview"#,
-        assessment_id.0
+             AND final_score IS NOT NULL AND NOT preview
+             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))"#,
+        assessment_id.0,
+        group_id.map(|g| g.0)
     )
     .fetch_all(pool)
     .await?;

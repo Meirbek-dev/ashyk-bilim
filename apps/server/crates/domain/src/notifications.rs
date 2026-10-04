@@ -11,7 +11,7 @@
 use ab_core::assessments::NotificationType;
 use ab_core::id::{
     ActivityId, AssessmentId, CourseId, CourseUpdateId, DiscussionId, FileAttemptId,
-    NotificationId, SubmissionId, UserId,
+    FileSubmissionId, NotificationId, SubmissionId, UserId,
 };
 use ab_core::{Error, FieldError, Result};
 use ab_db::notifications::NotificationRow;
@@ -51,13 +51,16 @@ pub enum NotificationPayload {
         submission_id: Option<SubmissionId>,
         attempt_id: Option<FileAttemptId>,
     },
-    /// A teacher extended the recipient's deadline.
+    /// A teacher extended the recipient's deadline: `assessment_id` for an
+    /// assessment, `file_submission_id` for a file submission (S-GAPS;
+    /// rows stored before it carry `assessment_id` only).
     DeadlineExtended {
         course_id: CourseId,
         course_name: String,
         activity_id: ActivityId,
         activity_name: String,
-        assessment_id: AssessmentId,
+        assessment_id: Option<AssessmentId>,
+        file_submission_id: Option<FileSubmissionId>,
         due_at_unix: i64,
     },
     /// Unsubmitted work is due within a day.

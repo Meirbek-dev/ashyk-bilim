@@ -66,7 +66,7 @@ impl AiService {
         mode: StudyMode,
         language: &str,
     ) -> Result<serde_json::Value> {
-        self.require_feature(AiFeature::StudyCompanion)?;
+        self.require_feature(AiFeature::StudyCompanion).await?;
         let question = validate_question(question)?;
         self.visible_course(actor, course_id).await?;
         self.budget
@@ -110,7 +110,7 @@ impl AiService {
         mode: StudyMode,
         language: &str,
     ) -> Result<RunRow> {
-        self.require_feature(AiFeature::StudyCompanion)?;
+        self.require_feature(AiFeature::StudyCompanion).await?;
         let question = validate_question(question)?;
         self.visible_course(actor, course_id).await?;
         self.budget

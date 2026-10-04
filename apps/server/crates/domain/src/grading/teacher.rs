@@ -161,6 +161,8 @@ pub struct Stats {
     pub returned: i64,
     pub late: i64,
     pub avg_score: Option<f64>,
+    /// The group filter these counts are for (null = everyone).
+    pub group_id: Option<UsergroupId>,
     /// Percent of graded work at or above the passing score.
     pub pass_rate: Option<f64>,
     pub distribution: Vec<ScoreBucket>,
@@ -878,11 +880,18 @@ impl GradingService {
         Ok(ReviewPage { items, next_cursor })
     }
 
-    /// Dashboard counts, average, pass rate and a 10-bucket distribution.
-    pub async fn stats(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<Stats> {
+    /// Dashboard counts, average, pass rate and a 10-bucket distribution;
+    /// `group_id` limits them to that usergroup's members (an unknown
+    /// group counts nothing, like the queue).
+    pub async fn stats(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+        group_id: Option<UsergroupId>,
+    ) -> Result<Stats> {
         let (assessment, _) = self.grader_context(actor, assessment_id).await?;
-        let counts = ab_db::submissions::stats(&self.pool, assessment_id).await?;
-        let scores = ab_db::submissions::graded_scores(&self.pool, assessment_id).await?;
+        let counts = ab_db::submissions::stats(&self.pool, assessment_id, group_id).await?;
+        let scores = ab_db::submissions::graded_scores(&self.pool, assessment_id, group_id).await?;
         let mut buckets = [0i64; 10];
         for score in &scores {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -909,6 +918,7 @@ impl GradingService {
             published: counts.published,
             returned: counts.returned,
             late: counts.late,
+            group_id,
             avg_score,
             pass_rate,
             distribution: buckets
@@ -1588,7 +1598,7 @@ impl GradingService {
         let mut skipped = 0;
         // BUG-202: a feedback-only save keeps the attempt `pending` (not
         // releasable) - the UI still has to warn that grading is owed.
-        let mut needs_grading = ab_db::submissions::stats(&self.pool, assessment_id)
+        let mut needs_grading = ab_db::submissions::stats(&self.pool, assessment_id, None)
             .await?
             .pending;
         for row in rows {
