@@ -62,7 +62,12 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is publishe
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
   await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
 
-  await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('')
+  const text = instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) })
+  // Clearing a contenteditable right after the publish re-render sometimes selects nothing: fill until it is empty.
+  await expect(async () => {
+    await text.fill('')
+    await expect(text).toHaveText('', { timeout: 1000 })
+  }).toPass()
   await save(page, m.submission_instructions({}, ru))
   await expect(instructions.getByText(m.errors_conflict({}, ru))).toBeVisible()
 })
