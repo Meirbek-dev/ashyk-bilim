@@ -1325,7 +1325,8 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     let complete_path = format!("/api/v2/ai/remediation/sessions/{session_id}/complete");
     let (pass, fail) = (
         serde_json::json!({ "answers": ["Left  Identity "] }),
-        serde_json::json!({ "score": 100 }),
+        // A wrong answer (a legacy `score` would pass too under `legacy`).
+        serde_json::json!({ "answers": ["commutativity"] }),
     );
     let (passed, failed) = tokio::join!(
         app.post_as(&alice, &complete_path, &pass),
