@@ -18,7 +18,7 @@ export function DeleteRole({ role }: { role: Role }) {
   const remove = useMutation(deleteRoleOptions(useQueryClient()))
   const confirm = () =>
     remove.mutate(
-      { path: { slug: role.slug } },
+      { path: { slug: role.slug }, headers: { 'If-Match': role.version } },
       {
         onSuccess: async () => {
           setOpen(false)

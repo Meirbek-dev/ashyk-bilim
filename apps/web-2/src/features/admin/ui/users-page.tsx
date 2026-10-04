@@ -24,7 +24,7 @@ export function UsersPage() {
   return (
     <ListPage
       title={m.admin_users_title()}
-      primaryAction={<CreateUserDialog />}
+      primaryAction={hasCapability(session, 'admin.users.create') ? <CreateUserDialog /> : null}
       search={
         <search className="w-full max-w-sm">
           <form

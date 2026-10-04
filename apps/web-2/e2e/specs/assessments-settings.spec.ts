@@ -108,7 +108,11 @@ test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the
   await expect(page.getByText(m.assessments_access_saved({}, ru)).first()).toBeVisible()
 })
 
-test('B-ASM-21 a learner gets an exception, it is changed and removed', async ({ page, studio, seed }) => {
+test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 412 asks and retries) and removed', async ({
+  page,
+  studio,
+  seed,
+}) => {
   const { courseId, assessment } = await makeAssessment(studio, seed, { published: true })
   await enroll({
     client: studio.api,
@@ -129,7 +133,19 @@ test('B-ASM-21 a learner gets an exception, it is changed and removed', async ({
   await page.getByRole('button', { name: m.assessments_exception_edit({ name }, ru) }).click()
   const edit = page.getByRole('dialog', { name: m.assessments_nav_exceptions({}, ru) })
   await edit.getByLabel(m.assessments_field_attempts_override({}, ru)).fill('4')
+  // The first change is answered 412, as if someone changed the exception since the page read it.
+  const versions: (string | undefined)[] = []
+  await page.route('**/api/v2/assessments/*/overrides/*', route => {
+    if (route.request().method() !== 'PUT') return route.fallback()
+    versions.push(route.request().headers()['if-match'])
+    if (versions.length > 1) return route.fallback()
+    const code = 'precondition-failed'
+    return route.fulfill({ status: 412, json: { type: 'about:blank', title: code, status: 412, code } })
+  })
   await edit.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect.poll(() => versions).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/)])
   await expect(page.getByText(m.assessments_exception_attempts({ count: '4' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_remove({ name }, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.assessments_exception_remove_title({ name }, ru) })

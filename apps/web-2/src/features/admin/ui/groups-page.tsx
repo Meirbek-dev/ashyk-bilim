@@ -1,6 +1,8 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
@@ -41,10 +43,14 @@ const columns: DataColumn<Usergroup>[] = [
 
 /** User groups, newest first, "Show more" by keyset cursor; a group's members and edits live on its page. */
 export function GroupsPage() {
+  const { data: session } = useSuspenseQuery(sessionOptions())
   const query = useSuspenseInfiniteQuery(groupsListOptions())
   const groups = query.data.pages.flatMap(page => page.items)
   return (
-    <ListPage title={m.admin_groups_title()} primaryAction={<CreateGroupDialog />}>
+    <ListPage
+      title={m.admin_groups_title()}
+      primaryAction={hasCapability(session, 'groups.create') ? <CreateGroupDialog /> : null}
+    >
       <ListState
         pending={false}
         error={query.error}

@@ -15,6 +15,7 @@ import {
   recommendedActionLabels,
   riskReasonLabels,
   severityBadges,
+  signalHref,
   signalText,
   whyNowLabels,
 } from './signals'
@@ -55,5 +56,11 @@ describe('analytics signals', () => {
     expect(distinctTexts(recommendedActionLabels, vRecommendedAction.options)).toBe(vRecommendedAction.options.length)
     expect(distinctTexts(riskReasonLabels, vRiskReasonCode.options)).toBe(vRiskReasonCode.options.length)
     expect(distinctTexts(outlierLabels, vOutlierReasonCode.options)).toBe(vOutlierReasonCode.options.length)
+  })
+
+  test('B-ANL-25 a signal links only into the analytics tabs of this web', () => {
+    expect(signalHref('/teach/analytics/learners?course=c')).toBe('/teach/analytics/learners?course=c')
+    expect(signalHref('/dash/analytics/learners/at-risk')).toBeUndefined()
+    expect(signalHref(null)).toBeUndefined()
   })
 })

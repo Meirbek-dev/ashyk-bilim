@@ -17,7 +17,7 @@ export function DeleteGroup({ group }: { group: Usergroup }) {
   const remove = useMutation(deleteGroupOptions())
   const confirm = () =>
     remove.mutate(
-      { path: { group_id: group.id } },
+      { path: { group_id: group.id }, headers: { 'If-Match': group.version } },
       {
         onSuccess: async () => {
           setOpen(false)

@@ -16,7 +16,7 @@ export function DeletePost({ item }: { item: Discussion }) {
   const reply = Boolean(item.parent_id)
   const confirm = () =>
     remove.mutate(
-      { path: { discussion_id: item.id } },
+      { path: { discussion_id: item.id }, headers: { 'If-Match': item.version ?? null } },
       {
         onSuccess: () => {
           setOpen(false)

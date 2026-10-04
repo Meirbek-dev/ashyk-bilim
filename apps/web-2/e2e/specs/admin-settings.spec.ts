@@ -105,7 +105,7 @@ test('B-ADM-14 a logo uploads with its purpose and is claimed by "Save"', async 
   await expect(branding.getByRole('img', { name: m.admin_platform_logo({}, ru) })).toBeVisible()
 })
 
-test('B-ADM-15 the XP rules save, survive a reload and keep the overrides the form does not show', async ({
+test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflict dialog, survive a reload and keep the overrides the form does not show', async ({
   page,
   signInAs,
   api,
@@ -125,8 +125,18 @@ test('B-ADM-15 the XP rules save, survive a reload and keep the overrides the fo
     await page.goto('/admin/gamification')
     const course = page.getByLabel(m.admin_xp_course_completion({}, ru))
     await course.fill('250')
-    const sent = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith('/config'))
+    // Someone saves the rules after this page read them: the page's version is stale (412). The retry sends the
+    // input as it was (with the overrides the page read).
+    await updateConfig({
+      client: api,
+      body: { ...restore, rewards: { ...before.rewards, admin_award: 4 } },
+      headers: cookie(seed),
+      throwOnError: true,
+    })
     await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
+    const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+    const sent = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith('/config'))
+    await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
     expect((await sent).postDataJSON()).toMatchObject({ rewards: { admin_award: 3, course_completion: 250 } })
     await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
     await page.reload()

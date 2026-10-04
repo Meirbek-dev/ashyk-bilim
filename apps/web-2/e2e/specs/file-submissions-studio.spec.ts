@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
-import { getActivityFileSubmission } from '#/shared/api/gen/sdk.gen'
+import { getActivityFileSubmission, updateFileSubmission } from '#/shared/api/gen/sdk.gen'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { fromDateTimeInput } from '#/shared/i18n/format'
 
@@ -30,7 +30,7 @@ async function stored(
 
 test.use({ as: 'teacher' })
 
-test('B-FSB-13 B-FSB-14 a draft task gets its instructions and is published from edit', async ({
+test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is published, unpublished and published again', async ({
   page,
   makeCourse,
   tasks,
@@ -52,6 +52,15 @@ test('B-FSB-13 B-FSB-14 a draft task gets its instructions and is published from
   await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
   await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).toBeChecked()
+
+  await publishing.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
+  const confirm = page.getByRole('alertdialog', { name: m.submission_unpublish_title({}, ru) })
+  await confirm.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
+  await expect(page.getByText(m.submission_unpublished_toast({}, ru))).toBeVisible()
+  await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
+  await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).not.toBeChecked()
+  await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
+  await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
 
   await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('')
   await save(page, m.submission_instructions({}, ru))
@@ -154,3 +163,29 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.getByRole('heading', { name: m.submission_deadlines_title({}, { locale }) })).toBeVisible()
   })
 }
+
+test('B-FSB-20 a save over a change made elsewhere opens the conflict dialog; the retry saves on the newer version', async ({
+  page,
+  api,
+  makeCourse,
+  tasks,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  const task = await tasks.make(course)
+  await page.goto(studio(course, task))
+  const instructions = form(page, m.submission_instructions({}, ru))
+  await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('Новое условие')
+  // Someone changes the task after this page read it: the page's version is stale (412).
+  await updateFileSubmission({
+    client: api,
+    path: { file_submission_id: task.id },
+    body: { max_files: 3 },
+    headers: tasks.teacher,
+    throwOnError: true,
+  })
+  await save(page, m.submission_instructions({}, ru))
+  const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  expect(await stored(api, tasks, task)).toMatchObject({ instructions: 'Новое условие', max_files: 3 })
+})

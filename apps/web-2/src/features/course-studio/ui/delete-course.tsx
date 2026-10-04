@@ -39,7 +39,7 @@ export function DeleteCourse({ course }: { course: Course }) {
   const matches = typed.trim() === course.name.trim()
   const confirm = () =>
     remove.mutate(
-      { path: { course_id: course.id } },
+      { path: { course_id: course.id }, headers: { 'If-Match': course.version } },
       {
         onSuccess: () => {
           toast.add({ title: m.studio_course_deleted() })

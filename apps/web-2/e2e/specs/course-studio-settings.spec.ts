@@ -138,7 +138,10 @@ test('B-CST-22 archiving names what stays behind; an archived course can be rest
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()
 })
 
-test('B-CST-25 announcements are created, edited in place and deleted', async ({ page, studio }) => {
+test('B-CST-25 B-CST-38 announcements are created, edited in place and deleted with If-Match', async ({
+  page,
+  studio,
+}) => {
   const { course } = await studio.course()
   await page.goto(tab(course.id, 'publish'))
   await expect(page.getByText(m.studio_updates_empty({}, ru))).toBeVisible()
@@ -159,11 +162,13 @@ test('B-CST-25 announcements are created, edited in place and deleted', async ({
   const confirm = page.getByRole('alertdialog', {
     name: m.studio_update_delete_title({ title: 'Старт переносится' }, ru),
   })
+  const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.studio_delete({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
   await expect(page.getByText(m.studio_updates_empty({}, ru))).toBeVisible()
 })
 
-test('B-CST-36 deleting the course asks for its name, then lands on the course list', async ({
+test('B-CST-36 B-CST-38 deleting the course asks for its name, is sent with If-Match, then lands on the course list', async ({
   page,
   studio,
   seed,
@@ -178,7 +183,9 @@ test('B-CST-36 deleting the course asks for its name, then lands on the course l
   const submit = confirm.getByRole('button', { name: m.studio_course_delete({}, ru) })
   await expect(submit).toBeDisabled()
   await confirm.getByRole('textbox', { name: m.studio_course_delete_name({}, ru) }).fill(course.name)
+  const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await submit.click()
+  expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
   await expect(page.getByText(m.studio_course_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/courses$/)
   const headers = cookieOf(seed, 'teacher')

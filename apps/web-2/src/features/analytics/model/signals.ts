@@ -127,3 +127,10 @@ export const signalText = {
   thin_course_data: p => m.analytics_code_thin_course_data({ count: num(p, 'count') }),
   stale_rollup: () => m.analytics_code_stale_rollup(),
 } satisfies Record<AnalyticsCode, (params: MessageParams) => string>
+
+/**
+ * The tab a signal is about (`href` from the server's link map): only a route of this web (`/teach/analytics...`);
+ * the old web's `/dash/...` (`AB__SERVER__WEB_LINKS=legacy`) and no link are plain text.
+ */
+export const signalHref = (href: string | null | undefined): string | undefined =>
+  href?.startsWith('/teach/analytics') ? href : undefined

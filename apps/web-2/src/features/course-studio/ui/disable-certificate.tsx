@@ -15,7 +15,7 @@ export function DisableCertificate({ course, certification }: { course: Course; 
   const remove = useMutation(deleteCertificationOptions(useQueryClient(), course.id))
   const confirm = () =>
     remove.mutate(
-      { path: { certification_id: certification.id } },
+      { path: { certification_id: certification.id }, headers: { 'If-Match': certification.version } },
       {
         onSuccess: () => {
           setOpen(false)

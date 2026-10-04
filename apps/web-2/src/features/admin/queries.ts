@@ -192,6 +192,9 @@ export const updatePlatformOptions = (queryClient: QueryClient) => ({
 
 export const configOptions = () => getConfigOptions()
 
+export const configVersion = async (queryClient: QueryClient) =>
+  (await queryClient.fetchQuery({ ...configOptions(), staleTime: 0 })).version ?? 0
+
 export const updateConfigOptions = (queryClient: QueryClient) => ({
   ...updateConfigMutation(),
   onSuccess: (config: GamificationConfig) => queryClient.setQueryData(getConfigQueryKey(), config),

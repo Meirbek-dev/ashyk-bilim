@@ -15,7 +15,7 @@ export function DeleteUpdate({ courseId, update }: { courseId: string; update: C
   const remove = useMutation(deleteUpdateOptions(useQueryClient(), courseId))
   const confirm = () =>
     remove.mutate(
-      { path: { update_id: update.id } },
+      { path: { update_id: update.id }, headers: { 'If-Match': update.version } },
       {
         onSuccess: () => {
           setOpen(false)

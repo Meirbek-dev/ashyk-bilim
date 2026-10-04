@@ -16,7 +16,7 @@ export function DeleteChapter({ courseId, chapter }: { courseId: string; chapter
   const remove = useMutation(deleteChapterOptions(useQueryClient(), courseId))
   const confirm = () =>
     remove.mutate(
-      { path: { chapter_id: chapter.id } },
+      { path: { chapter_id: chapter.id }, headers: { 'If-Match': chapter.version } },
       {
         onSuccess: () => {
           setOpen(false)

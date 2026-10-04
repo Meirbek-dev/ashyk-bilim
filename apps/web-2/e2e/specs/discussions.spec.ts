@@ -15,15 +15,11 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import type { Course, Discussion, DiscussionId } from '#/shared/api/gen/types.gen'
 
-import { expect, type Seed, test as base } from '../fixtures/seed'
+import { expect, test as base } from '../fixtures/seed'
+import { cookieOf } from './course-studio-fixture'
 
 const ru = { locale: 'ru' } as const
 type Author = 'teacher' | 'student'
-
-const cookie = (seed: Seed, role: Author) => {
-  const { name, value } = seed.accounts[role].cookie
-  return { cookie: `${name}=${value}` }
-}
 
 /** A post's stored content: the editor document as a JSON string, the way the composer sends it. */
 const doc = (text: string) =>
@@ -38,7 +34,7 @@ const test = base.extend<{
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
   course: async ({ api, seed }, use) => {
     const made: string[] = []
-    const headers = cookie(seed, 'teacher')
+    const headers = cookieOf(seed, 'teacher')
     await use(async () => {
       const name = `E2E discussions ${randomUUID().slice(0, 8)}`
       const { data: course } = await createCourse({ client: api, body: { name }, headers, throwOnError: true })
@@ -70,7 +66,7 @@ const test = base.extend<{
         client: api,
         path: { course_id: course.id },
         body: { content: doc(text), parent_id: parent },
-        headers: cookie(seed, author),
+        headers: cookieOf(seed, author),
         throwOnError: true,
       })
       return data
@@ -212,7 +208,7 @@ test('B-DSC-06 the author edits a post in place', async ({ page, signInAs, cours
   await expect(article(page, 'Исправленный текст.')).toBeVisible()
 })
 
-test('B-DSC-07 deleting asks first, then the post is gone', async ({ page, signInAs, course, post }) => {
+test('B-DSC-07 B-DSC-13 delete asks, sends If-Match, the post is gone', async ({ page, signInAs, course, post }) => {
   const made = await course()
   await post(made, 'Удаляемый пост.')
   await signInAs('student')
@@ -222,7 +218,9 @@ test('B-DSC-07 deleting asks first, then the post is gone', async ({ page, signI
     expect(confirm).toBeVisible({ timeout: 1000 }),
   )
   await expect(confirm).toContainText(m.discussions_delete_post_consequence({}, ru))
+  const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.discussions_delete({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
   await expect(page.getByText(m.discussions_deleted({}, ru))).toBeVisible()
   await expect(article(page, 'Удаляемый пост.')).toHaveCount(0)
 })

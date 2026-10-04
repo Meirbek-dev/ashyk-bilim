@@ -189,6 +189,15 @@ export const createOverrideOptions = (queryClient: QueryClient, id: string) => (
   onSuccess: putOverride(queryClient, id),
 })
 
+/** `If-Match` of a learner's exception: its version in the cached list (a retry after a 412 reads the list first). */
+export const overrideVersion = (queryClient: QueryClient, id: string, row: StudentOverride) =>
+  queryClient.getQueryData(overridesOptions(id).queryKey)?.find(item => item.user_id === row.user_id)?.version ??
+  row.version ??
+  null
+
+export const reloadOverrides = (queryClient: QueryClient, id: string) =>
+  queryClient.fetchQuery({ ...overridesOptions(id), staleTime: 0 })
+
 export const updateOverrideOptions = (queryClient: QueryClient, id: string) => ({
   ...updateOverrideMutation(),
   onSuccess: putOverride(queryClient, id),

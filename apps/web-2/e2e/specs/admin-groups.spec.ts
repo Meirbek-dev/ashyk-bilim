@@ -143,7 +143,7 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   await expect(page.getByRole('button', { name: m.admin_delete({}, ru) })).toHaveCount(0)
 })
 
-test('B-ADM-20 deleting a group asks with its name, then returns to the list', async ({
+test('B-ADM-20 B-ADM-24 deleting a group asks with its name, is sent with If-Match, then returns to the list', async ({
   page,
   signInAs,
   group,
@@ -156,7 +156,9 @@ test('B-ADM-20 deleting a group asks with its name, then returns to the list', a
   await page.getByRole('button', { name: m.admin_delete({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.admin_group_delete_title({ name: own.name }, ru) })
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
+  const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.admin_delete({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
   await expect(page.getByText(m.admin_group_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/groups$/)
   const left = await listGroups({ client: api, query: { limit: 100 }, headers: cookie(seed, 'teacher') })

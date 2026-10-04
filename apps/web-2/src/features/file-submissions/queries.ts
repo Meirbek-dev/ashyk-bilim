@@ -13,6 +13,7 @@ import {
   learnerCourseStateQueryKey,
   myAttemptsOptions,
   publishFileSubmissionMutation,
+  unpublishFileSubmissionMutation,
   saveFileSubmissionDraftMutation,
   startDraftMutation,
   submitMutation,
@@ -125,17 +126,32 @@ export const updateTaskOptions = (queryClient: QueryClient, activityId: Activity
   onSuccess: (task: FileSubmission) => queryClient.setQueryData(taskKey(activityId), task),
 })
 
-/**
- * Publishing also flips the activity live, which bumps its version; the answer does not carry the activity, so the
- * header switch's cached activity takes both by hand (a refetch would repeat the page's GET).
- */
-export const publishTaskOptions = (queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) => ({
-  ...publishFileSubmissionMutation(),
+const lifecycleOptions = <T>(
+  mutation: T,
+  queryClient: QueryClient,
+  courseId: CourseId,
+  activityId: ActivityId,
+  published: boolean,
+) => ({
+  ...mutation,
   onSuccess: (task: FileSubmission) => {
     queryClient.setQueryData(taskKey(activityId), task)
     queryClient.setQueryData<ActivityDetail>(getActivityQueryKey(byActivity(activityId)), activity =>
-      activity && !activity.published ? { ...activity, published: true, version: activity.version + 1 } : activity,
+      activity && activity.published !== published
+        ? { ...activity, published, version: activity.version + 1 }
+        : activity,
     )
   },
   meta: { invalidates: [getCurriculumQueryKey(byCourse(courseId)), courseReadinessQueryKey(byCourse(courseId))] },
 })
+
+/**
+ * Publishing also flips the activity live, which bumps its version; the answer does not carry the activity, so the
+ * header switch's cached activity takes both by hand (a refetch would repeat the page's GET).
+ */
+export const publishTaskOptions = (queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) =>
+  lifecycleOptions(publishFileSubmissionMutation(), queryClient, courseId, activityId, true)
+
+/** Unpublishing takes the activity out of the learners' view too (B-FSB-21): the switch follows the same way. */
+export const unpublishTaskOptions = (queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) =>
+  lifecycleOptions(unpublishFileSubmissionMutation(), queryClient, courseId, activityId, false)

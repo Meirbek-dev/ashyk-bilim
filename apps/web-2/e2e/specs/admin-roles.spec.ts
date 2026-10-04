@@ -2,8 +2,19 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { createRole, deleteRole, getRole, listRoles, updateRole } from '#/shared/api/gen/sdk.gen'
+import {
+  assignRole,
+  createRole,
+  deleteRole,
+  getRole,
+  listRoles,
+  listUsers,
+  login,
+  setRolePermissions,
+  updateRole,
+} from '#/shared/api/gen/sdk.gen'
 
+import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect, type Seed, test as base } from '../fixtures/seed'
 
 const ru = { locale: 'ru' } as const
@@ -139,14 +150,19 @@ test("B-ADM-23 a role save over someone else's change asks, keeps the input and 
   await expect(page.getByRole('heading', { level: 1, name: 'E2E мой вариант' })).toBeVisible()
 })
 
-test('B-ADM-12 deleting a role asks with its name, then returns to the list', async ({ page, role }) => {
+test('B-ADM-12 B-ADM-24 deleting a role asks with its name, is sent with If-Match, then returns to the list', async ({
+  page,
+  role,
+}) => {
   const { name } = await role()
   await page.goto('/admin/roles')
   await page.getByRole('link', { name }).click()
   await page.getByRole('button', { name: m.admin_delete({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.admin_role_delete_title({ name }, ru) })
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
+  const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.admin_delete({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
   await expect(page.getByText(m.admin_role_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/admin\/roles$/)
   await expect(page.getByRole('link', { name })).toHaveCount(0)
@@ -173,3 +189,46 @@ for (const locale of ['kk', 'en'] as const) {
     }
   })
 }
+
+test('B-ADM-25 a role reader without role:manage sees the roles but no "New role"', async ({
+  page,
+  context,
+  baseURL,
+  api,
+  seed,
+  role,
+}) => {
+  const { slug } = await role()
+  const admin = cookie(seed)
+  const { data: made } = await getRole({ client: api, path: { slug }, headers: admin, throwOnError: true })
+  await setRolePermissions({
+    client: api,
+    path: { slug },
+    body: { permissions: ['role:read:platform'] },
+    headers: { ...admin, 'If-Match': made.version },
+    throwOnError: true,
+  })
+  const account = await registerAccount(String(baseURL))
+  const { data: found } = await listUsers({ client: api, query: { q: account.username }, headers: admin })
+  const user = found?.items.find(item => item.username === account.username)
+  if (!user) throw new Error(`no user ${account.username}`)
+  await assignRole({
+    client: api,
+    path: { user_id: user.id },
+    body: { role: slug },
+    headers: admin,
+    throwOnError: true,
+  })
+  const signed = await login({
+    client: api,
+    body: { login: account.username, password: account.password },
+    headers: { 'x-real-ip': randomIp() },
+    throwOnError: true,
+  })
+  const [, name = '', value = ''] = /^([^=;]+)=([^;]*)/.exec(signed.response.headers.get('set-cookie') ?? '') ?? []
+  await context.clearCookies()
+  await context.addCookies([{ name, value, url: String(baseURL) }])
+  await page.goto('/admin/roles')
+  await expect(page.getByRole('heading', { level: 1, name: m.admin_roles_title({}, ru) })).toBeVisible()
+  await expect(page.getByRole('button', { name: m.admin_role_new({}, ru) })).toHaveCount(0)
+})

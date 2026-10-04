@@ -1,6 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import type { Role } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
@@ -52,9 +54,13 @@ const columns: DataColumn<Role>[] = [
 
 /** Every role in the server's order; a role's permissions and edits live on its page. */
 export function RolesPage() {
+  const { data: session } = useSuspenseQuery(sessionOptions())
   const query = useSuspenseQuery(rolesOptions())
   return (
-    <ListPage title={m.admin_roles_title()} primaryAction={<CreateRoleDialog />}>
+    <ListPage
+      title={m.admin_roles_title()}
+      primaryAction={hasCapability(session, 'admin.roles.create') ? <CreateRoleDialog /> : null}
+    >
       <ListState
         pending={false}
         error={query.error}
