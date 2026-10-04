@@ -6,6 +6,7 @@ import { addGroupMembers, createGroup, deleteGroup, listGroups, listUsers, updat
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
+import { gotoLive } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 type Owner = 'teacher' | 'admin'
@@ -194,4 +195,15 @@ test('B-ADM-22 members come in pages of 20 with "Show more"; the count is the wh
   await page.getByRole('button', { name: m.ui_show_more({}, ru) }).click()
   await expect(rows).toHaveCount(21)
   await expect(page.getByRole('button', { name: m.ui_show_more({}, ru) })).toHaveCount(0)
+})
+
+test('B-NOT-16 a group a teacher makes appears in the open list of a platform admin without a reload', async ({
+  page,
+  signInAs,
+  group,
+}) => {
+  await signInAs('admin')
+  await gotoLive(page, '/teach/groups')
+  const made = await group('teacher')
+  await expect(page.getByRole('link', { name: made.name })).toBeVisible()
 })
