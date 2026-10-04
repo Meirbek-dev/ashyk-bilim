@@ -87,7 +87,7 @@ const test = base.extend<{
 
 const about = (made: Made) => `/courses/${made.course.id}/about`
 
-// A click that lands before hydration (SSR page) does nothing: retry until it acts.
+// A pre-hydration click does nothing: retry until it acts. `target` never matches a dialog's confirm (B-CRS-07).
 async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
   await expect(async () => {
     await target.click({ timeout: 1000 })
@@ -177,7 +177,6 @@ test('B-CRS-07 leaving asks with the course name, starts on Cancel, then offers 
   await signInAs('student')
   await page.goto(about(made))
   const confirm = page.getByRole('alertdialog', { name: m.course_leave_title({ name: made.course.name }, ru) })
-  // The trigger in the page, never the dialog's own "Leave": a retried click would confirm (B-CRS-07 in CI).
   await clickUntil(page.getByRole('main').getByRole('button', { name: m.course_leave({}, ru) }), () =>
     expect(confirm).toBeVisible({ timeout: 1000 }),
   )

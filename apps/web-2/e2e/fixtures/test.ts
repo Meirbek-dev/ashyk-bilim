@@ -60,9 +60,12 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   }
   const viewport = page.viewportSize()
   await page.setViewportSize({ width: 390, height: 844 })
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  )
+  // The layout at 390 px once it settled: an open floating element (a focused button's tooltip, B-NOT-13 in CI)
+  // is repositioned on resize a frame later; measured before that, it sits at its desktop x.
+  const overflow = await page.evaluate(async () => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    return document.documentElement.scrollWidth - document.documentElement.clientWidth
+  })
   if (overflow > 0) problems.push(`horizontal overflow of ${overflow}px at 390px on ${page.url()}`)
   if (viewport) await page.setViewportSize(viewport)
 }

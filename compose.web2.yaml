@@ -6,9 +6,14 @@
 
 # The server presigns and calls storage at https://ashyq.test (nginx, self-signed cert):
 # rustls-native-certs trusts SSL_CERT_FILE instead of the system store.
+# No Judge0 on the stand (profile off): unset, `GET /code/runner` reads "not configured" instead of a
+# 503 from an unreachable runner. `@judge0` specs (CI: --grep-invert) need the profile and these keys.
 x-stand-cert: &stand-cert
   environment:
     SSL_CERT_FILE: /etc/ssl/stand/cert.pem
+    AB__JUDGE0__BASE_URL: !reset null
+    AB__JUDGE0__API_KEY: !reset null
+    AB__JUDGE0__DATABASE_URL: !reset null
   volumes:
     - ${TLS_DIR:?}/cert.pem:/etc/ssl/stand/cert.pem:ro
 
