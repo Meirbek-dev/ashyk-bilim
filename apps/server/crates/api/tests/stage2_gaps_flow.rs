@@ -907,7 +907,7 @@ async fn live_events_reach_their_readers(pool: PgPool) {
     assert_eq!(d["payload"]["course_id"], course_id.as_str());
     assert_eq!(d["payload"]["deleted"], false);
 
-    // Collections: the other platform collection editor.
+    // Collections: the creator hears of another editor's change.
     let collection = app
         .post_as(
             &admin,
@@ -916,7 +916,16 @@ async fn live_events_reach_their_readers(pool: PgPool) {
         )
         .await;
     assert!(collection.status.is_success(), "{}", collection.text());
-    let events = read_stream(&base, &watcher, "event: collection.updated").await;
+    let collection_id = s(&collection.json()["id"]);
+    let edited = app
+        .patch_as(
+            &watcher,
+            &format!("/api/v2/collections/{collection_id}"),
+            &json!({ "name": "Picks 2" }),
+        )
+        .await;
+    assert!(edited.status.is_success(), "{}", edited.text());
+    let events = read_stream(&base, &admin, "event: collection.updated").await;
     assert!(
         events.iter().any(|(e, _)| e == "collection.updated"),
         "{events:?}"

@@ -106,7 +106,7 @@ export const eventInvalidations = {
   'notification.created': () => [],
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
-  // LIVE (S-GAPS-2): a collection the user manages changed - the lists and that collection.
+  // LIVE (S-GAPS-2): a collection the user owns was changed by someone else - the lists and that collection.
   'collection.updated': ({ collection_id }) => [
     listCollectionsQueryKey(),
     getCollectionQueryKey({ path: { collection_id } }),

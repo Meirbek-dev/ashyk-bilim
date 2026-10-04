@@ -719,7 +719,7 @@ export const vCollectionHit = v.object({
 });
 
 /**
- * LIVE: a collection the recipient manages changed (created, edited,
+ * LIVE: a collection the recipient owns was changed by someone else (edited,
  * deleted).
  */
 export const vCollectionUpdated = v.object({

@@ -4444,7 +4444,7 @@
         "type": "object"
       },
       "CollectionUpdated": {
-        "description": "LIVE: a collection the recipient manages changed (created, edited,\ndeleted).",
+        "description": "LIVE: a collection the recipient owns was changed by someone else (edited,\ndeleted).",
         "properties": {
           "collection_id": {
             "$ref": "#/components/schemas/CollectionId"

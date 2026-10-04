@@ -100,7 +100,7 @@ pub struct DeadlineExtended {
     pub due_at_unix: i64,
 }
 
-/// LIVE: a collection the recipient manages changed (created, edited,
+/// LIVE: a collection the recipient owns was changed by someone else (edited,
 /// deleted).
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct CollectionUpdated {
@@ -291,19 +291,11 @@ fn or_none(found: ab_core::Result<Vec<UserId>>, what: &str) -> Vec<UserId> {
     })
 }
 
-/// LIVE `collection.updated` to its creator and the platform-wide
-/// collection editors.
-pub async fn collection(
-    pool: &PgPool,
-    actor: UserId,
-    creator: Option<UserId>,
-    payload: CollectionUpdated,
-) {
-    let mut to = or_none(
-        ab_db::notifications::platform_holders(pool, "collection", "update").await,
-        "collection",
-    );
-    to.extend(creator);
+/// LIVE `collection.updated` to its creator when someone else changed it
+/// (an editor with platform rights). Not every platform editor: their open
+/// lists would refetch on each collection anywhere.
+pub async fn collection(actor: UserId, creator: Option<UserId>, payload: CollectionUpdated) {
+    let to: Vec<UserId> = creator.into_iter().collect();
     fan_out(to, actor, UserEvent::CollectionUpdated(payload)).await;
 }
 
@@ -337,7 +329,9 @@ pub async fn admin_list(pool: &PgPool, actor: UserId, list: AdminList) {
     let (resource, action) = match list {
         AdminList::Users => ("platform", "read"),
         AdminList::Roles => ("role", "read"),
-        AdminList::Groups => ("usergroup", "read"),
+        // Group managers, not every reader (teachers read groups; their open
+        // lists would refetch on each group anywhere).
+        AdminList::Groups => ("usergroup", "manage"),
     };
     let to = or_none(
         ab_db::notifications::platform_holders(pool, resource, action).await,

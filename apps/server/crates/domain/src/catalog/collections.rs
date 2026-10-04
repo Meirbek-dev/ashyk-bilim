@@ -197,16 +197,6 @@ impl CollectionsService {
             ab_db::collections::set_collection_cover(&mut *tx, id, Some(&key)).await?;
         }
         tx.commit().await?;
-        crate::events::user::collection(
-            &self.pool,
-            actor.user_id,
-            Some(actor.user_id),
-            crate::events::user::CollectionUpdated {
-                collection_id: id,
-                deleted: false,
-            },
-        )
-        .await;
         self.get(actor, id).await
     }
 
@@ -361,7 +351,6 @@ impl CollectionsService {
         }
         tx.commit().await?;
         crate::events::user::collection(
-            &self.pool,
             actor.user_id,
             collection.creator_id,
             crate::events::user::CollectionUpdated {
@@ -394,7 +383,6 @@ impl CollectionsService {
         .await?
         {
             crate::events::user::collection(
-                &self.pool,
                 actor.user_id,
                 collection.creator_id,
                 crate::events::user::CollectionUpdated {
