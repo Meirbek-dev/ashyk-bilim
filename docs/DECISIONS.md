@@ -2291,3 +2291,61 @@ Defence in three layers, wire-compatible with the live old web:
   ignored `rich_text_corpus` test. The contract (`EditorDocument`) does not
   define a node set per editor, so discussion posts are not limited to the
   discussion editor's nodes (its schema includes `embedBlock` anyway).
+
+## Server gaps after the audit (2026-10-04, stage 2 S-GAPS, S-GAPS-2, S-GAPS-3)
+
+All additive to the live old web's contract; removals are listed in
+`apps/server/docs/phase9-removals.md`.
+
+- **The server scores remediation.** A gate-mode session blocks attempts
+  until it is passed, so a client-posted `score` let a learner lift the gate
+  with one request. `POST .../complete` scores `answers` against the stored
+  practice questions (trimmed, case- and space-insensitive equality;
+  round(100 x right / all), 70 passes; no questions = 100). `score` is
+  `deprecated`. The old web posts only a self-assessed `score` after revealing
+  the answers, so while it is live (`WEB_LINKS=legacy`) a `score` with no
+  `answers` still counts - otherwise its learners stay locked behind the gate.
+  The gate is forgeable while the old web is live, as it was before. Under
+  `v2`, a learner's reads (session, latest, own list) blank `answer` and
+  `explanation` in `test.questions` and `lecture.practice_questions` until the
+  first hand-in. The completion response, and later reads, carry them. The
+  old web keeps them because it shows them by design. Graders always see
+  them. The switch is the web-links setting because that setting says which
+  web is live, and a rollback flips both.
+- **LIVE events fan out to the people whose open screens change**, not to
+  every reader: `collection.updated` goes to the collection's creator,
+  `discussion.updated` to the thread's participants plus the course's graders,
+  `progress.updated` to the learner when a staff change (publish, unpublish,
+  access) moves their projection (their own work answers through
+  `submission.updated`), and `admin.updated {users|roles}` to platform-wide
+  readers of that list. `{groups}` goes only to `usergroup:manage` holders,
+  because teachers read groups and every group write anywhere refetched
+  their lists. The writer is included: their other tabs follow, and web-2
+  does not count an event-driven re-read as a duplicate. `grading.updated`
+  also reaches platform-wide graders.
+- **If-Match on deletes** (course, chapter, certification, course update,
+  role, usergroup, discussion) and on the file-submission PATCH, the
+  gamification config PUT and the override PUT: optional during expand (the
+  old web sends none), stale = 412. A delete runs the resource's
+  visibility and permission check before the version check, so a stranger
+  still gets 404, not a 412 that confirms the id. Four tables gained
+  `version` (migration `20261004000020`).
+- **Admin create capabilities** (`admin.users.create` = `platform:manage`,
+  `admin.roles.create` = `role:manage`, `groups.create` =
+  `usergroup:create`) are separate from the read capabilities: a read-only
+  admin sees the lists without create buttons that would answer 403.
+- **`deadline_extended.assessment_id` is nullable.** A file-submission
+  extension now notifies too, with `file_submission_id` set and no
+  assessment. This is the one non-additive change: neither web reads the field
+  (the old web renders the stored title/body), and a second notification
+  kind for the same event was not worth it.
+- **AI feature switches** are a table (`ai_feature_switches`, read on every
+  check, no cache) under the environment flag as the ceiling; deadline
+  reminders read the file override's due date; stats take `group_id`.
+- **Enums**: `NextAction.reason`, `WorkItem.kind` and `WorkItem.status` are
+  schema enums now (S-GAPS-3), like the other nine sets pinned in
+  `dto/enums.rs`. The wire strings are unchanged. Enums used only as
+  query parameters (`CollectionListSort`, `AdminUserSort`, `WorkKind`,
+  `WorkSort`) are registered in `app.rs`, because utoipa does not collect
+  them and the client typed them `unknown`. The web contract gate (G-08) now
+  fails on any `$ref` that points to a missing schema.
