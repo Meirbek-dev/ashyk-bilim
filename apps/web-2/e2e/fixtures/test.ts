@@ -1,5 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import { test as base, expect, type Page } from '@playwright/test'
+import { test as base, expect, type Locator, type Page } from '@playwright/test'
 
 // The shared fixture of every spec (spec 9): a test fails on any console error or CSP violation, on a
 // repeated GET of the same URL within one navigation, on serious/critical axe findings, and on
@@ -108,4 +108,24 @@ export async function gotoLive(page: Page, url: string): Promise<void> {
   const live = page.waitForResponse(response => new URL(response.url()).pathname === '/api/v2/me/events')
   await page.goto(url)
   await live
+}
+
+const passes = (check: () => Promise<void>) =>
+  check().then(
+    () => true,
+    () => false,
+  )
+
+/**
+ * Clicks until `outcome` holds: a click before hydration (SSR page) or under a view transition does nothing. After a
+ * click the outcome is checked before the next one: an answer that came late already acted, and a toggle (like) or a
+ * target gone with it must not be clicked again.
+ */
+export async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
+  let clicked = false
+  await expect(async () => {
+    if (clicked && (await passes(outcome))) return
+    if (await target.isVisible()) clicked = await target.click({ timeout: 1000 }).then(() => true)
+    await outcome()
+  }).toPass()
 }

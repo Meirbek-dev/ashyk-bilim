@@ -1,13 +1,12 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Locator } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { createCollection, deleteCollection, getCollection, updateCollection } from '#/shared/api/gen/sdk.gen'
 import type { Collection, CreateCollectionRequest } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
+import { clickUntil } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 
@@ -42,14 +41,6 @@ const test = base.extend<{
 })
 
 const searchBox = () => m.collections_search_label({}, ru)
-
-// A click that lands before hydration (SSR page) or under a view transition does nothing: retry until it acts.
-async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
-  await expect(async () => {
-    await target.click()
-    await outcome()
-  }).toPass()
-}
 
 test(
   'B-COL-01 a guest gets the list in the server-rendered document and never sees a hidden collection',

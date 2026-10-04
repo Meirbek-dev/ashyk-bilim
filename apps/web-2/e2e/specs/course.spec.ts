@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Locator } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
@@ -20,6 +18,7 @@ import {
 import type { Activity, Course, UpdateCourseRequest } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
+import { clickUntil } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 
@@ -86,14 +85,6 @@ const test = base.extend<{
 })
 
 const about = (made: Made) => `/courses/${made.course.id}/about`
-
-// A pre-hydration click does nothing: retry until it acts. A target gone after a late outcome is not clicked again.
-async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
-  await expect(async () => {
-    if (await target.isVisible()) await target.click({ timeout: 1000 })
-    await outcome()
-  }).toPass()
-}
 
 test('B-CRS-01 a guest gets the course in the server-rendered document; an unknown id is not found', async ({
   page,

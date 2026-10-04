@@ -6,6 +6,7 @@ import { dashboard, login, myProfile } from '#/shared/api/gen/sdk.gen'
 
 import { type NewAccount, registerAccount, totp } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
+import { clickUntil } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 const FIREFOX_WINDOWS = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0'
@@ -41,13 +42,6 @@ const test = base.extend<{ me: Me }>({
 const profileOf = async (me: Me) => (await myProfile({ client: me.client, headers: me.headers })).data
 const form = (page: Page, title: string) => page.getByRole('form', { name: title })
 const save = (section: Locator) => section.getByRole('button', { name: m.ui_save({}, ru) }).click()
-
-async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
-  await expect(async () => {
-    await target.click()
-    await outcome()
-  }).toPass()
-}
 
 test('B-SET-01 /settings opens the profile; its sections are route tabs; a guest signs in first', async ({
   page,

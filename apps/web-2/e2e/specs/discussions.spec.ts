@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Locator } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
@@ -16,6 +14,7 @@ import {
 import type { Course, Discussion, DiscussionId } from '#/shared/api/gen/types.gen'
 
 import { expect, test as base } from '../fixtures/seed'
+import { clickUntil } from '../fixtures/test'
 import { cookieOf } from './course-studio-fixture'
 
 const ru = { locale: 'ru' } as const
@@ -74,14 +73,6 @@ const test = base.extend<{
 })
 
 const tab = (course: Course, thread?: string) => `/courses/${course.id}/discussions${thread ? `?thread=${thread}` : ''}`
-
-// A click that lands before hydration (SSR page) does nothing: retry until it acts.
-async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
-  await expect(async () => {
-    await target.click({ timeout: 1000 })
-    await outcome()
-  }).toPass()
-}
 
 const article = (page: import('@playwright/test').Page, text: string) =>
   page.locator('article').filter({ hasText: text })
