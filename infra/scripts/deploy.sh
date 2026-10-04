@@ -68,7 +68,7 @@ prune_images() {
   local keep
   keep=$({ awk '{ print $2 }' "$HISTORY" | tail -n "$KEEP_RELEASES"; echo "$IMAGE_TAG"; } | paste -sd'|' -)
   docker images --format '{{.Repository}}:{{.Tag}}' |
-    grep -E "^$IMAGE_REPO/ashyq-(server|web):" |
+    grep -E "^$IMAGE_REPO/ashyq-(server|web|web-2):" |
     grep -vE ":($keep)\$" |
     xargs -r docker rmi || true
 }

@@ -1,7 +1,8 @@
-# One workflow for gates, images, stack smoke and publish. A release publishes
-# BOTH stage-1 images under the same <sha> tag; main no longer rebuilds the
-# frozen old web, so it publishes nothing until stage 2 cutover (Ф8). Pull
-# requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
+# One workflow for gates, images, stack smoke and publish. Only release/** branches
+# publish: server, the frozen old web (the rollback target until Ф9) and, when web2-e2e
+# is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md). main cannot
+# build the old web (QUESTIONS.md Q-2026-10-03-1), so it publishes nothing until Ф9.
+# Pull requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
 # only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
 name: ci
 
@@ -31,7 +32,8 @@ jobs:
     timeout-minutes: 5
     outputs:
       server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      # Not forced on release/**: the old web no longer builds from main; publish carries it.
+      web: ${{ steps.filter.outputs.web == 'true' }}
       web2: ${{ steps.filter.outputs.web2 == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
@@ -43,9 +45,9 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
-            # Frozen old web (G-13): only its image, and only when it changed (Legacy-Hotfix)
-            # or on release branches. Its catalogs are Paraglide since 34d8cd2, so it no longer
-            # builds on main (QUESTIONS.md Q-2026-10-03-1).
+            # Frozen old web (G-13): only its image, and only when it changed (Legacy-Hotfix,
+            # from a release/stage1 lineage). Its catalogs are Paraglide since 34d8cd2, so it no
+            # longer builds on main (QUESTIONS.md Q-2026-10-03-1).
             web:
               - 'apps/web/**'
               - 'package.json'
@@ -204,7 +206,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        # web (frozen) and web-2 (no build args) only when they changed or on release branches.
+        # web (frozen) only when it changed; web-2 (no build args) when it changed or on release branches.
         image: >-
           ${{ fromJSON(format('["server"{0}{1}]',
           needs.changes.outputs.web == 'true' && ',"web"' || '',
@@ -303,6 +305,28 @@ jobs:
           bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --pull never --force-recreate --wait web nginx'
           just smoke
 
+      # stage-2: the web rollback target (frozen old web, what publish tags ashyq-web:<sha>)
+      # against this release's server.
+      - name: Smoke with the published old web
+        if: needs.changes.outputs.web != 'true' && startsWith(github.ref, 'refs/heads/release/')
+        env:
+          WEB_IMAGE: ${{ env.IMAGE_REPO }}/ashyq-web:latest
+        run: |
+          bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --force-recreate --wait web nginx'
+          just smoke
+
+      # Stage 2 cutover switch (docs/STAGE-2-CUTOVER.md): the new web under compose.prod.yaml's
+      # own web block (PUBLIC_ORIGIN, INTERNAL_API_URL), selected by WEB_IMAGE_NAME only.
+      - name: Smoke with the new web
+        if: needs.changes.outputs.web2 == 'true'
+        env:
+          WEB_IMAGE: ''
+          WEB_IMAGE_NAME: ashyq-web-2
+          WEB_MEMORY: 512m
+        run: |
+          bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --force-recreate --wait web nginx'
+          just smoke
+
       - name: Compose logs
         if: failure()
         run: bash -c 'source infra/scripts/lib.sh && use_smoke && compose ps -a && compose logs --no-color --timestamps --tail 500'
@@ -385,9 +409,9 @@ jobs:
         run: just web2-stand-down
 
   publish:
-    needs: [changes, stack-smoke]
-    # Both images under one <sha>: only when the old web image was built (release branches).
-    if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !failure() && !cancelled() && needs.stack-smoke.result == 'success' && needs.changes.outputs.web == 'true' }}
+    needs: [changes, stack-smoke, web2-e2e]
+    # Release branches only. A red web2-e2e withholds ashyq-web-2 but not a server release.
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') && !cancelled() && needs.stack-smoke.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -405,8 +429,23 @@ jobs:
       - name: Retag ci-<sha> as <sha> and latest (no rebuild)
         env:
           SHA: ${{ needs.changes.outputs.sha }}
+          WEB_BUILT: ${{ needs.changes.outputs.web }}
+          WEB2_E2E: ${{ needs.web2-e2e.result }}
         run: |
-          for img in server web; do
-            ref="$IMAGE_REPO/ashyq-$img"
+          retag() {
+            local ref="$IMAGE_REPO/ashyq-$1"
             docker buildx imagetools create -t "$ref:$SHA" -t "$ref:latest" "$ref:ci-$SHA"
-          done
+          }
+          retag server
+          # stage-2: deploy.sh needs ashyq-web:<sha> and the web rollback runs it; frozen, so
+          # unless a Legacy-Hotfix rebuilt it, <sha> is the newest published old web.
+          if [[ $WEB_BUILT == true ]]; then
+            retag web
+          else
+            docker buildx imagetools create -t "$IMAGE_REPO/ashyq-web:$SHA" "$IMAGE_REPO/ashyq-web:latest"
+          fi
+          if [[ $WEB2_E2E == success ]]; then
+            retag web-2
+          else
+            echo "::warning::ashyq-web-2:$SHA not published (web2-e2e: $WEB2_E2E)"
+          fi

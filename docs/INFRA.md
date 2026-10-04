@@ -177,7 +177,9 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 Not in the template (overrides; path values must start with `./` or `/`):
 `SERVER_ENV_FILE` (default `./server.env`), `STACK_ENV_FILE` (the `.env` the
 backup copies), `BACKUP_DIR` (default `./backups`), `DOCKER_SOCKET`,
-`WEB_IMAGE` (smoke stub), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev;
+`WEB_IMAGE` (smoke stub), `WEB_IMAGE_NAME` (default `ashyq-web`; `ashyq-web-2`
+at the stage 2 cutover), `WEB_MEMORY` (web limit, default `2g`), `WEB_LINKS`
+(server `AB__SERVER__WEB_LINKS`, default `legacy`), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev;
 prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 `DEV_RUSTFS_PORT`.
 
@@ -195,6 +197,7 @@ prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 Compose sets these for server, worker and server-migrate (`x-server-env`,
 wins over `server.env`): `AB__ENVIRONMENT`, `AB__SERVER__HOST`,
 `AB__SERVER__PORT`, `AB__SERVER__CORS_ORIGINS`, `AB__SERVER__WEB_URL`,
+`AB__SERVER__WEB_LINKS` (from `WEB_LINKS`),
 `AB__REDIS__URL`, `AB__ZITADEL__BASE_URL`, `AB__STORAGE__ENDPOINT`,
 `AB__STORAGE__ACCESS_KEY`, `AB__STORAGE__SECRET_KEY`,
 `AB__STORAGE__PUBLIC_BUCKET`, `AB__STORAGE__PRIVATE_BUCKET`,
@@ -291,14 +294,14 @@ cancelled mid-run):
 
 | Job | When | What |
 | --- | --- | --- |
-| changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all true on `release/**`; `sha` = first 8 chars of the commit |
+| changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all but `web` true on `release/**`; `sha` = first 8 chars of the commit |
 | server-gates | server or infra changed | `just dev-up`, then `apps/server` recipes: `fmt-check`, `migrate`, `clippy`, `sqlx-check`, `test`, `deny`, `machete`, `cov`, `openapi-check` |
 | web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
 | images | push, no gate failed (skipped gates are fine) | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |
-| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start |
+| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` (compose.prod.yaml's own web env) and `just smoke` again |
 | web2-e2e | after images, web2 changed | the Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0` |
-| publish | after stack-smoke, only when `ashyq-web` was built (release branches) | `imagetools create`: `ci-<sha>` retagged `<sha>` and `latest`, no rebuild |
+| publish | `release/**` only, after stack-smoke | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (frozen old web, rollback target until Ф9); `ashyq-web-2` only when web2-e2e passed |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
 `latest` = newest green `main`. GHCR packages are public: the host pulls
@@ -478,7 +481,8 @@ server; OCI format drops `HEALTHCHECK` and `up --wait` fails), then
 
 CI job `web2-e2e` (after `images`, only when `apps/web-2` changed; `images`
 builds `ashyq-web-2:ci-<sha>` under the same condition, 60 min): the four recipes; on
-failure the HTML report, traces and server log as an artifact. Not gating `publish`.
+failure the HTML report, traces and server log as an artifact. Gates only the
+`ashyq-web-2` retag in `publish`.
 
 ## Verified in CI (2026-10-03)
 
@@ -497,10 +501,11 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
   The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
   First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
   on it: 160 s, row counts match prod (RTO target 2 h met with margin).
-- **`main` publishes nothing until Ф8.** The old web no longer builds on `main`
-  (34d8cd2 moved its catalogs to Paraglide; `apps/web` is frozen), so `main`
-  skips the `ashyq-web` image and `publish`; releases come from `release/**`
-  (`release/stage1`). See `QUESTIONS.md` Q-2026-10-03-1.
+- **`main` publishes nothing until Ф9.** The old web no longer builds on `main`
+  (34d8cd2 moved its catalogs to Paraglide; `apps/web` is frozen), so releases
+  come from `release/**`; they carry the newest published `ashyq-web` under
+  their own `<sha>`. Stage 2 cutover: `docs/STAGE-2-CUTOVER.md`. See
+  `QUESTIONS.md` Q-2026-10-03-1.
 - **Judge0 in CI smoke is off** (privileged). Verified on prod at the cutover:
   healthy, 401 without token, `judge0-tune` applied.
 - **No external monitoring** (owner decision 2026-10-02: no external
