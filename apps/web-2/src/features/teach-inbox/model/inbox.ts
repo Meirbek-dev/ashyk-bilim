@@ -20,9 +20,15 @@ export type RowAction = (typeof ROW_ACTIONS)[number]
 export const rowAction = (item: Pick<WorkItem, 'allowed_actions'>): RowAction | undefined =>
   ROW_ACTIONS.find(action => item.allowed_actions.includes(action))
 
-/** The submission (or file attempt) behind a row: `WorkItem` has no id field, the server puts it in `href`. */
+/**
+ * The submission (or file attempt) behind a row: `WorkItem` has no id field, the server puts it in `href`, either
+ * map of `AB__SERVER__WEB_LINKS`: `v2` `.../submissions/{id}`, `legacy` `...?submission={id}`.
+ */
+// ponytail: href parsing; read `item.submission_id` once the server's WorkItem carries it.
 export const submissionIdOf = (item: Pick<WorkItem, 'href'>): string | undefined =>
-  /[?&]submission=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:&|#|$)/i.exec(item.href)?.[1]
+  /(?:\/submissions\/|[?&]submission=)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?&#]|$)/i.exec(
+    item.href,
+  )?.[1]
 
 /** Keyset paging: the next request carries the previous page's opaque `next_cursor`. */
 export const nextWorkCursor = (page: WorkQueue): string | undefined => page.next_cursor ?? undefined

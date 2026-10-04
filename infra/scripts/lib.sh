@@ -58,7 +58,8 @@ use_web2() {
   export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-web2}
   use_smoke
   export COMPOSE_FILE=$COMPOSE_FILE:compose.web2.yaml
-  export PUBLIC_SCHEME=https FORCE_HTTPS=1
+  # Links as in production since the cutover (web-2 serves v2 URLs).
+  export PUBLIC_SCHEME=https FORCE_HTTPS=1 WEB_LINKS=v2
   export SERVER_ENV_FILE=./tmp/web2/server.env
   mkdir -p tmp/web2
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"

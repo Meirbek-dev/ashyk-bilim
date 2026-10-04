@@ -43,12 +43,17 @@ describe('teach inbox model', () => {
     expect(rowAction({ allowed_actions: ['publish'] })).toBeUndefined()
   })
 
-  test('B-INB-03 the submission id is read from the server href, otherwise there is none', () => {
-    const base = '/dash/courses/c/activity/a/review'
-    expect(submissionIdOf({ href: `${base}?submission=${SUBMISSION}` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: `${base}?tab=1&submission=${SUBMISSION}#top` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: base })).toBeUndefined()
-    expect(submissionIdOf({ href: `${base}?submission=${SUBMISSION}x` })).toBeUndefined()
+  test('B-INB-03 the submission id is read from the server href in either link map, otherwise there is none', () => {
+    const legacy = '/dash/courses/c/activity/a/review'
+    expect(submissionIdOf({ href: `${legacy}?submission=${SUBMISSION}` })).toBe(SUBMISSION)
+    expect(submissionIdOf({ href: `${legacy}?tab=1&submission=${SUBMISSION}#top` })).toBe(SUBMISSION)
+    expect(submissionIdOf({ href: legacy })).toBeUndefined()
+    expect(submissionIdOf({ href: `${legacy}?submission=${SUBMISSION}x` })).toBeUndefined()
+    const v2 = '/teach/courses/c/activities/a/submissions'
+    expect(submissionIdOf({ href: `${v2}/${SUBMISSION}` })).toBe(SUBMISSION)
+    expect(submissionIdOf({ href: `https://ashyq.test${v2}/${SUBMISSION}?x=1` })).toBe(SUBMISSION)
+    expect(submissionIdOf({ href: v2 })).toBeUndefined()
+    expect(submissionIdOf({ href: `${v2}/${SUBMISSION}x` })).toBeUndefined()
   })
 
   test('B-INB-04 B-INB-05 the filters are URL values; an unknown one is the whole queue', () => {

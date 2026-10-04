@@ -1,6 +1,6 @@
 # Stage 2 e2e stand (docs/INFRA.md "Stage 2 e2e stand"), on top of the smoke stack:
 # compose.yaml:compose.prod.yaml:compose.smoke.yaml:compose.web2.yaml, selected by
-# lib.sh use_web2 (STACK=web2), which also sets PUBLIC_SCHEME=https and FORCE_HTTPS=1.
+# lib.sh use_web2 (STACK=web2), which also sets PUBLIC_SCHEME=https, FORCE_HTTPS=1 and WEB_LINKS=v2.
 # web = ashyq-web-2 with its two runtime variables only (spec 7.13); WEB2_IMAGE overrides.
 # stage-2: removed in Ф9 (ashyq-web is then built from apps/web-2).
 
