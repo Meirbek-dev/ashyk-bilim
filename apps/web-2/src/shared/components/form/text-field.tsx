@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ComponentProps } from 'react'
+import { useId, useLayoutEffect, useRef, type ComponentProps } from 'react'
 
 import { Input } from '#/shared/ui/input'
 
@@ -18,8 +18,8 @@ export function TextField({ label, description, ...input }: TextFieldProps) {
   const error = errorText(field.state.meta.errors)
   const ref = useRef<HTMLInputElement>(null)
   // On a server-rendered page, text typed before hydration is in the input but not in the form: take it over. Later
-  // renders find the two equal (the input is controlled), so this acts once.
-  useEffect(() => {
+  // renders find the two equal (the input is controlled), so this acts once; in the commit, before the next key.
+  useLayoutEffect(() => {
     const typed = ref.current?.value
     if (typed && typed !== (field.state.value ?? '')) field.handleChange(typed)
   }, [field])
