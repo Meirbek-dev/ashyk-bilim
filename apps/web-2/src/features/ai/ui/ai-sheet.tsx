@@ -34,7 +34,7 @@ export function AiSheet({ courseId }: { courseId: CourseId }) {
         })
       }
       trigger={
-        <Button variant="outline" disabled={!hydrated}>
+        <Button variant="outline" disabled={!hydrated} data-hydrating={hydrated ? undefined : true}>
           <Sparkles data-icon="inline-start" aria-hidden />
           {m.ai_open_panel()}
         </Button>
