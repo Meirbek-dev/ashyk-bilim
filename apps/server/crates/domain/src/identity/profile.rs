@@ -703,20 +703,20 @@ mod tests {
         assert!(theme_slug("bad slug!").is_err());
     }
 
-    /// One source of truth: the web registry file the theme picker reads.
+    /// One source of truth: the theme manifest the web's theme picker reads.
     #[test]
     fn theme_slugs_mirror_the_web_registry() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../../web/src/lib/theme-store.json"
+            "/../../../web/public/themes/manifest.json"
         );
-        let registry: serde_json::Value =
+        let manifest: serde_json::Value =
             serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-        let names: Vec<&str> = registry["items"]
+        let names: Vec<&str> = manifest
             .as_array()
             .unwrap()
             .iter()
-            .map(|item| item["name"].as_str().unwrap())
+            .map(|item| item["slug"].as_str().unwrap())
             .collect();
         assert_eq!(names, THEME_SLUGS);
     }
