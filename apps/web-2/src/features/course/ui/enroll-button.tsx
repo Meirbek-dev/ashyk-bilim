@@ -21,7 +21,7 @@ export function EnrollButton({ courseId }: { courseId: CourseId }) {
     enroll.mutate({ path: { course_id: courseId } }, { onSuccess: () => toast.add({ title: m.course_enrolled() }) })
   return (
     <div className="flex flex-col gap-2">
-      <Button onClick={submit} disabled={!hydrated || enroll.isPending}>
+      <Button onClick={submit} disabled={!hydrated || enroll.isPending} data-hydrating={hydrated ? undefined : true}>
         {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
         {m.course_enroll()}
       </Button>

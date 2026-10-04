@@ -34,7 +34,7 @@ export function LeaveCourse({ course }: { course: Course }) {
         if (!next) leave.reset()
       }}
       trigger={
-        <Button variant="outline" disabled={!hydrated}>
+        <Button variant="outline" disabled={!hydrated} data-hydrating={hydrated ? undefined : true}>
           {m.course_leave()}
         </Button>
       }

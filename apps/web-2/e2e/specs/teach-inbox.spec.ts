@@ -21,6 +21,7 @@ import {
 
 import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
+import { expectReread } from '../fixtures/test'
 
 // The teacher inbox (slice 6.2). Each test makes a course of e2e-teacher with one quiz (an open-text item, so the
 // hand-in waits for a grade) and a fresh learner who hands it in, all through the generated SDK.
@@ -116,6 +117,8 @@ test('B-INB-04 B-INB-05 kind and course filters live in the URL; nothing found o
   handedIn,
 }) => {
   await signInAs('teacher')
+  // The shared teacher grades every parallel test's course: their events re-read the inbox (B-NOT-14), by design.
+  expectReread(page, '/api/v2/work')
   await page.goto('/teach')
   const kinds = page.getByRole('navigation', { name: m.inbox_state({}, ru) })
   await kinds.getByRole('link', { name: m.inbox_kind_awaiting_release({}, ru) }).click()
