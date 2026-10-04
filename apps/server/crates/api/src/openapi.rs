@@ -31,6 +31,9 @@ const NULL_CLEARS: &[(&str, &str)] = &[
     ("PreferencesPatch", "display"),
     ("GradeRequest", "final_score"),
     ("UpdatePlatformRequest", "label"),
+    ("UpdateInterventionRequest", "outcome"),
+    ("UpdateInterventionRequest", "outcome_code"),
+    ("UpdateInterventionRequest", "notes"),
     ("UpdateProfileRequest", "avatar_upload_id"),
     ("UpdateProfileRequest", "theme"),
 ];

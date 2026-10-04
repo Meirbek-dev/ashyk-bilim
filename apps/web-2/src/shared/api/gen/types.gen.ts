@@ -2090,6 +2090,10 @@ export type CreateInterventionRequest = {
     notes?: string;
     outcome?: string;
     /**
+     * The closed outcome (S-GAPS-2), next to the free-text `outcome`.
+     */
+    outcome_code?: InterventionOutcome;
+    /**
      * An object of at most 16 KiB serialized (UX-148).
      */
     payload?: InterventionPayload;
@@ -2325,11 +2329,28 @@ export type DismissSuggestionRequest = {
 export type DisplayPreferences = {
     animatedEffects?: boolean;
     compactMode?: boolean;
+    /**
+     * GAMIF: `false` hides the gamification UI (XP, levels, badges) for this
+     * user. Unset = shown.
+     */
+    showGamification?: boolean;
+    /**
+     * GAMIF: `false` hides the streak row. Unset = shown.
+     */
+    showStreaks?: boolean;
 };
 
 export type DisplaySettings = {
     animated_effects: boolean | null;
     compact_mode: boolean | null;
+    /**
+     * GAMIF switch; absent when never set (shown).
+     */
+    show_gamification?: boolean;
+    /**
+     * GAMIF switch; absent when never set (shown).
+     */
+    show_streaks?: boolean;
 };
 
 export type Disposition = 'attachment' | 'inline';
@@ -3138,12 +3159,18 @@ export type InsightFeedItem = {
 };
 
 export type Intervention = {
+    /**
+     * `update`, and `resolve` until resolved (every listed row is the
+     * caller's, in scope).
+     */
+    allowed_actions: Array<InterventionAction>;
     course_id: CourseId;
     created_at_unix: UnixTime;
     id: InterventionId;
     intervention_type: InterventionType;
     notes: string | null;
     outcome: string | null;
+    outcome_code: InterventionOutcome | null;
     payload: InterventionPayload;
     resolved_at_unix: UnixTime | null;
     risk_score_after: number | null;
@@ -3152,7 +3179,16 @@ export type Intervention = {
     teacher_user_id: UserId;
     updated_at_unix: UnixTime;
     user_id: UserId;
+    /**
+     * Send back as `If-Match` on the PATCH (stale -> 412).
+     */
+    version: number;
 };
+
+/**
+ * What the caller may do to an intervention (`Intervention.allowed_actions`).
+ */
+export type InterventionAction = 'update' | 'resolve';
 
 export type InterventionId = string;
 
@@ -3163,6 +3199,12 @@ export type InterventionList = {
     page_size: number;
     total: number;
 };
+
+/**
+ * What came of an intervention (S-GAPS-2; `Intervention.outcome_code`), next
+ * to the free-text `outcome` (teacher prose, kept).
+ */
+export type InterventionOutcome = 'improved' | 'no_change' | 'worsened' | 'no_response';
 
 /**
  * `teacher_interventions.payload`: what the at-risk table attaches to an
@@ -5201,6 +5243,17 @@ export type SloStatus = 'healthy' | 'warning' | 'breached' | 'not_applicable';
 
 export type SortOrder = 'asc' | 'desc';
 
+/**
+ * `POST /assessments/{id}/submissions` (optional body).
+ */
+export type StartSubmissionRequest = {
+    /**
+     * EXAM-CONSENT: the learner accepted the exam rules; stamps
+     * `rules_accepted_at` on the attempt (once).
+     */
+    rules_accepted?: boolean;
+};
+
 export type Stats = {
     avg_score: number | null;
     distribution: Array<ScoreBucket>;
@@ -5282,6 +5335,10 @@ export type StudentSubmission = {
     is_late: boolean;
     late_penalty_pct: number | null;
     release_state: ReleaseState;
+    /**
+     * EXAM-CONSENT: when the learner accepted the exam rules; absent if never.
+     */
+    rules_accepted_at_unix?: UnixTime;
     started_at_unix: UnixTime | null;
     status: SubmissionStatus;
     submitted_at_unix: UnixTime | null;
@@ -5835,6 +5892,20 @@ export type UpdateGamificationConfigRequest = {
     };
 };
 
+/**
+ * `PATCH /analytics/teacher/interventions/{id}`: absent fields stay; `null`
+ * clears `outcome`, `outcome_code` and `notes`. `status: resolved` closes it.
+ */
+export type UpdateInterventionRequest = {
+    notes?: string | null;
+    outcome?: string | null;
+    outcome_code?: InterventionOutcome | null;
+    /**
+     * `planned`, `completed` or `resolved`.
+     */
+    status?: InterventionStatus;
+};
+
 export type UpdateItemRequest = {
     body?: ItemBody;
     /**
@@ -6328,6 +6399,14 @@ export type XpAwarded = {
      */
     total_xp: number;
     transaction_id: XpTransactionId;
+};
+
+/**
+ * One page of the caller's XP history, newest first.
+ */
+export type XpHistoryPage = {
+    items: Array<Transaction>;
+    next_cursor: XpTransactionId | null;
 };
 
 export type XpNotificationSettings = {
@@ -8444,6 +8523,100 @@ export type CreateInterventionResponses = {
 
 export type CreateInterventionResponse = CreateInterventionResponses[keyof CreateInterventionResponses];
 
+export type UpdateInterventionData = {
+    body: UpdateInterventionRequest;
+    headers?: {
+        /**
+         * Intervention `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
+    path: {
+        /**
+         * Intervention id
+         */
+        intervention_id: InterventionId;
+    };
+    query?: {
+        /**
+         * `7d`, `28d` (default) or `90d`.
+         */
+        window?: Window;
+        /**
+         * `previous_period` (default) or `none`.
+         */
+        compare?: Compare;
+        /**
+         * `day` (default) or `week`.
+         */
+        bucket?: Bucket;
+        /**
+         * Narrow to one bucket: RFC 3339 timestamp or epoch seconds.
+         */
+        bucket_start?: string;
+        /**
+         * Comma-separated course ids (must be inside the caller's scope).
+         */
+        course_ids?: string;
+        /**
+         * Comma-separated usergroup ids.
+         */
+        cohort_ids?: string;
+        /**
+         * Inspect another teacher (platform scope only).
+         */
+        teacher_user_id?: string;
+        /**
+         * IANA zone for calendar bucketing (default UTC).
+         */
+        timezone?: string;
+        /**
+         * 1-based (default 1).
+         */
+        page?: number;
+        /**
+         * 1..=200 (default 25).
+         */
+        page_size?: number;
+        sort_by?: string;
+        /**
+         * `asc` or `desc` (default).
+         */
+        sort_order?: SortOrder;
+    };
+    url: '/api/v2/analytics/teacher/interventions/{intervention_id}';
+};
+
+export type UpdateInterventionErrors = {
+    /**
+     * Not yours or not in scope
+     */
+    404: Problem;
+    /**
+     * The course is archived
+     */
+    409: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+    /**
+     * Validation
+     */
+    422: Problem;
+};
+
+export type UpdateInterventionError = UpdateInterventionErrors[keyof UpdateInterventionErrors];
+
+export type UpdateInterventionResponses = {
+    /**
+     * Updated
+     */
+    200: Intervention;
+};
+
+export type UpdateInterventionResponse = UpdateInterventionResponses[keyof UpdateInterventionResponses];
+
 export type AtRiskLearnersData = {
     body?: never;
     path?: never;
@@ -9758,7 +9931,10 @@ export type AssessmentReviewQueueResponses = {
 export type AssessmentReviewQueueResponse = AssessmentReviewQueueResponses[keyof AssessmentReviewQueueResponses];
 
 export type StartSubmissionData = {
-    body?: never;
+    /**
+     * Optional; `{}` or no body is the same as `rules_accepted: false`
+     */
+    body?: StartSubmissionRequest | null;
     path: {
         /**
          * Assessment id
@@ -13444,6 +13620,44 @@ export type AdminAwardResponses = {
 };
 
 export type AdminAwardResponse = AdminAwardResponses[keyof AdminAwardResponses];
+
+export type XpHistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * `next_cursor` of the previous page.
+         */
+        cursor?: XpTransactionId | null;
+        /**
+         * 1..=100 (default 20).
+         */
+        limit?: number | null;
+    };
+    url: '/api/v2/gamification/xp/history';
+};
+
+export type XpHistoryErrors = {
+    /**
+     * No session
+     */
+    401: Problem;
+    /**
+     * Limit out of range
+     */
+    422: Problem;
+};
+
+export type XpHistoryError = XpHistoryErrors[keyof XpHistoryErrors];
+
+export type XpHistoryResponses = {
+    /**
+     * XP history page
+     */
+    200: XpHistoryPage;
+};
+
+export type XpHistoryResponse = XpHistoryResponses[keyof XpHistoryResponses];
 
 export type ListGroupsData = {
     body?: never;

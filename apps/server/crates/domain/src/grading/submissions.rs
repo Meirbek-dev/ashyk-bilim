@@ -294,6 +294,8 @@ pub struct StudentSubmission {
     pub graded_at: Option<i64>,
     /// Why the server closed the attempt (`None` = the learner submitted).
     pub auto_submit_reason: Option<AutoSubmitReason>,
+    /// When the learner accepted the exam rules (EXAM-CONSENT).
+    pub rules_accepted_at: Option<i64>,
     pub draft_version: i64,
     pub violation_count: i32,
     pub answered_count: usize,
@@ -455,6 +457,7 @@ impl SubmissionsService {
             submitted_at: submission.submitted_at,
             graded_at: visible.then_some(submission.graded_at).flatten(),
             auto_submit_reason: submission.auto_submit_reason,
+            rules_accepted_at: submission.rules_accepted_at,
             draft_version: submission.draft_version,
             violation_count: submission.violation_count,
             answered_count,
@@ -529,8 +532,13 @@ impl SubmissionsService {
 
     // ── Lifecycle ───────────────────────────────────────────────────────
 
-    /// Open (or return the existing) draft. Legacy `start_submission_v2`.
-    pub async fn start(&self, actor: &Actor, assessment_id: AssessmentId) -> Result<Started> {
+    /// UX-311: [`Self::start`]'s gate on its own (attempt state, archive
+    /// freeze), so the route checks it before reading the body.
+    pub async fn require_startable(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+    ) -> Result<crate::assessments::access::AttemptState> {
         let state = self.assessments.attempt_state(actor, assessment_id).await?;
         // An archived course is a 409 for everyone - the staff preview
         // bypasses the attempt gates, so it is checked here explicitly.
@@ -551,6 +559,18 @@ impl SubmissionsService {
                 ),
             ));
         }
+        Ok(state)
+    }
+
+    /// Open (or return the existing) draft. Legacy `start_submission_v2`.
+    /// `rules_accepted` (EXAM-CONSENT) stamps `rules_accepted_at` on the draft.
+    pub async fn start(
+        &self,
+        actor: &Actor,
+        assessment_id: AssessmentId,
+        rules_accepted: bool,
+    ) -> Result<Started> {
+        let state = self.require_startable(actor, assessment_id).await?;
         // Visibility gate only; the versions come from the locked row below.
         self.assessments.get(actor, assessment_id).await?;
         // BUG-224: the draft and the assessment row lock (`FOR SHARE`) land
@@ -618,6 +638,9 @@ impl SubmissionsService {
             .ok_or_else(|| Error::conflict("an attempt is already open"))?;
             (id, true)
         };
+        if rules_accepted {
+            ab_db::submissions::accept_rules(&mut tx, id).await?;
+        }
         // Read before commit: a submit racing this start cannot turn the
         // reply into a 404.
         let draft = ab_db::submissions::get_submission(&mut *tx, id)

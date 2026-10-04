@@ -33,6 +33,10 @@ pub struct StudentSubmission {
     /// Set when the server closed the attempt (time ran out, integrity
     /// violation); `null` when the learner submitted.
     pub auto_submit_reason: Option<AutoSubmitReason>,
+    /// EXAM-CONSENT: when the learner accepted the exam rules; absent if never.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub rules_accepted_at_unix: Option<i64>,
     /// Send back as `If-Match` on draft saves and submits.
     pub draft_version: i64,
     pub violation_count: i32,
@@ -60,6 +64,7 @@ impl From<DomainSubmission> for StudentSubmission {
             submitted_at_unix: s.submitted_at,
             graded_at_unix: s.graded_at,
             auto_submit_reason: s.auto_submit_reason,
+            rules_accepted_at_unix: s.rules_accepted_at,
             draft_version: s.draft_version,
             violation_count: s.violation_count,
             answered_count: s.answered_count,
@@ -101,4 +106,15 @@ pub struct ViolationRequest {
     #[garde(length(max = 500))]
     #[schema(max_length = 500)]
     pub detail: Option<String>,
+}
+
+/// `POST /assessments/{id}/submissions` (optional body).
+#[derive(Debug, Default, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct StartSubmissionRequest {
+    /// EXAM-CONSENT: the learner accepted the exam rules; stamps
+    /// `rules_accepted_at` on the attempt (once).
+    #[garde(skip)]
+    #[serde(default)]
+    pub rules_accepted: bool,
 }

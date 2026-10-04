@@ -20,7 +20,7 @@ use crate::dto::analytics::{
     DrillMetric, DrillThroughQuery, DrillThroughResponse, Intervention, InterventionList,
     InterventionListQuery, SaveViewRequest, SavedView, SavedViewList,
     TeacherAssessmentDetailResponse, TeacherAssessmentListResponse, TeacherCourseDetailResponse,
-    TeacherCourseListResponse, TeacherOverviewResponse,
+    TeacherCourseListResponse, TeacherOverviewResponse, UpdateInterventionRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
@@ -266,6 +266,7 @@ pub async fn create_intervention(
                         intervention_type: request.intervention_type,
                         status: request.status,
                         outcome: request.outcome,
+                        outcome_code: request.outcome_code,
                         notes: request.notes,
                         payload: request.payload,
                     },
@@ -275,6 +276,67 @@ pub async fn create_intervention(
         },
     )
     .await
+}
+
+/// Update or close an intervention (status, outcome, notes) - the caller's
+/// own, in a course in scope (404 otherwise). `status: resolved` stamps
+/// `resolved_at` and records the learner's risk then.
+#[utoipa::path(
+    patch, path = "/analytics/teacher/interventions/{intervention_id}", tag = "analytics",
+    params(
+        ("intervention_id" = ab_core::id::InterventionId, Path, description = "Intervention id"),
+        ("If-Match" = Option<i32>, Header, description = "Intervention `version`; stale -> 412"),
+        AnalyticsQuery,
+    ),
+    request_body = UpdateInterventionRequest,
+    responses(
+        (status = 200, description = "Updated", body = Intervention),
+        (status = 404, description = "Not yours or not in scope", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "The course is archived", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Validation", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn update_intervention(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<ab_core::id::InterventionId>,
+    Query(query): Query<AnalyticsQuery>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<Intervention>> {
+    let filters = filters(query)?;
+    // UX-311: the scope gate before the body.
+    state
+        .analytics
+        .require_intervention(&actor, &filters, id)
+        .await?;
+    let request = ValidJson::<UpdateInterventionRequest>::parse(&body)?;
+    crate::extract::require_if_match(
+        &state.pool,
+        ab_db::versions::Versioned::Intervention(id),
+        &headers,
+    )
+    .await?;
+    let updated = state
+        .analytics
+        .update_intervention(
+            &actor,
+            &filters,
+            id,
+            ab_domain::analytics::InterventionUpdate {
+                status: request.status,
+                outcome: request.outcome,
+                outcome_code: request.outcome_code,
+                notes: request.notes,
+            },
+        )
+        .await?;
+    Ok(Json(updated))
 }
 
 // ── Saved views ─────────────────────────────────────────────────────────

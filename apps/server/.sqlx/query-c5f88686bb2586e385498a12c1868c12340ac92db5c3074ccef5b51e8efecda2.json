@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers, grading,\n                  auto_score, final_score, is_late, late_penalty_pct,\n                  violation_count, violations,\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, grading_version, content_version, policy_version,\n                  items_snapshot, policy_snapshot, preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published')\n             AND NOT preview ORDER BY id",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers, grading,\n                  auto_score, final_score, is_late, late_penalty_pct,\n                  violation_count, violations,\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM rules_accepted_at))::bigint AS \"rules_accepted_at?\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, grading_version, content_version, policy_version,\n                  items_snapshot, policy_snapshot, preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft' ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -170,12 +170,18 @@
       },
       {
         "ordinal": 15,
-        "name": "auto_submitted_at?",
+        "name": "rules_accepted_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
         "ordinal": 16,
+        "name": "auto_submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 17,
         "name": "auto_submit_attempts",
         "type_info": "Int4",
         "origin": {
@@ -186,13 +192,13 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "auto_submit_retry_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "duration_seconds",
         "type_info": "Int4",
         "origin": {
@@ -203,25 +209,25 @@
         }
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "started_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "submitted_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "graded_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -232,7 +238,7 @@
         }
       },
       {
-        "ordinal": 23,
+        "ordinal": 24,
         "name": "draft_version",
         "type_info": "Int8",
         "origin": {
@@ -243,7 +249,7 @@
         }
       },
       {
-        "ordinal": 24,
+        "ordinal": 25,
         "name": "grading_version",
         "type_info": "Int4",
         "origin": {
@@ -254,7 +260,7 @@
         }
       },
       {
-        "ordinal": 25,
+        "ordinal": 26,
         "name": "content_version",
         "type_info": "Int4",
         "origin": {
@@ -265,7 +271,7 @@
         }
       },
       {
-        "ordinal": 26,
+        "ordinal": 27,
         "name": "policy_version",
         "type_info": "Int4",
         "origin": {
@@ -276,7 +282,7 @@
         }
       },
       {
-        "ordinal": 27,
+        "ordinal": 28,
         "name": "items_snapshot",
         "type_info": "Jsonb",
         "origin": {
@@ -287,7 +293,7 @@
         }
       },
       {
-        "ordinal": 28,
+        "ordinal": 29,
         "name": "policy_snapshot",
         "type_info": "Jsonb",
         "origin": {
@@ -298,7 +304,7 @@
         }
       },
       {
-        "ordinal": 29,
+        "ordinal": 30,
         "name": "preview",
         "type_info": "Bool",
         "origin": {
@@ -309,13 +315,13 @@
         }
       },
       {
-        "ordinal": 30,
+        "ordinal": 31,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 31,
+        "ordinal": 32,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -323,6 +329,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -343,6 +350,7 @@
       false,
       true,
       null,
+      null,
       false,
       null,
       true,
@@ -361,5 +369,5 @@
       null
     ]
   },
-  "hash": "af00bd8c59270a190d5527a0352fe6716654192af13dda6b895757713ec34272"
+  "hash": "c5f88686bb2586e385498a12c1868c12340ac92db5c3074ccef5b51e8efecda2"
 }

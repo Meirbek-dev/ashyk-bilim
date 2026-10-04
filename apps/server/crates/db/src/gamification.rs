@@ -305,6 +305,31 @@ pub async fn recent_transactions(
     Ok(rows)
 }
 
+/// GAMIF: the user's XP history, newest first, keyset on the (UUIDv7) id.
+pub async fn transactions_page(
+    pool: &PgPool,
+    user_id: UserId,
+    before: Option<XpTransactionId>,
+    limit: i64,
+) -> Result<Vec<TransactionRow>> {
+    let rows = sqlx::query_as!(
+        TransactionRow,
+        r#"SELECT id AS "id: XpTransactionId", user_id AS "user_id: UserId", amount,
+                  source AS "source: XpSource", source_id, reason, previous_level,
+                  triggered_level_up,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM xp_transactions
+           WHERE user_id = $1 AND ($2::uuid IS NULL OR id < $2)
+           ORDER BY id DESC LIMIT $3"#,
+        user_id.0,
+        before.map(|b| b.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 #[derive(Debug, Clone)]
 pub struct LeaderboardRow {
     /// Competition rank over the whole public board (ties share, the next

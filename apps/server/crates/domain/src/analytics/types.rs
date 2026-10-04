@@ -590,6 +590,14 @@ pub struct Intervention {
     #[schema(value_type = crate::analytics::InterventionStatus)]
     pub status: String,
     pub outcome: Option<String>,
+    /// The closed outcome (S-GAPS-2); `outcome` stays the teacher's prose.
+    #[schema(value_type = Option<crate::analytics::InterventionOutcome>)]
+    pub outcome_code: Option<String>,
+    /// Send back as `If-Match` on the PATCH (stale -> 412).
+    pub version: i32,
+    /// `update`, and `resolve` until resolved (every listed row is the
+    /// caller's, in scope).
+    pub allowed_actions: Vec<crate::analytics::InterventionAction>,
     pub notes: Option<String>,
     pub risk_score_before: Option<f64>,
     pub risk_score_after: Option<f64>,
@@ -602,6 +610,7 @@ pub struct Intervention {
 
 impl From<ab_db::analytics::InterventionRow> for Intervention {
     fn from(r: ab_db::analytics::InterventionRow) -> Self {
+        let resolved = r.status == "resolved";
         Self {
             id: r.id,
             teacher_user_id: r.teacher_user_id,
@@ -610,6 +619,16 @@ impl From<ab_db::analytics::InterventionRow> for Intervention {
             intervention_type: r.intervention_type,
             status: r.status,
             outcome: r.outcome,
+            allowed_actions: if resolved {
+                vec![crate::analytics::InterventionAction::Update]
+            } else {
+                vec![
+                    crate::analytics::InterventionAction::Update,
+                    crate::analytics::InterventionAction::Resolve,
+                ]
+            },
+            outcome_code: r.outcome_code,
+            version: r.version,
             notes: r.notes,
             risk_score_before: r.risk_score_before,
             risk_score_after: r.risk_score_after,

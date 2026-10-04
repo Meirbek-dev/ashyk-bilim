@@ -30,7 +30,7 @@ pub mod types;
 pub mod workload;
 
 use ab_core::assessments::AssessmentKind;
-use ab_core::id::{AssessmentId, CourseId, SavedViewId, UserId};
+use ab_core::id::{AssessmentId, CourseId, InterventionId, SavedViewId, UserId};
 use ab_core::permission::Action;
 use ab_core::{Error, FieldError, Result};
 use sqlx::PgPool;
@@ -77,6 +77,50 @@ pub enum InterventionStatus {
     Completed,
     Resolved,
 }
+
+/// What came of an intervention (S-GAPS-2; `Intervention.outcome_code`), next
+/// to the free-text `outcome` (teacher prose, kept).
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum InterventionOutcome {
+    Improved,
+    NoChange,
+    Worsened,
+    NoResponse,
+}
+
+impl InterventionOutcome {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Improved => "improved",
+            Self::NoChange => "no_change",
+            Self::Worsened => "worsened",
+            Self::NoResponse => "no_response",
+        }
+    }
+}
+
+/// What the caller may do to an intervention (`Intervention.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InterventionAction {
+    /// `PATCH` it (status, outcome, notes).
+    Update,
+    /// Close it (`status: resolved`) - not yet resolved.
+    Resolve,
+}
+
+/// `PATCH ./interventions/{id}`: absent fields stay; `Some(None)` clears.
+#[derive(Debug, Clone, Default)]
+pub struct InterventionUpdate {
+    pub status: Option<String>,
+    pub outcome: Option<Option<String>>,
+    pub outcome_code: Option<Option<InterventionOutcome>>,
+    pub notes: Option<Option<String>>,
+}
 /// "Latest" cut-off for rollup lookups.
 const FAR_FUTURE: &str = "9999-12-31";
 
@@ -88,6 +132,7 @@ pub struct NewIntervention {
     pub intervention_type: String,
     pub status: String,
     pub outcome: Option<String>,
+    pub outcome_code: Option<InterventionOutcome>,
     pub notes: Option<String>,
     pub payload: serde_json::Value,
 }
@@ -535,6 +580,7 @@ impl AnalyticsService {
                 intervention_type: &input.intervention_type,
                 status: &input.status,
                 outcome: input.outcome.as_deref(),
+                outcome_code: input.outcome_code.map(InterventionOutcome::as_str),
                 notes: input
                     .notes
                     .as_deref()
@@ -549,6 +595,81 @@ impl AnalyticsService {
         .await?;
         tx.commit().await?;
         Ok(row.into())
+    }
+
+    /// INTERVENTIONS: the scope gate of an intervention write - the row is
+    /// the caller's (as the list reads it) in a course in scope; anything
+    /// else is 404.
+    pub async fn require_intervention(
+        &self,
+        actor: &Actor,
+        filters: &AnalyticsFilters,
+        id: InterventionId,
+    ) -> Result<ab_db::analytics::InterventionRow> {
+        let scope = self.read_scope(actor, filters).await?;
+        let row = ab_db::analytics::get_intervention(&self.pool, id)
+            .await?
+            .filter(|r| {
+                r.teacher_user_id == scope.teacher_user_id
+                    && scope.course_ids.contains(&r.course_id)
+            })
+            .ok_or_else(|| Error::not_found("intervention"))?;
+        Ok(row)
+    }
+
+    /// INTERVENTIONS: change status, outcome or notes. Resolving stamps
+    /// `resolved_at` once and records the learner's risk then as
+    /// `risk_score_after`; reopening clears `resolved_at`.
+    pub async fn update_intervention(
+        &self,
+        actor: &Actor,
+        filters: &AnalyticsFilters,
+        id: InterventionId,
+        change: InterventionUpdate,
+    ) -> Result<Intervention> {
+        let row = self.require_intervention(actor, filters, id).await?;
+        ab_db::catalog::get_course(&self.pool, row.course_id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?
+            .ensure_not_archived()?;
+        let status = change.status.unwrap_or_else(|| row.status.clone());
+        if !INTERVENTION_STATUSES.contains(&status.as_str()) {
+            return Err(Error::validation(vec![FieldError {
+                field: "status".into(),
+                code: "invalid".into(),
+                message: format!("expected one of {}", INTERVENTION_STATUSES.join(", ")),
+            }]));
+        }
+        let resolved = status == "resolved";
+        let risk_after = if resolved && row.resolved_at.is_none() {
+            ab_db::analytics::latest_risk_score(&self.pool, row.user_id, row.course_id).await?
+        } else {
+            None
+        };
+        let outcome = change.outcome.unwrap_or(row.outcome);
+        let outcome_code = match change.outcome_code {
+            Some(code) => code.map(InterventionOutcome::as_str),
+            None => row.outcome_code.as_deref(),
+        };
+        let notes = change
+            .notes
+            .unwrap_or(row.notes)
+            .map(|n| ab_core::strip_controls_multiline(&n));
+        let updated = ab_db::analytics::update_intervention(
+            &self.pool,
+            id,
+            ab_db::analytics::InterventionChanges {
+                status: &status,
+                outcome: outcome.as_deref(),
+                outcome_code,
+                notes: notes.as_deref(),
+                risk_score_after: risk_after,
+                resolved,
+            },
+        )
+        .await?
+        .ok_or_else(|| Error::not_found("intervention"))?;
+        Ok(updated.into())
     }
 
     // ── Saved views ─────────────────────────────────────────────────────

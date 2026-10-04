@@ -32,6 +32,8 @@ pub struct SubmissionRow {
     pub violations: serde_json::Value,
     pub auto_submit_reason: Option<AutoSubmitReason>,
     pub auto_submitted_at: Option<i64>,
+    /// EXAM-CONSENT: when the learner accepted the exam rules at start.
+    pub rules_accepted_at: Option<i64>,
     pub auto_submit_attempts: i32,
     pub auto_submit_retry_at: Option<i64>,
     pub duration_seconds: Option<i32>,
@@ -176,6 +178,7 @@ pub async fn get_submission<'e>(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -208,6 +211,7 @@ pub async fn open_draft(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -245,6 +249,7 @@ pub async fn list_user_submissions<'e>(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -505,6 +510,7 @@ pub async fn list_non_draft(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -933,6 +939,7 @@ pub async fn list_releasable(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -967,6 +974,7 @@ pub async fn list_submitted_for_user(
                   auto_score, final_score, is_late, late_penalty_pct,
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
+                  (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
                   (extract(epoch FROM auto_submitted_at))::bigint AS "auto_submitted_at?",
                   auto_submit_attempts,
                   (extract(epoch FROM auto_submit_retry_at))::bigint AS "auto_submit_retry_at?",
@@ -1817,4 +1825,16 @@ pub async fn list_user_code_runs(
     .fetch_all(pool)
     .await?;
     Ok(ids)
+}
+
+/// EXAM-CONSENT: stamp the rules consent on an attempt (first time only).
+pub async fn accept_rules(conn: &mut sqlx::PgConnection, id: SubmissionId) -> Result<()> {
+    sqlx::query!(
+        "UPDATE submissions SET rules_accepted_at = now()
+         WHERE id = $1 AND rules_accepted_at IS NULL",
+        id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
 }

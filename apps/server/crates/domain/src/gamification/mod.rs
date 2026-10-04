@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 
 use ab_core::assessments::{StreakKind, XpSource};
-use ab_core::id::UserId;
+use ab_core::id::{UserId, XpTransactionId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::gamification::{
@@ -413,6 +413,33 @@ impl GamificationService {
             },
             next,
         ))
+    }
+
+    /// GAMIF: the caller's whole XP history, newest first, one keyset page
+    /// (`limit` 1..=100) and the cursor of the next.
+    pub async fn xp_history(
+        &self,
+        actor: &Actor,
+        cursor: Option<XpTransactionId>,
+        limit: i64,
+    ) -> Result<(
+        Vec<ab_db::gamification::TransactionRow>,
+        Option<XpTransactionId>,
+    )> {
+        if actor.is_anonymous() {
+            return Err(Error::unauthenticated());
+        }
+        let limit = ab_core::page_limit(limit, 100)?;
+        let mut rows =
+            ab_db::gamification::transactions_page(&self.pool, actor.user_id, cursor, limit + 1)
+                .await?;
+        let next = if rows.len() > usize::try_from(limit).unwrap_or(usize::MAX) {
+            rows.pop();
+            rows.last().map(|r| r.id)
+        } else {
+            None
+        };
+        Ok((rows, next))
     }
 
     pub async fn dashboard(&self, actor: &Actor) -> Result<Dashboard> {

@@ -220,6 +220,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PUT", "/api/v2/gamification/config"),
     // Analytics writes: analytics:read:{assigned,platform,all} + course scope.
     ("POST", "/api/v2/analytics/teacher/interventions"),
+    (
+        "PATCH",
+        "/api/v2/analytics/teacher/interventions/{intervention_id}",
+    ),
     ("POST", "/api/v2/analytics/teacher/saved-views"),
     ("DELETE", "/api/v2/analytics/teacher/saved-views/{view_id}"),
     // AI (P8): every agent entry point gates on course visibility + the

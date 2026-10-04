@@ -125,6 +125,7 @@ fn analytics_routes() -> OpenApiRouter<AppState> {
             routes::analytics::list_interventions,
             routes::analytics::create_intervention
         ))
+        .routes(routes!(routes::analytics::update_intervention))
         .routes(routes!(
             routes::analytics::list_saved_views,
             routes::analytics::save_view
@@ -192,6 +193,7 @@ fn work_queue_routes() -> OpenApiRouter<AppState> {
 fn gamification_routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::gamification::dashboard))
+        .routes(routes!(routes::gamification::xp_history))
         .routes(routes!(routes::gamification::leaderboard))
         .routes(routes!(routes::gamification::rank))
         .routes(routes!(routes::gamification::record_streak))

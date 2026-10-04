@@ -738,3 +738,97 @@ async fn file_submissions_unpublish(pool: PgPool) {
         .await;
     assert_eq!(hidden.status, StatusCode::NOT_FOUND, "{}", hidden.text());
 }
+
+/// EXAM-CONSENT: the start flag stamps the attempt once; GAMIF: the XP
+/// history pages by cursor and the display switches round-trip.
+#[sqlx::test(migrations = "../../migrations")]
+async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let (_, id) = essay_quiz(&app, &teacher, [&alice, &bob]).await;
+    // essay_quiz handed both in; a second attempt is a fresh draft.
+    let start = format!("/api/v2/assessments/{id}/submissions");
+    let plain = app.post_as(&alice, &start, &json!({})).await;
+    if plain.status.is_success() {
+        assert!(
+            plain.json().get("rules_accepted_at_unix").is_none(),
+            "{}",
+            plain.text()
+        );
+    }
+    let carol = learner(&app, "carol").await;
+    let consented = app
+        .post_as(&carol, &start, &json!({ "rules_accepted": true }))
+        .await;
+    assert_eq!(
+        consented.status,
+        StatusCode::CREATED,
+        "{}",
+        consented.text()
+    );
+    let at = consented.json()["rules_accepted_at_unix"].as_i64().unwrap();
+    assert!((now() - at).abs() < 60);
+    let unknown = app.post_as(&bob, &start, &json!({ "rules": true })).await;
+    assert_eq!(
+        unknown.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        unknown.text()
+    );
+
+    // XP history: three awards, two pages.
+    let admin = app.mint_session(&["platform:manage:platform"]).await;
+    for amount in [5, 6, 7] {
+        let awarded = app
+            .post_as(
+                &admin,
+                "/api/v2/gamification/xp",
+                &json!({ "user_id": alice.user_id, "amount": amount, "reason": "test" }),
+            )
+            .await;
+        assert!(awarded.status.is_success(), "{}", awarded.text());
+    }
+    let first = app
+        .get_as(&alice, "/api/v2/gamification/xp/history?limit=2")
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let first = first.json();
+    assert_eq!(first["items"].as_array().unwrap().len(), 2);
+    assert_eq!(first["items"][0]["amount"], 7);
+    let cursor = s(&first["next_cursor"]);
+    let rest = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/gamification/xp/history?limit=2&cursor={cursor}"),
+        )
+        .await
+        .json();
+    let amounts: Vec<i64> = rest["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["amount"].as_i64().unwrap())
+        .collect();
+    assert!(amounts.contains(&5), "{rest}");
+    assert!(rest["next_cursor"].is_null() || !amounts.is_empty());
+    assert_eq!(
+        app.get("/api/v2/gamification/xp/history").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+
+    // Display switches: snake_case in, camelCase stored, snake_case out.
+    let patched = app
+        .patch_as(
+            &alice,
+            "/api/v2/gamification/preferences",
+            &json!({ "display": { "show_gamification": false, "show_streaks": false } }),
+        )
+        .await;
+    assert!(patched.status.is_success(), "{}", patched.text());
+    let profile = app.get_as(&alice, "/api/v2/gamification").await.json();
+    let display = &profile["profile"]["settings"]["display"];
+    assert_eq!(display["show_gamification"], false, "{profile}");
+    assert_eq!(display["show_streaks"], false);
+}

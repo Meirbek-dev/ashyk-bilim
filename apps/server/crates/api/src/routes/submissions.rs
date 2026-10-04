@@ -16,7 +16,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::detach::detached;
 use crate::dto::submissions::{
-    SaveDraftRequest, StudentSubmission, SubmitRequest, ViolationRequest,
+    SaveDraftRequest, StartSubmissionRequest, StudentSubmission, SubmitRequest, ViolationRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, ValidJson, idempotent};
@@ -70,6 +70,7 @@ fn with_etag(status: StatusCode, body: StudentSubmission) -> Response {
 #[utoipa::path(
     post, path = "/assessments/{assessment_id}/submissions", tag = "submissions",
     params(("assessment_id" = AssessmentId, Path, description = "Assessment id")),
+    request_body(content = Option<StartSubmissionRequest>, description = "Optional; `{}` or no body is the same as `rules_accepted: false`"),
     responses(
         (status = 201, description = "Draft opened", body = StudentSubmission,
          headers(("ETag" = String, description = "Quoted draft_version"))),
@@ -82,11 +83,20 @@ pub async fn start_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<AssessmentId>,
+    body: axum::body::Bytes,
 ) -> ApiResult<Response> {
+    // EXAM-CONSENT: an optional body (the old web sends `{}` or nothing).
+    // UX-311: with a body, the start gate runs before it is read.
+    let rules_accepted = if body.iter().all(u8::is_ascii_whitespace) {
+        false
+    } else {
+        state.submissions.require_startable(&actor, id).await?;
+        ValidJson::<StartSubmissionRequest>::parse(&body)?.rules_accepted
+    };
     // Detached (BUG-313 sweep): the enrol + projection after the commit
     // outlive a hang-up.
     detached(async move {
-        let started = state.submissions.start(&actor, id).await?;
+        let started = state.submissions.start(&actor, id, rules_accepted).await?;
         let status = if started.created {
             StatusCode::CREATED
         } else {

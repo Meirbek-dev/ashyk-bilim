@@ -10,6 +10,7 @@ use axum::http::StatusCode;
 use crate::dto::gamification::{
     AdminAwardRequest, AwardResponse, Dashboard, GamificationConfig, Leaderboard, LeaderboardQuery,
     PreferencesPatch, Profile, StreakUpdate, UpdateGamificationConfigRequest, UserRank,
+    XpHistoryPage, XpHistoryQuery,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson};
@@ -25,6 +26,34 @@ pub async fn dashboard(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Json<Dashboard>> {
     Ok(Json(state.gamification.dashboard(&actor).await?.into()))
+}
+
+/// The caller's whole XP history, newest first, keyset-paged (the
+/// dashboard carries only the last 10).
+#[utoipa::path(
+    get, path = "/gamification/xp/history", tag = "gamification",
+    params(XpHistoryQuery),
+    responses(
+        (status = 200, description = "XP history page", body = XpHistoryPage),
+        (status = 401, description = "No session", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "Limit out of range", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn xp_history(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Query(query): Query<XpHistoryQuery>,
+) -> ApiResult<Json<XpHistoryPage>> {
+    let (rows, next_cursor) = state
+        .gamification
+        .xp_history(&actor, query.cursor, query.limit.unwrap_or(20))
+        .await?;
+    Ok(Json(XpHistoryPage {
+        items: rows.into_iter().map(Into::into).collect(),
+        next_cursor,
+    }))
 }
 
 #[utoipa::path(

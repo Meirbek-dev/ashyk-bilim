@@ -4,7 +4,7 @@
 use ab_core::Result;
 use ab_core::id::{
     AssessmentId, CertificationId, ChapterId, CourseId, CourseUpdateId, DiscussionId,
-    FileSubmissionId, UserId, UsergroupId,
+    FileSubmissionId, InterventionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -20,6 +20,7 @@ pub enum Versioned<'a> {
     Role(&'a str),
     Platform,
     Assessment(AssessmentId),
+    Intervention(InterventionId),
     Discussion(DiscussionId),
     FileSubmission(FileSubmissionId),
     GamificationConfig,
@@ -78,6 +79,14 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
             sqlx::query_scalar!("SELECT version FROM assessments WHERE id = $1", id.0)
                 .fetch_optional(pool)
                 .await?
+        }
+        Versioned::Intervention(id) => {
+            sqlx::query_scalar!(
+                "SELECT version FROM teacher_interventions WHERE id = $1",
+                id.0
+            )
+            .fetch_optional(pool)
+            .await?
         }
         Versioned::Discussion(id) => {
             sqlx::query_scalar!("SELECT version FROM course_discussions WHERE id = $1", id.0)

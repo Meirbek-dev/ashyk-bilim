@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions SET rules_accepted_at = now()\n         WHERE id = $1 AND rules_accepted_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "efcf4a663b40d0033bf9e4094a2ed4ae059c20469514bef2d687dfb6f23b8432"
+}

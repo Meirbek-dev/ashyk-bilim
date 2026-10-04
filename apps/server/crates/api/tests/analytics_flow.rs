@@ -592,6 +592,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         bob.user_id.to_string()
     );
     assert_eq!(at_risk.json()["items"][0]["intervention_count"], 0);
+    // ATRISK-TEST: the row offers the intervention gate (an archived
+    // course's learners leave the list, so there is no frozen row to show).
+    assert_eq!(
+        at_risk.json()["items"][0]["allowed_actions"],
+        serde_json::json!(["record_intervention"])
+    );
 
     // ── Rollups (job body), idempotent ──────────────────────────────────
     let service = ab_domain::analytics::AnalyticsService::new(pool.clone());
@@ -662,6 +668,85 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     );
     assert!(created.json()["risk_score_after"].is_null());
     assert!(created.json()["resolved_at_unix"].is_null());
+    // INTERVENTIONS: update / close with If-Match; carol (out of scope) 404.
+    assert_eq!(
+        created.json()["allowed_actions"],
+        serde_json::json!(["update", "resolve"])
+    );
+    let iv_id = created.json()["id"].as_str().unwrap().to_owned();
+    let iv_path = format!("/api/v2/analytics/teacher/interventions/{iv_id}");
+    let patch = |who: &ab_testkit::MintedSession, if_match: &str, body: serde_json::Value| {
+        axum::http::Request::builder()
+            .method("PATCH")
+            .uri(iv_path.clone())
+            .header(axum::http::header::COOKIE, &who.cookie)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::IF_MATCH, if_match)
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    };
+    let stale = app
+        .send(patch(
+            &teacher,
+            "9",
+            serde_json::json!({ "status": "resolved" }),
+        ))
+        .await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let foreign = app
+        .send(patch(
+            &carol,
+            "1",
+            serde_json::json!({ "status": "resolved" }),
+        ))
+        .await;
+    assert_eq!(foreign.status, StatusCode::NOT_FOUND, "{}", foreign.text());
+    let bad = app
+        .send(patch(
+            &teacher,
+            "1",
+            serde_json::json!({ "outcome_code": "great" }),
+        ))
+        .await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+    let closed = app
+        .send(patch(
+            &teacher,
+            "1",
+            serde_json::json!({ "status": "resolved", "outcome_code": "improved",
+                                "outcome": "Caught up" }),
+        ))
+        .await;
+    assert_eq!(closed.status, StatusCode::OK, "{}", closed.text());
+    let closed = closed.json();
+    assert_eq!(closed["status"], "resolved");
+    assert_eq!(closed["outcome_code"], "improved");
+    assert_eq!(closed["outcome"], "Caught up");
+    assert_eq!(closed["version"], 2);
+    assert!(closed["resolved_at_unix"].is_i64(), "{closed}");
+    assert_eq!(closed["allowed_actions"], serde_json::json!(["update"]));
+    // Reopen; `null` clears the code.
+    let reopened = app
+        .send(patch(
+            &teacher,
+            "2",
+            serde_json::json!({ "status": "planned", "outcome_code": null }),
+        ))
+        .await
+        .json();
+    assert!(reopened["resolved_at_unix"].is_null());
+    assert!(reopened["outcome_code"].is_null());
+    assert_eq!(reopened["outcome"], "Caught up");
     let invalid = app
         .post_as(
             &teacher,

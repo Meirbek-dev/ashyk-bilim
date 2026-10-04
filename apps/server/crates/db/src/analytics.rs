@@ -1288,6 +1288,10 @@ pub struct InterventionRow {
     pub intervention_type: String,
     pub status: String,
     pub outcome: Option<String>,
+    /// S-GAPS-2: the closed outcome (`InterventionOutcome`), next to the
+    /// free-text `outcome`.
+    pub outcome_code: Option<String>,
+    pub version: i32,
     pub notes: Option<String>,
     pub risk_score_before: Option<f64>,
     pub risk_score_after: Option<f64>,
@@ -1305,6 +1309,7 @@ pub struct NewIntervention<'a> {
     pub intervention_type: &'a str,
     pub status: &'a str,
     pub outcome: Option<&'a str>,
+    pub outcome_code: Option<&'a str>,
     pub notes: Option<&'a str>,
     pub risk_score_before: Option<f64>,
     pub risk_score_after: Option<f64>,
@@ -1320,13 +1325,13 @@ pub async fn insert_intervention<'e>(
         InterventionRow,
         r#"INSERT INTO teacher_interventions
               (teacher_user_id, user_id, course_id, intervention_type, status, outcome, notes,
-               risk_score_before, risk_score_after, payload, resolved_at)
+               risk_score_before, risk_score_after, payload, resolved_at, outcome_code)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                   CASE WHEN $11 THEN now() ELSE NULL END)
+                   CASE WHEN $11 THEN now() ELSE NULL END, $12)
            RETURNING id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
                      user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                     intervention_type, status, outcome, notes, risk_score_before,
-                     risk_score_after, payload,
+                     intervention_type, status, outcome, outcome_code, version, notes,
+                     risk_score_before, risk_score_after, payload,
                      (extract(epoch FROM created_at))::bigint AS "created_at!",
                      (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                      (extract(epoch FROM resolved_at))::bigint AS "resolved_at?""#,
@@ -1340,7 +1345,8 @@ pub async fn insert_intervention<'e>(
         i.risk_score_before,
         i.risk_score_after,
         i.payload,
-        i.resolved
+        i.resolved,
+        i.outcome_code
     )
     .fetch_one(db)
     .await?;
@@ -1361,8 +1367,8 @@ pub async fn list_interventions(
         InterventionRow,
         r#"SELECT id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
                   user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                  intervention_type, status, outcome, notes, risk_score_before, risk_score_after,
-                  payload,
+                  intervention_type, status, outcome, outcome_code, version, notes,
+                  risk_score_before, risk_score_after, payload,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   (extract(epoch FROM resolved_at))::bigint AS "resolved_at?"
@@ -1379,6 +1385,71 @@ pub async fn list_interventions(
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+pub async fn get_intervention(
+    pool: &PgPool,
+    id: InterventionId,
+) -> Result<Option<InterventionRow>> {
+    let row = sqlx::query_as!(
+        InterventionRow,
+        r#"SELECT id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+                  user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
+                  intervention_type, status, outcome, outcome_code, version, notes,
+                  risk_score_before, risk_score_after, payload,
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!",
+                  (extract(epoch FROM resolved_at))::bigint AS "resolved_at?"
+           FROM teacher_interventions WHERE id = $1"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// The fields an update replaces (all, as the merged row).
+pub struct InterventionChanges<'a> {
+    pub status: &'a str,
+    pub outcome: Option<&'a str>,
+    pub outcome_code: Option<&'a str>,
+    pub notes: Option<&'a str>,
+    /// Set when the update resolves it (the risk then).
+    pub risk_score_after: Option<f64>,
+    pub resolved: bool,
+}
+
+/// Replace the mutable fields; `resolved_at` is stamped once.
+pub async fn update_intervention(
+    pool: &PgPool,
+    id: InterventionId,
+    c: InterventionChanges<'_>,
+) -> Result<Option<InterventionRow>> {
+    let row = sqlx::query_as!(
+        InterventionRow,
+        r#"UPDATE teacher_interventions
+           SET status = $2, outcome = $3, outcome_code = $4, notes = $5,
+               risk_score_after = COALESCE($6, risk_score_after),
+               resolved_at = CASE WHEN $7 THEN COALESCE(resolved_at, now()) ELSE NULL END
+           WHERE id = $1
+           RETURNING id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+                     user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
+                     intervention_type, status, outcome, outcome_code, version, notes,
+                     risk_score_before, risk_score_after, payload,
+                     (extract(epoch FROM created_at))::bigint AS "created_at!",
+                     (extract(epoch FROM updated_at))::bigint AS "updated_at!",
+                     (extract(epoch FROM resolved_at))::bigint AS "resolved_at?""#,
+        id.0,
+        c.status,
+        c.outcome,
+        c.outcome_code,
+        c.notes,
+        c.risk_score_after,
+        c.resolved
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
 }
 
 // ── Saved views ─────────────────────────────────────────────────────────────

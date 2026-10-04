@@ -123,6 +123,9 @@ pub struct CreateInterventionRequest {
     #[garde(length(chars, max = 2_000))]
     #[schema(max_length = 2_000)]
     pub outcome: Option<String>,
+    /// The closed outcome (S-GAPS-2), next to the free-text `outcome`.
+    #[garde(skip)]
+    pub outcome_code: Option<ab_domain::analytics::InterventionOutcome>,
     #[garde(length(chars, max = 4_000))]
     #[schema(max_length = 4_000)]
     pub notes: Option<String>,
@@ -169,4 +172,27 @@ pub(crate) fn json_object_16k(value: &serde_json::Value, _ctx: &()) -> garde::Re
         return Err(garde::Error::new("must be at most 16384 bytes serialized"));
     }
     Ok(())
+}
+
+/// `PATCH /analytics/teacher/interventions/{id}`: absent fields stay; `null`
+/// clears `outcome`, `outcome_code` and `notes`. `status: resolved` closes it.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateInterventionRequest {
+    /// `planned`, `completed` or `resolved`.
+    #[garde(inner(length(min = 1, max = 20)))]
+    #[schema(value_type = Option<ab_domain::analytics::InterventionStatus>)]
+    pub status: Option<String>,
+    #[garde(inner(inner(length(chars, max = 2_000))))]
+    #[serde(default, deserialize_with = "crate::dto::double_option")]
+    #[schema(value_type = Option<String>, max_length = 2_000)]
+    pub outcome: Option<Option<String>>,
+    #[garde(skip)]
+    #[serde(default, deserialize_with = "crate::dto::double_option")]
+    #[schema(value_type = Option<ab_domain::analytics::InterventionOutcome>)]
+    pub outcome_code: Option<Option<ab_domain::analytics::InterventionOutcome>>,
+    #[garde(inner(inner(length(chars, max = 4_000))))]
+    #[serde(default, deserialize_with = "crate::dto::double_option")]
+    #[schema(value_type = Option<String>, max_length = 4_000)]
+    pub notes: Option<Option<String>>,
 }

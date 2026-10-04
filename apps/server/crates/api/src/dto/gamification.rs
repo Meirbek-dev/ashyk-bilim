@@ -309,6 +309,10 @@ impl PreferencesPatch {
         if let Some(Some(d)) = &mut self.display {
             d.animated_effects = d.animated_effects.or_else(|| d.animated_effects_v2.take());
             d.compact_mode = d.compact_mode.or_else(|| d.compact_mode_v2.take());
+            d.show_gamification = d
+                .show_gamification
+                .or_else(|| d.show_gamification_v2.take());
+            d.show_streaks = d.show_streaks.or_else(|| d.show_streaks_v2.take());
         }
     }
 }
@@ -337,6 +341,14 @@ pub struct XpNotificationSettings {
 pub struct DisplaySettings {
     pub animated_effects: Option<bool>,
     pub compact_mode: Option<bool>,
+    /// GAMIF switch; absent when never set (shown).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub show_gamification: Option<bool>,
+    /// GAMIF switch; absent when never set (shown).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub show_streaks: Option<bool>,
 }
 
 impl GamificationSettings {
@@ -352,6 +364,8 @@ impl GamificationSettings {
             display: DisplaySettings {
                 animated_effects: flag("/display/animatedEffects"),
                 compact_mode: flag("/display/compactMode"),
+                show_gamification: flag("/display/showGamification"),
+                show_streaks: flag("/display/showStreaks"),
             },
         }
     }
@@ -481,4 +495,56 @@ pub struct DisplayPreferences {
     )]
     #[schema(nullable = false)]
     pub compact_mode_v2: Option<bool>,
+    /// GAMIF: `false` hides the gamification UI (XP, levels, badges) for this
+    /// user. Unset = shown.
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(nullable = false)]
+    pub show_gamification: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "show_gamification",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub show_gamification_v2: Option<bool>,
+    /// GAMIF: `false` hides the streak row. Unset = shown.
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(nullable = false)]
+    pub show_streaks: Option<bool>,
+    /// snake_case twin (S-10); the camelCase key goes in phase 9.
+    #[serde(
+        rename = "show_streaks",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub show_streaks_v2: Option<bool>,
+}
+
+/// `GET /gamification/xp/history`.
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+pub struct XpHistoryQuery {
+    /// `next_cursor` of the previous page.
+    pub cursor: Option<XpTransactionId>,
+    /// 1..=100 (default 20).
+    pub limit: Option<i64>,
+}
+
+/// One page of the caller's XP history, newest first.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct XpHistoryPage {
+    pub items: Vec<Transaction>,
+    pub next_cursor: Option<XpTransactionId>,
 }

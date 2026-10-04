@@ -1079,12 +1079,16 @@ export const vDismissSuggestionRequest = v.strictObject({
 
 export const vDisplayPreferences = v.strictObject({
     animatedEffects: v.optional(v.boolean()),
-    compactMode: v.optional(v.boolean())
+    compactMode: v.optional(v.boolean()),
+    showGamification: v.optional(v.boolean()),
+    showStreaks: v.optional(v.boolean())
 });
 
 export const vDisplaySettings = v.object({
     animated_effects: v.nullable(v.boolean()),
-    compact_mode: v.nullable(v.boolean())
+    compact_mode: v.nullable(v.boolean()),
+    show_gamification: v.optional(v.boolean()),
+    show_streaks: v.optional(v.boolean())
 });
 
 export const vDisposition = v.picklist(['attachment', 'inline']);
@@ -1458,7 +1462,23 @@ export const vInsightCategory = v.picklist([
     'intervention'
 ]);
 
+/**
+ * What the caller may do to an intervention (`Intervention.allowed_actions`).
+ */
+export const vInterventionAction = v.picklist(['update', 'resolve']);
+
 export const vInterventionId = v.pipe(v.string(), v.uuid());
+
+/**
+ * What came of an intervention (S-GAPS-2; `Intervention.outcome_code`), next
+ * to the free-text `outcome` (teacher prose, kept).
+ */
+export const vInterventionOutcome = v.picklist([
+    'improved',
+    'no_change',
+    'worsened',
+    'no_response'
+]);
 
 /**
  * `teacher_interventions.payload`: what the at-risk table attaches to an
@@ -3129,6 +3149,13 @@ export const vAssessmentSloSnapshot = v.object({
 export const vSortOrder = v.picklist(['asc', 'desc']);
 
 /**
+ * `POST /assessments/{id}/submissions` (optional body).
+ */
+export const vStartSubmissionRequest = v.strictObject({
+    rules_accepted: v.optional(v.boolean())
+});
+
+/**
  * Streak kinds (legacy `StreakType`).
  */
 export const vStreakKind = v.picklist(['login', 'learning']);
@@ -3986,6 +4013,7 @@ export const vStudentSubmission = v.object({
     is_late: v.boolean(),
     late_penalty_pct: v.nullable(v.number()),
     release_state: vReleaseState,
+    rules_accepted_at_unix: v.optional(vUnixTime),
     started_at_unix: v.nullable(vUnixTime),
     status: vSubmissionStatus,
     submitted_at_unix: v.nullable(vUnixTime),
@@ -4118,6 +4146,17 @@ export const vUpdateDiscussionRequest = v.strictObject({
 export const vUpdateGamificationConfigRequest = v.strictObject({
     daily_xp_limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(1000000))),
     rewards: v.optional(v.record(v.string(), v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))))
+});
+
+/**
+ * `PATCH /analytics/teacher/interventions/{id}`: absent fields stay; `null`
+ * clears `outcome`, `outcome_code` and `notes`. `status: resolved` closes it.
+ */
+export const vUpdateInterventionRequest = v.strictObject({
+    notes: v.nullish(v.pipe(v.string(), v.maxLength(4000))),
+    outcome: v.nullish(v.pipe(v.string(), v.maxLength(2000))),
+    outcome_code: v.nullish(vInterventionOutcome),
+    status: v.optional(vInterventionStatus)
 });
 
 export const vUpdateItemRequest = v.strictObject({
@@ -4521,6 +4560,7 @@ export const vCreateInterventionRequest = v.strictObject({
     intervention_type: vInterventionType,
     notes: v.optional(v.pipe(v.string(), v.maxLength(4000))),
     outcome: v.optional(v.pipe(v.string(), v.maxLength(2000))),
+    outcome_code: v.optional(vInterventionOutcome),
     payload: v.optional(vInterventionPayload),
     status: v.optional(vInterventionStatus),
     user_id: vUserId
@@ -4681,12 +4721,14 @@ export const vGradingUpdated = v.object({
 });
 
 export const vIntervention = v.object({
+    allowed_actions: v.array(vInterventionAction),
     course_id: vCourseId,
     created_at_unix: vUnixTime,
     id: vInterventionId,
     intervention_type: vInterventionType,
     notes: v.nullable(v.string()),
     outcome: v.nullable(v.string()),
+    outcome_code: v.nullable(vInterventionOutcome),
     payload: vInterventionPayload,
     resolved_at_unix: v.nullable(vUnixTime),
     risk_score_after: v.nullable(v.number()),
@@ -4694,7 +4736,8 @@ export const vIntervention = v.object({
     status: vInterventionStatus,
     teacher_user_id: vUserId,
     updated_at_unix: vUnixTime,
-    user_id: vUserId
+    user_id: vUserId,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
 export const vInterventionList = v.object({
@@ -5838,6 +5881,14 @@ export const vUserStreamEvent = v.union([
     })
 ]);
 
+/**
+ * One page of the caller's XP history, newest first.
+ */
+export const vXpHistoryPage = v.object({
+    items: v.array(vTransaction),
+    next_cursor: v.nullable(vXpTransactionId)
+});
+
 export const vDeleteActivityHeaders = v.object({
     'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
@@ -6569,6 +6620,36 @@ export const vCreateInterventionQuery = v.object({
  */
 export const vCreateInterventionResponse = vIntervention;
 
+export const vUpdateInterventionBody = vUpdateInterventionRequest;
+
+export const vUpdateInterventionHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
+export const vUpdateInterventionPath = v.object({
+    intervention_id: vInterventionId
+});
+
+export const vUpdateInterventionQuery = v.object({
+    window: v.optional(vWindow),
+    compare: v.optional(vCompare),
+    bucket: v.optional(vBucket),
+    bucket_start: v.optional(v.string()),
+    course_ids: v.optional(v.string()),
+    cohort_ids: v.optional(v.string()),
+    teacher_user_id: v.optional(v.string()),
+    timezone: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    page_size: v.optional(v.pipe(v.number(), v.integer())),
+    sort_by: v.optional(v.string()),
+    sort_order: v.optional(vSortOrder)
+});
+
+/**
+ * Updated
+ */
+export const vUpdateInterventionResponse = vIntervention;
+
 export const vAtRiskLearnersQuery = v.object({
     window: v.optional(vWindow),
     compare: v.optional(vCompare),
@@ -7020,6 +7101,11 @@ export const vAssessmentReviewQueueQuery = v.object({
  * Review page
  */
 export const vAssessmentReviewQueueResponse = vReviewPage;
+
+/**
+ * Optional; `{}` or no body is the same as `rules_accepted: false`
+ */
+export const vStartSubmissionBody = v.nullable(vStartSubmissionRequest);
 
 export const vStartSubmissionPath = v.object({
     assessment_id: vAssessmentId
@@ -8255,6 +8341,16 @@ export const vAdminAwardBody = vAdminAwardRequest;
  * Awarded (or the earlier identical award)
  */
 export const vAdminAwardResponse = vAwardResponse;
+
+export const vXpHistoryQuery = v.object({
+    cursor: v.nullish(vXpTransactionId),
+    limit: v.nullish(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * XP history page
+ */
+export const vXpHistoryResponse = vXpHistoryPage;
 
 export const vListGroupsQuery = v.object({
     cursor: v.optional(vUsergroupId),

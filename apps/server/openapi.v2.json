@@ -6228,6 +6228,10 @@
             "maxLength": 2000,
             "type": "string"
           },
+          "outcome_code": {
+            "$ref": "#/components/schemas/InterventionOutcome",
+            "description": "The closed outcome (S-GAPS-2), next to the free-text `outcome`."
+          },
           "payload": {
             "$ref": "#/components/schemas/InterventionPayload",
             "description": "An object of at most 16 KiB serialized (UX-148)."
@@ -6870,6 +6874,14 @@
           },
           "compactMode": {
             "type": "boolean"
+          },
+          "showGamification": {
+            "description": "GAMIF: `false` hides the gamification UI (XP, levels, badges) for this\nuser. Unset = shown.",
+            "type": "boolean"
+          },
+          "showStreaks": {
+            "description": "GAMIF: `false` hides the streak row. Unset = shown.",
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -6887,6 +6899,14 @@
               "boolean",
               "null"
             ]
+          },
+          "show_gamification": {
+            "description": "GAMIF switch; absent when never set (shown).",
+            "type": "boolean"
+          },
+          "show_streaks": {
+            "description": "GAMIF switch; absent when never set (shown).",
+            "type": "boolean"
           }
         },
         "required": [
@@ -9326,6 +9346,13 @@
       },
       "Intervention": {
         "properties": {
+          "allowed_actions": {
+            "description": "`update`, and `resolve` until resolved (every listed row is the\ncaller's, in scope).",
+            "items": {
+              "$ref": "#/components/schemas/InterventionAction"
+            },
+            "type": "array"
+          },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
           },
@@ -9348,6 +9375,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "outcome_code": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InterventionOutcome",
+                "description": "The closed outcome (S-GAPS-2); `outcome` stays the teacher's prose."
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "payload": {
@@ -9388,6 +9426,11 @@
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
+          },
+          "version": {
+            "description": "Send back as `If-Match` on the PATCH (stale -> 412).",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -9397,16 +9440,27 @@
           "course_id",
           "intervention_type",
           "status",
+          "version",
+          "allowed_actions",
           "payload",
           "created_at_unix",
           "updated_at_unix",
           "notes",
           "outcome",
+          "outcome_code",
           "resolved_at_unix",
           "risk_score_after",
           "risk_score_before"
         ],
         "type": "object"
+      },
+      "InterventionAction": {
+        "description": "What the caller may do to an intervention (`Intervention.allowed_actions`).",
+        "enum": [
+          "update",
+          "resolve"
+        ],
+        "type": "string"
       },
       "InterventionId": {
         "format": "uuid",
@@ -9441,6 +9495,16 @@
           "items"
         ],
         "type": "object"
+      },
+      "InterventionOutcome": {
+        "description": "What came of an intervention (S-GAPS-2; `Intervention.outcome_code`), next\nto the free-text `outcome` (teacher prose, kept).",
+        "enum": [
+          "improved",
+          "no_change",
+          "worsened",
+          "no_response"
+        ],
+        "type": "string"
       },
       "InterventionPayload": {
         "description": "`teacher_interventions.payload`: what the at-risk table attaches to an\nextension / remediation draft.",
@@ -15449,6 +15513,17 @@
         ],
         "type": "string"
       },
+      "StartSubmissionRequest": {
+        "additionalProperties": false,
+        "description": "`POST /assessments/{id}/submissions` (optional body).",
+        "properties": {
+          "rules_accepted": {
+            "description": "EXAM-CONSENT: the learner accepted the exam rules; stamps\n`rules_accepted_at` on the attempt (once).",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "Stats": {
         "properties": {
           "avg_score": {
@@ -15723,6 +15798,10 @@
           },
           "release_state": {
             "$ref": "#/components/schemas/ReleaseState"
+          },
+          "rules_accepted_at_unix": {
+            "$ref": "#/components/schemas/UnixTime",
+            "description": "EXAM-CONSENT: when the learner accepted the exam rules; absent if never."
           },
           "started_at_unix": {
             "oneOf": [
@@ -17728,6 +17807,44 @@
         },
         "type": "object"
       },
+      "UpdateInterventionRequest": {
+        "additionalProperties": false,
+        "description": "`PATCH /analytics/teacher/interventions/{id}`: absent fields stay; `null`\nclears `outcome`, `outcome_code` and `notes`. `status: resolved` closes it.",
+        "properties": {
+          "notes": {
+            "maxLength": 4000,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "outcome": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "outcome_code": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InterventionOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "x-null-clears": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterventionStatus",
+            "description": "`planned`, `completed` or `resolved`."
+          }
+        },
+        "type": "object"
+      },
       "UpdateItemRequest": {
         "additionalProperties": false,
         "properties": {
@@ -18916,6 +19033,32 @@
           "total_xp",
           "level",
           "reason"
+        ],
+        "type": "object"
+      },
+      "XpHistoryPage": {
+        "description": "One page of the caller's XP history, newest first.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/XpTransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
         ],
         "type": "object"
       },
@@ -22897,6 +23040,208 @@
         ]
       }
     },
+    "/api/v2/analytics/teacher/interventions/{intervention_id}": {
+      "patch": {
+        "operationId": "update_intervention",
+        "parameters": [
+          {
+            "description": "Intervention id",
+            "in": "path",
+            "name": "intervention_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InterventionId"
+            }
+          },
+          {
+            "description": "Intervention `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "`7d`, `28d` (default) or `90d`.",
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Window"
+            }
+          },
+          {
+            "description": "`previous_period` (default) or `none`.",
+            "in": "query",
+            "name": "compare",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Compare"
+            }
+          },
+          {
+            "description": "`day` (default) or `week`.",
+            "in": "query",
+            "name": "bucket",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Bucket"
+            }
+          },
+          {
+            "description": "Narrow to one bucket: RFC 3339 timestamp or epoch seconds.",
+            "in": "query",
+            "name": "bucket_start",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated course ids (must be inside the caller's scope).",
+            "in": "query",
+            "name": "course_ids",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated usergroup ids.",
+            "in": "query",
+            "name": "cohort_ids",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inspect another teacher (platform scope only).",
+            "in": "query",
+            "name": "teacher_user_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "IANA zone for calendar bucketing (default UTC).",
+            "in": "query",
+            "name": "timezone",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based (default 1).",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "1..=200 (default 25).",
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`asc` or `desc` (default).",
+            "in": "query",
+            "name": "sort_order",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortOrder"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInterventionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intervention"
+                }
+              }
+            },
+            "description": "Updated"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not yours or not in scope"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The course is archived"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation"
+          }
+        },
+        "summary": "Update or close an intervention (status, outcome, notes) - the caller's\nown, in a course in scope (404 otherwise). `status: resolved` stamps\n`resolved_at` and records the learner's risk then.",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
     "/api/v2/analytics/teacher/learners/at-risk": {
       "get": {
         "description": "`low` rows are included (the KPI counters only count medium/high);\ncourse editors enrolled in their own course are never listed. `sort_by`\naccepts `risk` (default), `progress`, `activity`, `name`;\n`sort_order=asc` reverses.",
@@ -25427,6 +25772,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/StartSubmissionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "description": "Optional; `{}` or no body is the same as `rules_accepted: false`"
+        },
         "responses": {
           "200": {
             "content": {
@@ -31604,6 +31966,77 @@
           }
         },
         "summary": "Grant XP to a user (`platform:manage`). Learners never award themselves\nin v2; XP is a side effect of completing things.",
+        "tags": [
+          "gamification"
+        ]
+      }
+    },
+    "/api/v2/gamification/xp/history": {
+      "get": {
+        "operationId": "xp_history",
+        "parameters": [
+          {
+            "description": "`next_cursor` of the previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/XpTransactionId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "1..=100 (default 20).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpHistoryPage"
+                }
+              }
+            },
+            "description": "XP history page"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No session"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Limit out of range"
+          }
+        },
+        "summary": "The caller's whole XP history, newest first, keyset-paged (the\ndashboard carries only the last 10).",
         "tags": [
           "gamification"
         ]

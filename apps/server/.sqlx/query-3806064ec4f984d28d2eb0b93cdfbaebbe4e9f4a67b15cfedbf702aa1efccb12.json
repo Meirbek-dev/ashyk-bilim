@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: InterventionId\", teacher_user_id AS \"teacher_user_id: UserId\",\n                  user_id AS \"user_id: UserId\", course_id AS \"course_id: CourseId\",\n                  intervention_type, status, outcome, notes, risk_score_before, risk_score_after,\n                  payload,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  (extract(epoch FROM resolved_at))::bigint AS \"resolved_at?\"\n           FROM teacher_interventions\n           WHERE teacher_user_id = $1 AND course_id = ANY($2)\n             AND ($3::uuid IS NULL OR user_id = $3)\n             AND ($4::uuid IS NULL OR course_id = $4)\n           ORDER BY created_at DESC, id DESC",
+  "query": "INSERT INTO teacher_interventions\n              (teacher_user_id, user_id, course_id, intervention_type, status, outcome, notes,\n               risk_score_before, risk_score_after, payload, resolved_at, outcome_code)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,\n                   CASE WHEN $11 THEN now() ELSE NULL END, $12)\n           RETURNING id AS \"id: InterventionId\", teacher_user_id AS \"teacher_user_id: UserId\",\n                     user_id AS \"user_id: UserId\", course_id AS \"course_id: CourseId\",\n                     intervention_type, status, outcome, outcome_code, version, notes,\n                     risk_score_before, risk_score_after, payload,\n                     (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                     (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                     (extract(epoch FROM resolved_at))::bigint AS \"resolved_at?\"",
   "describe": {
     "columns": [
       {
@@ -82,6 +82,28 @@
       },
       {
         "ordinal": 7,
+        "name": "outcome_code",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "outcome_code"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "teacher_interventions",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
         "name": "notes",
         "type_info": "Text",
         "origin": {
@@ -92,7 +114,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "risk_score_before",
         "type_info": "Float8",
         "origin": {
@@ -103,7 +125,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "risk_score_after",
         "type_info": "Float8",
         "origin": {
@@ -114,7 +136,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "payload",
         "type_info": "Jsonb",
         "origin": {
@@ -125,19 +147,19 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "resolved_at?",
         "type_info": "Int8",
         "origin": "Expression"
@@ -146,9 +168,17 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "UuidArray",
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Jsonb",
+        "Bool",
+        "Text"
       ]
     },
     "nullable": [
@@ -160,6 +190,8 @@
       false,
       true,
       true,
+      false,
+      true,
       true,
       true,
       false,
@@ -168,5 +200,5 @@
       null
     ]
   },
-  "hash": "150ba03205eeef4349dcd580c45cf76af4b073edd20a586fe6d304438cb70b25"
+  "hash": "3806064ec4f984d28d2eb0b93cdfbaebbe4e9f4a67b15cfedbf702aa1efccb12"
 }
