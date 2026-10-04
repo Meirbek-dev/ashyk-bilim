@@ -7,11 +7,12 @@ import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
-import type { CodeItem } from '../model/arena'
-import { languagesOptions } from '../queries'
+import { isRunnerDown, languagesIn, type CodeItem } from '../model/arena'
+import { runnerStateOptions } from '../queries'
 import { CaseFields } from './case-fields'
 import { LanguageFields } from './language-fields'
 import { ReferenceResults } from './reference-results'
+import { RunnerDown } from './runner-down'
 import { StatementFields } from './statement-fields'
 import { useCodeItemForm } from './use-code-item-form'
 
@@ -19,10 +20,12 @@ type CodeItemFormProps = { activityId: string; challenge: AssessmentDetail; code
 
 /**
  * The code item editor (B-COD-13..19): statement, languages with starter code and reference solution, test cases,
- * limits; one "Save" (only with changes) and "Check reference". Without `update` everything is read only.
+ * limits; one "Save" (only with changes) and "Check reference". Without `update` everything is read only. A runner
+ * that is down keeps the form and "Save" working; "Check reference" waits for "Retry" (B-COD-23).
  */
 export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps) {
-  const { data: languages } = useSuspenseQuery(languagesOptions())
+  const { data: runner, refetch, isFetching } = useSuspenseQuery(runnerStateOptions())
+  const languages = languagesIn(runner)
   const { form, update, check, checkReference, unsaved, editable } = useCodeItemForm({ activityId, challenge, code })
   return (
     <form
@@ -42,7 +45,7 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
       </div>
       <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
         <StatementFields form={form} />
-        <LanguageFields form={form} languages={languages} readOnly={!editable} />
+        <LanguageFields form={form} runner={runner} readOnly={!editable} />
         <CaseFields form={form} />
         <div className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold">{m.code_limits()}</h3>
@@ -63,7 +66,17 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
         </div>
       </fieldset>
       {update.error ? <ErrorAlert>{presentError(update.error)}</ErrorAlert> : null}
-      {check.error ? <ErrorAlert>{presentError(check.error)}</ErrorAlert> : null}
+      {runner.state === 'down' || isRunnerDown(check.error) ? (
+        <RunnerDown
+          pending={isFetching}
+          onRetry={() => {
+            check.reset()
+            void refetch()
+          }}
+        />
+      ) : check.error ? (
+        <ErrorAlert>{presentError(check.error)}</ErrorAlert>
+      ) : null}
       {editable ? (
         <div className="flex flex-wrap gap-2">
           <form.Subscribe selector={state => unsaved(state.values)}>
@@ -77,7 +90,7 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
           <Button
             type="button"
             variant="outline"
-            disabled={check.isPending || update.isPending}
+            disabled={runner.state === 'down' || check.isPending || update.isPending}
             onClick={() => void checkReference()}
           >
             {check.isPending ? <Spinner data-icon="inline-start" /> : null}

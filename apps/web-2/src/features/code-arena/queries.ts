@@ -13,14 +13,14 @@ import {
   listMyCodeRunsOptions,
   mySubmissionsOptions,
   referenceCheckItemMutation,
-  runnerOptions,
+  runnerQueryKey,
   runItemMutation,
   saveSubmissionDraftMutation,
   startSubmissionMutation,
   submitSubmissionMutation,
   updateItemMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { getActivityAssessment, getCodeRun } from '#/shared/api/gen/sdk.gen'
+import { getActivityAssessment, getCodeRun, runner } from '#/shared/api/gen/sdk.gen'
 import type {
   ActivityId,
   AssessmentDetail,
@@ -30,13 +30,11 @@ import type {
   CodeRun,
   CodeRunId,
   CourseId,
-  CodeRunnerInfo,
-  LanguageInfo,
   StudentSubmission,
   SubmissionId,
 } from '#/shared/api/gen/types.gen'
 
-import { codeItemOf, upsert } from './model/arena'
+import { codeItemOf, isRunnerDown, runnerOf, upsert, type Runner } from './model/arena'
 
 const byActivity = (id: ActivityId) => ({ path: { activity_id: id } })
 const assessmentKey = (activityId: ActivityId) => getActivityAssessmentQueryKey(byActivity(activityId))
@@ -57,14 +55,23 @@ export const challengeOptions = (activityId: ActivityId) =>
   })
 
 /**
- * The platform's languages (`GET /code/runner`); null while the sandbox is not configured (`runner_configured`,
- * B-COD-09). It changes only with the platform's config: one read per tab.
+ * The runner's state (`GET /code/runner`): an outage of a configured runner (503) is a state, not an error, so the
+ * statement, the editor and the history render without it (B-COD-23). Languages change only with the platform's config
+ * (one read per tab); "down" is read again on the next mount, focus or "Retry".
  */
-export const languagesOptions = () => ({
-  ...runnerOptions(),
-  staleTime: Number.POSITIVE_INFINITY,
-  select: (info: CodeRunnerInfo): LanguageInfo[] | null => (info.runner_configured ? info.languages : null),
-})
+export const runnerStateOptions = () =>
+  queryOptions({
+    queryKey: runnerQueryKey(),
+    queryFn: async ({ signal }): Promise<Runner> => {
+      try {
+        return runnerOf((await runner({ signal, throwOnError: true })).data)
+      } catch (error) {
+        if (isRunnerDown(error)) return { state: 'down' }
+        throw error
+      }
+    },
+    staleTime: ({ state }) => (state.data?.state === 'down' ? 0 : Number.POSITIVE_INFINITY),
+  })
 
 export const stateOptions = (id: AssessmentId) => attemptStateOptions({ path: { assessment_id: id } })
 export const attemptsOptions = (id: AssessmentId) => mySubmissionsOptions({ path: { assessment_id: id } })
@@ -114,7 +121,7 @@ export async function ensureArena(queryClient: QueryClient, { courseId, activity
   if (names.locked) return names
   const [challenge] = await Promise.all([
     queryClient.ensureQueryData(challengeOptions(activityId)),
-    queryClient.ensureQueryData(languagesOptions()),
+    queryClient.ensureQueryData(runnerStateOptions()),
   ])
   const code = codeItemOf(challenge)
   if (!challenge || !code) return names
@@ -176,7 +183,7 @@ export async function ensureCodeStudio(queryClient: QueryClient, activityId: Act
   if (activity?.activity_type !== 'code_challenge') return { codeChallenge: false }
   await Promise.all([
     queryClient.ensureQueryData(challengeOptions(activityId)),
-    queryClient.ensureQueryData(languagesOptions()),
+    queryClient.ensureQueryData(runnerStateOptions()),
   ])
   return { codeChallenge: true }
 }

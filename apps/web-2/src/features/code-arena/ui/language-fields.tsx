@@ -1,25 +1,27 @@
 import { Suspense, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { LanguageInfo } from '#/shared/api/gen/types.gen'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { Label } from '#/shared/ui/label'
 import { Skeleton } from '#/shared/ui/skeleton'
 
-import { languageOf } from '../model/arena'
+import { languageOf, languagesIn, type Runner } from '../model/arena'
 import { LanguageSelect } from './language-select'
 import { CodeEditor } from './lazy-editor'
 import type { CodeFormApi } from './use-code-item-form'
 
-type LanguageFieldsProps = { form: CodeFormApi; languages: LanguageInfo[] | null; readOnly: boolean }
+type LanguageFieldsProps = { form: CodeFormApi; runner: Runner; readOnly: boolean }
 
 const toggle = (ids: number[], id: number, on: boolean) => (on ? [...ids, id] : ids.filter(other => other !== id))
 
 /**
  * Languages (B-COD-15): checkboxes from the platform's list (plus any stored one it no longer offers); the starter code
- * and the reference solution of one chosen language at a time. Without the list the choice stays as stored.
+ * and the reference solution of one chosen language at a time. Without the list (runner off or down, B-COD-23) the
+ * choice stays as stored.
  */
-export function LanguageFields({ form, languages, readOnly }: LanguageFieldsProps) {
+export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) {
+  const languages = languagesIn(runner)
+  const unavailable = runner.state === 'down' ? m.code_languages_down() : m.code_languages_unavailable()
   const [picked, setPicked] = useState<number | null>(null)
   return (
     <fieldset className="flex min-w-0 flex-col gap-4">
@@ -33,7 +35,7 @@ export function LanguageFields({ form, languages, readOnly }: LanguageFieldsProp
           return (
             <>
               {languages === null ? (
-                <p className="text-sm text-muted-foreground">{m.code_languages_unavailable()}</p>
+                <p className="text-sm text-muted-foreground">{unavailable}</p>
               ) : (
                 <form.Field name="languages">
                   {field => (

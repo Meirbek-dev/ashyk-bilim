@@ -1,7 +1,9 @@
+import { ApiError } from '#/shared/api/errors'
 import type {
   AssessmentDetail,
   AssessmentItem,
   CodeBody,
+  CodeRunnerInfo,
   LanguageInfo,
   StudentSubmission,
 } from '#/shared/api/gen/types.gen'
@@ -63,3 +65,16 @@ export function testsPassed(attempt: StudentSubmission): { correct: number; tota
 /** The platform's name of a language; null when the list is unavailable or does not hold it. */
 export const languageOf = (languages: LanguageInfo[] | null, id: number) =>
   languages?.find(language => language.id === id) ?? null
+
+/** The runner as the pages see it: its languages, not configured (B-COD-09), or configured and down (B-COD-23). */
+export type Runner = { state: 'ready'; languages: LanguageInfo[] } | { state: 'off' } | { state: 'down' }
+
+export const runnerOf = (info: CodeRunnerInfo): Runner =>
+  info.runner_configured ? { state: 'ready', languages: info.languages } : { state: 'off' }
+
+/** A configured runner that does not answer: its code (`code-runner-degraded`) or any 5xx; a 4xx stays an error. */
+export const isRunnerDown = (error: unknown): boolean =>
+  error instanceof ApiError && (error.code === 'code-runner-degraded' || error.status >= 500)
+
+/** The platform's languages; null while there is no list (off or down). */
+export const languagesIn = (runner: Runner) => (runner.state === 'ready' ? runner.languages : null)

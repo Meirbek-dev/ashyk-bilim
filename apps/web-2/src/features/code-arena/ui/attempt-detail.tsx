@@ -6,8 +6,8 @@ import type { StudentSubmission } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
-import { answerOf, languageOf, testsPassed, type CodeItem } from '../model/arena'
-import { languagesOptions } from '../queries'
+import { answerOf, languageOf, languagesIn, testsPassed, type CodeItem } from '../model/arena'
+import { runnerStateOptions } from '../queries'
 import { FinalRun } from './final-run'
 import { CodeEditor } from './lazy-editor'
 
@@ -25,7 +25,8 @@ function outcome(attempt: StudentSubmission): string[] {
 
 /** A handed-in attempt: its result, the run it was graded on and its code in its language, read only (B-COD-11). */
 export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; code: CodeItem }) {
-  const { data: languages } = useSuspenseQuery(languagesOptions())
+  const { data: runner } = useSuspenseQuery(runnerStateOptions())
+  const languages = languagesIn(runner)
   const answer = answerOf(attempt, code.item.id)
   const language = answer ? languageOf(languages, answer.language) : null
   return (

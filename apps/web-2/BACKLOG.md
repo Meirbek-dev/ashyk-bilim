@@ -82,7 +82,9 @@ W-2 done (through 1ccc7a1): T-1 translations, event dedup by server time, remain
 CSP/Zod + KaTeX font + hydration fixes, REVIEW-1 web findings; e2e on the production build 658/671 (`reports/W-2.md`).
 C-2 done: `main` pushed, CI green except `web2-e2e` (before the W-2 fixes). P-8 done (41ce779): `docs/STAGE-2-CUTOVER.md`,
 compose switch variables, release publishing of `ashyq-web-2`. REVIEW-1 (independent review) + SEC-1 (5c6940a): user
-content inert on the web origin. FIN-1 (wip): regen for 5c6940a, push, CI to green, `docs/web/ACCEPTANCE.md`.
+content inert on the web origin. FIN-1 done: `main` pushed through b28bdc2, CI green, `web2-e2e` 671/671 (run 37178939498); `docs/web/ACCEPTANCE.md`.
+Open before cutover: e2e on the owner's dependency bumps (b707d68), code arena must degrade when Judge0 is down,
+full `@judge0` run on the local stand, G-14 on the newest production backup.
 
 ## Server lane (sequential)
 
@@ -129,6 +131,6 @@ content inert on the web origin. FIN-1 (wip): regen for 5c6940a, push, CI to gre
 | 6.1 | grading, results, gradebook | done |
 | 6.2 | teach inbox                                                       | done   |
 | 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI) | done |
-| 7   | hardening (W-2, C-2 in progress; G-14 corpus 148/148 + 1051/1051 on 2026-10-04) | wip    |
-| 8   | cutover (needs owner: prod access, exam-free window)              | todo   |
-| 9   | legacy removal (after the 7-day observation window)               | todo   |
+| 7   | hardening: CI green incl. web2-e2e 671/671; acceptance in `docs/web/ACCEPTANCE.md`; open items above | done (open items) |
+| 8   | cutover - prepared (`docs/STAGE-2-CUTOVER.md`); needs the owner: prod SSH, exam-free window, smoke accounts | blocked(owner) |
+| 9   | legacy removal after the 7-day window (`apps/server/docs/phase9-removals.md`, checklist in the cutover doc) | blocked(owner) |

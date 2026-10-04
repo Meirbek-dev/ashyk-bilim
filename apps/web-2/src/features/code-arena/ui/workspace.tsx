@@ -10,10 +10,20 @@ import { Button } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
 import { Spinner } from '#/shared/ui/spinner'
 
-import { answerOf, initialAnswer, languageOf, switchLanguage, type CodeAnswer, type CodeItem } from '../model/arena'
-import { languagesOptions } from '../queries'
+import {
+  answerOf,
+  initialAnswer,
+  isRunnerDown,
+  languageOf,
+  languagesIn,
+  switchLanguage,
+  type CodeAnswer,
+  type CodeItem,
+} from '../model/arena'
+import { runnerStateOptions } from '../queries'
 import { LanguageSelect } from './language-select'
 import { CodeEditor } from './lazy-editor'
+import { RunnerDown } from './runner-down'
 import { SubmitDialog } from './submit-dialog'
 import { useAttemptActions } from './use-attempt-actions'
 import { useCodeDraft, type DraftStatus } from './use-code-draft'
@@ -30,10 +40,12 @@ type WorkspaceProps = { courseId: string; challenge: AssessmentDetail; code: Cod
 
 /**
  * The open attempt (B-COD-05..10): language, the editor, "Run" on the visible tests and "Submit". The code lives here
- * while typing and goes to the server draft after a pause (B-COD-06).
+ * while typing and goes to the server draft after a pause (B-COD-06). A runner that is down (its read or a run or
+ * hand-in answered so) leaves the editor and the draft working; "Run" and "Submit" wait for "Retry" (B-COD-23).
  */
 export function Workspace({ courseId, challenge, code, draft }: WorkspaceProps) {
-  const { data: languages } = useSuspenseQuery(languagesOptions())
+  const { data: runner, refetch, isFetching } = useSuspenseQuery(runnerStateOptions())
+  const languages = languagesIn(runner)
   const [answer, setAnswer] = useState(() => initialAnswer(code.body, answerOf(draft, code.item.id)))
   const ids = { courseId, assessmentId: challenge.id, itemId: code.item.id, draftId: draft.id }
   const saver = useCodeDraft(ids)
@@ -69,12 +81,22 @@ export function Workspace({ courseId, challenge, code, draft }: WorkspaceProps) 
           onChange={source => change({ language: answer.language, source })}
         />
       </Suspense>
-      {languages === null ? <p className="text-sm text-muted-foreground">{m.code_runner_unavailable()}</p> : null}
-      {actions.error ? <ErrorAlert>{presentError(actions.error)}</ErrorAlert> : null}
+      {runner.state === 'off' ? <p className="text-sm text-muted-foreground">{m.code_runner_unavailable()}</p> : null}
+      {runner.state === 'down' || isRunnerDown(actions.error) ? (
+        <RunnerDown
+          pending={isFetching}
+          onRetry={() => {
+            actions.reset()
+            void refetch()
+          }}
+        />
+      ) : actions.error ? (
+        <ErrorAlert>{presentError(actions.error)}</ErrorAlert>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <Button
           variant="secondary"
-          disabled={languages === null || actions.running}
+          disabled={runner.state !== 'ready' || actions.running}
           onClick={() => actions.runCode(answer)}
         >
           {actions.running ? <Spinner data-icon="inline-start" /> : <Play aria-hidden data-icon="inline-start" />}
@@ -83,7 +105,7 @@ export function Workspace({ courseId, challenge, code, draft }: WorkspaceProps) 
         <SubmitDialog
           number={draft.attempt_number}
           max={challenge.policy.max_attempts}
-          disabled={actions.submitting}
+          disabled={runner.state === 'down' || actions.submitting}
           onConfirm={handIn}
           trigger={
             <>

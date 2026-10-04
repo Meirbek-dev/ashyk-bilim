@@ -108,11 +108,36 @@ export const routeLanguages = (page: Page) =>
     route.fulfill({ json: { runner_configured: true, languages: LANGUAGES } }),
   )
 
-/** Opens the challenge from the player's entry card: a client navigation, so the browser reads what is routed. */
+/** The runner answers that it is configured but down (B-COD-23). */
+export const runnerDown = {
+  status: 503,
+  contentType: 'application/problem+json',
+  json: { type: 'about:blank', title: 'code-runner-degraded', status: 503, code: 'code-runner-degraded' },
+}
+
+/** Opens the challenge from the player's entry card ("Start" or "Continue"): a client navigation, so the browser reads what is routed. */
 export async function openFromPlayer(page: Page, course: MadeCourse, made: Made) {
   await page.goto(`/learn/${course.id}/${made.activityId}`)
-  await page.getByRole('link', { name: m.player_entry_start({}, ru) }).click()
+  const entry = new RegExp(`^(${m.player_entry_start({}, ru)}|${m.player_continue({}, ru)})$`)
+  await page.getByRole('link', { name: entry }).click()
   await baseExpect(page).toHaveURL(new RegExp(`/learn/${course.id}/${made.activityId}/code`))
+}
+
+export const region = (page: Page, name: string) => page.getByRole('region', { name })
+export const editor = (page: Page) => page.getByRole('textbox', { name: m.code_editor_label({}, ru) })
+
+export async function typeCode(page: Page, code: string) {
+  await editor(page).click()
+  await page.keyboard.press('ControlOrMeta+A')
+  await page.keyboard.type(code)
+}
+
+/** "Start" on the entry: the attempt opens in the editor. */
+export async function start(page: Page) {
+  await region(page, m.code_solution({}, ru))
+    .getByRole('button', { name: m.code_start({}, ru) })
+    .click()
+  await expect(editor(page)).toBeVisible()
 }
 
 const passed = (id: string, input: string, output: string): CaseResult => ({

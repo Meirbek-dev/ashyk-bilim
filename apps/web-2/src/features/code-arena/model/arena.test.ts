@@ -1,8 +1,20 @@
 import { describe, expect, test } from 'vite-plus/test'
 
+import { ApiError } from '#/shared/api/errors'
 import type { AssessmentItem, CodeBody, StudentSubmission } from '#/shared/api/gen/types.gen'
 
-import { answerOf, codeItemOf, draftOf, initialAnswer, switchLanguage, testsPassed, upsert } from './arena'
+import {
+  answerOf,
+  codeItemOf,
+  draftOf,
+  initialAnswer,
+  isRunnerDown,
+  languagesIn,
+  runnerOf,
+  switchLanguage,
+  testsPassed,
+  upsert,
+} from './arena'
 import { caseVerdict } from './verdict'
 
 const body: CodeBody = {
@@ -122,5 +134,26 @@ describe('code arena model', () => {
     const runs = [{ id: 'r2' }, { id: 'r1' }]
     expect(upsert(runs, { id: 'r3' }).map(run => run.id)).toEqual(['r3', 'r2', 'r1'])
     expect(upsert(runs, { id: 'r1' }).map(run => run.id)).toEqual(['r2', 'r1'])
+  })
+})
+
+const apiError = (status: number, code: ApiError['code']) =>
+  new ApiError({ status, code, fieldErrors: [], requestId: null, retryAfter: null })
+
+describe('code runner state', () => {
+  test('B-COD-09 B-COD-23 the runner is ready, off, or down; only an outage of a configured runner is "down"', () => {
+    const python = { id: 71, name: 'Python', monaco_language: 'python' }
+    const ready = runnerOf({ runner_configured: true, languages: [python] })
+    expect(ready).toEqual({ state: 'ready', languages: [python] })
+    expect(languagesIn(ready)).toEqual([python])
+    expect(runnerOf({ runner_configured: false, languages: [] })).toEqual({ state: 'off' })
+    expect(languagesIn({ state: 'off' })).toBeNull()
+    expect(languagesIn({ state: 'down' })).toBeNull()
+    expect(isRunnerDown(apiError(503, 'code-runner-degraded'))).toBe(true)
+    expect(isRunnerDown(apiError(502, 'internal'))).toBe(true)
+    expect(isRunnerDown(apiError(429, 'rate-limited'))).toBe(false)
+    expect(isRunnerDown(apiError(401, 'unauthenticated'))).toBe(false)
+    expect(isRunnerDown(new TypeError('fetch failed'))).toBe(false)
+    expect(isRunnerDown(null)).toBe(false)
   })
 })

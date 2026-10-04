@@ -5,7 +5,7 @@ import { getAssessment } from '#/shared/api/gen/sdk.gen'
 import type { AssessmentDetail, ReferenceCheckResponse } from '#/shared/api/gen/types.gen'
 
 import type { MadeCourse } from '../fixtures/learning'
-import { expect, routeLanguages, ru, test, type Made } from './code-arena-fixture'
+import { expect, routeLanguages, ru, runnerDown, test, type Made } from './code-arena-fixture'
 
 // A code challenge in the activity studio (slice 5.3): the `edit` tab holds its code item. The language list comes
 // from the sandbox, which the local stack lacks: it is routed for a client navigation from the course's content tab
@@ -148,6 +148,29 @@ test('B-COD-19 B-COD-18 the reference check saves first; a refused save keeps th
   await expect(constraints).toHaveValue('1 <= a, b <= 10')
 })
 
+test('B-COD-23 a runner that is down keeps the editor and Save; Check reference waits for Retry', async ({
+  page,
+  makeCourse,
+  challenges,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  const made = await challenges.make(course)
+  await page.route('**/api/v2/code/runner', route => route.fulfill(runnerDown))
+  await openEdit(page, course, made)
+  const editor = form(page)
+  await expect(editor.getByText(m.code_runner_down({}, ru))).toBeVisible()
+  await expect(editor.getByText(m.code_languages_down({}, ru))).toBeVisible()
+  await expect(editor.getByRole('button', { name: m.code_check({}, ru) })).toBeDisabled()
+  await editor.getByLabel(m.code_field_input_spec({}, ru)).fill('a b')
+  await editor.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible()
+
+  await page.unroute('**/api/v2/code/runner')
+  await routeLanguages(page)
+  await editor.getByRole('button', { name: m.ui_retry({}, ru) }).click()
+  await expect(editor.getByRole('button', { name: m.code_check({}, ru) })).toBeEnabled()
+})
+
 test('B-COD-13 without update in allowed_actions the challenge is read only', async ({
   page,
   makeCourse,
@@ -175,6 +198,6 @@ for (const locale of ['kk', 'en'] as const) {
     await page.goto(studio(course, made, 'edit'))
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
     await expect(page.getByRole('heading', { name: m.code_studio_title({}, { locale }) })).toBeVisible()
-    await expect(page.getByText(m.code_languages_unavailable({}, { locale }))).toBeVisible()
+    await expect(page.getByText(m.code_languages({}, { locale }), { exact: true })).toBeVisible()
   })
 }

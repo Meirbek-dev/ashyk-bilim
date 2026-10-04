@@ -1,34 +1,30 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Page } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { formatPercent } from '#/shared/i18n/format'
 
 import type { MadeCourse } from '../fixtures/learning'
-import { expect, gradedAttempt, openFromPlayer, routeLanguages, ru, runOf, test, type Made } from './code-arena-fixture'
+import {
+  editor,
+  expect,
+  gradedAttempt,
+  openFromPlayer,
+  region,
+  routeLanguages,
+  ru,
+  runOf,
+  start,
+  test,
+  typeCode,
+  type Made,
+} from './code-arena-fixture'
 
 // The learner's code challenge (slice 5.3): /learn/$courseId/$activityId/code. A started attempt waits for the
 // draft's save pause (5 s) and a cold `vp dev` compiles the editor: each test gets a minute.
 test.describe.configure({ timeout: 60_000 })
 
 const arena = (course: MadeCourse, made: Made) => `/learn/${course.id}/${made.activityId}/code`
-const region = (page: Page, name: string) => page.getByRole('region', { name })
-const editor = (page: Page) => page.getByRole('textbox', { name: m.code_editor_label({}, ru) })
 const problemOf = (code: string, status: number) => ({ type: 'about:blank', title: code, status, code })
-
-async function typeCode(page: Page, code: string) {
-  await editor(page).click()
-  await page.keyboard.press('ControlOrMeta+A')
-  await page.keyboard.type(code)
-}
-
-async function start(page: Page) {
-  await region(page, m.code_solution({}, ru))
-    .getByRole('button', { name: m.code_start({}, ru) })
-    .click()
-  await expect(editor(page)).toBeVisible()
-}
 
 test('B-COD-01 only an enrolled learner opens the challenge; another activity type is not found', async ({
   page,
@@ -109,8 +105,15 @@ test('B-COD-03 B-COD-04 B-COD-05 B-COD-06 B-COD-09 B-COD-12 the statement, a sta
   await expect(page.getByRole('button', { name: m.code_run({}, ru) })).toBeVisible()
   await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible({ timeout: 20_000 })
 
-  // A reload renders on the server, where the sandbox is not configured: no names, no runs, the code is back.
+  // A reload renders on the server (whatever its sandbox): the code is back.
   await page.reload()
+  await expect(editor(page)).toContainText('console.log(3)')
+  // Reopened with the sandbox not configured: no names, no runs.
+  await page.unroute('**/api/v2/code/runner')
+  await page.route('**/api/v2/code/runner', route =>
+    route.fulfill({ json: { runner_configured: false, languages: [] } }),
+  )
+  await openFromPlayer(page, course, made)
   await expect(editor(page)).toContainText('console.log(3)')
   await expect(language.locator('option:checked')).toHaveText(m.code_language_unknown({ id: 71 }, ru))
   await expect(page.getByText(m.code_runner_unavailable({}, ru))).toBeVisible()

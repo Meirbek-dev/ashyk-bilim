@@ -60,5 +60,9 @@ export function useAttemptActions({ courseId, assessmentId, itemId, draftId }: A
     running: run.isPending,
     submitting: submit.isPending,
     error: run.error ?? submit.error,
+    reset: () => {
+      run.reset()
+      submit.reset()
+    },
   }
 }
