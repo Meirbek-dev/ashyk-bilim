@@ -4,7 +4,7 @@ import type { ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/valibot.gen'
 
 import { RUN_KINDS, RUN_STATUSES, runsFilter } from '../route'
-import { budgetUsed, gateHolds, panelTabs, pickTab, remediationScore, unavailableReason } from './ai'
+import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason } from './ai'
 import { runErrorText } from './labels'
 import { STREAM_LOST } from './run'
 
@@ -51,12 +51,6 @@ describe('panel tabs', () => {
 })
 
 describe('remediation and admin helpers', () => {
-  test('B-AI-19 the score is round(100 × right / all), 100 without questions', () => {
-    expect(remediationScore(2, 3)).toBe(67)
-    expect(remediationScore(0, 4)).toBe(0)
-    expect(remediationScore(0, 0)).toBe(100)
-  })
-
   test('B-AI-17 a gate holds until it is passed', () => {
     expect(vRemediationStatus.options.map(status => [status, gateHolds(status)])).toEqual([
       ['assigned', true],

@@ -85,7 +85,7 @@
   "ai_remediation_open": "Открыть",
   "ai_remediation_objectives": "Цели",
   "ai_remediation_questions": "Вопросы",
-  "ai_got_it": "Я ответил верно",
+  "ai_remediation_answer": "Ответ на вопрос {number}",
   "ai_remediation_complete": "Завершить",
   "ai_remediation_threshold": "Чтобы пройти, нужно {threshold}%.",
   "ai_remediation_result_passed": "Пройдено: {score}%",

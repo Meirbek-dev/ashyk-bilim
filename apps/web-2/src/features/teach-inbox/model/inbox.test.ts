@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { WorkItem } from '#/shared/api/gen/types.gen'
 
-import { courseOptions, filterItems, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
+import { courseOptions, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
 import { inboxSearchSchema } from '../route'
 
 const COURSE_A = '7f0c1a2e-0000-4000-8000-00000000000a'
@@ -43,37 +43,24 @@ describe('teach inbox model', () => {
     expect(rowAction({ allowed_actions: ['publish'] })).toBeUndefined()
   })
 
-  test('B-INB-03 the submission id is read from the server href in either link map, otherwise there is none', () => {
-    const legacy = '/dash/courses/c/activity/a/review'
-    expect(submissionIdOf({ href: `${legacy}?submission=${SUBMISSION}` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: `${legacy}?tab=1&submission=${SUBMISSION}#top` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: legacy })).toBeUndefined()
-    expect(submissionIdOf({ href: `${legacy}?submission=${SUBMISSION}x` })).toBeUndefined()
-    const v2 = '/teach/courses/c/activities/a/submissions'
-    expect(submissionIdOf({ href: `${v2}/${SUBMISSION}` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: `https://ashyq.test${v2}/${SUBMISSION}?x=1` })).toBe(SUBMISSION)
-    expect(submissionIdOf({ href: v2 })).toBeUndefined()
-    expect(submissionIdOf({ href: `${v2}/${SUBMISSION}x` })).toBeUndefined()
+  test('B-INB-03 the work behind a row is the submission or the file attempt, otherwise there is none', () => {
+    expect(submissionIdOf({ submission_id: SUBMISSION })).toBe(SUBMISSION)
+    expect(submissionIdOf({ attempt_id: SUBMISSION })).toBe(SUBMISSION)
+    expect(submissionIdOf({})).toBeUndefined()
   })
 
-  test('B-INB-04 B-INB-05 the filters are URL values; an unknown one is the whole queue', () => {
-    expect(v.parse(inboxSearchSchema, { kind: 'awaiting_release', course: COURSE_A })).toEqual({
+  test('B-INB-04 B-INB-05 B-INB-10 the filters and order are URL values; an unknown one is the whole queue', () => {
+    expect(v.parse(inboxSearchSchema, { kind: 'awaiting_release', course: COURSE_A, sort: 'due' })).toEqual({
       kind: 'awaiting_release',
       course: COURSE_A,
+      sort: 'due',
     })
-    expect(v.parse(inboxSearchSchema, { kind: 'overdue', course: 'not-an-id' })).toEqual({
+    expect(v.parse(inboxSearchSchema, { kind: 'overdue', course: 'not-an-id', sort: 'name' })).toEqual({
       kind: undefined,
       course: undefined,
+      sort: undefined,
     })
     expect(v.parse(inboxSearchSchema, {})).toEqual({})
-  })
-
-  test('B-INB-04 B-INB-05 the filters narrow the loaded rows and keep the server order', () => {
-    const items = [item('1', 'sla_breach'), item('2', 'needs_grading', COURSE_B), item('3', 'needs_grading')]
-    expect(filterItems(items, {}).map(row => row.id)).toEqual(['1', '2', '3'])
-    expect(filterItems(items, { kind: 'needs_grading' }).map(row => row.id)).toEqual(['2', '3'])
-    expect(filterItems(items, { kind: 'needs_grading', course: COURSE_A }).map(row => row.id)).toEqual(['3'])
-    expect(filterItems(items, { kind: 'awaiting_release' })).toEqual([])
   })
 
   test('B-INB-05 the course filter offers each loaded course once, first appearance first', () => {

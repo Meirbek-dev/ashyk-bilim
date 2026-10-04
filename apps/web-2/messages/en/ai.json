@@ -81,7 +81,7 @@
   "ai_remediation_open": "Open",
   "ai_remediation_objectives": "Objectives",
   "ai_remediation_questions": "Questions",
-  "ai_got_it": "I got it right",
+  "ai_remediation_answer": "Answer to question {number}",
   "ai_remediation_complete": "Finish",
   "ai_remediation_threshold": "You need {threshold}% to pass.",
   "ai_remediation_result_passed": "Passed: {score}%",

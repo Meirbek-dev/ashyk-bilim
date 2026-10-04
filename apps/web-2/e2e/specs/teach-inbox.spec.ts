@@ -105,13 +105,14 @@ test('B-INB-01 B-INB-02 B-INB-03 a hand-in waits in the teacher queue and leads 
   const line = row(page, handedIn.quiz)
   await expect(line).toContainText(handedIn.courseName)
   await expect(line).toContainText(m.inbox_kind_needs_grading({}, ru))
+  await expect(line).toContainText('E2E Account') // the learner (registerAccount's name)
   await expect(line.getByRole('link', { name: m.inbox_action_grade({}, ru) })).toHaveAttribute(
     'href',
     `/teach/courses/${handedIn.courseId}/activities/${handedIn.activityId}/submissions/${handedIn.submissionId}`,
   )
 })
 
-test('B-INB-04 B-INB-05 kind and course filters live in the URL; nothing found offers a reset', async ({
+test('B-INB-04 B-INB-05 B-INB-10 kind, course and order live in the URL and go to the server; nothing found offers a reset', async ({
   page,
   signInAs,
   handedIn,
@@ -119,6 +120,11 @@ test('B-INB-04 B-INB-05 kind and course filters live in the URL; nothing found o
   await signInAs('teacher')
   // The shared teacher grades every parallel test's course: their events re-read the inbox (B-NOT-14), by design.
   expectReread(page, '/api/v2/work')
+  const asked: URLSearchParams[] = []
+  page.on('request', request => {
+    const url = new URL(request.url())
+    if (url.pathname === '/api/v2/work') asked.push(url.searchParams)
+  })
   await page.goto('/teach')
   const kinds = page.getByRole('navigation', { name: m.inbox_state({}, ru) })
   await kinds.getByRole('link', { name: m.inbox_kind_awaiting_release({}, ru) }).click()
@@ -134,6 +140,15 @@ test('B-INB-04 B-INB-05 kind and course filters live in the URL; nothing found o
   await expect(page).toHaveURL(/kind=needs_grading/)
   await expect(row(page, handedIn.quiz)).toBeVisible()
   await expect(page.getByRole('row').filter({ hasNotText: handedIn.courseName })).toHaveCount(1) // the header
+  expect(asked.at(-1)?.get('course_id')).toBe(handedIn.courseId)
+  expect(asked.at(-1)?.get('kind')).toBe('needs_grading')
+  await page.keyboard.press('Escape') // a radio menu stays open after a pick
+
+  await page.getByRole('button', { name: m.inbox_sort_label({ sort: m.inbox_sort_priority({}, ru) }, ru) }).click()
+  await page.getByRole('menuitemradio', { name: m.inbox_sort_due({}, ru) }).click()
+  await expect(page).toHaveURL(/sort=due/)
+  await expect.poll(() => asked.at(-1)?.get('sort')).toBe('due')
+  await expect(row(page, handedIn.quiz)).toBeVisible()
 
   await page.goto(`/teach?kind=awaiting_release&course=${handedIn.courseId}`)
   await expect(page.getByText(m.ui_no_matches({}, ru))).toBeVisible()

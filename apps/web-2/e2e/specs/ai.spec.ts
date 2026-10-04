@@ -239,7 +239,7 @@ const session = (activityId: string): RemediationSession => ({
 })
 
 test(
-  'B-AI-19 the learner works through a remediation session and posts the score',
+  'B-AI-19 the learner answers a remediation session and the server scores it',
   { tag: '@ai' },
   async ({ page, learner, makeCourse }) => {
     const course = await makeCourse()
@@ -260,10 +260,9 @@ test(
     await expect(aside.getByText('Отличать for и while')).toBeVisible()
     const finish = aside.getByRole('button', { name: m.ai_remediation_complete({}, ru) })
     await expect(finish).toBeDisabled()
-    await aside.getByRole('button', { name: m.ai_show_answer({}, ru) }).click()
-    await aside.getByRole('checkbox', { name: m.ai_got_it({}, ru) }).click()
+    await aside.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }, ru) }).fill('Когда условие ложно')
     await finish.click()
-    expect(await posted.promise).toEqual({ score: 100 })
+    expect(await posted.promise).toEqual({ answers: ['Когда условие ложно'] })
     await expect(aside.getByText(m.ai_remediation_result_passed({ score: 100 }, ru))).toBeVisible()
   },
 )

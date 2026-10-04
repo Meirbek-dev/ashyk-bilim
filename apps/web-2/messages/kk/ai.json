@@ -81,7 +81,7 @@
   "ai_remediation_open": "Ашу",
   "ai_remediation_objectives": "Мақсаттар",
   "ai_remediation_questions": "Сұрақтар",
-  "ai_got_it": "Мен дұрыс жауап бердім",
+  "ai_remediation_answer": "{number}-сұрақтың жауабы",
   "ai_remediation_complete": "Аяқтау",
   "ai_remediation_threshold": "Өту үшін {threshold}% керек.",
   "ai_remediation_result_passed": "Өтті: {score}%",

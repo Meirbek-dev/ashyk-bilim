@@ -39,10 +39,6 @@ export const gateHolds = (status: RemediationStatus) => status !== 'passed'
 export const sessionsOf = (sessions: RemediationSession[], activityId: string) =>
   sessions.filter(session => session.activity_id === activityId)
 
-/** The self-reported score the contract takes: round(100 × right / all), 100 without questions. */
-export const remediationScore = (right: number, total: number) =>
-  total === 0 ? 100 : Math.round((100 * right) / total)
-
 /** `RemediationBundle.pass_threshold`, 70 when the bundle has none (`complete_remediation`). */
 export const passThreshold = (session: RemediationSession) => session.lecture.pass_threshold ?? 70
 

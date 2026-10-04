@@ -7,32 +7,23 @@ import type { RemediationSession, UserId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { Checkbox } from '#/shared/ui/checkbox'
 import { Spinner } from '#/shared/ui/spinner'
 
-import { passThreshold, remediationScore } from '../model/ai'
+import { passThreshold } from '../model/ai'
 import { completeSessionOptions } from '../queries'
 import { Citations } from './citations'
-import { PracticeItem } from './practice-item'
-
-const toggle = (set: Set<number>, index: number, on: boolean) => {
-  const next = new Set(set)
-  if (on) next.add(index)
-  else next.delete(index)
-  return next
-}
+import { RemediationAnswer } from './remediation-answer'
 
 /**
  * One remediation session (B-AI-19): the micro-lecture, its objectives, the questions. "Finish" opens once every
- * answer is revealed and posts the self-reported score the contract takes (SPEC "Ждёт сервера").
+ * question has an answer and hands the answers in: the server scores them.
  */
 export function RemediationSessionView({ session, userId }: { session: RemediationSession; userId: UserId }) {
   const queryClient = useQueryClient()
   const complete = useMutation(completeSessionOptions(queryClient, userId))
-  const [revealed, setRevealed] = useState<Set<number>>(new Set())
-  const [right, setRight] = useState<Set<number>>(new Set())
   const { lecture } = session
   const questions = session.test.questions
+  const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ''))
   const score = session.score
   const done = session.status === 'passed' || (session.status === 'failed' && score !== null)
   return (
@@ -62,19 +53,13 @@ export function RemediationSessionView({ session, userId }: { session: Remediati
           <h4 className="text-sm font-medium">{m.ai_remediation_questions()}</h4>
           <ol className="flex flex-col gap-4">
             {questions.map((question, index) => (
-              <PracticeItem
+              <RemediationAnswer
                 key={question.prompt}
-                item={question}
-                onReveal={() => setRevealed(set => toggle(set, index, true))}
-              >
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={right.has(index)}
-                    onCheckedChange={on => setRight(set => toggle(set, index, on))}
-                  />
-                  {m.ai_got_it()}
-                </label>
-              </PracticeItem>
+                question={question}
+                number={index + 1}
+                value={answers[index] ?? ''}
+                onChange={value => setAnswers(all => all.with(index, value))}
+              />
             ))}
           </ol>
           <p className="text-sm text-muted-foreground">
@@ -83,13 +68,8 @@ export function RemediationSessionView({ session, userId }: { session: Remediati
           {complete.error ? <ErrorAlert>{presentError(complete.error)}</ErrorAlert> : null}
           <div>
             <Button
-              disabled={revealed.size < questions.length || complete.isPending}
-              onClick={() =>
-                complete.mutate({
-                  path: { session_id: session.id },
-                  body: { score: remediationScore(right.size, questions.length) },
-                })
-              }
+              disabled={answers.some(answer => !answer.trim()) || complete.isPending}
+              onClick={() => complete.mutate({ path: { session_id: session.id }, body: { answers } })}
             >
               {complete.isPending ? <Spinner data-icon="inline-start" /> : null}
               {m.ai_remediation_complete()}

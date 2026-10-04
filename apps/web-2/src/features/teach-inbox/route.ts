@@ -6,11 +6,16 @@ import * as v from 'valibot'
 export const INBOX_KINDS = ['sla_breach', 'needs_grading', 'awaiting_release'] as const
 export type InboxKind = (typeof INBOX_KINDS)[number]
 
+/** `GET /work?sort=`; `priority` is the server default. */
+export const INBOX_SORTS = ['priority', 'due', 'oldest', 'newest'] as const
+export type InboxSort = (typeof INBOX_SORTS)[number]
+
 export const isInboxKind = (kind: string): kind is InboxKind => INBOX_KINDS.some(known => known === kind)
 
-/** /teach?kind=&course=: both optional; an unknown value is the whole queue, not an error page. */
+/** /teach?kind=&course=&sort=: all optional; an unknown value is the whole queue in server order, not an error page. */
 export const inboxSearchSchema = v.object({
   kind: v.fallback(v.optional(v.picklist(INBOX_KINDS)), undefined),
   course: v.fallback(v.optional(v.pipe(v.string(), v.uuid())), undefined),
+  sort: v.fallback(v.optional(v.picklist(INBOX_SORTS)), undefined),
 })
 export type InboxSearch = v.InferOutput<typeof inboxSearchSchema>

@@ -28,6 +28,12 @@ export const inboxColumns: DataColumn<WorkItem>[] = [
     cell: item => <span className="wrap-anywhere">{item.activity_title}</span>,
   },
   {
+    id: 'learner',
+    header: m.inbox_col_learner(),
+    priority: 1,
+    cell: item => <span className="wrap-anywhere">{item.learner_name}</span>,
+  },
+  {
     id: 'course',
     header: m.inbox_col_course(),
     priority: 2,
