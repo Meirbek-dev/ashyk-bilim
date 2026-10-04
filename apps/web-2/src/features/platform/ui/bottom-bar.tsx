@@ -2,8 +2,10 @@ import { lazy, Suspense } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
-import { visibleSections, type Workspace } from '#/shared/auth/access'
+import type { Section, Workspace } from '#/shared/auth/access'
 import { Link } from '#/shared/components/link'
+
+import { NavSections } from './nav-sections'
 
 const MAX_ITEMS = 5
 
@@ -12,14 +14,21 @@ const MoreMenu = lazy(() => import('./more-menu').then(module => ({ default: mod
 
 /** The workspace navigation below lg (DESIGN 6): at most 5 items, icon plus label; the rest under "More". */
 export function BottomBar({ session, workspace }: { session: SessionInfo; workspace: Workspace }) {
-  const sections = visibleSections(session, workspace)
-  const shown = sections.length > MAX_ITEMS ? sections.slice(0, MAX_ITEMS - 1) : sections
-  const rest = sections.slice(shown.length)
   return (
     <nav
       aria-label={m.platform_nav_label()}
       className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch gap-1 border-t bg-sidebar px-2 py-0.5 text-sidebar-foreground lg:hidden"
     >
+      <NavSections session={session} workspace={workspace} render={barItems} />
+    </nav>
+  )
+}
+
+function barItems(sections: Section[]) {
+  const shown = sections.length > MAX_ITEMS ? sections.slice(0, MAX_ITEMS - 1) : sections
+  const rest = sections.slice(shown.length)
+  return (
+    <>
       {shown.map(section => (
         <Link key={section.to} variant="bar" to={section.to} activeOptions={{ exact: section.exact === true }}>
           <section.icon aria-hidden />
@@ -33,6 +42,6 @@ export function BottomBar({ session, workspace }: { session: SessionInfo; worksp
           </Suspense>
         </div>
       ) : null}
-    </nav>
+    </>
   )
 }

@@ -107,4 +107,12 @@ describe('access', () => {
     expect(workspaceHome(teacher, 'teach')).toBe('/teach')
     expect(() => workspaceHome(teacher, 'admin')).toThrow(ApiError)
   })
+
+  test('B-ACH-13 gamification off hides Achievements from the navigation', () => {
+    const learn = workspaces[0]!
+    const paths = (gamification: boolean) => visibleSections(sessionWith([]), learn, gamification).map(s => s.to)
+    expect(paths(true)).toContain('/achievements')
+    expect(paths(false)).not.toContain('/achievements')
+    expect(paths(false)).toContain('/courses')
+  })
 })

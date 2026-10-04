@@ -134,3 +134,5 @@ full `@judge0` run on the local stand, G-14 on the newest production backup.
 | 7   | hardening: CI green incl. web2-e2e 671/671; acceptance in `docs/web/ACCEPTANCE.md`; open items above | done (open items) |
 | 8   | cutover - prepared (`docs/STAGE-2-CUTOVER.md`); needs the owner: prod SSH, exam-free window, smoke accounts | blocked(owner) |
 | 9   | legacy removal after the 7-day window (`apps/server/docs/phase9-removals.md`, checklist in the cutover doc) | blocked(owner) |
+| W-3, W-4 | web consumers for S-GAPS and S-GAPS-2 (switches, group stats, scored remediation, inbox, If-Match, LIVE, enums); e2e flakes made deterministic | done |
+| W-5 | Achievements nav follows `show_gamification` (B-ACH-13); same-origin upload PUT (local stand CSP); open: WebKit-on-Windows crash in B-AUTH-01 (local only), full prod-build e2e run not repeated | done (open items) |

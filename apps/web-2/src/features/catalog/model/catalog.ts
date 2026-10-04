@@ -50,12 +50,15 @@ export function courseState(course: Pick<Course, 'public' | 'archived_at_unix'>)
 export function paletteSections(
   session: SessionInfo | null,
   text: string,
+  gamification = true,
 ): { workspace: Workspace; sections: Section[] }[] {
   const needle = text.trim().toLowerCase()
   return availableWorkspaces(session)
     .map(workspace => ({
       workspace,
-      sections: visibleSections(session, workspace).filter(section => section.label().toLowerCase().includes(needle)),
+      sections: visibleSections(session, workspace, gamification).filter(section =>
+        section.label().toLowerCase().includes(needle),
+      ),
     }))
     .filter(group => group.sections.length > 0)
 }

@@ -3,9 +3,11 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
-import { visibleSections, type Workspace } from '#/shared/auth/access'
+import type { Workspace } from '#/shared/auth/access'
 import { Link } from '#/shared/components/link'
 import { cookieItem } from '#/shared/lib/storage'
+
+import { NavSections } from './nav-sections'
 
 // A cookie, not localStorage: the shell renders on the server too, and the first paint must match.
 const sidebarCookie = cookieItem('ab_sidebar', v.picklist(['expanded', 'collapsed']))
@@ -31,18 +33,24 @@ export function SidebarNav({ session, workspace }: { session: SessionInfo; works
             <SidebarToggle collapsed={collapsed} onToggle={toggle} />
           </Suspense>
         </div>
-        {visibleSections(session, workspace).map(section => (
-          <Link
-            key={section.to}
-            variant="nav"
-            to={section.to}
-            activeOptions={{ exact: section.exact === true }}
-            title={collapsed ? section.label() : undefined}
-          >
-            <section.icon aria-hidden />
-            <span className={collapsed ? 'sr-only' : 'truncate'}>{section.label()}</span>
-          </Link>
-        ))}
+        <NavSections
+          session={session}
+          workspace={workspace}
+          render={sections =>
+            sections.map(section => (
+              <Link
+                key={section.to}
+                variant="nav"
+                to={section.to}
+                activeOptions={{ exact: section.exact === true }}
+                title={collapsed ? section.label() : undefined}
+              >
+                <section.icon aria-hidden />
+                <span className={collapsed ? 'sr-only' : 'truncate'}>{section.label()}</span>
+              </Link>
+            ))
+          }
+        />
       </div>
     </nav>
   )

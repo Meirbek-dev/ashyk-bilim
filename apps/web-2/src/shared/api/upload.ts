@@ -92,9 +92,11 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
   })
 }
 
-/** Dev: a bucket URL goes through the dev server's storage proxy (same origin, as nginx serves it in prod). */
+/**
+ * A bucket URL as a same-origin path: storage sits behind our origin (nginx; the dev server's and the local stand's
+ * proxies, which presign for `localhost:9002`), and CSP allows `connect-src 'self'` only.
+ */
 const storageUrl = (url: string): string => {
-  if (!import.meta.env.DEV) return url
   const target = new URL(url)
   return /^\/ab-(public|private)\//.test(target.pathname) ? `${target.pathname}${target.search}` : url
 }

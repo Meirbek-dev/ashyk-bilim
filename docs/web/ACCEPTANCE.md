@@ -22,4 +22,10 @@ job on top of it incl. `web2-e2e` (3 shards, all green).
 
 A configured runner that is down (Judge0 outage) no longer breaks the code pages: B-COD-23, b1d86df.
 
+Gap closing on 2026-10-04 (server S-GAPS, S-GAPS-2, S-GAPS-3; web W-3, W-4, W-5):
+- S-GAPS / S-GAPS-2 (server): the operations and fields the web was missing, then feature switches, group stats, scored remediation, inbox data, If-Match, LIVE events, enums. W-3 / W-4 (web): each has a consumer and a `B-` test; no G-07 "consumer pending" left; CI green on 0cfb547 (run 37219537187).
+- S-GAPS-3 (server): remediation answers only after the hand-in, typed work/next-action enums, no dangling `$ref`s (18606b4).
+- W-5: the Achievements nav item follows `show_gamification` (B-ACH-13); uploads PUT to the same-origin bucket path in every build (the local prod-build stand presigned for `localhost:9002` and CSP blocked it; prod and the CI stand presign for the public origin, so they were never affected).
+- Still open locally only: WebKit on Windows crashes on B-AUTH-01 (`page.goto` after sign-out); Linux WebKit in CI passes.
+
 Open before cutover: G-14 on the newest backup, the owner's window.

@@ -18,7 +18,7 @@ import {
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
-import type { Capability, SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Capability, Dashboard, SessionInfo } from '#/shared/api/gen/types.gen'
 
 // Spec 7.5: the single table "workspace -> section -> route -> capability". The route guards, the sidebar,
 // the bottom bar, the workspace switcher and the command palette all read it: an item the user lacks the
@@ -39,6 +39,8 @@ export type Section = {
   capability?: Capability
   /** Only this exact path, not the paths under it (an index that prefixes its siblings). */
   exact?: boolean
+  /** Hidden from navigation when the user turned gamification off (the route itself stays open). */
+  gamification?: true
 }
 
 export type WorkspaceId = 'learn' | 'teach' | 'admin'
@@ -61,7 +63,7 @@ const learn: Workspace = {
     { to: '/learning', label: m.platform_nav_learning, icon: GraduationCap },
     { to: '/courses', label: m.platform_nav_courses, icon: BookOpen },
     { to: '/collections', label: m.platform_nav_collections, icon: Library },
-    { to: '/achievements', label: m.platform_nav_achievements, icon: Trophy },
+    { to: '/achievements', label: m.platform_nav_achievements, icon: Trophy, gamification: true },
   ],
 }
 
@@ -130,9 +132,14 @@ const allowed = (session: SessionInfo | null, item: { capability?: Capability })
 export const availableWorkspaces = (session: SessionInfo | null): Workspace[] =>
   session ? workspaces.filter(workspace => allowed(session, workspace)) : []
 
-/** A workspace's sections the user may open, in table order. */
-export const visibleSections = (session: SessionInfo | null, workspace: Workspace): Section[] =>
-  allowed(session, workspace) ? workspace.sections.filter(section => allowed(session, section)) : []
+/** A workspace's sections the user may open, in table order; `gamification`: the profile's switch (B-ACH-13). */
+export const visibleSections = (session: SessionInfo | null, workspace: Workspace, gamification = true): Section[] =>
+  allowed(session, workspace)
+    ? workspace.sections.filter(section => allowed(session, section) && (gamification || !section.gamification))
+    : []
+
+/** The profile's gamification switch, for `visibleSections` (unset = on). */
+export const gamificationOn = ({ profile }: Dashboard) => profile.settings.display.show_gamification !== false
 
 const forbidden = () =>
   new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })

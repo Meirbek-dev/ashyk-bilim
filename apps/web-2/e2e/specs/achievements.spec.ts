@@ -141,6 +141,24 @@ test('B-ACH-05 a learner hidden from the leaderboard is told so and pointed to t
   await expect(page).toHaveURL(/\/settings\/notifications$/)
 })
 
+test('B-ACH-13 with gamification off the navigation has no Achievements; the page still opens', async ({
+  page,
+  me,
+}) => {
+  await updatePreferences({
+    client: me.client,
+    body: { display: { showGamification: false } },
+    headers: me.headers,
+    throwOnError: true,
+  })
+  await page.goto('/courses')
+  const nav = page.getByRole('navigation', { name: m.platform_nav_label({}, ru) })
+  await expect(nav.getByRole('link', { name: m.platform_nav_courses({}, ru) })).toBeVisible()
+  await expect(nav.getByRole('link', { name: m.platform_nav_achievements({}, ru) })).toHaveCount(0)
+  await page.goto('/achievements')
+  await expect(page.getByRole('region', { name: m.achievements_leaderboard_title({}, ru) })).toBeVisible()
+})
+
 for (const locale of ['kk', 'en'] as const) {
   test(`B-ACH-09 the achievements page speaks ${locale}`, async ({ page, context, baseURL, signInAs }) => {
     await signInAs('student')

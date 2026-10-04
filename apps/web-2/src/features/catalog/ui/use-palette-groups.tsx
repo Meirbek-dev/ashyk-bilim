@@ -4,6 +4,8 @@ import { Keyboard, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { gamificationOn } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 
 import { PALETTE_LIMIT, paletteSections } from '../model/catalog'
@@ -33,6 +35,7 @@ type PaletteActions = { close: () => void; showHelp: () => void }
  */
 export function usePaletteGroups(text: string, q: string, { close, showHelp }: PaletteActions): PaletteGroup[] {
   const { data: session } = useSuspenseQuery(sessionOptions())
+  const { data: gamification } = useSuspenseQuery({ ...dashboardOptions(), select: gamificationOn })
   const navigate = useNavigate()
   const found = useSuspenseQueries({
     queries: (q ? [q] : []).map(query => searchResultsOptions(query, PALETTE_LIMIT)),
@@ -42,7 +45,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
     close()
     void navigation()
   }
-  const navigation = paletteSections(session, text).map(({ workspace, sections }) => ({
+  const navigation = paletteSections(session, text, gamification).map(({ workspace, sections }) => ({
     heading: workspace.label(),
     entries: sections.map(section => {
       const Icon = section.icon
