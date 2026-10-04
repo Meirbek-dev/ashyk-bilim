@@ -312,9 +312,13 @@
             "type": "boolean"
           },
           "blocked_reason": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BlockedReason"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "complete": {
@@ -577,6 +581,27 @@
           "active_learners_7d",
           "at_risk_learners",
           "content_roi_score"
+        ],
+        "type": "object"
+      },
+      "AdminList": {
+        "description": "Which admin list changed.",
+        "enum": [
+          "users",
+          "roles",
+          "groups"
+        ],
+        "type": "string"
+      },
+      "AdminListUpdated": {
+        "description": "LIVE: an admin list the recipient can read changed.",
+        "properties": {
+          "list": {
+            "$ref": "#/components/schemas/AdminList"
+          }
+        },
+        "required": [
+          "list"
         ],
         "type": "object"
       },
@@ -1344,6 +1369,16 @@
         "format": "uuid",
         "type": "string"
       },
+      "AiMode": {
+        "description": "An AI entry point the scope offers (`ScopeCapabilities.modes`).",
+        "enum": [
+          "ask",
+          "explain",
+          "practice",
+          "analyze"
+        ],
+        "type": "string"
+      },
       "AiRemediationSessionId": {
         "format": "uuid",
         "type": "string"
@@ -1372,6 +1407,16 @@
           "succeeded",
           "failed",
           "aborted"
+        ],
+        "type": "string"
+      },
+      "AiScopeReason": {
+        "description": "Why the scope offers no AI (`ScopeCapabilities.reason`).",
+        "enum": [
+          "course_not_found",
+          "ai_disabled",
+          "restricted_activity",
+          "no_enabled_modes"
         ],
         "type": "string"
       },
@@ -3303,6 +3348,13 @@
         ],
         "type": "string"
       },
+      "BlockedReason": {
+        "description": "Why an activity is not open to the learner (`ActivityState.blocked_reason`).",
+        "enum": [
+          "restricted"
+        ],
+        "type": "string"
+      },
       "Bucket": {
         "enum": [
           "day",
@@ -4391,6 +4443,22 @@
         ],
         "type": "object"
       },
+      "CollectionUpdated": {
+        "description": "LIVE: a collection the recipient manages changed (created, edited,\ndeleted).",
+        "properties": {
+          "collection_id": {
+            "$ref": "#/components/schemas/CollectionId"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "collection_id",
+          "deleted"
+        ],
+        "type": "object"
+      },
       "CommonFailureRow": {
         "properties": {
           "count": {
@@ -5142,7 +5210,7 @@
             "type": "integer"
           },
           "reason": {
-            "type": "string"
+            "$ref": "#/components/schemas/DataGapReason"
           }
         },
         "required": [
@@ -5604,9 +5672,13 @@
             "type": "boolean"
           },
           "denial_reason": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DenialReason"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
@@ -6487,6 +6559,13 @@
         ],
         "type": "object"
       },
+      "DataGapReason": {
+        "description": "Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS).",
+        "enum": [
+          "fewer_than_5_learners"
+        ],
+        "type": "string"
+      },
       "DataMode": {
         "description": "Where the analytics read came from.",
         "enum": [
@@ -6621,6 +6700,14 @@
           "new_due_at_unix"
         ],
         "type": "object"
+      },
+      "DenialReason": {
+        "description": "Why the caller cannot enrol (`CoursePermissions.denial_reason`).",
+        "enum": [
+          "course_archived",
+          "staff_preview"
+        ],
+        "type": "string"
       },
       "Difficulty": {
         "enum": [
@@ -6851,6 +6938,38 @@
           "deleted"
         ],
         "type": "string"
+      },
+      "DiscussionUpdated": {
+        "description": "LIVE: a post or reply changed in a thread the recipient takes part in or\na course they teach (created, edited, moderated, deleted).",
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "discussion_id": {
+            "$ref": "#/components/schemas/DiscussionId"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DiscussionId",
+                "description": "The thread's post for a reply; null for a top-level post."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "course_id",
+          "discussion_id",
+          "deleted",
+          "parent_id"
+        ],
+        "type": "object"
       },
       "DismissSuggestionRequest": {
         "additionalProperties": false,
@@ -7573,9 +7692,13 @@
             "type": "string"
           },
           "reason": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FeatureReason"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
@@ -7585,6 +7708,13 @@
           "reason"
         ],
         "type": "object"
+      },
+      "FeatureReason": {
+        "description": "Why a feature is off (`FeatureCapability.reason`; ENUMS).",
+        "enum": [
+          "disabled"
+        ],
+        "type": "string"
       },
       "FeatureSetting": {
         "properties": {
@@ -10942,6 +11072,7 @@
             "type": "string"
           },
           "reason": {
+            "description": "A [`NextActionReason`] value (typed `string` in the schema until the\nweb's fixtures move; the server only sends the enum's values).",
             "type": "string"
           }
         },
@@ -12501,6 +12632,18 @@
           "progress_pct",
           "completed_at_unix",
           "grade_average"
+        ],
+        "type": "object"
+      },
+      "ProgressUpdated": {
+        "description": "LIVE: the recipient's own progress in a course was re-projected (a\ngrade, a hand-in, a curriculum change).",
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          }
+        },
+        "required": [
+          "course_id"
         ],
         "type": "object"
       },
@@ -15139,14 +15282,18 @@
           },
           "modes": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AiMode"
             },
             "type": "array"
           },
           "reason": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiScopeReason"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "restricted": {
@@ -18358,6 +18505,114 @@
               },
               "payload": {
                 "$ref": "#/components/schemas/DeadlineExtended"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "collection.updated"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/CollectionUpdated"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "discussion.updated"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/DiscussionUpdated"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "progress.updated"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/ProgressUpdated"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "admin.updated"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/AdminListUpdated"
               },
               "sent_at": {
                 "description": "Unix seconds.",

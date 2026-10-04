@@ -59,7 +59,7 @@ pub fn build_data_quality(
                 course_id: *course_id,
                 course_name: ctx.course_name(*course_id),
                 learner_count: count_i64(learners),
-                reason: "fewer_than_5_learners",
+                reason: super::types::DataGapReason::FewerThan5Learners,
             })
         })
         .collect();

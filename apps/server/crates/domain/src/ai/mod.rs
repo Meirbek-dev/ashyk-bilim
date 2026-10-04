@@ -38,7 +38,10 @@ pub use ab_db::ai::{
 pub use agents::course_analyst::LatestCourseAnalysis;
 pub use agents::course_qa::{QaReplay, QaRequest, QaSession, QaStream, QaTurn};
 pub use budget::TokenBudget;
-pub use capabilities::{ContextSummary, FeatureCapability, ScopeCapabilities, Surface};
+pub use capabilities::{
+    AiMode, AiScopeReason, ContextSummary, FeatureCapability, FeatureReason, ScopeCapabilities,
+    Surface,
+};
 pub use runs::{
     AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, FeatureState, RunDetail,
     RunListQuery, UsageSummary,

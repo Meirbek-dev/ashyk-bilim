@@ -474,7 +474,15 @@ pub struct CourseDataGap {
     pub course_id: CourseId,
     pub course_name: String,
     pub learner_count: i64,
-    pub reason: &'static str,
+    pub reason: DataGapReason,
+}
+
+/// Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DataGapReason {
+    #[serde(rename = "fewer_than_5_learners")]
+    FewerThan5Learners,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]

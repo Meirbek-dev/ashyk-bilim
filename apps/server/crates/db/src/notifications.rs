@@ -180,6 +180,23 @@ pub async fn course_graders(pool: &PgPool, course_id: CourseId) -> Result<Vec<Us
     Ok(ids.into_iter().map(UserId).collect())
 }
 
+/// Holders of `resource:action` at platform scope (wildcards included, as
+/// `Grant::grants` reads them) - the platform-wide readers of a list.
+pub async fn platform_holders(pool: &PgPool, resource: &str, action: &str) -> Result<Vec<UserId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT DISTINCT ur.user_id AS "id!" FROM user_roles ur
+           JOIN role_permissions rp ON rp.role_id = ur.role_id
+           WHERE split_part(rp.permission, ':', 1) IN ('*', $1)
+             AND split_part(rp.permission, ':', 2) IN ('*', $2)
+             AND split_part(rp.permission, ':', 3) IN ('', '*', 'platform', 'all')"#,
+        resource,
+        action
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids.into_iter().map(UserId).collect())
+}
+
 /// Who manages the roster: the creator and active maintainers.
 pub async fn course_owners(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(

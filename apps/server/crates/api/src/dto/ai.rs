@@ -686,7 +686,7 @@ pub struct FeatureCapability {
     /// The legacy flag key (`course_qa_enabled`, …).
     pub key: String,
     pub enabled: bool,
-    pub reason: Option<String>,
+    pub reason: Option<domain::FeatureReason>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -706,8 +706,8 @@ pub struct ScopeCapabilities {
     #[schema(value_type = crate::dto::enums::ContextVisibility)]
     pub context_visibility: String,
     pub restricted: bool,
-    pub reason: Option<String>,
-    pub modes: Vec<String>,
+    pub reason: Option<domain::AiScopeReason>,
+    pub modes: Vec<domain::AiMode>,
     pub features: Vec<FeatureCapability>,
     pub context: Option<ContextSummary>,
 }
@@ -720,15 +720,15 @@ impl From<domain::ScopeCapabilities> for ScopeCapabilities {
             surface: c.surface,
             context_visibility: c.context_visibility.to_owned(),
             restricted: c.restricted,
-            reason: c.reason.map(str::to_owned),
-            modes: c.modes.into_iter().map(str::to_owned).collect(),
+            reason: c.reason,
+            modes: c.modes,
             features: c
                 .features
                 .into_iter()
                 .map(|f| FeatureCapability {
                     key: f.feature.as_str().to_owned(),
                     enabled: f.enabled,
-                    reason: f.reason.map(str::to_owned),
+                    reason: f.reason,
                 })
                 .collect(),
             context: c.context.map(|ctx| ContextSummary {

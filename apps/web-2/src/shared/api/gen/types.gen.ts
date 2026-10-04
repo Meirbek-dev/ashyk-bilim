@@ -138,7 +138,7 @@ export type ActivityState = {
     activity_type: ActivityType;
     allowed_actions: Array<string>;
     available: boolean;
-    blocked_reason: string | null;
+    blocked_reason: BlockedReason | null;
     complete: boolean;
     due_at_unix: UnixTime | null;
     id: ActivityId;
@@ -208,6 +208,18 @@ export type AdminCourseRow = {
     course_id: CourseId;
     course_name: string;
     health_score: number;
+};
+
+/**
+ * Which admin list changed.
+ */
+export type AdminList = 'users' | 'roles' | 'groups';
+
+/**
+ * LIVE: an admin list the recipient can read changed.
+ */
+export type AdminListUpdated = {
+    list: AdminList;
 };
 
 export type AdminProgramRow = {
@@ -472,6 +484,11 @@ export type AiLectureReviewId = string;
 
 export type AiMessageId = string;
 
+/**
+ * An AI entry point the scope offers (`ScopeCapabilities.modes`).
+ */
+export type AiMode = 'ask' | 'explain' | 'practice' | 'analyze';
+
 export type AiRemediationSessionId = string;
 
 export type AiRunId = string;
@@ -486,6 +503,11 @@ export type AiRunKind = 'course_analysis' | 'submission_analysis' | 'remediation
  * failed, aborted}`. The legacy names were finished/error.
  */
 export type AiRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'aborted';
+
+/**
+ * Why the scope offers no AI (`ScopeCapabilities.reason`).
+ */
+export type AiScopeReason = 'course_not_found' | 'ai_disabled' | 'restricted_activity' | 'no_enabled_modes';
 
 /**
  * The work an AI analysis or remediation is about: an assessment
@@ -1042,6 +1064,11 @@ export type BlockId = string;
  */
 export type BlockType = 'image' | 'pdf' | 'video' | 'custom';
 
+/**
+ * Why an activity is not open to the learner (`ActivityState.blocked_reason`).
+ */
+export type BlockedReason = 'restricted';
+
 export type Bucket = 'day' | 'week';
 
 export type BulkAction = {
@@ -1414,6 +1441,15 @@ export type CollectionPage = {
     next_cursor: CollectionId | null;
 };
 
+/**
+ * LIVE: a collection the recipient manages changed (created, edited,
+ * deleted).
+ */
+export type CollectionUpdated = {
+    collection_id: CollectionId;
+    deleted: boolean;
+};
+
 export type CommonFailureRow = {
     count: number;
     key: string;
@@ -1682,7 +1718,7 @@ export type CourseDataGap = {
     course_id: CourseId;
     course_name: string;
     learner_count: number;
-    reason: string;
+    reason: DataGapReason;
 };
 
 /**
@@ -1829,7 +1865,7 @@ export type CoursePermissions = {
     can_access: boolean;
     can_discover: boolean;
     can_enroll: boolean;
-    denial_reason: string | null;
+    denial_reason: DenialReason | null;
 };
 
 export type CourseQaAnswer = {
@@ -2200,6 +2236,11 @@ export type Dashboard = {
 };
 
 /**
+ * Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS).
+ */
+export type DataGapReason = 'fewer_than_5_learners';
+
+/**
  * Where the analytics read came from.
  */
 export type DataMode = 'live' | 'rollup';
@@ -2242,6 +2283,11 @@ export type DeadlineExtensionRequest = {
     reason?: string;
     user_ids: Array<UserId>;
 };
+
+/**
+ * Why the caller cannot enrol (`CoursePermissions.denial_reason`).
+ */
+export type DenialReason = 'course_archived' | 'staff_preview';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -2321,6 +2367,17 @@ export type DiscussionPage = {
  * Course discussion visibility (legacy `DiscussionStatusEnum`).
  */
 export type DiscussionStatus = 'active' | 'hidden' | 'deleted';
+
+/**
+ * LIVE: a post or reply changed in a thread the recipient takes part in or
+ * a course they teach (created, edited, moderated, deleted).
+ */
+export type DiscussionUpdated = {
+    course_id: CourseId;
+    deleted: boolean;
+    discussion_id: DiscussionId;
+    parent_id: DiscussionId | null;
+};
 
 export type DismissSuggestionRequest = {
     suggestion_id: string;
@@ -2554,8 +2611,13 @@ export type FeatureCapability = {
      * The legacy flag key (`course_qa_enabled`, …).
      */
     key: string;
-    reason: string | null;
+    reason: FeatureReason | null;
 };
+
+/**
+ * Why a feature is off (`FeatureCapability.reason`; ENUMS).
+ */
+export type FeatureReason = 'disabled';
 
 export type FeatureSetting = {
     /**
@@ -3685,6 +3747,10 @@ export type NextAction = {
      * English fallback; the web localizes by `id` + `reason`.
      */
     label: string;
+    /**
+     * A [`NextActionReason`] value (typed `string` in the schema until the
+     * web's fixtures move; the server only sends the enum's values).
+     */
     reason: string;
 };
 
@@ -4172,6 +4238,14 @@ export type ProgressState = {
     needs_grading_count: number;
     progress_pct: number;
     total_required_count: number;
+};
+
+/**
+ * LIVE: the recipient's own progress in a course was re-projected (a
+ * grade, a hand-in, a curriculum change).
+ */
+export type ProgressUpdated = {
+    course_id: CourseId;
 };
 
 /**
@@ -5086,8 +5160,8 @@ export type ScopeCapabilities = {
      */
     context_visibility: ContextVisibility;
     features: Array<FeatureCapability>;
-    modes: Array<string>;
-    reason: string | null;
+    modes: Array<AiMode>;
+    reason: AiScopeReason | null;
     restricted: boolean;
     role: AiThreadRole;
     surface: Surface;
@@ -6128,6 +6202,38 @@ export type UserStreamEvent = {
     event: 'deadline.extended';
     event_id: string;
     payload: DeadlineExtended;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'collection.updated';
+    event_id: string;
+    payload: CollectionUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'discussion.updated';
+    event_id: string;
+    payload: DiscussionUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'progress.updated';
+    event_id: string;
+    payload: ProgressUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'admin.updated';
+    event_id: string;
+    payload: AdminListUpdated;
     /**
      * Unix seconds.
      */

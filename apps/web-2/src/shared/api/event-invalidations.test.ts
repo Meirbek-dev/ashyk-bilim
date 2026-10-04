@@ -33,10 +33,14 @@ const hits = (keys: readonly (readonly unknown[])[], cached: readonly unknown[])
 test('B-NOT-12 every contract event has a row (a missing one does not compile)', () => {
   expectTypeOf<keyof typeof eventInvalidations>().toEqualTypeOf<EventType>()
   expect(Object.keys(eventInvalidations).toSorted()).toEqual([
+    'admin.updated',
+    'collection.updated',
     'deadline.extended',
+    'discussion.updated',
     'grading.updated',
     'notification.created',
     'notification.read',
+    'progress.updated',
     'submission.updated',
     'xp.awarded',
   ])

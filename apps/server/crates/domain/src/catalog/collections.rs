@@ -197,6 +197,15 @@ impl CollectionsService {
             ab_db::collections::set_collection_cover(&mut *tx, id, Some(&key)).await?;
         }
         tx.commit().await?;
+        crate::events::user::collection(
+            &self.pool,
+            Some(actor.user_id),
+            crate::events::user::CollectionUpdated {
+                collection_id: id,
+                deleted: false,
+            },
+        )
+        .await;
         self.get(actor, id).await
     }
 
@@ -350,6 +359,15 @@ impl CollectionsService {
             }
         }
         tx.commit().await?;
+        crate::events::user::collection(
+            &self.pool,
+            collection.creator_id,
+            crate::events::user::CollectionUpdated {
+                collection_id: id,
+                deleted: false,
+            },
+        )
+        .await;
         self.get(actor, id).await
     }
 
@@ -373,6 +391,15 @@ impl CollectionsService {
         )
         .await?
         {
+            crate::events::user::collection(
+                &self.pool,
+                collection.creator_id,
+                crate::events::user::CollectionUpdated {
+                    collection_id: id,
+                    deleted: true,
+                },
+            )
+            .await;
             return Ok(());
         }
         // UX-317: nothing deleted - a concurrent delete won (404), or the

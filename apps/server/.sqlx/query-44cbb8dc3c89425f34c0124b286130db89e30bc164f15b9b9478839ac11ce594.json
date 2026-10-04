@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ur.user_id AS \"id!\" FROM user_roles ur\n           JOIN role_permissions rp ON rp.role_id = ur.role_id\n           WHERE split_part(rp.permission, ':', 1) IN ('*', $1)\n             AND split_part(rp.permission, ':', 2) IN ('*', $2)\n             AND split_part(rp.permission, ':', 3) IN ('', '*', 'platform', 'all')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "user_roles",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "44cbb8dc3c89425f34c0124b286130db89e30bc164f15b9b9478839ac11ce594"
+}

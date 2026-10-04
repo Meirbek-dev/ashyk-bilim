@@ -95,12 +95,68 @@ pub enum EnrollmentState {
     Completed,
 }
 
+/// Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum NextActionReason {
+    NotEnrolled,
+    ReturnedForRevision,
+    Overdue,
+    InProgress,
+    DueSoon,
+    NextRequired,
+    CertificateIssued,
+    CourseComplete,
+    WaitingForGrade,
+    Optional,
+    NoAvailableAction,
+}
+
+impl NextActionReason {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NotEnrolled => "not_enrolled",
+            Self::ReturnedForRevision => "returned_for_revision",
+            Self::Overdue => "overdue",
+            Self::InProgress => "in_progress",
+            Self::DueSoon => "due_soon",
+            Self::NextRequired => "next_required",
+            Self::CertificateIssued => "certificate_issued",
+            Self::CourseComplete => "course_complete",
+            Self::WaitingForGrade => "waiting_for_grade",
+            Self::Optional => "optional",
+            Self::NoAvailableAction => "no_available_action",
+        }
+    }
+}
+
+/// Why an activity is not open to the learner (`ActivityState.blocked_reason`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum BlockedReason {
+    /// An assessment the learner is not on the access list of.
+    Restricted,
+}
+
+/// Why the caller cannot enrol (`CoursePermissions.denial_reason`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DenialReason {
+    CourseArchived,
+    /// Course staff never hold a trail run (BUG-287).
+    StaffPreview,
+}
+
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct NextAction {
     pub id: ActionId,
     /// English fallback; the web localizes by `id` + `reason`.
     pub label: String,
-    pub reason: String,
+    /// A [`NextActionReason`] value (typed `string` in the schema until the
+    /// web's fixtures move; the server only sends the enum's values).
+    #[schema(value_type = String)]
+    pub reason: NextActionReason,
     pub enabled: bool,
     /// The course the action is in (build the web URL from the ids).
     pub course_id: CourseId,
@@ -125,7 +181,7 @@ pub struct ActivityState {
     pub due_at_unix: Option<i64>,
     pub is_late: bool,
     pub available: bool,
-    pub blocked_reason: Option<String>,
+    pub blocked_reason: Option<BlockedReason>,
     pub allowed_actions: Vec<&'static str>,
 }
 
@@ -164,7 +220,7 @@ pub struct CoursePermissions {
     pub can_discover: bool,
     pub can_access: bool,
     pub can_enroll: bool,
-    pub denial_reason: Option<String>,
+    pub denial_reason: Option<DenialReason>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -298,7 +354,7 @@ impl LearnerStateService {
                 // not required, never a next step; their own results stay readable.
                 if restricted.contains(&a.id) {
                     state.required = false;
-                    state.blocked_reason = Some("restricted".to_owned());
+                    state.blocked_reason = Some(BlockedReason::Restricted);
                 }
                 if markable.as_ref().is_some_and(|ids| ids.contains(&a.id)) {
                     state.allowed_actions.push(if state.complete {
@@ -347,9 +403,9 @@ impl LearnerStateService {
                 can_access: true,
                 can_enroll: !enrolled && !staff && !archived,
                 denial_reason: if archived {
-                    Some("course_archived".to_owned())
+                    Some(DenialReason::CourseArchived)
                 } else {
-                    staff.then(|| "staff_preview".to_owned())
+                    staff.then_some(DenialReason::StaffPreview)
                 },
             },
             progress,
@@ -485,14 +541,14 @@ fn progress_state(
 fn activity_action(
     id: ActionId,
     label: &str,
-    reason: &str,
+    reason: NextActionReason,
     activity: &ActivityState,
     course_id: CourseId,
 ) -> NextAction {
     NextAction {
         id,
         label: label.to_owned(),
-        reason: reason.to_owned(),
+        reason,
         enabled: true,
         course_id,
         activity_id: Some(activity.id),
@@ -512,7 +568,7 @@ fn next_action(
         return NextAction {
             id: ActionId::Enroll,
             label: "Start course".to_owned(),
-            reason: "not_enrolled".to_owned(),
+            reason: NextActionReason::NotEnrolled,
             enabled: true,
             course_id,
             activity_id: None,
@@ -523,7 +579,7 @@ fn next_action(
         return activity_action(
             ActionId::Revise,
             "Revise returned work",
-            "returned_for_revision",
+            NextActionReason::ReturnedForRevision,
             a,
             course_id,
         );
@@ -536,7 +592,7 @@ fn next_action(
         return activity_action(
             ActionId::Continue,
             "Complete overdue work",
-            "overdue",
+            NextActionReason::Overdue,
             a,
             course_id,
         );
@@ -545,7 +601,7 @@ fn next_action(
         return activity_action(
             ActionId::Continue,
             "Continue activity",
-            "in_progress",
+            NextActionReason::InProgress,
             a,
             course_id,
         );
@@ -556,7 +612,13 @@ fn next_action(
             && a.due_at_unix
                 .is_some_and(|d| d >= now && d <= now + DUE_SOON_WINDOW_SECS)
     }) {
-        return activity_action(ActionId::Start, "Start due work", "due_soon", a, course_id);
+        return activity_action(
+            ActionId::Start,
+            "Start due work",
+            NextActionReason::DueSoon,
+            a,
+            course_id,
+        );
     }
     if let Some(a) = activities
         .iter()
@@ -565,7 +627,7 @@ fn next_action(
         return activity_action(
             ActionId::Start,
             "Continue course",
-            "next_required",
+            NextActionReason::NextRequired,
             a,
             course_id,
         );
@@ -587,7 +649,7 @@ fn fallback_action(
         return NextAction {
             id: ActionId::ViewCertificate,
             label: "View certificate".to_owned(),
-            reason: "certificate_issued".to_owned(),
+            reason: NextActionReason::CertificateIssued,
             enabled: true,
             course_id,
             activity_id: None,
@@ -598,7 +660,7 @@ fn fallback_action(
         return NextAction {
             id: ActionId::ReviewCompletion,
             label: "Review course completion".to_owned(),
-            reason: "course_complete".to_owned(),
+            reason: NextActionReason::CourseComplete,
             enabled: true,
             course_id,
             activity_id: None,
@@ -609,7 +671,7 @@ fn fallback_action(
         return NextAction {
             id: ActionId::WaitForGrade,
             label: "Waiting for feedback".to_owned(),
-            reason: "waiting_for_grade".to_owned(),
+            reason: NextActionReason::WaitingForGrade,
             enabled: false,
             course_id,
             activity_id: None,
@@ -620,7 +682,7 @@ fn fallback_action(
         return activity_action(
             ActionId::Start,
             "Start optional activity",
-            "optional",
+            NextActionReason::Optional,
             a,
             course_id,
         );
@@ -628,7 +690,7 @@ fn fallback_action(
     NextAction {
         id: ActionId::None,
         label: "No action available".to_owned(),
-        reason: "no_available_action".to_owned(),
+        reason: NextActionReason::NoAvailableAction,
         enabled: false,
         course_id,
         activity_id: None,
@@ -708,7 +770,7 @@ mod tests {
         assert_eq!((got.id, got.reason.as_str()), (ActionId::Start, "due_soon"));
         assert_eq!(got.activity_id, Some(due_soon.id));
         let got = pick(&[&far]);
-        assert_eq!(got.reason, "next_required");
+        assert_eq!(got.reason.as_str(), "next_required");
         let got = pick(&[&submitted]);
         assert_eq!(
             (got.id, got.reason.as_str()),

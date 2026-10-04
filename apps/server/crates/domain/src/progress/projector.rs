@@ -394,6 +394,8 @@ impl ProgressProjector {
         }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
+        // LIVE: the learner's open views refetch their progress.
+        crate::events::user::progress(user_id, course_id).await;
         Ok(true)
     }
 

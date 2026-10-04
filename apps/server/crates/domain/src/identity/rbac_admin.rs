@@ -208,7 +208,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        Ok(())
     }
 
     pub async fn unassign_role(&self, actor: &Actor, user_id: UserId, slug: &str) -> Result<()> {
@@ -248,7 +250,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        Ok(())
     }
 
     /// Create a custom role (system roles are seed-managed).
@@ -283,7 +287,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        Ok(())
     }
 
     /// Metadata update - custom roles only (404 covers system + unknown).
@@ -309,6 +315,7 @@ impl RbacAdminService {
         {
             return Err(Error::not_found("custom role"));
         }
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
         Ok(())
     }
 
@@ -333,7 +340,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        Ok(())
     }
 
     /// Replace a custom role's grant set; holders' sessions update live.
@@ -386,7 +395,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "role": slug, "by": actor.user_id, "count": permissions.len() }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        Ok(())
     }
 
     /// Admin listing of all users with their roles (keyset; newest first
@@ -471,7 +482,9 @@ impl RbacAdminService {
             None,
             serde_json::json!({ "by": actor.user_id }),
         )
-        .await
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        Ok(())
     }
 
     /// Rewrite sessions for every holder already bumped by the role-level

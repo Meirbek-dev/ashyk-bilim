@@ -266,4 +266,131 @@ mod tests {
             );
         }
     }
+
+    /// ENUMS (S-GAPS-2): the free strings that became enums keep their wire
+    /// strings, and the schema lists exactly the serde values.
+    fn pin<T: PartialSchema + serde::Serialize>(all: &[T], expected: &[&str]) {
+        let wire: Vec<String> = all
+            .iter()
+            .map(|v| {
+                serde_json::to_value(v)
+                    .ok()
+                    .and_then(|v| v.as_str().map(str::to_owned))
+                    .unwrap_or_default()
+            })
+            .collect();
+        assert_eq!(wire, expected);
+        assert_eq!(values::<T>(), expected);
+    }
+
+    #[test]
+    fn s_gaps_2_enums_keep_their_wire_strings() {
+        use ab_domain::ai::{AiMode, AiScopeReason, FeatureReason};
+        use ab_domain::analytics::types::DataGapReason;
+        use ab_domain::progress::learner_state::{BlockedReason, DenialReason, NextActionReason};
+        pin(
+            &[
+                NextActionReason::NotEnrolled,
+                NextActionReason::ReturnedForRevision,
+                NextActionReason::Overdue,
+                NextActionReason::InProgress,
+                NextActionReason::DueSoon,
+                NextActionReason::NextRequired,
+                NextActionReason::CertificateIssued,
+                NextActionReason::CourseComplete,
+                NextActionReason::WaitingForGrade,
+                NextActionReason::Optional,
+                NextActionReason::NoAvailableAction,
+            ],
+            &[
+                "not_enrolled",
+                "returned_for_revision",
+                "overdue",
+                "in_progress",
+                "due_soon",
+                "next_required",
+                "certificate_issued",
+                "course_complete",
+                "waiting_for_grade",
+                "optional",
+                "no_available_action",
+            ],
+        );
+        pin(&[BlockedReason::Restricted], &["restricted"]);
+        pin(
+            &[DenialReason::CourseArchived, DenialReason::StaffPreview],
+            &["course_archived", "staff_preview"],
+        );
+        pin(
+            &[
+                AiMode::Ask,
+                AiMode::Explain,
+                AiMode::Practice,
+                AiMode::Analyze,
+            ],
+            &["ask", "explain", "practice", "analyze"],
+        );
+        pin(
+            &[
+                AiScopeReason::CourseNotFound,
+                AiScopeReason::AiDisabled,
+                AiScopeReason::RestrictedActivity,
+                AiScopeReason::NoEnabledModes,
+            ],
+            &[
+                "course_not_found",
+                "ai_disabled",
+                "restricted_activity",
+                "no_enabled_modes",
+            ],
+        );
+        pin(&[FeatureReason::Disabled], &["disabled"]);
+        pin(
+            &[DataGapReason::FewerThan5Learners],
+            &["fewer_than_5_learners"],
+        );
+    }
+
+    #[test]
+    fn s_gaps_2_work_enums_keep_their_wire_strings() {
+        use ab_domain::progress::work_queue::{WorkKind, WorkStatus};
+        pin(
+            &[
+                WorkKind::InProgress,
+                WorkKind::Overdue,
+                WorkKind::WaitingForGrade,
+                WorkKind::ReturnedForRevision,
+                WorkKind::FeedbackReleased,
+                WorkKind::NeedsGrading,
+                WorkKind::SlaBreach,
+                WorkKind::AwaitingRelease,
+            ],
+            &[
+                "in_progress",
+                "overdue",
+                "waiting_for_grade",
+                "returned_for_revision",
+                "feedback_released",
+                "needs_grading",
+                "sla_breach",
+                "awaiting_release",
+            ],
+        );
+        pin(
+            &[
+                WorkStatus::InProgress,
+                WorkStatus::NeedsGrading,
+                WorkStatus::Returned,
+                WorkStatus::Published,
+                WorkStatus::GradedHidden,
+            ],
+            &[
+                "in_progress",
+                "needs_grading",
+                "returned",
+                "published",
+                "graded_hidden",
+            ],
+        );
+    }
 }

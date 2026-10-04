@@ -832,3 +832,73 @@ async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
     assert_eq!(display["show_gamification"], false, "{profile}");
     assert_eq!(display["show_streaks"], false);
 }
+
+/// LIVE: admin lists, discussions, progress and collections reach the
+/// user stream of the people who show them.
+#[sqlx::test(migrations = "../../migrations")]
+async fn live_events_reach_their_readers(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let base = app.serve().await;
+    let admin_user = app
+        .create_user("admin", "admin@example.com", &["admin"])
+        .await;
+    let admin = app.mint_session_for(admin_user, &["*:*:*"]).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+
+    // Admin lists: a new group.
+    let group = app
+        .post_as(&admin, "/api/v2/groups", &json!({ "name": "G1" }))
+        .await;
+    assert!(group.status.is_success(), "{}", group.text());
+    let events = read_stream(&base, &admin, "event: admin.updated").await;
+    assert!(
+        events
+            .iter()
+            .any(|(e, d)| e == "admin.updated" && d["payload"]["list"] == "groups"),
+        "{events:?}"
+    );
+
+    // Progress: alice hands in, her projection moves.
+    let (course_id, _) = essay_quiz(&app, &teacher, [&alice, &bob]).await;
+    let events = read_stream(&base, &alice, "event: progress.updated").await;
+    assert!(
+        events.iter().any(
+            |(e, d)| e == "progress.updated" && d["payload"]["course_id"] == course_id.as_str()
+        ),
+        "{events:?}"
+    );
+
+    // Discussions: the course author hears of an admin's post.
+    let post = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &json!({ "content": "Welcome" }),
+        )
+        .await;
+    assert!(post.status.is_success(), "{}", post.text());
+    let events = read_stream(&base, &teacher, "event: discussion.updated").await;
+    let (_, d) = events
+        .iter()
+        .find(|(e, _)| e == "discussion.updated")
+        .unwrap();
+    assert_eq!(d["payload"]["course_id"], course_id.as_str());
+    assert_eq!(d["payload"]["deleted"], false);
+
+    // Collections: the platform's collection editors (the admin).
+    let collection = app
+        .post_as(
+            &admin,
+            "/api/v2/collections",
+            &json!({ "name": "Picks", "courses": [] }),
+        )
+        .await;
+    assert!(collection.status.is_success(), "{}", collection.text());
+    let events = read_stream(&base, &admin, "event: collection.updated").await;
+    assert!(
+        events.iter().any(|(e, _)| e == "collection.updated"),
+        "{events:?}"
+    );
+}

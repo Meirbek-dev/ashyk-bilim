@@ -18,8 +18,8 @@ use std::sync::OnceLock;
 
 use ab_core::assessments::{SubmissionStatus, XpSource};
 use ab_core::id::{
-    ActivityId, AssessmentId, CourseId, FileAttemptId, FileSubmissionId, NotificationId,
-    SubmissionId, UserId, XpTransactionId,
+    ActivityId, AssessmentId, CollectionId, CourseId, DiscussionId, FileAttemptId,
+    FileSubmissionId, NotificationId, SubmissionId, UserId, XpTransactionId,
 };
 use redis::streams::StreamMaxlen;
 use serde::Serialize;
@@ -100,6 +100,47 @@ pub struct DeadlineExtended {
     pub due_at_unix: i64,
 }
 
+/// LIVE: a collection the recipient manages changed (created, edited,
+/// deleted).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct CollectionUpdated {
+    pub collection_id: CollectionId,
+    pub deleted: bool,
+}
+
+/// LIVE: a post or reply changed in a thread the recipient takes part in or
+/// a course they teach (created, edited, moderated, deleted).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct DiscussionUpdated {
+    pub course_id: CourseId,
+    pub discussion_id: DiscussionId,
+    /// The thread's post for a reply; null for a top-level post.
+    pub parent_id: Option<DiscussionId>,
+    pub deleted: bool,
+}
+
+/// LIVE: the recipient's own progress in a course was re-projected (a
+/// grade, a hand-in, a curriculum change).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ProgressUpdated {
+    pub course_id: CourseId,
+}
+
+/// Which admin list changed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AdminList {
+    Users,
+    Roles,
+    Groups,
+}
+
+/// LIVE: an admin list the recipient can read changed.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct AdminListUpdated {
+    pub list: AdminList,
+}
+
 /// The closed set of user-stream events: the SSE `event:` name and the
 /// typed `payload`.
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -117,6 +158,14 @@ pub enum UserEvent {
     XpAwarded(XpAwarded),
     #[serde(rename = "deadline.extended")]
     DeadlineExtended(DeadlineExtended),
+    #[serde(rename = "collection.updated")]
+    CollectionUpdated(CollectionUpdated),
+    #[serde(rename = "discussion.updated")]
+    DiscussionUpdated(DiscussionUpdated),
+    #[serde(rename = "progress.updated")]
+    ProgressUpdated(ProgressUpdated),
+    #[serde(rename = "admin.updated")]
+    AdminListUpdated(AdminListUpdated),
 }
 
 impl UserEvent {
@@ -128,6 +177,10 @@ impl UserEvent {
         "notification.read",
         "xp.awarded",
         "deadline.extended",
+        "collection.updated",
+        "discussion.updated",
+        "progress.updated",
+        "admin.updated",
     ];
 }
 
@@ -212,4 +265,74 @@ pub async fn submission(owner: UserId, mut payload: SubmissionUpdated) {
 /// `deadline.extended` to the learner whose due date moved.
 pub async fn deadline_extended(learner: UserId, payload: DeadlineExtended) {
     publish(vec![(learner, UserEvent::DeadlineExtended(payload))]).await;
+}
+
+/// Fan one event out to `recipients` (deduplicated). Never fails.
+async fn fan_out(recipients: Vec<UserId>, event: UserEvent) {
+    let mut recipients = recipients;
+    recipients.sort_unstable();
+    recipients.dedup();
+    publish(
+        recipients
+            .into_iter()
+            .map(|user| (user, event.clone()))
+            .collect(),
+    )
+    .await;
+}
+
+fn or_none(found: ab_core::Result<Vec<UserId>>, what: &str) -> Vec<UserId> {
+    found.unwrap_or_else(|err| {
+        tracing::warn!(%err, what, "live fan-out: recipients not resolved");
+        Vec::new()
+    })
+}
+
+/// LIVE `collection.updated` to its creator and the platform-wide
+/// collection editors.
+pub async fn collection(pool: &PgPool, creator: Option<UserId>, payload: CollectionUpdated) {
+    let mut to = or_none(
+        ab_db::notifications::platform_holders(pool, "collection", "update").await,
+        "collection",
+    );
+    to.extend(creator);
+    fan_out(to, UserEvent::CollectionUpdated(payload)).await;
+}
+
+/// LIVE `discussion.updated` to the thread's participants and the
+/// course's graders (authors and platform-wide).
+pub async fn discussion(pool: &PgPool, payload: DiscussionUpdated) {
+    let root = payload.parent_id.unwrap_or(payload.discussion_id);
+    let mut to = or_none(
+        ab_db::notifications::thread_participants(pool, root).await,
+        "discussion",
+    );
+    to.extend(or_none(
+        ab_db::notifications::course_graders(pool, payload.course_id).await,
+        "discussion",
+    ));
+    fan_out(to, UserEvent::DiscussionUpdated(payload)).await;
+}
+
+/// LIVE `progress.updated` to the learner whose projection moved.
+pub async fn progress(learner: UserId, course_id: CourseId) {
+    publish(vec![(
+        learner,
+        UserEvent::ProgressUpdated(ProgressUpdated { course_id }),
+    )])
+    .await;
+}
+
+/// LIVE `admin.updated` to everyone who can read that list platform-wide.
+pub async fn admin_list(pool: &PgPool, list: AdminList) {
+    let (resource, action) = match list {
+        AdminList::Users => ("platform", "read"),
+        AdminList::Roles => ("role", "read"),
+        AdminList::Groups => ("usergroup", "read"),
+    };
+    let to = or_none(
+        ab_db::notifications::platform_holders(pool, resource, action).await,
+        "admin list",
+    );
+    fan_out(to, UserEvent::AdminListUpdated(AdminListUpdated { list })).await;
 }

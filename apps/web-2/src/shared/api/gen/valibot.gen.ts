@@ -85,6 +85,22 @@ export const vActivityType = v.picklist([
 ]);
 
 /**
+ * Which admin list changed.
+ */
+export const vAdminList = v.picklist([
+    'users',
+    'roles',
+    'groups'
+]);
+
+/**
+ * LIVE: an admin list the recipient can read changed.
+ */
+export const vAdminListUpdated = v.object({
+    list: vAdminList
+});
+
+/**
  * What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).
  */
 export const vAdminUserAction = v.picklist([
@@ -158,6 +174,16 @@ export const vAiLectureReviewId = v.pipe(v.string(), v.uuid());
 
 export const vAiMessageId = v.pipe(v.string(), v.uuid());
 
+/**
+ * An AI entry point the scope offers (`ScopeCapabilities.modes`).
+ */
+export const vAiMode = v.picklist([
+    'ask',
+    'explain',
+    'practice',
+    'analyze'
+]);
+
 export const vAiRemediationSessionId = v.pipe(v.string(), v.uuid());
 
 export const vAiRunId = v.pipe(v.string(), v.uuid());
@@ -184,6 +210,16 @@ export const vAiRunStatus = v.picklist([
     'succeeded',
     'failed',
     'aborted'
+]);
+
+/**
+ * Why the scope offers no AI (`ScopeCapabilities.reason`).
+ */
+export const vAiScopeReason = v.picklist([
+    'course_not_found',
+    'ai_disabled',
+    'restricted_activity',
+    'no_enabled_modes'
 ]);
 
 /**
@@ -411,6 +447,11 @@ export const vBlockType = v.picklist([
     'video',
     'custom'
 ]);
+
+/**
+ * Why an activity is not open to the learner (`ActivityState.blocked_reason`).
+ */
+export const vBlockedReason = v.picklist(['restricted']);
 
 export const vBucket = v.picklist(['day', 'week']);
 
@@ -677,6 +718,15 @@ export const vCollectionHit = v.object({
     public: v.boolean()
 });
 
+/**
+ * LIVE: a collection the recipient manages changed (created, edited,
+ * deleted).
+ */
+export const vCollectionUpdated = v.object({
+    collection_id: vCollectionId,
+    deleted: v.boolean()
+});
+
 export const vCommonFailureRow = v.object({
     count: v.pipe(v.number(), v.integer()),
     key: v.string(),
@@ -827,13 +877,6 @@ export const vContinueLearning = v.object({
     progress_pct: v.nullable(v.number())
 });
 
-export const vCourseDataGap = v.object({
-    course_id: vCourseId,
-    course_name: v.string(),
-    learner_count: v.pipe(v.number(), v.integer()),
-    reason: v.string()
-});
-
 /**
  * `CourseLearner.allowed_actions`.
  */
@@ -879,13 +922,6 @@ export const vCourseListSort = v.picklist([
     'name',
     'progress'
 ]);
-
-export const vCoursePermissions = v.object({
-    can_access: v.boolean(),
-    can_discover: v.boolean(),
-    can_enroll: v.boolean(),
-    denial_reason: v.nullable(v.string())
-});
 
 export const vCourseRef = v.object({
     id: vCourseId,
@@ -1006,6 +1042,18 @@ export const vCurriculum = v.object({
 });
 
 /**
+ * Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS).
+ */
+export const vDataGapReason = v.picklist(['fewer_than_5_learners']);
+
+export const vCourseDataGap = v.object({
+    course_id: vCourseId,
+    course_name: v.string(),
+    learner_count: v.pipe(v.number(), v.integer()),
+    reason: vDataGapReason
+});
+
+/**
  * Where the analytics read came from.
  */
 export const vDataMode = v.picklist(['live', 'rollup']);
@@ -1013,6 +1061,18 @@ export const vDataMode = v.picklist(['live', 'rollup']);
 export const vDeadlineExtendedPayload = v.object({
     new_due_at: v.pipe(v.number(), v.integer()),
     reason: v.string()
+});
+
+/**
+ * Why the caller cannot enrol (`CoursePermissions.denial_reason`).
+ */
+export const vDenialReason = v.picklist(['course_archived', 'staff_preview']);
+
+export const vCoursePermissions = v.object({
+    can_access: v.boolean(),
+    can_discover: v.boolean(),
+    can_enroll: v.boolean(),
+    denial_reason: v.nullable(vDenialReason)
 });
 
 export const vDifficulty = v.picklist([
@@ -1072,6 +1132,17 @@ export const vDiscussionStatus = v.picklist([
     'hidden',
     'deleted'
 ]);
+
+/**
+ * LIVE: a post or reply changed in a thread the recipient takes part in or
+ * a course they teach (created, edited, moderated, deleted).
+ */
+export const vDiscussionUpdated = v.object({
+    course_id: vCourseId,
+    deleted: v.boolean(),
+    discussion_id: vDiscussionId,
+    parent_id: v.nullable(vDiscussionId)
+});
 
 export const vDismissSuggestionRequest = v.strictObject({
     suggestion_id: v.pipe(v.string(), v.minLength(1), v.maxLength(200))
@@ -1216,10 +1287,15 @@ export const vEvalDetails = v.object({
     usage: v.optional(vEvalUsage)
 });
 
+/**
+ * Why a feature is off (`FeatureCapability.reason`; ENUMS).
+ */
+export const vFeatureReason = v.picklist(['disabled']);
+
 export const vFeatureCapability = v.object({
     enabled: v.boolean(),
     key: v.string(),
-    reason: v.nullable(v.string())
+    reason: v.nullable(vFeatureReason)
 });
 
 export const vFeatureSetting = v.object({
@@ -2141,6 +2217,14 @@ export const vLinksSection = v.strictObject({
     id: v.string(),
     links: v.array(vProfileLink),
     title: v.string()
+});
+
+/**
+ * LIVE: the recipient's own progress in a course was re-projected (a
+ * grade, a hand-in, a curriculum change).
+ */
+export const vProgressUpdated = v.object({
+    course_id: vCourseId
 });
 
 export const vPublishSummary = v.object({
@@ -3363,8 +3447,8 @@ export const vScopeCapabilities = v.object({
     context: v.nullable(vContextSummary),
     context_visibility: vContextVisibility,
     features: v.array(vFeatureCapability),
-    modes: v.array(v.string()),
-    reason: v.nullable(v.string()),
+    modes: v.array(vAiMode),
+    reason: v.nullable(vAiScopeReason),
     restricted: v.boolean(),
     role: vAiThreadRole,
     surface: vSurface
@@ -5646,7 +5730,7 @@ export const vActivityState = v.object({
     activity_type: vActivityType,
     allowed_actions: v.array(v.string()),
     available: v.boolean(),
-    blocked_reason: v.nullable(v.string()),
+    blocked_reason: v.nullable(vBlockedReason),
     complete: v.boolean(),
     due_at_unix: v.nullable(vUnixTime),
     id: vActivityId,
@@ -5873,6 +5957,30 @@ export const vUserStreamEvent = v.union([
         event: v.picklist(['deadline.extended']),
         event_id: v.string(),
         payload: vDeadlineExtended,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['collection.updated']),
+        event_id: v.string(),
+        payload: vCollectionUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['discussion.updated']),
+        event_id: v.string(),
+        payload: vDiscussionUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['progress.updated']),
+        event_id: v.string(),
+        payload: vProgressUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['admin.updated']),
+        event_id: v.string(),
+        payload: vAdminListUpdated,
         sent_at: v.pipe(v.number(), v.integer())
     }),
     v.object({

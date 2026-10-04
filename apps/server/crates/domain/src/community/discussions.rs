@@ -422,6 +422,16 @@ impl DiscussionsService {
         if let Some(parent_id) = parent_id {
             Self::notify_reply(&self.pool, &course, parent_id, &row).await;
         }
+        crate::events::user::discussion(
+            &self.pool,
+            crate::events::user::DiscussionUpdated {
+                course_id,
+                discussion_id: id,
+                parent_id,
+                deleted: false,
+            },
+        )
+        .await;
         let mut created = Abilities::of(actor, &course).resolve(actor, row, Vec::new());
         if let Some(parent_id) = parent_id {
             created.parent_replies_count =
@@ -510,6 +520,16 @@ impl DiscussionsService {
         let fresh = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;
+        crate::events::user::discussion(
+            &self.pool,
+            crate::events::user::DiscussionUpdated {
+                course_id: fresh.course_id,
+                discussion_id: id,
+                parent_id: fresh.parent_id,
+                deleted: false,
+            },
+        )
+        .await;
         Ok(abilities.resolve(actor, fresh, Vec::new()))
     }
 
@@ -522,7 +542,16 @@ impl DiscussionsService {
         if !(abilities.delete_any || (is_owner && abilities.delete_own)) {
             return Err(Error::forbidden("you cannot delete this discussion"));
         }
+        // LIVE: told after the delete (a deleted post takes its thread with
+        // it, so only a reply's thread or the course graders hear of it).
+        let payload = crate::events::user::DiscussionUpdated {
+            course_id: row.course_id,
+            discussion_id: id,
+            parent_id: row.parent_id,
+            deleted: true,
+        };
         ab_db::discussions::delete_discussion(&self.pool, id).await?;
+        crate::events::user::discussion(&self.pool, payload).await;
         Ok(())
     }
 

@@ -36,7 +36,34 @@ pub struct FeatureCapability {
     pub feature: AiFeature,
     pub enabled: bool,
     /// `disabled` when off (legacy carried a free-text reason).
-    pub reason: Option<&'static str>,
+    pub reason: Option<FeatureReason>,
+}
+
+/// Why a feature is off (`FeatureCapability.reason`; ENUMS).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FeatureReason {
+    Disabled,
+}
+
+/// An AI entry point the scope offers (`ScopeCapabilities.modes`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AiMode {
+    Ask,
+    Explain,
+    Practice,
+    Analyze,
+}
+
+/// Why the scope offers no AI (`ScopeCapabilities.reason`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AiScopeReason {
+    CourseNotFound,
+    AiDisabled,
+    RestrictedActivity,
+    NoEnabledModes,
 }
 
 #[derive(Debug, Clone)]
@@ -55,14 +82,14 @@ pub struct ScopeCapabilities {
     /// `student` or `teacher` (legacy `AIContextVisibility`).
     pub context_visibility: &'static str,
     pub restricted: bool,
-    pub reason: Option<&'static str>,
-    pub modes: Vec<&'static str>,
+    pub reason: Option<AiScopeReason>,
+    pub modes: Vec<AiMode>,
     pub features: Vec<FeatureCapability>,
     pub context: Option<ContextSummary>,
 }
 
 impl ScopeCapabilities {
-    const fn unavailable(surface: Surface, reason: &'static str) -> Self {
+    const fn unavailable(surface: Surface, reason: AiScopeReason) -> Self {
         Self {
             available: false,
             role: AiThreadRole::Student,
@@ -87,7 +114,7 @@ impl AiService {
         FeatureCapability {
             feature,
             enabled,
-            reason: (!enabled).then_some("disabled"),
+            reason: (!enabled).then_some(FeatureReason::Disabled),
         }
     }
 
@@ -104,7 +131,10 @@ impl AiService {
         let course = match self.visible_course(actor, course_id).await {
             Ok(course) => course,
             Err(err) if err.code() == ab_core::ErrorCode::NotFound => {
-                return Ok(ScopeCapabilities::unavailable(surface, "course_not_found"));
+                return Ok(ScopeCapabilities::unavailable(
+                    surface,
+                    AiScopeReason::CourseNotFound,
+                ));
             }
             Err(err) => return Err(err),
         };
@@ -152,34 +182,36 @@ impl AiService {
         .collect();
 
         let ai_enabled = self.config.ai_enabled;
-        let mut modes: Vec<&'static str> = Vec::new();
+        let mut modes: Vec<AiMode> = Vec::new();
         if ai_enabled && !restricted {
             if self.feature_available(&switches, AiFeature::CourseQa) {
-                modes.push("ask");
+                modes.push(AiMode::Ask);
             }
             if role == AiThreadRole::Student
                 && self.feature_available(&switches, AiFeature::StudyCompanion)
             {
-                modes.extend(["explain", "practice"]);
+                modes.extend([AiMode::Explain, AiMode::Practice]);
             }
         }
         if ai_enabled && role != AiThreadRole::Student {
             if surface == Surface::CoursePage
                 && self.feature_available(&switches, AiFeature::CourseAnalysis)
             {
-                modes.push("analyze");
+                modes.push(AiMode::Analyze);
             }
-            if self.feature_available(&switches, AiFeature::CourseQa) && !modes.contains(&"ask") {
-                modes.push("ask");
+            if self.feature_available(&switches, AiFeature::CourseQa)
+                && !modes.contains(&AiMode::Ask)
+            {
+                modes.push(AiMode::Ask);
             }
         }
 
         let reason = if !ai_enabled {
-            Some("ai_disabled")
+            Some(AiScopeReason::AiDisabled)
         } else if restricted {
-            Some("restricted_activity")
+            Some(AiScopeReason::RestrictedActivity)
         } else if modes.is_empty() {
-            Some("no_enabled_modes")
+            Some(AiScopeReason::NoEnabledModes)
         } else {
             None
         };

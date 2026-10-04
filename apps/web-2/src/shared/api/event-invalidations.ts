@@ -7,6 +7,8 @@ import {
   dashboardQueryKey,
   fileSubmissionReviewQueueQueryKey,
   getActivityAssessmentQueryKey,
+  getCollectionQueryKey,
+  getDiscussionQueryKey,
   getActivityFileSubmissionQueryKey,
   getAttemptQueryKey,
   getSubmissionQueryKey,
@@ -16,6 +18,13 @@ import {
   itemAnalyticsQueryKey,
   leaderboardInfiniteQueryKey,
   learnerCourseStateQueryKey,
+  listCollectionsQueryKey,
+  listDiscussionsQueryKey,
+  listGroupsQueryKey,
+  listRepliesQueryKey,
+  listRolesQueryKey,
+  listUsergroupsQueryKey,
+  listUsersQueryKey,
   myAttemptsQueryKey,
   myFeedbackQueryKey,
   mySubmissionsQueryKey,
@@ -97,6 +106,31 @@ export const eventInvalidations = {
   'notification.created': () => [],
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
+  // LIVE (S-GAPS-2): a collection the user manages changed - the lists and that collection.
+  'collection.updated': ({ collection_id }) => [
+    listCollectionsQueryKey(),
+    getCollectionQueryKey({ path: { collection_id } }),
+  ],
+  // A post or reply changed in a thread the user is in or a course they teach: the course's posts and the thread.
+  'discussion.updated': ({ course_id, discussion_id, parent_id }) => [
+    listDiscussionsQueryKey({ path: { course_id } }),
+    getDiscussionQueryKey({ path: { discussion_id: parent_id ?? discussion_id } }),
+    listRepliesQueryKey({ path: { discussion_id: parent_id ?? discussion_id } }),
+  ],
+  // The user's own progress in a course was re-projected (a grade, a hand-in, a curriculum change).
+  'progress.updated': ({ course_id }) => [
+    learnerCourseStateQueryKey({ path: { course_id } }),
+    listEnrollmentsQueryKey(),
+    agendaQueryKey(),
+    workQueueInfiniteQueryKey(),
+  ],
+  // An admin list the user can read changed.
+  'admin.updated': ({ list }) =>
+    list === 'users'
+      ? [listUsersQueryKey()]
+      : list === 'roles'
+        ? [listRolesQueryKey()]
+        : [listGroupsQueryKey(), listUsergroupsQueryKey()],
 } satisfies EventInvalidations
 
 /** The keys one event makes stale; an event this build does not know (a newer server) touches nothing. */

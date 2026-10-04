@@ -4,7 +4,8 @@
 use ab_core::assessments::NotificationType;
 use ab_core::id::UserId;
 use ab_domain::events::user::{
-    DeadlineExtended, GradingUpdated, NotificationRead, SubmissionUpdated, XpAwarded,
+    AdminListUpdated, CollectionUpdated, DeadlineExtended, DiscussionUpdated, GradingUpdated,
+    NotificationRead, ProgressUpdated, SubmissionUpdated, XpAwarded,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -66,6 +67,34 @@ pub enum UserStreamEvent {
     DeadlineExtended {
         event_id: String,
         payload: DeadlineExtended,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "collection.updated")]
+    CollectionUpdated {
+        event_id: String,
+        payload: CollectionUpdated,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "discussion.updated")]
+    DiscussionUpdated {
+        event_id: String,
+        payload: DiscussionUpdated,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "progress.updated")]
+    ProgressUpdated {
+        event_id: String,
+        payload: ProgressUpdated,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "admin.updated")]
+    AdminListUpdated {
+        event_id: String,
+        payload: AdminListUpdated,
         /// Unix seconds.
         sent_at: i64,
     },

@@ -1185,6 +1185,7 @@ impl IdentityService {
         for role_id in role_ids {
             ab_db::identity::assign_role(&self.pool, profile.id, role_id).await?;
         }
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
         ab_db::identity::get_admin_user(&self.pool, profile.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))
