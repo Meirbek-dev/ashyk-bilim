@@ -2,19 +2,11 @@ import { useDebouncedValue } from '@tanstack/react-pacer'
 import { useDeferredValue, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandShortcut,
-} from '#/shared/ui/command'
+import { Combobox, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxLabel, ComboboxList } from '#/shared/ui/combobox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '#/shared/ui/dialog'
 
 import { ShortcutHelp } from './shortcut-help'
-import { usePaletteGroups } from './use-palette-groups'
+import { type PaletteEntry, usePaletteGroups } from './use-palette-groups'
 
 export type PaletteMode = 'palette' | 'help'
 
@@ -23,7 +15,7 @@ const SEARCH_WAIT_MS = 250
 
 type PaletteDialogProps = { mode: PaletteMode | null; onModeChange: (mode: PaletteMode | null) => void }
 
-/** The command palette (N-4) or the shortcut help, in the stock dialog and command list; closing clears the typed text. */
+/** The command palette (N-4) or the shortcut help, in the stock dialog and an inline combobox; closing clears the typed text. */
 export function PaletteDialog({ mode, onModeChange }: PaletteDialogProps) {
   const [text, setText] = useState('')
   const [settled] = useDebouncedValue(text.trim(), { wait: SEARCH_WAIT_MS })
@@ -55,31 +47,50 @@ export function PaletteDialog({ mode, onModeChange }: PaletteDialogProps) {
             <ShortcutHelp />
           </div>
         ) : (
-          // Filtering is ours (entries come from the server and the access table): cmdk only handles focus,
-          // arrows, Enter and the ARIA combobox.
-          <Command label={m.catalog_palette_title()} shouldFilter={false} loop>
-            <CommandInput ref={inputRef} value={text} onValueChange={setText} placeholder={m.catalog_palette_input()} />
-            <CommandList label={m.catalog_palette_title()}>
+          // Filtering is ours (entries come from the server and the access table): the combobox only handles focus,
+          // arrows, Enter and the ARIA combobox. Nothing stays selected; only typing changes the text.
+          <Combobox
+            inline
+            open
+            filter={null}
+            autoHighlight
+            value={null}
+            onValueChange={(entry: PaletteEntry | null) => entry?.onSelect()}
+            itemToStringLabel={(entry: PaletteEntry) => entry.label}
+            inputValue={text}
+            onInputValueChange={(value, { reason }) => {
+              if (reason === 'input-change' || reason === 'input-clear') setText(value)
+            }}
+          >
+            <ComboboxInput
+              ref={inputRef}
+              className="w-full"
+              aria-label={m.catalog_palette_title()}
+              placeholder={m.catalog_palette_input()}
+              showTrigger={false}
+            />
+            <ComboboxList aria-label={m.catalog_palette_title()} className="max-h-80">
               {searching ? (
                 <output className="block px-2 py-2 text-sm text-muted-foreground">
                   {m.catalog_palette_searching()}
                 </output>
-              ) : (
-                <CommandEmpty>{m.catalog_palette_empty()}</CommandEmpty>
-              )}
+              ) : groups.length === 0 ? (
+                <p className="py-2 text-center text-sm text-muted-foreground">{m.catalog_palette_empty()}</p>
+              ) : null}
               {groups.map(group => (
-                <CommandGroup key={group.heading} heading={group.heading}>
+                <ComboboxGroup key={group.heading}>
+                  <ComboboxLabel>{group.heading}</ComboboxLabel>
                   {group.entries.map(entry => (
-                    <CommandItem key={entry.id} value={entry.id} onSelect={entry.onSelect}>
+                    <ComboboxItem key={entry.id} value={entry}>
                       {entry.icon}
                       <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                      {entry.hint ? <CommandShortcut>{entry.hint}</CommandShortcut> : null}
-                    </CommandItem>
+                      {entry.hint ? <span className="text-xs text-muted-foreground">{entry.hint}</span> : null}
+                    </ComboboxItem>
                   ))}
-                </CommandGroup>
+                </ComboboxGroup>
               ))}
-            </CommandList>
-          </Command>
+            </ComboboxList>
+          </Combobox>
         )}
       </DialogContent>
     </Dialog>

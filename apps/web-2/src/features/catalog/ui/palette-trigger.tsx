@@ -8,7 +8,7 @@ import { IconButton } from '#/shared/components/icon-button'
 import { shortcuts } from '../model/shortcuts'
 import type { PaletteMode } from './palette-dialog'
 
-// cmdk and the dialog load on the first open.
+// The combobox and the dialog load on the first open.
 const PaletteDialog = lazy(() => import('./palette-dialog').then(module => ({ default: module.PaletteDialog })))
 
 /** The palette button, `Mod+K` for the palette and `?` for the shortcut help. */

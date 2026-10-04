@@ -12,8 +12,8 @@ import { searchResultsOptions } from '../queries'
 import { searchKindLabels } from './kind-labels'
 
 /** One choice of the palette: arrows highlight it, Enter or a click runs `onSelect`. */
-type CommandEntry = {
-  /** Unique within the list: cmdk tracks the highlighted entry by it. */
+export type PaletteEntry = {
+  /** Unique within the list: the React key. */
   id: string
   label: string
   /** A lucide icon, `aria-hidden`. */
@@ -23,7 +23,7 @@ type CommandEntry = {
   onSelect: () => void
 }
 
-type CommandGroup = { heading: string; entries: readonly CommandEntry[] }
+type PaletteGroup = { heading: string; entries: readonly PaletteEntry[] }
 
 type PaletteActions = { close: () => void; showHelp: () => void }
 
@@ -31,7 +31,7 @@ type PaletteActions = { close: () => void; showHelp: () => void }
  * The palette's entries for the typed text: the sections the user may open (access table), the `search` hits for
  * the settled query `q`, a link to the full search, and the shortcut help.
  */
-export function usePaletteGroups(text: string, q: string, { close, showHelp }: PaletteActions): CommandGroup[] {
+export function usePaletteGroups(text: string, q: string, { close, showHelp }: PaletteActions): PaletteGroup[] {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const navigate = useNavigate()
   const found = useSuspenseQueries({
@@ -54,7 +54,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
       }
     }),
   }))
-  const hits: CommandGroup[] = found
+  const hits: PaletteGroup[] = found
     ? [
         {
           heading: searchKindLabels.courses(),
@@ -83,7 +83,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
         },
       ]
     : []
-  const all: CommandEntry[] = q
+  const all: PaletteEntry[] = q
     ? [
         {
           id: 'search:all',
@@ -93,7 +93,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
         },
       ]
     : []
-  const help: CommandEntry = {
+  const help: PaletteEntry = {
     id: 'help',
     label: shortcuts.help.label(),
     icon: <Keyboard aria-hidden />,
