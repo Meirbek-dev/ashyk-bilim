@@ -315,7 +315,7 @@ cancelled mid-run):
 | --- | --- | --- |
 | changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all but `web` true on `release/**`; `sha` = first 8 chars of the commit |
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
-| server-test | server or infra changed | `just dev-up`, then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor; `just test` is the same suite without coverage) |
+| server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor; `just test` is the same suite without coverage) |
 | web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |

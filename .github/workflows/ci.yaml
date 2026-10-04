@@ -129,6 +129,8 @@ jobs:
       DATABASE_URL: postgres://ashyq:ashyq@localhost:5433/ashyq_test
       TEST_REDIS_URL: redis://:ashyq-dev@localhost:6380
       TEST_S3_ENDPOINT: http://localhost:9002
+      # `just dev-up`'s Postgres (compose.dev.yaml): no fsync for the per-test sqlx databases.
+      DEV_PG_ARGS: -c fsync=off -c synchronous_commit=off -c full_page_writes=off
       CARGO_TERM_QUIET: 'true'
       # Coverage needs no debuginfo (-C instrument-coverage); faster builds, smaller cache.
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -435,12 +437,12 @@ jobs:
 
       # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
-      # Shards split by test count and the cheap access.spec matrix comes first: weights 4:3:2
-      # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446).
+      # Shards split by test count and the cheap access.spec matrix comes first: weights 9:6:5
+      # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446; 4:3:2 4.6/6.4/4.8).
       - name: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
-          PWTEST_SHARD_WEIGHTS: '4:3:2'
+          PWTEST_SHARD_WEIGHTS: '9:6:5'
         run: just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
 
       - name: Compose logs

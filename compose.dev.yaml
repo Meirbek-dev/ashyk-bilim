@@ -10,6 +10,8 @@ networks:
 services:
   db:
     ports: ['127.0.0.1:${DEV_PG_PORT:-5433}:5432']
+    # Extra server flags; CI's server-test turns durability off (throwaway test databases).
+    command: postgres ${DEV_PG_ARGS:-}
 
   redis:
     ports: ['127.0.0.1:${DEV_REDIS_PORT:-6380}:6379']
