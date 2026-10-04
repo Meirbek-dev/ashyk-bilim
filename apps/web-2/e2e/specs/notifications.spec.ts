@@ -12,6 +12,7 @@ import {
   updatePreferences,
 } from '#/shared/api/gen/sdk.gen'
 
+import { expectReread } from '../fixtures/test'
 import type { MadeCourse } from '../fixtures/learning'
 import { expect, ru, test } from './file-submissions-fixture'
 
@@ -179,6 +180,8 @@ test2(
     const admin = { cookie: `${seed.accounts.admin.cookie.name}=${seed.accounts.admin.cookie.value}` }
     const award = (amount: number) =>
       adminAward({ client: api, body: { user_id: me.id, amount }, headers: admin, throwOnError: true })
+    // The nav reads the profile (B-ACH-13): each award re-reads it.
+    expectReread(page, '/api/v2/gamification')
     await page.goto('/notifications')
     await expect(bell(page)).toBeVisible()
     await award(25)

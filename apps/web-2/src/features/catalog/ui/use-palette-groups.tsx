@@ -35,7 +35,9 @@ type PaletteActions = { close: () => void; showHelp: () => void }
  */
 export function usePaletteGroups(text: string, q: string, { close, showHelp }: PaletteActions): PaletteGroup[] {
   const { data: session } = useSuspenseQuery(sessionOptions())
-  const { data: gamification } = useSuspenseQuery({ ...dashboardOptions(), select: gamificationOn })
+  const gamification = useSuspenseQueries({
+    queries: (session ? [session] : []).map(() => ({ ...dashboardOptions(), select: gamificationOn })),
+  })[0]?.data
   const navigate = useNavigate()
   const found = useSuspenseQueries({
     queries: (q ? [q] : []).map(query => searchResultsOptions(query, PALETTE_LIMIT)),
@@ -45,7 +47,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
     close()
     void navigation()
   }
-  const navigation = paletteSections(session, text, gamification).map(({ workspace, sections }) => ({
+  const navigation = paletteSections(session, text, gamification ?? true).map(({ workspace, sections }) => ({
     heading: workspace.label(),
     entries: sections.map(section => {
       const Icon = section.icon
