@@ -5,7 +5,7 @@ import { getAssessment } from '#/shared/api/gen/sdk.gen'
 import type { AssessmentDetail, ReferenceCheckResponse } from '#/shared/api/gen/types.gen'
 
 import type { MadeCourse } from '../fixtures/learning'
-import { expect, routeLanguages, ru, runnerDown, test, type Made } from './code-arena-fixture'
+import { expect, routeLanguages, routeRunnerDown, ru, test, type Made } from './code-arena-fixture'
 
 // A code challenge in the activity studio (slice 5.3): the `edit` tab holds its code item. The language list comes
 // from the sandbox, which the local stack lacks: it is routed for a client navigation from the course's content tab
@@ -155,7 +155,7 @@ test('B-COD-23 a runner that is down keeps the editor and Save; Check reference 
 }) => {
   const course = await makeCourse({ activities: 1 })
   const made = await challenges.make(course)
-  await page.route('**/api/v2/code/runner', route => route.fulfill(runnerDown))
+  await routeRunnerDown(page)
   await openEdit(page, course, made)
   const editor = form(page)
   await expect(editor.getByText(m.code_runner_down({}, ru))).toBeVisible()
@@ -167,7 +167,8 @@ test('B-COD-23 a runner that is down keeps the editor and Save; Check reference 
 
   await page.unroute('**/api/v2/code/runner')
   await routeLanguages(page)
-  await editor.getByRole('button', { name: m.ui_retry({}, ru) }).click()
+  // The studio header has its own (icon) "Retry": this one is the notice's text button.
+  await editor.getByText(m.ui_retry({}, ru), { exact: true }).click()
   await expect(editor.getByRole('button', { name: m.code_check({}, ru) })).toBeEnabled()
 })
 

@@ -13,6 +13,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 import { expect as baseExpect, type MadeCourse, test as base } from '../fixtures/learning'
+import { expectOutage, expectReread } from '../fixtures/test'
 
 // Data of the code-arena specs through the generated SDK: a code challenge in a made course (the teacher's), its code
 // item filled and published. Judge0 is not part of the local stack: the language list, runs and reference checks
@@ -108,7 +109,13 @@ export const routeLanguages = (page: Page) =>
     route.fulfill({ json: { runner_configured: true, languages: LANGUAGES } }),
   )
 
-/** The runner answers that it is configured but down (B-COD-23). */
+/** The runner answers that it is configured but down (B-COD-23); "Retry" and a remount read it again. */
+export async function routeRunnerDown(page: Page) {
+  expectOutage(page)
+  expectReread(page, '/api/v2/code/runner')
+  await page.route('**/api/v2/code/runner', route => route.fulfill(runnerDown))
+}
+
 export const runnerDown = {
   status: 503,
   contentType: 'application/problem+json',

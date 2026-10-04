@@ -7,6 +7,7 @@ import {
   region,
   routeLanguages,
   ru,
+  routeRunnerDown,
   runnerDown,
   start,
   test,
@@ -26,7 +27,7 @@ test('B-COD-23 a runner that is down leaves the statement, the saved code and th
   const made = await challenges.make(course)
   await learner.enroll(course)
   await learner.signIn()
-  await page.route('**/api/v2/code/runner', route => route.fulfill(runnerDown))
+  await routeRunnerDown(page)
   await openFromPlayer(page, course, made)
   await expect(region(page, m.code_problem({}, ru)).getByText('сумму')).toBeVisible()
   await start(page)

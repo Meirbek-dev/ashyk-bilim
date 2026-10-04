@@ -240,6 +240,8 @@ test('B-COD-07 B-COD-08 B-COD-10 @judge0 a real run, a reload of its verdicts an
   await page.getByRole('button', { name: m.code_run({}, ru) }).click()
   const result = region(page, m.code_run_title({}, ru))
   await expect(result.getByText(m.code_run_passed({ passed: 1, total: 1 }, ru))).toBeVisible({ timeout: 30_000 })
+  // The draft is saved after a pause: the reload reads it back.
+  await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible({ timeout: 20_000 })
   await page.reload()
   await expect(result.getByText(m.code_status_accepted({}, ru)).first()).toBeVisible()
   await page.getByRole('button', { name: m.code_submit({}, ru) }).click()

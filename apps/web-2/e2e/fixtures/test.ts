@@ -13,6 +13,14 @@ export function expectReread(page: Page, pathname: string): void {
   repeatable.set(page, [...(repeatable.get(page) ?? []), pathname])
 }
 
+/** Pages answered 5xx on purpose (a routed outage, B-COD-23): Chromium logs each such answer as a resource error. */
+const outage = new WeakSet<Page>()
+
+/** Declares that `page` is answered 5xx on purpose; the app shows the outage in place. */
+export function expectOutage(page: Page): void {
+  outage.add(page)
+}
+
 function watch(page: Page, problems: string[]): void {
   let requested = new Set<string>()
   page.on('framenavigated', frame => {
@@ -33,8 +41,9 @@ function watch(page: Page, problems: string[]): void {
   page.on('requestfailed', request => outcome.set(request.url(), request.failure()?.errorText ?? 'failed'))
   page.on('console', message => {
     // A 4xx answer is shown in place by the app; Chromium still logs it as a resource error.
-    const expected4xx = message.text().startsWith('Failed to load resource: the server responded with a status of 4')
-    if (message.type() === 'error' && !expected4xx) problems.push(`console: ${message.text()}`)
+    const status = /^Failed to load resource: the server responded with a status of (\d)/.exec(message.text())?.[1]
+    const expected = status === '4' || (status === '5' && outage.has(page))
+    if (message.type() === 'error' && !expected) problems.push(`console: ${message.text()}`)
   })
   page.on('pageerror', error => problems.push(`page error: ${error.message}`))
   // Against a built server (E2E_BASE_URL) every document carries the CSP the violations above are checked against.
