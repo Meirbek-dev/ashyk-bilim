@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
-import type { AdminRun, LectureReview } from '#/shared/api/gen/types.gen'
+import type { AdminRun, AdminSettings, FeatureSetting, LectureReview } from '#/shared/api/gen/types.gen'
 
 import { expect as baseExpect, test } from '../fixtures/learning'
 import { gotoLive } from '../fixtures/test'
@@ -219,6 +219,36 @@ test(
     await expect(sheet.getByRole('heading', { name: m.ai_run_events({}, ru) })).toBeVisible()
   },
 )
+
+test('B-AI-25 the admin switches a feature off where the environment allows it', async ({ page, signInAs }) => {
+  await signInAs('admin')
+  const features: FeatureSetting[] = [
+    { key: 'course_qa_enabled', enabled: true, editable: true, source: 'environment' },
+    { key: 'lecture_authoring_enabled', enabled: false, editable: false, source: 'environment' },
+  ]
+  let real: AdminSettings | undefined
+  await page.route('**/api/v2/ai/admin/settings', async route => {
+    const response = await route.fetch()
+    const settings: AdminSettings = await response.json()
+    real = settings
+    await route.fulfill({ response, json: { ...settings, features } })
+  })
+  const switched = Promise.withResolvers<unknown>()
+  await page.route('**/api/v2/ai/admin/settings/features/course_qa_enabled', route => {
+    switched.resolve(route.request().postDataJSON())
+    features[0] = { ...features[0]!, enabled: false, source: 'runtime' }
+    return json(route, { ...real, features })
+  })
+  await openAdminAi(page)
+  const qa = page.getByRole('switch', { name: m.ai_feature_course_qa({}, ru) })
+  await expect(page.getByRole('switch', { name: m.ai_feature_lecture_authoring({}, ru) })).toBeDisabled()
+  await expect(page.getByText(m.ai_feature_locked({}, ru))).toBeVisible()
+  await qa.click()
+  expect(await switched.promise).toEqual({ enabled: false })
+  await expect(qa).not.toBeChecked()
+  await expect(page.getByText(m.ai_feature_switched_off({ name: m.ai_feature_course_qa({}, ru) }, ru))).toBeVisible()
+  await expect(page.getByText(m.ai_feature_source({ source: m.ai_source_runtime({}, ru) }, ru))).toBeVisible()
+})
 
 for (const locale of ['kk', 'en'] as const) {
   test(`B-AI-24 /admin/ai speaks ${locale}`, async ({ page, context, baseURL, signInAs }) => {

@@ -98,6 +98,13 @@ const featureLabels: Record<string, () => string> = {
 /** An unknown key shows as itself. */
 export const featureLabel = (key: string) => featureLabels[key]?.() ?? key
 
+const sourceLabels: Record<string, () => string> = {
+  runtime: m.ai_source_runtime,
+  environment: m.ai_source_environment,
+}
+/** `FeatureSetting.source`; an unknown value shows as itself. */
+export const sourceLabel = (source: string) => sourceLabels[source]?.() ?? source
+
 /**
  * The text of a run's or a turn's error code: an API error code (`ai-budget-exhausted`, `ai-disabled`...) reads as
  * its `presentError` text; a lost stream and the agents' own codes (`AI_RUN_FAILED`...) as one sentence each.

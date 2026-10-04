@@ -1,17 +1,21 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import { StatusBadge } from '#/shared/components/status-badge'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { featureLabel } from '../model/labels'
 import { settingsOptions } from '../queries'
+import { FeatureRow, flag } from './feature-row'
 
-const flag = (on: boolean) => <StatusBadge tone={on ? 'success' : 'neutral'}>{on ? m.ai_yes() : m.ai_no()}</StatusBadge>
-
-/** The effective AI settings and the feature switches, read-only: the contract has no write (B-AI-20). */
+/**
+ * The effective AI settings and the feature switches (B-AI-20). A platform editor (`admin.platform`) turns a feature
+ * on and off where the environment allows it (`editable`, B-AI-25); everyone else reads them.
+ */
 export function AdminSettings() {
   const { data: settings } = useSuspenseQuery(settingsOptions())
+  const { data: session } = useSuspenseQuery(sessionOptions())
+  const canSwitch = hasCapability(session, 'admin.platform')
   return (
     <section id="settings" className="flex max-w-prose flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.ai_admin_settings()}</h2>
@@ -31,13 +35,7 @@ export function AdminSettings() {
       <h3 className="font-medium">{m.ai_features()}</h3>
       <ul className="flex flex-col gap-2 text-sm">
         {settings.features.map(feature => (
-          <li key={feature.key} className="flex flex-wrap items-center justify-between gap-2">
-            <span>{featureLabel(feature.key)}</span>
-            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-              {m.ai_feature_source({ source: feature.source })}
-              {flag(feature.enabled)}
-            </span>
-          </li>
+          <FeatureRow key={feature.key} feature={feature} canSwitch={canSwitch} />
         ))}
       </ul>
     </section>

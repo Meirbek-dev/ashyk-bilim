@@ -1,6 +1,6 @@
 # ai
 
-Операции: scopeCapabilities, qaChat, qaThreads, qaThread, deleteQaThread, studyAskQueue, streamRun, runArtifacts, cancelRun, queueCourseAnalysis, latestCourseAnalysis, reviewCourseFinding, publishCourseAnalysis, queueSubmissionAnalysis, latestSubmissionAnalysis, queueRemediation, latestRemediation, studentRemediation, completeRemediation, queueLectureReview, lectureReviews, dismissLectureSuggestion, adminSettings, usage, adminRuns, adminRunDetail, adminEvals
+Операции: scopeCapabilities, qaChat, qaThreads, qaThread, deleteQaThread, studyAskQueue, streamRun, runArtifacts, cancelRun, queueCourseAnalysis, latestCourseAnalysis, reviewCourseFinding, publishCourseAnalysis, queueSubmissionAnalysis, latestSubmissionAnalysis, queueRemediation, latestRemediation, studentRemediation, completeRemediation, queueLectureReview, lectureReviews, dismissLectureSuggestion, adminSettings, setFeatureSwitch, usage, adminRuns, adminRunDetail, adminEvals
 
 Одна панель AI (`AiPanel`) в правом слоте плеера (`student-activity`) и студии активности (`teacher-studio`) и в
 листе страницы курса (`course-page`). Вкладки панели - из `GET /ai/capabilities/scope/{course_id}`. Вкладка и тред
@@ -49,12 +49,14 @@
 - B-AI-19 Работа над ошибками (учащийся, плеер): мини-лекция, цели, вопросы с «Показать ответ» и «Я ответил
   верно»; «Завершить» доступно, когда все ответы раскрыты; балл = round(100 × верных / всех) (100 без вопросов),
   проходной - `pass_threshold` (70 по умолчанию); итог - «Пройдено» или «Не пройдено».
-- B-AI-20 `/admin/ai`: ИИ включён, провайдер готов, режим черновика, модель, лимиты токенов; переключатели функций
-  только для чтения с источником; расход: запуски, токены, остаток бюджета и доля израсходованного.
+- B-AI-20 `/admin/ai`: ИИ включён, провайдер готов, режим черновика, модель, лимиты токенов; функции с источником
+  (переключатель или окружение); расход: запуски, токены, остаток бюджета и доля израсходованного.
 - B-AI-21 Запуски: фильтры в URL (дни 1/7/30, статус, вид), «Показать ещё» по `next_cursor`; застрявший запуск
   помечен.
 - B-AI-22 Запуск (`?run=`): модель, токены, длительность, код ошибки, журнал событий по порядку, артефакты и источники.
 - B-AI-23 Оценки: число запусков по статусам, всего оценок, пройдено, средний балл, последние оценки; пусто - текст.
+- B-AI-25 Переключатель функции - у кого есть `admin.platform` и где окружение разрешает (`editable`); иначе - «да/нет»
+  (и строка «выключено в окружении»). Переключение -> ответ заменяет настройки в кэше, сообщение; отказ - текст под строкой.
 - B-AI-24 Панель и `/admin/ai` работают на kk и en: тексты из каталога.
 
 ## Изменено
@@ -79,7 +81,6 @@
   самооценке учащегося; вопрос владельцу - проверять ответы на сервере. Поведение контракта сохранено.
 - `ScopeCapabilities.modes` и `FeatureCapability.key` - строки, а не enum; `StudyCompanionAnswer.flashcards` -
   `JsonValue[]`; `TOOL_CALL_RESULT.content` - JSON внутри строки.
-- `AdminSettings` только читается: операции включения функций нет (L-6 отложил: нужен дизайн).
 
 ## Не перенесено (контракт есть)
 

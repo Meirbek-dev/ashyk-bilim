@@ -168,6 +168,7 @@ test('B-GRD-24 the group filter narrows the queue and the gradebook (URL)', asyn
   await expect(page).toHaveURL(/group=/)
   await expect(row(page, graded.boris.name)).toHaveCount(0)
   await expect(row(page, graded.ana.name)).toBeVisible()
+  await expect(page.getByText(m.grading_queue_count({ count: 1 }, ru))).toBeVisible()
   await page.goto(`/teach/courses/${graded.courseId}/gradebook`)
   const cells = page.getByRole('table', { name: m.grading_gradebook_table({}, ru) }).getByRole('link')
   await expect(cells).toHaveCount(2)

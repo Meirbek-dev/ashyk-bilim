@@ -58,7 +58,9 @@ export type Work = { kind: 'assessment'; id: AssessmentId } | { kind: 'file'; id
 export const activityOptions = (id: ActivityId) => getActivityOptions(byActivity(id))
 export const assessmentOptions = (id: ActivityId) => getActivityAssessmentOptions(byActivity(id))
 export const taskOptions = (id: ActivityId) => getActivityFileSubmissionOptions(byActivity(id))
-export const statsOptionsOf = (id: AssessmentId) => statsOptions({ path: { assessment_id: id } })
+/** An assessment's counts, of one group when the queue is filtered by it (B-GRD-05, B-GRD-24). */
+export const statsOptionsOf = (id: AssessmentId, group?: string) =>
+  statsOptions({ path: { assessment_id: id }, ...(group ? { query: { group_id: group } } : {}) })
 export const itemStatsOptions = (id: AssessmentId) => itemAnalyticsOptions({ path: { assessment_id: id } })
 export const reviewOptions = (id: string) => reviewSubmissionOptions({ path: { submission_id: id } })
 export const attemptOptions = (id: string) => getAttemptOptions({ path: { attempt_id: id } })
@@ -163,7 +165,7 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
   await Promise.all([
     queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
     work.kind === 'assessment'
-      ? queryClient.ensureQueryData(statsOptionsOf(work.id))
+      ? queryClient.ensureQueryData(statsOptionsOf(work.id, search.group))
       : queryClient.ensureQueryData(fileStatsOptions(work.id, search.group)),
     queryClient.ensureQueryData(groupsOptions(courseId)),
   ])

@@ -6,6 +6,7 @@ import {
   adminRunDetailOptions,
   adminRunsInfiniteQueryKey,
   adminSettingsOptions,
+  adminSettingsQueryKey,
   completeRemediationMutation,
   deleteQaThreadMutation,
   dismissLectureSuggestionMutation,
@@ -24,6 +25,7 @@ import {
   reviewCourseFindingMutation,
   runArtifactsOptions,
   scopeCapabilitiesOptions,
+  setFeatureSwitchMutation,
   studentRemediationOptions,
   studentRemediationQueryKey,
   usageOptions,
@@ -39,6 +41,7 @@ import {
 import type {
   ActivityId,
   AdminRunPage,
+  AdminSettings,
   AdminRunsData,
   AiRunId,
   AiThreadId,
@@ -154,6 +157,11 @@ export const dismissOptions = (queryClient: QueryClient, courseId: CourseId) => 
 
 // ---- Admin ----
 export const settingsOptions = () => adminSettingsOptions()
+// The answer is the new settings: it replaces the cached ones.
+export const featureSwitchOptions = (queryClient: QueryClient) => ({
+  ...setFeatureSwitchMutation(),
+  onSuccess: (settings: AdminSettings) => queryClient.setQueryData(adminSettingsQueryKey(), settings),
+})
 export const usageSummaryOptions = () => usageOptions()
 export const evalsOptions = () => adminEvalsOptions()
 export const runDetailOptions = (runId: AiRunId) => adminRunDetailOptions({ path: { run_id: runId } })
