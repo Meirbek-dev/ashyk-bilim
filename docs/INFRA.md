@@ -187,7 +187,7 @@ prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 
 | Key | Notes |
 | --- | --- |
-| `AB__DATABASE__URL` | prod: the legacy superuser URL until RUNBOOK 2.1, then `postgres://ashyq:<ASHYQ_DB_PASSWORD>@db:5432/ashyq` |
+| `AB__DATABASE__URL` | `postgres://ashyq:<ASHYQ_DB_PASSWORD>@db:5432/ashyq` (prod switched from the legacy superuser on 2026-10-04, RUNBOOK 2.1) |
 | `AB__ZITADEL__PAT` | appended by bootstrap from `zitadel_machinekey/pat.txt` |
 | `AB__GOOGLE__CLIENT_ID`, `AB__GOOGLE__CLIENT_SECRET`, `AB__GOOGLE__REDIRECT_URI` | optional, all or none |
 | `AB__RESEND__API_KEY`, `AB__RESEND__FROM` | optional, all or none (`FROM` has no default) |
@@ -514,6 +514,12 @@ second smoke with the stub web (R-09). Web gates were green on `main` at 39eabe9
 Any `ci/**` branch runs gates, images and stack smoke without publishing.
 
 ## Known gaps
+
+- **The proxy in front of prod limits response headers to 4k.** A larger response
+  is a 502 at the proxy while the stack itself answers 200 (hit on 2026-10-04 by the
+  web app's `Link` header on the home page). The edge drops `Link` on web responses
+  and smoke fails when the home page headers exceed 3500 bytes; smoke still does
+  not go through the proxy itself.
 
 - ~~Prod cutover pending~~ - done 2026-10-03: release `f5e493c4` (branch
   `release/stage1`), downtime 91 s, smoke green, real client addresses in the

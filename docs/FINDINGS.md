@@ -76,6 +76,12 @@ check run in CI (`ci.yaml`, web-gates). Still open: Playwright runs only by
 hand, and `scripts/run-vitest.mjs` pins Vitest over a stale vite-plus bundle
 (remove when vite-plus catches up).
 
+### 31. Responses with more than 4k of headers are a 502 at the university proxy
+Found 2026-10-04: the home page answered 502 through the proxy (200 at our nginx)
+because Next's `Link` header (hreflang + preloads) was 3.3 KB. **Fixed:** the edge
+hides `Link` on web responses and smoke checks the header size. Stage 2 contract:
+the web app must keep response headers under 3.5 KB (no preload `Link` headers).
+
 ### 29. Flaky server test under coverage
 `ab-api::mfa_flow::fenced_totp_login_retries_without_replaying_the_code`
 (`crates/api/tests/mfa_flow.rs:580`, "the retry ran": left 0, right 1) failed once in
