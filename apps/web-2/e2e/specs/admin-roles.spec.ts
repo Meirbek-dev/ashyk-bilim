@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { createRole, deleteRole, listRoles } from '#/shared/api/gen/sdk.gen'
+import { createRole, deleteRole, getRole, listRoles, updateRole } from '#/shared/api/gen/sdk.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
 
@@ -102,6 +102,41 @@ test('B-ADM-11 a custom role saves its name and its permissions, line by line', 
     .toEqual(['course:read:all', 'quiz:read:assigned'])
   await page.reload()
   await expect(field).toHaveValue('course:read:all\nquiz:read:assigned')
+})
+
+test("B-ADM-23 a role save over someone else's change asks, keeps the input and retries", async ({
+  page,
+  role,
+  api,
+  seed,
+}) => {
+  const { slug, name: shown } = await role()
+  const { data: loaded } = await getRole({ client: api, path: { slug }, headers: cookie(seed), throwOnError: true })
+  await page.goto(`/admin/roles/${slug}`)
+  const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
+  const name = general.getByLabel(m.admin_field_name({}, ru))
+  await expect(name).toHaveValue(shown)
+  await name.fill('E2E мой вариант')
+  // Another admin saves the role behind the open form.
+  await updateRole({
+    client: api,
+    path: { slug },
+    body: { description: 'из другой вкладки' },
+    headers: cookie(seed),
+    throwOnError: true,
+  })
+  const sent = page.waitForRequest(request => request.method() === 'PATCH')
+  await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toBe(String(loaded.version))
+  const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await expect(conflict).toBeVisible()
+  await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(name).toHaveValue('E2E мой вариант')
+
+  await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect(conflict).toBeHidden()
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E мой вариант' })).toBeVisible()
 })
 
 test('B-ADM-12 deleting a role asks with its name, then returns to the list', async ({ page, role }) => {

@@ -43,6 +43,10 @@ export const groupsListOptions = () => {
 
 export const groupOptions = (id: UsergroupId) => getGroupOptions({ path: { group_id: id } })
 
+/** A group's current `version`, read past the cache: "Reload and retry" after a 412. */
+export const groupVersion = async (queryClient: QueryClient, id: UsergroupId) =>
+  (await queryClient.fetchQuery({ ...groupOptions(id), staleTime: 0 })).version
+
 const membersKey = (id: UsergroupId) =>
   listGroupMembersPageInfiniteQueryKey({ path: { group_id: id }, query: { limit: PAGE_SIZE } })
 

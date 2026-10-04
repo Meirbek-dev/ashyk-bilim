@@ -23,6 +23,9 @@ export const canRole = (role: Pick<Role, 'allowed_actions'>, action: RoleAction)
 export const canGroup = (group: Pick<Usergroup, 'allowed_actions'>, action: UsergroupAction) =>
   group.allowed_actions.includes(action)
 
+/** A 412: the object was saved elsewhere since the form loaded it (`If-Match`, spec 7.6). */
+export const isStale = (error: unknown): boolean => error instanceof ApiError && error.status === 412
+
 /** The 409 codes of `POST /users` and `POST /rbac/roles` that name a field: shown under it, not as the form message. */
 export function takenField(error: unknown): 'username' | 'email' | 'slug' | null {
   if (!(error instanceof ApiError)) return null

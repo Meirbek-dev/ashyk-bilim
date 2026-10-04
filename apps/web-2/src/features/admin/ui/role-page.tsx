@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
@@ -20,6 +21,8 @@ export function RolePage() {
   const { roleSlug } = useParams({ from: '/_authed/admin/roles/$roleSlug' })
   const { data: role } = useSuspenseQuery(roleOptions(roleSlug))
   const description = roleDescription(role)
+  // Both sections write the same role: they share the version their forms are based on.
+  const base = useState(role.version)
   return (
     <DetailPage
       title={roleName(role)}
@@ -29,9 +32,9 @@ export function RolePage() {
     >
       <Link to="/admin/roles">{m.admin_roles_all()}</Link>
       {description ? <p className="max-w-prose wrap-anywhere">{description}</p> : null}
-      {canRole(role, 'update') ? <RoleEditSection role={role} /> : null}
+      {canRole(role, 'update') ? <RoleEditSection role={role} base={base} /> : null}
       {canRole(role, 'set_permissions') ? (
-        <RolePermissionsSection role={role} />
+        <RolePermissionsSection role={role} base={base} />
       ) : (
         <section aria-labelledby="role-permissions" className="flex flex-col gap-4">
           <h2 id="role-permissions" className="text-xl font-semibold">

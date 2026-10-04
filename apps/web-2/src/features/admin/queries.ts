@@ -153,13 +153,20 @@ const putRole = (queryClient: QueryClient) => (next: Role | void) => {
 
 export const createRoleOptions = () => ({ ...createRoleMutation(), meta: { invalidates: [listRolesQueryKey()] } })
 
+/** A role write's headers: `If-Match` (stale -> 412) and `Prefer`, so it answers the role with its new `version`. */
+export const roleWrite = (version: number) => ({ headers: { ...representation.headers, 'If-Match': version } })
+
+/** A role's current `version`, read past the cache: "Reload and retry" after a 412. */
+export const roleVersion = async (queryClient: QueryClient, slug: string) =>
+  (await queryClient.fetchQuery({ ...roleOptions(slug), staleTime: 0 })).version
+
 export const updateRoleOptions = (queryClient: QueryClient) => ({
-  ...updateRoleMutation(representation),
+  ...updateRoleMutation(),
   onSuccess: putRole(queryClient),
 })
 
 export const setPermissionsOptions = (queryClient: QueryClient) => ({
-  ...setRolePermissionsMutation(representation),
+  ...setRolePermissionsMutation(),
   onSuccess: putRole(queryClient),
 })
 
@@ -173,6 +180,10 @@ export const deleteRoleOptions = (queryClient: QueryClient) => ({
 })
 
 export const platformOptions = () => getPlatformOptions()
+
+/** The platform's current `version`, read past the cache: "Reload and retry" after a 412. */
+export const platformVersion = async (queryClient: QueryClient) =>
+  (await queryClient.fetchQuery({ ...platformOptions(), staleTime: 0 })).version
 
 export const updatePlatformOptions = (queryClient: QueryClient) => ({
   ...updatePlatformMutation(),

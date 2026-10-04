@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
@@ -17,6 +18,8 @@ const tab = (hash: string, label: string) => (
 /** Platform settings (`GET` / `PATCH /platform`): two sections, each saved on its own; the nav jumps between them. */
 export function PlatformPage() {
   const { data: platform } = useSuspenseQuery(platformOptions())
+  // Both sections write the platform: they share the version their forms are based on.
+  const base = useState(platform.version)
   return (
     <SettingsPage
       title={m.admin_platform_title()}
@@ -28,10 +31,10 @@ export function PlatformPage() {
       }
     >
       <div id="general">
-        <PlatformGeneral platform={platform} />
+        <PlatformGeneral platform={platform} base={base} />
       </div>
       <div id="branding">
-        <PlatformBranding platform={platform} />
+        <PlatformBranding platform={platform} base={base} />
       </div>
     </SettingsPage>
   )

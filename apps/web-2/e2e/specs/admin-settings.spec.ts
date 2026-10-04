@@ -16,6 +16,9 @@ const test = base.extend<{ api: ReturnType<typeof createClient> }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
 })
 
+// The platform is one object saved with `If-Match`: its tests run one after another, or one's save is the other's 412.
+test.describe.configure({ mode: 'default' })
+
 // A 1x1 PNG.
 const PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -45,6 +48,38 @@ test('B-ADM-13 the platform texts save and survive a reload; a blank name is ref
     await general.getByLabel(m.admin_field_name({}, ru)).fill('')
     await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
     await expect(general.getByText(m.validation_required({}, ru))).toBeVisible()
+  } finally {
+    await updatePlatform({ client: api, body: { about: before.about }, headers: cookie(seed), throwOnError: true })
+  }
+})
+
+test("B-ADM-23 a platform save over someone else's change opens the conflict dialog and keeps the input", async ({
+  page,
+  signInAs,
+  api,
+  seed,
+}) => {
+  const { data: before } = await getPlatform({ client: api, throwOnError: true })
+  await signInAs('admin')
+  try {
+    await page.goto('/admin/platform')
+    const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
+    const about = general.getByLabel(m.admin_platform_about({}, ru))
+    await expect(about).toHaveValue(before.about)
+    await about.fill('E2E мой вариант')
+    await updatePlatform({
+      client: api,
+      body: { about: `E2E другая вкладка ${randomUUID().slice(0, 8)}` },
+      headers: cookie(seed),
+      throwOnError: true,
+    })
+    const sent = page.waitForRequest(request => request.method() === 'PATCH')
+    await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
+    expect((await sent).headers()['if-match']).toBe(String(before.version))
+    const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+    await expect(conflict).toBeVisible()
+    await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+    await expect(about).toHaveValue('E2E мой вариант')
   } finally {
     await updatePlatform({ client: api, body: { about: before.about }, headers: cookie(seed), throwOnError: true })
   }

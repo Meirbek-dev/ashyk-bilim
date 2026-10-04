@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { addGroupMembers, createGroup, deleteGroup, listGroups, listUsers } from '#/shared/api/gen/sdk.gen'
+import { addGroupMembers, createGroup, deleteGroup, listGroups, listUsers, updateGroup } from '#/shared/api/gen/sdk.gen'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
@@ -75,6 +75,35 @@ test('B-ADM-18 the group page edits its name; an unknown group is not found', as
     await page.goto(`/teach/groups/${id}`)
     await expect(page.getByRole('heading', { name: m.admin_group_not_found({}, ru) })).toBeVisible()
   }
+})
+
+test("B-ADM-23 a group save over someone else's change opens the conflict dialog and keeps the input", async ({
+  page,
+  signInAs,
+  api,
+  seed,
+  group,
+}) => {
+  const own = await group()
+  await signInAs('teacher')
+  await page.goto(`/teach/groups/${own.id}`)
+  const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
+  const description = general.getByLabel(m.admin_field_description({}, ru))
+  await description.fill('Мой вариант описания')
+  await updateGroup({
+    client: api,
+    path: { group_id: own.id },
+    body: { name: `${own.name} (другая вкладка)` },
+    headers: { ...cookie(seed, 'teacher'), 'If-Match': own.version },
+    throwOnError: true,
+  })
+  const sent = page.waitForRequest(request => request.method() === 'PATCH')
+  await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  expect((await sent).headers()['if-match']).toBe(String(own.version))
+  const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+  await expect(conflict).toBeVisible()
+  await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(description).toHaveValue('Мой вариант описания')
 })
 
 test('B-ADM-19 members are added by search and removed; without manage_members there are no controls', async ({
