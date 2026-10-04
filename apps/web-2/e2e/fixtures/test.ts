@@ -31,7 +31,9 @@ function watch(page: Page, problems: string[]): void {
     // A worker's bulk action has no event: its status is polled by design (grading B-GRD-27).
     const { pathname } = new URL(request.url())
     if (pathname.startsWith('/api/v2/bulk-actions/') || repeatable.get(page)?.includes(pathname)) return
-    if (requested.has(request.url()))
+    // The event stream reconnects after a refusal (429: the user's 5 streams are open in parallel tests), by design.
+    const reconnect = pathname === '/api/v2/me/events' && outcome.get(request.url()) !== '200'
+    if (requested.has(request.url()) && !reconnect)
       problems.push(`duplicate GET ${request.url()} (first: ${outcome.get(request.url())})`)
     requested.add(request.url())
   })

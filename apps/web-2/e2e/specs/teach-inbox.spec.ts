@@ -160,6 +160,8 @@ test('B-INB-04 B-INB-05 B-INB-10 kind, course and order live in the URL and go t
 test('B-INB-07 a queue with nothing to react to says so in one sentence', async ({ page, signInAs }) => {
   // e2e-admin authors no course with hand-ins: its teacher queue is empty.
   await signInAs('admin')
+  // A platform grader gets every course's grading.updated (S-GAPS): parallel tests re-read the queue, by design.
+  expectReread(page, '/api/v2/work')
   await page.goto('/teach')
   await expect(page.getByText(m.inbox_empty({}, ru))).toBeVisible()
   await expect(page.getByRole('navigation', { name: m.inbox_state({}, ru) })).toHaveCount(0)
