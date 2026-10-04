@@ -267,12 +267,10 @@ pub async fn deadline_extended(learner: UserId, payload: DeadlineExtended) {
     publish(vec![(learner, UserEvent::DeadlineExtended(payload))]).await;
 }
 
-/// Fan one event out to `recipients` (deduplicated), never to `actor`: the
-/// writer's own views update from the write's answer (a refetch would only
-/// repeat it). Never fails.
-async fn fan_out(recipients: Vec<UserId>, actor: UserId, event: UserEvent) {
+/// Fan one event out to `recipients` (deduplicated; the writer too - their
+/// other tabs follow). Never fails.
+async fn fan_out(recipients: Vec<UserId>, event: UserEvent) {
     let mut recipients = recipients;
-    recipients.retain(|u| *u != actor);
     recipients.sort_unstable();
     recipients.dedup();
     publish(
@@ -291,17 +289,17 @@ fn or_none(found: ab_core::Result<Vec<UserId>>, what: &str) -> Vec<UserId> {
     })
 }
 
-/// LIVE `collection.updated` to its creator when someone else changed it
-/// (an editor with platform rights). Not every platform editor: their open
-/// lists would refetch on each collection anywhere.
-pub async fn collection(actor: UserId, creator: Option<UserId>, payload: CollectionUpdated) {
+/// LIVE `collection.updated` to its creator (their other tabs, or another
+/// editor's change). Not every platform editor: their open lists would
+/// refetch on each collection anywhere.
+pub async fn collection(creator: Option<UserId>, payload: CollectionUpdated) {
     let to: Vec<UserId> = creator.into_iter().collect();
-    fan_out(to, actor, UserEvent::CollectionUpdated(payload)).await;
+    fan_out(to, UserEvent::CollectionUpdated(payload)).await;
 }
 
 /// LIVE `discussion.updated` to the thread's participants and the
 /// course's graders (authors and platform-wide).
-pub async fn discussion(pool: &PgPool, actor: UserId, payload: DiscussionUpdated) {
+pub async fn discussion(pool: &PgPool, payload: DiscussionUpdated) {
     let root = payload.parent_id.unwrap_or(payload.discussion_id);
     let mut to = or_none(
         ab_db::notifications::thread_participants(pool, root).await,
@@ -311,7 +309,7 @@ pub async fn discussion(pool: &PgPool, actor: UserId, payload: DiscussionUpdated
         ab_db::notifications::course_graders(pool, payload.course_id).await,
         "discussion",
     ));
-    fan_out(to, actor, UserEvent::DiscussionUpdated(payload)).await;
+    fan_out(to, UserEvent::DiscussionUpdated(payload)).await;
 }
 
 /// LIVE `progress.updated` to the learner whose projection a staff change
@@ -325,7 +323,7 @@ pub async fn progress(learner: UserId, course_id: CourseId) {
 }
 
 /// LIVE `admin.updated` to everyone who can read that list platform-wide.
-pub async fn admin_list(pool: &PgPool, actor: UserId, list: AdminList) {
+pub async fn admin_list(pool: &PgPool, list: AdminList) {
     let (resource, action) = match list {
         AdminList::Users => ("platform", "read"),
         AdminList::Roles => ("role", "read"),
@@ -337,10 +335,5 @@ pub async fn admin_list(pool: &PgPool, actor: UserId, list: AdminList) {
         ab_db::notifications::platform_holders(pool, resource, action).await,
         "admin list",
     );
-    fan_out(
-        to,
-        actor,
-        UserEvent::AdminListUpdated(AdminListUpdated { list }),
-    )
-    .await;
+    fan_out(to, UserEvent::AdminListUpdated(AdminListUpdated { list })).await;
 }

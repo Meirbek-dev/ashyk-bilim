@@ -131,12 +131,7 @@ impl UsergroupsService {
         let id =
             ab_db::usergroups::insert_usergroup(&self.pool, &name, &description, actor.user_id)
                 .await?;
-        crate::events::user::admin_list(
-            &self.pool,
-            actor.user_id,
-            crate::events::user::AdminList::Groups,
-        )
-        .await;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))
@@ -184,12 +179,7 @@ impl UsergroupsService {
             description.as_deref(),
         )
         .await?;
-        crate::events::user::admin_list(
-            &self.pool,
-            actor.user_id,
-            crate::events::user::AdminList::Groups,
-        )
-        .await;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
         ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("usergroup"))
@@ -201,12 +191,7 @@ impl UsergroupsService {
         // the courses first.
         let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
         ab_db::usergroups::delete_usergroup(&self.pool, id).await?;
-        crate::events::user::admin_list(
-            &self.pool,
-            actor.user_id,
-            crate::events::user::AdminList::Groups,
-        )
-        .await;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
         Self::reaggregate(&self.pool, courses).await;
         Ok(())
     }
@@ -230,7 +215,7 @@ impl UsergroupsService {
             .collect();
         reject_unknown("user_ids", "user", user_ids, &known)?;
         ab_db::usergroups::add_members(&self.pool, id, user_ids).await?;
-        self.after_membership_change(actor, id).await
+        self.after_membership_change(id).await
     }
 
     pub async fn remove_members(
@@ -241,18 +226,13 @@ impl UsergroupsService {
     ) -> Result<()> {
         self.writable(actor, id).await?;
         ab_db::usergroups::remove_members(&self.pool, id, user_ids).await?;
-        self.after_membership_change(actor, id).await
+        self.after_membership_change(id).await
     }
 
     /// BUG-318: a group on an assessment's allowlist decides who must take
     /// it - re-aggregate every course it is linked to or allowlisted in.
-    async fn after_membership_change(&self, actor: &Actor, id: UsergroupId) -> Result<()> {
-        crate::events::user::admin_list(
-            &self.pool,
-            actor.user_id,
-            crate::events::user::AdminList::Groups,
-        )
-        .await;
+    async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
         let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
         Self::reaggregate(&self.pool, courses).await;
         Ok(())

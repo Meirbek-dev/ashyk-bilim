@@ -834,7 +834,7 @@ async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
 }
 
 /// LIVE: admin lists, discussions, progress and collections reach the
-/// user stream of the other people who show them (never the writer).
+/// user stream of the people who show them (the writer's other tabs too).
 #[sqlx::test(migrations = "../../migrations")]
 async fn live_events_reach_their_readers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -851,7 +851,7 @@ async fn live_events_reach_their_readers(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     let bob = learner(&app, "bob").await;
 
-    // Admin lists: a new group reaches the other admin, not the writer.
+    // Admin lists: a new group reaches the other admin and the writer.
     let group = app
         .post_as(&admin, "/api/v2/groups", &json!({ "name": "G1" }))
         .await;
@@ -863,8 +863,11 @@ async fn live_events_reach_their_readers(pool: PgPool) {
             .any(|(e, d)| e == "admin.updated" && d["payload"]["list"] == "groups"),
         "{events:?}"
     );
-    let own = read_stream(&base, &admin, "event: connected").await;
-    assert!(own.iter().all(|(e, _)| e != "admin.updated"), "{own:?}");
+    let own = read_stream(&base, &admin, "event: admin.updated").await;
+    assert!(
+        own.iter().any(|(e, _)| e == "admin.updated"),
+        "the writer's other tabs follow"
+    );
 
     // Progress: a staff change (a new published activity) moves alice's
     // aggregate; her own hand-in does not ping her.

@@ -351,7 +351,6 @@ impl CollectionsService {
         }
         tx.commit().await?;
         crate::events::user::collection(
-            actor.user_id,
             collection.creator_id,
             crate::events::user::CollectionUpdated {
                 collection_id: id,
@@ -383,7 +382,6 @@ impl CollectionsService {
         .await?
         {
             crate::events::user::collection(
-                actor.user_id,
                 collection.creator_id,
                 crate::events::user::CollectionUpdated {
                     collection_id: id,
