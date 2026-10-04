@@ -117,6 +117,8 @@ test(
     await openSecondActivity(page, course)
     const aside = panel(page)
     await aside.getByRole('button', { name: m.ai_tab_study({}, ru) }).click()
+    // The tab lives in the URL: text typed before it lands is reset with the tab's state (B-AI-07 in CI).
+    await expect(page).toHaveURL(/[?&]ai=study/)
     await aside.getByRole('textbox', { name: m.ai_question({}, ru) }).fill('Вопрос')
     await aside.getByRole('button', { name: m.ai_ask({}, ru) }).click()
     await aside.getByRole('button', { name: m.ai_stop({}, ru) }).click()
