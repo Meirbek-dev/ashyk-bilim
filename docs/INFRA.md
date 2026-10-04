@@ -314,13 +314,14 @@ cancelled mid-run):
 | Job | When | What |
 | --- | --- | --- |
 | changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all but `web` true on `release/**`; `sha` = first 8 chars of the commit |
-| server-gates | server or infra changed | `just dev-up`, then `apps/server` recipes: `fmt-check`, `migrate`, `clippy`, `sqlx-check`, `test`, `deny`, `machete`, `cov`, `openapi-check` |
+| server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
+| server-test | server or infra changed | `just dev-up`, then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor; `just test` is the same suite without coverage) |
 | web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
-| images | push, no gate failed (skipped gates are fine) | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |
+| images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` (compose.prod.yaml's own web env) and `just smoke` again |
-| web2-e2e | after images, web2 changed | the Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0` |
-| publish | `release/**` only, after stack-smoke | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (frozen old web, rollback target until Ф9); `ashyq-web-2` only when web2-e2e passed |
+| web2-e2e | after images, web2 changed | three shards, each on its own Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0 --shard=N/3` |
+| publish | `release/**` only, every gate and stack-smoke green | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (frozen old web, rollback target until Ф9); `ashyq-web-2` only when web2-e2e passed |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
 `latest` = newest green `main`. GHCR packages are public: the host pulls
@@ -499,7 +500,7 @@ server; OCI format drops `HEALTHCHECK` and `up --wait` fails), then
 `IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
 
 CI job `web2-e2e` (after `images`, only when `apps/web-2` changed; `images`
-builds `ashyq-web-2:ci-<sha>` under the same condition, 60 min): the four recipes; on
+builds `ashyq-web-2:ci-<sha>` under the same condition; three shards, 30 min each): the four recipes; on
 failure the HTML report, traces and server log as an artifact. Gates only the
 `ashyq-web-2` retag in `publish`.
 

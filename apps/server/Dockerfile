@@ -18,7 +18,10 @@ COPY --from=planner /build/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY apps/server/ .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release -p ashyq-server
+# The binary moves out and target/ goes in the same layer: the layer (and the gha
+# cache it is exported to) stays small instead of ~0.5 GB of build output.
+RUN cargo build --release -p ashyq-server \
+    && mv target/release/ashyq /usr/local/bin/ashyq && rm -rf target
 
 FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
 RUN apt-get update \
@@ -26,7 +29,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -g 10001 ashyq \
     && useradd -u 10001 -g ashyq -s /usr/sbin/nologin ashyq
-COPY --from=builder /build/target/release/ashyq /usr/local/bin/ashyq
+COPY --from=builder /usr/local/bin/ashyq /usr/local/bin/ashyq
 USER ashyq
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s \

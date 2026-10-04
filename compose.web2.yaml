@@ -32,3 +32,9 @@ services:
 
   server: *stand-cert
   worker: *stand-cert
+
+  # Test stand only: bcrypt cost 14 (Zitadel's default, prod) is ~1 s of Zitadel's single CPU per
+  # hash, which serialized the 250-learner seed (~4.5 min) and every sign-in of the suite.
+  zitadel:
+    environment:
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_HASHER_COST: 4

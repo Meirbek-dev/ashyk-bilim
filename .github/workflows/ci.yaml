@@ -69,21 +69,22 @@ jobs:
       - id: sha
         run: echo "sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
 
-  server-gates:
+  # Two parallel server jobs (CI-OPT): lints without services, tests on the dev stack.
+  # `cov` IS the test gate: llvm-cov runs the whole nextest suite (fails on any failed
+  # test) and then the line floor, so the suite is built and run once, not twice.
+  server-lint:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: apps/server
     env:
-      CARGO_TERM_COLOR: always
-      SQLX_OFFLINE: 'false'
-      # Must match infra/env/dev.env (services come from `just dev-up`).
-      DATABASE_URL: postgres://ashyq:ashyq@localhost:5433/ashyq_test
-      TEST_REDIS_URL: redis://:ashyq-dev@localhost:6380
-      TEST_S3_ENDPOINT: http://localhost:9002
+      # The committed .sqlx cache; server-test's sqlx-check proves it matches the schema.
+      SQLX_OFFLINE: 'true'
+      CARGO_TERM_QUIET: 'true'
+      CARGO_PROFILE_DEV_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
 
@@ -93,13 +94,62 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/server
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest,cargo-llvm-cov,cargo-deny,cargo-machete,sqlx-cli,just
+          tool: cargo-deny,cargo-machete,just
 
       - name: Format
         run: just fmt-check
+
+      - name: Clippy (deny warnings)
+        run: just clippy
+
+      - name: cargo-deny
+        run: just deny
+
+      - name: cargo-machete
+        run: just machete
+
+      - name: OpenAPI export is committed and current
+        run: just openapi-check
+
+  server-test:
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      SQLX_OFFLINE: 'false'
+      # Must match infra/env/dev.env (services come from `just dev-up`).
+      DATABASE_URL: postgres://ashyq:ashyq@localhost:5433/ashyq_test
+      TEST_REDIS_URL: redis://:ashyq-dev@localhost:6380
+      TEST_S3_ENDPOINT: http://localhost:9002
+      CARGO_TERM_QUIET: 'true'
+      # Coverage needs no debuginfo (-C instrument-coverage); faster builds, smaller cache.
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      # Quiet on success: only failures, each with its output at the end.
+      NEXTEST_STATUS_LEVEL: fail
+      NEXTEST_FINAL_STATUS_LEVEL: fail
+      NEXTEST_FAILURE_OUTPUT: final
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/server
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,cargo-llvm-cov,sqlx-cli,just
 
       - name: Dev services (db, redis, zitadel, rustfs)
         working-directory: .
@@ -108,26 +158,11 @@ jobs:
       - name: Migrate test database
         run: just migrate
 
-      - name: Clippy (deny warnings)
-        run: just clippy
-
       - name: SQLx offline cache check
         run: just sqlx-check
 
-      - name: Tests (nextest)
-        run: just test
-
-      - name: cargo-deny
-        run: just deny
-
-      - name: cargo-machete
-        run: just machete
-
-      - name: Coverage floor
+      - name: Tests (nextest) with coverage floor
         run: just cov
-
-      - name: OpenAPI export is committed and current
-        run: just openapi-check
 
   infra-gates:
     runs-on: ubuntu-latest
@@ -194,13 +229,13 @@ jobs:
       - name: Build with chunk budgets
         run: bun run build
 
+  # Built in parallel with the gates (CI-OPT): a ci-<sha> tag is "built, not verified";
+  # publish still requires every gate (and stack-smoke) before any <sha>/latest tag.
   images:
-    needs: [changes, server-gates, web2-gates, infra-gates]
-    # Gates may be skipped (path filter) but never failed.
-    if: >-
-      github.event_name == 'push' && !failure() && !cancelled()
+    needs: changes
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 40
     permissions:
       contents: read
       packages: write
@@ -231,13 +266,15 @@ jobs:
             echo 'EOF'
           } >>"$GITHUB_OUTPUT"
 
-      # The release compile ran out of disk on stock runners (runs #45/#46).
+      # The release compile ran out of disk on stock runners (runs #45/#46). Today's runners
+      # have ~75 GB free and the rm costs ~3 min, so only when short.
       - name: Free runner disk for the release build
         if: matrix.image == 'server'
         run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
           df -h /
+          (($(df --output=avail -BG / | tail -1 | tr -dc 0-9) >= 30)) ||
+            sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+              /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
 
       - uses: docker/setup-buildx-action@v4
 
@@ -333,12 +370,16 @@ jobs:
 
   # G-06 (spec section 9): Playwright against ashyq-web-2:ci-<sha> on the seeded stand
   # (`just web2-*`, docs/INFRA.md "Stage 2 e2e stand"). Secret E2E_PASSWORD is optional:
-  # without it the stand seeds a random password per run.
+  # without it the stand seeds a random password per run. Three shards, each on its own stand.
   web2-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     permissions:
       contents: read
       packages: read
@@ -385,10 +426,11 @@ jobs:
         run: just web2-seed
 
       # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
+      # dot: one character per test; github: each failure as an annotation (`gh run view`).
       - name: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
-        run: just web2-e2e --grep-invert @judge0 --reporter=line,html
+        run: just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
 
       - name: Compose logs
         if: failure()
@@ -397,7 +439,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: web2-e2e-${{ needs.changes.outputs.sha }}
+          name: web2-e2e-${{ needs.changes.outputs.sha }}-${{ matrix.shard }}
           path: |
             apps/web-2/playwright-report/
             apps/web-2/test-results/
@@ -409,9 +451,14 @@ jobs:
         run: just web2-stand-down
 
   publish:
-    needs: [changes, stack-smoke, web2-e2e]
-    # Release branches only. A red web2-e2e withholds ashyq-web-2 but not a server release.
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') && !cancelled() && needs.stack-smoke.result == 'success' }}
+    needs: [changes, server-lint, server-test, web2-gates, infra-gates, stack-smoke, web2-e2e]
+    # Release branches only (every gate runs there). A red web2-e2e withholds ashyq-web-2 but
+    # not a server release; any red gate withholds everything (images no longer wait for gates).
+    if: >-
+      startsWith(github.ref, 'refs/heads/release/') && !cancelled() &&
+      needs.server-lint.result == 'success' && needs.server-test.result == 'success' &&
+      needs.web2-gates.result == 'success' && needs.infra-gates.result == 'success' &&
+      needs.stack-smoke.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

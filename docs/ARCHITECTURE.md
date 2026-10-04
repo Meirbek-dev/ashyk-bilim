@@ -592,15 +592,16 @@ Wiremock stubs live in testkit as **recorded-shape fixtures**: Zitadel Session A
 Judge0, Resend, OpenAI-compatible chat completions (incl. SSE streaming) — each
 stub asserts request shape, not just returns canned data.
 
-### CI (`.github/workflows/ci.yaml`, job `server-gates`)
+### CI (`.github/workflows/ci.yaml`, jobs `server-lint` and `server-test`)
 
 Runs on pushes to `main` and on pull requests when `apps/server/**` or infra
 files change. The services come from the dev stack (`just dev-up`: Postgres 18
-+ pgvector, Redis, Zitadel, RustFS). Steps, all `just` recipes: `fmt-check ->
-migrate -> clippy -> sqlx-check -> test (nextest: unit+db+http) -> deny ->
-machete -> cov -> openapi-check`; `just ci` runs the same list locally. The
-server image is built by the `images` job only after every gate passed, and
-published as `<sha>` only after the full-stack smoke (`docs/INFRA.md`). Agents
++ pgvector, Redis, Zitadel, RustFS). Steps, all `just` recipes, in two parallel jobs: `fmt-check -> clippy -> deny
+-> machete -> openapi-check` (offline `.sqlx`) and `migrate -> sqlx-check -> cov`
+(`cov` runs the nextest suite, unit+db+http, once and enforces the floor); `just ci`
+runs the same list locally. The server image is built by the `images` job in
+parallel with the gates and published as `<sha>` only after every gate and the
+full-stack smoke passed (`docs/INFRA.md`). Agents
 commit directly to `main` and treat a red pipeline as a stop-the-line event:
 **the branch must be green at the end of every working session.**
 

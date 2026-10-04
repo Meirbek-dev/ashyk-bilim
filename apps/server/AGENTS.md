@@ -29,7 +29,7 @@ it in git history). The design rationale lives in `docs/ARCHITECTURE.md`
 just check        # fmt-check + clippy(-D warnings) - fast, run often
 just test         # nextest: unit + db + http suites (needs the dev stack)
 just test-unit    # nextest: unit only - works with no DB/containers (Windows sessions)
-just ci           # = CI server-gates: fmt-check clippy sqlx-check test deny machete cov openapi-check
+just ci           # = CI server-lint + server-test: fmt-check clippy sqlx-check test deny machete cov openapi-check
 just services     # = root `just dev-up` (db redis zitadel rustfs + init jobs)
 just migrate      # sqlx migrate run (DATABASE_URL from apps/server/.env)
 just migration NAME  # create a new migration file pair
