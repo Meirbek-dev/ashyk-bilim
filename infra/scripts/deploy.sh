@@ -42,8 +42,9 @@ set_tag() {
 # Chained with && so it stays correct when called from an `if` (no errexit there).
 up_and_smoke() {
   compose up -d --no-build --wait --remove-orphans &&
-    compose exec -T nginx nginx -t &&
-    compose exec -T nginx nginx -s reload &&
+    # The config files are single-file bind mounts and git replaces files (new
+    # inode): only a recreated container sees a changed config. CI ran nginx -t.
+    compose up -d --no-build --no-deps --force-recreate --wait nginx &&
     "$ROOT/infra/scripts/smoke.sh" "https://$domain"
 }
 
