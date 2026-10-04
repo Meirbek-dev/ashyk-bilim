@@ -103,15 +103,15 @@ full `@judge0` run on the local stand, G-14 on the newest production backup.
 | --- | ----------------------------------------------------------------- | ------ |
 | 0.1 | freeze `apps/web`, explicit workspaces, `.gitignore`              | done   |
 | 0.3 | skeleton: Start + Paraglide + hey-api + srvx, gates, hooks        | done   |
-| 0.4 | e2e stand: local + CI job `web2-e2e`                              | todo   |
+| 0.4 | e2e stand: local + CI job `web2-e2e`                              | done (`ci.yaml` job `web2-e2e`, `just web2-*`, `e2e/prod-stand.ts`) |
 | 0.5 | assumptions recorded in `docs/DECISIONS.md`                       | done   |
 | 1.1 | DESIGN.md, tokens, typography, 63 themes                          | done   |
 | 1.2 | kit, templates, states, theme infra, G-15; shell, full route tree, nav | done   |
-| 1.3 | shared/api (client, errors, upload), shared/auth, guards; events.ts waits L-4 | done (events todo) |
+| 1.3 | shared/api (client, errors, upload), shared/auth, guards; events.ts waits L-4 | done (events: `shared/api/event-invalidations.ts`) |
 | 1.4 | i18n: strategy, format.ts, validation map, labels, glossary       | done   |
 | 1.5 | request chain: CSP, request id, healthz, client-error             | done   |
 | 1.6 | reference slice: auth + collections (reset-password waits L-5)    | done   |
-| 1.7 | AGENTS.md final                                                   | todo   |
+| 1.7 | AGENTS.md final                                                   | done (`apps/web-2/AGENTS.md`: map, commands, one way, e2e) |
 | 2   | editor + markdown core, insert/paste/slash, video, PDF, discussions (in 3.3) | done |
 | 3.1 | home (+ reset-password and resend-code pages in auth) | done |
 | 3.2 | catalog, landing, search, command palette                         | done   |
