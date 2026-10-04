@@ -8,17 +8,32 @@ import {
   recordStreakMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { leaderboard } from '#/shared/api/gen/sdk.gen'
-import type { Leaderboard } from '#/shared/api/gen/types.gen'
+import type { Dashboard, Leaderboard, StreakUpdate } from '#/shared/api/gen/types.gen'
 
 import { LEADERBOARD_PAGE } from './model/achievements'
 
 /** Profile, the 10 latest XP awards and the viewer's rank; the same cache entry the settings page writes. */
 export const achievementsOptions = () => dashboardOptions()
 
-/** Touches today's login streak; the profile (both streaks) is read again. */
-export const recordLoginOptions = () => ({
+/**
+ * Touches today's login streak. The answer carries both counts: the profile in the cache takes them, so /home does
+ * not read the dashboard a second time (XP the touch awards arrives as `xp.awarded`).
+ */
+export const recordLoginOptions = (queryClient: QueryClient) => ({
   ...recordStreakMutation(),
-  meta: { invalidates: [dashboardQueryKey()] },
+  onSuccess: (streak: StreakUpdate) =>
+    queryClient.setQueryData<Dashboard>(dashboardQueryKey(), dashboard =>
+      dashboard
+        ? {
+            ...dashboard,
+            profile: {
+              ...dashboard.profile,
+              login_streak: streak.current_count,
+              longest_login_streak: streak.longest_count,
+            },
+          }
+        : dashboard,
+    ),
 })
 
 // Composed by hand like collectionsListOptions: the generated infinite options are not suspense-typed.

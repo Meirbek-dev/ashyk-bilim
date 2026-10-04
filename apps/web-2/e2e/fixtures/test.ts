@@ -23,9 +23,14 @@ function watch(page: Page, problems: string[]): void {
     // A worker's bulk action has no event: its status is polled by design (grading B-GRD-27).
     const { pathname } = new URL(request.url())
     if (pathname.startsWith('/api/v2/bulk-actions/') || repeatable.get(page)?.includes(pathname)) return
-    if (requested.has(request.url())) problems.push(`duplicate GET ${request.url()}`)
+    if (requested.has(request.url()))
+      problems.push(`duplicate GET ${request.url()} (first: ${outcome.get(request.url())})`)
     requested.add(request.url())
   })
+  // How the first read ended: a retried network failure or 5xx reads differently from a second fetch by the app.
+  const outcome = new Map<string, string>()
+  page.on('response', response => outcome.set(response.url(), String(response.status())))
+  page.on('requestfailed', request => outcome.set(request.url(), request.failure()?.errorText ?? 'failed'))
   page.on('console', message => {
     // A 4xx answer is shown in place by the app; Chromium still logs it as a resource error.
     const expected4xx = message.text().startsWith('Failed to load resource: the server responded with a status of 4')
@@ -35,6 +40,8 @@ function watch(page: Page, problems: string[]): void {
 }
 
 async function inspect(page: Page, problems: string[]): Promise<void> {
+  // Contrast measured mid-fade (a tooltip opening on focus) is not the page's contrast: let transitions end first.
+  await page.evaluate(() => Promise.allSettled(document.getAnimations().map(animation => animation.finished)))
   const axe = await new AxeBuilder({ page }).analyze()
   for (const violation of axe.violations) {
     if (violation.impact === 'serious' || violation.impact === 'critical') {
