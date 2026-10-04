@@ -16,6 +16,7 @@ import {
 
 import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect, type Seed, test as base } from '../fixtures/seed'
+import { expectReread, gotoLive } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 const cookie = (seed: Seed) => {
@@ -231,4 +232,14 @@ test('B-ADM-25 a role reader without role:manage sees the roles but no "New role
   await page.goto('/admin/roles')
   await expect(page.getByRole('heading', { level: 1, name: m.admin_roles_title({}, ru) })).toBeVisible()
   await expect(page.getByRole('button', { name: m.admin_role_new({}, ru) })).toHaveCount(0)
+})
+
+test('B-NOT-16 a role made elsewhere appears in the open list without a reload (admin.updated)', async ({
+  page,
+  role,
+}) => {
+  await gotoLive(page, '/admin/roles')
+  expectReread(page, '/api/v2/rbac/roles')
+  const { name } = await role()
+  await expect(page.getByRole('link', { name })).toBeVisible()
 })

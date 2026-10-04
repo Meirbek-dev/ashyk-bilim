@@ -22,6 +22,9 @@ export function CollectionEditPage() {
   const navigate = useNavigate()
   const update = useMutation(updateCollectionOptions(useQueryClient(), collectionId))
   const [conflict, setConflict] = useState(false)
+  // The version the form is based on: a live refresh of the collection (`collection.updated`) must not move it, or a
+  // save would silently overwrite the change it brought (B-COL-10). Only "reload and retry" takes the newer one.
+  const [base] = useState(() => query.data.version)
   // Captured once: a reload after a conflict must not reset what the user typed.
   const [defaultValues] = useState<UpdateCollectionRequest>(() => ({
     name: query.data.name,
@@ -43,7 +46,7 @@ export function CollectionEditPage() {
   }
   const form = useAppForm(vUpdateCollectionRequest, {
     defaultValues,
-    onSubmit: body => update.mutateAsync(request(body, query.data.version), callbacks),
+    onSubmit: body => update.mutateAsync(request(body, base), callbacks),
   })
   const reloadAndRetry = async () => {
     const fresh = await query.refetch()

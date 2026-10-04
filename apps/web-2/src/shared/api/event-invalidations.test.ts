@@ -8,10 +8,17 @@ import {
   attemptStateQueryKey,
   dashboardQueryKey,
   getActivityFileSubmissionQueryKey,
+  getCollectionQueryKey,
   getSubmissionQueryKey,
   listEnrollmentsInfiniteQueryKey,
   gradebookInfiniteQueryKey,
   learnerCourseStateQueryKey,
+  listCollectionsInfiniteQueryKey,
+  listDiscussionsInfiniteQueryKey,
+  listGroupsInfiniteQueryKey,
+  listRepliesInfiniteQueryKey,
+  listRolesQueryKey,
+  listUsersInfiniteQueryKey,
   myAttemptsQueryKey,
   reviewSubmissionQueryKey,
   statsQueryKey,
@@ -110,4 +117,27 @@ test('B-NOT-15 a task-keyed read of another activity is left alone; an unknown t
   expect(aboutOtherActivity(gradebookInfiniteQueryKey({ path: { course_id: COURSE } }), ACTIVITY, read('x'))).toBe(
     false,
   )
+})
+
+test('B-NOT-16 the live events refresh the lists this web reads (its infinite and filtered keys)', () => {
+  const COLLECTION = '0190a5d2-0000-7000-8000-000000000010'
+  const POST = '0190a5d2-0000-7000-8000-000000000011'
+  const collection = invalidationsFor('collection.updated', { collection_id: COLLECTION, deleted: false })
+  expect(hits(collection, listCollectionsInfiniteQueryKey({ query: { limit: 20, q: 'x' } }))).toBe(true)
+  expect(hits(collection, getCollectionQueryKey({ path: { collection_id: COLLECTION } }))).toBe(true)
+  const reply = { course_id: COURSE, discussion_id: SUBMISSION, parent_id: POST, deleted: false }
+  const discussion = invalidationsFor('discussion.updated', reply)
+  expect(hits(discussion, listDiscussionsInfiniteQueryKey({ path: { course_id: COURSE }, query: {} }))).toBe(true)
+  expect(hits(discussion, listDiscussionsInfiniteQueryKey({ path: { course_id: OTHER_COURSE } }))).toBe(false)
+  expect(hits(discussion, listRepliesInfiniteQueryKey({ path: { discussion_id: POST } }))).toBe(true)
+  const progress = invalidationsFor('progress.updated', { course_id: COURSE })
+  expect(hits(progress, learnerCourseStateQueryKey({ path: { course_id: COURSE } }))).toBe(true)
+  expect(hits(progress, listEnrollmentsInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
+  expect(hits(invalidationsFor('admin.updated', { list: 'users' }), listUsersInfiniteQueryKey({ query: {} }))).toBe(
+    true,
+  )
+  expect(hits(invalidationsFor('admin.updated', { list: 'roles' }), listRolesQueryKey())).toBe(true)
+  const groups = invalidationsFor('admin.updated', { list: 'groups' })
+  expect(hits(groups, listGroupsInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
+  expect(hits(groups, listRolesQueryKey())).toBe(false)
 })

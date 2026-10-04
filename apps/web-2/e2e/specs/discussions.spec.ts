@@ -252,7 +252,7 @@ test('B-DSC-09 like toggles with the counts the server answers', async ({ page, 
   await expect(like).toHaveText('0')
 })
 
-test('B-DSC-10 writes update the list from their answers, without reading it again', async ({
+test('B-DSC-10 writes update the list from their answers, not from a re-read', async ({
   page,
   signInAs,
   course,
@@ -262,17 +262,19 @@ test('B-DSC-10 writes update the list from their answers, without reading it aga
   await post(made, 'Пост для реакции.', 'teacher')
   await signInAs('student')
   await page.goto(tab(made))
-  const reads: string[] = []
-  page.on('request', sent => {
-    if (sent.method() === 'GET' && /\/discussions\?/.test(sent.url())) reads.push(sent.url())
+  // A re-read (the `discussion.updated` of these very writes may bring one) is held back: what shows comes from the
+  // writes' answers.
+  await page.route(/\/discussions\?/, async route => {
+    await page.waitForTimeout(20_000)
+    await route.fallback()
   })
   const like = article(page, 'Пост для реакции.').getByRole('button', { name: m.discussions_like({}, ru), exact: true })
   await clickUntil(like, () => expect(like).toHaveText('1', { timeout: 2000 }))
   const composer = page.getByRole('region', { name: m.discussions_new({}, ru) })
   await composer.getByRole('textbox').fill('Ещё один пост.')
   await composer.getByRole('button', { name: m.discussions_publish({}, ru) }).click()
-  await expect(article(page, 'Ещё один пост.')).toBeVisible()
-  expect(reads).toEqual([])
+  await expect(article(page, 'Ещё один пост.')).toBeVisible({ timeout: 5000 })
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
 
 for (const locale of ['kk', 'en'] as const) {

@@ -77,7 +77,7 @@
 
 ## Ждёт сервера
 
-- `ScopeCapabilities.modes` и `FeatureCapability.key` - строки, а не enum; `StudyCompanionAnswer.flashcards` -
+- `FeatureCapability.key` - строка, а не enum; `StudyCompanionAnswer.flashcards` -
   `JsonValue[]`; `TOOL_CALL_RESULT.content` - JSON внутри строки.
 
 ## Не перенесено (контракт есть)
