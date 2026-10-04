@@ -1,139 +1,120 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# apps/web-2
 
-# This is NOT the Next.js you know
+The new web (stage 2): React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on
+Node 26. Standalone bun project (own `bun.lock`, not in the root workspace). The old `apps/web` is
+frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until its phase 9).
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+## Map
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+| Path                                | What lives there                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `src/routes/`                       | file routes: `validateSearch`, `beforeLoad`, `loader`, `head`, component       |
+| `src/features/<name>/`              | `SPEC.md`, `index.ts`, `route.ts` (entry chunk), `queries.ts`, `model/`, `ui/` |
+| `src/shared/api/`                   | `client.ts` (the SDK seam), `errors.ts` (`ApiError`), `query-client.ts`        |
+| `src/shared/api/gen/`               | generated SDK, types, Valibot schemas, query options. Never edit               |
+| `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities)   |
+| `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`    |
+| `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts`   |
+| `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.21.1 add <name>`; never hand-edit     |
+| `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest    |
+| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`; `cn` (shadcn's `cn` package)                                      |
+| `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP           |
+| `serve.ts`                          | production entry: srvx static files + the Start handler                        |
+| `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                   |
+| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks    |
+| `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)      |
 
-<!-- END:nextjs-agent-rules -->
+Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
+inside a feature use relative paths; across layers use `#/`. Lint enforces all of it.
 
-<!--VITE PLUS START-->
+## Commands (run in apps/web-2)
 
-# Using Vite+, the Unified Toolchain for the Web
+| Command                          | Does                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                                    |
+| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                          |
+| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                                               |
+| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
+| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
+| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                                    |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
+| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
+| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
 
-This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
+## One way to do each thing (lint and gates reject the alternatives)
 
-Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
+| Task            | The way                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`                              |
+| Read            | route `loader: ensureQueryData(xOptions())` + `useSuspenseQuery(xOptions())`                           |
+| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`                                |
+| Query keys      | generated `xQueryKey()`; never literal arrays                                                          |
+| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table)                          |
+| Action access   | `allowed_actions` from the API response; never roles or permission strings                             |
+| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                                           |
+| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit })` + `field.TextField`                             |
+| File upload     | `FileInput` (`purpose` sets types and cap) / `FileField`; pasted image: `useUpload` + `clipboardImage` |
+| Pick from list  | `MultiCombobox` (server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`       |
+| Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`        |
+| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                          |
+| Dates, numbers  | `#/shared/i18n/format`                                                                                 |
+| Screens         | a template from `#/shared/components/templates`; lists through `ListState`                             |
+| UI elements     | stock `#/shared/ui/<name>` (`variant`, `size`, `render`) or a composite; layout classes only, tokens   |
+| Button looks    | route: router `Link` + `className={buttonVariants({ variant })}`; pending: `disabled` + `<Spinner />`  |
+| Toast           | `toast.add({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                      |
+| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                            |
+| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                           |
+| Memoization     | none: React Compiler                                                                                   |
 
-## Review Checklist
+No suppressions: `oxlint-disable`, `@ts-expect-error`, `as any`, `test.skip`, TODO are errors unless
+listed in `gates/allowlist.json` with a reason (G-12).
 
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
-- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
-- [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
+## Routes, access, shell
 
-<!--VITE PLUS END-->
+- Tree = spec 5.3: `_public` (`ssr: true`), `_guest` (signed-in -> `/home`), `_authed` (`ssr: 'data-only'`) with
+  `teach.tsx` / `admin.tsx` guarded by `requireCapability`. `shared/auth/access.ts` is the one table "workspace ->
+  section -> capability": guards, sidebar, bottom bar, switcher (and the palette) read it. A new nav section = a row.
+- Route `staticData`: `title` (document title, layout heading), `layout: 'focus'` (the route draws
+  `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment). Tabs live
+  in the layout route file; its `index.tsx` redirects to the first tab. A 403 thrown in `beforeLoad` renders in place
+  (`ErrorView` -> `ForbiddenView`) and SSR answers with the ApiError's status (`shared/lib/ssr-status.ts`).
+- No stub routes (gate `under-construction`). Each OpenAPI operation has a consumer in `src/`, is a service operation
+  (`allowlist.json`) or is in `gates/server-removals.json` with a reason (G-07; a stale entry is an error).
+- Live data: `GET /me/events` -> `shared/api/event-invalidations.ts` (event -> keys). An event skips a read that
+  landed after it (`server-clock.ts`: stream-id time, offsets from arrivals and `Date`) and task-keyed reads of
+  another activity. e2e: `expectReread(page, path)` when a test changes data behind an open page on purpose.
+- Before hydration (/login ~140 ms, more on the stand) an SSR page works natively: navigation is a `Link`; an action
+  that changes server-rendered state (a form's fieldset, enrol, leave) stays disabled until `useHydrated()`: a click
+  React replays mid-hydration breaks it (React error 418). The auth fieldset carries `data-hydrating`, which the e2e fixture
+  awaits. `FileField` / `MultiSelectField` are not bound fields: render them inside `form.AppField`.
+- Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
+  signed-in). Set the slice's (lazy) component there, from its `route.ts`; an unset slot renders nothing.
+- Entry chunk (G-05, checked by `bun run build`): only `loader` and the components are code-split; `validateSearch`,
+  `search`, `beforeLoad`, `loaderDeps`, `head`, `staticData` and the root route (the shell) stay in the entry, which
+  takes whole modules. Those options use a feature only via `#/features/<name>/route` (lint `ab/route-level-imports`);
+  `route.ts` holds that code itself, no static import of its feature (`ab/route-entry-imports`; else `import()`). No
+  generated SDK there (the session key is spelled out, pinned by `session.test.ts`). The gate prints any other
+  feature module or SDK file in the initial chunks with its import chain (`dist/initial-modules.json`).
 
-# apps/web - frontend conventions (v2 contract, P9)
+## e2e locally
 
-The app talks to the Rust backend (`apps/server`, `/api/v2`), the only backend.
-The legacy Python API was removed after the 2026-09-30 cutover (git tag
-`legacy-final`).
+API on `:8000` (`vp dev` proxies `/api/v2`; buckets and `/content`: storage `:9002`), seeded by `ashyq admin seed-e2e`.
+`E2E_PASSWORD=<seed password> vp run e2e [--grep x]` reuses or starts `vp dev` and warms every route; parallel runs in
+one tree pass `--output=<own dir>`; never commit the password. `E2E_API_LOG=<API log>`: `auth.spec.ts` reads emailed
+codes there. `e2e/fixtures/seed.ts`: `seed`, `test.use({ as: role })` (storage state per worker), `signInAs(role)`.
+**Against the production build** (CSP is sent only there, as on the stand): `bun run build`; `PORT=3101 HOST=127.0.0.1
+PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node serve.ts` (restart after a build);
+`node e2e/prod-stand.ts` (nginx in miniature, :3100); `E2E_BASE_URL=http://127.0.0.1:3100 vp run e2e` (CSP header checked).
 
-## Toolchain
+## Slice cycle (one feature)
 
-- `bun install`, `bun run dev`, `bun run build`.
-- From the repo root use `just web <script>` (= `bun run --cwd apps/web <script>`).
-- CI gates (`.github/workflows/ci.yaml`, web job): `bun run lint` (oxlint via
-  `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
-  `bun run test` (vitest, `src/tests/**`), `bun run generate:api-types` +
-  `bun run check:contracts` (generated client matches `openapi.v2.json`),
-  `bun run check:error-codes`. Baseline: `docs/INFRA.md`.
-- `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
-  unrelated files, so run it deliberately and review the diff.
-- `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`
-  in this directory, vitest uses `vitest.config.ts`.
-- `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
-- `bunx knip` reports dead files/exports (generated code is ignored).
+1. Write `src/features/<name>/SPEC.md` first: `Операции:` line, `B-<FEAT>-NN` behaviors, "Изменено",
+   "Не переносится" (<= 150 lines). Reference: `src/features/collections/`.
+2. Add `messages/{ru,kk,en}/<name>.json` and list the file in `project.inlang/settings.json`.
+3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`; bind it in `src/routes/`. Each `B-` id is in a test title (G-10).
+4. `vp run verify` and `bun run build` green. A gate you cannot satisfy is a question for the orchestrator.
 
-## The contract and the generated client
-
-- **Source of truth:** `apps/server/openapi.v2.json` (exported by `ashyq openapi`).
-  Handler docs live in `apps/server/crates/api/src/routes/*.rs`, DTOs in
-  `crates/api/src/dto/*.rs`; design in `docs/ARCHITECTURE.md` §5–§7 and
-  the per-slice "Routes:" notes in `docs/DECISIONS.md`.
-- `bun run generate:api-types` regenerates `src/lib/api/generated/**` (Orval,
-  react-query hooks per tag + zod schemas). Never edit generated files; fix
-  `orval.config.ts` / `scripts/orval-input-transformer.mjs` /
-  `scripts/postprocess-orval-output.mjs` instead. Contract defects the
-  transformer papers over are listed in `docs/FINDINGS.md`.
-- **Types come from the zod module:** `import type { Course, CoursePage } from
-'@/lib/api/generated/zod'`; the same names are zod schemas (`Course.parse`).
-  Generated fetchers/hooks: `import { listCourses, useListCourses } from
-'@/lib/api/generated/courses/courses'`. Duplicate operation ids are prefixed
-  with their tag (`codeGetRun`, `fileSubmissionsSaveDraft`, …).
-- Hand-written calls go through `apiJson(path, init, parse)` /
-  `apiResult(...)` (`@/lib/api-client`) with a **path relative to `/api/v2`**
-  (`'courses/{id}/curriculum'`), and a zod parser from the generated module.
-  `apiResult` also returns response headers (needed for `ETag` versions).
-
-## Wire conventions (ARCHITECTURE §6)
-
-- **Ids are UUID strings** (`id`, `course_id`, `user_id`, …). No numeric ids,
-  no `*_uuid` fields, no `course_`/`activity_` prefixes. Route params and
-  links carry the id as-is.
-- **Timestamps are epoch seconds** named `*_unix`. Convert with `fromUnix` /
-  `toUnix` / `unixToIso` from `@/lib/api/contract`.
-- **Listings are keyset pages** `{ items, next_cursor }` (`Page<T>` in
-  `@/lib/api/contract`, `collectPages` walks them). Pass `next_cursor` back as
-  `cursor`; there is no offset paging or `total` except where the contract
-  says so (work queue, leaderboard, and every `analytics/teacher/*` listing -
-  those keep legacy `page`/`page_size` deliberately, see DECISIONS.md
-  "Analytics (2026-09-06, P7)"). Do not "fix" those into cursors.
-- **Errors are `application/problem+json`** (`{type,title,status,code,detail,
-details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
-  exposes `code` (kebab-case, closed registry), `details`, `fieldErrors`,
-  `requestId`, `retryAfterSeconds`. Branch on `hasErrorCode(error,
-'precondition-failed')`, never on English text. Display through
-  `useApiError()` (looks up `Errors.codes.<code>` / `Errors.fields.<code>` in
-  `src/messages/*.json`; `scripts/sync-error-codes.mjs` keeps the code list in
-  sync with the registry and fails the build on gaps).
-- **Optimistic locks:** `If-Match: "<version>"` via `ifMatchHeaders(version)`
-  (`@/lib/api/headers`); the new version comes back as `ETag`
-  (`parseEntityTagVersion(headers)`). Learner draft saves use `draft_version`
-  (409 `conflict` with `details {expected, actual}`), teacher grade saves and
-  file-attempt grading use `version` (412 `precondition-failed`).
-- **Idempotency:** retry-safe POSTs (submission submit, code runs, file
-  submission submit) send `Idempotency-Key` via `idempotencyHeaders(key)`; keep
-  the same key when retrying one logical action.
-- **Uploads never go through the API:** `uploadFile(file, purpose)`
-  (`@/services/media/uploads`) does `POST /uploads` -> presigned `PUT` ->
-  `POST /uploads/{id}/finalize` and returns `{id, key}`; attach the `id` to the
-  owner (`avatar_upload_id`, block create, file-submission draft). Public
-  objects are addressed by storage `key` and served at `/content/<key>`
-  (`getContentUrl(key)` in `@/services/media/media`).
-- **SSE:** `GET /submissions/{id}/events` (one submission),
-  `GET /courses/{id}/grading/events` (every grade change and hand-in on a
-  course, graders only - `useCourseGradingEvents` invalidates
-  `queryKeys.grading.*`; polling is the fallback while it is down),
-  `POST /ai/runs/{id}/stream` and `POST /ai/qa/{course}/chat` (AG-UI);
-  `Last-Event-ID` resumes.
-- **Sessions:** one httponly `ab_session` cookie set by the BFF; no tokens, no
-  refresh. `getSession()` (server) joins `GET /auth/session` (user id, role
-  slugs, permission strings) with `GET /users/me`; `useSession()` exposes it
-  client-side with `can(resource, action, scope)`. A browser-side 401 redirects
-  to `/login`. Auth server actions live in `src/app/actions/auth.ts`.
-
-## Feature layout
-
-- `src/services/**` - plain async functions per resource (server and client
-  safe), `src/features/<area>/**` - TanStack Query options/hooks + feature UI,
-  `src/app/[locale]/**` - routes, `src/app/_shared/**` - page implementations,
-  `src/components/**` - shared UI. Query keys are centralised in
-  `src/lib/react-query/queryKeys.ts` (edit, never rewrite the file).
-- i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (inlang message format,
-  configured in `project.inlang/settings.json` for the Paraglide migration).
-  Keep nested keys; complex messages are arrays with declarations and match variants.
-  Add keys to all three; Russian first, kk/en translations. Verify with
-  `just web check:messages`. The existing Next.js consumers still need migration.
-- Tests: `src/tests/**/*.test.ts(x)` (vitest + testing-library), Playwright in
-  `e2e/` (page objects in `e2e/page-objects`, specs in `e2e/specs`).
-
-## Not in v2 (do not re-add without a contract change)
-
-Password reset (self-registration `/signup`, email verification and
-password change came back 2026-09-12 - DECISIONS.md), refresh tokens, numeric ids,
-`*_uuid` strings, multipart uploads through the API, offset pagination,
-`/members`, `/roles/{id}` numeric role ids,
-batch grading, bulk zip download of file submissions, `/trail/start`.
+Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator; ask
+for a missing primitive or operation. Gates print `file:line rule - what to do` (<= 30 lines each); Playwright uses
+the `line` reporter. Search `sdk.gen.ts`, never paste generated files into context.

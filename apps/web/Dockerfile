@@ -1,48 +1,33 @@
+# ashyq-web-2: build with bun, run on Node 26 (spec 7.13). No build args: one image for any domain;
+# PUBLIC_ORIGIN and INTERNAL_API_URL are read at startup (src/shared/lib/env.server.ts).
+# Build context is the repository root: podman build -f apps/web-2/Dockerfile .
+# The root .dockerignore keeps host node_modules out of the context.
+
 FROM oven/bun:1.4.2-alpine AS deps
 WORKDIR /app
-COPY package.json bun.lock ./
-COPY apps/web/package.json ./apps/web/package.json
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-  bun install --frozen-lockfile
+COPY apps/web-2/package.json apps/web-2/bun.lock ./
+RUN bun install --frozen-lockfile --ignore-scripts
 
-FROM node:26-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY . .
+FROM deps AS build
+COPY apps/web-2/ ./
+# `build` = vp build + the chunk budgets (G-05): an over-budget bundle fails the image.
+RUN bun run build
 
-# Public env vars are baked into the bundle at build time
-ARG NEXT_PUBLIC_SITE_URL
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_MEDIA_URL
+FROM deps AS runtime-deps
+RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
-  NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-  NEXT_PUBLIC_MEDIA_URL=$NEXT_PUBLIC_MEDIA_URL \
-  NEXT_TELEMETRY_DISABLED=1
-
-# Strip any local env files so they are never baked into the image
-RUN rm -f apps/web/.env*
-RUN npm --prefix apps/web run build
-
-FROM node:26-alpine AS runner
-WORKDIR /app
-
-RUN apk add --no-cache dumb-init curl
-
+FROM node:26-alpine
 ENV NODE_ENV=production \
-  NEXT_TELEMETRY_DISABLED=1 \
-  PORT=3000 \
-  HOSTNAME=0.0.0.0
-
-COPY --from=builder --chown=node:node /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=node:node /app/apps/web/public ./apps/web/public
-
+    HOST=0.0.0.0 \
+    PORT=3000
+WORKDIR /app
+COPY --from=runtime-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY apps/web-2/package.json apps/web-2/serve.ts ./
 USER node
 EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -fsS http://localhost:3000/api/health || exit 1
-
-CMD ["dumb-init", "node", "apps/web/server.js"]
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD ["node", "-e", "fetch(`http://127.0.0.1:${process.env.PORT}/healthz`).then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+# srvx `gracefulShutdown`: SIGTERM stops accepting and drains in-flight requests (serve.ts).
+STOPSIGNAL SIGTERM
+CMD ["node", "serve.ts"]

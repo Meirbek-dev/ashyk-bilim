@@ -1,181 +1,72 @@
-/**
- * Global setup — runs once before the entire Playwright test suite.
- *
- * Responsibilities (v2 contract, `/api/v2`):
- *  1. Verify the Admin, Teacher and Student accounts can log in through the
- *     BFF (`POST /auth/login`). v2 has no registration endpoint — the three
- *     accounts must exist beforehand (seeded through Zitadel, see
- *     docs/GAUNTLET-LOOP.md step 0).
- *  2. Log in as Admin and grant the teacher role
- *     (`POST /users/{id}/roles {role: slug}`) to the Teacher user, resolved
- *     through the admin listing (`GET /users?q=`).
- *  3. Persist authenticated browser storage states (the `ab_session` cookie)
- *     for Admin, Teacher, and Student so individual test files can reuse them
- *     without re-logging-in for every single spec.
- *
- * Design decisions:
- *  - Direct REST calls for the administrative steps — faster and more
- *    reliable than browser interactions.
- *  - A real browser session is used only to capture the storageState, which
- *    the server action sets via an HttpOnly cookie on the app origin.
- */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
-import { chromium } from '@playwright/test'
-import type { FullConfig } from '@playwright/test'
-import * as fs from 'node:fs'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { STORAGE_STATE_DIR, STORAGE_STATE } from './auth-states'
-import { getEnvOr, requireEnv, setEnv } from './env'
-import { probeJudge0 } from './fixtures/environment'
+import { chromium, type FullConfig, type Page } from '@playwright/test'
 
-export { STORAGE_STATE_DIR, STORAGE_STATE }
+import { createClient, createConfig } from '#/shared/api/gen/client'
+import { login } from '#/shared/api/gen/sdk.gen'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// Against `vp dev` only (no E2E_BASE_URL): the first request of a route compiles it (SSR and the client chunks) and
+// may re-optimize dependencies with a full reload, which costs a cold test its 5 s budget. One signed-in pass over
+// every route of the tree compiles them all before the specs start, so no spec needs a longer timeout.
 
-// ---------------------------------------------------------------------------
-// Load test-specific env overrides (Playwright runs in Node; dotenv may not be
-// available as a dep, so we do a minimal manual parse as a fallback).
-// ---------------------------------------------------------------------------
-function loadEnvFile(filePath: string): void {
-  if (!fs.existsSync(filePath)) return
-  const lines = fs.readFileSync(filePath, 'utf8').split('\n')
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const eqIdx = trimmed.indexOf('=')
-    if (eqIdx === -1) continue
-    const key = trimmed.slice(0, eqIdx).trim()
-    const value = trimmed
-      .slice(eqIdx + 1)
-      .trim()
-      .replace(/^["']|["']$/g, '')
-    if (key && !(key in process.env)) process.env[key] = value
+const PLACEHOLDER = '00000000-0000-4000-8000-000000000000'
+const PARALLEL = 6
+
+/** Leaf paths of src/routeTree.gen.ts with a placeholder for each param (the route's chunks load either way). */
+function routePaths(): string[] {
+  const tree = readFileSync(resolve(import.meta.dirname, '../src/routeTree.gen.ts'), 'utf8')
+  const block = /export interface FileRoutesByFullPath \{([\s\S]*?)\n\}/.exec(tree)?.[1] ?? ''
+  const paths = [...block.matchAll(/^\s+'([^']+)':/gm)].flatMap(match => (match[1] ? [match[1]] : []))
+  return [...new Set(paths.map(path => path.replaceAll(/\$\w+/g, PLACEHOLDER)))]
+}
+
+const counted = (request: { url: () => string }) => !request.url().includes('/me/events')
+
+/** Loads the page and waits until no request is in flight for 500 ms (the event stream does not count). */
+async function settle(page: Page, url: string): Promise<void> {
+  const traffic = { inflight: 0, quietSince: Date.now() }
+  page.on('request', request => counted(request) && traffic.inflight++)
+  const done = (request: { url: () => string }) => {
+    if (!counted(request)) return
+    traffic.inflight--
+    traffic.quietSince = Date.now()
   }
+  page.on('requestfinished', done)
+  page.on('requestfailed', done)
+  await page.goto(url, { waitUntil: 'load', timeout: 120_000 }).catch(() => undefined)
+  const busy = () => traffic.inflight > 0 || Date.now() - traffic.quietSince < 500
+  for (const deadline = Date.now() + 60_000; Date.now() < deadline && busy();) await page.waitForTimeout(100)
+  page.removeAllListeners()
 }
 
-loadEnvFile(path.join(__dirname, '.env.test.local')) // overrides win: first loader sets the key
-loadEnvFile(path.join(__dirname, '.env.test'))
-
-const API_URL = getEnvOr('E2E_API_URL', 'http://localhost:8000/api/v2').replace(/\/+$/u, '')
-const BASE_URL = getEnvOr('E2E_BASE_URL', 'http://localhost:3000')
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-interface Problem {
-  code?: string
-  detail?: string
-  title?: string
-}
-
-async function readProblem(res: Response): Promise<string> {
-  const body = (await res.json().catch(() => null)) as Problem | null
-  return body ? `${body.code ?? ''} ${body.detail ?? body.title ?? ''}`.trim() : ''
-}
-
-/** POST /auth/login (JSON) — returns the `ab_session` cookie pair. */
-async function loginViaApi(login: string, password: string): Promise<string> {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login, password }),
-    redirect: 'manual',
+async function adminCookie(baseURL: string): Promise<{ name: string; value: string } | null> {
+  const password = process.env['E2E_PASSWORD']
+  if (!password) return null
+  const { response } = await login({
+    client: createClient(createConfig({ baseUrl: baseURL })),
+    body: { login: 'e2e-admin', password },
   })
-
-  if (!res.ok) {
-    throw new Error(`[setup] Login failed for ${login}: ${res.status} ${await readProblem(res)}`)
-  }
-
-  const setCookie = res.headers.getSetCookie?.() ?? []
-  const session = setCookie.map(c => c.split(';')[0]).find(pair => pair?.startsWith('ab_session='))
-  if (!session) {
-    throw new Error(`[setup] Login for ${login} returned no ab_session cookie.`)
-  }
-  return session
+  const pair = /^([^=;]+)=([^;]*)/.exec(response?.headers.get('set-cookie') ?? '')
+  return pair?.[1] && pair[2] !== undefined ? { name: pair[1], value: pair[2] } : null
 }
 
-/** GET /auth/session — the caller's user id, roles and permissions. */
-async function getSessionInfo(cookieHeader: string): Promise<{ user_id: string; roles: string[] }> {
-  const res = await fetch(`${API_URL}/auth/session`, { headers: { Cookie: cookieHeader } })
-  if (!res.ok) throw new Error(`[setup] /auth/session failed: ${res.status}`)
-  return res.json() as Promise<{ user_id: string; roles: string[] }>
-}
-
-/** POST /users/{id}/roles {role} — idempotent role grant (platform admin). */
-async function assignRole(adminCookie: string, userId: string, roleSlug: string): Promise<void> {
-  const res = await fetch(`${API_URL}/users/${userId}/roles`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
-    body: JSON.stringify({ role: roleSlug }),
-  })
-  // 409 = already holds the role; anything else non-2xx is a real failure.
-  if (!res.ok && res.status !== 409) {
-    throw new Error(`[setup] Failed to assign role ${roleSlug} to ${userId}: ${res.status} ${await readProblem(res)}`)
-  }
-}
-
-/** Log in through the UI and persist the browser storage state. */
-async function captureStorageState(login: string, password: string, outputPath: string): Promise<void> {
+export default async function warmDevServer(config: FullConfig): Promise<void> {
+  if (process.env['E2E_BASE_URL']) return
+  const baseURL = String(config.projects[0]?.use.baseURL)
   const browser = await chromium.launch()
-  const context = await browser.newContext({ baseURL: BASE_URL })
-  const page = await context.newPage()
-
-  await page.goto('/en/login')
-
-  await page.locator('input[name="login"]').fill(login)
-  await page.locator('input[name="password"]').fill(password)
-  await page.locator('form button[type="submit"]').click()
-
-  // Wait for redirect away from /login — indicates successful auth
-  await page.waitForURL(url => !url.pathname.includes('/login'), {
-    timeout: 15_000,
-  })
-
-  await context.storageState({ path: outputPath })
+  const context = await browser.newContext({ baseURL })
+  const cookie = await adminCookie(baseURL)
+  if (cookie) await context.addCookies([{ ...cookie, url: baseURL }])
+  const queue = routePaths()
+  const started = Date.now()
+  await Promise.all(
+    Array.from({ length: PARALLEL }, async () => {
+      const page = await context.newPage()
+      for (let path = queue.shift(); path !== undefined; path = queue.shift()) await settle(page, path)
+      await page.close()
+    }),
+  )
   await browser.close()
-  console.log(`[setup] Saved storage state for ${login} → ${outputPath}`)
-}
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
-export default async function globalSetup(_config: FullConfig): Promise<void> {
-  // Ensure output directory exists; drop cross-spec state left by an aborted run
-  fs.mkdirSync(STORAGE_STATE_DIR, { recursive: true })
-  fs.rmSync(path.join(STORAGE_STATE_DIR, 'state.json'), { force: true })
-
-  const teacherEmail = requireEnv('E2E_TEACHER_EMAIL')
-  const teacherPassword = requireEnv('E2E_TEACHER_PASSWORD')
-  const studentEmail = requireEnv('E2E_STUDENT_EMAIL')
-  const studentPassword = requireEnv('E2E_STUDENT_PASSWORD')
-  const adminEmail = requireEnv('E2E_ADMIN_EMAIL')
-  const adminPassword = requireEnv('E2E_ADMIN_PASSWORD')
-
-  // 1. Every account must already exist — v2 has no registration endpoint.
-  const adminCookie = await loginViaApi(adminEmail, adminPassword)
-  const teacherCookie = await loginViaApi(teacherEmail, teacherPassword)
-  await loginViaApi(studentEmail, studentPassword)
-
-  // 2. Grant the teacher role (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
-  const teacherRoleSlug = getEnvOr('E2E_TEACHER_ROLE_SLUG', 'instructor')
-  const teacher = await getSessionInfo(teacherCookie)
-  if (!teacher.roles.includes(teacherRoleSlug)) {
-    await assignRole(adminCookie, teacher.user_id, teacherRoleSlug)
-    console.log(`[setup] Assigned role "${teacherRoleSlug}" to ${teacherEmail} (id=${teacher.user_id})`)
-  }
-
-  // 3. Capture real browser storage states (HttpOnly cookies)
-  await captureStorageState(adminEmail, adminPassword, STORAGE_STATE.admin)
-  await captureStorageState(teacherEmail, teacherPassword, STORAGE_STATE.teacher)
-  await captureStorageState(studentEmail, studentPassword, STORAGE_STATE.student)
-
-  // 4. Infrastructure probes — recorded for the specs that need the service.
-  const judge0 = await probeJudge0(API_URL, await loginViaApi(teacherEmail, teacherPassword))
-  setEnv('E2E_JUDGE0', String(judge0))
-  if (!judge0) console.log('[setup] Judge0 not reachable (code/languages) — code-challenge tests will be skipped.')
-
-  console.log('[setup] Global setup complete.')
+  process.stdout.write(`dev server warmed in ${Math.round((Date.now() - started) / 1000)} s\n`)
 }
