@@ -274,7 +274,9 @@ async fn last_admin_role_cannot_be_removed(pool: PgPool) {
 
 /// UX-135: two admins stripping each other at the same time - the guard
 /// counts under a row lock on the `admin` role in the write's transaction,
-/// so exactly one removal lands and one active admin always remains.
+/// so exactly one removal lands and one active admin always remains. The
+/// loser is 409 (guard) or, when the winner committed before its permission
+/// check, 403 (it is no longer an admin).
 #[sqlx::test(migrations = "../../migrations")]
 async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -296,9 +298,9 @@ async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
     );
     let mut statuses = [a.status, b.status];
     statuses.sort();
-    assert_eq!(
-        statuses,
-        [StatusCode::NO_CONTENT, StatusCode::CONFLICT],
+    assert!(
+        statuses == [StatusCode::NO_CONTENT, StatusCode::FORBIDDEN]
+            || statuses == [StatusCode::NO_CONTENT, StatusCode::CONFLICT],
         "{} / {}",
         a.text(),
         b.text()
