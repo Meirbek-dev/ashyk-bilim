@@ -424,6 +424,7 @@ impl DiscussionsService {
         }
         crate::events::user::discussion(
             &self.pool,
+            actor.user_id,
             crate::events::user::DiscussionUpdated {
                 course_id,
                 discussion_id: id,
@@ -522,6 +523,7 @@ impl DiscussionsService {
             .ok_or_else(|| Error::not_found("discussion"))?;
         crate::events::user::discussion(
             &self.pool,
+            actor.user_id,
             crate::events::user::DiscussionUpdated {
                 course_id: fresh.course_id,
                 discussion_id: id,
@@ -551,7 +553,7 @@ impl DiscussionsService {
             deleted: true,
         };
         ab_db::discussions::delete_discussion(&self.pool, id).await?;
-        crate::events::user::discussion(&self.pool, payload).await;
+        crate::events::user::discussion(&self.pool, actor.user_id, payload).await;
         Ok(())
     }
 

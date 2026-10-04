@@ -209,7 +209,12 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Users,
+        )
+        .await;
         Ok(())
     }
 
@@ -251,7 +256,12 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Users,
+        )
+        .await;
         Ok(())
     }
 
@@ -288,7 +298,12 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Roles,
+        )
+        .await;
         Ok(())
     }
 
@@ -315,7 +330,12 @@ impl RbacAdminService {
         {
             return Err(Error::not_found("custom role"));
         }
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Roles,
+        )
+        .await;
         Ok(())
     }
 
@@ -341,7 +361,12 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Roles,
+        )
+        .await;
         Ok(())
     }
 
@@ -396,7 +421,12 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id, "count": permissions.len() }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Roles,
+        )
+        .await;
         Ok(())
     }
 
@@ -483,7 +513,12 @@ impl RbacAdminService {
             serde_json::json!({ "by": actor.user_id }),
         )
         .await?;
-        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        crate::events::user::admin_list(
+            &self.pool,
+            actor.user_id,
+            crate::events::user::AdminList::Users,
+        )
+        .await;
         Ok(())
     }
 

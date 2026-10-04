@@ -12636,7 +12636,7 @@
         "type": "object"
       },
       "ProgressUpdated": {
-        "description": "LIVE: the recipient's own progress in a course was re-projected (a\ngrade, a hand-in, a curriculum change).",
+        "description": "LIVE: a staff change (publish, unpublish, access) re-projected the\nrecipient's progress in a course (their own work answers for itself).",
         "properties": {
           "course_id": {
             "$ref": "#/components/schemas/CourseId"

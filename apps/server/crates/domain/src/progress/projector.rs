@@ -394,8 +394,6 @@ impl ProgressProjector {
         }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
-        // LIVE: the learner's open views refetch their progress.
-        crate::events::user::progress(user_id, course_id).await;
         Ok(true)
     }
 
@@ -469,6 +467,10 @@ impl ProgressProjector {
             if let Err(err) = self.recalculate_course(course_id, user_id).await {
                 tracing::warn!(%course_id, %user_id, error = %err, "course recalculation failed");
                 outcome = Err(err);
+            } else {
+                // LIVE: a staff change (publish, unpublish, access) moved
+                // this member's progress; their open views refetch.
+                crate::events::user::progress(user_id, course_id).await;
             }
         }
         outcome

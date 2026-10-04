@@ -834,7 +834,7 @@ async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
 }
 
 /// LIVE: admin lists, discussions, progress and collections reach the
-/// user stream of the people who show them.
+/// user stream of the other people who show them (never the writer).
 #[sqlx::test(migrations = "../../migrations")]
 async fn live_events_reach_their_readers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -843,25 +843,45 @@ async fn live_events_reach_their_readers(pool: PgPool) {
         .create_user("admin", "admin@example.com", &["admin"])
         .await;
     let admin = app.mint_session_for(admin_user, &["*:*:*"]).await;
+    let watcher_user = app
+        .create_user("watcher", "watcher@example.com", &["admin"])
+        .await;
+    let watcher = app.mint_session_for(watcher_user, &["*:*:*"]).await;
     let teacher = instructor(&app, "teacher").await;
     let alice = learner(&app, "alice").await;
     let bob = learner(&app, "bob").await;
 
-    // Admin lists: a new group.
+    // Admin lists: a new group reaches the other admin, not the writer.
     let group = app
         .post_as(&admin, "/api/v2/groups", &json!({ "name": "G1" }))
         .await;
     assert!(group.status.is_success(), "{}", group.text());
-    let events = read_stream(&base, &admin, "event: admin.updated").await;
+    let events = read_stream(&base, &watcher, "event: admin.updated").await;
     assert!(
         events
             .iter()
             .any(|(e, d)| e == "admin.updated" && d["payload"]["list"] == "groups"),
         "{events:?}"
     );
+    let own = read_stream(&base, &admin, "event: connected").await;
+    assert!(own.iter().all(|(e, _)| e != "admin.updated"), "{own:?}");
 
-    // Progress: alice hands in, her projection moves.
+    // Progress: a staff change (a new published activity) moves alice's
+    // aggregate; her own hand-in does not ping her.
     let (course_id, _) = essay_quiz(&app, &teacher, [&alice, &bob]).await;
+    let quiet = read_stream(&base, &alice, "event: connected").await;
+    assert!(
+        quiet.iter().all(|(e, _)| e != "progress.updated"),
+        "{quiet:?}"
+    );
+    sqlx::query("UPDATE activities SET published = false WHERE course_id = $1::uuid")
+        .bind(&course_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    ab_domain::progress::ProgressProjector::new(app.pool.clone())
+        .after_course_change(ab_core::id::CourseId(course_id.parse().unwrap()))
+        .await;
     let events = read_stream(&base, &alice, "event: progress.updated").await;
     assert!(
         events.iter().any(
@@ -887,7 +907,7 @@ async fn live_events_reach_their_readers(pool: PgPool) {
     assert_eq!(d["payload"]["course_id"], course_id.as_str());
     assert_eq!(d["payload"]["deleted"], false);
 
-    // Collections: the platform's collection editors (the admin).
+    // Collections: the other platform collection editor.
     let collection = app
         .post_as(
             &admin,
@@ -896,7 +916,7 @@ async fn live_events_reach_their_readers(pool: PgPool) {
         )
         .await;
     assert!(collection.status.is_success(), "{}", collection.text());
-    let events = read_stream(&base, &admin, "event: collection.updated").await;
+    let events = read_stream(&base, &watcher, "event: collection.updated").await;
     assert!(
         events.iter().any(|(e, _)| e == "collection.updated"),
         "{events:?}"

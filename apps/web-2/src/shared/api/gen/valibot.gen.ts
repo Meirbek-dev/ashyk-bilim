@@ -2220,8 +2220,8 @@ export const vLinksSection = v.strictObject({
 });
 
 /**
- * LIVE: the recipient's own progress in a course was re-projected (a
- * grade, a hand-in, a curriculum change).
+ * LIVE: a staff change (publish, unpublish, access) re-projected the
+ * recipient's progress in a course (their own work answers for itself).
  */
 export const vProgressUpdated = v.object({
     course_id: vCourseId

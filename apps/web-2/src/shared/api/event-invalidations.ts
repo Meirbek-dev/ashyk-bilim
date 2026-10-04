@@ -117,7 +117,7 @@ export const eventInvalidations = {
     getDiscussionQueryKey({ path: { discussion_id: parent_id ?? discussion_id } }),
     listRepliesQueryKey({ path: { discussion_id: parent_id ?? discussion_id } }),
   ],
-  // The user's own progress in a course was re-projected (a grade, a hand-in, a curriculum change).
+  // A staff change (publish, unpublish, access) re-projected the user's progress in a course.
   'progress.updated': ({ course_id }) => [
     learnerCourseStateQueryKey({ path: { course_id } }),
     listEnrollmentsQueryKey(),
