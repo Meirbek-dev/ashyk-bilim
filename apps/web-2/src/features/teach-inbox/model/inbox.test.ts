@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { WorkItem } from '#/shared/api/gen/types.gen'
+import type { WorkItem, WorkKind } from '#/shared/api/gen/types.gen'
 
 import { courseOptions, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
 import { inboxSearchSchema } from '../route'
@@ -10,7 +10,7 @@ const COURSE_A = '7f0c1a2e-0000-4000-8000-00000000000a'
 const COURSE_B = '7f0c1a2e-0000-4000-8000-00000000000b'
 const SUBMISSION = '0d6c2f4a-1b2c-4d5e-8f90-a1b2c3d4e5f6'
 
-function item(id: string, kind: string, courseId = COURSE_A): WorkItem {
+function item(id: string, kind: WorkKind, courseId = COURSE_A): WorkItem {
   return {
     id,
     kind,

@@ -545,7 +545,9 @@ export const remediationSessionOptions = (options: Options<RemediationSessionDat
 
 /**
  * The learner hands in the practice answers; the server scores them and 70
- * or more passes (and lifts a gate). A posted `score` is ignored.
+ * or more passes (and lifts a gate). The response carries the answer key
+ * (`answer` / `explanation`), which reads hide until then. A posted
+ * `score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).
  */
 export const completeRemediationMutation = (options?: Partial<Options<CompleteRemediationData>>): UseMutationOptions<CompleteRemediationResponse, CompleteRemediationError, Options<CompleteRemediationData>> => {
     const mutationOptions: UseMutationOptions<CompleteRemediationResponse, CompleteRemediationError, Options<CompleteRemediationData>> = {

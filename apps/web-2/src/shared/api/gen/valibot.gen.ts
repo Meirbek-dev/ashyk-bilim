@@ -109,6 +109,11 @@ export const vAdminUserAction = v.picklist([
     'enable'
 ]);
 
+/**
+ * `GET /users` order.
+ */
+export const vAdminUserSort = v.picklist(['newest', 'name']);
+
 export const vAgUiAssistantRole = v.picklist(['assistant']);
 
 /**
@@ -717,6 +722,16 @@ export const vCollectionHit = v.object({
     name: v.string(),
     public: v.boolean()
 });
+
+/**
+ * `GET /collections?sort=`: `newest` (default), `name` (A-Z) or
+ * `updated` (newest update first).
+ */
+export const vCollectionListSort = v.picklist([
+    'newest',
+    'name',
+    'updated'
+]);
 
 /**
  * LIVE: a collection the recipient owns was changed by someone else (edited,
@@ -2018,6 +2033,23 @@ export const vMoveChapterRequest = v.strictObject({
     position: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
+/**
+ * Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).
+ */
+export const vNextActionReason = v.picklist([
+    'not_enrolled',
+    'returned_for_revision',
+    'overdue',
+    'in_progress',
+    'due_soon',
+    'next_required',
+    'certificate_issued',
+    'course_complete',
+    'waiting_for_grade',
+    'optional',
+    'no_available_action'
+]);
+
 export const vNextAction = v.object({
     activity_id: v.nullable(vActivityId),
     course_id: vCourseId,
@@ -2025,7 +2057,7 @@ export const vNextAction = v.object({
     href: v.nullable(v.string()),
     id: vActionId,
     label: v.string(),
-    reason: v.string()
+    reason: vNextActionReason
 });
 
 export const vNotificationId = v.pipe(v.string(), v.uuid());
@@ -5636,6 +5668,20 @@ export const vWindow = v.picklist([
 ]);
 
 /**
+ * The situation an item names.
+ */
+export const vWorkKind = v.picklist([
+    'in_progress',
+    'overdue',
+    'waiting_for_grade',
+    'returned_for_revision',
+    'feedback_released',
+    'needs_grading',
+    'sla_breach',
+    'awaiting_release'
+]);
+
+/**
  * The message an item shows: the client renders `work_<key>_title`,
  * `_description` and `_action` with [`WorkMessageParams`] (the English
  * `title` / `description` / `primary_action` stay for the old web).
@@ -5671,44 +5717,14 @@ export const vWorkPriority = v.picklist([
 export const vWorkRole = v.picklist(['learner', 'teacher']);
 
 /**
- * One thing to act on.
- *
- * `id` is stable across calls; `kind` names the situation. `title`,
- * `description` and `primary_action` are English (the old web);
- * `message_key` + `message_params` are the translatable form.
+ * `GET /work` order (INBOX-DATA).
  */
-export const vWorkItem = v.object({
-    activity_id: vActivityId,
-    activity_title: v.string(),
-    allowed_actions: v.array(v.string()),
-    attempt_id: v.optional(vFileAttemptId),
-    course_id: vCourseId,
-    course_title: v.string(),
-    created_at_unix: v.nullable(vUnixTime),
-    description: v.string(),
-    due_at_unix: v.nullable(vUnixTime),
-    href: v.string(),
-    id: v.string(),
-    kind: v.string(),
-    learner_name: v.optional(v.string()),
-    message_key: v.optional(vWorkMessageKey),
-    message_params: v.optional(vWorkMessageParams),
-    primary_action: v.string(),
-    priority: vWorkPriority,
-    role: vWorkRole,
-    status: v.string(),
-    submission_id: v.optional(vSubmissionId),
-    title: v.string()
-});
-
-/**
- * One page; `total` counts the whole (filtered) queue before paging.
- */
-export const vWorkQueue = v.object({
-    items: v.array(vWorkItem),
-    next_cursor: v.nullable(v.string()),
-    total: v.pipe(v.number(), v.integer())
-});
+export const vWorkSort = v.picklist([
+    'priority',
+    'due',
+    'oldest',
+    'newest'
+]);
 
 /**
  * Product-level work state shown to the learner.
@@ -5773,6 +5789,57 @@ export const vTrail = v.object({
     runs: v.array(vTrailRun),
     updated_at_unix: v.nullable(vUnixTime),
     user_id: vUserId
+});
+
+/**
+ * The work's grading status.
+ */
+export const vWorkStatus = v.picklist([
+    'in_progress',
+    'needs_grading',
+    'returned',
+    'published',
+    'graded_hidden'
+]);
+
+/**
+ * One thing to act on.
+ *
+ * `id` is stable across calls; `kind` names the situation. `title`,
+ * `description` and `primary_action` are English (the old web);
+ * `message_key` + `message_params` are the translatable form.
+ */
+export const vWorkItem = v.object({
+    activity_id: vActivityId,
+    activity_title: v.string(),
+    allowed_actions: v.array(v.string()),
+    attempt_id: v.optional(vFileAttemptId),
+    course_id: vCourseId,
+    course_title: v.string(),
+    created_at_unix: v.nullable(vUnixTime),
+    description: v.string(),
+    due_at_unix: v.nullable(vUnixTime),
+    href: v.string(),
+    id: v.string(),
+    kind: vWorkKind,
+    learner_name: v.optional(v.string()),
+    message_key: v.optional(vWorkMessageKey),
+    message_params: v.optional(vWorkMessageParams),
+    primary_action: v.string(),
+    priority: vWorkPriority,
+    role: vWorkRole,
+    status: vWorkStatus,
+    submission_id: v.optional(vSubmissionId),
+    title: v.string()
+});
+
+/**
+ * One page; `total` counts the whole (filtered) queue before paging.
+ */
+export const vWorkQueue = v.object({
+    items: v.array(vWorkItem),
+    next_cursor: v.nullable(v.string()),
+    total: v.pipe(v.number(), v.integer())
 });
 
 export const vWorkloadAgingBuckets = v.object({
@@ -7570,7 +7637,7 @@ export const vListCollectionsQuery = v.object({
     cursor: v.optional(vCollectionId),
     limit: v.optional(v.pipe(v.number(), v.integer())),
     q: v.optional(v.string()),
-    sort: v.optional(v.unknown())
+    sort: v.optional(vCollectionListSort)
 });
 
 /**
@@ -9127,7 +9194,7 @@ export const vListUsergroupMembersPageResponse = vUsergroupMemberPage;
 
 export const vListUsersQuery = v.object({
     q: v.optional(v.string()),
-    sort: v.optional(v.unknown()),
+    sort: v.optional(vAdminUserSort),
     status: v.optional(vUserStatus),
     role: v.optional(v.string()),
     cursor: v.optional(vUserId),
@@ -9253,9 +9320,9 @@ export const vLinkPreviewResponse = vLinkPreview;
 
 export const vWorkQueueQuery = v.object({
     role: v.nullish(vWorkRole),
-    kind: v.nullish(v.unknown()),
+    kind: v.nullish(vWorkKind),
     course_id: v.nullish(vCourseId),
-    sort: v.nullish(v.unknown()),
+    sort: v.nullish(vWorkSort),
     limit: v.nullish(v.pipe(v.number(), v.integer())),
     cursor: v.nullish(v.string())
 });

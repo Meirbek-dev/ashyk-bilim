@@ -332,6 +332,11 @@ export type AdminUserPage = {
     next_cursor: UserId | null;
 };
 
+/**
+ * `GET /users` order.
+ */
+export type AdminUserSort = 'newest' | 'name';
+
 export type AffiliationSection = {
     affiliations: Array<ProfileAffiliation>;
     id: string;
@@ -1432,6 +1437,12 @@ export type CollectionHit = {
 };
 
 export type CollectionId = string;
+
+/**
+ * `GET /collections?sort=`: `newest` (default), `name` (A-Z) or
+ * `updated` (newest update first).
+ */
+export type CollectionListSort = 'newest' | 'name' | 'updated';
 
 /**
  * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
@@ -3747,12 +3758,13 @@ export type NextAction = {
      * English fallback; the web localizes by `id` + `reason`.
      */
     label: string;
-    /**
-     * A [`NextActionReason`] value (typed `string` in the schema until the
-     * web's fixtures move; the server only sends the enum's values).
-     */
-    reason: string;
+    reason: NextActionReason;
 };
+
+/**
+ * Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).
+ */
+export type NextActionReason = 'not_enrolled' | 'returned_for_revision' | 'overdue' | 'in_progress' | 'due_soon' | 'next_required' | 'certificate_issued' | 'course_complete' | 'waiting_for_grade' | 'optional' | 'no_available_action';
 
 /**
  * One notification as served (list items and `notification.created`).
@@ -4638,8 +4650,9 @@ export type RemediationCompletionRequest = {
      */
     answers?: Array<string>;
     /**
-     * Ignored: the server scores `answers` against the session's test.
-     * Accepted only so the old web's request stays valid (phase 9).
+     * Old-web contract: honoured only while the old web is live
+     * (`WEB_LINKS=legacy`) and `answers` is empty; otherwise ignored and
+     * the server scores `answers` against the session's test (phase 9).
      *
      * @deprecated
      */
@@ -6410,11 +6423,7 @@ export type WorkItem = {
      */
     href: string;
     id: string;
-    /**
-     * A [`WorkKind`] value (the schema keeps `string` while clients'
-     * fixtures catch up; the `kind` filter is typed).
-     */
-    kind: string;
+    kind: WorkKind;
     /**
      * Teacher items: the learner's display name, else username (absent otherwise).
      */
@@ -6431,16 +6440,18 @@ export type WorkItem = {
     primary_action: string;
     priority: WorkPriority;
     role: WorkRole;
-    /**
-     * A [`WorkStatus`] value (typed as `string`, like `kind`).
-     */
-    status: string;
+    status: WorkStatus;
     /**
      * Teacher items: the assessment submission under review (absent otherwise).
      */
     submission_id?: SubmissionId;
     title: string;
 };
+
+/**
+ * The situation an item names.
+ */
+export type WorkKind = 'in_progress' | 'overdue' | 'waiting_for_grade' | 'returned_for_revision' | 'feedback_released' | 'needs_grading' | 'sla_breach' | 'awaiting_release';
 
 /**
  * The message an item shows: the client renders `work_<key>_title`,
@@ -6478,9 +6489,19 @@ export type WorkQueue = {
 export type WorkRole = 'learner' | 'teacher';
 
 /**
+ * `GET /work` order (INBOX-DATA).
+ */
+export type WorkSort = 'priority' | 'due' | 'oldest' | 'newest';
+
+/**
  * Product-level work state shown to the learner.
  */
 export type WorkState = 'not_started' | 'in_progress' | 'submitted' | 'needs_grading' | 'graded_hidden' | 'returned' | 'passed' | 'failed' | 'complete' | 'locked';
+
+/**
+ * The work's grading status.
+ */
+export type WorkStatus = 'in_progress' | 'needs_grading' | 'returned' | 'published' | 'graded_hidden';
 
 export type WorkloadAgingBuckets = {
     d1_3: number;
@@ -11188,7 +11209,7 @@ export type ListCollectionsData = {
         /**
          * `newest` (default), `name` (A-Z) or `updated`
          */
-        sort?: unknown;
+        sort?: CollectionListSort;
     };
     url: '/api/v2/collections';
 };
@@ -15755,7 +15776,7 @@ export type ListUsersData = {
         /**
          * `newest` (default) or `name`
          */
-        sort?: unknown;
+        sort?: AdminUserSort;
         /**
          * Only accounts in this status
          */
@@ -16215,7 +16236,7 @@ export type WorkQueueData = {
         /**
          * Items of this kind only.
          */
-        kind?: unknown | null;
+        kind?: WorkKind | null;
         /**
          * Items of this course only.
          */
@@ -16223,7 +16244,7 @@ export type WorkQueueData = {
         /**
          * Order; default `priority`.
          */
-        sort?: unknown | null;
+        sort?: WorkSort | null;
         /**
          * 1..=100 (default 50).
          */

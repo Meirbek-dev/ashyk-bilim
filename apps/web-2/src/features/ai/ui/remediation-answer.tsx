@@ -7,15 +7,19 @@ import { Field, FieldLabel } from '#/shared/ui/field'
 import { Input } from '#/shared/ui/input'
 import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
+import { AnswerKey } from './answer-key'
+
 type RemediationAnswerProps = {
   question: RemediationQuestion
   number: number
   value: string
   onChange: (value: string) => void
+  /** After a hand-in: the answer key under the field (the server sends it only then). */
+  showKey?: boolean
 }
 
 /** One remediation question and the learner's answer: a choice when the question has choices, else a line of text. */
-export function RemediationAnswer({ question, number, value, onChange }: RemediationAnswerProps) {
+export function RemediationAnswer({ question, number, value, onChange, showKey = false }: RemediationAnswerProps) {
   const id = useId()
   const label = m.ai_remediation_answer({ number })
   return (
@@ -35,6 +39,7 @@ export function RemediationAnswer({ question, number, value, onChange }: Remedia
       ) : (
         <Input aria-label={label} value={value} onChange={event => onChange(event.target.value)} />
       )}
+      {showKey ? <AnswerKey question={question} /> : null}
     </li>
   )
 }

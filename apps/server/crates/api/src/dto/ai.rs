@@ -447,8 +447,9 @@ pub struct RemediationRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RemediationCompletionRequest {
-    /// Ignored: the server scores `answers` against the session's test.
-    /// Accepted only so the old web's request stays valid (phase 9).
+    /// Old-web contract: honoured only while the old web is live
+    /// (`WEB_LINKS=legacy`) and `answers` is empty; otherwise ignored and
+    /// the server scores `answers` against the session's test (phase 9).
     #[garde(range(min = 0, max = 100))]
     #[schema(minimum = 0, maximum = 100, deprecated)]
     pub score: Option<i32>,
@@ -658,6 +659,41 @@ impl From<ab_db::ai::RemediationSessionRow> for RemediationSession {
             created_at_unix: s.created_at,
             updated_at_unix: s.updated_at,
         }
+    }
+}
+
+impl RemediationSession {
+    /// S-GAPS-3: while web-2 is the live web (`WEB_LINKS=v2`) the learner
+    /// gets the practice questions without `answer` / `explanation` (blank
+    /// strings) until they hand in once; the completion response carries
+    /// them. The old web (`legacy`) reveals answers by design, so it keeps
+    /// them. Graders always see them.
+    #[must_use]
+    pub fn for_viewer(mut self, viewer: UserId) -> Self {
+        let handed_in = matches!(
+            self.status,
+            RemediationStatus::Passed | RemediationStatus::Failed
+        );
+        if viewer != self.student_user_id
+            || handed_in
+            || ab_core::links::scheme() != ab_core::links::LinkScheme::V2
+        {
+            return self;
+        }
+        let test = self.test.get_mut("questions");
+        let lecture = self.lecture.get_mut("practice_questions");
+        for question in [test, lecture]
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_array_mut)
+            .flatten()
+            .filter_map(serde_json::Value::as_object_mut)
+        {
+            for key in ["answer", "explanation"] {
+                question.insert(key.into(), serde_json::Value::String(String::new()));
+            }
+        }
+        self
     }
 }
 

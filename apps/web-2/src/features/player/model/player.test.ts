@@ -31,7 +31,7 @@ function course(activities: ActivityState[][], next: Partial<NextAction> | null 
     next_action: next && {
       id: 'start',
       label: '',
-      reason: '',
+      reason: 'next_required',
       enabled: true,
       activity_id: null,
       course_id: 'c',

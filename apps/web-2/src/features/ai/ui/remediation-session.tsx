@@ -12,11 +12,12 @@ import { Spinner } from '#/shared/ui/spinner'
 import { passThreshold } from '../model/ai'
 import { completeSessionOptions } from '../queries'
 import { Citations } from './citations'
+import { AnswerKey } from './answer-key'
 import { RemediationAnswer } from './remediation-answer'
 
 /**
  * One remediation session (B-AI-19): the micro-lecture, its objectives, the questions. "Finish" opens once every
- * question has an answer and hands the answers in: the server scores them.
+ * question has an answer and hands the answers in: the server scores them and only then sends the answer key.
  */
 export function RemediationSessionView({ session, userId }: { session: RemediationSession; userId: UserId }) {
   const queryClient = useQueryClient()
@@ -48,7 +49,16 @@ export function RemediationSessionView({ session, userId }: { session: Remediati
             : m.ai_remediation_result_failed({ score })}
         </output>
       ) : null}
-      {session.status === 'passed' ? null : (
+      {session.status === 'passed' ? (
+        <ol className="flex flex-col gap-4">
+          {questions.map(question => (
+            <li key={question.prompt} className="flex flex-col gap-2">
+              <MarkdownView content={question.prompt} />
+              <AnswerKey question={question} />
+            </li>
+          ))}
+        </ol>
+      ) : (
         <section className="flex flex-col gap-3">
           <h4 className="text-sm font-medium">{m.ai_remediation_questions()}</h4>
           <ol className="flex flex-col gap-4">
@@ -59,6 +69,7 @@ export function RemediationSessionView({ session, userId }: { session: Remediati
                 number={index + 1}
                 value={answers[index] ?? ''}
                 onChange={value => setAnswers(all => all.with(index, value))}
+                showKey={done}
               />
             ))}
           </ol>

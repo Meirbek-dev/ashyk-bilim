@@ -1439,7 +1439,12 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
 /// learner passes it.
 #[sqlx::test(migrations = "../../migrations")]
 async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
-    let app = TestApp::spawn(pool).await;
+    // web-2 is the live web: REM-SCORE ignores a posted score and reads hide
+    // the answer key from the learner (S-GAPS-3).
+    let app = TestApp::spawn_with(pool, |c| {
+        c.server.web_links = ab_core::links::LinkScheme::V2;
+    })
+    .await;
     let teacher = instructor(&app, "teacher").await;
     let alice = learner(&app, "alice").await;
     let course_id = published_course(&app, &teacher, "Gate").await;
@@ -1556,6 +1561,29 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         session_id
     );
 
+    // S-GAPS-3: the learner's reads carry no answer key before they hand
+    // in (test and lecture alike); the grader's do.
+    let session_url = format!("/api/v2/ai/remediation/sessions/{session_id}");
+    let own = app.get_as(&alice, &session_url).await.json();
+    let own_list = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/student/{}", alice.user_id),
+        )
+        .await
+        .json();
+    for q in [
+        &own["test"]["questions"][0],
+        &own["lecture"]["practice_questions"][0],
+        &own_list[0]["test"]["questions"][0],
+    ] {
+        assert_eq!(q["answer"], "", "{own}");
+        assert_eq!(q["explanation"], "", "{own}");
+        assert!(q["prompt"].as_str().is_some_and(|p| !p.is_empty()));
+    }
+    let graders = app.get_as(&teacher, &session_url).await.json();
+    assert_eq!(graders["test"]["questions"][0]["answer"], "left identity");
+
     // REM-SCORE: a posted score is ignored - the server scores the answers,
     // so a forged 100 with no answers fails and the gate holds.
     let forged = app
@@ -1568,6 +1596,15 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     assert_eq!(forged.status, StatusCode::OK, "{}", forged.text());
     assert_eq!(forged.json()["status"], "failed");
     assert_eq!(forged.json()["score"], 0);
+    // The completion response carries the answer key.
+    assert_eq!(
+        forged.json()["test"]["questions"][0]["answer"],
+        "left identity"
+    );
+    assert_eq!(
+        forged.json()["test"]["questions"][0]["explanation"],
+        "Monads need not commute."
+    );
     let still_gated = app.get_as(&alice, &state_url).await;
     assert_eq!(
         still_gated.json()["can_continue"],

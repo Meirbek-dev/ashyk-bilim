@@ -49,6 +49,10 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         ab_domain::analytics::filters::Bucket,
         crate::dto::enums::CourseListSort,
         crate::dto::enums::CourseListPreset,
+        crate::dto::enums::CollectionListSort,
+        crate::dto::enums::AdminUserSort,
+        ab_domain::progress::work_queue::WorkKind,
+        ab_domain::progress::work_queue::WorkSort,
     )),
     tags(
         (name = "health", description = "Liveness and readiness probes"),

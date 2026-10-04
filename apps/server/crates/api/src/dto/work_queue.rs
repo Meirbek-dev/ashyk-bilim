@@ -35,12 +35,7 @@ pub struct WorkQueueQuery {
 pub struct WorkItem {
     pub id: String,
     pub role: WorkRole,
-    /// A [`WorkKind`] value (the schema keeps `string` while clients'
-    /// fixtures catch up; the `kind` filter is typed).
-    #[schema(value_type = String)]
     pub kind: WorkKind,
-    /// A [`WorkStatus`] value (typed as `string`, like `kind`).
-    #[schema(value_type = String)]
     pub status: WorkStatus,
     pub priority: WorkPriority,
     pub title: String,

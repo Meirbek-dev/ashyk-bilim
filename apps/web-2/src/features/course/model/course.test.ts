@@ -108,7 +108,7 @@ describe('primary action', () => {
   test("B-CRS-05 an enrolled learner continues at the server's next activity, or opens the summary", () => {
     const next = {
       label: 'Continue course',
-      reason: 'next_required',
+      reason: 'next_required' as const,
       enabled: true,
       activity_id: 'a2',
       course_id: 'c1',
@@ -126,7 +126,7 @@ describe('primary action', () => {
       next_action: {
         id: 'review_completion',
         label: 'Review',
-        reason: 'complete',
+        reason: 'course_complete',
         enabled: true,
         activity_id: null,
         course_id: 'c1',

@@ -296,7 +296,9 @@ export const remediationSession = <ThrowOnError extends boolean = false>(options
 
 /**
  * The learner hands in the practice answers; the server scores them and 70
- * or more passes (and lifts a gate). A posted `score` is ignored.
+ * or more passes (and lifts a gate). The response carries the answer key
+ * (`answer` / `explanation`), which reads hide until then. A posted
+ * `score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).
  */
 export const completeRemediation = <ThrowOnError extends boolean = false>(options: Options<CompleteRemediationData, ThrowOnError>): RequestResult<CompleteRemediationResponses, CompleteRemediationErrors, ThrowOnError> => (options.client ?? client).post<CompleteRemediationResponses, CompleteRemediationErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vCompleteRemediationResponse, data),

@@ -652,8 +652,9 @@ pub async fn generate_remediation(
             state
                 .ai
                 .generate_remediation(&actor, submission_id, request.gate_mode, &request.language)
-                .await?
-                .into(),
+                .await
+                .map(RemediationSession::from)?
+                .for_viewer(actor.user_id),
         ))
     })
     .await
@@ -705,8 +706,9 @@ pub async fn remediation_session(
         state
             .ai
             .remediation_session(&actor, session_id)
-            .await?
-            .into(),
+            .await
+            .map(RemediationSession::from)?
+            .for_viewer(actor.user_id),
     ))
 }
 
@@ -728,11 +730,15 @@ pub async fn latest_remediation(
     Path(submission_id): Path<AiSubjectId>,
 ) -> ApiResult<Json<Option<RemediationSession>>> {
     let latest = state.ai.latest_remediation(&actor, submission_id).await?;
-    Ok(Json(latest.map(Into::into)))
+    Ok(Json(latest.map(|s| {
+        RemediationSession::from(s).for_viewer(actor.user_id)
+    })))
 }
 
 /// The learner hands in the practice answers; the server scores them and 70
-/// or more passes (and lifts a gate). A posted `score` is ignored.
+/// or more passes (and lifts a gate). The response carries the answer key
+/// (`answer` / `explanation`), which reads hide until then. A posted
+/// `score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).
 #[utoipa::path(
     post, path = "/ai/remediation/sessions/{session_id}/complete", tag = "ai",
     params(("session_id" = AiRemediationSessionId, Path, description = "Session id")),
@@ -760,7 +766,7 @@ pub async fn complete_remediation(
     Ok(Json(
         state
             .ai
-            .complete_remediation(&actor, session_id, &request.answers)
+            .complete_remediation(&actor, session_id, &request.answers, request.score)
             .await?
             .into(),
     ))
@@ -787,5 +793,10 @@ pub async fn student_remediation(
         .ai
         .student_remediation_sessions(&actor, user_id)
         .await?;
-    Ok(Json(sessions.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        sessions
+            .into_iter()
+            .map(|s| RemediationSession::from(s).for_viewer(actor.user_id))
+            .collect(),
+    ))
 }

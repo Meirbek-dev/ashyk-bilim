@@ -28,6 +28,7 @@ const isBareObject = (schema: Json): boolean => {
 // document (schema marked `x-stored-json: true`) whose real rows have it both absent and `null`.
 let requestOnly = new Set<string>()
 let storedJson = new Set<string>()
+let schemaNames = new Set<string>()
 const componentOf = (pointer: string) => /^\/components\/schemas\/([^/]+)/.exec(pointer)?.[1] ?? ''
 const optionalNullableAllowed = (property: Json, pointer: string) =>
   (property['x-null-clears'] === true && requestOnly.has(componentOf(pointer))) || storedJson.has(componentOf(pointer))
@@ -72,6 +73,14 @@ function visit(node: unknown, pointer: string, findings: Finding[]): void {
   }
   if (!isObject(node)) return
   checkProperties(node, pointer, findings)
+  const ref = node['$ref']
+  if (typeof ref === 'string' && !schemaNames.has(ref.replace('#/components/schemas/', ''))) {
+    findings.push({
+      file: `${FILE}#${pointer}`,
+      rule: 'contract-dangling-ref',
+      fix: `${ref} is not in components.schemas: register the schema on the server (the generator types it unknown)`,
+    })
+  }
   if (node['format'] === 'int64') {
     findings.push({
       file: `${FILE}#${pointer}`,
@@ -109,6 +118,7 @@ export function contract(): Finding[] {
     new Set(),
   )
   requestOnly = new Set([...fromRequests].filter(name => !fromResponses.has(name)))
+  schemaNames = new Set(Object.keys(schemas))
   storedJson = new Set(
     Object.keys(schemas).filter(name => isObject(schemas[name]) && schemas[name]['x-stored-json'] === true),
   )

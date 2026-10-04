@@ -410,12 +410,16 @@ impl AiService {
 
     /// `POST /ai/remediation/sessions/{session}/complete`: the learner hands
     /// in the practice answers; the server scores them against the stored
-    /// test ([`practice_score`]) and 70+ passes (and lifts a gate).
+    /// test ([`practice_score`]) and 70+ passes (and lifts a gate). The old
+    /// web posts a self-assessed `legacy_score` and no answers: it counts
+    /// only while the old web is live (`WEB_LINKS=legacy`), as before
+    /// REM-SCORE, so its learners are not locked behind the gate.
     pub async fn complete_remediation(
         &self,
         actor: &Actor,
         id: AiRemediationSessionId,
         answers: &[String],
+        legacy_score: Option<i32>,
     ) -> Result<RemediationSessionRow> {
         // UX-134 / UX-141: a stranger sees an unknown session (404); a reader
         // who is not the learner - the grader - may not complete it (403).
@@ -431,7 +435,15 @@ impl AiService {
             .cloned()
             .and_then(|q| serde_json::from_value(q).ok())
             .unwrap_or_default();
-        let score = practice_score(&questions, answers);
+        let score = match legacy_score {
+            Some(score)
+                if answers.is_empty()
+                    && ab_core::links::scheme() == ab_core::links::LinkScheme::Legacy =>
+            {
+                score
+            }
+            _ => practice_score(&questions, answers),
+        };
         let status = if score >= PASS_SCORE {
             RemediationStatus::Passed
         } else {

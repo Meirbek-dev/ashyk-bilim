@@ -989,6 +989,14 @@
         ],
         "type": "object"
       },
+      "AdminUserSort": {
+        "description": "`GET /users` order.",
+        "enum": [
+          "newest",
+          "name"
+        ],
+        "type": "string"
+      },
       "AffiliationSection": {
         "additionalProperties": false,
         "properties": {
@@ -4415,6 +4423,15 @@
       },
       "CollectionId": {
         "format": "uuid",
+        "type": "string"
+      },
+      "CollectionListSort": {
+        "description": "`GET /collections?sort=`: `newest` (default), `name` (A-Z) or\n`updated` (newest update first).",
+        "enum": [
+          "newest",
+          "name",
+          "updated"
+        ],
         "type": "string"
       },
       "CollectionPage": {
@@ -11072,8 +11089,7 @@
             "type": "string"
           },
           "reason": {
-            "description": "A [`NextActionReason`] value (typed `string` in the schema until the\nweb's fixtures move; the server only sends the enum's values).",
-            "type": "string"
+            "$ref": "#/components/schemas/NextActionReason"
           }
         },
         "required": [
@@ -11086,6 +11102,23 @@
           "href"
         ],
         "type": "object"
+      },
+      "NextActionReason": {
+        "description": "Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).",
+        "enum": [
+          "not_enrolled",
+          "returned_for_revision",
+          "overdue",
+          "in_progress",
+          "due_soon",
+          "next_required",
+          "certificate_issued",
+          "course_complete",
+          "waiting_for_grade",
+          "optional",
+          "no_available_action"
+        ],
+        "type": "string"
       },
       "Notification": {
         "description": "One notification as served (list items and `notification.created`).",
@@ -13771,7 +13804,7 @@
           },
           "score": {
             "deprecated": true,
-            "description": "Ignored: the server scores `answers` against the session's test.\nAccepted only so the old web's request stays valid (phase 9).",
+            "description": "Old-web contract: honoured only while the old web is live\n(`WEB_LINKS=legacy`) and `answers` is empty; otherwise ignored and\nthe server scores `answers` against the session's test (phase 9).",
             "format": "int32",
             "maximum": 100,
             "minimum": 0,
@@ -19077,8 +19110,7 @@
             "type": "string"
           },
           "kind": {
-            "description": "A [`WorkKind`] value (the schema keeps `string` while clients'\nfixtures catch up; the `kind` filter is typed).",
-            "type": "string"
+            "$ref": "#/components/schemas/WorkKind"
           },
           "learner_name": {
             "description": "Teacher items: the learner's display name, else username (absent otherwise).",
@@ -19102,8 +19134,7 @@
             "$ref": "#/components/schemas/WorkRole"
           },
           "status": {
-            "description": "A [`WorkStatus`] value (typed as `string`, like `kind`).",
-            "type": "string"
+            "$ref": "#/components/schemas/WorkStatus"
           },
           "submission_id": {
             "$ref": "#/components/schemas/SubmissionId",
@@ -19132,6 +19163,20 @@
           "due_at_unix"
         ],
         "type": "object"
+      },
+      "WorkKind": {
+        "description": "The situation an item names.",
+        "enum": [
+          "in_progress",
+          "overdue",
+          "waiting_for_grade",
+          "returned_for_revision",
+          "feedback_released",
+          "needs_grading",
+          "sla_breach",
+          "awaiting_release"
+        ],
+        "type": "string"
       },
       "WorkMessageKey": {
         "description": "The message an item shows: the client renders `work_<key>_title`,\n`_description` and `_action` with [`WorkMessageParams`] (the English\n`title` / `description` / `primary_action` stay for the old web).",
@@ -19212,6 +19257,16 @@
         ],
         "type": "string"
       },
+      "WorkSort": {
+        "description": "`GET /work` order (INBOX-DATA).",
+        "enum": [
+          "priority",
+          "due",
+          "oldest",
+          "newest"
+        ],
+        "type": "string"
+      },
       "WorkState": {
         "description": "Product-level work state shown to the learner.",
         "enum": [
@@ -19225,6 +19280,17 @@
           "failed",
           "complete",
           "locked"
+        ],
+        "type": "string"
+      },
+      "WorkStatus": {
+        "description": "The work's grading status.",
+        "enum": [
+          "in_progress",
+          "needs_grading",
+          "returned",
+          "published",
+          "graded_hidden"
         ],
         "type": "string"
       },
@@ -20835,7 +20901,7 @@
             "description": "The session is already passed"
           }
         },
-        "summary": "The learner hands in the practice answers; the server scores them and 70\nor more passes (and lifts a gate). A posted `score` is ignored.",
+        "summary": "The learner hands in the practice answers; the server scores them and 70\nor more passes (and lifts a gate). The response carries the answer key\n(`answer` / `explanation`), which reads hide until then. A posted\n`score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).",
         "tags": [
           "ai"
         ]

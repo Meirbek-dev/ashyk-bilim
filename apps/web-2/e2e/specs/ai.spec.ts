@@ -234,7 +234,8 @@ const session = (activityId: string): RemediationSession => ({
   status: 'assigned',
   student_user_id: '0190a5d2-0000-7000-8000-00000000a031',
   submission_id: null,
-  test: { questions: [{ prompt: 'Когда цикл while останавливается?', answer: 'Когда условие ложно' }] },
+  // The server withholds the answer key until the hand-in (S-GAPS-3).
+  test: { questions: [{ prompt: 'Когда цикл while останавливается?', answer: '', explanation: '' }] },
   updated_at_unix: 1_760_000_000,
 })
 
@@ -251,7 +252,21 @@ test(
     const posted = Promise.withResolvers<unknown>()
     await page.route('**/api/v2/ai/remediation/sessions/*/complete', route => {
       posted.resolve(route.request().postDataJSON())
-      return json(route, { ...session(activityId), status: 'passed', score: 100, passed_at_unix: 1_760_000_100 })
+      return json(route, {
+        ...session(activityId),
+        status: 'passed',
+        score: 100,
+        passed_at_unix: 1_760_000_100,
+        test: {
+          questions: [
+            {
+              prompt: 'Когда цикл while останавливается?',
+              answer: 'Когда условие ложно',
+              explanation: 'Проверка идёт перед каждым шагом.',
+            },
+          ],
+        },
+      })
     })
     await openSecondActivity(page, course)
     const aside = panel(page)
@@ -261,8 +276,10 @@ test(
     const finish = aside.getByRole('button', { name: m.ai_remediation_complete({}, ru) })
     await expect(finish).toBeDisabled()
     await aside.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }, ru) }).fill('Когда условие ложно')
+    await expect(aside.getByText('Проверка идёт перед каждым шагом.')).toHaveCount(0)
     await finish.click()
     expect(await posted.promise).toEqual({ answers: ['Когда условие ложно'] })
     await expect(aside.getByText(m.ai_remediation_result_passed({ score: 100 }, ru))).toBeVisible()
+    await expect(aside.getByText('Проверка идёт перед каждым шагом.')).toBeVisible()
   },
 )

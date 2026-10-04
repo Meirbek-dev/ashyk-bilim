@@ -153,9 +153,6 @@ pub struct NextAction {
     pub id: ActionId,
     /// English fallback; the web localizes by `id` + `reason`.
     pub label: String,
-    /// A [`NextActionReason`] value (typed `string` in the schema until the
-    /// web's fixtures move; the server only sends the enum's values).
-    #[schema(value_type = String)]
     pub reason: NextActionReason,
     pub enabled: bool,
     /// The course the action is in (build the web URL from the ids).

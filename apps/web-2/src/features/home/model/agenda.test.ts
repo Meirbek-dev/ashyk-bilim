@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { Agenda, AgendaDeadline, RecentResult, WorkItem } from '#/shared/api/gen/types.gen'
+import type { Agenda, AgendaDeadline, RecentResult, WorkItem, WorkKind } from '#/shared/api/gen/types.gen'
 import { fromDateTimeInput } from '#/shared/i18n/format'
 
 import { attentionWork, groupDeadlines, isEmptyToday, timeOf } from './agenda'
@@ -20,7 +20,7 @@ const deadline = (activity_id: string, due_at_unix: number): AgendaDeadline => (
   state: 'not_started',
 })
 
-const work = (activity_id: string, kind: string): WorkItem => ({
+const work = (activity_id: string, kind: WorkKind): WorkItem => ({
   activity_id,
   activity_title: activity_id,
   allowed_actions: [],
@@ -35,7 +35,7 @@ const work = (activity_id: string, kind: string): WorkItem => ({
   primary_action: '',
   priority: 'high',
   role: 'learner',
-  status: '',
+  status: 'in_progress',
   title: '',
 })
 
