@@ -3,6 +3,7 @@ import handler from '@tanstack/react-start/server-entry'
 import { paraglideMiddleware } from '#/paraglide/server'
 import { NONCE_HEADER, contentSecurityPolicy } from '#/shared/lib/csp'
 import { serverEnv } from '#/shared/lib/env.server'
+import { clientKey, createBudget, readLimited } from '#/shared/lib/intake'
 import { SSR_STATUS_HEADER } from '#/shared/lib/ssr-status'
 
 // The web server's request chain (spec 7.4): /healthz, /_client-error, then locale, request id,
@@ -10,33 +11,20 @@ import { SSR_STATUS_HEADER } from '#/shared/lib/ssr-status'
 
 const REQUEST_ID = /^[\w-]{1,64}$/
 const CLIENT_ERROR_MAX_BYTES = 8 * 1024
-const CLIENT_ERROR_PER_MINUTE = 10
 // ponytail: in-process counter, per instance; move to the edge if the web ever runs replicated.
-const clientErrorBudget = new Map<string, { windowStart: number; count: number }>()
+const overBudget = createBudget(10)
 
 const log = (entry: Record<string, unknown>) => process.stdout.write(`${JSON.stringify(entry)}\n`)
 
 // serverEnv is parsed on import: a missing or malformed variable has already stopped the process here.
 log({ level: 'info', msg: 'web server ready', public_origin: serverEnv.publicOrigin, api: serverEnv.apiOrigin })
 
-function overBudget(client: string, now: number): boolean {
-  if (clientErrorBudget.size > 10_000) clientErrorBudget.clear()
-  const entry = clientErrorBudget.get(client)
-  if (!entry || now - entry.windowStart > 60_000) {
-    clientErrorBudget.set(client, { windowStart: now, count: 1 })
-    return false
-  }
-  entry.count += 1
-  return entry.count > CLIENT_ERROR_PER_MINUTE
-}
-
 async function clientError(request: Request, requestId: string): Promise<Response> {
-  const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'direct'
-  if (overBudget(client, Date.now())) return new Response(null, { status: 429 })
+  if (overBudget(clientKey(request), Date.now())) return new Response(null, { status: 429 })
   if (Number(request.headers.get('content-length') ?? 0) > CLIENT_ERROR_MAX_BYTES)
     return new Response(null, { status: 413 })
-  const body = await request.text()
-  if (body.length > CLIENT_ERROR_MAX_BYTES) return new Response(null, { status: 413 })
+  const body = await readLimited(request, CLIENT_ERROR_MAX_BYTES)
+  if (body === null) return new Response(null, { status: 413 })
   try {
     log({ level: 'error', source: 'browser', request_id: requestId, report: JSON.parse(body) })
   } catch {

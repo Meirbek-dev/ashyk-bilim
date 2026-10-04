@@ -75,6 +75,30 @@ export const deprecatedOperations = (): Set<string> =>
     ),
   )
 
-/** True when `source` calls the operation directly or through its generated Query helpers. */
-export const usesOperation = (source: string, operation: string): boolean =>
-  new RegExp(`\\b${operation}(Options|InfiniteOptions|Mutation)?\\b`).test(source)
+/** Source without comments: a mention in a comment is not a use (strings stay; the import check covers them). */
+const code = (source: string) => source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/(^|[^:'"`\w])\/\/.*$/gm, '$1')
+// Static imports and `const { a } = await import(...)` from the generated client (`#/shared/api/gen/...` or `./gen/...`).
+const GEN_IMPORT =
+  /(?:import\s+(?:type\s+)?\{([^}]*)\}\s*from|const\s+\{([^}]*)\}\s*=\s*await\s+import\()\s*'[^']*\/gen\/[^']*'\)?/g
+
+/**
+ * True when `source` imports the operation (its Query helper or request type) from the generated client and uses that
+ * binding outside the import: a bare identifier, a comment or a string with the same name does not count.
+ */
+export function usesOperation(source: string, operation: string): boolean {
+  const text = code(source)
+  // The function, its Query helpers, or its request type (`XData['url']` for a link or a stream the SDK cannot drive).
+  const data = `${operation.charAt(0).toUpperCase()}${operation.slice(1)}Data`
+  const helper = new RegExp(`^(${operation}(Options|InfiniteOptions|Mutation)?|${data})$`)
+  const bindings: string[] = []
+  for (const [, imported, destructured] of text.matchAll(GEN_IMPORT))
+    for (const specifier of (imported ?? destructured ?? '').split(',')) {
+      const [name = '', alias] = specifier
+        .replace(/^\s*type\s+/, '')
+        .trim()
+        .split(/\s+as\s+|\s*:\s*/)
+      if (helper.test(name)) bindings.push(alias ?? name)
+    }
+  const body = text.replaceAll(GEN_IMPORT, '')
+  return bindings.some(binding => new RegExp(`\\b${binding}\\b`).test(body))
+}

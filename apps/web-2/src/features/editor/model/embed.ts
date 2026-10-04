@@ -1,7 +1,8 @@
 /**
  * The `embedBlock` node: `{type, url, width, height}`. `type` is a provider id from the old catalog
- * (youtube, excalidraw, google-docs...) or `url`, any https page. Unknown provider ids from old documents
- * render like `url`: the iframe shows the stored URL as is, which is what the old web did for them.
+ * (youtube, excalidraw, google-docs...) or `url`, a page of a known service. Unknown provider ids from old
+ * documents render like `url`. Whatever the type, the iframe address must be on `EMBED_HOSTS`: never our own
+ * origin, a relative path or an arbitrary page (B-EDT-21).
  */
 const GENERIC_EMBED = 'url'
 
@@ -15,15 +16,135 @@ const parse = (value: string): URL | null => {
 
 const hostIs = (url: URL, host: string) => url.hostname === host || url.hostname.endsWith(`.${host}`)
 
-/** The video id of a youtube.com/watch, youtu.be, /embed/ or /shorts/ URL, or a bare id. */
+// The third-party services of the old embed catalog (and their player hosts); a host matches with its subdomains.
+const EMBED_HOSTS = [
+  'airtable.com',
+  'blooket.com',
+  'brilliant.org',
+  'canva.com',
+  'chatgpt.com',
+  'chemtube3d.com',
+  'clickup.com',
+  'coda.io',
+  'codepen.io',
+  'codesandbox.io',
+  'codesnip.dev',
+  'deezer.com',
+  'desmos.com',
+  'discord.com',
+  'discord.gg',
+  'edpuzzle.com',
+  'excalidraw.com',
+  'explaineverything.com',
+  'figma.com',
+  'flip.com',
+  'gamma.app',
+  'genially.com',
+  'geogebra.org',
+  'gist.github.com',
+  'gitpod.io',
+  'glitch.com',
+  'google.com',
+  'h5p.com',
+  'h5p.org',
+  'huggingface.co',
+  'hyperbeam.com',
+  'jotform.com',
+  'jsfiddle.net',
+  'kaggle.com',
+  'kahoot.it',
+  'kaltura.com',
+  'live.com',
+  'loom.com',
+  'lottiefiles.com',
+  'mentimeter.com',
+  'microsoft.com',
+  'miro.com',
+  'mixcloud.com',
+  'molview.org',
+  'mural.co',
+  'mybinder.org',
+  'nearpod.com',
+  'notion.so',
+  'observablehq.com',
+  'office.com',
+  'openai.com',
+  'overleaf.com',
+  'padlet.com',
+  'panopto.com',
+  'phet.colorado.edu',
+  'pitch.com',
+  'plickers.com',
+  'polleverywhere.com',
+  'ppt-online.org',
+  'prezi.com',
+  'quizizz.com',
+  'quizlet.com',
+  'replit.com',
+  'rutube.ru',
+  'sketchfab.com',
+  'sketchpad.app',
+  'sli.do',
+  'slides.com',
+  'slido.com',
+  'sodaphonic.com',
+  'soundcloud.com',
+  'spline.design',
+  'spotify.com',
+  'stackblitz.com',
+  'stepik.org',
+  'suno.com',
+  'symbolab.com',
+  't.me',
+  'tableau.com',
+  'tally.so',
+  'ted.com',
+  'texlyre.com',
+  'tldraw.com',
+  'trello.com',
+  'typeform.com',
+  'vimeo.com',
+  'vk.com',
+  'vkvideo.ru',
+  'wakelet.com',
+  'wandb.ai',
+  'wistia.com',
+  'wistia.net',
+  'wolframalpha.com',
+  'wooclap.com',
+  'wordwall.net',
+  'yandex.com',
+  'yandex.ru',
+  'youtube-nocookie.com',
+]
+
+// Players that keep state in their own storage and break in an opaque origin. `allow-same-origin` lets a frame
+// keep *its own* origin; these hosts are never ours, so it grants nothing over our window.
+const OWN_ORIGIN_PLAYERS = [
+  'youtube-nocookie.com',
+  'vimeo.com',
+  'google.com',
+  'spotify.com',
+  'excalidraw.com',
+  'tldraw.com',
+  'figma.com',
+  'codepen.io',
+]
+
+const onHosts = (url: URL, hosts: readonly string[]) => hosts.some(host => hostIs(url, host))
+
+const YOUTUBE_ID = /^[\w-]{11}$/
+const videoId = (id: string | null | undefined) => (id && YOUTUBE_ID.test(id) ? id : null)
+
+/** The video id of a youtube.com/watch, youtu.be, /embed/ or /shorts/ URL, or a bare 11-character id. */
 export function youTubeId(value: string): string | null {
   const url = parse(value)
-  if (!url) return /^[\w-]{6,}$/.test(value.trim()) ? value.trim() : null
+  if (!url) return videoId(value.trim())
   if (url.protocol !== 'https:') return null
-  if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('/')[0] || null
+  if (url.hostname === 'youtu.be') return videoId(url.pathname.slice(1).split('/')[0])
   if (!hostIs(url, 'youtube.com')) return null
-  if (url.pathname === '/watch') return url.searchParams.get('v') || null
-  return /^\/(embed|shorts)\/([^/?#]+)/.exec(url.pathname)?.[2] ?? null
+  if (url.pathname === '/watch') return videoId(url.searchParams.get('v'))
+  return videoId(/^\/(embed|shorts)\/([^/?#]+)/.exec(url.pathname)?.[2])
 }
 
 // Host (and path, for Google) -> provider id. Only providers whose iframe address differs from the page
@@ -76,7 +197,7 @@ const SOURCES: Record<string, (url: URL) => string> = {
   edpuzzle: url => url.href.replace('/media/', '/embed/media/'),
 }
 
-/** The iframe `src` for an embed, or null when the stored URL cannot be shown safely (https only). */
+/** The iframe `src` for an embed, or null when the stored URL cannot be shown safely: https on `EMBED_HOSTS` only. */
 export function embedSrc(type: string | null, value: string | null): string | null {
   if (!value) return null
   if (type === 'youtube' || (type === null && youTubeId(value))) {
@@ -86,5 +207,13 @@ export function embedSrc(type: string | null, value: string | null): string | nu
   const url = parse(value)
   if (url?.protocol !== 'https:') return null
   const source = type && Object.hasOwn(SOURCES, type) ? SOURCES[type] : undefined
-  return source ? source(url) : url.href
+  const src = parse(source ? source(url) : url.href)
+  return src?.protocol === 'https:' && !src.username && !src.password && onHosts(src, EMBED_HOSTS) ? src.href : null
+}
+
+/** The iframe sandbox for an `embedSrc` address: no top navigation ever; own origin only for `OWN_ORIGIN_PLAYERS`. */
+export function embedSandbox(src: string): string {
+  const url = parse(src)
+  const own = url?.protocol === 'https:' && onHosts(url, OWN_ORIGIN_PLAYERS) ? ' allow-same-origin' : ''
+  return `allow-scripts${own} allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation`
 }

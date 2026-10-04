@@ -3,15 +3,11 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { m } from '#/paraglide/messages'
 
 import { numberAttr, textAttr } from '../../model/document'
-import { embedSrc, embedTypeForUrl } from '../../model/embed'
+import { embedSandbox, embedSrc, embedTypeForUrl } from '../../model/embed'
 import { AttrForm } from './attr-form'
 
-// Third-party pages run scripts in their own origin; they never get top navigation or our cookies.
-const SANDBOX =
-  'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation'
-
 /**
- * embedBlock: one iframe for every provider (YouTube, Google Docs, Excalidraw, any https page). The stored
+ * embedBlock: one iframe for every provider (YouTube, Google Docs, Excalidraw, known services). The stored
  * width ('100%', '91%') and height (px) go to the iframe's own attributes; narrower embeds are centered.
  * Authoring: paste a URL, the provider is detected from it.
  */
@@ -36,7 +32,7 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
           title={m.editor_embed_title()}
           width={textAttr(node.attrs['width']) ?? '100%'}
           height={numberAttr(node.attrs['height']) ?? 500}
-          sandbox={SANDBOX}
+          sandbox={embedSandbox(src)}
           allow="fullscreen; clipboard-write; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           loading="lazy"

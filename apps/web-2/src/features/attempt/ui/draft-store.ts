@@ -2,7 +2,7 @@ import { Store } from '@tanstack/react-store'
 
 import { storageItem } from '#/shared/lib/storage'
 
-import { type Queue, vQueue } from '../model/queue'
+import { draftKey, type Queue, vQueue } from '../model/queue'
 
 /**
  * The global client state of spec 7.8: each attempt's queue of unacknowledged answers, by attempt id. Every change
@@ -11,14 +11,21 @@ import { type Queue, vQueue } from '../model/queue'
  */
 export const draftStore = new Store<Record<string, Queue>>({})
 
-const stored = (attemptId: string) => storageItem(`ab.attempt.${attemptId}`, vQueue)
+/** Whose attempt each loaded queue is: the storage key carries the user, so a shared browser keeps queues apart. */
+const owners = new Map<string, string>()
+const stored = (attemptId: string) => storageItem(draftKey(owners.get(attemptId) ?? 'anonymous', attemptId), vQueue)
 
-/** Adopt the persisted queue the first time this tab opens the attempt. */
-export function loadQueue(attemptId: string): void {
+/** Adopt the persisted queue the first time this tab opens the attempt (as `userId`). */
+export function loadQueue(attemptId: string, userId: string): void {
+  owners.set(attemptId, userId)
   if (attemptId in draftStore.state) return
   draftStore.setState(state => ({ ...state, [attemptId]: stored(attemptId).get() ?? [] }))
 }
 
+/**
+ * Both copies take the same change: this tab's memory, and what storage holds now (another tab of the attempt may
+ * have written it). `change` must therefore be a pure function of its queue (an id is minted by the caller).
+ */
 export function updateQueue(attemptId: string, change: (queue: Queue) => Queue): void {
   draftStore.setState(state => ({ ...state, [attemptId]: change(state[attemptId] ?? []) }))
   const item = stored(attemptId)

@@ -28,3 +28,6 @@ export const overlay = (answers: Record<string, ItemAnswer>, queue: Queue): Reco
   ...answers,
   ...patchOf(queue),
 })
+
+/** The storage key of an attempt's unsent answers: per user and attempt (a shared computer keeps them apart). */
+export const draftKey = (userId: string, attemptId: string): `ab.${string}` => `ab.attempt.${userId}.${attemptId}`

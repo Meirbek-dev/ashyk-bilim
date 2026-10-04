@@ -10,13 +10,16 @@ import { PdfFrame } from '#/shared/components/pdf-frame'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
+import { showsInline } from '../model/grade-form'
 import { downloadOptions } from '../queries'
 
-const previewable = (type: string) => type.startsWith('image/') || type === 'application/pdf'
+/** A same-origin `download` link saves the file whatever its headers say: it is never rendered here. */
+const save = (path: string) => Object.assign(document.createElement('a'), { href: path, download: '' }).click()
 
 /**
- * The attempt's files (B-GRD-16). A name asks for a short-lived signed path on our origin and opens it in a new tab;
- * an image or a PDF can be shown here (`disposition=inline`). The paths expire, so they are asked for on click.
+ * The attempt's files (B-GRD-16). A name asks for a short-lived signed path on our origin and downloads the file;
+ * an image (not SVG) or a PDF can be shown here (`disposition=inline`, `showsInline`, B-GRD-28). The paths expire,
+ * so they are asked for on click.
  */
 export function FilesList({ files }: { files: readonly AttachedFile[] }) {
   const queryClient = useQueryClient()
@@ -42,12 +45,12 @@ export function FilesList({ files }: { files: readonly AttachedFile[] }) {
               variant="ghost"
               className="min-w-0 flex-1 justify-start"
               aria-label={m.grading_download({ name: file.filename })}
-              onClick={() => void signed(file).then(url => url && window.open(url, '_blank', 'noopener'))}
+              onClick={() => void signed(file).then(path => path && save(path))}
             >
               <Download data-icon="inline-start" aria-hidden />
               <span className="truncate">{file.filename}</span>
             </Button>
-            {previewable(file.content_type) ? (
+            {showsInline(file.content_type) ? (
               <IconButton
                 label={m.grading_preview({ name: file.filename })}
                 icon={<Eye aria-hidden />}

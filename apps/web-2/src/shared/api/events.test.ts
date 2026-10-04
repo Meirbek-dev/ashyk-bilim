@@ -145,3 +145,20 @@ test('B-NOT-11 401 and `closed` end the stream and report the lost session', asy
   expect(unauthorized.requests).toHaveLength(1)
   expect(closed.requests).toHaveLength(1)
 })
+
+test('B-NOT-11 pause closes the open connection even when the fetch does not tie its body to the signal', async () => {
+  let cancelled = false
+  const body = new ReadableStream<Uint8Array>({ cancel: () => void (cancelled = true) })
+  const stream = createEventStream({
+    fetch: async () => new Response(body),
+    onEvent: () => undefined,
+    onResync: () => undefined,
+    onSessionLost: () => undefined,
+    baseWait: 1,
+  })
+  stream.resume()
+  await vi.waitFor(() => expect(body.locked).toBe(true))
+  stream.pause()
+  await vi.waitFor(() => expect(cancelled).toBe(true))
+  stream.stop()
+})

@@ -11,7 +11,7 @@
   "editor_pdf_title": "PDF-документ",
   "editor_pdf_open": "Открыть PDF",
   "editor_embed_title": "Встроенный материал",
-  "editor_embed_unsafe": "Этот адрес нельзя встроить. Нужна ссылка, начинающаяся с https://.",
+  "editor_embed_unsafe": "Этот адрес нельзя встроить. Нужна https-ссылка на известный сервис: YouTube, Google Docs, Figma и другие.",
   "editor_math_invalid": "В формуле ошибка. Проверьте запись LaTeX.",
   "editor_scenario_restart": "Начать заново",
   "editor_scenario_end": "Сценарий завершён",

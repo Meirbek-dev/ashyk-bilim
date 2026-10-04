@@ -9,6 +9,7 @@ import { IconButton } from '#/shared/components/icon-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
+import { showsInline } from '../model/types'
 import { downloadOptions } from '../queries'
 
 type AttemptFilesProps = {
@@ -19,17 +20,20 @@ type AttemptFilesProps = {
 }
 
 /**
- * The attempt's own files. A name is a button that asks for a short-lived signed URL and opens it in a new tab
- * (B-FSB-10): the URLs expire, so they are not fetched for every row up front.
+ * The attempt's own files. A name is a button that asks for a short-lived signed URL (B-FSB-10): an image (not SVG)
+ * or a PDF opens in a new tab (`inline`); any other file is downloaded by a same-origin `download` link, never
+ * rendered on our origin (B-FSB-19). The URLs expire, so they are not fetched for every row up front.
  */
 export function AttemptFiles({ files, onRemove, disabled = false }: AttemptFilesProps) {
   const queryClient = useQueryClient()
   const [error, setError] = useState<unknown>(null)
   async function open(file: AttachedFile) {
     try {
-      const signed = await queryClient.fetchQuery(downloadOptions(file.id))
+      const inline = showsInline(file.content_type)
+      const signed = await queryClient.fetchQuery(downloadOptions(file.id, inline ? 'inline' : 'attachment'))
       setError(null)
-      window.open(signed.path, '_blank', 'noopener')
+      if (inline) window.open(signed.path, '_blank', 'noopener')
+      else Object.assign(document.createElement('a'), { href: signed.path, download: '' }).click()
     } catch (failed) {
       setError(failed)
     }

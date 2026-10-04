@@ -25,7 +25,14 @@ export const numberAttr = (value: unknown): number | null => {
   return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null
 }
 
-/** Public URL of a block file; ETL-migrated rows without `file_key` resolve `<file_id>.<file_format>`. */
+// A storage key is plain segments: no traversal, no query or fragment, no backslash, no control character, and
+// no `%` (so no percent-encoded form of any of these). Each segment is encoded again below.
+const UNSAFE_KEY = /\.\.|[\\?#%]|\p{Cc}|^\/|\/\/|\/$/u
+
+/**
+ * Public URL of a block file, always under `/content/` (B-EDT-21); ETL-migrated rows without `file_key` resolve
+ * `<file_id>.<file_format>`. An unsafe key is no file (null).
+ */
 export function blockFileUrl(blockObject: unknown): string | null {
   if (!isRecord(blockObject) || !isRecord(blockObject['content'])) return null
   const content = blockObject['content']
@@ -34,7 +41,9 @@ export function blockFileUrl(blockObject: unknown): string | null {
   const key = textAttr(content['file_key']) ?? (id && format ? `${id}.${format}` : null)
   if (!key) return null
   if (/^https:\/\//i.test(key)) return key
-  return `/content/${key.replace(/^\/+/, '')}`
+  if (UNSAFE_KEY.test(key)) return null
+  const path = `/content/${key.split('/').map(encodeURIComponent).join('/')}`
+  return new URL(path, 'https://x.invalid').pathname === path ? path : null
 }
 
 const stripNode = (node: JSONContent): JSONContent =>

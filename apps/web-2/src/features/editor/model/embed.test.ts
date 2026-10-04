@@ -2,7 +2,7 @@ import * as fc from 'fast-check'
 import { describe, expect, test } from 'vite-plus/test'
 
 import type { EditorNode } from './document'
-import { embedSrc, embedTypeForUrl, youTubeId } from './embed'
+import { embedSandbox, embedSrc, embedTypeForUrl, youTubeId } from './embed'
 import { normalizeDocument } from './normalize'
 
 const url = fc.oneof(
@@ -93,5 +93,39 @@ describe('B-EDT-08 embed addresses', () => {
     expect(embedSrc('url', 'https://ppt-online.org/1')).toBe('https://ppt-online.org/1')
     expect(embedSrc('unknown-old-provider', 'https://h5p.org/x')).toBe('https://h5p.org/x')
     expect(embedSrc('url', 'javascript:alert(1)')).toBeNull()
+  })
+})
+
+describe('B-EDT-21 embeds frame known services only', () => {
+  test('B-EDT-21 our origin, relative, storage and unknown pages never become an iframe', () => {
+    for (const value of [
+      'https://ashyq.example/ab-private/k.html?X-Amz-Signature=s',
+      'https://evil.example/',
+      '/content/x.html',
+      '/ab-public/x.html',
+      '//evil.example/x',
+      'https://youtube.com.evil.example/x',
+    ]) {
+      for (const type of ['url', 'unknown-old-provider', 'codepen', null]) expect(embedSrc(type, value)).toBeNull()
+    }
+    expect(embedSrc('url', 'https://user:pass@www.figma.com/file/x')).toBeNull()
+    expect(embedSrc('url', 'https://ppt-online.org/1')).toBe('https://ppt-online.org/1')
+    expect(embedSrc('url', 'https://www.geogebra.org/m/abc')).toBe('https://www.geogebra.org/m/abc')
+  })
+
+  test('B-EDT-21 only provider players keep their own origin in the sandbox', () => {
+    const youtube = embedSrc('youtube', 'dQw4w9WgXcQ') ?? ''
+    expect(embedSandbox(youtube)).toContain('allow-same-origin')
+    expect(embedSandbox('https://ppt-online.org/1')).not.toContain('allow-same-origin')
+    expect(embedSandbox('/content/x.html')).not.toContain('allow-same-origin')
+    expect(embedSandbox(youtube)).not.toContain('allow-top-navigation')
+  })
+
+  test('B-EDT-03 bare text is a YouTube id only in the 11-character id form', () => {
+    expect(youTubeId('dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+    for (const value of ['hello-there-world', 'abcdef', 'dQw4w9WgXcQx', 'dQw4w9WgXc!'])
+      expect(youTubeId(value)).toBeNull()
+    expect(embedTypeForUrl('just-some-text')).toBe('url')
+    expect(embedSrc(null, 'just-some-text')).toBeNull()
   })
 })

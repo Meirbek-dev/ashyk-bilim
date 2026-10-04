@@ -27,7 +27,7 @@ import {
   withAttempt,
   workOf,
 } from './task'
-import { describeTypes, tickedGroups, typesOf } from './types'
+import { describeTypes, showsInline, tickedGroups, typesOf } from './types'
 
 const file = (id: string) => ({
   id,
@@ -272,5 +272,16 @@ describe('studio forms', () => {
     expect(rubricPatch({ criteria: [] })).toEqual({ rubric: {} })
     expect(rubricForm({})).toEqual({ criteria: [] })
     expect(v.safeParse(rubricSchema, { criteria: [{ ...added, label: ' ' }] }).success).toBe(false)
+  })
+})
+
+describe('B-FSB-19 own files open inline only when safe', () => {
+  test('B-FSB-19 an image (not SVG) or a PDF opens in a tab; HTML, SVG, XML and the rest download', () => {
+    for (const type of ['image/png', 'image/JPEG', 'application/pdf', 'application/pdf; charset=binary']) {
+      expect(showsInline(type)).toBe(true)
+    }
+    for (const type of ['text/html', 'image/svg+xml', 'IMAGE/SVG+XML', 'application/xml', 'text/plain', '']) {
+      expect(showsInline(type)).toBe(false)
+    }
   })
 })

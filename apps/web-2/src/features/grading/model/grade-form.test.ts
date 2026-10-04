@@ -10,6 +10,7 @@ import {
   gradeForm,
   gradeFormSchema,
   gradeRequest,
+  showsInline,
 } from './grade-form'
 
 const item = (id: string, max: number): AssessmentItem => ({
@@ -148,5 +149,16 @@ describe('file grade form', () => {
     expect(fileGradeRequest(plain, 'return')).toEqual({ action: 'return', feedback: '' })
     const over = { ...form, criteria: form.criteria.map(row => ({ ...row, score: '99' })) }
     expect(v.safeParse(fileGradeSchema, over).success).toBe(false)
+  })
+})
+
+describe('B-GRD-28 file preview types', () => {
+  test('B-GRD-28 only images (not SVG) and PDFs are shown inline; the rest is downloaded', () => {
+    for (const type of ['image/png', 'image/JPEG', 'application/pdf', 'application/pdf; charset=binary']) {
+      expect(showsInline(type)).toBe(true)
+    }
+    for (const type of ['text/html', 'image/svg+xml', 'IMAGE/SVG+XML', 'application/xml', 'text/plain', '']) {
+      expect(showsInline(type)).toBe(false)
+    }
   })
 })

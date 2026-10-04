@@ -94,6 +94,13 @@ export function gradeRequest(form: GradeForm, seed: GradeForm, action: GradeActi
 
 // ---- File attempts (B-GRD-16) ----
 
+/** A file the browser may show here or in a tab (`inline`): an image other than SVG, or a PDF. Anything else
+ * (HTML, SVG, XML...) is only downloaded, never rendered on our origin. */
+export function showsInline(type: string): boolean {
+  const mime = type.split(';')[0]?.trim().toLowerCase() ?? ''
+  return (mime.startsWith('image/') && !mime.startsWith('image/svg')) || mime === 'application/pdf'
+}
+
 const criterionObject = v.object({ criterion_id: v.string(), label: v.string(), max: v.number(), score: v.string() })
 const criterionRow = v.pipe(
   criterionObject,

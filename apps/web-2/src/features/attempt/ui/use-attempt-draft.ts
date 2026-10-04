@@ -1,9 +1,10 @@
 import { useDebouncer, useThrottler } from '@tanstack/react-pacer'
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery, type QueryClient } from '@tanstack/react-query'
 import { useSelector } from '@tanstack/react-store'
 import { useEffect, useRef, useState } from 'react'
 
 import type { ItemAnswer, StudentSubmission } from '#/shared/api/gen/types.gen'
+import { sessionOptions } from '#/shared/auth/session'
 
 import { retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
 import { ack, enqueue, overlay, patchOf, type Queue } from '../model/queue'
@@ -28,7 +29,7 @@ async function stillDraft(queryClient: QueryClient, attempt: StudentSubmission) 
  */
 export function useAttemptDraft(attempt: StudentSubmission) {
   const id = attempt.id
-  loadQueue(id)
+  loadQueue(id, useSuspenseQuery(sessionOptions()).data?.user_id ?? 'anonymous')
   const queryClient = useQueryClient()
   const queue = useSelector(draftStore, state => state[id] ?? EMPTY)
   const online = useOnline()

@@ -100,6 +100,10 @@
     {
       "operation": "getCertification",
       "reason": "settings read the course's one template through listCourseCertifications"
+    },
+    {
+      "operation": "rank",
+      "reason": "the viewer's rank comes with the dashboard (Dashboard.user_rank); no screen reads it alone"
     }
   ]
 }

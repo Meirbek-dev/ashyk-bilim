@@ -32,12 +32,13 @@ type Options = {
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
 export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteImage }: Options) {
+  const readOnly = preset === 'view' || preset === 'discussion-view'
   // What this editor last emitted: a parent that passes it back as `content` must not reset the cursor.
   const emitted = useRef<unknown>(undefined)
   const editor = useEditor({
     extensions: presetExtensions(preset),
     content: loadable(content),
-    editable: preset !== 'view',
+    editable: !readOnly,
     immediatelyRender: false,
     editorProps: {
       handlePaste: (_view, event) => {
@@ -52,8 +53,8 @@ export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteI
       },
       attributes: {
         'aria-label': m.editor_label(),
-        class: `ab-prose max-w-none ${preset === 'view' ? '' : 'min-h-40 rounded-md border border-input bg-background p-4'}`,
-        ...(preset === 'view' ? { role: 'article' } : { role: 'textbox', 'aria-multiline': 'true' }),
+        class: `ab-prose max-w-none ${readOnly ? '' : 'min-h-40 rounded-md border border-input bg-background p-4'}`,
+        ...(readOnly ? { role: 'article' } : { role: 'textbox', 'aria-multiline': 'true' }),
       },
     },
     onUpdate: ({ editor: current }) => {

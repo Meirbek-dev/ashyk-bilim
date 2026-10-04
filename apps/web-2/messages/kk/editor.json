@@ -11,7 +11,7 @@
   "editor_pdf_title": "PDF құжаты",
   "editor_pdf_open": "PDF ашу",
   "editor_embed_title": "Ендірілген материал",
-  "editor_embed_unsafe": "Бұл мекенжайды ендіру мүмкін емес. https:// деп басталатын сілтеме қажет.",
+  "editor_embed_unsafe": "Бұл мекенжайды ендіру мүмкін емес. Белгілі сервиске https сілтемесі қажет: YouTube, Google Docs, Figma және т.б.",
   "editor_math_invalid": "Формулада қате бар. LaTeX жазбасын тексеріңіз.",
   "editor_scenario_restart": "Қайта бастау",
   "editor_scenario_end": "Сценарий аяқталды",

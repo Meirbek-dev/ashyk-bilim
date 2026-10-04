@@ -63,7 +63,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
         />
       ) : (
         <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
-          <BlockViewer content={item.content} />
+          <BlockViewer content={item.content} discussion />
         </Suspense>
       )}
       <div className="flex flex-wrap items-center gap-1">

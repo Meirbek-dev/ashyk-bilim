@@ -1,4 +1,4 @@
-import { MutationCache, QueryCache, QueryClient, type QueryKey } from '@tanstack/react-query'
+import { hashKey, MutationCache, QueryCache, QueryClient, type QueryKey } from '@tanstack/react-query'
 
 import { sessionOptions } from '#/shared/auth/session'
 
@@ -36,12 +36,18 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
       },
     }),
   })
-  // A session that goes away (401 anywhere, sign-out, or another tab seen on focus refetch) re-runs the guards.
-  let signedIn = false
+  // A session that goes away or changes hands (401 anywhere, sign-out, another account signed in from another tab and
+  // seen on a focus refetch) re-runs the guards. On a switch to another account nothing of the previous one stays.
+  const sessionKey = sessionOptions().queryKey
+  let user: string | null = null
   queryClient.getQueryCache().subscribe(() => {
-    const now = Boolean(queryClient.getQueryData(sessionOptions().queryKey))
-    if (signedIn && !now) void onSessionLost()
-    signedIn = now
+    const now = queryClient.getQueryData(sessionKey)?.user_id ?? null
+    if (now === user) return
+    const previous = user
+    user = now
+    if (previous === null) return
+    if (now !== null) queryClient.removeQueries({ predicate: query => query.queryHash !== hashKey(sessionKey) })
+    void onSessionLost()
   })
   return queryClient
 }

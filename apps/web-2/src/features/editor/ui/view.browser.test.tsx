@@ -165,3 +165,17 @@ describe('B-EDT-19 media', () => {
     expect(pdf.element().hasAttribute('sandbox')).toBe(false)
   })
 })
+
+describe('B-EDT-14 discussion-view preset', () => {
+  test('B-EDT-14 B-EDT-21 a post is read with its own schema: an embed is a link, never a frame', async () => {
+    const embed = {
+      type: 'embedBlock',
+      attrs: { type: 'url', url: 'https://www.figma.com/file/x', width: '100%', height: 300 },
+    }
+    const screen = await render(<BlockViewer discussion content={{ type: 'doc', content: [embed] }} />)
+    await expect
+      .element(screen.getByRole('link', { name: 'https://www.figma.com/file/x' }))
+      .toHaveAttribute('href', 'https://www.figma.com/file/x')
+    await expect.element(screen.getByTitle(m.editor_embed_title())).not.toBeInTheDocument()
+  })
+})

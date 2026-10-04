@@ -11,7 +11,7 @@
   "editor_pdf_title": "PDF document",
   "editor_pdf_open": "Open PDF",
   "editor_embed_title": "Embedded content",
-  "editor_embed_unsafe": "This address cannot be embedded. Use a link that starts with https://.",
+  "editor_embed_unsafe": "This address cannot be embedded. Use an https link to a known service: YouTube, Google Docs, Figma and others.",
   "editor_math_invalid": "The formula has an error. Check the LaTeX.",
   "editor_scenario_restart": "Start over",
   "editor_scenario_end": "Scenario complete",

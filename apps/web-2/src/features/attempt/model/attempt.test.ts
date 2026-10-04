@@ -119,6 +119,12 @@ describe('attempt answers and outcomes', () => {
     expect(clock(3_725)).toBe('1:02:05')
   })
 
+  test('B-ATT-14 a skewed client clock does not move the deadline: only time elapsed since the answer counts', () => {
+    // The same answer seen by a tab whose clock is 10 minutes ahead: both have 30 s left after 30 s.
+    const skew = 600_000
+    expect(secondsLeft(60, 1_000 + skew, 31_000 + skew)).toBe(secondsLeft(60, 1_000, 31_000))
+  })
+
   test('B-ATT-12 B-ATT-13 B-ATT-15 a failed save says what to do next', () => {
     expect(saveOutcome(new TypeError('Failed to fetch'))).toBe('network')
     expect(saveOutcome(apiError(503, 'service-unavailable'))).toBe('network')

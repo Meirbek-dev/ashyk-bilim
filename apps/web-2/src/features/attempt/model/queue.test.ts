@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { ItemAnswer } from '#/shared/api/gen/types.gen'
 
-import { ack, enqueue, overlay, patchOf, type Queue, vQueue } from './queue'
+import { ack, draftKey, enqueue, overlay, patchOf, type Queue, vQueue } from './queue'
 
 const ITEMS = ['a', 'b', 'c', 'd']
 const text = (value: string): ItemAnswer => ({ kind: 'open_text', text: value })
@@ -128,4 +128,9 @@ describe('attempt queue', () => {
       }),
     )
   })
+})
+
+test('B-ATT-10 the stored queue is per user and attempt: two accounts on one browser never share one', () => {
+  expect(draftKey('u1', 'a1')).not.toBe(draftKey('u2', 'a1'))
+  expect(draftKey('u1', 'a1')).toBe('ab.attempt.u1.a1')
 })

@@ -17,7 +17,14 @@ describe('safeRedirect', () => {
     '\\\\evil.example',
     'javascript:alert(1)',
     '/\t/evil.example',
+    '/.//evil.example',
+    '/a/..//evil.example',
+    '/%2e//evil.example',
   ])('sends %j to /home', value => {
     expect(safeRedirect(value)).toBe('/home')
+  })
+
+  test('normalizes what it keeps', () => {
+    expect(safeRedirect('/courses/./1/../2?x=1#y')).toBe('/courses/2?x=1#y')
   })
 })

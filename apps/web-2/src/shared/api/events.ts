@@ -36,8 +36,11 @@ export type EventStreamOptions = {
 export type EventStream = { resume: () => void; pause: () => void; stop: () => void }
 
 /** The `data` of each message of an SSE body; comments (the heartbeat) and other fields are skipped. */
-async function* sseData(body: NonNullable<Response['body']>): AsyncGenerator<string> {
+async function* sseData(body: NonNullable<Response['body']>, signal: AbortSignal | null): AsyncGenerator<string> {
   const reader = body.pipeThrough(new TextDecoderStream()).getReader()
+  // Pause, hide and stop close the connection now, whether or not the fetch ties its body to the signal.
+  const cancel = () => void reader.cancel().catch(() => undefined)
+  signal?.addEventListener('abort', cancel, { once: true })
   let buffer = ''
   try {
     for (;;) {
@@ -58,6 +61,7 @@ async function* sseData(body: NonNullable<Response['body']>): AsyncGenerator<str
       }
     }
   } finally {
+    signal?.removeEventListener('abort', cancel)
     reader.releaseLock()
   }
 }
@@ -96,7 +100,7 @@ export function createEventStream(options: EventStreamOptions): EventStream {
     let opened: number | undefined
     const healthy = () => opened !== undefined && Date.now() - opened >= HEALTHY_MS
     try {
-      for await (const data of sseData(response.body)) {
+      for await (const data of sseData(response.body, signal)) {
         const event = readEvent(data)
         if (event?.event === 'connected') {
           if (droppedAt && !lastEventId) options.onResync(droppedAt)

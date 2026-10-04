@@ -69,12 +69,29 @@ export function underConstruction(phaseOverride?: number): { findings: Finding[]
 const TEST_FILE = /(\.test\.tsx?|\.spec\.ts)$/
 const BEHAVIOR_ID = /\bB-[A-Z]+-\d+\b/
 
+// A behavior id counts only inside a test or describe title: the first string argument of test/it/describe (or an extended test2,
+// `test.each(rows)(...)`, `test.describe(...)`), never a comment, a helper or a fixture.
+const TITLE_START = /\b(?:test|it|describe)\w*(?:\.\w+)*\s*(?:\([\s\S]*?\)\s*)?\(\s*$/
+const QUOTES = new Set(["'", '"', '`'])
+
+/** The behavior ids that stand in a test title, with their lines. */
+export function titleIds(source: string): { text: string; line: number }[] {
+  const found: { text: string; line: number }[] = []
+  for (const match of source.matchAll(new RegExp(BEHAVIOR_ID.source, 'g'))) {
+    let start = match.index
+    while (start > 0 && !QUOTES.has(source[start - 1] ?? '') && source[start - 1] !== '\n') start -= 1
+    const opened = QUOTES.has(source[start - 1] ?? '')
+    if (opened && TITLE_START.test(source.slice(Math.max(0, start - 601), start - 1)))
+      found.push({ text: match[0], line: source.slice(0, match.index).split('\n').length })
+  }
+  return found
+}
+
 export function trace(): Finding[] {
   const findings: Finding[] = []
   const testFiles = [...walk('src', TEST_FILE), ...(existsSync(resolve(appDir, 'e2e')) ? walk('e2e', TEST_FILE) : [])]
   const tested = new Map<string, string>()
-  for (const file of testFiles)
-    for (const match of matches(read(file), BEHAVIOR_ID)) tested.set(match.text, `${file}:${match.line}`)
+  for (const file of testFiles) for (const id of titleIds(read(file))) tested.set(id.text, `${file}:${id.line}`)
   const specified = new Set<string>()
   for (const spec of walk('src/features', /\/SPEC\.md$/)) {
     const text = read(spec)
@@ -140,7 +157,7 @@ export function tokens(): Finding[] {
 }
 
 // Built from parts so this file does not match itself.
-const SUPPRESSIONS: [RegExp, string, string][] = [
+export const SUPPRESSIONS: [RegExp, string, string][] = [
   [
     new RegExp(['(oxlint|eslint)', '-disable'].join('')),
     'lint-disable',
@@ -152,7 +169,7 @@ const SUPPRESSIONS: [RegExp, string, string][] = [
     'fix the type instead of silencing it',
   ],
   [
-    new RegExp(['\\bas ', '(any|unknown as)\\b'].join('')),
+    new RegExp(['\\bas\\s+', '(any|never|unknown\\s+as)\\b'].join('')),
     'unsafe-cast',
     'use the contract types as they are; narrow with a check',
   ],

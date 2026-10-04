@@ -79,3 +79,10 @@ export function typesOf(ticks: Ticks, current: readonly string[]): string[] {
   const ticked = TYPE_GROUP_KEYS.filter(group => ticks[group]).flatMap(group => TYPE_GROUPS[group])
   return [...ticked, ...current.filter(mime => !groupOf(mime))]
 }
+
+/** A file the browser may show here or in a tab (`inline`): an image other than SVG, or a PDF. Anything else
+ * (HTML, SVG, XML...) is only downloaded, never rendered on our origin. */
+export function showsInline(type: string): boolean {
+  const mime = type.split(';')[0]?.trim().toLowerCase() ?? ''
+  return (mime.startsWith('image/') && !mime.startsWith('image/svg')) || mime === 'application/pdf'
+}
