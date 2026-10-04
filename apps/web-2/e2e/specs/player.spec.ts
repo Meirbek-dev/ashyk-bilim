@@ -258,8 +258,12 @@ test('B-PLY-04 B-PLY-13 shortcuts move between activities, mark one done and ope
   await page.keyboard.press('ArrowLeft')
   await expect(page.getByRole('heading', { level: 1, name: 'Page 1' })).toBeVisible()
 
-  await page.keyboard.press('Shift+?')
   const help = page.getByRole('dialog', { name: m.catalog_help_title({}, ru) })
+  // The page of the activity just opened registers the key after it renders (B-PLY-04 in CI): retry until it acts.
+  await expect(async () => {
+    await page.keyboard.press('Shift+?')
+    await expect(help).toBeVisible({ timeout: 1000 })
+  }).toPass()
   await expect(help.getByText(m.player_shortcut_next({}, ru))).toBeVisible()
   await expect(help.getByText(m.player_shortcut_mark({}, ru))).toBeVisible()
   await page.keyboard.press('Escape')

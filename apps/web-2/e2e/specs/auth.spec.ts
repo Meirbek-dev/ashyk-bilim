@@ -22,7 +22,10 @@ async function signIn(page: Page, login: string, password: string): Promise<void
   await page.getByLabel(m.auth_login_field_login({}, ru)).fill(login)
   // Exact: the reset's toast ("Пароль изменён...") is labelled too.
   await page.getByLabel(m.auth_login_field_password({}, ru), { exact: true }).fill(password)
+  // Settled once the API answered: a sign-in under load can take longer than an assertion's wait (webkit, CI).
+  const answered = page.waitForResponse(response => response.url().endsWith('/api/v2/auth/login'))
   await page.getByRole('button', { name: m.auth_login_submit({}, ru) }).click()
+  await answered
 }
 
 test('B-AUTH-01 B-AUTH-09 a student signs in, lands on /home and signs out', { tag: '@smoke' }, async ({ page }) => {
@@ -160,6 +163,8 @@ test('B-AUTH-12 B-AUTH-13 a forgotten password is reset with the emailed code; t
   await page.goto('/login')
   await page.getByRole('link', { name: m.auth_login_forgot({}, ru) }).click()
   await expect(page).toHaveURL(/\/reset-password$/)
+  // The URL changes before the page renders: the login form (same field label) is still there until then.
+  await expect(page.getByRole('heading', { level: 1, name: m.platform_page_reset_password({}, ru) })).toBeVisible()
   await page.getByLabel(m.auth_login_field_login({}, ru)).fill(account.username)
   const request = page.waitForRequest(sent => sent.url().endsWith('/api/v2/auth/password-reset'))
   await page.getByRole('button', { name: m.auth_reset_request_submit({}, ru) }).click()

@@ -87,10 +87,10 @@ const test = base.extend<{
 
 const about = (made: Made) => `/courses/${made.course.id}/about`
 
-// A pre-hydration click does nothing: retry until it acts. `target` never matches a dialog's confirm (B-CRS-07).
+// A pre-hydration click does nothing: retry until it acts. A target gone after a late outcome is not clicked again.
 async function clickUntil(target: Locator, outcome: () => Promise<void>): Promise<void> {
   await expect(async () => {
-    await target.click({ timeout: 1000 })
+    if (await target.isVisible()) await target.click({ timeout: 1000 })
     await outcome()
   }).toPass()
 }
