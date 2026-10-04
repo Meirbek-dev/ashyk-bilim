@@ -20851,6 +20851,7 @@ expression: json
     },
     "/api/v2/ai/remediation/sessions/{session_id}/complete": {
       "post": {
+        "description": "70 or more passes (and lifts a gate). The response carries the answer key\n(`answer` / `explanation`), which reads hide until then. A posted\n`score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).",
         "operationId": "complete_remediation",
         "parameters": [
           {
@@ -20905,7 +20906,7 @@ expression: json
             "description": "The session is already passed"
           }
         },
-        "summary": "The learner hands in the practice answers; the server scores them and 70\nor more passes (and lifts a gate). The response carries the answer key\n(`answer` / `explanation`), which reads hide until then. A posted\n`score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).",
+        "summary": "The learner hands in the practice answers; the server scores them.",
         "tags": [
           "ai"
         ]

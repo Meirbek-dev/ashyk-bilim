@@ -544,8 +544,9 @@ export const remediationSessionOptions = (options: Options<RemediationSessionDat
 });
 
 /**
- * The learner hands in the practice answers; the server scores them and 70
- * or more passes (and lifts a gate). The response carries the answer key
+ * The learner hands in the practice answers; the server scores them.
+ *
+ * 70 or more passes (and lifts a gate). The response carries the answer key
  * (`answer` / `explanation`), which reads hide until then. A posted
  * `score` counts only for the old web (`WEB_LINKS=legacy`, no `answers`).
  */
