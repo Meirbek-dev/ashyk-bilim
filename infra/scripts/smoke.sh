@@ -43,6 +43,19 @@ expect 200 /api/v2/health/ready
 expect 200 / -L --max-redirs 3
 expect 200 /content/_probe/smoke.txt
 
+# The TLS proxy in front of prod reads response headers into a 4k buffer and
+# answers 502 beyond it; smoke bypasses that proxy, so check the size here.
+final=$(curl "${curl_opts[@]}" -L --max-redirs 3 -w '
+%{url_effective}' "$origin/" 2>/dev/null | tail -n 1 || true)
+size=$(curl "${curl_opts[@]}" -w '
+%{size_header}' "${final:-$origin/}" 2>/dev/null | tail -n 1 || true)
+if [[ $size =~ ^[0-9]+$ ]] && ((size < 3500)); then
+  log "ok   response headers of ${final#"$origin"}: $size bytes"
+else
+  log "FAIL response headers of ${final#"$origin"}: ${size:-?} bytes (limit 3500; the proxy's buffer is 4k)"
+  failed=1
+fi
+
 use_stack
 if grep -qx judge0-server <<<"$(compose ps --status running --services 2>/dev/null)"; then
   got=$(compose exec -T server curl -sS -o /dev/null -w '%{http_code}' http://judge0-server:2358/languages || true)
