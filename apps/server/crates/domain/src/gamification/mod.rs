@@ -684,6 +684,7 @@ mod tests {
             rewards: serde_json::json!({
                 "activity_completion": 40, "quiz_completion": -5, "admin_award": 0, "bogus": 9
             }),
+            version: 1,
             updated_at: 0,
         };
         let policy = Policy::from_config(&config);

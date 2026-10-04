@@ -95,6 +95,11 @@ pub struct CreateFileSubmissionRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FileSubmission {
     pub id: FileSubmissionId,
+    /// Send back as `If-Match` on the config PATCH (stale -> 412).
+    /// Always present (schema-optional while client fixtures catch up).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub version: Option<i32>,
     pub activity_id: ActivityId,
     pub course_id: CourseId,
     pub chapter_id: ChapterId,
@@ -132,6 +137,7 @@ impl From<domain::FileSubmission> for FileSubmission {
         let attempts: Vec<Attempt> = s.attempts.into_iter().map(Into::into).collect();
         Self {
             id: s.row.id,
+            version: Some(s.row.version),
             activity_id: s.row.activity_id,
             course_id: s.row.course_id,
             chapter_id: s.chapter_id,

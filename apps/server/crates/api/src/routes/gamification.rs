@@ -171,16 +171,28 @@ pub async fn get_config(
 /// Replace the policy overrides (`platform:manage`).
 #[utoipa::path(
     put, path = "/gamification/config", tag = "gamification",
+    params(("If-Match" = Option<i32>, Header, description = "Config `version`; stale -> 412")),
     request_body = UpdateGamificationConfigRequest,
-    responses((status = 200, description = "Policy overrides", body = GamificationConfig)),
+    responses(
+        (status = 200, description = "Policy overrides", body = GamificationConfig),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn update_config(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    headers: axum::http::HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<GamificationConfig>> {
     GamificationService::require_manage(&actor)?;
     let request = ValidJson::<UpdateGamificationConfigRequest>::parse(&body)?;
+    crate::extract::require_if_match(
+        &state.pool,
+        ab_db::versions::Versioned::GamificationConfig,
+        &headers,
+    )
+    .await?;
     Ok(Json(
         state
             .gamification

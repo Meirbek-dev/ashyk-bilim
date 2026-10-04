@@ -18,6 +18,8 @@ pub struct DiscussionRow {
     pub parent_id: Option<DiscussionId>,
     pub content: String,
     pub status: DiscussionStatus,
+    /// S-04 optimistic lock (content and status edits bump it).
+    pub version: i32,
     pub username: Option<String>,
     pub display_name: Option<String>,
     pub avatar_key: Option<String>,
@@ -40,7 +42,7 @@ pub async fn get_discussion(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -73,7 +75,7 @@ pub async fn list_posts(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -111,7 +113,7 @@ pub async fn list_replies(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -148,7 +150,7 @@ pub async fn list_replies_for(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus",
+                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",

@@ -43,6 +43,8 @@ pub struct FileSubmissionRow {
     pub archived_at: Option<i64>,
     pub settings: serde_json::Value,
     pub creator_id: Option<UserId>,
+    /// S-04 optimistic lock (any config change bumps it).
+    pub version: i32,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -121,7 +123,7 @@ pub async fn get_file_submission<'e>(
                   lifecycle AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  settings, creator_id AS "creator_id: UserId",
+                  settings, creator_id AS "creator_id: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submissions WHERE id = $1"#,
@@ -149,7 +151,7 @@ pub async fn get_file_submission_by_activity<'e>(
                   lifecycle AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  settings, creator_id AS "creator_id: UserId",
+                  settings, creator_id AS "creator_id: UserId", version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM file_submissions WHERE activity_id = $1"#,

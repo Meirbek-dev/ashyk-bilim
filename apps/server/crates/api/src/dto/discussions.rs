@@ -26,6 +26,11 @@ pub struct Discussion {
     pub parent_id: Option<DiscussionId>,
     pub content: String,
     pub status: DiscussionStatus,
+    /// Send back as `If-Match` on delete (stale -> 412). Likes do not move it.
+    /// Always present (schema-optional while client fixtures catch up).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub version: Option<i32>,
     pub author: Option<DiscussionAuthor>,
     pub likes_count: i32,
     pub dislikes_count: i32,
@@ -58,6 +63,7 @@ impl From<domain::Discussion> for Discussion {
             parent_id: r.parent_id,
             content: r.content,
             status: r.status,
+            version: Some(r.version),
             author: r.user_id.map(|id| DiscussionAuthor {
                 id,
                 username: r.username.unwrap_or_default(),

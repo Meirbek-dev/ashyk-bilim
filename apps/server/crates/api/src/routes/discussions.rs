@@ -12,8 +12,11 @@ use crate::dto::discussions::{
     RepliesQuery, UpdateDiscussionRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent};
+use crate::extract::{
+    CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent, require_if_match_gated,
+};
 use crate::state::AppState;
+use ab_db::versions::Versioned;
 
 const DEFAULT_PAGE: i64 = 50;
 
@@ -151,8 +154,12 @@ pub async fn update_discussion(
 /// Remove a post with its replies and reactions (owner, or a moderator).
 #[utoipa::path(
     delete, path = "/discussions/{discussion_id}", tag = "discussions",
-    params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
+    params(("discussion_id" = DiscussionId, Path, description = "Discussion id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "Not yours and not a moderator", body = Problem,
          content_type = "application/problem+json"),
@@ -162,7 +169,12 @@ pub async fn delete_discussion(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<DiscussionId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Discussion(id), &headers, async {
+        state.discussions.get(&actor, id).await.map(|_| ())
+    })
+    .await?;
     state.discussions.delete(&actor, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

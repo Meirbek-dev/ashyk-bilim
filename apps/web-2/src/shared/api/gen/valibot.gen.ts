@@ -3665,7 +3665,8 @@ export const vForecastItem = v.object({
 export const vGamificationConfig = v.object({
     daily_xp_limit: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     rewards: v.record(v.string(), v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
 export const vGradebookAssessment = v.object({
@@ -4550,7 +4551,8 @@ export const vDiscussion: v.GenericSchema = v.object({
     replies: v.array(v.lazy(() => vDiscussion)),
     replies_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     status: vDiscussionStatus,
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
 export const vDiscussionPage = v.object({
@@ -4969,6 +4971,7 @@ export const vStudentOverride = v.object({
     updated_at_unix: vUnixTime,
     user_display_name: v.nullable(v.string()),
     user_id: vUserId,
+    version: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     waive_late_penalty: v.boolean()
 });
 
@@ -5144,7 +5147,8 @@ export const vFileSubmission = v.object({
     rubric: vFileRubric,
     settings: vFileSubmissionSettings,
     title: v.string(),
-    updated_at_unix: vUnixTime
+    updated_at_unix: vUnixTime,
+    version: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
 /**
@@ -6917,6 +6921,10 @@ export const vCreateOverrideResponse = vStudentOverride;
 
 export const vUpdateOverrideBody = vOverrideRequest;
 
+export const vUpdateOverrideHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vUpdateOverridePath = v.object({
     assessment_id: vAssessmentId,
     user_id: vUserId
@@ -7224,6 +7232,10 @@ export const vCreateCertificationHeaders = v.object({
  */
 export const vCreateCertificationResponse = vCertification;
 
+export const vDeleteCertificationHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vDeleteCertificationPath = v.object({
     certification_id: vCertificationId
 });
@@ -7273,6 +7285,10 @@ export const vCertificationPreviewPdfQuery = v.object({
  * PDF
  */
 export const vCertificationPreviewPdfResponse = v.string();
+
+export const vDeleteChapterHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vDeleteChapterPath = v.object({
     chapter_id: vChapterId
@@ -7403,6 +7419,10 @@ export const vUpdateCollectionPath = v.object({
  */
 export const vUpdateCollectionResponse = vCollection;
 
+export const vDeleteCourseUpdateHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vDeleteCourseUpdatePath = v.object({
     update_id: vCourseUpdateId
 });
@@ -7451,6 +7471,10 @@ export const vCreateCourseHeaders = v.object({
  * Created
  */
 export const vCreateCourseResponse = vCourse;
+
+export const vDeleteCourseHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vDeleteCoursePath = v.object({
     course_id: vCourseId
@@ -7823,6 +7847,10 @@ export const vUsergroupsForCoursePath = v.object({
  */
 export const vUsergroupsForCourseResponse = v.array(vUsergroup);
 
+export const vDeleteDiscussionHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 export const vDeleteDiscussionPath = v.object({
     discussion_id: vDiscussionId
 });
@@ -7984,6 +8012,10 @@ export const vGetFileSubmissionPath = v.object({
 export const vGetFileSubmissionResponse = vFileSubmission;
 
 export const vUpdateFileSubmissionBody = vConfigPatch;
+
+export const vUpdateFileSubmissionHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vUpdateFileSubmissionPath = v.object({
     file_submission_id: vFileSubmissionId
@@ -8154,6 +8186,10 @@ export const vGetConfigResponse = vGamificationConfig;
 
 export const vUpdateConfigBody = vUpdateGamificationConfigRequest;
 
+export const vUpdateConfigHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 /**
  * Policy overrides
  */
@@ -8218,6 +8254,10 @@ export const vCreateGroupHeaders = v.object({
  * Created
  */
 export const vCreateGroupResponse = vUsergroup;
+
+export const vDeleteGroupHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vDeleteGroupPath = v.object({
     group_id: vUsergroupId
@@ -8470,6 +8510,10 @@ export const vCreateRoleHeaders = v.object({
 });
 
 export const vCreateRoleResponse = v.union([vRole, v.void()]);
+
+export const vDeleteRoleHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vDeleteRolePath = v.object({
     slug: v.string()
@@ -8739,6 +8783,10 @@ export const vCreateUsergroupHeaders = v.object({
  * Created
  */
 export const vCreateUsergroupResponse = vUsergroup;
+
+export const vDeleteUsergroupHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
 
 export const vDeleteUsergroupPath = v.object({
     usergroup_id: vUsergroupId

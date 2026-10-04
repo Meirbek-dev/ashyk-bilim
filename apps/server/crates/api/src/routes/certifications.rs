@@ -14,7 +14,8 @@ use crate::dto::certifications::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
-    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, with_etag,
+    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, require_if_match_gated,
+    with_etag,
 };
 use crate::state::AppState;
 use ab_db::versions::Versioned;
@@ -172,14 +173,25 @@ pub async fn certification_preview_pdf(
 /// Remove the template and every certificate issued from it.
 #[utoipa::path(
     delete, path = "/certifications/{certification_id}", tag = "certifications",
-    params(("certification_id" = CertificationId, Path, description = "Certification id")),
-    responses((status = 204, description = "Deleted")),
+    params(("certification_id" = CertificationId, Path, description = "Certification id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn delete_certification(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CertificationId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Certification(id), &headers, async {
+        state.certifications.get(&actor, id).await.map(|_| ())
+    })
+    .await?;
     state.certifications.delete(&actor, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

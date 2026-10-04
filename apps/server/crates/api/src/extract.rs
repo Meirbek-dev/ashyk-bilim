@@ -528,6 +528,24 @@ pub async fn require_if_match(
     }
 }
 
+/// [`require_if_match`] for writes whose own gate runs inside the write.
+///
+/// Deletes: with an `If-Match`, `gate` - the visibility / permission check
+/// the write answers 403/404 with - runs first, so a 412 reveals nothing
+/// more. Without the header nothing runs.
+pub async fn require_if_match_gated(
+    pool: &sqlx::PgPool,
+    of: ab_db::versions::Versioned<'_>,
+    headers: &HeaderMap,
+    gate: impl std::future::Future<Output = ab_core::Result<()>>,
+) -> Result<(), ApiError> {
+    if crate::routes::curriculum::if_match(headers)?.is_none() {
+        return Ok(());
+    }
+    gate.await?;
+    require_if_match(pool, of, headers).await
+}
+
 /// A JSON body with its `version` as a quoted `ETag` (the next `If-Match`).
 pub fn with_etag<T: serde::Serialize>(status: StatusCode, version: i32, body: T) -> Response {
     let etag = axum::http::HeaderValue::from_str(&format!("\"{version}\""))

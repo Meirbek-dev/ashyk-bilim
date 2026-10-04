@@ -2281,6 +2281,11 @@ export type Discussion = {
     replies_count: number;
     status: DiscussionStatus;
     updated_at_unix: UnixTime;
+    /**
+     * Send back as `If-Match` on delete (stale -> 412). Likes do not move it.
+     * Always present (schema-optional while client fixtures catch up).
+     */
+    version?: number;
 };
 
 /**
@@ -2724,6 +2729,11 @@ export type FileSubmission = {
     settings: FileSubmissionSettings;
     title: string;
     updated_at_unix: UnixTime;
+    /**
+     * Send back as `If-Match` on the config PATCH (stale -> 412).
+     * Always present (schema-optional while client fixtures catch up).
+     */
+    version?: number;
 };
 
 export type FileSubmissionId = string;
@@ -2835,6 +2845,11 @@ export type GamificationConfig = {
         [key: string]: number;
     };
     updated_at_unix: UnixTime;
+    /**
+     * Send back as `If-Match` on the PUT (stale -> 412).
+     * Always present (schema-optional while client fixtures catch up).
+     */
+    version?: number;
 };
 
 /**
@@ -5222,6 +5237,11 @@ export type StudentOverride = {
      */
     user_display_name: string | null;
     user_id: UserId;
+    /**
+     * Send back as `If-Match` on the PUT (stale -> 412).
+     * Always present (schema-optional while client fixtures catch up).
+     */
+    version?: number;
     waive_late_penalty: boolean;
 };
 
@@ -9485,6 +9505,12 @@ export type CreateOverrideResponse = CreateOverrideResponses[keyof CreateOverrid
 
 export type UpdateOverrideData = {
     body: OverrideRequest;
+    headers?: {
+        /**
+         * Override `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Assessment id
@@ -9498,6 +9524,15 @@ export type UpdateOverrideData = {
     query?: never;
     url: '/api/v2/assessments/{assessment_id}/overrides/{user_id}';
 };
+
+export type UpdateOverrideErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateOverrideError = UpdateOverrideErrors[keyof UpdateOverrideErrors];
 
 export type UpdateOverrideResponses = {
     /**
@@ -10480,6 +10515,12 @@ export type CreateCertificationResponse = CreateCertificationResponses[keyof Cre
 
 export type DeleteCertificationData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Certification id
@@ -10489,6 +10530,15 @@ export type DeleteCertificationData = {
     query?: never;
     url: '/api/v2/certifications/{certification_id}';
 };
+
+export type DeleteCertificationErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type DeleteCertificationError = DeleteCertificationErrors[keyof DeleteCertificationErrors];
 
 export type DeleteCertificationResponses = {
     /**
@@ -10599,6 +10649,12 @@ export type CertificationPreviewPdfResponse = CertificationPreviewPdfResponses[k
 
 export type DeleteChapterData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Chapter id
@@ -10614,6 +10670,10 @@ export type DeleteChapterErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteChapterError = DeleteChapterErrors[keyof DeleteChapterErrors];
@@ -11001,6 +11061,12 @@ export type UpdateCollectionResponse = UpdateCollectionResponses[keyof UpdateCol
 
 export type DeleteCourseUpdateData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course update id
@@ -11016,6 +11082,10 @@ export type DeleteCourseUpdateErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteCourseUpdateError = DeleteCourseUpdateErrors[keyof DeleteCourseUpdateErrors];
@@ -11152,6 +11222,12 @@ export type CreateCourseResponse = CreateCourseResponses[keyof CreateCourseRespo
 
 export type DeleteCourseData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Course id
@@ -11171,6 +11247,10 @@ export type DeleteCourseErrors = {
      * Unknown or inaccessible
      */
     404: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteCourseError = DeleteCourseErrors[keyof DeleteCourseErrors];
@@ -12222,6 +12302,12 @@ export type UsergroupsForCourseResponse = UsergroupsForCourseResponses[keyof Use
 
 export type DeleteDiscussionData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Discussion id
@@ -12237,6 +12323,10 @@ export type DeleteDiscussionErrors = {
      * Not yours and not a moderator
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteDiscussionError = DeleteDiscussionErrors[keyof DeleteDiscussionErrors];
@@ -12680,6 +12770,12 @@ export type GetFileSubmissionResponse = GetFileSubmissionResponses[keyof GetFile
 
 export type UpdateFileSubmissionData = {
     body: ConfigPatch;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * File submission id
@@ -12689,6 +12785,15 @@ export type UpdateFileSubmissionData = {
     query?: never;
     url: '/api/v2/file-submissions/{file_submission_id}';
 };
+
+export type UpdateFileSubmissionErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateFileSubmissionError = UpdateFileSubmissionErrors[keyof UpdateFileSubmissionErrors];
 
 export type UpdateFileSubmissionResponses = {
     /**
@@ -13141,10 +13246,25 @@ export type GetConfigResponse = GetConfigResponses[keyof GetConfigResponses];
 
 export type UpdateConfigData = {
     body: UpdateGamificationConfigRequest;
+    headers?: {
+        /**
+         * Config `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v2/gamification/config';
 };
+
+export type UpdateConfigErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateConfigError = UpdateConfigErrors[keyof UpdateConfigErrors];
 
 export type UpdateConfigResponses = {
     /**
@@ -13339,6 +13459,12 @@ export type CreateGroupResponse = CreateGroupResponses[keyof CreateGroupResponse
 
 export type DeleteGroupData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Group id
@@ -13354,6 +13480,10 @@ export type DeleteGroupErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteGroupError = DeleteGroupErrors[keyof DeleteGroupErrors];
@@ -14107,6 +14237,12 @@ export type CreateRoleResponse = CreateRoleResponses[keyof CreateRoleResponses];
 
 export type DeleteRoleData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Role slug
@@ -14122,6 +14258,10 @@ export type DeleteRoleErrors = {
      * System role
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteRoleError = DeleteRoleErrors[keyof DeleteRoleErrors];
@@ -14962,6 +15102,12 @@ export type CreateUsergroupResponse = CreateUsergroupResponses[keyof CreateUserg
 
 export type DeleteUsergroupData = {
     body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
     path: {
         /**
          * Usergroup id
@@ -14977,6 +15123,10 @@ export type DeleteUsergroupErrors = {
      * No write access
      */
     403: Problem;
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
 };
 
 export type DeleteUsergroupError = DeleteUsergroupErrors[keyof DeleteUsergroupErrors];

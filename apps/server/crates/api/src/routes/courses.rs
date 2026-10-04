@@ -16,7 +16,8 @@ use crate::dto::courses::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
-    CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent, require_if_match, with_etag,
+    CurrentActor, MaybeActor, Path, Query, ValidJson, idempotent, require_if_match,
+    require_if_match_gated, with_etag,
 };
 use crate::state::AppState;
 
@@ -614,8 +615,12 @@ pub async fn course_archive_preview(
     delete,
     path = "/courses/{course_id}",
     tag = "courses",
-    params(("course_id" = CourseId, Path, description = "Course id")),
+    params(("course_id" = CourseId, Path, description = "Course id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "No delete access", body = Problem,
          content_type = "application/problem+json"),
@@ -627,7 +632,12 @@ pub async fn delete_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Course(id), &headers, async {
+        state.courses.get(&actor, id).await.map(|_| ())
+    })
+    .await?;
     detached(async move {
         state.courses.delete(&actor, id).await?;
         Ok(StatusCode::NO_CONTENT)
@@ -827,8 +837,12 @@ pub async fn edit_course_update(
     delete,
     path = "/course-updates/{update_id}",
     tag = "courses",
-    params(("update_id" = CourseUpdateId, Path, description = "Course update id")),
+    params(("update_id" = CourseUpdateId, Path, description = "Course update id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
@@ -838,7 +852,15 @@ pub async fn delete_course_update(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseUpdateId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(
+        &state.pool,
+        Versioned::CourseUpdate(id),
+        &headers,
+        state.courses.require_writable_update(&actor, id),
+    )
+    .await?;
     state.courses.delete_update(&actor, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

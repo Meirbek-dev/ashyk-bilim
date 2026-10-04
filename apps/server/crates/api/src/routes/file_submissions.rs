@@ -21,9 +21,10 @@ use crate::dto::file_submissions::{
 };
 use crate::dto::grading::{DeadlineExtensionRequest, SortOrder};
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent};
+use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent, require_if_match};
 use crate::routes::grading::{csv_language, if_match};
 use crate::state::AppState;
+use ab_db::versions::Versioned;
 
 const DEFAULT_REVIEW_PAGE: i64 = 25;
 
@@ -105,14 +106,22 @@ pub async fn get_activity_file_submission(
 /// Partial update of title and configuration (authors; archived = read-only).
 #[utoipa::path(
     patch, path = "/file-submissions/{file_submission_id}", tag = "file-submissions",
-    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
+    params(
+        ("file_submission_id" = FileSubmissionId, Path, description = "File submission id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     request_body = ConfigPatch,
-    responses((status = 200, description = "Updated", body = FileSubmission)),
+    responses(
+        (status = 200, description = "Updated", body = FileSubmission),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn update_file_submission(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<FileSubmissionId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<FileSubmission>> {
     // UX-311: permission before the body.
@@ -121,6 +130,7 @@ pub async fn update_file_submission(
         .require_authorable(&actor, id)
         .await?;
     let request = ValidJson::<ConfigPatch>::parse(&body)?;
+    require_if_match(&state.pool, Versioned::FileSubmission(id), &headers).await?;
     // BUG-322: the lateness re-price after the commit must outlive the socket.
     detached(async move {
         Ok(Json(

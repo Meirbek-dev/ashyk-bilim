@@ -6742,6 +6742,11 @@ expression: json
           },
           "updated_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "version": {
+            "description": "Send back as `If-Match` on delete (stale -> 412). Likes do not move it.\nAlways present (schema-optional while client fixtures catch up).",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -8059,6 +8064,11 @@ expression: json
           },
           "updated_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "version": {
+            "description": "Send back as `If-Match` on the config PATCH (stale -> 412).\nAlways present (schema-optional while client fixtures catch up).",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -8434,6 +8444,11 @@ expression: json
           },
           "updated_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "version": {
+            "description": "Send back as `If-Match` on the PUT (stale -> 412).\nAlways present (schema-optional while client fixtures catch up).",
+            "format": "int32",
+            "type": "integer"
           }
         },
         "required": [
@@ -15578,6 +15593,11 @@ expression: json
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
+          },
+          "version": {
+            "description": "Send back as `If-Match` on the PUT (stale -> 412).\nAlways present (schema-optional while client fixtures catch up).",
+            "format": "int32",
+            "type": "integer"
           },
           "waive_late_penalty": {
             "type": "boolean"
@@ -24928,6 +24948,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/UserId"
             }
+          },
+          {
+            "description": "Override `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -24950,6 +24983,16 @@ expression: json
               }
             },
             "description": "Updated"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Replace a student's override.",
@@ -26572,11 +26615,34 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/CertificationId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Remove the template and every certificate issued from it.",
@@ -26771,6 +26837,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/ChapterId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -26786,6 +26865,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete a chapter and its activities; siblings renumber to stay contiguous.",
@@ -27427,6 +27516,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/CourseUpdateId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -27442,6 +27544,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete an announcement (course write access).",
@@ -27676,6 +27788,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/CourseId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -27701,6 +27826,16 @@ expression: json
               }
             },
             "description": "Unknown or inaccessible"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete a course and everything under it (cascades).",
@@ -29534,6 +29669,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/DiscussionId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -29549,6 +29697,16 @@ expression: json
               }
             },
             "description": "Not yours and not a moderator"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Remove a post with its replies and reactions (owner, or a moderator).",
@@ -30291,6 +30449,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/FileSubmissionId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -30313,6 +30484,16 @@ expression: json
               }
             },
             "description": "Updated"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Partial update of title and configuration (authors; archived = read-only).",
@@ -31106,6 +31287,21 @@ expression: json
       },
       "put": {
         "operationId": "update_config",
+        "parameters": [
+          {
+            "description": "Config `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -31126,6 +31322,16 @@ expression: json
               }
             },
             "description": "Policy overrides"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Replace the policy overrides (`platform:manage`).",
@@ -31445,6 +31651,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/UsergroupId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -31460,6 +31679,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete a usergroup (membership/course links cascade).",
@@ -32701,6 +32930,19 @@ expression: json
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -32716,6 +32958,16 @@ expression: json
               }
             },
             "description": "System role"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete a custom role; holders' live sessions lose it immediately.",
@@ -34202,6 +34454,19 @@ expression: json
             "schema": {
               "$ref": "#/components/schemas/UsergroupId"
             }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -34217,6 +34482,16 @@ expression: json
               }
             },
             "description": "No write access"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
           }
         },
         "summary": "Delete a usergroup (membership/course links cascade).",

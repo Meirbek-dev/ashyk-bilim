@@ -12,8 +12,8 @@ use crate::dto::usergroups::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
-    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, wants_representation,
-    with_etag,
+    CurrentActor, Path, Query, ValidJson, idempotent, require_if_match, require_if_match_gated,
+    wants_representation, with_etag,
 };
 use crate::state::AppState;
 
@@ -164,8 +164,12 @@ pub async fn update_usergroup(
 /// Delete a usergroup (membership/course links cascade).
 #[utoipa::path(
     delete, path = "/usergroups/{usergroup_id}", tag = "usergroups",
-    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id")),
+    params(("usergroup_id" = UsergroupId, Path, description = "Usergroup id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
@@ -175,7 +179,12 @@ pub async fn delete_usergroup(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Usergroup(id), &headers, async {
+        state.usergroups.get(&actor, id).await.map(|_| ())
+    })
+    .await?;
     // BUG-318/322: the course re-aggregation after the delete must outlive
     // the socket.
     detached(async move { Ok(state.usergroups.delete(&actor, id).await?) }).await?;
@@ -471,9 +480,14 @@ pub async fn update_group(
 /// S-10 name of [`delete_usergroup`] (that path is deprecated).
 #[utoipa::path(
     delete, path = "/groups/{group_id}", tag = "usergroups",
-    params(("group_id" = UsergroupId, Path, description = "Group id")),
+    params(
+        ("group_id" = UsergroupId, Path, description = "Group id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
     )
@@ -482,8 +496,9 @@ pub async fn delete_group(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
-    delete_usergroup(State(state), CurrentActor(actor), Path(id)).await
+    delete_usergroup(State(state), CurrentActor(actor), Path(id), headers).await
 }
 
 /// Member profiles.

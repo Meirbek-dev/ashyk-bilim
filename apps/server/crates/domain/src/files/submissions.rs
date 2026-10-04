@@ -660,6 +660,7 @@ impl FileSubmissionsService {
             archived_at: None,
             settings: serde_json::json!({}),
             creator_id: Some(actor.user_id),
+            version: 1,
             created_at: 0,
             updated_at: 0,
         };

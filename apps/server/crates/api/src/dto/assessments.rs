@@ -586,6 +586,11 @@ pub struct SetAccessRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct StudentOverride {
     pub id: uuid::Uuid,
+    /// Send back as `If-Match` on the PUT (stale -> 412).
+    /// Always present (schema-optional while client fixtures catch up).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub version: Option<i32>,
     pub user_id: UserId,
     pub max_attempts_override: Option<i32>,
     pub due_at_override_unix: Option<i64>,
@@ -604,6 +609,7 @@ impl From<ab_domain::assessments::access::Override> for StudentOverride {
     fn from(o: ab_domain::assessments::access::Override) -> Self {
         Self {
             id: o.id,
+            version: Some(o.version),
             user_id: o.user_id,
             max_attempts_override: o.max_attempts_override,
             due_at_override_unix: o.due_at_override,

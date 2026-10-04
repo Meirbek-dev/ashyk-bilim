@@ -475,3 +475,208 @@ async fn work_queue_items_name_the_work_and_filter(pool: PgPool) {
         bad.text()
     );
 }
+
+async fn send_with(
+    app: &TestApp,
+    who: &MintedSession,
+    method: &str,
+    uri: &str,
+    if_match: &str,
+    body: Option<Value>,
+) -> TestResponse {
+    let mut req = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header(header::COOKIE, &who.cookie)
+        .header(header::IF_MATCH, if_match);
+    if body.is_some() {
+        req = req.header(header::CONTENT_TYPE, "application/json");
+    }
+    app.send(
+        req.body(body.map_or_else(Body::empty, |b| Body::from(b.to_string())))
+            .unwrap(),
+    )
+    .await
+}
+
+/// IFM: deletes and the remaining replace/patch writes take `If-Match`
+/// (stale -> 412, current -> the write); a like does not move a post's
+/// version.
+#[sqlx::test(migrations = "../../migrations")]
+async fn if_match_guards_deletes_and_config_writes(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice_user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice_user,
+            &[
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+                "trail:submit:assigned",
+                "discussion:create:platform",
+                "discussion:read:all",
+                "discussion:delete:own",
+            ],
+        )
+        .await;
+    let (course_id, chapter_id) = course(&app, &teacher).await;
+    enrol(&app, &alice, &course_id).await;
+
+    // Discussion: a like leaves the version; stale delete 412, current 204.
+    let post = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &json!({ "content": "Hello" }),
+        )
+        .await;
+    assert!(post.status.is_success(), "{}", post.text());
+    let post_id = s(&post.json()["id"]);
+    assert_eq!(post.json()["version"], 1);
+    let liked = send_with(
+        &app,
+        &alice,
+        "PUT",
+        &format!("/api/v2/discussions/{post_id}/like"),
+        "1",
+        None,
+    )
+    .await;
+    assert!(liked.status.is_success(), "{}", liked.text());
+    let path = format!("/api/v2/discussions/{post_id}");
+    let stale = send_with(&app, &alice, "DELETE", &path, "\"7\"", None).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let gone = send_with(&app, &alice, "DELETE", &path, "\"1\"", None).await;
+    assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.text());
+
+    // File submission PATCH: the version moves with each change.
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &json!({ "chapter_id": chapter_id, "title": "Essay", "instructions": "PDF." }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let fs = s(&created.json()["id"]);
+    let v = created.json()["version"].as_i64().unwrap();
+    let fs_path = format!("/api/v2/file-submissions/{fs}");
+    let patch = json!({ "instructions": "PDF, please." });
+    let stale = send_with(
+        &app,
+        &teacher,
+        "PATCH",
+        &fs_path,
+        &(v + 5).to_string(),
+        Some(patch.clone()),
+    )
+    .await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let ok = send_with(
+        &app,
+        &teacher,
+        "PATCH",
+        &fs_path,
+        &v.to_string(),
+        Some(patch),
+    )
+    .await;
+    assert_eq!(ok.status, StatusCode::OK, "{}", ok.text());
+    assert_eq!(ok.json()["version"], v + 1);
+
+    // Gamification config PUT.
+    let admin = app.mint_session(&["platform:manage:platform"]).await;
+    let config = app
+        .get_as(&admin, "/api/v2/gamification/config")
+        .await
+        .json();
+    let cv = config["version"].as_i64().unwrap();
+    let body = json!({ "daily_xp_limit": 30, "rewards": {} });
+    let stale = send_with(
+        &app,
+        &admin,
+        "PUT",
+        "/api/v2/gamification/config",
+        &(cv + 1).to_string(),
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let ok = send_with(
+        &app,
+        &admin,
+        "PUT",
+        "/api/v2/gamification/config",
+        &cv.to_string(),
+        Some(body),
+    )
+    .await;
+    assert_eq!(ok.status, StatusCode::OK, "{}", ok.text());
+
+    // Course delete last (it takes the rest with it); without the header
+    // the old behaviour stands.
+    let stale = send_with(
+        &app,
+        &teacher,
+        "DELETE",
+        &format!("/api/v2/courses/{course_id}"),
+        "99",
+        None,
+    )
+    .await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let bad = send_with(
+        &app,
+        &teacher,
+        "DELETE",
+        &format!("/api/v2/courses/{course_id}"),
+        "x",
+        None,
+    )
+    .await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+    // A stranger with a stale If-Match learns nothing new (404, not 412).
+    let stranger = learner(&app, "mallory").await;
+    let private = app
+        .post_as(&teacher, "/api/v2/courses", &json!({ "name": "Hidden" }))
+        .await;
+    let hidden = s(&private.json()["id"]);
+    let peek = send_with(
+        &app,
+        &stranger,
+        "DELETE",
+        &format!("/api/v2/courses/{hidden}"),
+        "99",
+        None,
+    )
+    .await;
+    assert_eq!(peek.status, StatusCode::NOT_FOUND, "{}", peek.text());
+}

@@ -1017,6 +1017,8 @@ pub struct OverrideRow {
     /// `expires_at` (which then bounds only the attempts and the waiver).
     pub due_extended: bool,
     pub granted_by: Option<UserId>,
+    /// S-04 optimistic lock.
+    pub version: i32,
     /// The learner's and the granter's display names (the exceptions tab).
     pub user_display_name: Option<String>,
     pub granted_by_name: Option<String>,
@@ -1161,7 +1163,7 @@ pub async fn get_override(
                   (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
                   waive_late_penalty, note,
                   (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
-                  granted_by AS "granted_by: UserId",
+                  granted_by AS "granted_by: UserId", version,
                   (SELECT u.display_name FROM users u WHERE u.id = o.user_id) AS "user_display_name?",
                   (SELECT u.display_name FROM users u WHERE u.id = o.granted_by) AS "granted_by_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -1183,7 +1185,7 @@ pub async fn list_overrides(pool: &PgPool, id: AssessmentId) -> Result<Vec<Overr
                   (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
                   waive_late_penalty, note,
                   (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
-                  granted_by AS "granted_by: UserId",
+                  granted_by AS "granted_by: UserId", version,
                   (SELECT u.display_name FROM users u WHERE u.id = o.user_id) AS "user_display_name?",
                   (SELECT u.display_name FROM users u WHERE u.id = o.granted_by) AS "granted_by_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",

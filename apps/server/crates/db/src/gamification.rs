@@ -400,13 +400,14 @@ pub async fn count_with_more_xp(pool: &PgPool, total_xp: i32) -> Result<i64> {
 pub struct ConfigRow {
     pub daily_xp_limit: Option<i32>,
     pub rewards: serde_json::Value,
+    pub version: i32,
     pub updated_at: i64,
 }
 
 pub async fn get_config(pool: &PgPool) -> Result<ConfigRow> {
     let row = sqlx::query_as!(
         ConfigRow,
-        r#"SELECT daily_xp_limit, rewards,
+        r#"SELECT daily_xp_limit, rewards, version,
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM gamification_config WHERE id = 1"#
     )

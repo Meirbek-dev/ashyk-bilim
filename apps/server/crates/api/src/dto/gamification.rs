@@ -250,6 +250,11 @@ pub struct GamificationConfig {
     /// Source → XP overrides; unknown sources are ignored.
     #[schema(value_type = std::collections::BTreeMap<String, i32>)]
     pub rewards: serde_json::Value,
+    /// Send back as `If-Match` on the PUT (stale -> 412).
+    /// Always present (schema-optional while client fixtures catch up).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub version: Option<i32>,
     pub updated_at_unix: i64,
 }
 
@@ -258,6 +263,7 @@ impl From<ab_db::gamification::ConfigRow> for GamificationConfig {
         Self {
             daily_xp_limit: c.daily_xp_limit,
             rewards: c.rewards,
+            version: Some(c.version),
             updated_at_unix: c.updated_at,
         }
     }

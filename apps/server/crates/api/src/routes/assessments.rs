@@ -661,19 +661,31 @@ pub async fn create_override(
     params(
         ("assessment_id" = AssessmentId, Path, description = "Assessment id"),
         ("user_id" = ab_core::id::UserId, Path, description = "Student"),
+        ("If-Match" = Option<i32>, Header, description = "Override `version`; stale -> 412"),
     ),
     request_body = crate::dto::assessments::OverrideRequest,
-    responses((status = 200, description = "Updated", body = crate::dto::assessments::StudentOverride)),
+    responses(
+        (status = 200, description = "Updated", body = crate::dto::assessments::StudentOverride),
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
+    ),
 )]
 pub async fn update_override(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path((id, user_id)): Path<(AssessmentId, ab_core::id::UserId)>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Json<crate::dto::assessments::StudentOverride>> {
     // UX-311: permission before the body.
     state.assessments.require_authorable(&actor, id).await?;
     let request = ValidJson::<crate::dto::assessments::OverrideRequest>::parse(&body)?;
+    require_if_match(
+        &state.pool,
+        Versioned::AssessmentOverride(id, user_id),
+        &headers,
+    )
+    .await?;
     // Detached (BUG-313): the settle outlives a hang-up.
     detached(async move {
         let row = state

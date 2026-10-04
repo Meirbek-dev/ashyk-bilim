@@ -3,7 +3,8 @@
 
 use ab_core::Result;
 use ab_core::id::{
-    AssessmentId, CertificationId, ChapterId, CourseId, CourseUpdateId, UserId, UsergroupId,
+    AssessmentId, CertificationId, ChapterId, CourseId, CourseUpdateId, DiscussionId,
+    FileSubmissionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -19,6 +20,11 @@ pub enum Versioned<'a> {
     Role(&'a str),
     Platform,
     Assessment(AssessmentId),
+    Discussion(DiscussionId),
+    FileSubmission(FileSubmissionId),
+    GamificationConfig,
+    /// A learner's override on an assessment.
+    AssessmentOverride(AssessmentId, UserId),
 }
 
 /// `None` when the row does not exist.
@@ -73,6 +79,28 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
                 .fetch_optional(pool)
                 .await?
         }
+        Versioned::Discussion(id) => {
+            sqlx::query_scalar!("SELECT version FROM course_discussions WHERE id = $1", id.0)
+                .fetch_optional(pool)
+                .await?
+        }
+        Versioned::FileSubmission(id) => {
+            sqlx::query_scalar!("SELECT version FROM file_submissions WHERE id = $1", id.0)
+                .fetch_optional(pool)
+                .await?
+        }
+        Versioned::GamificationConfig => {
+            sqlx::query_scalar!("SELECT version FROM gamification_config WHERE id = 1")
+                .fetch_optional(pool)
+                .await?
+        }
+        Versioned::AssessmentOverride(id, user_id) => sqlx::query_scalar!(
+            "SELECT version FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
+            id.0,
+            user_id.0
+        )
+        .fetch_optional(pool)
+        .await?,
     };
     Ok(version)
 }

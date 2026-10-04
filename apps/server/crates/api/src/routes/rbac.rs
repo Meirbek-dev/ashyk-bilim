@@ -11,7 +11,8 @@ use crate::dto::rbac::{
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
-    CurrentActor, Path, ValidJson, idempotent, require_if_match, wants_representation,
+    CurrentActor, Path, ValidJson, idempotent, require_if_match, require_if_match_gated,
+    wants_representation,
 };
 use crate::routes::users::user_or_no_content;
 use crate::state::AppState;
@@ -270,8 +271,12 @@ pub async fn update_role(
     delete,
     path = "/rbac/roles/{slug}",
     tag = "rbac",
-    params(("slug" = String, Path, description = "Role slug")),
+    params(("slug" = String, Path, description = "Role slug"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "System role", body = Problem,
          content_type = "application/problem+json"),
@@ -281,7 +286,12 @@ pub async fn delete_role(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(slug): Path<String>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Role(&slug), &headers, async {
+        ab_domain::identity::RbacAdminService::require_manage_roles(&actor)
+    })
+    .await?;
     detached(async move {
         state.rbac.delete_role(&actor, &slug).await?;
         Ok(StatusCode::NO_CONTENT)

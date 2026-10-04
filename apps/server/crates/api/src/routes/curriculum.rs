@@ -13,7 +13,9 @@ use crate::dto::curriculum::{
     UpdateActivityRequest, UpdateChapterRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, MaybeActor, Path, ValidJson, idempotent, require_if_match};
+use crate::extract::{
+    CurrentActor, MaybeActor, Path, ValidJson, idempotent, require_if_match, require_if_match_gated,
+};
 use crate::state::AppState;
 use ab_db::versions::Versioned;
 
@@ -166,8 +168,12 @@ pub async fn update_chapter(
     delete,
     path = "/chapters/{chapter_id}",
     tag = "courses",
-    params(("chapter_id" = ChapterId, Path, description = "Chapter id")),
+    params(("chapter_id" = ChapterId, Path, description = "Chapter id"),
+        ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+    ),
     responses(
+        (status = 412, description = "Stale `If-Match`", body = Problem,
+         content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
@@ -177,7 +183,16 @@ pub async fn delete_chapter(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ChapterId>,
+    headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
+    require_if_match_gated(&state.pool, Versioned::Chapter(id), &headers, async {
+        state
+            .curriculum
+            .writable_chapter(&actor, id)
+            .await
+            .map(|_| ())
+    })
+    .await?;
     // BUG-242: the renumber + projection after the commit outlive the socket.
     detached(async move {
         state.curriculum.delete_chapter(&actor, id).await?;

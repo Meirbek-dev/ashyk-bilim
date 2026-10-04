@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileSubmissionId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", instructions, rubric, allowed_mime_types,\n                  max_files, max_file_size_mb,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\", allow_late,\n                  late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  max_attempts, grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  lifecycle AS \"lifecycle: FileSubmissionLifecycle\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  settings, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submissions WHERE activity_id = $1",
+  "query": "SELECT id AS \"id: FileSubmissionId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\", instructions, rubric, allowed_mime_types,\n                  max_files, max_file_size_mb,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\", allow_late,\n                  late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day, late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  max_attempts, grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  lifecycle AS \"lifecycle: FileSubmissionLifecycle\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  settings, creator_id AS \"creator_id: UserId\", version,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM file_submissions WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -216,12 +216,23 @@
       },
       {
         "ordinal": 21,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -254,9 +265,10 @@
       null,
       false,
       true,
+      false,
       null,
       null
     ]
   },
-  "hash": "cfffe5f944532cf03b746f9197ec3de0b57c61d47e36fb6a23b84a03f28da924"
+  "hash": "5e8e87f3220ab995dc03cc74d62993a13970dea38a1fe3781ab539d7cb6e58ab"
 }
