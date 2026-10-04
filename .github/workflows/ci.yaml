@@ -411,6 +411,11 @@ jobs:
       - name: Resolve the stand host
         run: echo '127.0.0.1 ashyq.test' | sudo tee -a /etc/hosts
 
+      # The stand comes up while Playwright installs (~1 min saved); its log and exit code are
+      # collected by "Stand up" below.
+      - name: Stand up in the background (from scratch, bootstrap included)
+        run: (set +e; just web2-stand-up >"$RUNNER_TEMP/stand.log" 2>&1; echo $? >"$RUNNER_TEMP/stand.rc") </dev/null >/dev/null 2>&1 &
+
       - name: Playwright dependencies
         working-directory: apps/web-2
         run: |
@@ -418,8 +423,11 @@ jobs:
           bun run codegen
           bunx playwright install --with-deps
 
-      - name: Stand up (from scratch, bootstrap included)
-        run: just web2-stand-up
+      - name: Stand up
+        run: |
+          until [[ -f $RUNNER_TEMP/stand.rc ]]; do sleep 2; done
+          cat "$RUNNER_TEMP/stand.log"
+          exit "$(<"$RUNNER_TEMP/stand.rc")"
 
       # Also the learner pool (E2E_LEARNERS, default 250): the stand caps self-registration at 10/h.
       - name: Seed
@@ -427,9 +435,12 @@ jobs:
 
       # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
+      # Shards split by test count and the cheap access.spec matrix comes first: weights 4:3:2
+      # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446).
       - name: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
+          PWTEST_SHARD_WEIGHTS: '4:3:2'
         run: just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
 
       - name: Compose logs
