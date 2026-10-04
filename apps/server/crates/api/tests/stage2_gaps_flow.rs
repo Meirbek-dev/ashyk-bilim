@@ -680,3 +680,61 @@ async fn if_match_guards_deletes_and_config_writes(pool: PgPool) {
     .await;
     assert_eq!(peek.status, StatusCode::NOT_FOUND, "{}", peek.text());
 }
+
+/// FSB-UNPUB: a published task goes back to draft (the activity leaves the
+/// learners' view), `allowed_actions` follows the lifecycle, learners and
+/// drafts are refused.
+#[sqlx::test(migrations = "../../migrations")]
+async fn file_submissions_unpublish(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    enrol(&app, &alice, &course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &json!({ "chapter_id": chapter_id, "title": "Essay", "instructions": "PDF." }),
+        )
+        .await;
+    let fs = s(&created.json()["id"]);
+    assert_eq!(
+        created.json()["allowed_actions"],
+        json!(["update", "publish"])
+    );
+    let unpublish = format!("/api/v2/file-submissions/{fs}/unpublish");
+    let draft = app.post_as(&teacher, &unpublish, &json!({})).await;
+    assert_eq!(draft.status, StatusCode::CONFLICT, "{}", draft.text());
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{fs}/publish"),
+            &json!({}),
+        )
+        .await;
+    assert_eq!(
+        published.json()["allowed_actions"],
+        json!(["update", "unpublish"])
+    );
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{fs}"))
+        .await;
+    assert_eq!(seen.status, StatusCode::OK, "{}", seen.text());
+    assert!(
+        seen.json().get("allowed_actions").is_none(),
+        "learners get none"
+    );
+
+    let refused = app.post_as(&alice, &unpublish, &json!({})).await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    let back = app.post_as(&teacher, &unpublish, &json!({})).await;
+    assert_eq!(back.status, StatusCode::OK, "{}", back.text());
+    assert_eq!(back.json()["lifecycle"], "draft");
+    assert_eq!(back.json()["published"], false);
+    assert_eq!(back.json()["allowed_actions"], json!(["update", "publish"]));
+    let hidden = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{fs}"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::NOT_FOUND, "{}", hidden.text());
+}

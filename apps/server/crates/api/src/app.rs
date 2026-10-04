@@ -271,6 +271,7 @@ fn file_submission_routes() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(routes::file_submissions::update_file_submission))
         .routes(routes!(routes::file_submissions::publish_file_submission))
+        .routes(routes!(routes::file_submissions::unpublish_file_submission))
         .routes(routes!(routes::file_submissions::get_draft))
         .routes(routes!(routes::file_submissions::start_draft))
         .routes(routes!(routes::file_submissions::save_draft))

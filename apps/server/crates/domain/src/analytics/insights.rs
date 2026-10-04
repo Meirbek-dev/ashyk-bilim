@@ -1,5 +1,6 @@
 //! The insight feed (legacy `services/analytics/insights.py`).
 
+use ab_core::links::WebLink;
 use std::collections::BTreeMap;
 
 use ab_core::id::CourseId;
@@ -58,7 +59,7 @@ pub fn build_insight_feed(
             assessment_type: None,
             assessment_id: None,
             learner_count: Some(count_i64(n)),
-            href: Some("/dash/analytics/learners/at-risk".to_owned()),
+            href: Some(WebLink::AnalyticsAtRisk(course_id).path(None)),
         });
     }
 
@@ -86,10 +87,7 @@ pub fn build_insight_feed(
             assessment_type: Some(a.assessment_type),
             assessment_id: Some(a.assessment_id),
             learner_count: None,
-            href: Some(format!(
-                "/dash/analytics/assessments/{}/{}",
-                a.assessment_type, a.assessment_id
-            )),
+            href: Some(WebLink::AnalyticsAssessment(a.assessment_type, a.assessment_id).path(None)),
         });
     }
 
@@ -112,10 +110,7 @@ pub fn build_insight_feed(
             assessment_type: None,
             assessment_id: None,
             learner_count: Some(b.started_learners),
-            href: Some(format!(
-                "/dash/analytics/courses?course_ids={}",
-                b.course_id
-            )),
+            href: Some(WebLink::AnalyticsCourseFilter(b.course_id).path(None)),
         });
     }
 
@@ -141,7 +136,7 @@ pub fn build_insight_feed(
             assessment_type: None,
             assessment_id: None,
             learner_count: None,
-            href: Some("/dash/analytics?drill=backlog".to_owned()),
+            href: Some(WebLink::AnalyticsBacklog.path(None)),
         });
     }
 
@@ -163,7 +158,7 @@ pub fn build_insight_feed(
             assessment_type: None,
             assessment_id: None,
             learner_count: None,
-            href: Some(format!("/dash/analytics/courses/{}", row.course_id)),
+            href: Some(WebLink::AnalyticsCourse(row.course_id).path(None)),
         });
     }
 

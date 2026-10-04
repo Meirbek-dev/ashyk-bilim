@@ -10,11 +10,14 @@
 //! | `course.create`      | `CoursesService::require_create` - `course:create:platform`          |
 //! | `collection.create`  | `CollectionsService::require_create` - `collection:create:platform`  |
 //! | `groups.manage`      | `usergroup:read:platform` and `UsergroupsService::require_writer`    |
+//! | `groups.create`      | `UsergroupsService::create` - `usergroup:create:platform`           |
 //! | `analytics.view`     | `analytics::scope::ensure_access(read)` - `analytics:read:{assigned,platform,all}` |
 //! | `analytics.export`   | `analytics::scope::ensure_access(export)`                            |
 //! | `teach`              | authors any course, or `AssessmentsService::require_some_authoring`, or `course:{update,manage}:platform`, or `assessment:grade:platform`, or any of `course.create`, `analytics.view`, `groups.manage` |
 //! | `admin.users`        | `RbacAdminService::require_read_users` - `platform:read:platform`    |
+//! | `admin.users.create` | `RbacAdminService::require_manage_platform` - `platform:manage:platform` |
 //! | `admin.roles`        | `RbacAdminService::require_read_roles` - `role:read:platform`        |
+//! | `admin.roles.create` | `RbacAdminService::require_manage_roles` - `role:manage:platform`   |
 //! | `admin.platform`     | `PlatformService::require_update` - `platform:update:platform`       |
 //! | `admin.ai`           | `ai::policy::require_admin` - `platform:read:platform`               |
 //! | `admin.gamification` | `GamificationService::require_manage` - `platform:manage:platform`   |
@@ -46,6 +49,9 @@ pub enum Capability {
     CollectionCreate,
     #[serde(rename = "groups.manage")]
     GroupsManage,
+    /// Create usergroups (`usergroup:create:platform`), apart from managing them.
+    #[serde(rename = "groups.create")]
+    GroupsCreate,
     #[serde(rename = "analytics.view")]
     AnalyticsView,
     #[serde(rename = "analytics.export")]
@@ -55,8 +61,14 @@ pub enum Capability {
     Admin,
     #[serde(rename = "admin.users")]
     AdminUsers,
+    /// Create accounts (`platform:manage:platform`), apart from reading them.
+    #[serde(rename = "admin.users.create")]
+    AdminUsersCreate,
     #[serde(rename = "admin.roles")]
     AdminRoles,
+    /// Create and edit custom roles (`role:manage`), apart from reading them.
+    #[serde(rename = "admin.roles.create")]
+    AdminRolesCreate,
     #[serde(rename = "admin.platform")]
     AdminPlatform,
     #[serde(rename = "admin.ai")]
@@ -108,8 +120,16 @@ fn granted(actor: &Actor) -> Vec<Capability> {
             RbacAdminService::require_read_users(actor).is_ok(),
         ),
         (
+            C::AdminUsersCreate,
+            RbacAdminService::require_manage_platform(actor).is_ok(),
+        ),
+        (
             C::AdminRoles,
             RbacAdminService::require_read_roles(actor).is_ok(),
+        ),
+        (
+            C::AdminRolesCreate,
+            RbacAdminService::require_manage_roles(actor).is_ok(),
         ),
         (
             C::AdminPlatform,
@@ -134,6 +154,10 @@ fn granted(actor: &Actor) -> Vec<Capability> {
             CollectionsService::require_create(actor).is_ok(),
         ),
         (C::GroupsManage, groups),
+        (
+            C::GroupsCreate,
+            actor.has(crate::identity::usergroups::perm(Action::Create)),
+        ),
         (C::AnalyticsView, analytics),
         (
             C::AnalyticsExport,
@@ -182,7 +206,7 @@ mod tests {
     fn seeded_roles_map_to_the_documented_capabilities() {
         use Capability as C;
         let all = granted(&actor(&["*:*:*"]));
-        assert_eq!(all.len(), 13, "admin holds every capability: {all:?}");
+        assert_eq!(all.len(), 16, "admin holds every capability: {all:?}");
 
         let student = granted(&actor(&[
             "course:read:all",
@@ -212,6 +236,7 @@ mod tests {
                 C::CourseCreate,
                 C::CollectionCreate,
                 C::GroupsManage,
+                C::GroupsCreate,
                 C::AnalyticsView,
                 C::AnalyticsExport,
             ]
@@ -239,6 +264,30 @@ mod tests {
         assert_eq!(
             serde_json::to_value([Capability::AdminAi, Capability::CourseCreate]).unwrap(),
             serde_json::json!(["admin.ai", "course.create"])
+        );
+    }
+
+    /// ADMIN-CAPS: create rights are their own capabilities; a read-only
+    /// admin sees the lists without the create entry points.
+    #[test]
+    fn create_rights_are_separate_from_read() {
+        use Capability as C;
+        let reader = granted(&actor(&["platform:read:platform", "role:read:platform"]));
+        assert!(reader.contains(&C::AdminUsers) && reader.contains(&C::AdminRoles));
+        assert!(!reader.contains(&C::AdminUsersCreate), "{reader:?}");
+        assert!(!reader.contains(&C::AdminRolesCreate), "{reader:?}");
+        let manager = granted(&actor(&[
+            "platform:manage:platform",
+            "role:manage:platform",
+            "usergroup:create:platform",
+        ]));
+        for cap in [C::AdminUsersCreate, C::AdminRolesCreate, C::GroupsCreate] {
+            assert!(manager.contains(&cap), "{cap:?} in {manager:?}");
+        }
+        assert_eq!(
+            serde_json::to_value([C::AdminUsersCreate, C::AdminRolesCreate, C::GroupsCreate])
+                .unwrap(),
+            serde_json::json!(["admin.users.create", "admin.roles.create", "groups.create"])
         );
     }
 }

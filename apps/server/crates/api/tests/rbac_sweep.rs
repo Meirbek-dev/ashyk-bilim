@@ -161,6 +161,10 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ),
     (
         "POST",
+        "/api/v2/file-submissions/{file_submission_id}/unpublish",
+    ),
+    (
+        "POST",
         "/api/v2/file-submissions/{file_submission_id}/draft",
     ),
     (

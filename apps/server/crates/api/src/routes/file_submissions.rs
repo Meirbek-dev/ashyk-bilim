@@ -168,6 +168,33 @@ pub async fn publish_file_submission(
     .await
 }
 
+/// Take a published task back to draft (authors): the activity leaves the
+/// learners' view; hand-ins stay, new ones wait until it is published again.
+#[utoipa::path(
+    post, path = "/file-submissions/{file_submission_id}/unpublish", tag = "file-submissions",
+    params(("file_submission_id" = FileSubmissionId, Path, description = "File submission id")),
+    responses(
+        (status = 200, description = "Back to draft", body = FileSubmission),
+        (status = 403, description = "Not an author", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "Not published, or the course is archived", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn unpublish_file_submission(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<FileSubmissionId>,
+) -> ApiResult<Json<FileSubmission>> {
+    // BUG-232: the projection after the commit must not die with the socket.
+    detached(async move {
+        Ok(Json(
+            state.file_submissions.unpublish(&actor, id).await?.into(),
+        ))
+    })
+    .await
+}
+
 /// The caller's open attempt (draft or returned), 404 when none.
 #[utoipa::path(
     get, path = "/file-submissions/{file_submission_id}/draft", tag = "file-submissions",

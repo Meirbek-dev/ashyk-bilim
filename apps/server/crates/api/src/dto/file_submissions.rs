@@ -127,6 +127,10 @@ pub struct FileSubmission {
     /// Why the caller cannot open or submit right now (quiz vocabulary:
     /// `PAST_DUE`, `REMEDIATION_REQUIRED`); empty for authors.
     pub disabled_reasons: Vec<ab_domain::assessments::access::DisabledReason>,
+    /// FSB-UNPUB: what an author may do now (`update`, `publish`,
+    /// `unpublish`); absent for learners.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub allowed_actions: Vec<ab_domain::files::submissions::FileSubmissionAction>,
     pub published_at_unix: Option<i64>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
@@ -158,6 +162,7 @@ impl From<domain::FileSubmission> for FileSubmission {
             current_attempt: attempts.first().cloned(),
             attempts,
             disabled_reasons: s.disabled_reasons,
+            allowed_actions: s.allowed_actions,
             published_at_unix: s.row.published_at,
             created_at_unix: s.row.created_at,
             updated_at_unix: s.row.updated_at,

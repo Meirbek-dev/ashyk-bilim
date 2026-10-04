@@ -104,6 +104,10 @@
     {
       "operation": "rank",
       "reason": "the viewer's rank comes with the dashboard (Dashboard.user_rank); no screen reads it alone"
+    },
+    {
+      "operation": "unpublishFileSubmission",
+      "reason": "consumer pending: S-GAPS-2 FSB-UNPUB (server 2026-10-04); the task settings get an unpublish action next - drop this entry then"
     }
   ]
 }

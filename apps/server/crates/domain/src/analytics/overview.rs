@@ -6,6 +6,7 @@
 //! and the freshness / mode block. The legacy served stale rollup numbers
 //! as the current value whenever a rollup existed.
 
+use ab_core::links::WebLink;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ab_core::id::{CourseId, UserId, UsergroupId};
@@ -121,10 +122,9 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
                     "oldest_hours": row.age_hours.map_or(0.0, round1),
                     "target_hours": GRADING_SLA_HOURS,
                 }),
-                href: Some(format!(
-                    "/dash/analytics/assessments/{}/{}",
-                    row.assessment_type, row.assessment_id
-                )),
+                href: Some(
+                    WebLink::AnalyticsAssessment(row.assessment_type, row.assessment_id).path(None),
+                ),
                 course_id: Some(row.course_id),
                 activity_id: None,
                 assessment_id: Some(row.assessment_id),
@@ -151,10 +151,9 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
             "oldest_hours": round1(age),
             "target_hours": GRADING_SLA_HOURS,
         }),
-        href: Some(format!(
-            "/dash/analytics/assessments/{}/{}",
-            leading.assessment_type, leading.assessment_id
-        )),
+        href: Some(
+            WebLink::AnalyticsAssessment(leading.assessment_type, leading.assessment_id).path(None),
+        ),
         course_id: Some(leading.course_id),
         activity_id: None,
         assessment_id: Some(leading.assessment_id),

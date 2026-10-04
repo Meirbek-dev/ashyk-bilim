@@ -9,7 +9,8 @@
 
 use std::sync::OnceLock;
 
-use crate::id::{ActivityId, CourseId};
+use crate::assessments::AssessmentKind;
+use crate::id::{ActivityId, AssessmentId, CourseId};
 use crate::language::Language;
 
 /// Which web app the links point into.
@@ -54,6 +55,16 @@ pub enum WebLink<'a> {
     Review(CourseId, ActivityId, Option<uuid::Uuid>),
     /// Public verification of a certificate code.
     CertificateVerify(&'a str),
+    /// Analytics: the at-risk learners of a course.
+    AnalyticsAtRisk(CourseId),
+    /// Analytics: the grading backlog.
+    AnalyticsBacklog,
+    /// Analytics: one course's drill-down.
+    AnalyticsCourse(CourseId),
+    /// Analytics: the overview filtered to one course.
+    AnalyticsCourseFilter(CourseId),
+    /// Analytics: one assessment's drill-down.
+    AnalyticsAssessment(AssessmentKind, AssessmentId),
 }
 
 impl WebLink<'_> {
@@ -82,6 +93,15 @@ impl WebLink<'_> {
                     Self::CertificateVerify(code) => {
                         format!("{prefix}/certificates/{code}/verify")
                     }
+                    Self::AnalyticsAtRisk(_) => "/dash/analytics/learners/at-risk".to_owned(),
+                    Self::AnalyticsBacklog => "/dash/analytics?drill=backlog".to_owned(),
+                    Self::AnalyticsCourse(c) => format!("/dash/analytics/courses/{c}"),
+                    Self::AnalyticsCourseFilter(c) => {
+                        format!("/dash/analytics/courses?course_ids={c}")
+                    }
+                    Self::AnalyticsAssessment(k, a) => {
+                        format!("/dash/analytics/assessments/{k}/{a}")
+                    }
                 }
             }
             LinkScheme::V2 => match self {
@@ -97,6 +117,13 @@ impl WebLink<'_> {
                     format!("/teach/courses/{c}/activities/{a}/submissions/{s}")
                 }
                 Self::CertificateVerify(code) => format!("/certificates/{code}/verify"),
+                Self::AnalyticsAtRisk(c) => format!("/teach/analytics/learners?course={c}"),
+                Self::AnalyticsBacklog => "/teach/analytics/operations?metric=backlog".to_owned(),
+                Self::AnalyticsCourse(c) => format!("/teach/analytics/performance?courseId={c}"),
+                Self::AnalyticsCourseFilter(c) => format!("/teach/analytics/overview?course={c}"),
+                Self::AnalyticsAssessment(k, a) => {
+                    format!("/teach/analytics/performance?assessmentType={k}&assessmentId={a}")
+                }
             },
         }
     }
@@ -128,6 +155,26 @@ mod tests {
         assert_eq!(
             v2(WebLink::CertificateVerify("AB-CD")),
             "/certificates/AB-CD/verify"
+        );
+        let s = AssessmentId(uuid::Uuid::nil());
+        assert_eq!(
+            legacy(WebLink::AnalyticsAssessment(AssessmentKind::Quiz, s)),
+            format!("/dash/analytics/assessments/quiz/{s}")
+        );
+        assert_eq!(
+            v2(WebLink::AnalyticsAssessment(
+                AssessmentKind::CodeChallenge,
+                s
+            )),
+            format!("/teach/analytics/performance?assessmentType=code_challenge&assessmentId={s}")
+        );
+        assert_eq!(
+            v2(WebLink::AnalyticsBacklog),
+            "/teach/analytics/operations?metric=backlog"
+        );
+        assert_eq!(
+            v2(WebLink::AnalyticsAtRisk(c)),
+            format!("/teach/analytics/learners?course={c}")
         );
     }
 }

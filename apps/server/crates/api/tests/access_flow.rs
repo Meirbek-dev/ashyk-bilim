@@ -93,13 +93,14 @@ async fn session_carries_user_and_capabilities(pool: PgPool) {
             "course.create",
             "collection.create",
             "groups.manage",
+            "groups.create",
             "analytics.view",
             "analytics.export"
         ])
     );
 
     let caps = app.get_as(&admin, "/api/v2/auth/session").await.json()["capabilities"].clone();
-    assert_eq!(caps.as_array().unwrap().len(), 13, "{caps}");
+    assert_eq!(caps.as_array().unwrap().len(), 16, "{caps}");
     assert!(caps.as_array().unwrap().contains(&json!("admin.ai")));
 
     // A learner co-authoring a course teaches - authorship, not a grant.

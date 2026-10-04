@@ -1089,7 +1089,7 @@ export type BulkGradeSummary = {
  * A UI-level right: may the caller enter a workspace / see an entry point.
  * Closed set; object-level rights travel as `allowed_actions` instead.
  */
-export type Capability = 'teach' | 'course.create' | 'collection.create' | 'groups.manage' | 'analytics.view' | 'analytics.export' | 'admin' | 'admin.users' | 'admin.roles' | 'admin.platform' | 'admin.ai' | 'admin.gamification' | 'admin.analytics';
+export type Capability = 'teach' | 'course.create' | 'collection.create' | 'groups.manage' | 'groups.create' | 'analytics.view' | 'analytics.export' | 'admin' | 'admin.users' | 'admin.users.create' | 'admin.roles' | 'admin.roles.create' | 'admin.platform' | 'admin.ai' | 'admin.gamification' | 'admin.analytics';
 
 /**
  * One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/
@@ -2697,6 +2697,11 @@ export type FileRubric = {
 export type FileSubmission = {
     activity_id: ActivityId;
     allow_late: boolean;
+    /**
+     * FSB-UNPUB: what an author may do now (`update`, `publish`,
+     * `unpublish`); absent for learners.
+     */
+    allowed_actions?: Array<FileSubmissionAction>;
     allowed_mime_types: Array<string>;
     /**
      * The caller's attempts, newest first (learners).
@@ -2735,6 +2740,11 @@ export type FileSubmission = {
      */
     version?: number;
 };
+
+/**
+ * What an author may do to the task now (`FileSubmission.allowed_actions`).
+ */
+export type FileSubmissionAction = 'update' | 'publish' | 'unpublish';
 
 export type FileSubmissionId = string;
 
@@ -13211,6 +13221,40 @@ export type SubmitResponses = {
 };
 
 export type SubmitResponse = SubmitResponses[keyof SubmitResponses];
+
+export type UnpublishFileSubmissionData = {
+    body?: never;
+    path: {
+        /**
+         * File submission id
+         */
+        file_submission_id: FileSubmissionId;
+    };
+    query?: never;
+    url: '/api/v2/file-submissions/{file_submission_id}/unpublish';
+};
+
+export type UnpublishFileSubmissionErrors = {
+    /**
+     * Not an author
+     */
+    403: Problem;
+    /**
+     * Not published, or the course is archived
+     */
+    409: Problem;
+};
+
+export type UnpublishFileSubmissionError = UnpublishFileSubmissionErrors[keyof UnpublishFileSubmissionErrors];
+
+export type UnpublishFileSubmissionResponses = {
+    /**
+     * Back to draft
+     */
+    200: FileSubmission;
+};
+
+export type UnpublishFileSubmissionResponse = UnpublishFileSubmissionResponses[keyof UnpublishFileSubmissionResponses];
 
 export type DashboardData = {
     body?: never;

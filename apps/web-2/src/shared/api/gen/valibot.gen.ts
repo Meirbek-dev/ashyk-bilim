@@ -458,11 +458,14 @@ export const vCapability = v.picklist([
     'course.create',
     'collection.create',
     'groups.manage',
+    'groups.create',
     'analytics.view',
     'analytics.export',
     'admin',
     'admin.users',
+    'admin.users.create',
     'admin.roles',
+    'admin.roles.create',
     'admin.platform',
     'admin.ai',
     'admin.gamification',
@@ -1309,6 +1312,15 @@ export const vFileReviewStats = v.object({
     submitted: v.pipe(v.number(), v.integer()),
     total: v.pipe(v.number(), v.integer())
 });
+
+/**
+ * What an author may do to the task now (`FileSubmission.allowed_actions`).
+ */
+export const vFileSubmissionAction = v.picklist([
+    'update',
+    'publish',
+    'unpublish'
+]);
 
 export const vFileSubmissionId = v.pipe(v.string(), v.uuid());
 
@@ -5126,6 +5138,7 @@ export const vFileReviewPage = v.object({
 export const vFileSubmission = v.object({
     activity_id: vActivityId,
     allow_late: v.boolean(),
+    allowed_actions: v.optional(v.array(vFileSubmissionAction)),
     allowed_mime_types: v.array(v.string()),
     attempts: v.array(vAttempt),
     chapter_id: vChapterId,
@@ -8173,6 +8186,15 @@ export const vSubmitPath = v.object({
  * Submitted
  */
 export const vSubmitResponse = vAttempt;
+
+export const vUnpublishFileSubmissionPath = v.object({
+    file_submission_id: vFileSubmissionId
+});
+
+/**
+ * Back to draft
+ */
+export const vUnpublishFileSubmissionResponse = vFileSubmission;
 
 /**
  * Dashboard

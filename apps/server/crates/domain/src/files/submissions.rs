@@ -85,6 +85,19 @@ pub struct FileSubmission {
     /// Why the caller may not open or submit right now (quiz vocabulary;
     /// empty for authors).
     pub disabled_reasons: Vec<DisabledReason>,
+    /// Empty for learners; by lifecycle for authors (draft: update,
+    /// publish; published: update, unpublish; archived: none).
+    pub allowed_actions: Vec<FileSubmissionAction>,
+}
+
+/// What an author may do to the task now (`FileSubmission.allowed_actions`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FileSubmissionAction {
+    /// `PATCH` the configuration.
+    Update,
+    Publish,
+    Unpublish,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -559,6 +572,10 @@ impl FileSubmissionsService {
             title: activity.name,
             chapter_id: activity.chapter_id,
             published: activity.published,
+            allowed_actions: match viewer {
+                Some((_, false)) => Vec::new(),
+                _ => author_actions(row.lifecycle),
+            },
             row,
             attempts,
             disabled_reasons,
@@ -850,6 +867,41 @@ impl FileSubmissionsService {
             row.activity_id,
             ab_db::catalog::ActivityWrite {
                 published: Some(true),
+                ..Default::default()
+            },
+        )
+        .await?;
+        tx.commit().await?;
+        self.projector.after_course_change(row.course_id).await;
+        let row = self.load(id).await?;
+        self.view(None, row, Vec::new()).await
+    }
+
+    /// FSB-UNPUB: take a published task back to draft; the activity leaves
+    /// the learners' view in the same transaction (the assessment
+    /// `published -> draft` rule). Hand-ins stay; new ones wait (409) until
+    /// it is published again. Only a published task can be unpublished.
+    pub async fn unpublish(&self, actor: &Actor, id: FileSubmissionId) -> Result<FileSubmission> {
+        let row = self.load(id).await?;
+        self.scoped(actor, &row, Action::Author, "publishing")
+            .await?
+            .ensure_not_archived()?;
+        let mut tx = self.pool.begin().await?;
+        let row = self.lock(&mut tx, id).await?;
+        if row.lifecycle != FileSubmissionLifecycle::Published {
+            return Err(Error::conflict("file submission is not published"));
+        }
+        ab_db::file_submissions::set_file_submission_lifecycle(
+            &mut *tx,
+            id,
+            FileSubmissionLifecycle::Draft,
+        )
+        .await?;
+        ab_db::catalog::update_activity(
+            &mut tx,
+            row.activity_id,
+            ab_db::catalog::ActivityWrite {
+                published: Some(false),
                 ..Default::default()
             },
         )
@@ -1992,5 +2044,21 @@ fn values_of(row: &FileSubmissionRow) -> FileSubmissionValues<'_> {
         max_attempts: row.max_attempts,
         grade_release_mode: row.grade_release_mode,
         settings: &row.settings,
+    }
+}
+
+/// FSB-UNPUB: an author's actions by lifecycle.
+fn author_actions(lifecycle: FileSubmissionLifecycle) -> Vec<FileSubmissionAction> {
+    match lifecycle {
+        FileSubmissionLifecycle::Draft => {
+            vec![FileSubmissionAction::Update, FileSubmissionAction::Publish]
+        }
+        FileSubmissionLifecycle::Published => {
+            vec![
+                FileSubmissionAction::Update,
+                FileSubmissionAction::Unpublish,
+            ]
+        }
+        FileSubmissionLifecycle::Archived => Vec::new(),
     }
 }

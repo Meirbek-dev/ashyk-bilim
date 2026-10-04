@@ -3442,11 +3442,14 @@
           "course.create",
           "collection.create",
           "groups.manage",
+          "groups.create",
           "analytics.view",
           "analytics.export",
           "admin",
           "admin.users",
+          "admin.users.create",
           "admin.roles",
+          "admin.roles.create",
           "admin.platform",
           "admin.ai",
           "admin.gamification",
@@ -7952,6 +7955,13 @@
           "allow_late": {
             "type": "boolean"
           },
+          "allowed_actions": {
+            "description": "FSB-UNPUB: what an author may do now (`update`, `publish`,\n`unpublish`); absent for learners.",
+            "items": {
+              "$ref": "#/components/schemas/FileSubmissionAction"
+            },
+            "type": "array"
+          },
           "allowed_mime_types": {
             "items": {
               "type": "string"
@@ -8094,6 +8104,15 @@
           "published_at_unix"
         ],
         "type": "object"
+      },
+      "FileSubmissionAction": {
+        "description": "What an author may do to the task now (`FileSubmission.allowed_actions`).",
+        "enum": [
+          "update",
+          "publish",
+          "unpublish"
+        ],
+        "type": "string"
       },
       "FileSubmissionId": {
         "format": "uuid",
@@ -31236,6 +31255,58 @@
           }
         },
         "summary": "Submit the open attempt (optionally replacing files first).",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v2/file-submissions/{file_submission_id}/unpublish": {
+      "post": {
+        "operationId": "unpublish_file_submission",
+        "parameters": [
+          {
+            "description": "File submission id",
+            "in": "path",
+            "name": "file_submission_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileSubmissionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmission"
+                }
+              }
+            },
+            "description": "Back to draft"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not an author"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not published, or the course is archived"
+          }
+        },
+        "summary": "Take a published task back to draft (authors): the activity leaves the\nlearners' view; hand-ins stay, new ones wait until it is published again.",
         "tags": [
           "file-submissions"
         ]
