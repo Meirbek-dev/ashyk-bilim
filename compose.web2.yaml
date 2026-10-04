@@ -34,7 +34,9 @@ services:
   worker: *stand-cert
 
   # Test stand only: bcrypt cost 14 (Zitadel's default, prod) is ~1 s of Zitadel's single CPU per
-  # hash, which serialized the 250-learner seed (~4.5 min) and every sign-in of the suite.
+  # hash, which serialized the 250-learner seed (~4.5 min) and every sign-in of the suite. 10 is
+  # Zitadel's floor for a stored hash (LIMITS_BCRYPT_MINCOST): with 4 a password change failed
+  # "Password is invalid" (B-SET-07, run 37185565326).
   zitadel:
     environment:
-      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_HASHER_COST: 4
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_HASHER_COST: 10
