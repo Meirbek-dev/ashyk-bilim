@@ -37,10 +37,19 @@ function watch(page: Page, problems: string[]): void {
     if (message.type() === 'error' && !expected4xx) problems.push(`console: ${message.text()}`)
   })
   page.on('pageerror', error => problems.push(`page error: ${error.message}`))
+  // Against a built server (E2E_BASE_URL) every document carries the CSP the violations above are checked against.
+  page.on('response', response => {
+    const document = response.request().isNavigationRequest() && response.frame() === page.mainFrame()
+    if (document && process.env['E2E_BASE_URL'] && response.ok() && !response.headers()['content-security-policy'])
+      problems.push(`no Content-Security-Policy on ${response.url()}`)
+  })
 }
 
 async function inspect(page: Page, problems: string[]): Promise<void> {
   // Contrast measured mid-fade (a tooltip opening on focus) is not the page's contrast: let transitions end first.
+  // The checks judge the hydrated page: an SSR form keeps its controls disabled (faded) until then.
+  await page.waitForLoadState('load')
+  await page.waitForFunction(() => !document.querySelector('[data-hydrating]'), null, { timeout: 10_000 })
   await page.evaluate(() => Promise.allSettled(document.getAnimations().map(animation => animation.finished)))
   const axe = await new AxeBuilder({ page }).analyze()
   for (const violation of axe.violations) {

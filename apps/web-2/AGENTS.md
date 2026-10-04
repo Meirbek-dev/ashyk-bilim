@@ -75,7 +75,7 @@ listed in `gates/allowlist.json` with a reason (G-12).
 - Tree = spec 5.3: `_public` (`ssr: true`), `_guest` (signed-in -> `/home`), `_authed` (`ssr: 'data-only'`) with
   `teach.tsx` / `admin.tsx` guarded by `requireCapability`. `shared/auth/access.ts` is the one table "workspace ->
   section -> capability": guards, sidebar, bottom bar, switcher (and the palette) read it. A new nav section = a row.
-- Route `staticData`: `title` (document title, layout heading, stub heading), `layout: 'focus'` (the route draws
+- Route `staticData`: `title` (document title, layout heading), `layout: 'focus'` (the route draws
   `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment). Tabs live
   in the layout route file; its `index.tsx` redirects to the first tab. A 403 thrown in `beforeLoad` renders in place
   (`ErrorView` -> `ForbiddenView`) and SSR answers with the ApiError's status (`shared/lib/ssr-status.ts`).
@@ -84,11 +84,10 @@ listed in `gates/allowlist.json` with a reason (G-12).
 - Live data: `GET /me/events` -> `shared/api/event-invalidations.ts` (event -> keys). An event skips a read that
   landed after it (`server-clock.ts`: stream-id time, offsets from arrivals and `Date`) and task-keyed reads of
   another activity. e2e: `expectReread(page, path)` when a test changes data behind an open page on purpose.
-- Before hydration (/login: ~140 ms, ~540 ms at 4x CPU) clicks do nothing: React cannot replay them until Start has
-  loaded the route's chunks and hydrated the root. An SSR page works natively until then: navigation is a `Link`
-  (a real `<a>`), a form keeps its fieldset disabled until `useHydrated()` (`features/auth/ui/auth-form.tsx`), and
-  e2e waits for an enabled control rather than retrying clicks. `FileField` / `MultiSelectField` are not bound
-  fields (they would put the combobox in every form's chunk): render them inside `form.AppField`.
+- Before hydration (/login ~140 ms, more on the stand) an SSR page works natively: navigation is a `Link`; an action
+  that changes server-rendered state (a form's fieldset, enrol, leave) stays disabled until `useHydrated()`: a click
+  React replays mid-hydration breaks it (React error 418). The auth fieldset carries `data-hydrating`, which the e2e fixture
+  awaits. `FileField` / `MultiSelectField` are not bound fields: render them inside `form.AppField`.
 - Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
   signed-in). Set the slice's (lazy) component there, from its `route.ts`; an unset slot renders nothing.
 - Entry chunk (G-05, checked by `bun run build`): only `loader` and the components are code-split; `validateSearch`,
@@ -100,12 +99,13 @@ listed in `gates/allowlist.json` with a reason (G-12).
 
 ## e2e locally
 
-API on `http://127.0.0.1:8000` (`vp dev` proxies `/api/v2`, else `API_PROXY_TARGET`; buckets and `/content`: storage
-`STORAGE_PROXY_TARGET`, `localhost:9002`), seeded by `ashyq admin seed-e2e`. Run `E2E_PASSWORD=<seed password> vp run
-e2e [--grep x]`: it reuses or starts `vp dev` and warms every route first (`e2e/global-setup.ts`); runs sharing a tree
-pass `--output=<own dir>`. Never write the password into the repo. `E2E_API_LOG=<API log file>`: without a mailer the API logs email verification codes, and
-`auth.spec.ts` reads them there. `e2e/fixtures/seed.ts` gives `seed` (accounts and route params, read with the SDK),
-`test.use({ as: role })` (one API sign-in per worker and role, as storage state), `signInAs(role)` to switch.
+API on `:8000` (`vp dev` proxies `/api/v2`; buckets and `/content`: storage `:9002`), seeded by `ashyq admin seed-e2e`.
+`E2E_PASSWORD=<seed password> vp run e2e [--grep x]` reuses or starts `vp dev` and warms every route; parallel runs in
+one tree pass `--output=<own dir>`; never commit the password. `E2E_API_LOG=<API log>`: `auth.spec.ts` reads emailed
+codes there. `e2e/fixtures/seed.ts`: `seed`, `test.use({ as: role })` (storage state per worker), `signInAs(role)`.
+**Against the production build** (CSP is sent only there, as on the stand): `bun run build`; `PORT=3101 HOST=127.0.0.1
+PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node serve.ts` (restart after a build);
+`node e2e/prod-stand.ts` (nginx in miniature, :3100); `E2E_BASE_URL=http://127.0.0.1:3100 vp run e2e` (CSP header checked).
 
 ## Slice cycle (one feature)
 

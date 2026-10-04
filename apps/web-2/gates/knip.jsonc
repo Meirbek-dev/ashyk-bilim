@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // Start, Vite, Vitest and Playwright entries are detected by knip's plugins.
-  "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs"],
+  "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs", "e2e/prod-stand.ts"],
   "project": ["src/**/*.{ts,tsx}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
   "ignore": ["src/shared/api/gen/**"],
   // Stock shadcn files (`bunx shadcn add`) keep their full export list so `shadcn add --overwrite` stays a no-op diff;

@@ -4,7 +4,9 @@ import { hydrateRoot } from 'react-dom/client'
 
 import { ApiError } from '#/shared/api/errors'
 import { installClientErrorReporting, reportClientError } from '#/shared/lib/client-errors'
+import { disableZodJit } from '#/shared/lib/zod-jitless'
 
+disableZodJit()
 installClientErrorReporting()
 
 hydrateRoot(

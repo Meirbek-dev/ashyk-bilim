@@ -49,7 +49,6 @@ const chromium = {
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
 // G-15 (spec 9) is a phase gate, not part of `vp test run`: `bun run g15` sets G15.
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
-
 // ---- Lint (G-01, spec 7.2-7.3). Every rule is an error; each message names the one allowed way. ----
 const SDK = 'HTTP to the API goes through the generated SDK (#/shared/api/gen) on top of #/shared/api/client.ts.'
 const ROUTER_URL = 'URL state: validateSearch (Valibot) + Link / navigate({ search }); navigation via the router.'
@@ -242,7 +241,6 @@ const lint: OxlintConfig = {
     },
   ],
 }
-
 // `vp staged` (pre-commit) formats staged files; generated output is never reformatted.
 const GENERATED = /\/(shared\/api\/gen|shared\/ui|paraglide|themes)\/|routeTree\.gen\.ts$|BACKLOG\.md$/
 const formatStaged = (files: readonly string[]) => {
@@ -254,11 +252,13 @@ export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
   server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy },
+  resolve: { dedupe: ['zod'] }, // one Zod: @ag-ui/client's own 3.25 copy hides its config from disableZodJit (CSP)
   build: {
     manifest: true,
-    // Spec 7.4: response schemas leave the production bundle, so an unused `v.object(...)` is dead code, but a bundler
-    // cannot know valibot calls are pure. Every `v.<fn>()` result is now droppable: call a valibot side effect by its
-    // named import (`setGlobalMessage` in shared/ui/form/use-app-form.ts), never as `v.<fn>()`.
+    // CSP `font-src 'self'` refuses `data:` fonts (KaTeX's woff2 would be inlined).
+    assetsInlineLimit: (file: string) => (/\.(woff2?|ttf)$/.test(file) ? false : undefined),
+    // Spec 7.4: response schemas leave the bundle, so an unused `v.object(...)` is dead code; every `v.<fn>()` result is
+    // droppable: call a valibot side effect by its named import (`setGlobalMessage`), never as `v.<fn>()`.
     rolldownOptions: { treeshake: { manualPureFunctions: ['v'] } },
   },
   test: {

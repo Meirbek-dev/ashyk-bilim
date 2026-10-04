@@ -14,7 +14,7 @@ export function AuthForm({ onSubmit, children }: { onSubmit: () => Promise<void>
         void onSubmit()
       }}
     >
-      <fieldset disabled={!hydrated} className="flex flex-col gap-4">
+      <fieldset disabled={!hydrated} data-hydrating={hydrated ? undefined : true} className="flex flex-col gap-4">
         {children}
       </fieldset>
     </form>

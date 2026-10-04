@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrated } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -13,6 +14,8 @@ import { leaveOptions } from '../queries'
 export function LeaveCourse({ course }: { course: Course }) {
   const [open, setOpen] = useState(false)
   const leave = useMutation(leaveOptions(useQueryClient(), course.id))
+  // Before hydration the dialog cannot open: a dead button would swallow the click.
+  const hydrated = useHydrated()
   const confirm = () =>
     leave.mutate(
       { path: { course_id: course.id } },
@@ -30,7 +33,11 @@ export function LeaveCourse({ course }: { course: Course }) {
         setOpen(next)
         if (!next) leave.reset()
       }}
-      trigger={<Button variant="outline">{m.course_leave()}</Button>}
+      trigger={
+        <Button variant="outline" disabled={!hydrated}>
+          {m.course_leave()}
+        </Button>
+      }
       title={m.course_leave_title({ name: course.name })}
       consequence={m.course_leave_consequence()}
       confirmLabel={m.course_leave()}

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useHydrated } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -19,6 +20,7 @@ export function ContributorApplication({ course, userId }: { course: Course; use
   const roster = useSuspenseInfiniteQuery(contributorsOptions(course.id))
   const apply = useMutation(applyOptions(queryClient, course.id))
   const withdraw = useMutation(withdrawOptions(queryClient, course.id, userId))
+  const hydrated = useHydrated()
   const state = application(course, roster.data, userId)
   if (!state) return null
   const path = { course_id: course.id }
@@ -41,13 +43,13 @@ export function ContributorApplication({ course, userId }: { course: Course; use
       {state === 'pending' ? (
         <>
           <p className="text-sm text-muted-foreground">{m.course_application_pending()}</p>
-          <Button variant="outline" onClick={onWithdraw} disabled={withdraw.isPending}>
+          <Button variant="outline" onClick={onWithdraw} disabled={!hydrated || withdraw.isPending}>
             {withdraw.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.course_withdraw()}
           </Button>
         </>
       ) : (
-        <Button variant="outline" onClick={onApply} disabled={apply.isPending}>
+        <Button variant="outline" onClick={onApply} disabled={!hydrated || apply.isPending}>
           {apply.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.course_apply()}
         </Button>

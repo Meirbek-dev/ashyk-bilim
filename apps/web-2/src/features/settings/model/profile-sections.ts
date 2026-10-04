@@ -88,7 +88,7 @@ const tagged = <const T extends SectionType, E extends v.ObjectEntries>(type: T,
 
 /**
  * The builder's form schema, composed from the generated section schemas: the generated `vProfileSection`
- * rejects every section (strict variant + separate tag, see SPEC "Ждёт сервера"). Adds the http(s) check of
+ * rejects every section (strict variant + separate tag, see SPEC "Не перенесено (контракт есть)"). Adds the http(s) check of
  * link, image and logo addresses that the old builder ran before saving.
  */
 export const vBuilderDocument: v.GenericSchema<ProfileSections> = v.object({

@@ -216,6 +216,9 @@ test('B-CAT-11 the palette offers only the sections the user may open', async ({
   await expect(dialog.getByRole('option', { name: m.platform_nav_learning({}, ru) })).toBeVisible()
   await expect(dialog.getByRole('option', { name: m.platform_nav_inbox({}, ru) })).toHaveCount(0)
   await dialog.getByRole('combobox').fill(m.platform_nav_learning({}, ru))
+  // Enter acts on the highlighted option: wait until the filtered list has settled on it.
+  const learning = dialog.getByRole('option', { name: m.platform_nav_learning({}, ru) })
+  await expect(learning).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/learning$/)
   await expect(dialog).toBeHidden()
