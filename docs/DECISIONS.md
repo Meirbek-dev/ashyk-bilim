@@ -2241,3 +2241,53 @@ lane appends to it).
   needs the 16 synchronous `require_feature`/`feature_available` checks to
   read shared state (DB + short cache, env as the ceiling) in the API and
   the worker; left for a separate step.
+
+## User content is inert on the web origin (2026-10-04, REVIEW-1 C1/H1/H4)
+
+Uploads are served from the app's own origin (`/content/<key>`, presigned
+`/ab-public` / `/ab-private`), and `file-submission` accepts any type, so an
+uploaded HTML/SVG document opened (or framed) from there ran as the app.
+Defence in three layers, wire-compatible with the live old web:
+
+- **Served type is the server's choice, not the uploader's.** Every presigned
+  GET (`StorageClient::presign_get`; `uploads/{id}/download`,
+  `file-submission-files/{id}/url` incl. `path` and `?disposition=inline`)
+  signs `response-content-type` + `response-content-disposition`. Only
+  `ab_clients::storage::inline_type` types are served as themselves and may
+  be `inline`: raster images, PDF, audio, video, `text/plain` (as
+  `text/plain; charset=utf-8`). Everything else (HTML, XHTML, SVG, XML, JS,
+  unknown) is `application/octet-stream` + `attachment`, whatever the query
+  says - existing objects included, since the override is applied at
+  download time. Uploads are unchanged: the PUT stays pinned to the declared
+  type (the old web sends it) and finalize still checks the stored type;
+  public purposes only accept inline-safe types (unit-tested invariant).
+  `uploads/{id}/download` keeps opening safe types inline as before.
+- **Edge** (`infra/nginx`, both storage locations): `nosniff` (already
+  there), `Cross-Origin-Resource-Policy: same-origin` (nothing loads user
+  content cross-origin; no email links it), and by response type
+  `Content-Security-Policy: default-src 'none'; img-src 'self' data:;
+  media-src 'self'; style-src 'unsafe-inline'` + `sandbox` (opaque origin,
+  no script). Measured in Chromium against the real config and RustFS:
+  `sandbox` stops the browser's own media page from loading a top-level
+  video/audio, so audio/video get the CSP without `sandbox`; PDFs get no CSP
+  (`sandbox` disables Firefox's pdf.js and a PDF's script runs in the viewer,
+  not the origin). Images and HTML get both: an HTML upload opened directly
+  renders as static text. Media embedded by app pages are subresources the
+  header does not touch. RustFS also honours `response-*` overrides on
+  anonymous GETs (S3 refuses them): `/content/` now drops the query and
+  `/ab-*` refuses any query on a request with neither a query signature nor
+  an `Authorization` header (403).
+- **Stored documents** (`ab_domain::rich_text`, on discussion post/reply
+  create + edit and activity content PATCH): embeds must be an `https:` URL
+  on another host than `AB__SERVER__WEB_URL` / the storage endpoint / the
+  CORS origins, or a bare provider id; legacy `blockEmbed.embedCode` must be
+  iframe HTML whose every `src` passes the same rule; links `https:`,
+  `http:`, `mailto:` or `#anchor`; images a plain key, `/content/<key>` or `https:`; file
+  block keys plain (`[A-Za-z0-9._-]` segments, no `..`). 422 with one field
+  error per node (`content.content.3.attrs.url`, code `unsafe-url`). HTML
+  posts (old web) and non-document content pass untouched. `http:` links are
+  allowed because a production lesson has one; on the restored copy (590
+  activities, 147 documents, 1 JSON post) nothing fails - re-run with the
+  ignored `rich_text_corpus` test. The contract (`EditorDocument`) does not
+  define a node set per editor, so discussion posts are not limited to the
+  discussion editor's nodes (its schema includes `embedBlock` anyway).

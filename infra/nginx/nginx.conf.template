@@ -22,6 +22,27 @@ map $upstream_http_cache_control $skip_cache {
   ~immutable 0;
 }
 
+# User content (/content, /ab-*) is served on this origin: whatever renders
+# as a document gets no script and no subresources beyond its own media, and
+# runs in an opaque origin (`sandbox`). Exempt from `sandbox`: audio/video (it
+# stops the browser's own media page from loading the file) and PDF, which gets
+# no CSP at all (`sandbox` disables the built-in viewers; a PDF's script runs in
+# the viewer, not in this origin). Media the app embeds (<img>, <video>) are
+# subresources, which this header does not affect.
+map $sent_http_content_type $user_content_csp {
+  ~*^application/pdf "";
+  ~*^(audio|video)/ "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'";
+  default "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox";
+}
+
+# RustFS honours `response-content-type` / `-disposition` overrides on
+# anonymous GETs (S3 refuses them), percent-encoded names too: an unsigned
+# request (no Authorization header, no query signature) gets no query at all.
+map "$http_authorization:$args" $unsigned_query {
+  "~*^:(?!.*(?:^|&)x-amz-signature=)." 1;
+  default 0;
+}
+
 limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
 limit_req_status 429;

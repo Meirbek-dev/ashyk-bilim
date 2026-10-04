@@ -29993,7 +29993,7 @@ expression: json
             }
           },
           {
-            "description": "`inline` signs `Content-Disposition: inline` (preview in a frame);\ndefault `attachment` (download under the original name).",
+            "description": "`inline` signs `Content-Disposition: inline` (preview in a frame)\nfor raster images, PDF, audio, video and plain text only; every\nother type is always `attachment` as `application/octet-stream`.\nDefault `attachment` (download under the original name).",
             "in": "query",
             "name": "disposition",
             "required": false,
@@ -33820,6 +33820,7 @@ expression: json
     },
     "/api/v2/uploads/{upload_id}/download": {
       "get": {
+        "description": "Raster images, PDF, audio, video and plain text open inline; every other\ntype downloads as `application/octet-stream`.",
         "operationId": "download_upload",
         "parameters": [
           {

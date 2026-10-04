@@ -28,4 +28,5 @@ pub mod link_preview;
 pub mod maintenance;
 pub mod notifications;
 pub mod progress;
+pub mod rich_text;
 pub mod wire;

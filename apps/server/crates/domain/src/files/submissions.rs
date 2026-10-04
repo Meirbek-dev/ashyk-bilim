@@ -1602,10 +1602,13 @@ impl FileSubmissionsService {
                 .await
                 .map_err(|_| Error::not_found("file"))?;
         }
-        let url = self.storage.presign_get_as(
+        // `inline` is honoured only for the inline-safe types; HTML, SVG and
+        // the rest always download (`presign_get`).
+        let url = self.storage.presign_get(
             Bucket::Private,
             &file.storage_key,
             Some(&file.display_name),
+            Some(&file.content_type),
             inline,
             DOWNLOAD_TTL,
         )?;

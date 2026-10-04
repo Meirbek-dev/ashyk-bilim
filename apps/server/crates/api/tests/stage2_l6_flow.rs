@@ -121,13 +121,12 @@ async fn group(app: &TestApp, members: &[&MintedSession]) -> String {
     id.to_string()
 }
 
-async fn upload_pdf(app: &TestApp, who: &MintedSession) -> String {
-    let payload = b"%PDF-1.4 l6".to_vec();
+async fn upload(app: &TestApp, who: &MintedSession, mime: &str, payload: &[u8]) -> String {
     let created = app
         .post_as(
             who,
             "/api/v2/uploads",
-            &json!({ "purpose": "file-submission", "mime": "application/pdf",
+            &json!({ "purpose": "file-submission", "mime": mime,
                      "size_bytes": payload.len() }),
         )
         .await;
@@ -135,9 +134,9 @@ async fn upload_pdf(app: &TestApp, who: &MintedSession) -> String {
     let id = s(&created.json()["id"]);
     let put = reqwest::Client::new()
         .put(created.json()["put_url"].as_str().unwrap())
-        .header("content-type", "application/pdf")
+        .header("content-type", mime)
         .header("if-none-match", "*")
-        .body(payload)
+        .body(payload.to_vec())
         .send()
         .await
         .unwrap();
@@ -151,7 +150,7 @@ async fn upload_pdf(app: &TestApp, who: &MintedSession) -> String {
 
 /// Hand in one PDF; returns the attempt JSON.
 async fn hand_in(app: &TestApp, who: &MintedSession, fs: &str) -> Value {
-    let upload = upload_pdf(app, who).await;
+    let upload = upload(app, who, "application/pdf", b"%PDF-1.4 l6").await;
     let submitted = app
         .post_as(
             who,
@@ -378,6 +377,41 @@ async fn file_review_has_assessment_parity(pool: PgPool) {
             .to_str()
             .unwrap()
             .starts_with("inline")
+    );
+    assert_eq!(fetched.headers()["content-type"], "application/pdf");
+
+    // REVIEW-1 H4: an HTML hand-in never previews - `inline` is ignored and
+    // the bytes come back as a neutral download.
+    let html = upload(&app, &mallory, "text/html", b"<script>alert(1)</script>").await;
+    let handed = app
+        .post_as(
+            &mallory,
+            &format!("/api/v2/file-submissions/{fs}/submit"),
+            &json!({ "files": [{ "upload_id": html }] }),
+        )
+        .await;
+    assert_eq!(handed.status, StatusCode::OK, "{}", handed.text());
+    let html_file = s(&handed.json()["files"][0]["id"]);
+    let signed = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submission-files/{html_file}/url?disposition=inline"),
+        )
+        .await;
+    assert_eq!(signed.status, StatusCode::OK, "{}", signed.text());
+    let fetched = reqwest::get(s(&signed.json()["url"])).await.unwrap();
+    assert!(fetched.status().is_success(), "{}", fetched.status());
+    assert!(
+        fetched.headers()["content-disposition"]
+            .to_str()
+            .unwrap()
+            .starts_with("attachment;"),
+        "{:?}",
+        fetched.headers()
+    );
+    assert_eq!(
+        fetched.headers()["content-type"],
+        "application/octet-stream"
     );
 }
 

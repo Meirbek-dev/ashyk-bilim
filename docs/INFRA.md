@@ -224,8 +224,8 @@ under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchai
 | `= /api/v1/auth/google/callback` | server, rewritten to `/api/v2/auth/google/callback` | `auth_limit`; drop once the Google console uses the v2 path |
 | `/api/v2/auth` | server | `auth_limit` 10 r/s, burst 20 |
 | `/api/v2` | server | `api_limit` 30 r/s, burst 60; `proxy_buffering off`, 300 s timeouts (SSE) |
-| `/content/` | rustfs, rewritten to `/ab-public/` | anonymous read; `content_cache` 7 days; `Cache-Control: public, max-age=604800, immutable` |
-| `~ ^/(ab-public\|ab-private)/` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 500M bodies, no request buffering, 300 s |
+| `/content/` | rustfs, rewritten to `/ab-public/` (query dropped) | anonymous read; `content_cache` 7 days; `Cache-Control: public, max-age=604800, immutable`; user-content headers |
+| `~ ^/(ab-public\|ab-private)/` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 500M bodies, no request buffering, 300 s; 403 for a query without a signature (no `X-Amz-Signature`, no `Authorization`); user-content headers |
 | `/` | web | `app_cache` only when the upstream says `immutable` |
 
 - **Server blocks.** `:80` serves ACME challenges from `ACME_WEBROOT`,
@@ -247,7 +247,26 @@ under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchai
   needs no reload. deploy.sh still runs `nginx -t` and a reload.
 - **Headers.** `security-headers.conf` (HSTS, `X-Frame-Options`,
   `X-Content-Type-Options`, `Referrer-Policy`) is included in each server and in
-  every location with its own `add_header`. CSP belongs to the web app.
+  every location with its own `add_header`. CSP belongs to the web app,
+  except on user content.
+- **User content** (both storage locations) is inert on this origin:
+  `Cross-Origin-Resource-Policy: same-origin`, `nosniff`, and
+  `Content-Security-Policy` by response type (`map $sent_http_content_type
+  $user_content_csp`): `default-src 'none'; img-src 'self' data:; media-src
+  'self'; style-src 'unsafe-inline'; sandbox` for everything; audio/video
+  without `sandbox` (it stops the browser's media page from loading the
+  file); PDF none (`sandbox` disables the built-in viewers; PDF script runs in
+  the viewer). App pages embed media as subresources, which the header does
+  not touch. Verified in Chromium on the real config: images, video and PDF
+  preview (public and signed) work; an HTML upload renders without script.
+  The server decides the served type on every presigned GET (only images,
+  PDF, audio, video, plain text as themselves; the rest
+  `application/octet-stream` + `attachment`), and RustFS's anonymous
+  `response-*` overrides are cut off by the query rules above. DECISIONS
+  2026-10-04 "User content is inert on the web origin". The two maps live in
+  the template, which is rendered only when the container starts: the release
+  that first ships them needs `compose up -d --force-recreate nginx` (a
+  reload alone fails `nginx -t` on the unknown variables).
 - **Limits.** 10M request bodies except `/ab-*`; `limit_req_status 429`.
 - **Logs.** JSON access log to stdout with `request_id`, also sent upstream as
   `X-Request-ID`.

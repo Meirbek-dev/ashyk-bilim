@@ -52,6 +52,50 @@ pub struct ObjectHead {
     pub content_type: Option<String>,
 }
 
+/// Stored types a browser may render from the web origin, matched on the
+/// essence (no parameters, any case). Raster images, PDF, audio, video and
+/// plain text: nothing that runs script in the origin.
+const INLINE_TYPES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+    "application/pdf",
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/x-matroska",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/x-flv",
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/aac",
+    "audio/ogg",
+    "audio/webm",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/flac",
+];
+
+/// The `Content-Type` an object of `stored` type may be served inline
+/// with, or `None` (download only, as `application/octet-stream`). Plain
+/// text gets an explicit UTF-8 charset.
+#[must_use]
+pub fn inline_type(stored: &str) -> Option<&'static str> {
+    let essence = stored
+        .split(';')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+    if essence == "text/plain" {
+        return Some("text/plain; charset=utf-8");
+    }
+    INLINE_TYPES.iter().copied().find(|t| *t == essence)
+}
+
 impl StorageClient {
     pub fn new(config: &StorageConfig) -> Result<Self> {
         let build = |bucket: &str| -> Result<AmazonS3> {
@@ -110,39 +154,39 @@ impl StorageClient {
         )
     }
 
-    /// Presigned GET for private downloads. With `filename`, the response
-    /// carries `Content-Disposition: attachment` under that name (part of
-    /// the signature), so the browser saves the original name instead of
-    /// the storage key.
+    /// Presigned GET. The response type and disposition are always signed
+    /// overrides, never the stored metadata as is: a type in
+    /// [`inline_type`]'s allowlist is served as that type (inline when
+    /// `inline` asks, else `attachment`); anything else - HTML, SVG, XML,
+    /// JavaScript, unknown - as `application/octet-stream` + `attachment`,
+    /// whatever `inline` says (REVIEW-1 H4: these URLs are on the web
+    /// origin). `filename` names the saved file.
     pub fn presign_get(
         &self,
         bucket: Bucket,
         key: &str,
         filename: Option<&str>,
-        expires_in: Duration,
-    ) -> Result<String> {
-        self.presign_get_as(bucket, key, filename, false, expires_in)
-    }
-
-    /// [`Self::presign_get`] with the disposition chosen: `inline` lets the
-    /// browser render the object (a same-origin preview frame) instead of
-    /// saving it.
-    pub fn presign_get_as(
-        &self,
-        bucket: Bucket,
-        key: &str,
-        filename: Option<&str>,
+        stored_type: Option<&str>,
         inline: bool,
         expires_in: Duration,
     ) -> Result<String> {
-        let kind = if inline { "inline" } else { "attachment" };
-        let disposition =
-            filename.map(|name| format!("{kind}; filename*=UTF-8''{}", aws_encode(name.trim())));
-        let query: Vec<(&str, &str)> = disposition
-            .as_deref()
-            .map(|d| ("response-content-disposition", d))
-            .into_iter()
-            .collect();
+        let served = stored_type.and_then(inline_type);
+        let kind = if inline && served.is_some() {
+            "inline"
+        } else {
+            "attachment"
+        };
+        let disposition = filename.map_or_else(
+            || kind.to_owned(),
+            |name| format!("{kind}; filename*=UTF-8''{}", aws_encode(name.trim())),
+        );
+        let query = [
+            ("response-content-disposition", disposition.as_str()),
+            (
+                "response-content-type",
+                served.unwrap_or("application/octet-stream"),
+            ),
+        ];
         self.presign("GET", bucket, key, &query, &[], expires_in)
     }
 

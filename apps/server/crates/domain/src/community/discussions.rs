@@ -203,6 +203,11 @@ fn validate_content(content: &str) -> Result<()> {
             message: "content cannot be empty".into(),
         }]));
     }
+    // A JSON document (the new web) gets its URLs checked; an HTML post
+    // (the old web) passes as before.
+    if let Ok(doc) = serde_json::from_str::<serde_json::Value>(content) {
+        crate::rich_text::validate("content", &doc)?;
+    }
     Ok(())
 }
 

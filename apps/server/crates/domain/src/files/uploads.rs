@@ -283,10 +283,14 @@ impl UploadsService {
         if row.created_by != actor.user_id {
             return Err(Error::forbidden("not your upload"));
         }
+        // Inline for the types a browser may render from our origin (as
+        // before), a download for the rest (`presign_get` decides).
         self.storage.presign_get(
             bucket_from_name(&row.bucket),
             &row.key,
             None,
+            Some(&row.mime),
+            true,
             PRESIGN_GET_TTL,
         )
     }
@@ -356,4 +360,40 @@ pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64>
         failures_in_a_row = 0;
     }
     Ok(deleted)
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    /// The public bucket is served on the web origin without a signed
+    /// override (`/content/<key>`): every type it accepts must be one a
+    /// browser may render there.
+    #[test]
+    fn public_purposes_take_only_inline_safe_types() {
+        for purpose in [
+            "avatar",
+            "discussion-image",
+            "course-thumbnail",
+            "block-image",
+            "platform-logo",
+            "platform-thumbnail",
+            "collection-cover",
+            "block-pdf",
+            "block-video",
+            "file-submission",
+        ] {
+            let (bucket, _, types) = policy(purpose).expect(purpose);
+            if bucket == Bucket::Public {
+                assert!(!types.is_empty(), "{purpose} accepts any type");
+                for t in types {
+                    assert!(
+                        ab_clients::storage::inline_type(t).is_some(),
+                        "{purpose}: {t}"
+                    );
+                }
+            }
+        }
+    }
 }

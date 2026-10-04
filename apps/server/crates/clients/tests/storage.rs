@@ -48,20 +48,30 @@ async fn put_head_presigned_get_delete_roundtrip() {
         payload.len() as u64
     );
 
-    // Presigned GET works without credentials; a filename becomes the
-    // signed `response-content-disposition`.
+    // Presigned GET works without credentials; the type and disposition
+    // are signed overrides, a filename names the download.
     let url = storage
-        .presign_get(Bucket::Private, &key, None, Duration::from_mins(1))
+        .presign_get(
+            Bucket::Private,
+            &key,
+            None,
+            Some("image/png"),
+            true,
+            Duration::from_mins(1),
+        )
         .unwrap();
     let fetched = reqwest::get(&url).await.unwrap();
-    assert!(fetched.status().is_success());
-    assert!(fetched.headers().get("content-disposition").is_none());
+    assert!(fetched.status().is_success(), "{}", fetched.status());
+    assert_eq!(fetched.headers()["content-disposition"], "inline");
+    assert_eq!(fetched.headers()["content-type"], "image/png");
     assert_eq!(fetched.bytes().await.unwrap().to_vec(), payload);
     let named = storage
         .presign_get(
             Bucket::Private,
             &key,
             Some("проект.pdf"),
+            Some("application/pdf"),
+            false,
             Duration::from_mins(1),
         )
         .unwrap();
@@ -71,6 +81,52 @@ async fn put_head_presigned_get_delete_roundtrip() {
         fetched.headers()["content-disposition"].to_str().unwrap(),
         "attachment; filename*=UTF-8''%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82.pdf"
     );
+    // REVIEW-1 H4: an active type never renders, inline asked or not;
+    // plain text carries its charset.
+    for (stored, inline, disposition, served) in [
+        ("text/html", true, "attachment", "application/octet-stream"),
+        (
+            "image/svg+xml",
+            true,
+            "attachment",
+            "application/octet-stream",
+        ),
+        (
+            "application/xml",
+            false,
+            "attachment",
+            "application/octet-stream",
+        ),
+        (
+            "Text/Plain; charset=koi8-r",
+            true,
+            "inline",
+            "text/plain; charset=utf-8",
+        ),
+    ] {
+        let url = storage
+            .presign_get(
+                Bucket::Private,
+                &key,
+                None,
+                Some(stored),
+                inline,
+                Duration::from_mins(1),
+            )
+            .unwrap();
+        let fetched = reqwest::get(&url).await.unwrap();
+        assert!(
+            fetched.status().is_success(),
+            "{stored}: {}",
+            fetched.status()
+        );
+        assert_eq!(
+            fetched.headers()["content-disposition"],
+            disposition,
+            "{stored}"
+        );
+        assert_eq!(fetched.headers()["content-type"], served, "{stored}");
+    }
 
     storage.delete(Bucket::Private, &key).await.unwrap();
     assert_eq!(storage.head(Bucket::Private, &key).await.unwrap(), None);

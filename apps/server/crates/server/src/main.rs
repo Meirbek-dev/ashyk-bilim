@@ -124,6 +124,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config::load()?;
     ab_core::links::init(config.server.web_links);
+    ab_domain::rich_text::init(&config);
     // seed-e2e's stdout is its JSON report: no log lines in it.
     let quiet = matches!(
         cli.command,

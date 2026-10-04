@@ -485,6 +485,9 @@ impl CurriculumService {
             .name
             .map(|n| ab_core::required_str("name", n))
             .transpose()?;
+        if let Some(content) = changes.content {
+            crate::rich_text::validate("content", content)?;
+        }
         // The publish gate reads the MERGED row: the type this PATCH sets
         // (or keeps) and the published flag it asks for. It runs whenever
         // the merged row is published and either the flag flips or the type

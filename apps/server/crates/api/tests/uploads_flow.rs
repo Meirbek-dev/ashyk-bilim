@@ -360,3 +360,55 @@ async fn authoring_and_platform_purposes_need_their_grant(pool: PgPool) {
         .unwrap();
     assert_eq!(pending, 1, "refused purposes never reach the ledger");
 }
+
+/// REVIEW-1 H4: a file submission may be any type, but an active one
+/// (HTML here) is stored for download only - the signed URL serves it as
+/// `application/octet-stream` + `attachment`, never as `text/html`.
+#[sqlx::test(migrations = "../../migrations")]
+async fn html_file_submission_downloads_as_an_attachment(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("html", "h@example.com", &["user"]).await;
+    let session = app.mint_session_for(user, &["file:create:own"]).await;
+    let payload = b"<script>alert(document.domain)</script>".to_vec();
+    let created = app
+        .post_as(
+            &session,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "file-submission", "mime": "text/html",
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(created.json()["put_url"].as_str().unwrap())
+        .header("content-type", "text/html")
+        .header("if-none-match", "*")
+        .body(payload.clone())
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "presigned PUT: {}", put.status());
+    let finalized = app
+        .post_as(
+            &session,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+
+    let download = app
+        .get_as(&session, &format!("/api/v2/uploads/{id}/download"))
+        .await;
+    assert_eq!(download.status, StatusCode::SEE_OTHER);
+    let url = download.headers.get("location").unwrap().to_str().unwrap();
+    let fetched = reqwest::get(url).await.unwrap();
+    assert!(fetched.status().is_success(), "{}", fetched.status());
+    assert_eq!(fetched.headers()["content-disposition"], "attachment");
+    assert_eq!(
+        fetched.headers()["content-type"],
+        "application/octet-stream"
+    );
+    assert_eq!(fetched.bytes().await.unwrap().to_vec(), payload);
+}

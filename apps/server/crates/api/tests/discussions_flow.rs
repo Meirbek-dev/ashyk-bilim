@@ -551,3 +551,85 @@ async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
     assert_eq!(edited.json()["content"], "Edited");
     assert_eq!(edited.json()["status"], "hidden");
 }
+
+/// REVIEW-1 C1: a JSON post's URLs are checked on create and edit - an
+/// embed framing the platform's own origin, a traversal out of
+/// `/content/` and a script link are 422 with the node's field; HTML posts
+/// (the old web) and a clean document pass.
+#[sqlx::test(migrations = "../../migrations")]
+async fn document_posts_with_unsafe_urls_are_refused(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.server.web_url = Some("https://ashyq.test".into());
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Forum safety").await;
+    let alice = learner(&app, "alice").await;
+    let doc = |node: serde_json::Value| {
+        serde_json::json!({ "type": "doc", "content": [
+            { "type": "paragraph", "content": [{ "type": "text", "text": "see" }] }, node] })
+        .to_string()
+    };
+    let posts = format!("/api/v2/courses/{course_id}/discussions");
+    for (node, field) in [
+        (
+            serde_json::json!({ "type": "embedBlock", "attrs": { "type": "url",
+                "url": "https://ashyq.test/ab-private/x.html?X-Amz-Signature=s" } }),
+            "content.content.1.attrs.url",
+        ),
+        (
+            serde_json::json!({ "type": "image", "attrs": {
+                "src": "/content/../ab-private/x.html?X-Amz-Signature=s" } }),
+            "content.content.1.attrs.src",
+        ),
+        (
+            serde_json::json!({ "type": "paragraph", "content": [{ "type": "text", "text": "x",
+                "marks": [{ "type": "link", "attrs": { "href": "javascript:alert(1)" } }] }] }),
+            "content.content.1.content.0.marks.0.attrs.href",
+        ),
+    ] {
+        let refused = app
+            .post_as(&alice, &posts, &serde_json::json!({ "content": doc(node) }))
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.text()
+        );
+        assert_eq!(refused.json()["field_errors"][0]["field"], field);
+        assert_eq!(refused.json()["field_errors"][0]["code"], "unsafe-url");
+    }
+    let clean = doc(
+        serde_json::json!({ "type": "embedBlock", "attrs": { "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } }),
+    );
+    let created = app
+        .post_as(&alice, &posts, &serde_json::json!({ "content": clean }))
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let html = app
+        .post_as(
+            &alice,
+            &posts,
+            &serde_json::json!({ "content": "<p>old web</p>" }),
+        )
+        .await;
+    assert_eq!(html.status, StatusCode::CREATED, "{}", html.text());
+    // The edit path checks the same way.
+    let edited = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/discussions/{id}"),
+            &serde_json::json!({ "content": doc(serde_json::json!({ "type": "embedBlock",
+                "attrs": { "type": "url", "url": "/content/x.html" } })) }),
+        )
+        .await;
+    assert_eq!(
+        edited.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        edited.text()
+    );
+}

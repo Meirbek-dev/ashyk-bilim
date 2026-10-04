@@ -92,6 +92,9 @@ pub async fn finalize_upload(
 }
 
 /// Redirect to a short-lived presigned download URL.
+///
+/// Raster images, PDF, audio, video and plain text open inline; every other
+/// type downloads as `application/octet-stream`.
 #[utoipa::path(
     get,
     path = "/uploads/{upload_id}/download",

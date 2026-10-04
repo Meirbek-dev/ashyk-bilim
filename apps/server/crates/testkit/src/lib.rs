@@ -128,6 +128,7 @@ impl TestApp {
         });
         adjust(&mut config);
         ab_core::links::init(config.server.web_links);
+        ab_domain::rich_text::init(&config);
         let judge0_client = Arc::new(
             Judge0Client::new(ab_clients::judge0::Judge0Config {
                 base_url: judge0.uri(),

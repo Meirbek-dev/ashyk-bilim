@@ -141,6 +141,37 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
         .await;
     assert_eq!(scalar.status, StatusCode::UNPROCESSABLE_ENTITY);
 
+    // REVIEW-1 C1/H1: a file block's key is a plain storage key - a
+    // traversal out of `/content/` is 422 on the node's field.
+    let traversal = app
+        .send(
+            axum::http::Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/activities/{activity}"))
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .header(axum::http::header::COOKIE, &teacher.cookie)
+                .header(axum::http::header::IF_MATCH, "\"2\"")
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "content": { "type": "doc", "content": [
+                        { "type": "blockPDF", "attrs": { "blockObject": { "content": {
+                            "file_key": "../ab-private/x.html?response-content-type=text/html" } } } }
+                    ] } })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        traversal.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        traversal.text()
+    );
+    assert_eq!(
+        traversal.json()["field_errors"][0]["field"],
+        "content.content.0.attrs.blockObject.content.file_key"
+    );
+
     // Type changes travel as a pair; half a pair or a bad pair is refused.
     let half = app
         .patch_as(
