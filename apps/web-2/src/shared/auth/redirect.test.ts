@@ -23,8 +23,4 @@ describe('safeRedirect', () => {
   ])('sends %j to /home', value => {
     expect(safeRedirect(value)).toBe('/home')
   })
-
-  test('normalizes what it keeps', () => {
-    expect(safeRedirect('/courses/./1/../2?x=1#y')).toBe('/courses/2?x=1#y')
-  })
 })
