@@ -5,7 +5,7 @@
 //!
 //! - D-01 `migrate-editor-docs`: editor documents keep one embed node -
 //!   `blockEmbed` becomes `embedBlock` exactly like the new web's
-//!   `normalizeDocument` (`apps/web-2/src/features/editor/model/normalize.ts`),
+//!   `normalizeDocument` (`apps/web/src/features/editor/model/normalize.ts`),
 //!   and plain-paragraph HTML discussion posts become JSON documents (the old
 //!   web parses both). An embed whose provider the old web does not know
 //!   (type `url`) cannot render there: such a run needs `after_cutover`.
@@ -411,7 +411,7 @@ mod tests {
     fn theme_slugs_match_the_new_web_manifest() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../../web-2/public/themes/manifest.json"
+            "/../../../web/public/themes/manifest.json"
         );
         let manifest: Value =
             serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
