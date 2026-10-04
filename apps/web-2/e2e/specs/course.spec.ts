@@ -177,7 +177,8 @@ test('B-CRS-07 leaving asks with the course name, starts on Cancel, then offers 
   await signInAs('student')
   await page.goto(about(made))
   const confirm = page.getByRole('alertdialog', { name: m.course_leave_title({ name: made.course.name }, ru) })
-  await clickUntil(page.getByRole('button', { name: m.course_leave({}, ru) }), () =>
+  // The trigger in the page, never the dialog's own "Leave": a retried click would confirm (B-CRS-07 in CI).
+  await clickUntil(page.getByRole('main').getByRole('button', { name: m.course_leave({}, ru) }), () =>
     expect(confirm).toBeVisible({ timeout: 1000 }),
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
