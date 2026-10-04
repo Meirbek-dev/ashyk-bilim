@@ -295,7 +295,8 @@ export const remediationSession = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * The learner records a score; 70 or more passes (and lifts a gate).
+ * The learner hands in the practice answers; the server scores them and 70
+ * or more passes (and lifts a gate). A posted `score` is ignored.
  */
 export const completeRemediation = <ThrowOnError extends boolean = false>(options: Options<CompleteRemediationData, ThrowOnError>): RequestResult<CompleteRemediationResponses, CompleteRemediationErrors, ThrowOnError> => (options.client ?? client).post<CompleteRemediationResponses, CompleteRemediationErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vCompleteRemediationResponse, data),
@@ -3205,8 +3206,9 @@ export const linkPreview = <ThrowOnError extends boolean = false>(options: Optio
  * Ranked work items for the caller.
  *
  * `role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade
- * or release across the courses the caller created or co-authors. Sorted
- * by priority, then due/created time, then id; paged by an opaque cursor.
+ * or release across the courses the caller created or co-authors. `kind` and
+ * `course_id` filter; `sort` orders (default: priority, then due/created
+ * time, then id). Paged by an opaque cursor (same filters and order).
  */
 export const workQueue = <ThrowOnError extends boolean = false>(options?: Options<WorkQueueData, ThrowOnError>): RequestResult<WorkQueueResponses, WorkQueueErrors, ThrowOnError> => (options?.client ?? client).get<WorkQueueResponses, WorkQueueErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vWorkQueueResponse, data),

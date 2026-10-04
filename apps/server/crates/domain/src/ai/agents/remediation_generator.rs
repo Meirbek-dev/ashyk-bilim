@@ -8,7 +8,7 @@
 use ab_clients::llm::OutputSchema;
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, RemediationStatus};
 use ab_core::id::{ActivityId, AiRemediationSessionId, AiSubjectId, UserId};
-use ab_core::{Error, ErrorCode, FieldError, Result};
+use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::{NewRemediationSession, RemediationSessionRow, RunRow, SubmissionAnalysisRow};
 use tokio_util::sync::CancellationToken;
 
@@ -408,21 +408,15 @@ impl AiService {
         ab_db::ai::list_student_remediation_sessions(&self.pool, student_user_id).await
     }
 
-    /// `POST /ai/remediation/sessions/{session}/complete`: the learner
-    /// records a score; 70+ passes (and lifts a gate).
+    /// `POST /ai/remediation/sessions/{session}/complete`: the learner hands
+    /// in the practice answers; the server scores them against the stored
+    /// test ([`practice_score`]) and 70+ passes (and lifts a gate).
     pub async fn complete_remediation(
         &self,
         actor: &Actor,
         id: AiRemediationSessionId,
-        score: i32,
+        answers: &[String],
     ) -> Result<RemediationSessionRow> {
-        if !(0..=100).contains(&score) {
-            return Err(Error::validation(vec![FieldError {
-                field: "score".into(),
-                code: "out-of-range".into(),
-                message: "score must be between 0 and 100".into(),
-            }]));
-        }
         // UX-134 / UX-141: a stranger sees an unknown session (404); a reader
         // who is not the learner - the grader - may not complete it (403).
         let session = self.accessible_remediation(actor, id).await?;
@@ -431,6 +425,13 @@ impl AiService {
                 "only the learner of this session can complete it",
             ));
         }
+        let questions: Vec<RemediationQuestion> = session
+            .test
+            .get("questions")
+            .cloned()
+            .and_then(|q| serde_json::from_value(q).ok())
+            .unwrap_or_default();
+        let score = practice_score(&questions, answers);
         let status = if score >= PASS_SCORE {
             RemediationStatus::Passed
         } else {
@@ -455,5 +456,57 @@ impl AiService {
         activity_id: ActivityId,
     ) -> Result<Option<AiRemediationSessionId>> {
         ab_db::ai::active_remediation_gate(&self.pool, user_id, activity_id).await
+    }
+}
+
+/// REM-SCORE: round(100 x right / all) over the stored practice questions;
+/// an answer is right when it equals the question's `answer` ignoring case
+/// and surrounding / repeated whitespace. No questions = 100 (the lecture
+/// is the whole remediation); a question without a stored answer is right.
+fn practice_score(questions: &[RemediationQuestion], answers: &[String]) -> i32 {
+    fn norm(s: &str) -> String {
+        s.split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_lowercase()
+    }
+    if questions.is_empty() {
+        return 100;
+    }
+    let right = questions
+        .iter()
+        .enumerate()
+        .filter(|(i, q)| {
+            let key = norm(&q.answer);
+            key.is_empty() || answers.get(*i).is_some_and(|a| norm(a) == key)
+        })
+        .count();
+    let total = questions.len();
+    i32::try_from((right * 200 + total) / (2 * total)).unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn q(answer: &str) -> RemediationQuestion {
+        RemediationQuestion {
+            prompt: "?".into(),
+            choices: Vec::new(),
+            answer: answer.into(),
+            explanation: String::new(),
+        }
+    }
+
+    #[test]
+    fn practice_score_counts_matching_answers() {
+        let test = [q("Paris"), q("4"), q("Blue  whale")];
+        assert_eq!(practice_score(&test, &[]), 0);
+        let all = ["  paris ".into(), "4".into(), "blue whale".into()];
+        assert_eq!(practice_score(&test, &all), 100);
+        assert_eq!(practice_score(&test, &["paris".into(), "5".into()]), 33);
+        assert_eq!(practice_score(&test, &["paris".into(), "4".into()]), 67);
+        assert_eq!(practice_score(&[], &[]), 100);
+        assert_eq!(practice_score(&[q("")], &[]), 100);
     }
 }

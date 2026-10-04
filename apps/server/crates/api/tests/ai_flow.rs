@@ -1324,8 +1324,8 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     // itself guards `status <> 'passed'`, so the session never ends `failed`.
     let complete_path = format!("/api/v2/ai/remediation/sessions/{session_id}/complete");
     let (pass, fail) = (
-        serde_json::json!({ "score": 80 }),
-        serde_json::json!({ "score": 10 }),
+        serde_json::json!({ "answers": ["Left  Identity "] }),
+        serde_json::json!({ "score": 100 }),
     );
     let (passed, failed) = tokio::join!(
         app.post_as(&alice, &complete_path, &pass),
@@ -1359,7 +1359,7 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         .post_as(
             &alice,
             &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
-            &serde_json::json!({ "score": 40 }),
+            &serde_json::json!({ "answers": ["commutativity"] }),
         )
         .await;
     assert_eq!(again.status, StatusCode::CONFLICT, "{}", again.text());
@@ -1556,15 +1556,35 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
         session_id
     );
 
+    // REM-SCORE: a posted score is ignored - the server scores the answers,
+    // so a forged 100 with no answers fails and the gate holds.
+    let forged = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
+            &serde_json::json!({ "score": 100 }),
+        )
+        .await;
+    assert_eq!(forged.status, StatusCode::OK, "{}", forged.text());
+    assert_eq!(forged.json()["status"], "failed");
+    assert_eq!(forged.json()["score"], 0);
+    let still_gated = app.get_as(&alice, &state_url).await;
+    assert_eq!(
+        still_gated.json()["can_continue"],
+        false,
+        "{}",
+        still_gated.text()
+    );
     let passed = app
         .post_as(
             &alice,
             &format!("/api/v2/ai/remediation/sessions/{session_id}/complete"),
-            &serde_json::json!({ "score": 80 }),
+            &serde_json::json!({ "answers": ["left identity"] }),
         )
         .await;
     assert_eq!(passed.status, StatusCode::OK, "{}", passed.text());
     assert_eq!(passed.json()["status"], "passed");
+    assert_eq!(passed.json()["score"], 100);
     assert_eq!(
         app.get_as(&teacher, &latest_url).await.json()["id"],
         plain_id

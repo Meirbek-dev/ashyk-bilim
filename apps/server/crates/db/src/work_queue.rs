@@ -81,6 +81,9 @@ pub struct TeacherWorkRow {
     /// Submission id, else the newest matching file attempt id; `None` when
     /// neither exists (a release row without one is not shown).
     pub review_ref: Option<uuid::Uuid>,
+    /// `review_ref` is a file attempt (a file-submission activity), not a
+    /// submission.
+    pub review_is_file: bool,
 }
 
 /// Rows flagged `teacher_action_required` in the courses the teacher may grade.
@@ -118,7 +121,8 @@ pub async fn list_teacher_grading_work(
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                          AND fa.status = 'submitted' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
-                  ) AS "review_ref?"
+                  ) AS "review_ref?",
+                  (a.activity_type = 'file_submission') AS "review_is_file!"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
@@ -175,7 +179,8 @@ pub async fn list_teacher_release_work(
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                          AND fa.status = 'graded' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
-                  ) AS "review_ref?"
+                  ) AS "review_ref?",
+                  (a.activity_type = 'file_submission') AS "review_is_file!"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id

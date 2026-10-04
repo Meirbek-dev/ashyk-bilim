@@ -8,7 +8,7 @@
 //! did): it is bounded by one user's open work.
 
 use ab_core::assessments::ActivityProgressState;
-use ab_core::id::{ActivityId, CourseId};
+use ab_core::id::{ActivityId, CourseId, FileAttemptId, SubmissionId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::work_queue::{LearnerWorkRow, TeacherWorkRow};
 use base64::Engine;
@@ -54,29 +54,108 @@ impl WorkPriority {
     }
 }
 
+/// The situation an item names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkKind {
+    InProgress,
+    Overdue,
+    WaitingForGrade,
+    ReturnedForRevision,
+    FeedbackReleased,
+    NeedsGrading,
+    SlaBreach,
+    AwaitingRelease,
+}
+
+/// The work's grading status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkStatus {
+    InProgress,
+    NeedsGrading,
+    Returned,
+    Published,
+    GradedHidden,
+}
+
+/// `GET /work` order (INBOX-DATA).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkSort {
+    /// Priority, then due (else created) time - the legacy order (default).
+    #[default]
+    Priority,
+    /// Soonest due first; undated last.
+    Due,
+    /// Longest waiting first (created time).
+    Oldest,
+    /// Newest first (created time).
+    Newest,
+}
+
+/// The message an item shows: the client renders `work_<key>_title`,
+/// `_description` and `_action` with [`WorkMessageParams`] (the English
+/// `title` / `description` / `primary_action` stay for the old web).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkMessageKey {
+    Revise,
+    AwaitingFeedback,
+    ReviewFeedback,
+    Continue,
+    Grade,
+    Release,
+}
+
+/// Placeholders of a [`WorkMessageKey`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
+pub struct WorkMessageParams {
+    pub activity: String,
+    pub course: String,
+    /// The learner's display name (teacher items).
+    pub learner: Option<String>,
+}
+
+/// `GET /work` filters.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct WorkFilter {
+    pub kind: Option<WorkKind>,
+    pub course_id: Option<CourseId>,
+    pub sort: WorkSort,
+}
+
 /// One actionable thing. `id` is stable across calls
 /// (`<role>-<kind>-<progress_id>`) so clients can diff pages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkItem {
     pub id: String,
     pub role: WorkRole,
-    pub kind: &'static str,
-    pub status: &'static str,
+    pub kind: WorkKind,
+    pub status: WorkStatus,
     pub priority: WorkPriority,
     pub title: String,
     pub description: String,
+    pub message_key: WorkMessageKey,
+    pub message_params: WorkMessageParams,
     pub href: String,
     pub primary_action: &'static str,
     pub course_id: CourseId,
     pub course_title: String,
     pub activity_id: ActivityId,
     pub activity_title: String,
+    /// Teacher items: the assessment submission under review.
+    pub submission_id: Option<SubmissionId>,
+    /// Teacher items: the file-submission attempt under review.
+    pub attempt_id: Option<FileAttemptId>,
+    /// Teacher items: the learner's display name (else username).
+    pub learner_name: Option<String>,
     pub due_at: Option<i64>,
     pub created_at: Option<i64>,
     pub allowed_actions: Vec<&'static str>,
 }
 
-/// One page. `total` counts the whole queue before paging (legacy).
+/// One page. `total` counts the whole (filtered) queue before paging.
 #[derive(Debug, Clone)]
 pub struct WorkQueue {
     pub items: Vec<WorkItem>,
@@ -84,8 +163,9 @@ pub struct WorkQueue {
     pub next_cursor: Option<String>,
 }
 
-/// `(priority rank, due_at or created_at - missing sorts last, id)`.
-type SortKey = (u8, i64, String);
+/// `(primary, secondary - i64::MAX = missing, sorts last, id)`; what the
+/// two numbers are depends on the [`WorkSort`].
+type SortKey = (i64, i64, String);
 
 #[derive(Clone)]
 pub struct WorkQueueService {
@@ -105,6 +185,7 @@ impl WorkQueueService {
         &self,
         actor: &Actor,
         role: WorkRole,
+        filter: WorkFilter,
         limit: i64,
         cursor: Option<&str>,
     ) -> Result<WorkQueue> {
@@ -120,7 +201,7 @@ impl WorkQueueService {
         }
         let after = cursor.map(decode_cursor).transpose()?;
         let now = now_unix();
-        let items = match role {
+        let items: Vec<WorkItem> = match role {
             WorkRole::Learner => ab_db::work_queue::list_learner_work(&self.pool, actor.user_id)
                 .await?
                 .iter()
@@ -139,7 +220,12 @@ impl WorkQueueService {
                     .collect()
             }
         };
-        Ok(page(items, after.as_ref(), limit))
+        let items = items
+            .into_iter()
+            .filter(|i| filter.kind.is_none_or(|k| i.kind == k))
+            .filter(|i| filter.course_id.is_none_or(|c| i.course_id == c))
+            .collect();
+        Ok(page(items, filter.sort, after.as_ref(), limit))
     }
 }
 
@@ -156,8 +242,9 @@ fn learner_href(course_id: CourseId, activity_id: ActivityId) -> String {
 /// What differs between the learner kinds (legacy `_learner_item` branches).
 struct LearnerSpec {
     id_kind: &'static str,
-    kind: &'static str,
-    status: &'static str,
+    kind: WorkKind,
+    status: WorkStatus,
+    message_key: WorkMessageKey,
     priority: WorkPriority,
     title: String,
     description: String,
@@ -172,8 +259,9 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
     match row.state {
         ActivityProgressState::Returned => LearnerSpec {
             id_kind: "returned",
-            kind: "returned_for_revision",
-            status: "returned",
+            kind: WorkKind::ReturnedForRevision,
+            status: WorkStatus::Returned,
+            message_key: WorkMessageKey::Revise,
             priority: WorkPriority::Critical,
             title: format!("Revise {activity}"),
             description: format!("{course}: feedback requires a new submission."),
@@ -183,8 +271,9 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
         },
         ActivityProgressState::Submitted | ActivityProgressState::NeedsGrading => LearnerSpec {
             id_kind: "waiting",
-            kind: "waiting_for_grade",
-            status: "needs_grading",
+            kind: WorkKind::WaitingForGrade,
+            status: WorkStatus::NeedsGrading,
+            message_key: WorkMessageKey::AwaitingFeedback,
             priority: WorkPriority::Low,
             title: format!("Waiting for feedback on {activity}"),
             description: format!("{course}: your work was received."),
@@ -194,8 +283,9 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
         },
         ActivityProgressState::Passed | ActivityProgressState::Failed => LearnerSpec {
             id_kind: "feedback",
-            kind: "feedback_released",
-            status: "published",
+            kind: WorkKind::FeedbackReleased,
+            status: WorkStatus::Published,
+            message_key: WorkMessageKey::ReviewFeedback,
             priority: if row.state == ActivityProgressState::Failed {
                 WorkPriority::High
             } else {
@@ -216,8 +306,13 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
             let overdue = row.due_at.is_some_and(|due| due < now);
             LearnerSpec {
                 id_kind: "progress",
-                kind: if overdue { "overdue" } else { "in_progress" },
-                status: "in_progress",
+                kind: if overdue {
+                    WorkKind::Overdue
+                } else {
+                    WorkKind::InProgress
+                },
+                status: WorkStatus::InProgress,
+                message_key: WorkMessageKey::Continue,
                 priority: if overdue {
                     WorkPriority::Critical
                 } else {
@@ -254,12 +349,21 @@ fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
         priority: spec.priority,
         title: spec.title,
         description: spec.description,
+        message_key: spec.message_key,
+        message_params: WorkMessageParams {
+            activity: row.activity_title.clone(),
+            course: row.course_title.clone(),
+            learner: None,
+        },
         href: learner_href(row.course_id, row.activity_id),
         primary_action: spec.primary_action,
         course_id: row.course_id,
         course_title: row.course_title.clone(),
         activity_id: row.activity_id,
         activity_title: row.activity_title.clone(),
+        submission_id: None,
+        attempt_id: None,
+        learner_name: None,
         due_at: row.due_at,
         created_at: spec.created_at,
         allowed_actions: spec.allowed_actions,
@@ -280,18 +384,52 @@ fn learner_name(row: &TeacherWorkRow) -> &str {
     }
 }
 
+/// A teacher item: the parts every teacher kind shares.
+fn teacher_item(
+    row: &TeacherWorkRow,
+    review_ref: Option<uuid::Uuid>,
+    key: WorkMessageKey,
+) -> WorkItem {
+    let learner = learner_name(row).to_owned();
+    WorkItem {
+        id: String::new(),
+        role: WorkRole::Teacher,
+        kind: WorkKind::NeedsGrading,
+        status: WorkStatus::NeedsGrading,
+        priority: WorkPriority::High,
+        title: String::new(),
+        description: String::new(),
+        message_key: key,
+        message_params: WorkMessageParams {
+            activity: row.activity_title.clone(),
+            course: row.course_title.clone(),
+            learner: Some(learner.clone()),
+        },
+        href: review_href(row, review_ref),
+        primary_action: "",
+        course_id: row.course_id,
+        course_title: row.course_title.clone(),
+        activity_id: row.activity_id,
+        activity_title: row.activity_title.clone(),
+        submission_id: review_ref.filter(|_| !row.review_is_file).map(SubmissionId),
+        attempt_id: review_ref.filter(|_| row.review_is_file).map(FileAttemptId),
+        learner_name: Some(learner),
+        due_at: None,
+        created_at: None,
+        allowed_actions: Vec::new(),
+    }
+}
+
 fn teacher_grading_item(row: &TeacherWorkRow, now: i64) -> WorkItem {
     let submitted_at = row.submitted_at.unwrap_or(row.updated_at);
     let breached = now - submitted_at >= SLA_BREACH_SECS;
     WorkItem {
         id: format!("teacher-grade-{}", row.progress_id),
-        role: WorkRole::Teacher,
         kind: if breached {
-            "sla_breach"
+            WorkKind::SlaBreach
         } else {
-            "needs_grading"
+            WorkKind::NeedsGrading
         },
-        status: "needs_grading",
         priority: if breached {
             WorkPriority::Critical
         } else {
@@ -303,15 +441,11 @@ fn teacher_grading_item(row: &TeacherWorkRow, now: i64) -> WorkItem {
             learner_name(row),
             row.course_title
         ),
-        href: review_href(row, row.review_ref),
         primary_action: "Grade submission",
-        course_id: row.course_id,
-        course_title: row.course_title.clone(),
-        activity_id: row.activity_id,
-        activity_title: row.activity_title.clone(),
         due_at: row.due_at,
         created_at: Some(submitted_at),
         allowed_actions: vec!["grade", "return", "publish"],
+        ..teacher_item(row, row.review_ref, WorkMessageKey::Grade)
     }
 }
 
@@ -320,44 +454,44 @@ fn teacher_release_item(row: &TeacherWorkRow) -> Option<WorkItem> {
     let review_ref = row.review_ref?;
     Some(WorkItem {
         id: format!("teacher-release-{}", row.progress_id),
-        role: WorkRole::Teacher,
-        kind: "awaiting_release",
-        status: "graded_hidden",
-        priority: WorkPriority::High,
+        kind: WorkKind::AwaitingRelease,
+        status: WorkStatus::GradedHidden,
         title: format!("Release {}", row.activity_title),
         description: format!(
             "{}'s grade in {} is saved but not visible.",
             learner_name(row),
             row.course_title
         ),
-        href: review_href(row, Some(review_ref)),
         primary_action: "Review and release",
-        course_id: row.course_id,
-        course_title: row.course_title.clone(),
-        activity_id: row.activity_id,
-        activity_title: row.activity_title.clone(),
-        due_at: None,
         created_at: row.graded_at.or(Some(row.updated_at)),
         allowed_actions: vec!["review", "publish"],
+        ..teacher_item(row, Some(review_ref), WorkMessageKey::Release)
     })
 }
 
 // ── Ordering, cursor, paging (legacy `_sort_key`, `_encode_cursor`) ─────────
 
-fn sort_key(item: &WorkItem) -> SortKey {
-    (
-        item.priority.rank(),
-        item.due_at.or(item.created_at).unwrap_or(i64::MAX),
-        item.id.clone(),
-    )
+fn sort_key(item: &WorkItem, sort: WorkSort) -> SortKey {
+    let created = item.created_at.unwrap_or(i64::MAX);
+    let (primary, secondary) = match sort {
+        WorkSort::Priority => (
+            i64::from(item.priority.rank()),
+            item.due_at.or(item.created_at).unwrap_or(i64::MAX),
+        ),
+        WorkSort::Due => (item.due_at.unwrap_or(i64::MAX), created),
+        WorkSort::Oldest => (created, 0),
+        WorkSort::Newest => (item.created_at.map_or(i64::MAX, |at| -at), 0),
+    };
+    (primary, secondary, item.id.clone())
 }
 
-/// base64url (no padding) of the JSON array `[rank, at, id]`; `at` is
-/// `null` for items without any timestamp.
-fn encode_cursor(item: &WorkItem) -> String {
-    let (rank, at, id) = sort_key(item);
-    let at = (at != i64::MAX).then_some(at);
-    let json = serde_json::to_vec(&(rank, at, id)).unwrap_or_default();
+/// base64url (no padding) of the JSON array `[primary, secondary, id]`;
+/// `secondary` is `null` when missing (legacy: `[rank, at, id]`, so an old
+/// cursor reads the same under the default order).
+fn encode_cursor(item: &WorkItem, sort: WorkSort) -> String {
+    let (primary, secondary, id) = sort_key(item, sort);
+    let secondary = (secondary != i64::MAX).then_some(secondary);
+    let json = serde_json::to_vec(&(primary, secondary, id)).unwrap_or_default();
     URL_SAFE_NO_PAD.encode(json)
 }
 
@@ -372,23 +506,28 @@ fn decode_cursor(cursor: &str) -> Result<SortKey> {
     let bytes = URL_SAFE_NO_PAD
         .decode(cursor.trim_end_matches('='))
         .map_err(|_| invalid())?;
-    let (rank, at, id): (u8, Option<i64>, String) =
+    let (primary, secondary, id): (i64, Option<i64>, String) =
         serde_json::from_slice(&bytes).map_err(|_| invalid())?;
-    Ok((rank, at.unwrap_or(i64::MAX), id))
+    Ok((primary, secondary.unwrap_or(i64::MAX), id))
 }
 
 /// Sort, skip everything at or before `after`, cut to `limit`.
-fn page(mut items: Vec<WorkItem>, after: Option<&SortKey>, limit: i64) -> WorkQueue {
+fn page(
+    mut items: Vec<WorkItem>,
+    sort: WorkSort,
+    after: Option<&SortKey>,
+    limit: i64,
+) -> WorkQueue {
     let total = i64::try_from(items.len()).unwrap_or(i64::MAX);
-    items.sort_by_cached_key(sort_key);
+    items.sort_by_cached_key(|item| sort_key(item, sort));
     if let Some(after) = after {
-        items.retain(|item| sort_key(item) > *after);
+        items.retain(|item| sort_key(item, sort) > *after);
     }
     let limit = usize::try_from(limit).unwrap_or(usize::MAX);
     let has_more = items.len() > limit;
     items.truncate(limit);
     let next_cursor = if has_more {
-        items.last().map(encode_cursor)
+        items.last().map(|item| encode_cursor(item, sort))
     } else {
         None
     };
@@ -408,17 +547,26 @@ mod tests {
         WorkItem {
             id: id.to_owned(),
             role: WorkRole::Learner,
-            kind: "in_progress",
-            status: "in_progress",
+            kind: WorkKind::InProgress,
+            status: WorkStatus::InProgress,
             priority,
             title: String::new(),
             description: String::new(),
+            message_key: WorkMessageKey::Continue,
+            message_params: WorkMessageParams {
+                activity: String::new(),
+                course: String::new(),
+                learner: None,
+            },
             href: String::new(),
             primary_action: "Continue",
             course_id: CourseId::new(),
             course_title: String::new(),
             activity_id: ActivityId::new(),
             activity_title: String::new(),
+            submission_id: None,
+            attempt_id: None,
+            learner_name: None,
             due_at,
             created_at: None,
             allowed_actions: vec![],
@@ -438,7 +586,7 @@ mod tests {
             item("a", WorkPriority::High, Some(20)),
             item("e", WorkPriority::Critical, Some(99)),
         ];
-        let queue = page(items, None, 100);
+        let queue = page(items, WorkSort::Priority, None, 100);
         assert_eq!(ids(&queue), ["e", "a", "b", "c", "d"]);
         assert_eq!(queue.total, 5);
         assert!(queue.next_cursor.is_none());
@@ -451,13 +599,13 @@ mod tests {
             item("b", WorkPriority::High, Some(20)),
             item("c", WorkPriority::High, None),
         ];
-        let first = page(items.clone(), None, 2);
+        let first = page(items.clone(), WorkSort::Priority, None, 2);
         assert_eq!(ids(&first), ["a", "b"]);
         assert_eq!(first.total, 3);
         let cursor = first.next_cursor.as_deref().unwrap();
         let after = decode_cursor(cursor).unwrap();
         assert_eq!(after, (1, 20, "b".to_owned()));
-        let second = page(items, Some(&after), 2);
+        let second = page(items, WorkSort::Priority, Some(&after), 2);
         assert_eq!(ids(&second), ["c"]);
         assert_eq!(second.total, 3, "total ignores the cursor");
         assert!(second.next_cursor.is_none());
@@ -466,11 +614,14 @@ mod tests {
     #[test]
     fn cursor_round_trips_missing_timestamps() {
         let last = item("z", WorkPriority::Low, None);
-        let cursor = encode_cursor(&last);
-        assert_eq!(decode_cursor(&cursor).unwrap(), sort_key(&last));
+        let cursor = encode_cursor(&last, WorkSort::Priority);
+        assert_eq!(
+            decode_cursor(&cursor).unwrap(),
+            sort_key(&last, WorkSort::Priority)
+        );
         assert_eq!(
             decode_cursor(&format!("{cursor}==")).unwrap(),
-            sort_key(&last),
+            sort_key(&last, WorkSort::Priority),
             "padding tolerated"
         );
     }
@@ -505,7 +656,7 @@ mod tests {
         let open = learner_item(&learner_row(ActivityProgressState::InProgress, None), now);
         assert_eq!(
             (open.kind, open.priority),
-            ("in_progress", WorkPriority::High)
+            (WorkKind::InProgress, WorkPriority::High)
         );
         assert_eq!(open.created_at, Some(100), "started_at");
         assert!(open.id.starts_with("learner-progress-"));
@@ -515,12 +666,16 @@ mod tests {
         );
         assert_eq!(
             (late.kind, late.priority),
-            ("overdue", WorkPriority::Critical)
+            (WorkKind::Overdue, WorkPriority::Critical)
         );
         let waiting = learner_item(&learner_row(ActivityProgressState::NeedsGrading, None), now);
         assert_eq!(
             (waiting.kind, waiting.status, waiting.created_at),
-            ("waiting_for_grade", "needs_grading", Some(200))
+            (
+                WorkKind::WaitingForGrade,
+                WorkStatus::NeedsGrading,
+                Some(200)
+            )
         );
         let returned = learner_item(&learner_row(ActivityProgressState::Returned, None), now);
         assert_eq!(returned.priority, WorkPriority::Critical);
@@ -528,7 +683,7 @@ mod tests {
         let failed = learner_item(&learner_row(ActivityProgressState::Failed, None), now);
         assert_eq!(
             (failed.kind, failed.priority),
-            ("feedback_released", WorkPriority::High)
+            (WorkKind::FeedbackReleased, WorkPriority::High)
         );
         assert_eq!(failed.created_at, Some(300), "graded_at");
         let passed = learner_item(&learner_row(ActivityProgressState::Passed, None), now);
@@ -555,6 +710,7 @@ mod tests {
             due_at: None,
             updated_at: 400,
             review_ref,
+            review_is_file: false,
         }
     }
 
@@ -564,14 +720,14 @@ mod tests {
         let fresh = teacher_grading_item(&teacher_row(Some(now - 86_400), None), now);
         assert_eq!(
             (fresh.kind, fresh.priority),
-            ("needs_grading", WorkPriority::High)
+            (WorkKind::NeedsGrading, WorkPriority::High)
         );
         assert!(fresh.href.ends_with("/review"), "{}", fresh.href);
         assert_eq!(fresh.description, "alice submitted work in Course.");
         let stale = teacher_grading_item(&teacher_row(Some(now - SLA_BREACH_SECS), None), now);
         assert_eq!(
             (stale.kind, stale.priority),
-            ("sla_breach", WorkPriority::Critical)
+            (WorkKind::SlaBreach, WorkPriority::Critical)
         );
         let no_time = teacher_grading_item(&teacher_row(None, None), now);
         assert_eq!(no_time.created_at, Some(400), "updated_at fallback");
@@ -582,9 +738,35 @@ mod tests {
         assert!(teacher_release_item(&teacher_row(None, None)).is_none());
         let target = uuid::Uuid::nil();
         let item = teacher_release_item(&teacher_row(None, Some(target))).unwrap();
-        assert_eq!(item.kind, "awaiting_release");
-        assert_eq!(item.status, "graded_hidden");
+        assert_eq!(item.kind, WorkKind::AwaitingRelease);
+        assert_eq!(item.status, WorkStatus::GradedHidden);
+        assert_eq!(item.submission_id, Some(SubmissionId(target)));
+        assert_eq!(item.message_params.learner.as_deref(), Some("alice"));
         assert!(item.href.ends_with(&format!("?submission={target}")));
         assert!(item.id.starts_with("teacher-release-"));
+    }
+
+    #[test]
+    fn other_orders_page_by_their_own_keys() {
+        let mut a = item("a", WorkPriority::Low, Some(30));
+        a.created_at = Some(1);
+        let mut b = item("b", WorkPriority::Critical, Some(10));
+        b.created_at = Some(3);
+        let mut c = item("c", WorkPriority::High, None);
+        c.created_at = Some(2);
+        let items = vec![a, b, c];
+        assert_eq!(
+            ids(&page(items.clone(), WorkSort::Due, None, 10)),
+            ["b", "a", "c"]
+        );
+        assert_eq!(
+            ids(&page(items.clone(), WorkSort::Oldest, None, 10)),
+            ["a", "c", "b"]
+        );
+        let first = page(items.clone(), WorkSort::Newest, None, 1);
+        assert_eq!(ids(&first), ["b"]);
+        let after = decode_cursor(first.next_cursor.as_deref().unwrap()).unwrap();
+        let rest = page(items, WorkSort::Newest, Some(&after), 10);
+        assert_eq!(ids(&rest), ["c", "a"]);
     }
 }

@@ -4489,7 +4489,20 @@ export type RemediationBundle = {
 };
 
 export type RemediationCompletionRequest = {
-    score: number;
+    /**
+     * The learner's answer to each practice question, in order (a missing
+     * or blank answer is wrong). Scored server-side: an answer equal to the
+     * question's `answer` (trimmed, case- and space-insensitive) is right;
+     * round(100 x right / all), 100 when the test has no questions.
+     */
+    answers?: Array<string>;
+    /**
+     * Ignored: the server scores `answers` against the session's test.
+     * Accepted only so the old web's request stays valid (phase 9).
+     *
+     * @deprecated
+     */
+    score?: number;
 };
 
 export type RemediationQuestion = {
@@ -6168,14 +6181,18 @@ export type Window = '7d' | '28d' | '90d';
 /**
  * One thing to act on.
  *
- * `id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,
- * `returned_for_revision`, `feedback_released`, `needs_grading`,
- * `sla_breach`, `awaiting_release`).
+ * `id` is stable across calls; `kind` names the situation. `title`,
+ * `description` and `primary_action` are English (the old web);
+ * `message_key` + `message_params` are the translatable form.
  */
 export type WorkItem = {
     activity_id: ActivityId;
     activity_title: string;
     allowed_actions: Array<string>;
+    /**
+     * Teacher items: the file-submission attempt under review (absent otherwise).
+     */
+    attempt_id?: FileAttemptId;
     course_id: CourseId;
     course_title: string;
     created_at_unix: UnixTime | null;
@@ -6186,18 +6203,61 @@ export type WorkItem = {
      */
     href: string;
     id: string;
+    /**
+     * A [`WorkKind`] value (the schema keeps `string` while clients'
+     * fixtures catch up; the `kind` filter is typed).
+     */
     kind: string;
+    /**
+     * Teacher items: the learner's display name, else username (absent otherwise).
+     */
+    learner_name?: string;
+    /**
+     * Always present on this server (optional in the schema so earlier
+     * clients' fixtures stay valid).
+     */
+    message_key?: WorkMessageKey;
+    /**
+     * Always present, like `message_key`.
+     */
+    message_params?: WorkMessageParams;
     primary_action: string;
     priority: WorkPriority;
     role: WorkRole;
+    /**
+     * A [`WorkStatus`] value (typed as `string`, like `kind`).
+     */
     status: string;
+    /**
+     * Teacher items: the assessment submission under review (absent otherwise).
+     */
+    submission_id?: SubmissionId;
     title: string;
+};
+
+/**
+ * The message an item shows: the client renders `work_<key>_title`,
+ * `_description` and `_action` with [`WorkMessageParams`] (the English
+ * `title` / `description` / `primary_action` stay for the old web).
+ */
+export type WorkMessageKey = 'revise' | 'awaiting_feedback' | 'review_feedback' | 'continue' | 'grade' | 'release';
+
+/**
+ * Placeholders of a [`WorkMessageKey`].
+ */
+export type WorkMessageParams = {
+    activity: string;
+    course: string;
+    /**
+     * The learner's display name (teacher items).
+     */
+    learner: string | null;
 };
 
 export type WorkPriority = 'critical' | 'high' | 'normal' | 'low';
 
 /**
- * One page; `total` counts the whole queue before paging.
+ * One page; `total` counts the whole (filtered) queue before paging.
  */
 export type WorkQueue = {
     items: Array<WorkItem>;
@@ -15639,11 +15699,23 @@ export type WorkQueueData = {
          */
         role?: WorkRole | null;
         /**
+         * Items of this kind only.
+         */
+        kind?: unknown | null;
+        /**
+         * Items of this course only.
+         */
+        course_id?: CourseId | null;
+        /**
+         * Order; default `priority`.
+         */
+        sort?: unknown | null;
+        /**
          * 1..=100 (default 50).
          */
         limit?: number | null;
         /**
-         * `next_cursor` of the previous page (opaque).
+         * `next_cursor` of the previous page (opaque; same filters and order).
          */
         cursor?: string | null;
     };

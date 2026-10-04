@@ -13520,16 +13520,23 @@
       "RemediationCompletionRequest": {
         "additionalProperties": false,
         "properties": {
+          "answers": {
+            "description": "The learner's answer to each practice question, in order (a missing\nor blank answer is wrong). Scored server-side: an answer equal to the\nquestion's `answer` (trimmed, case- and space-insensitive) is right;\nround(100 x right / all), 100 when the test has no questions.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
           "score": {
+            "deprecated": true,
+            "description": "Ignored: the server scores `answers` against the session's test.\nAccepted only so the old web's request stays valid (phase 9).",
             "format": "int32",
             "maximum": 100,
             "minimum": 0,
             "type": "integer"
           }
         },
-        "required": [
-          "score"
-        ],
         "type": "object"
       },
       "RemediationQuestion": {
@@ -18604,7 +18611,7 @@
         "type": "string"
       },
       "WorkItem": {
-        "description": "One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).",
+        "description": "One thing to act on.\n\n`id` is stable across calls; `kind` names the situation. `title`,\n`description` and `primary_action` are English (the old web);\n`message_key` + `message_params` are the translatable form.",
         "properties": {
           "activity_id": {
             "$ref": "#/components/schemas/ActivityId"
@@ -18617,6 +18624,10 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "attempt_id": {
+            "$ref": "#/components/schemas/FileAttemptId",
+            "description": "Teacher items: the file-submission attempt under review (absent otherwise)."
           },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
@@ -18655,7 +18666,20 @@
             "type": "string"
           },
           "kind": {
+            "description": "A [`WorkKind`] value (the schema keeps `string` while clients'\nfixtures catch up; the `kind` filter is typed).",
             "type": "string"
+          },
+          "learner_name": {
+            "description": "Teacher items: the learner's display name, else username (absent otherwise).",
+            "type": "string"
+          },
+          "message_key": {
+            "$ref": "#/components/schemas/WorkMessageKey",
+            "description": "Always present on this server (optional in the schema so earlier\nclients' fixtures stay valid)."
+          },
+          "message_params": {
+            "$ref": "#/components/schemas/WorkMessageParams",
+            "description": "Always present, like `message_key`."
           },
           "primary_action": {
             "type": "string"
@@ -18667,7 +18691,12 @@
             "$ref": "#/components/schemas/WorkRole"
           },
           "status": {
+            "description": "A [`WorkStatus`] value (typed as `string`, like `kind`).",
             "type": "string"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/SubmissionId",
+            "description": "Teacher items: the assessment submission under review (absent otherwise)."
           },
           "title": {
             "type": "string"
@@ -18693,6 +18722,42 @@
         ],
         "type": "object"
       },
+      "WorkMessageKey": {
+        "description": "The message an item shows: the client renders `work_<key>_title`,\n`_description` and `_action` with [`WorkMessageParams`] (the English\n`title` / `description` / `primary_action` stay for the old web).",
+        "enum": [
+          "revise",
+          "awaiting_feedback",
+          "review_feedback",
+          "continue",
+          "grade",
+          "release"
+        ],
+        "type": "string"
+      },
+      "WorkMessageParams": {
+        "description": "Placeholders of a [`WorkMessageKey`].",
+        "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "course": {
+            "type": "string"
+          },
+          "learner": {
+            "description": "The learner's display name (teacher items).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "activity",
+          "course",
+          "learner"
+        ],
+        "type": "object"
+      },
       "WorkPriority": {
         "enum": [
           "critical",
@@ -18703,7 +18768,7 @@
         "type": "string"
       },
       "WorkQueue": {
-        "description": "One page; `total` counts the whole queue before paging.",
+        "description": "One page; `total` counts the whole (filtered) queue before paging.",
         "properties": {
           "items": {
             "items": {
@@ -20333,7 +20398,7 @@
             "description": "The session is already passed"
           }
         },
-        "summary": "The learner records a score; 70 or more passes (and lifts a gate).",
+        "summary": "The learner hands in the practice answers; the server scores them and 70\nor more passes (and lifts a gate). A posted `score` is ignored.",
         "tags": [
           "ai"
         ]
@@ -35373,7 +35438,7 @@
     },
     "/api/v2/work": {
       "get": {
-        "description": "`role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade\nor release across the courses the caller created or co-authors. Sorted\nby priority, then due/created time, then id; paged by an opaque cursor.",
+        "description": "`role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade\nor release across the courses the caller created or co-authors. `kind` and\n`course_id` filter; `sort` orders (default: priority, then due/created\ntime, then id). Paged by an opaque cursor (same filters and order).",
         "operationId": "work_queue",
         "parameters": [
           {
@@ -35385,6 +35450,54 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/WorkRole"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Items of this kind only.",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/WorkKind"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Items of this course only.",
+            "in": "query",
+            "name": "course_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CourseId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "description": "Order; default `priority`.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/WorkSort"
                 },
                 {
                   "type": "null"
@@ -35405,7 +35518,7 @@
             }
           },
           {
-            "description": "`next_cursor` of the previous page (opaque).",
+            "description": "`next_cursor` of the previous page (opaque; same filters and order).",
             "in": "query",
             "name": "cursor",
             "required": false,

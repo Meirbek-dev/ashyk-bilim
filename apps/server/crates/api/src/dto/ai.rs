@@ -447,9 +447,19 @@ pub struct RemediationRequest {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RemediationCompletionRequest {
+    /// Ignored: the server scores `answers` against the session's test.
+    /// Accepted only so the old web's request stays valid (phase 9).
     #[garde(range(min = 0, max = 100))]
-    #[schema(minimum = 0, maximum = 100)]
-    pub score: i32,
+    #[schema(minimum = 0, maximum = 100, deprecated)]
+    pub score: Option<i32>,
+    /// The learner's answer to each practice question, in order (a missing
+    /// or blank answer is wrong). Scored server-side: an answer equal to the
+    /// question's `answer` (trimmed, case- and space-insensitive) is right;
+    /// round(100 x right / all), 100 when the test has no questions.
+    #[garde(length(max = 100), inner(length(chars, max = 4000)))]
+    #[schema(max_items = 100)]
+    #[serde(default)]
+    pub answers: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]

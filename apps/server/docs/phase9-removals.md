@@ -66,6 +66,7 @@ Started by L-6 (2026-10-04); every later lane appends here.
 | field | `Usergroup.can_write` | `allowed_actions` | L-3 |
 | field | `CoursePermissions.can_discover`, `.can_access`, `.can_enroll` | `allowed_actions` on the course / learner state | L-3 |
 | field | `Profile.locale` (legacy `ru-RU` form) | `Profile.language` | L-5 (D-03) |
+| field | `RemediationCompletionRequest.score` (deprecated, ignored: the server scores `answers`) | `RemediationCompletionRequest.answers` | S-GAPS-2 (REM-SCORE) |
 | behaviour | 204 on role assign/unassign, user status, members, role writes without `Prefer` | always `return=representation` | L-3 |
 | behaviour | 409 for a stale submission draft without `If-Match` | 412 with `If-Match` required | L-3 |
 | behaviour | `GET /code/languages` 503 when Judge0 is unset | `runner_configured: false` | L-6 |

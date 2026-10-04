@@ -404,3 +404,74 @@ async fn assessment_stats_filter_by_group(pool: PgPool) {
         StatusCode::FORBIDDEN
     );
 }
+
+// ── S-GAPS-2 ────────────────────────────────────────────────────────────────
+
+/// INBOX-DATA: teacher items carry the submission, the learner and a
+/// translatable message; `kind` / `course_id` filter, `sort` pages by
+/// its own key.
+#[sqlx::test(migrations = "../../migrations")]
+async fn work_queue_items_name_the_work_and_filter(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let (course_id, _) = essay_quiz(&app, &teacher, [&alice, &bob]).await;
+
+    let page = app.get_as(&teacher, "/api/v2/work?role=teacher").await;
+    assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+    let page = page.json();
+    assert_eq!(page["total"], 2);
+    let item = &page["items"][0];
+    assert_eq!(item["kind"], "needs_grading");
+    assert_eq!(item["message_key"], "grade");
+    assert_eq!(item["message_params"]["activity"], "Essay");
+    assert_eq!(item["message_params"]["course"], "Gaps");
+    assert!(item["submission_id"].is_string(), "{item}");
+    assert!(item["attempt_id"].is_null());
+    let names: Vec<String> = page["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| s(&i["learner_name"]))
+        .collect();
+    assert!(names.contains(&"alice".to_owned()), "{names:?}");
+
+    let only = |q: &str| format!("/api/v2/work?role=teacher&{q}");
+    let kind = app.get_as(&teacher, &only("kind=sla_breach")).await.json();
+    assert_eq!(kind["total"], 0);
+    let other = uuid::Uuid::now_v7();
+    let course = app
+        .get_as(&teacher, &only(&format!("course_id={other}")))
+        .await
+        .json();
+    assert_eq!(course["total"], 0);
+    let mine = app
+        .get_as(&teacher, &only(&format!("course_id={course_id}")))
+        .await
+        .json();
+    assert_eq!(mine["total"], 2);
+
+    // `sort=newest`, one per page: two pages, each item once.
+    let first = app
+        .get_as(&teacher, &only("sort=newest&limit=1"))
+        .await
+        .json();
+    let cursor = s(&first["next_cursor"]);
+    let second = app
+        .get_as(
+            &teacher,
+            &only(&format!("sort=newest&limit=1&cursor={cursor}")),
+        )
+        .await
+        .json();
+    assert_ne!(first["items"][0]["id"], second["items"][0]["id"]);
+    assert!(second["next_cursor"].is_null());
+    let bad = app.get_as(&teacher, &only("sort=sideways")).await;
+    assert_eq!(
+        bad.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        bad.text()
+    );
+}

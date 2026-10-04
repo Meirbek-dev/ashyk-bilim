@@ -544,7 +544,8 @@ export const remediationSessionOptions = (options: Options<RemediationSessionDat
 });
 
 /**
- * The learner records a score; 70 or more passes (and lifts a gate).
+ * The learner hands in the practice answers; the server scores them and 70
+ * or more passes (and lifts a gate). A posted `score` is ignored.
  */
 export const completeRemediationMutation = (options?: Partial<Options<CompleteRemediationData>>): UseMutationOptions<CompleteRemediationResponse, CompleteRemediationError, Options<CompleteRemediationData>> => {
     const mutationOptions: UseMutationOptions<CompleteRemediationResponse, CompleteRemediationError, Options<CompleteRemediationData>> = {
@@ -6257,8 +6258,9 @@ export const workQueueQueryKey = (options?: Options<WorkQueueData>) => createQue
  * Ranked work items for the caller.
  *
  * `role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade
- * or release across the courses the caller created or co-authors. Sorted
- * by priority, then due/created time, then id; paged by an opaque cursor.
+ * or release across the courses the caller created or co-authors. `kind` and
+ * `course_id` filter; `sort` orders (default: priority, then due/created
+ * time, then id). Paged by an opaque cursor (same filters and order).
  */
 export const workQueueOptions = (options?: Options<WorkQueueData>) => queryOptions<WorkQueueResponse, WorkQueueError, WorkQueueResponse, ReturnType<typeof workQueueQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -6279,8 +6281,9 @@ export const workQueueInfiniteQueryKey = (options?: Options<WorkQueueData>): Que
  * Ranked work items for the caller.
  *
  * `role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade
- * or release across the courses the caller created or co-authors. Sorted
- * by priority, then due/created time, then id; paged by an opaque cursor.
+ * or release across the courses the caller created or co-authors. `kind` and
+ * `course_id` filter; `sort` orders (default: priority, then due/created
+ * time, then id). Paged by an opaque cursor (same filters and order).
  */
 export const workQueueInfiniteOptions = (options?: Options<WorkQueueData>) => {
     const opts = infiniteQueryOptions<WorkQueueResponse, WorkQueueError, InfiniteData<WorkQueueResponse>, QueryKey<Options<WorkQueueData>>, string | null | Pick<QueryKey<Options<WorkQueueData>>[0], 'body' | 'headers' | 'path' | 'query'>>(

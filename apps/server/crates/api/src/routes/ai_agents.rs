@@ -731,7 +731,8 @@ pub async fn latest_remediation(
     Ok(Json(latest.map(Into::into)))
 }
 
-/// The learner records a score; 70 or more passes (and lifts a gate).
+/// The learner hands in the practice answers; the server scores them and 70
+/// or more passes (and lifts a gate). A posted `score` is ignored.
 #[utoipa::path(
     post, path = "/ai/remediation/sessions/{session_id}/complete", tag = "ai",
     params(("session_id" = AiRemediationSessionId, Path, description = "Session id")),
@@ -759,7 +760,7 @@ pub async fn complete_remediation(
     Ok(Json(
         state
             .ai
-            .complete_remediation(&actor, session_id, request.score)
+            .complete_remediation(&actor, session_id, &request.answers)
             .await?
             .into(),
     ))

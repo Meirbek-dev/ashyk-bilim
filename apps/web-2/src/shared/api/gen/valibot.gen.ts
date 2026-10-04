@@ -2499,7 +2499,8 @@ export const vReleaseState = v.picklist([
 ]);
 
 export const vRemediationCompletionRequest = v.strictObject({
-    score: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100))
+    answers: v.optional(v.pipe(v.array(v.string()), v.maxLength(100))),
+    score: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100)))
 });
 
 export const vRemediationQuestion = v.object({
@@ -5490,6 +5491,29 @@ export const vWindow = v.picklist([
     '90d'
 ]);
 
+/**
+ * The message an item shows: the client renders `work_<key>_title`,
+ * `_description` and `_action` with [`WorkMessageParams`] (the English
+ * `title` / `description` / `primary_action` stay for the old web).
+ */
+export const vWorkMessageKey = v.picklist([
+    'revise',
+    'awaiting_feedback',
+    'review_feedback',
+    'continue',
+    'grade',
+    'release'
+]);
+
+/**
+ * Placeholders of a [`WorkMessageKey`].
+ */
+export const vWorkMessageParams = v.object({
+    activity: v.string(),
+    course: v.string(),
+    learner: v.nullable(v.string())
+});
+
 export const vWorkPriority = v.picklist([
     'critical',
     'high',
@@ -5505,14 +5529,15 @@ export const vWorkRole = v.picklist(['learner', 'teacher']);
 /**
  * One thing to act on.
  *
- * `id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,
- * `returned_for_revision`, `feedback_released`, `needs_grading`,
- * `sla_breach`, `awaiting_release`).
+ * `id` is stable across calls; `kind` names the situation. `title`,
+ * `description` and `primary_action` are English (the old web);
+ * `message_key` + `message_params` are the translatable form.
  */
 export const vWorkItem = v.object({
     activity_id: vActivityId,
     activity_title: v.string(),
     allowed_actions: v.array(v.string()),
+    attempt_id: v.optional(vFileAttemptId),
     course_id: vCourseId,
     course_title: v.string(),
     created_at_unix: v.nullable(vUnixTime),
@@ -5521,15 +5546,19 @@ export const vWorkItem = v.object({
     href: v.string(),
     id: v.string(),
     kind: v.string(),
+    learner_name: v.optional(v.string()),
+    message_key: v.optional(vWorkMessageKey),
+    message_params: v.optional(vWorkMessageParams),
     primary_action: v.string(),
     priority: vWorkPriority,
     role: vWorkRole,
     status: v.string(),
+    submission_id: v.optional(vSubmissionId),
     title: v.string()
 });
 
 /**
- * One page; `total` counts the whole queue before paging.
+ * One page; `total` counts the whole (filtered) queue before paging.
  */
 export const vWorkQueue = v.object({
     items: v.array(vWorkItem),
@@ -8950,6 +8979,9 @@ export const vLinkPreviewResponse = vLinkPreview;
 
 export const vWorkQueueQuery = v.object({
     role: v.nullish(vWorkRole),
+    kind: v.nullish(v.unknown()),
+    course_id: v.nullish(vCourseId),
+    sort: v.nullish(v.unknown()),
     limit: v.nullish(v.pipe(v.number(), v.integer())),
     cursor: v.nullish(v.string())
 });
