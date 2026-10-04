@@ -23,7 +23,7 @@ export default defineConfig({
     timezoneId: 'Asia/Almaty',
     trace: 'retain-on-failure',
     // E2E_INSECURE=1: the stand's self-signed certificate (https, so the Secure session cookie works; spec 9).
-    // The fixtures' Node fetch trusts it through NODE_EXTRA_CA_CERTS (`just web2-e2e`).
+    // The fixtures' Node fetch trusts it through NODE_EXTRA_CA_CERTS (`just web-e2e`).
     ignoreHTTPSErrors: process.env['E2E_INSECURE'] === '1',
   },
   projects: [

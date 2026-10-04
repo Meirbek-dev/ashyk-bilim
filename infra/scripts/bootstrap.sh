@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Idempotent initialization of the stack in STACK=dev|prod|smoke (default prod):
+# Idempotent initialization of the stack in STACK=dev|prod|smoke|e2e (default prod):
 # data services + init jobs (roles/DBs, Zitadel, buckets), Zitadel PAT into the
 # server env, migrations, Judge0 tuning. Safe to re-run; changes nothing when done.
 # The app tier is started by `just stack-up` / `just deploy`, not here.

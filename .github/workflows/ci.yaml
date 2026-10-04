@@ -1,7 +1,5 @@
-# One workflow for gates, images, stack smoke and publish. Only release/** branches
-# publish: server, the frozen old web (the rollback target until Ф9) and, when web2-e2e
-# is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md). main cannot
-# build the old web (QUESTIONS.md Q-2026-10-03-1), so it publishes nothing until Ф9.
+# One workflow for gates, images, stack smoke, e2e and publish, so every green main (or
+# release/**) commit gets BOTH images (ashyq-server, ashyq-web) under the same <sha> tag.
 # Pull requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
 # only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
 name: ci
@@ -32,9 +30,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      # Not forced on release/**: the old web no longer builds from main; publish carries it.
-      web: ${{ steps.filter.outputs.web == 'true' }}
-      web2: ${{ steps.filter.outputs.web2 == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
     steps:
@@ -45,19 +41,12 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
-            # Frozen old web (G-13): only its image, and only when it changed (Legacy-Hotfix,
-            # from a release/stage1 lineage). Its catalogs are Paraglide since 34d8cd2, so it no
-            # longer builds on main (QUESTIONS.md Q-2026-10-03-1).
             web:
               - 'apps/web/**'
-              - 'package.json'
-              - 'bun.lock'
-            web2:
-              - 'apps/web-2/**'
               - 'apps/server/openapi.v2.json'
               - '.node-version'
               # the e2e stand and this workflow
-              - 'compose.web2.yaml'
+              - 'compose.smoke.yaml'
               - 'justfile'
               - '.github/workflows/ci.yaml'
             infra:
@@ -191,24 +180,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
-  # production build with chunk budgets. The freeze gate (G-13) needs the pushed range and origin/main.
-  web2-gates:
+  # `vp run verify` = check + tests + gates.ts (apps/web/AGENTS.md), then the production
+  # build with chunk budgets.
+  web-gates:
     needs: changes
-    if: needs.changes.outputs.web2 == 'true'
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: apps/web-2
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: apps/web-2/package.json
+          bun-version-file: apps/web/package.json
 
       - uses: actions/setup-node@v7
         with:
@@ -224,8 +211,6 @@ jobs:
         run: bun run codegen
 
       - name: Verify (check, tests, gates)
-        env:
-          GATES_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bun run verify
 
       - name: Build with chunk budgets
@@ -243,30 +228,9 @@ jobs:
       packages: write
     strategy:
       matrix:
-        # web (frozen) only when it changed; web-2 (no build args) when it changed or on release branches.
-        image: >-
-          ${{ fromJSON(format('["server"{0}{1}]',
-          needs.changes.outputs.web == 'true' && ',"web"' || '',
-          needs.changes.outputs.web2 == 'true' && ',"web-2"' || '')) }}
+        image: [server, web]
     steps:
       - uses: actions/checkout@v7
-
-      # stage-2: the only Next-specific spot; the old web image is bound to the
-      # prod domain. (Not a matrix `include`: that would add `web` to every run.)
-      - name: Web build args from PROD_DOMAIN
-        id: args
-        if: matrix.image == 'web'
-        env:
-          D: ${{ vars.PROD_DOMAIN }}
-        run: |
-          test -n "$D" || { echo "::error::repository variable PROD_DOMAIN is not set"; exit 1; }
-          {
-            echo 'list<<EOF'
-            echo "NEXT_PUBLIC_SITE_URL=https://$D/"
-            echo "NEXT_PUBLIC_API_URL=https://$D/api/v2/"
-            echo "NEXT_PUBLIC_MEDIA_URL=https://$D/"
-            echo 'EOF'
-          } >>"$GITHUB_OUTPUT"
 
       # The release compile ran out of disk on stock runners (runs #45/#46). Today's runners
       # have ~75 GB free and the rm costs ~3 min, so only when short.
@@ -293,7 +257,6 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          build-args: ${{ steps.args.outputs.list }}
           cache-from: type=gha,scope=${{ matrix.image }}-image
           cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
 
@@ -310,8 +273,6 @@ jobs:
     env:
       IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
       SMOKE_RESOLVE_IP: 127.0.0.1
-      # No old web image built (main, apps/web unchanged): the stub web from the start.
-      WEB_IMAGE: ${{ needs.changes.outputs.web != 'true' && 'ashyq-stub-web:ci' || '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -325,57 +286,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Stub web image
-        run: docker build -t ashyq-stub-web:ci infra/smoke/stub-web
-
       - name: Stack up (from scratch, bootstrap included)
         run: just stack-up
 
       - name: Smoke
         run: just smoke
 
-      # R-09: the edge must not depend on Next.js. Swap web for a stub and
+      # R-09: the edge must not depend on the web app. Swap web for a stub and
       # smoke again; only web and nginx are recreated.
       - name: Smoke with stub web
-        if: env.WEB_IMAGE == ''
         env:
           WEB_IMAGE: ashyq-stub-web:ci
         run: |
+          docker build -t "$WEB_IMAGE" infra/smoke/stub-web
           bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --pull never --force-recreate --wait web nginx'
-          just smoke
-
-      # stage-2: the web rollback target (frozen old web, what publish tags ashyq-web:<sha>)
-      # against this release's server.
-      - name: Smoke with the published old web
-        if: needs.changes.outputs.web != 'true' && startsWith(github.ref, 'refs/heads/release/')
-        env:
-          WEB_IMAGE: ${{ env.IMAGE_REPO }}/ashyq-web:latest
-        run: |
-          bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --force-recreate --wait web nginx'
-          just smoke
-
-      # Stage 2 cutover switch (docs/STAGE-2-CUTOVER.md): the new web under compose.prod.yaml's
-      # own web block (PUBLIC_ORIGIN, INTERNAL_API_URL), selected by WEB_IMAGE_NAME only.
-      - name: Smoke with the new web
-        if: needs.changes.outputs.web2 == 'true'
-        env:
-          WEB_IMAGE: ''
-          WEB_IMAGE_NAME: ashyq-web-2
-          WEB_MEMORY: 512m
-        run: |
-          bash -c 'source infra/scripts/lib.sh && use_smoke && compose up -d --no-deps --no-build --force-recreate --wait web nginx'
           just smoke
 
       - name: Compose logs
         if: failure()
         run: bash -c 'source infra/scripts/lib.sh && use_smoke && compose ps -a && compose logs --no-color --timestamps --tail 500'
 
-  # G-06 (spec section 9): Playwright against ashyq-web-2:ci-<sha> on the seeded stand
-  # (`just web2-*`, docs/INFRA.md "Stage 2 e2e stand"). Secret E2E_PASSWORD is optional:
-  # without it the stand seeds a random password per run. Three shards, each on its own stand.
-  web2-e2e:
+  # G-06: Playwright against ashyq-web:ci-<sha> on the seeded stand (`just web-*`,
+  # docs/INFRA.md "e2e stand"). Secret E2E_PASSWORD is optional: without it the stand
+  # seeds a random password per run. Three shards, each on its own stand.
+  web-e2e:
     needs: [changes, images]
-    if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
+    if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -397,7 +333,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: apps/web-2/package.json
+          bun-version-file: apps/web/package.json
 
       - uses: actions/setup-node@v7
         with:
@@ -416,10 +352,10 @@ jobs:
       # The stand comes up while Playwright installs (~1 min saved); its log and exit code are
       # collected by "Stand up" below.
       - name: Stand up in the background (from scratch, bootstrap included)
-        run: (set +e; just web2-stand-up >"$RUNNER_TEMP/stand.log" 2>&1; echo $? >"$RUNNER_TEMP/stand.rc") </dev/null >/dev/null 2>&1 &
+        run: (set +e; just web-stand-up >"$RUNNER_TEMP/stand.log" 2>&1; echo $? >"$RUNNER_TEMP/stand.rc") </dev/null >/dev/null 2>&1 &
 
       - name: Playwright dependencies
-        working-directory: apps/web-2
+        working-directory: apps/web
         run: |
           bun install --frozen-lockfile
           bun run codegen
@@ -433,7 +369,7 @@ jobs:
 
       # Also the learner pool (E2E_LEARNERS, default 250): the stand caps self-registration at 10/h.
       - name: Seed
-        run: just web2-seed
+        run: just web-seed
 
       # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
@@ -443,35 +379,32 @@ jobs:
         env:
           PLAYWRIGHT_HTML_OPEN: never
           PWTEST_SHARD_WEIGHTS: '9:6:5'
-        run: just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
+        run: just web-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
 
       - name: Compose logs
         if: failure()
-        run: bash -c 'source infra/scripts/lib.sh && use_web2 && compose ps -a && compose logs --no-color --timestamps --tail 500'
+        run: bash -c 'source infra/scripts/lib.sh && use_e2e && compose ps -a && compose logs --no-color --timestamps --tail 500'
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: web2-e2e-${{ needs.changes.outputs.sha }}-${{ matrix.shard }}
+          name: web-e2e-${{ needs.changes.outputs.sha }}-${{ matrix.shard }}
           path: |
-            apps/web-2/playwright-report/
-            apps/web-2/test-results/
-            tmp/web2/server.log
+            apps/web/playwright-report/
+            apps/web/test-results/
+            tmp/e2e/server.log
           retention-days: 7
 
       - name: Stand down
         if: always()
-        run: just web2-stand-down
+        run: just web-stand-down
 
   publish:
-    needs: [changes, server-lint, server-test, web2-gates, infra-gates, stack-smoke, web2-e2e]
-    # Release branches only (every gate runs there). A red web2-e2e withholds ashyq-web-2 but
-    # not a server release; any red gate withholds everything (images no longer wait for gates).
+    needs: [changes, server-lint, server-test, web-gates, infra-gates, stack-smoke, web-e2e]
+    # main and release/** only. Path-filtered gates may be skipped, never failed.
     if: >-
-      startsWith(github.ref, 'refs/heads/release/') && !cancelled() &&
-      needs.server-lint.result == 'success' && needs.server-test.result == 'success' &&
-      needs.web2-gates.result == 'success' && needs.infra-gates.result == 'success' &&
-      needs.stack-smoke.result == 'success'
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) &&
+      !failure() && !cancelled() && needs.stack-smoke.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -489,23 +422,8 @@ jobs:
       - name: Retag ci-<sha> as <sha> and latest (no rebuild)
         env:
           SHA: ${{ needs.changes.outputs.sha }}
-          WEB_BUILT: ${{ needs.changes.outputs.web }}
-          WEB2_E2E: ${{ needs.web2-e2e.result }}
         run: |
-          retag() {
-            local ref="$IMAGE_REPO/ashyq-$1"
+          for img in server web; do
+            ref="$IMAGE_REPO/ashyq-$img"
             docker buildx imagetools create -t "$ref:$SHA" -t "$ref:latest" "$ref:ci-$SHA"
-          }
-          retag server
-          # stage-2: deploy.sh needs ashyq-web:<sha> and the web rollback runs it; frozen, so
-          # unless a Legacy-Hotfix rebuilt it, <sha> is the newest published old web.
-          if [[ $WEB_BUILT == true ]]; then
-            retag web
-          else
-            docker buildx imagetools create -t "$IMAGE_REPO/ashyq-web:$SHA" "$IMAGE_REPO/ashyq-web:latest"
-          fi
-          if [[ $WEB2_E2E == success ]]; then
-            retag web-2
-          else
-            echo "::warning::ashyq-web-2:$SHA not published (web2-e2e: $WEB2_E2E)"
-          fi
+          done

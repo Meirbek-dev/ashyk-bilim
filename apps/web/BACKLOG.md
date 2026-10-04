@@ -1,12 +1,12 @@
 # Stage 2 backlog
 
-Spec: `docs/MODERNIZATION-STAGE-2.md`. Status: `todo` / `wip` / `done` / `blocked(<reason>)`.
+Spec: `docs/archive/MODERNIZATION-STAGE-2.md`. Status: `todo` / `wip` / `done` / `blocked(<reason>)`.
 Orchestrator updates this file; deleted in phase 9.
 
 Orchestration rules (not in the spec):
 
-- `apps/web-2` is a standalone bun project (own `bun.lock`, not in the root workspace) so the frozen
-  old web's Docker build is untouched. Root layout is decided again in 9.3.
+- `apps/web` (renamed in 9.4) is a standalone bun project (own `bun.lock`); the root workspace
+  went with the old web in 9.1.
 - All Rust work goes through one serialized server lane in the main tree (one cargo build at a time).
 - Web feature slices run in git worktrees (one per agent); the orchestrator merges them and
   regenerates `routeTree.gen.ts`. Subagents do not commit to `main`.
@@ -80,9 +80,9 @@ Orchestration (owner, 2026-10-04): at most 2 subagents at a time - one web (main
 W-1 done (1e3cfb7..3927410): client matches a05c210, L-5/L-6 adopted, storage-state logins; e2e 507/524 (`reports/W-1.md`).
 W-2 done (through 1ccc7a1): T-1 translations, event dedup by server time, remaining UI, G-07 and stub gates enforcing,
 CSP/Zod + KaTeX font + hydration fixes, REVIEW-1 web findings; e2e on the production build 658/671 (`reports/W-2.md`).
-C-2 done: `main` pushed, CI green except `web2-e2e` (before the W-2 fixes). P-8 done (41ce779): `docs/STAGE-2-CUTOVER.md`,
-compose switch variables, release publishing of `ashyq-web-2`. REVIEW-1 (independent review) + SEC-1 (5c6940a): user
-content inert on the web origin. FIN-1 done: `main` pushed through b28bdc2, CI green, `web2-e2e` 671/671 (run 37178939498); `docs/web/ACCEPTANCE.md`.
+C-2 done: `main` pushed, CI green except `web-e2e` (before the W-2 fixes). P-8 done (41ce779): `docs/STAGE-2-CUTOVER.md`,
+compose switch variables, release publishing of the new web image. REVIEW-1 (independent review) + SEC-1 (5c6940a): user
+content inert on the web origin. FIN-1 done: `main` pushed through b28bdc2, CI green, `web-e2e` 671/671 (run 37178939498); `docs/web/ACCEPTANCE.md`.
 Open before cutover: e2e on the owner's dependency bumps (b707d68), code arena must degrade when Judge0 is down,
 full `@judge0` run on the local stand, G-14 on the newest production backup.
 
@@ -103,7 +103,7 @@ full `@judge0` run on the local stand, G-14 on the newest production backup.
 | --- | ----------------------------------------------------------------- | ------ |
 | 0.1 | freeze `apps/web`, explicit workspaces, `.gitignore`              | done   |
 | 0.3 | skeleton: Start + Paraglide + hey-api + srvx, gates, hooks        | done   |
-| 0.4 | e2e stand: local + CI job `web2-e2e`                              | todo   |
+| 0.4 | e2e stand: local + CI job `web-e2e`                              | todo   |
 | 0.5 | assumptions recorded in `docs/DECISIONS.md`                       | done   |
 | 1.1 | DESIGN.md, tokens, typography, 63 themes                          | done   |
 | 1.2 | kit, templates, states, theme infra, G-15; shell, full route tree, nav | done   |
@@ -131,6 +131,6 @@ full `@judge0` run on the local stand, G-14 on the newest production backup.
 | 6.1 | grading, results, gradebook | done |
 | 6.2 | teach inbox                                                       | done   |
 | 6.3 | AI (panel, Q&A, analysis, critique, remediation, admin AI) | done |
-| 7   | hardening: CI green incl. web2-e2e 671/671; acceptance in `docs/web/ACCEPTANCE.md`; open items above | done (open items) |
-| 8   | cutover - prepared (`docs/STAGE-2-CUTOVER.md`); needs the owner: prod SSH, exam-free window, smoke accounts | blocked(owner) |
-| 9   | legacy removal after the 7-day window (`apps/server/docs/phase9-removals.md`, checklist in the cutover doc) | blocked(owner) |
+| 7   | hardening: CI green incl. web-e2e 671/671; acceptance in `docs/web/ACCEPTANCE.md`; open items above | done (open items) |
+| 8   | cutover: prod on the new web since 2026-10-04 10:50 UTC (release 9c88be2c); open: authenticated prod pass, 7-day watch (`docs/STAGE-2-CUTOVER.md`) | wip (owner) |
+| 9   | 9.1 old web, 9.2 Next config, 9.4 rename, 9.5 docs: done; 2.8 and 9.3 S-12 (`apps/server/docs/phase9-removals.md`) after the 7-day window | blocked(owner: window) |

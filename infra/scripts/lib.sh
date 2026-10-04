@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Sourced by every infra script: strict mode, ROOT (cwd = repo root), log/die,
 # `compose` (docker compose, else podman compose; env passes through) and the
-# stack selectors use_prod / use_dev / use_smoke / use_web2 / use_stack ($STACK).
+# stack selectors use_prod / use_dev / use_smoke / use_e2e / use_stack ($STACK).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -52,19 +52,18 @@ use_smoke() {
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
 }
 
-# Stage 2 e2e stand: the smoke stack with web = ashyq-web-2, https at the edge
-# (self-signed cert; the session cookie is Secure). Own project and server env.
-use_web2() {
-  export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-web2}
+# e2e stand: the smoke stack in its own project and server env, https at the edge
+# (self-signed cert; the session cookie is Secure).
+use_e2e() {
+  export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-e2e}
   use_smoke
-  export COMPOSE_FILE=$COMPOSE_FILE:compose.web2.yaml
   export PUBLIC_SCHEME=https FORCE_HTTPS=1
-  export SERVER_ENV_FILE=./tmp/web2/server.env
-  mkdir -p tmp/web2
+  export SERVER_ENV_FILE=./tmp/e2e/server.env
+  mkdir -p tmp/e2e
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
   # Seeded accounts' password: E2E_PASSWORD (CI secret), else a random one per stand.
-  [[ -s tmp/web2/e2e-password ]] || echo "E2e-$(openssl rand -hex 12)-Pw1" >tmp/web2/e2e-password
-  E2E_PASSWORD=${E2E_PASSWORD:-$(<tmp/web2/e2e-password)}
+  [[ -s tmp/e2e/e2e-password ]] || echo "E2e-$(openssl rand -hex 12)-Pw1" >tmp/e2e/e2e-password
+  E2E_PASSWORD=${E2E_PASSWORD:-$(<tmp/e2e/e2e-password)}
   export E2E_PASSWORD
 }
 
@@ -73,7 +72,7 @@ use_stack() {
     prod) use_prod ;;
     dev) use_dev ;;
     smoke) use_smoke ;;
-    web2) use_web2 ;;
-    *) die "STACK must be dev, prod, smoke or web2 (got '$STACK')" ;;
+    e2e) use_e2e ;;
+    *) die "STACK must be dev, prod, smoke or e2e (got '$STACK')" ;;
   esac
 }

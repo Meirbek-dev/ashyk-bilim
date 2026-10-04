@@ -1,7 +1,22 @@
-# Smoke overrides (CI stack-smoke, `just stack-up`), on top of compose.yaml +
-# compose.prod.yaml. Values: infra/env/smoke.env + a copy of smoke.server.env.
-# Plain http on ashyq.test (PUBLIC_SCHEME=http, FORCE_HTTPS=0); Judge0 profile off.
-# WEB_IMAGE=<stub> swaps the web app for infra/smoke/stub-web (edge is web-agnostic).
+# Test stacks on top of compose.yaml + compose.prod.yaml, values infra/env/smoke.env + a copy of
+# smoke.server.env. Judge0 profile off. Two users (infra/scripts/lib.sh):
+# - smoke (use_smoke, CI stack-smoke, `just stack-up`): plain http on ashyq.test
+#   (PUBLIC_SCHEME=http, FORCE_HTTPS=0). WEB_IMAGE=<stub> swaps the web app for
+#   infra/smoke/stub-web (edge is web-agnostic).
+# - e2e stand (use_e2e, `just web-*`): the same files, own project, PUBLIC_SCHEME=https and
+#   FORCE_HTTPS=1 (the session cookie is Secure); docs/INFRA.md "e2e stand".
+
+# The server presigns and calls storage at the public origin (nginx, self-signed cert on the
+# e2e stand): rustls-native-certs trusts SSL_CERT_FILE instead of the system store.
+# No Judge0 (profile off): a blank base URL turns the runner off, so `GET /code/runner` reads
+# "not configured" instead of a 503 from an unreachable runner. `@judge0` specs (CI:
+# --grep-invert) need the judge0 profile and E2E_JUDGE0_URL=http://judge0-server:2358.
+x-stand-cert: &stand-cert
+  environment:
+    SSL_CERT_FILE: /etc/ssl/stand/cert.pem
+    AB__JUDGE0__BASE_URL: ${E2E_JUDGE0_URL:-}
+  volumes:
+    - ${TLS_DIR:?}/cert.pem:/etc/ssl/stand/cert.pem:ro
 
 services:
   nginx:
@@ -9,3 +24,14 @@ services:
     ports: !override
       - '127.0.0.1:${HTTP_PORT:-80}:80'
       - '127.0.0.1:${HTTPS_PORT:-443}:443'
+
+  server: *stand-cert
+  worker: *stand-cert
+
+  # Test stacks only: bcrypt cost 14 (Zitadel's default, prod) is ~1 s of Zitadel's single CPU per
+  # hash, which serialized the 250-learner seed (~4.5 min) and every sign-in of the suite. 10 is
+  # Zitadel's floor for a stored hash (LIMITS_BCRYPT_MINCOST): with 4 a password change failed
+  # "Password is invalid" (B-SET-07, run 37185565326).
+  zitadel:
+    environment:
+      ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_HASHER_COST: 10

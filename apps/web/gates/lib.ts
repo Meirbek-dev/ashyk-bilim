@@ -11,7 +11,7 @@ export type Finding = { file: string; line?: number; rule: string; fix: string }
 
 export const read = (path: string): string => readFileSync(resolve(appDir, path), 'utf8')
 
-/** Files under `dir` (relative to apps/web-2) whose path matches `include`, generated code skipped. */
+/** Files under `dir` (relative to apps/web) whose path matches `include`, generated code skipped. */
 export function walk(dir: string, include: RegExp): string[] {
   const skip = /(^|\/)(node_modules|dist|paraglide|gen|gen\.check-tmp)(\/|$)|routeTree\.gen\.ts$/
   const found: string[] = []

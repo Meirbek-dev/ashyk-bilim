@@ -3,7 +3,7 @@
 import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
 import { allowlist, type Finding } from './lib.ts'
-import { budgets, codegenDrift, freeze, knip } from './repo.ts'
+import { budgets, codegenDrift, knip } from './repo.ts'
 import { apiCoverage, docs, suppressions, tokens, trace, underConstruction } from './source.ts'
 
 const MAX_LINES = 30
@@ -54,7 +54,6 @@ const GATES: Record<string, () => Finding[] | Promise<Finding[]>> = {
   trace, // G-10
   tokens, // G-11
   suppressions, // G-12
-  freeze, // G-13
   docs, // 8.2
   budgets, // G-05, needs `vp build`: not part of `all`
 }

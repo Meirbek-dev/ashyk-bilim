@@ -1,5 +1,5 @@
 # Build context is the repo root for apps/web/Dockerfile and apps/server/Dockerfile.
-# They need package.json, bun.lock, apps/web/** and apps/server/** (incl. .sqlx).
+# They need apps/web/** (own package.json and bun.lock) and apps/server/** (incl. .sqlx).
 
 # VCS, CI, editors, agents
 .git

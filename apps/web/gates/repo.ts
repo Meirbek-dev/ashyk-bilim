@@ -1,4 +1,4 @@
-// Gates that need tools or git: G-04 knip, G-05 budgets, G-09 codegen drift, G-13 freeze.
+// Gates that need tools or a build: G-04 knip, G-05 budgets, G-09 codegen drift.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -8,36 +8,7 @@ import * as v from 'valibot'
 
 import { INITIAL_MODULES, type InitialModules } from './bundle.ts'
 import { generateApi, generateRouteTree } from './codegen.ts'
-import { appDir, type Finding, read, repoDir } from './lib.ts'
-
-function git(args: string[]): { ok: boolean; out: string } {
-  const result = spawnSync('git', args, { cwd: repoDir, encoding: 'utf8' })
-  return { ok: result.status === 0, out: result.stdout.trim() }
-}
-
-export function freeze(): Finding[] {
-  const fix = 'apps/web is frozen (G-13): revert, or commit an emergency fix with a "Legacy-Hotfix: <reason>" trailer'
-  const status = git(['status', '--porcelain', '--', 'apps/web'])
-  if (!status.ok) return [{ file: 'apps/web', rule: 'freeze', fix: 'git status failed: the gate cannot run' }]
-  const findings: Finding[] = status.out
-    .split('\n')
-    .filter(Boolean)
-    .map(line => ({ file: `../../${line.slice(3)}`, rule: 'freeze', fix }))
-  // CI sets GATES_BASE to the pushed range start; locally the base is where HEAD left origin/main.
-  const base = process.env['GATES_BASE'] ?? git(['merge-base', 'HEAD', 'origin/main']).out
-  if (!base || !git(['rev-parse', '--verify', `${base}^{commit}`]).ok) {
-    return [
-      ...findings,
-      { file: 'apps/web', rule: 'freeze', fix: 'no base commit (set GATES_BASE or fetch origin/main)' },
-    ]
-  }
-  const log = git(['log', '--format=%h%x00%B%x01', `${base}..HEAD`, '--', 'apps/web'])
-  for (const commit of log.out.split('\x01').filter(entry => entry.trim())) {
-    const [hash, body = ''] = commit.trim().split('\x00')
-    if (!/^Legacy-Hotfix:\s*\S/m.test(body)) findings.push({ file: `commit ${hash}`, rule: 'freeze', fix })
-  }
-  return findings
-}
+import { appDir, type Finding, read } from './lib.ts'
 
 export function knip(): Finding[] {
   const result = spawnSync('bunx', ['knip', '--config', 'gates/knip.jsonc', '--no-progress', '--reporter', 'json'], {

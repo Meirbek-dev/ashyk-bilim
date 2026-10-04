@@ -21,7 +21,7 @@ export function newAccount(): NewAccount {
 }
 
 /**
- * The stand (`just web2-e2e`) caps self-registration at 10 per hour for everyone (nginx sets the address): with
+ * The stand (`just web-e2e`) caps self-registration at 10 per hour for everyone (nginx sets the address): with
  * E2E_LEARNERS=<n> and E2E_LEARNERS_DIR a test takes the next untaken `seed-e2e --learners <n>` account (verified,
  * E2E_PASSWORD). A taken one is a file in that directory, so parallel workers and reruns never share an account.
  */

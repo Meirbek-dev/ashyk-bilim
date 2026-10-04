@@ -1,15 +1,15 @@
-# ashyq-web-2: build with bun, run on Node 26 (spec 7.13). No build args: one image for any domain;
+# ashyq-web: build with bun, run on Node 26 (spec 7.13). No build args: one image for any domain;
 # PUBLIC_ORIGIN and INTERNAL_API_URL are read at startup (src/shared/lib/env.server.ts).
-# Build context is the repository root: podman build -f apps/web-2/Dockerfile .
+# Build context is the repository root: podman build -f apps/web/Dockerfile .
 # The root .dockerignore keeps host node_modules out of the context.
 
 FROM oven/bun:1.4.2-alpine AS deps
 WORKDIR /app
-COPY apps/web-2/package.json apps/web-2/bun.lock ./
+COPY apps/web/package.json apps/web/bun.lock ./
 RUN bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
-COPY apps/web-2/ ./
+COPY apps/web/ ./
 # `build` = vp build + the chunk budgets (G-05): an over-budget bundle fails the image.
 RUN bun run build
 
@@ -23,7 +23,7 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=runtime-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY apps/web-2/package.json apps/web-2/serve.ts ./
+COPY apps/web/package.json apps/web/serve.ts ./
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "web-2",
+      "name": "web",
       "dependencies": {
         "@ag-ui/client": "1.0.1",
         "@base-ui/react": "1.8.0",

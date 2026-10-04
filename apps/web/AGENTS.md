@@ -1,8 +1,8 @@
-# apps/web-2
+# apps/web
 
-The new web (stage 2): React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on
-Node 26. Standalone bun project (own `bun.lock`, not in the root workspace). The old `apps/web` is
-frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until its phase 9).
+The web: React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on Node 26.
+Standalone bun project (the repo root has no workspace). Image `ashyq-web` (`Dockerfile`, runtime config
+`PUBLIC_ORIGIN` + `INTERNAL_API_URL`). Spec history: `docs/archive/MODERNIZATION-STAGE-2.md`.
 
 ## Map
 
@@ -27,20 +27,20 @@ frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until 
 Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
 inside a feature use relative paths; across layers use `#/`. Lint enforces all of it.
 
-## Commands (run in apps/web-2)
+## Commands (run in apps/web)
 
-| Command                          | Does                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                                    |
-| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                          |
-| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                                               |
-| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
-| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
-| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
-| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                                    |
-| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
-| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
-| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
+| Command                          | Does                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                             |
+| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                   |
+| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                                        |
+| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                     |
+| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                     |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions docs budgets |
+| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                             |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                     |
+| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                  |
+| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                            |
 
 ## One way to do each thing (lint and gates reject the alternatives)
 
