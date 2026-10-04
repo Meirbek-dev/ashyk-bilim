@@ -534,10 +534,15 @@ impl Config {
             "ai": {},
             "telemetry": { "json_logs": false },
         });
-        let config: Self = Figment::from(Serialized::defaults(defaults))
+        let mut config: Self = Figment::from(Serialized::defaults(defaults))
             .merge(Env::prefixed(ENV_PREFIX).split("__"))
             .extract()
             .map_err(|e| Error::config(format!("failed to load configuration: {e}")))?;
+        // A blank `AB__JUDGE0__BASE_URL` turns the runner off: a compose overlay can
+        // blank a key but not unset it (the e2e stand runs without Judge0).
+        config
+            .judge0
+            .take_if(|judge0| judge0.base_url.trim().is_empty());
         config.validate()?;
         Ok(config)
     }
