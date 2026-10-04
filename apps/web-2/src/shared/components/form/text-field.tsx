@@ -1,4 +1,4 @@
-import { useId, type ComponentProps } from 'react'
+import { useEffect, useId, useRef, type ComponentProps } from 'react'
 
 import { Input } from '#/shared/ui/input'
 
@@ -16,9 +16,17 @@ export function TextField({ label, description, ...input }: TextFieldProps) {
   const field = useFieldContext<string | null | undefined>()
   const id = useId()
   const error = errorText(field.state.meta.errors)
+  const ref = useRef<HTMLInputElement>(null)
+  // On a server-rendered page, text typed before hydration is in the input but not in the form: take it over. Later
+  // renders find the two equal (the input is controlled), so this acts once.
+  useEffect(() => {
+    const typed = ref.current?.value
+    if (typed && typed !== (field.state.value ?? '')) field.handleChange(typed)
+  }, [field])
   return (
     <FieldShell id={id} label={label} description={description} error={error}>
       <Input
+        ref={ref}
         id={id}
         name={field.name}
         value={field.state.value ?? ''}
