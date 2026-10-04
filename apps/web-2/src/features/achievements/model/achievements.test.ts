@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { Profile } from '#/shared/api/gen/types.gen'
+import type { DisplaySettings, Profile } from '#/shared/api/gen/types.gen'
 
 import { activeStreak, homeStreak, levelProgress } from './achievements'
 
@@ -56,5 +56,13 @@ describe('achievements model', () => {
     expect(homeStreak(profile({ learning_streak: 4, last_learning_at_unix: NOW - 60 }), NOW)).toBe(4)
     expect(homeStreak(profile({ learning_streak: 4, last_learning_at_unix: NOW - 3 * DAY }), NOW)).toBeNull()
     expect(homeStreak(profile({ learning_streak: 0, last_learning_at_unix: NOW }), NOW)).toBeNull()
+  })
+
+  test('B-ACH-11 the /home line is hidden by either display switch', () => {
+    const live = { learning_streak: 4, last_learning_at_unix: NOW - 60 }
+    const off = (display: DisplaySettings) => profile({ ...live, settings: { ...profile({}).settings, display } })
+    expect(homeStreak(off({ animated_effects: null, compact_mode: null, show_streaks: false }), NOW)).toBeNull()
+    expect(homeStreak(off({ animated_effects: null, compact_mode: null, show_gamification: false }), NOW)).toBeNull()
+    expect(homeStreak(off({ animated_effects: null, compact_mode: null, show_streaks: true }), NOW)).toBe(4)
   })
 })

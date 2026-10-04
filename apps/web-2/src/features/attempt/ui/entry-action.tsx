@@ -68,7 +68,8 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const begin = () => {
     if (rules.includes('fullscreen')) void document.documentElement.requestFullscreen().catch(() => null)
     start.mutate(
-      { path: { assessment_id: assessment.id } },
+      // The consent to the rules is stored on the attempt (B-ATT-04); without rules there is nothing to accept.
+      { path: { assessment_id: assessment.id }, ...(rules.length ? { body: { rules_accepted: true } } : {}) },
       {
         onSuccess: attempt => {
           queryClient.setQueryData(submissionKey(attempt.id), attempt)

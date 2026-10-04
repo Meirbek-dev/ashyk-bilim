@@ -9,7 +9,8 @@ import { formatDate } from '#/shared/i18n/format'
 import { recommendedActionLabels, riskReasonLabels, whyNowLabels } from '../model/signals'
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
-import { interventionStatusLabels, interventionTypeLabels } from './labels'
+import { InterventionEditDialog } from './intervention-edit-dialog'
+import { interventionOutcomeLabels, interventionStatusLabels, interventionTypeLabels } from './labels'
 
 type LearnerSheetProps = {
   learnerId: UserId
@@ -72,7 +73,17 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
               <span className="text-muted-foreground">
                 {interventionStatusLabels[item.status]()} · {formatDate(item.created_at_unix)}
               </span>
+              {item.outcome_code ? (
+                <span>
+                  {m.analytics_intervention_outcome_is({ outcome: interventionOutcomeLabels[item.outcome_code]() })}
+                </span>
+              ) : null}
               {item.notes ? <span className="wrap-anywhere whitespace-pre-line">{item.notes}</span> : null}
+              {item.allowed_actions.includes('update') ? (
+                <div>
+                  <InterventionEditDialog item={item} />
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

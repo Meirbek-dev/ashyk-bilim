@@ -1,6 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type {
   DrillMetric,
+  InterventionOutcome,
   InterventionStatus,
   InterventionType,
   RiskLevel,
@@ -80,6 +81,13 @@ export const interventionTypeLabels = {
   meeting_scheduled: m.analytics_intervention_meeting_scheduled,
   learner_recovered: m.analytics_intervention_learner_recovered,
 } satisfies Record<InterventionType, () => string>
+
+export const interventionOutcomeLabels = {
+  improved: m.analytics_outcome_improved,
+  no_change: m.analytics_outcome_no_change,
+  worsened: m.analytics_outcome_worsened,
+  no_response: m.analytics_outcome_no_response,
+} satisfies Record<InterventionOutcome, () => string>
 
 export const interventionStatusLabels = {
   planned: m.analytics_intervention_status_planned,

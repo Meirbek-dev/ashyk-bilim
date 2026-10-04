@@ -1,6 +1,6 @@
 # analytics
 
-Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, listSavedViews, saveView, deleteView, getGroup, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
+Операции: teacherOverview, adminOverview, atRiskLearners, courseList, courseDetail, assessmentList, assessmentDetail, drillThrough, listInterventions, createIntervention, updateIntervention, listSavedViews, saveView, deleteView, getGroup, exportAtRisk, exportCourseProgress, exportAssessmentOutcomes, exportGradingBacklog
 
 ## Поведение
 
@@ -29,6 +29,8 @@
   открывается без фильтра группы, а не ошибкой 422.
 - B-ANL-23 Обзор: блоки "Требует внимания" (алерты) и "Наблюдения" (инсайты); успеваемость: "Прогнозы" и "Аномалии" (из ответа обзора). Пункт - важность словом (сведения / внимание / срочно) и фраза по `code` с подставленными `params`: числа, проценты и часы в формате языка, сигнал узкого места - словом; незнакомое значение параметра показывается как пришло. Пустой блок не показывается.
 - B-ANL-24 Зона риска: столбец "Почему сейчас" (`why_now`); панель учащегося - курс, почему сейчас, что сделать (`recommended_action`), признаки риска (`reason_codes`), последнее вмешательство (`last_intervention_type`); задания - столбец "Отклонения" (`outlier_reason_codes`). Тексты - исчерпывающие карты по enum.
+- B-ANL-26 Вмешательство в панели учащегося: итог (`outcome_code`) словами; «Изменить вмешательство» (есть в `allowed_actions`:
+  `update`) - статус (`resolved` только с `resolve`), итог, заметки; уходит с `If-Match`, 412 - диалог конфликта.
 - B-ANL-25 Сигнал (тревога, вывод, прогноз, аномалия) с `href` этого веба (`/teach/analytics/...`) - ссылка в нужную вкладку с фильтром; `/dash/...` старого веба и без `href` - просто текст.
 
 ## Изменено
@@ -47,7 +49,6 @@
 ## Ждёт сервера
 
 - `SavedView.query` и `SaveViewRequest.query` - словарь скаляров без схемы фильтров, `view_type` - строка: разбираем схемой фильтров (`/analytics/teacher/saved-views`).
-- `CreateInterventionRequest.outcome`, `Intervention.outcome`, `AtRiskLearnerRow.last_intervention_outcome` - строки, нужен enum (сейчас не показываются).
 - `params` (`MessageParams`) - словарь `string | number` без схемы по `code`: имена параметров читаются по описанию `AnalyticsCode`, нужен tagged union. `missing_event_sources` шлёт `sources` массивом вопреки схеме, поэтому блок качества данных не показывается.
 - Правка и закрытие вмешательства: операции нет.
 

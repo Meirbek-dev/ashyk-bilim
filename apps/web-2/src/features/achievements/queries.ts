@@ -6,11 +6,12 @@ import {
   dashboardQueryKey,
   leaderboardInfiniteQueryKey,
   recordStreakMutation,
+  xpHistoryInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { leaderboard } from '#/shared/api/gen/sdk.gen'
-import type { Dashboard, Leaderboard, StreakUpdate } from '#/shared/api/gen/types.gen'
+import { leaderboard, xpHistory } from '#/shared/api/gen/sdk.gen'
+import type { Dashboard, Leaderboard, StreakUpdate, XpHistoryPage } from '#/shared/api/gen/types.gen'
 
-import { LEADERBOARD_PAGE } from './model/achievements'
+import { LEADERBOARD_PAGE, XP_HISTORY_PAGE } from './model/achievements'
 
 /** Profile, the 10 latest XP awards and the viewer's rank; the same cache entry the settings page writes. */
 export const achievementsOptions = () => dashboardOptions()
@@ -61,9 +62,30 @@ export const leaderboardListOptions = () => {
   })
 }
 
-/** Route loader of /achievements: both reads in parallel. */
+/** The whole XP history, newest first, a keyset page at a time (B-ACH-12). */
+export const xpHistoryListOptions = () => {
+  const options = { query: { limit: XP_HISTORY_PAGE } }
+  return infiniteQueryOptions<
+    XpHistoryPage,
+    ApiError,
+    InfiniteData<XpHistoryPage>,
+    ReturnType<typeof xpHistoryInfiniteQueryKey>,
+    string | undefined
+  >({
+    queryKey: xpHistoryInfiniteQueryKey(options),
+    queryFn: async ({ pageParam, signal }) => {
+      const query = pageParam ? { ...options.query, cursor: pageParam } : options.query
+      return (await xpHistory({ query, signal, throwOnError: true })).data
+    },
+    initialPageParam: undefined,
+    getNextPageParam: page => page.next_cursor ?? undefined,
+  })
+}
+
+/** Route loader of /achievements: the reads in parallel. */
 export const ensureAchievements = (queryClient: QueryClient) =>
   Promise.all([
     queryClient.ensureQueryData(achievementsOptions()),
     queryClient.ensureInfiniteQueryData(leaderboardListOptions()),
+    queryClient.ensureInfiniteQueryData(xpHistoryListOptions()),
   ])

@@ -190,7 +190,7 @@ test('B-ATT-19 B-ATT-21 past the violation limit the hand-in scores zero and say
   await expect(page.getByText(m.attempt_auto_violation({}, ru))).toBeVisible()
 })
 
-test('B-ATT-04 B-ATT-21 B-ATT-18 an exam: rules accepted, copying reported, the grade waits for release', async ({
+test('B-ATT-04 B-ATT-21 B-ATT-18 an exam: rules accepted (stored), copying reported, the grade waits for release', async ({
   page,
   learner,
   makeQuiz,
@@ -204,7 +204,10 @@ test('B-ATT-04 B-ATT-21 B-ATT-18 an exam: rules accepted, copying reported, the 
   await page.goto(quiz.url)
   await expect(page.getByText(m.attempt_rule_copy_paste({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.attempt_start({}, ru) })).toBeDisabled()
+  const started = page.waitForResponse(answer => /\/assessments\/[^/]+\/submissions$/.test(answer.url()))
   await start(page, quiz, { consent: true })
+  expect((await started).request().postDataJSON()).toEqual({ rules_accepted: true })
+  expect(await (await started).json()).toMatchObject({ rules_accepted_at_unix: expect.any(Number) })
   await page.getByRole('heading', { level: 1, name: items.single.title }).click()
   await page.keyboard.press('ControlOrMeta+C')
   await expect(page.getByText(m.attempt_violations({ count: 1, threshold: 3 }, ru))).toBeVisible()

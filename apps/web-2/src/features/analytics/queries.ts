@@ -11,6 +11,7 @@ import {
   courseDetailOptions,
   courseListOptions,
   createInterventionMutation,
+  updateInterventionMutation,
   deleteViewMutation,
   drillThroughOptions,
   listInterventionsOptions,
@@ -92,6 +93,28 @@ export const createInterventionOptions = (queryClient: QueryClient, userId: User
     ),
   meta: { invalidates: [atRiskLearnersQueryKey(), teacherOverviewQueryKey()] },
 })
+
+/**
+ * The answer replaces the row in the learner's cached history. The at-risk rows and the overview count interventions
+ * and show the latest one's type, which a change of status or outcome leaves as they are: no reload.
+ */
+export const updateInterventionOptions = (queryClient: QueryClient, userId: UserId, courseId: CourseId) => ({
+  ...updateInterventionMutation(),
+  onSuccess: (updated: Intervention) =>
+    queryClient.setQueryData(interventionsOptions(userId, courseId).queryKey, (list: InterventionList | undefined) =>
+      list ? { ...list, items: list.items.map(item => (item.id === updated.id ? updated : item)) } : list,
+    ),
+})
+
+/** `If-Match` of an intervention: its version in the cached history (a retry after a 412 reads it first). */
+export const interventionVersion = (queryClient: QueryClient, item: Intervention) =>
+  queryClient
+    .getQueryData(interventionsOptions(item.user_id, item.course_id).queryKey)
+    ?.items.find(row => row.id === item.id)?.version ?? item.version
+
+/** A retry after a 412 reads the history again: the row's current `version`. */
+export const reloadInterventions = (queryClient: QueryClient, userId: UserId, courseId: CourseId) =>
+  queryClient.fetchQuery({ ...interventionsOptions(userId, courseId), staleTime: 0 })
 
 /** Saving overwrites the view of the same name and tab: the answer replaces it in the cached list or is added. */
 export const saveViewOptions = (queryClient: QueryClient) => ({

@@ -10,7 +10,12 @@ import { toast } from '#/shared/ui/toast'
 import { readSwitches, type GamificationSwitches } from '../model/settings'
 import { gamificationOptions, updatePreferencesOptions } from '../queries'
 
-const vSwitches = v.object({ xpGain: v.boolean(), showOnLeaderboard: v.boolean() })
+const vSwitches = v.object({
+  xpGain: v.boolean(),
+  showOnLeaderboard: v.boolean(),
+  showGamification: v.boolean(),
+  showStreaks: v.boolean(),
+})
 
 /** /settings/notifications: the gamification preferences the API has today (per-type notifications: S-07). */
 export function NotificationsPage() {
@@ -19,9 +24,15 @@ export function NotificationsPage() {
   const [defaultValues] = useState<GamificationSwitches>(() => readSwitches(data.profile.settings))
   const form = useAppForm(vSwitches, {
     defaultValues,
-    onSubmit: ({ xpGain, showOnLeaderboard }) =>
+    onSubmit: ({ xpGain, showOnLeaderboard, showGamification, showStreaks }) =>
       update.mutateAsync(
-        { body: { notifications: { xpGain }, privacy: { showOnLeaderboard } } },
+        {
+          body: {
+            notifications: { xpGain },
+            privacy: { showOnLeaderboard },
+            display: { showGamification, showStreaks },
+          },
+        },
         { onSuccess: () => toast.add({ title: m.settings_saved() }) },
       ),
   })
@@ -38,6 +49,17 @@ export function NotificationsPage() {
         {field => (
           <field.SwitchField label={m.settings_field_leaderboard()} description={m.settings_field_leaderboard_hint()} />
         )}
+      </form.AppField>
+      <form.AppField name="showGamification">
+        {field => (
+          <field.SwitchField
+            label={m.settings_field_gamification()}
+            description={m.settings_field_gamification_hint()}
+          />
+        )}
+      </form.AppField>
+      <form.AppField name="showStreaks">
+        {field => <field.SwitchField label={m.settings_field_streaks()} />}
       </form.AppField>
     </SettingsSection>
   )

@@ -66,7 +66,13 @@ describe('settings model', () => {
   })
 
   test('B-SET-13 the switches read the stored preferences and are on when unset', () => {
-    expect(readSwitches(settings(null, null))).toEqual({ xpGain: true, showOnLeaderboard: true })
-    expect(readSwitches(settings(false, false))).toEqual({ xpGain: false, showOnLeaderboard: false })
+    const on = { showGamification: true, showStreaks: true }
+    expect(readSwitches(settings(null, null))).toEqual({ xpGain: true, showOnLeaderboard: true, ...on })
+    expect(readSwitches(settings(false, false))).toEqual({ xpGain: false, showOnLeaderboard: false, ...on })
+  })
+
+  test('B-SET-16 the gamification and streak switches read display and are on when never set', () => {
+    const off = { ...settings(null, null), display: { ...settings(null, null).display, show_gamification: false } }
+    expect(readSwitches(off)).toMatchObject({ showGamification: false, showStreaks: true })
   })
 })

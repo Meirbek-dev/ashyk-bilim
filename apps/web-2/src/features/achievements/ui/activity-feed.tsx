@@ -1,16 +1,17 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
+import { ShowMore } from '#/shared/components/show-more'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
 
-import { achievementsOptions } from '../queries'
+import { xpHistoryListOptions } from '../queries'
 import { sourceLabel } from './source-labels'
 
-/** The latest XP awards (the API returns the 10 newest; no history operation yet). */
+/** Every XP award, newest first, with "Show more" by keyset cursor (B-ACH-12). */
 export function ActivityFeed() {
-  const query = useSuspenseQuery(achievementsOptions())
-  const awards = query.data.recent_transactions
+  const query = useSuspenseInfiniteQuery(xpHistoryListOptions())
+  const awards = query.data.pages.flatMap(page => page.items)
   return (
     <section aria-label={m.achievements_feed_title()} className="flex max-w-prose flex-col gap-3">
       <h2 className="text-xl font-semibold">{m.achievements_feed_title()}</h2>
@@ -35,6 +36,11 @@ export function ActivityFeed() {
           ))}
         </ul>
       </ListState>
+      <ShowMore
+        hasMore={query.hasNextPage}
+        pending={query.isFetchingNextPage}
+        onMore={() => void query.fetchNextPage()}
+      />
     </section>
   )
 }

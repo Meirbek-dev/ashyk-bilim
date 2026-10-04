@@ -32,13 +32,20 @@ export const vAppearance = v.object({ theme: v.string(), mode: v.picklist(MODES)
 export const startTheme = (profileTheme: string | null | undefined, shown: string, slugs: readonly string[]) =>
   profileTheme && slugs.includes(profileTheme) ? profileTheme : shown
 
-/** The two switches of the notifications page. An unset preference is on (the server's default). */
-export type GamificationSwitches = { xpGain: boolean; showOnLeaderboard: boolean }
+/** The switches of the notifications page. An unset preference is on (the server's default). */
+export type GamificationSwitches = {
+  xpGain: boolean
+  showOnLeaderboard: boolean
+  showGamification: boolean
+  showStreaks: boolean
+}
 
-/** The switches from the typed `Profile.settings` (null = never set). */
-export const readSwitches = ({ notifications, privacy }: GamificationSettings): GamificationSwitches => ({
+/** The switches from the typed `Profile.settings` (null or absent = never set). */
+export const readSwitches = ({ notifications, privacy, display }: GamificationSettings): GamificationSwitches => ({
   xpGain: notifications.xp_gain ?? true,
   showOnLeaderboard: privacy.show_on_leaderboard ?? true,
+  showGamification: display.show_gamification ?? true,
+  showStreaks: display.show_streaks ?? true,
 })
 
 /** This device first, then the most recently seen. */

@@ -2,6 +2,8 @@ import type { Profile } from '#/shared/api/gen/types.gen'
 
 /** Leaderboard rows per "Show more" (the API allows 1..=100). */
 export const LEADERBOARD_PAGE = 20
+/** XP awards per history page (the server allows 1..=100). */
+export const XP_HISTORY_PAGE = 20
 
 /** Level progress exactly as the server reports it (UX-064: no client level table). `next` is null at the cap. */
 export function levelProgress(profile: Profile) {
@@ -27,6 +29,8 @@ export function activeStreak(count: number, lastUnix: number | null | undefined,
 
 /** The /home line: the live learning streak, or null when there is none to show. */
 export function homeStreak(profile: Profile, nowUnix: number): number | null {
+  const { show_gamification: game, show_streaks: streaks } = profile.settings.display
+  if (game === false || streaks === false) return null
   const days = activeStreak(profile.learning_streak, profile.last_learning_at_unix, nowUnix)
   return days > 0 ? days : null
 }

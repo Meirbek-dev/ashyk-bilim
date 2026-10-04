@@ -22,6 +22,7 @@ import {
   reviewSubmissionQueryKey,
   statsQueryKey,
   workQueueInfiniteQueryKey,
+  xpHistoryInfiniteQueryKey,
 } from './gen/@tanstack/react-query.gen'
 import type { UserStreamEvent } from './gen/types.gen'
 
@@ -95,7 +96,7 @@ export const eventInvalidations = {
   ],
   'notification.created': () => [],
   'notification.read': () => [],
-  'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey()],
+  'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
 } satisfies EventInvalidations
 
 /** The keys one event makes stale; an event this build does not know (a newer server) touches nothing. */

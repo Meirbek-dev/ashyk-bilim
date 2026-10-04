@@ -79,7 +79,10 @@ test('B-ANL-08 B-ANL-09 learners: risk counts, the at-risk list, its sort in the
   )
 })
 
-test('B-ANL-10 B-ANL-11 the learner panel: history, a new intervention without a refetch', async ({ page, seed }) => {
+test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention, then its outcome (412 retried)', async ({
+  page,
+  seed,
+}) => {
   const learner = seed.accounts.student.session.user_id
   await page.goto(`/teach/analytics/learners?learnerId=${learner}&courseId=${seed.params.courseId}`)
   const panel = page.getByRole('dialog')
@@ -97,6 +100,28 @@ test('B-ANL-10 B-ANL-11 the learner panel: history, a new intervention without a
   const entry = page.getByRole('listitem').filter({ hasText: note })
   await expect(entry).toContainText(m.analytics_intervention_meeting_scheduled({}, ru))
   await expect(entry).toContainText(m.analytics_intervention_status_planned({}, ru))
+
+  const sent: (string | undefined)[] = []
+  await page.route('**/api/v2/analytics/teacher/interventions/*', route => {
+    if (route.request().method() !== 'PATCH') return route.fallback()
+    sent.push(route.request().headers()['if-match'])
+    const code = 'precondition-failed'
+    if (sent.length > 1) return route.fallback()
+    return route.fulfill({ status: 412, json: { type: 'about:blank', title: code, status: 412, code } })
+  })
+  await entry.getByRole('button', { name: m.analytics_intervention_edit({}, ru) }).click()
+  const edit = page.getByRole('dialog', { name: m.analytics_intervention_edit({}, ru) })
+  await edit.getByLabel(m.analytics_intervention_status({}, ru)).selectOption('resolved')
+  await edit.getByLabel(m.analytics_intervention_outcome({}, ru)).selectOption('improved')
+  await edit.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: m.ui_conflict_retry({}, ru) })
+    .click()
+  await expect(page.getByText(m.analytics_intervention_saved({}, ru))).toBeVisible()
+  expect(sent).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/)])
+  const outcome = m.analytics_outcome_improved({}, ru)
+  await expect(entry).toContainText(m.analytics_intervention_outcome_is({ outcome }, ru))
 })
 
 test('B-ANL-12 B-ANL-13 performance: courses and assessments; a course opens its drill-down', async ({
