@@ -2,11 +2,8 @@
 
 Operations for the stack described in `docs/INFRA.md`. Prod host: deploy dir
 `~/openu-prod`, compose project `openu-prod`, domain `cs-mooc.tou.edu.kz`,
-TLS-terminating university proxy (`192.168.1.46`, plain http to port 80 with
-`X-Forwarded-Proto`) in front. Section 1 was executed on 2026-10-03 (release
-`f5e493c4` from branch `release/stage1`, downtime 05:22:57-05:24:28 UTC); it stays
-as the record of the procedure. The legacy compose files live in git history
-(last at `f5e493c4`).
+TLS-terminating university proxy in front. Until section 1 has been executed
+the host runs the legacy stack (`docs/DEPLOYMENT.md`).
 
 ## 0. Conventions
 
@@ -90,7 +87,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
    a=$(ls -1t backups/backup-*.tar.zst | head -n 1) && mv "$a" "backups/legacy-final-${a#backups/}" && ls -l backups/legacy-final-*
    ```
 
-   It is a raw volume copy (legacy format, restore recipe in `docs/DEPLOYMENT.md` of git history
+   It is a raw volume copy (legacy format, restore recipe in `docs/DEPLOYMENT.md`
    at `$LEGACY_SHA`). It is also the only remaining copy of the legacy `openu`
    database. Rollback: none needed.
 
@@ -202,8 +199,8 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
 
    ```bash
    legacy() { IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml --env-file .env.pre-split "$@"; }
-   (umask 077 && legacy exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > dumps/pre-cutover-ashyq.dump)
-   test -s dumps/pre-cutover-ashyq.dump && legacy down
+   (umask 077 && legacy exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > backups/pre-cutover-ashyq.dump)
+   test -s backups/pre-cutover-ashyq.dump && legacy down
    docker volume ls | grep openu-prod_      # all volumes still there
    ```
 
@@ -238,7 +235,7 @@ IMAGE_TAG=$LEGACY_TAG docker compose -f docker-compose.yml exec -T db sh -c \
     ```
 
     First deploy: no `.deploy-history`, so deploy.sh treats migrations as
-    changed, writes `dumps/pre-deploy-$NEW_SHA.dump`, runs `server-migrate`
+    changed, writes `backups/pre-deploy-$NEW_SHA.dump`, runs `server-migrate`
     (no-op), writes `IMAGE_TAG` into `.env`, starts everything with
     `--remove-orphans` (removes the stopped legacy containers, not their
     volumes), reloads nginx and runs smoke. It never rolls back automatically
@@ -280,7 +277,7 @@ what the legacy binary accepts), restore the step 8 dump:
 ```bash
 legacy up -d db
 legacy exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE ashyq WITH (FORCE)"'
-legacy exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d postgres --create --exit-on-error' < dumps/pre-cutover-ashyq.dump
+legacy exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d postgres --create --exit-on-error' < backups/pre-cutover-ashyq.dump
 ```
 
 Then `legacy up -d` and check the site. What carries over: `postgres_data`
@@ -294,14 +291,17 @@ Legacy images (`ashyq-server:$LEGACY_TAG`, `ashyq-web:$LEGACY_TAG`,
 
 ### 1.5 After a successful cutover
 
-- Certbot hook: the legacy root-owned hook (`openu-prod.sh`) keeps working: it writes
-  into `./certs` (a directory mount now) and reloads `openu-prod-nginx-1`. Replace it
-  with 3.7 only when the project name or checkout path changes.
-- Restore drill: done 2026-10-03 right after the cutover (`just restore-drill`
-  on `backup-2026-10-03T05-28-57`: 160 s restore + start + smoke, 180 users /
-  47 courses, matching prod). Repeat monthly (3.5).
-- Repo: legacy files deleted and FINDINGS #1, #2, #8, #10, #11 closed (done
-  2026-10-03, after the cutover).
+- Same day: replace the certbot hook (3.7). The legacy hook uses `install`
+  (new inode), which the new single-file bind mounts would not see.
+- Within the week, when the host has spare RAM: `just restore-drill` (3.5).
+- Repo (dev machine, one commit): delete `docker-compose.yml`,
+  `docker-compose.dev.yml`, root `.env.example`, root `judge0.conf`,
+  `extra/Dockerfile.db`, `extra/deploy.sh`, `extra/nginx.conf.template`,
+  `extra/nginx.routes.conf`, `extra/renew-certificate.sh`,
+  `extra/storage-cors.json`, `extra/storage-public-policy.json`,
+  `docs/DEPLOYMENT.md`, and the root `package.json` scripts `services` and
+  `deploy`; drop the "until section 1" note at the top of this file; mark
+  FINDINGS #1, #2, #8, #10, #11 closed. Then `git pull` on the host.
 - After a week without rollback: `rm .env.pre-split .env.legacy-removed`
   (the legacy `PLATFORM_*` secrets, FINDINGS #10), `docker image rm
   ashyq-server:$LEGACY_TAG ashyq-web:$LEGACY_TAG openu-prod-db`, `docker
@@ -332,7 +332,7 @@ dc exec -T db sh -c 'dropdb -U "$POSTGRES_USER" ashyq_rehearsal'
 Window (2-5 min, server and worker stopped):
 
 ```bash
-(umask 077 && dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > dumps/pre-ownership-ashyq.dump) && test -s dumps/pre-ownership-ashyq.dump
+(umask 077 && dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > backups/pre-ownership-ashyq.dump) && test -s backups/pre-ownership-ashyq.dump
 cp -p server.env server.env.pre-ownership
 dc stop server worker
 dc exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' < infra/postgres/transfer-ownership.sql   # "(0 rows)", COMMIT
@@ -353,7 +353,7 @@ dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d ashyq -tAc "SELECT DISTINCT a.u
 Rollback: `cp -p server.env.pre-ownership server.env && dc up -d --wait server worker`
 (the superuser works whatever the owners are). Only if the database itself is
 damaged: `dc stop server worker`, then `DROP DATABASE ashyq WITH (FORCE)` and
-`pg_restore --create` of `dumps/pre-ownership-ashyq.dump` as in 1.4 (writes
+`pg_restore --create` of `backups/pre-ownership-ashyq.dump` as in 1.4 (writes
 since the dump are lost). The first later deploy with a migration is the first
 migration run as `ashyq`; deploy.sh dumps before it.
 
@@ -410,7 +410,7 @@ these lines when it stops):
 
 ```bash
 dc stop server worker
-dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d ashyq --clean --if-exists' < dumps/pre-deploy-<bad sha>.dump
+dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d ashyq --clean --if-exists' < backups/pre-deploy-<bad sha>.dump
 just rollback --force <previous sha>
 ```
 
@@ -587,7 +587,7 @@ du -sh backups/* | sort -h | tail
 docker system df
 ```
 
-Free space with: old `dumps/pre-deploy-*.dump`, `pre-cutover`/`pre-ownership`
+Free space with: old `backups/pre-deploy-*.dump`, `pre-cutover`/`pre-ownership`
 dumps once obsolete (nothing prunes them); `docker image prune` (deploy.sh
 keeps 5 releases); `docker builder prune`. Not: `docker volume prune` (legacy
 `app_content` and stopped projects' data), `backups/legacy-final-*`. Archives

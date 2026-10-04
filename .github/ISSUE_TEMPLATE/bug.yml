@@ -41,7 +41,6 @@ body:
         - Firefox
         - Chrome
         - Safari
-        - Arc Browser
   - type: textarea
     id: logs
     attributes:
