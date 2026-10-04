@@ -52,6 +52,12 @@ migrations land first under the old web; the only old-web-breaking step comes la
    preflight, pull, `pre-deploy-<sha>.dump` (migrations differ from f5e493c4), additive
    migrations, `up --wait`, smoke. The old web now runs on the new server (expand only).
    Check `tail -1 .deploy-history` = `<sha>`; open `/` and sign in once in the old web.
+   **nginx: recreate, never reload** (the first release with SEC-1 5c6940a's template: CSP
+   `sandbox` and CORP on `/content`, unsigned `/ab-*` queries refused): `nginx -t` fails on a
+   reload with the new template, so `dc up -d --no-build --force-recreate nginx`, then
+   `curl -sI https://cs-mooc.tou.edu.kz/content/_probe/smoke.txt | grep -i cross-origin-resource-policy`.
+   The recreate empties nginx's `/content` cache (container fs, not a volume); browsers keep
+   `/content` responses cached before it with their old headers up to 7 days (`max-age=604800, immutable`).
 3. **Reversible data migrations** (D-02, D-03; the old web keeps working: responses keep the
    legacy `locale`). Dry-run, compare with the rehearsal, then for real:
    ```bash
