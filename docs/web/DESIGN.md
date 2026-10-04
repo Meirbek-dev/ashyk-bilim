@@ -1,7 +1,7 @@
-# Design system (apps/web-2)
+# Design system (apps/web)
 
-Spec: `docs/MODERNIZATION-STAGE-2.md` 5.2, 5.7, 5.8, 7.10. Tokens: `apps/web-2/src/styles/tokens.css`. Themes:
-`apps/web-2/public/themes/<slug>.css` + `manifest.json`. Every rule below is meant to be checked by a gate, a lint
+Spec: `docs/archive/MODERNIZATION-STAGE-2.md` 5.2, 5.7, 5.8, 7.10. Tokens: `apps/web/src/styles/tokens.css`. Themes:
+`apps/web/public/themes/<slug>.css` + `manifest.json`. Every rule below is meant to be checked by a gate, a lint
 rule or the reference slice; a rule nobody can check does not belong here.
 
 ## 1. Principles

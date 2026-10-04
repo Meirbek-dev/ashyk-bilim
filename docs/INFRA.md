@@ -5,9 +5,9 @@ Spec (Russian): `docs/MODERNIZATION-STAGE-1.md`. Deviations from it, with
 reasons: `docs/DECISIONS.md`, "Stage 1 modernization" (2026-10-02).
 Operations: `docs/RUNBOOK.md`.
 
-**Status 2026-10-02:** prod (`cs-mooc.tou.edu.kz`, `~/openu-prod`) still runs
-the legacy stack (`docker-compose.yml`, `extra/`, one `.env`, images built on the
-host). The switch is RUNBOOK "1. Cutover".
+**Status 2026-10-04:** prod (`cs-mooc.tou.edu.kz`, `~/openu-prod`) runs this
+stack since 2026-10-03 (release `f5e493c4`) and the current web since 2026-10-04
+(release `9c88be2c`, then published as `ashyq-web-2`): `docs/STAGE-2-CUTOVER.md`.
 
 ## Layout
 
@@ -15,7 +15,7 @@ host). The switch is RUNBOOK "1. Cutover".
 compose.yaml          shared tier: db, redis, zitadel, rustfs, judge0-* (profile judge0), init jobs
 compose.prod.yaml     nginx, web, server, worker, server-migrate, backup; prod overrides
 compose.dev.yaml      dev overrides: ports on 127.0.0.1, data-net not internal
-compose.smoke.yaml    smoke overrides: nginx ports on 127.0.0.1 only
+compose.smoke.yaml    smoke and e2e stand overrides: nginx ports on 127.0.0.1, stand cert, Zitadel hash cost
 justfile              single entry point (recipes below)
 infra/
   env/                prod.env.example, server.env.example, dev.env, smoke.env, smoke.server.env
@@ -26,7 +26,7 @@ infra/
   smoke/stub-web/     stand-in web image for the edge-independence smoke (R-09)
   scripts/            lib.sh, bootstrap, deploy, rollback, preflight, smoke, restore,
                       restore-drill, renew-certificate, host-inventory, split-env
-.github/workflows/ci.yaml   gates, images, stack smoke, publish
+.github/workflows/ci.yaml   gates, images, stack smoke, e2e, publish
 ```
 
 The legacy stack (`docker-compose.yml`, `extra/`, `judge0.conf`,
@@ -37,6 +37,7 @@ Root `justfile` recipes: `dev-up`, `dev-down`, `dev-reset`, `bootstrap`,
 `stack-up`, `stack-down`, `smoke`, `ci-infra`, `preflight`, `deploy`,
 `rollback`, `backup`, `restore`, `restore-drill`, `server *args` (runs
 `apps/server/justfile` recipes with `TEST_REDIS_URL` from `dev.env`),
+`web-stand-up`, `web-seed`, `web-e2e`, `web-stand-down` (e2e stand below),
 `web *args` (`bun run --cwd apps/web`).
 
 ## Stacks
@@ -45,12 +46,13 @@ Root `justfile` recipes: `dev-up`, `dev-down`, `dev-reset`, `bootstrap`,
 repo root, sets `set -euo pipefail`, `MSYS_NO_PATHCONV=1` (Git Bash) and
 `COMPOSE_PATH_SEPARATOR=:`, picks `docker`, else `podman` (`compose` =
 `$CTR compose`), reads the pinned db image into `PG_IMAGE`, and provides the
-selectors below. `use_stack` maps `STACK=dev|prod|smoke` (default `prod`).
+selectors below. `use_stack` maps `STACK=dev|prod|smoke|e2e` (default `prod`).
 
 | Stack | `COMPOSE_FILE` | Interpolation env | Server env | Project | Recipes |
 | --- | --- | --- | --- | --- | --- |
 | dev | `compose.yaml:compose.dev.yaml` | `infra/env/dev.env` (`COMPOSE_ENV_FILES`) | none: the server runs on the host with `apps/server/.env` | `ashyq-dev` | `dev-up`, `dev-down`, `dev-reset` |
 | smoke | `compose.yaml:compose.prod.yaml:compose.smoke.yaml` | `infra/env/smoke.env` | `tmp/smoke/server.env` (copied from `infra/env/smoke.server.env`) | `ashyq-smoke` | `stack-up`, `smoke`, `stack-down` |
+| e2e | smoke files | `infra/env/smoke.env` + `PUBLIC_SCHEME=https`, `FORCE_HTTPS=1` | `tmp/e2e/server.env` | `ashyq-e2e` | `web-stand-up`, `web-seed`, `web-e2e`, `web-stand-down` |
 | prod | `compose.yaml:compose.prod.yaml` | `./.env` (compose default) | `./server.env` | from `.env`: `openu-prod` | `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restore` |
 | drill | prod files | the archive's `.env` | the archive's `server.env` | `ashyq-drill` | `restore-drill` |
 
@@ -70,7 +72,7 @@ makes it non-internal to publish ports), `exec-net` (`internal`).
 | Service | File | Networks | Notes |
 | --- | --- | --- | --- |
 | nginx | prod | edge-net, alias `${NGINX_SERVER_NAME}` | the only published ports (`HTTP_PORT`/`HTTPS_PORT`, 80/443) |
-| web | prod | edge-net | env: `INTERNAL_API_URL`, `APP_URL`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` only; healthcheck from the image |
+| web | prod | edge-net | image `ashyq-web` (`apps/web`); env `PUBLIC_ORIGIN`, `INTERNAL_API_URL` only; healthcheck from the image |
 | server | prod | edge-net, data-net, exec-net | `env_file: server.env` + `x-server-env`; liveness healthcheck from the image |
 | worker | prod | edge-net, data-net, exec-net | same env; no healthcheck; `stop_grace_period: 60s` |
 | server-migrate | prod, profile `maintenance` | data-net | one-shot `ashyq migrate` |
@@ -100,7 +102,7 @@ Trust zones:
   through it, without NAT loopback or `host-gateway`.
 
 All services log through `x-logging` (json-file, 10 MB x 5). Memory limits:
-web 2g; db, server, worker, zitadel 1g; rustfs 512m; nginx, redis 256m.
+db, server, worker, zitadel 1g; web, rustfs 512m; nginx, redis 256m.
 
 Volumes (`<project>_<name>`; the names are load-bearing, a rename means empty
 volumes): `postgres_data`, `redis_data`, `rustfs_data`, `zitadel_machinekey`,
@@ -154,7 +156,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | --- | --- | --- |
 | Project | `COMPOSE_PROJECT_NAME=openu-prod` | compose (volume prefix); preflight checks it is set and its `postgres_data` volume exists |
 | | `COMPOSE_PROFILES=judge0` | compose; bootstrap detects Judge0 from it |
-| Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `APP_URL` and build args; storage-init CORS origin; deploy smoke target |
+| Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `PUBLIC_ORIGIN`; storage-init CORS origin; deploy smoke target |
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
 | | `FORCE_HTTPS` (default `1`) | nginx :80 redirect |
 | | `TRUSTED_PROXY_CIDR` (empty = `127.0.0.1/32`) | nginx `set_real_ip_from` |
@@ -162,7 +164,6 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `ACME_WEBROOT` (default `/var/www/certbot`), `HTTP_PORT`, `HTTPS_PORT` | nginx |
 | Release | `IMAGE_REPO` (default `ghcr.io/meirbek-dev`) | image names; deploy.sh |
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
-| Web | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | web |
 | Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db (initdb only), db-init, zitadel-init |
 | | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init |
 | Zitadel | `ZITADEL_MASTERKEY` (exactly 32 chars; losing it loses every account) | zitadel; preflight |
@@ -177,9 +178,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 Not in the template (overrides; path values must start with `./` or `/`):
 `SERVER_ENV_FILE` (default `./server.env`), `STACK_ENV_FILE` (the `.env` the
 backup copies), `BACKUP_DIR` (default `./backups`), `DOCKER_SOCKET`,
-`WEB_IMAGE` (smoke stub), `WEB_IMAGE_NAME` (default `ashyq-web`; `ashyq-web-2`
-at the stage 2 cutover), `WEB_MEMORY` (web limit, default `2g`), `WEB_LINKS`
-(server `AB__SERVER__WEB_LINKS`, default `legacy`), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev;
+`WEB_IMAGE` (full image ref of web: smoke stub, local builds), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev;
 prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 `DEV_RUSTFS_PORT`.
 
@@ -197,7 +196,7 @@ prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 Compose sets these for server, worker and server-migrate (`x-server-env`,
 wins over `server.env`): `AB__ENVIRONMENT`, `AB__SERVER__HOST`,
 `AB__SERVER__PORT`, `AB__SERVER__CORS_ORIGINS`, `AB__SERVER__WEB_URL`,
-`AB__SERVER__WEB_LINKS` (from `WEB_LINKS`),
+`AB__SERVER__WEB_LINKS` (literal `v2`; the setting goes with S-12),
 `AB__REDIS__URL`, `AB__ZITADEL__BASE_URL`, `AB__STORAGE__ENDPOINT`,
 `AB__STORAGE__ACCESS_KEY`, `AB__STORAGE__SECRET_KEY`,
 `AB__STORAGE__PUBLIC_BUCKET`, `AB__STORAGE__PRIVATE_BUCKET`,
@@ -307,21 +306,21 @@ zero takes about 30 s on the owner's machine; a second run changes nothing.
 
 ## Build and release
 
-`.github/workflows/ci.yaml` (`push` to `main`, `pull_request`; PRs run the
-gates only, a newer PR push cancels the running one, `main` runs are never
-cancelled mid-run):
+`.github/workflows/ci.yaml` (`push` to `main`, `ci/**`, `release/**`; `pull_request`;
+PRs run the gates only, a newer PR push cancels the running one, `main` runs are
+never cancelled mid-run; `ci/**` runs everything but `publish`):
 
 | Job | When | What |
 | --- | --- | --- |
-| changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`), `web2` (`apps/web-2/**`, `openapi.v2.json`), `infra`; all but `web` true on `release/**`; `sha` = first 8 chars of the commit |
+| changes | always | path filters `server`, `web` (`apps/web/**`, `openapi.v2.json`, `.node-version`, `compose.smoke.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `release/**`; `sha` = first 8 chars of the commit |
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
 | server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor; `just test` is the same suite without coverage) |
-| web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
-| infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
-| images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` only when `web` changed (frozen, G-13; it does not build on `main` since 34d8cd2), `ashyq-web-2` when `web2` changed; web build args from the repo variable `PROD_DOMAIN` |
-| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` (compose.prod.yaml's own web env) and `just smoke` again |
-| web2-e2e | after images, web2 changed | three shards, each on its own Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0 --shard=N/3` |
-| publish | `release/**` only, every gate and stack-smoke green | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (frozen old web, rollback target until Ф9); `ashyq-web-2` only when web2-e2e passed |
+| web-gates | web changed | in `apps/web`: `bun install`, Playwright chromium, `codegen`, `verify` (check, tests, `gates.ts all`), `build` with chunk budgets |
+| infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/e2e, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
+| images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` and `ashyq-web` (no build args) |
+| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again (R-09) |
+| web-e2e | after images, web changed | three shards, each on its own e2e stand below, `just web-e2e --grep-invert @judge0 --shard=N/3` |
+| publish | `main` and `release/**`; no gate failed (path-filtered ones may be skipped), stack-smoke green | `imagetools create`, no rebuild: `ashyq-server` and `ashyq-web` `ci-<sha>` -> `<sha>`/`latest` |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
 `latest` = newest green `main`. GHCR packages are public: the host pulls
@@ -398,111 +397,81 @@ Recorded 2026-10-02 (HEAD `e1117fe` plus the stage 1 tree), Windows 11, bun
 1.4.2, Rust 1.98.1. Every gate below is required in CI; none carries
 `continue-on-error`.
 
-Web (`apps/web`, until 2026-10-04; since then frozen and only its image is built, see Build and release):
-
-| Gate | Command | Status |
-| --- | --- | --- |
-| install | `bun install --frozen-lockfile` (repo root) | green |
-| lint | `bun run lint` (`vp lint --type-aware --type-check`, non-mutating) | green: the 2 baseline errors (`codeChallengeMarkdownValidation.ts`, `MarkdownContent.tsx`) were fixed in the stage 1 commit; warnings do not fail it |
-| typecheck | `bun run typecheck` | green |
-| test | `bun run test` | green (262 files, 1120 tests) |
-| contract | `bun run generate:api-types`, `bun run check:contracts`, `git diff --exit-code` | green |
-| error codes | `bun run check:error-codes` | green (41/41 codes in ru-RU, kk-KZ, en-US) |
-| build | `bun run build` | not a CI gate (the image build covers it) |
-| e2e | `bun run test:e2e` (Playwright) | not in CI, manual |
-| fmt | `bunx vp fmt --check` | not a gate; red, 75 of 1813 files |
-
-Tooling changes made for the baseline: `lint` no longer mutates files (the old
-command is `lint:fix`); `apps/web/vite.config.ts` excludes
-`src/lib/api/generated/` from lint (the deleted root `vite.config.ts` did);
-`scripts/generate-api-types.mjs` runs `vp fmt` from `apps/web`.
+Web (`apps/web`): `bun run verify` (check, tests, gates) and `bun run build`
+(chunk budgets), CI job `web-gates`. The old Next.js web's baseline is in git
+at `f5e493c4`.
 
 Server (`apps/server`): `fmt-check`, `clippy`, `openapi-check` green locally;
 `sqlx-check`, `test`, `deny`, `machete`, `cov` need the dev stack and run in CI.
 `just ci` runs the same list in CI order.
 
-## Web contract for stage 2
+## Web
 
-What the stage 1 infrastructure guarantees the web app and requires from it:
+`apps/web` (TanStack Start, `apps/web/AGENTS.md`), image `ashyq-web` built from
+`apps/web/Dockerfile` with no build args: one image for any domain. Contract
+with the stack:
 
 | Aspect | Contract |
 | --- | --- |
-| Container | listens on `:3000`, non-root, exits cleanly on SIGTERM, `HEALTHCHECK` inside the image |
-| Configuration | runtime variables only: `PUBLIC_ORIGIN`, `INTERNAL_API_URL`. One image for any domain; no build args carrying a domain |
+| Container | listens on `:3000`, non-root, drains on SIGTERM, `HEALTHCHECK` (`/healthz`) inside the image; 512m |
+| Configuration | runtime variables only: `PUBLIC_ORIGIN`, `INTERNAL_API_URL` (its origin is used) |
 | Network | talks only to `server` via `INTERNAL_API_URL`; never to the DB, Redis, Zitadel or RustFS |
 | Browser | same origin: API at `/api/v2`, media at `/content/<key>`, uploads via presigned URLs; session = the `ab_session` cookie the server sets |
 | Cache | content-hashed assets carry `Cache-Control: public, max-age=31536000, immutable`; nothing else is `immutable` |
-| Headers | baseline headers come from the edge; CSP is the web app's job |
-| CI | package scripts `lint` (no autofix), `typecheck`, `test`, `build`, `e2e`; CI calls only these |
-| API contract | the client is generated from `apps/server/openapi.v2.json`; drift = red CI |
-| Acceptance | the stage 1 smoke stack plus seeded accounts is the e2e test bed for the new web |
+| Headers | baseline headers come from the edge; CSP (with a nonce) is the web app's |
+| API contract | the client is generated from `apps/server/openapi.v2.json`; drift = red CI (G-09) |
 
-Next.js leftovers stage 2 must remove:
+## e2e stand
 
-- `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MEDIA_URL` build
-  args: `compose.prod.yaml` (web `build.args`), `ci.yaml` (images job
-  `build-args`, repo variable `PROD_DOMAIN`), `apps/web/Dockerfile` (`ARG`s).
-  Today the published web image is bound to `cs-mooc.tou.edu.kz`.
-- `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`: `compose.prod.yaml` web env,
-  `infra/env/prod.env.example`, `infra/env/smoke.env`. It is the one secret in
-  the web container.
-- `APP_URL`: `compose.prod.yaml` web env (cookie domain derivation).
-- Hard-coded `cs-mooc.tou.edu.kz` in `apps/web/next.config.ts`
-  (`serverActions.allowedOrigins`, `allowedDevOrigins`) and the dev-only
-  `CONTENT_REWRITE_TARGET` rewrite.
-- `scripts/run-vitest.mjs` Vitest pin (FINDINGS #13); `test` script name is
-  fine, `e2e` is today `test:e2e`.
+Gate G-06: Playwright against the `ashyq-web` image on the smoke files.
+`STACK=e2e` (`lib.sh use_e2e`) = the smoke stack in project `ashyq-e2e`,
+server env `tmp/e2e/server.env`, `PUBLIC_SCHEME=https`, `FORCE_HTTPS=1`,
+self-signed cert of the smoke stack. `compose.smoke.yaml` serves both stacks
+(no separate e2e file: prod's web block already is the stand's).
 
-## Stage 2 e2e stand
-
-Gate G-06 (spec section 9): Playwright against the `ashyq-web-2` image on the
-smoke stack. `STACK=web2` (`lib.sh use_web2`) = the smoke files plus
-`compose.web2.yaml`, project `ashyq-web2`, server env `tmp/web2/server.env`,
-`PUBLIC_SCHEME=https`, `FORCE_HTTPS=1`, self-signed cert of the smoke stack.
-
-- `web`: `ashyq-web-2:${IMAGE_TAG}` (`WEB2_IMAGE` overrides), env `PUBLIC_ORIGIN`
-  and `INTERNAL_API_URL` only, 512m.
+- `web`: `ashyq-web:${IMAGE_TAG}` (`WEB_IMAGE` overrides), as in prod.
 - Origin `https://ashyq.test`. The server presigns S3 URLs for
   `AB__STORAGE__ENDPOINT` (already the public origin), so uploads stay
   same-origin; it reaches storage through nginx and trusts the self-signed cert
   via `SSL_CERT_FILE` (server and worker).
+- No Judge0: `AB__JUDGE0__BASE_URL` is blank (`E2E_JUDGE0_URL` sets it for
+  `@judge0` specs with the judge0 profile on).
 - The server runs with `AB__ENVIRONMENT=production` (Secure session cookie).
-  `seed-e2e` refuses production, so `web2-seed` runs it with
+  `seed-e2e` refuses production, so `web-seed` runs it with
   `-e AB__ENVIRONMENT=development` in the running server container.
 - Password: `E2E_PASSWORD` (CI secret `E2E_PASSWORD`, optional), else a random
-  one per stand in `tmp/web2/e2e-password`. Failure traces contain it in
+  one per stand in `tmp/e2e/e2e-password`. Failure traces contain it in
   clear (filled inputs), so leave the secret unset.
 
 | Recipe | Does |
 | --- | --- |
-| `web2-stand-up` | cert, `bootstrap.sh`, `up -d --wait` |
-| `web2-seed` | `ashyq admin seed-e2e --learners $E2E_LEARNERS` (default 250) in the server container |
-| `web2-e2e [playwright args]` | follows the server log into `tmp/web2/server.log` (`E2E_API_LOG`), runs `bun run e2e` with `E2E_LEARNERS` + `E2E_LEARNERS_DIR=tmp/web2/learners`, `E2E_BASE_URL=https://ashyq.test`, `E2E_INSECURE=1` (browser `ignoreHTTPSErrors`), `NODE_EXTRA_CA_CERTS` (fixtures' fetch) |
-| `web2-stand-down` | `down -v`, removes `tmp/web2` |
+| `web-stand-up` | cert, `bootstrap.sh`, `up -d --wait` |
+| `web-seed` | `ashyq admin seed-e2e --learners $E2E_LEARNERS` (default 250) in the server container |
+| `web-e2e [playwright args]` | follows the server log into `tmp/e2e/server.log` (`E2E_API_LOG`), runs `bun run e2e` with `E2E_LEARNERS` + `E2E_LEARNERS_DIR=tmp/e2e/learners`, `E2E_BASE_URL=https://ashyq.test`, `E2E_INSECURE=1` (browser `ignoreHTTPSErrors`), `NODE_EXTRA_CA_CERTS` (fixtures' fetch) |
+| `web-stand-down` | `down -v`, removes `tmp/e2e` |
 
 Learner pool: nginx sets the client address, so the stand allows 10
 self-registrations per hour in total. `seed-e2e --learners N` creates verified
 `e2e-learner-001..N` (`learner-NNN@e2e.test`, "E2E Account", `E2E_PASSWORD`);
 the fixture `registerAccount` takes the next untaken one (a file per taken
-account in `tmp/web2/learners`, so reruns on the same stand never reuse one).
+account in `tmp/e2e/learners`, so reruns on the same stand never reuse one).
 Only the email-verification specs still register for real.
 
-Run it locally: `just web2-stand-up && just web2-seed && just web2-e2e
---grep-invert @judge0`, then `just web2-stand-down`.
+Run it locally: `just web-stand-up && just web-seed && just web-e2e
+--grep-invert @judge0`, then `just web-stand-down`.
 
 The host must resolve `ashyq.test` to 127.0.0.1 (CI appends it to
 `/etc/hosts`). Without that, or where published ports misbehave (podman on
-Windows), `WEB2_E2E_IN_NETWORK=1 just web2-e2e` runs the suite in
+Windows), `WEB_E2E_IN_NETWORK=1 just web-e2e` runs the suite in
 `mcr.microsoft.com/playwright:v<version>-noble` on the stand's `edge-net`,
 where `ashyq.test` is the nginx alias. Local images: `podman build --format
-docker -f apps/web-2/Dockerfile -t localhost/ashyq-web-2:dev .` (same for the
+docker -f apps/web/Dockerfile -t localhost/ashyq-web:dev .` (same for the
 server; OCI format drops `HEALTHCHECK` and `up --wait` fails), then
-`IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
+`IMAGE_REPO=localhost IMAGE_TAG=dev just web-stand-up`.
 
-CI job `web2-e2e` (after `images`, only when `apps/web-2` changed; `images`
-builds `ashyq-web-2:ci-<sha>` under the same condition; three shards, 30 min each): the four recipes; on
-failure the HTML report, traces and server log as an artifact. Gates only the
-`ashyq-web-2` retag in `publish`.
+CI job `web-e2e` (after `images`, when `web` changed; three shards, 30 min
+each): the four recipes; on failure the HTML report, traces and server log as
+an artifact. A red shard withholds `publish`.
 
 ## Verified in CI (2026-10-03)
 
@@ -524,14 +493,11 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
 - ~~Prod cutover pending~~ - done 2026-10-03: release `f5e493c4` (branch
   `release/stage1`), downtime 91 s, smoke green, real client addresses in the
   nginx log (proxy `192.168.1.46/32`), Judge0 healthy on its own db/redis.
-  The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
+  The host checkout is a `release/**` branch; `main` publishes again since the web rename.
   First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
   on it: 160 s, row counts match prod (RTO target 2 h met with margin).
-- **`main` publishes nothing until Ф9.** The old web no longer builds on `main`
-  (34d8cd2 moved its catalogs to Paraglide; `apps/web` is frozen), so releases
-  come from `release/**`; they carry the newest published `ashyq-web` under
-  their own `<sha>`. Stage 2 cutover: `docs/STAGE-2-CUTOVER.md`. See
-  `QUESTIONS.md` Q-2026-10-03-1.
+- **`publish` does not wait for e2e on server-only changes.** `web-e2e` runs when
+  `web` changed (incl. `openapi.v2.json`); `release/**` forces it.
 - **Judge0 in CI smoke is off** (privileged). Verified on prod at the cutover:
   healthy, 401 without token, `judge0-tune` applied.
 - **No external monitoring** (owner decision 2026-10-02: no external

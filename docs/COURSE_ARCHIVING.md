@@ -253,7 +253,7 @@ CREATE OR REPLACE FUNCTION collection_listable(...)  -- + AND c.archived_at IS N
 
 Перед началом: `bun run generate:api-types` после обновления
 `openapi.v2.json`; новые ключи i18n добавлять во все три каталога
-(`ru-RU` первым). По `docs/DESIGN_GUIDELINES.md`: только семантические токены,
+(`ru-RU` первым). По `docs/web/DESIGN.md`: только семантические токены,
 примитивы shadcn, без декоративных иконок.
 
 ### 9.1 Таблица курсов (`src/app/_shared/dash/courses/client.tsx`)

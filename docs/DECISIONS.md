@@ -1790,7 +1790,7 @@ Deviations decided during implementation:
 
 ## UI rights: `capabilities` on the session, `allowed_actions` on resources (2026-10-03, stage 2 S-02/S-03)
 
-Stage 2 (docs/MODERNIZATION-STAGE-2.md 7.5, 10.1) makes the web draw navigation
+Stage 2 (docs/archive/MODERNIZATION-STAGE-2.md 7.5, 10.1) makes the web draw navigation
 and actions from server-computed rights instead of parsing `resource:action:scope`
 strings. All additive on the wire (old fields, paths and statuses unchanged;
 the `can_*` flags and `permissions` go in phase 9).
@@ -1855,7 +1855,7 @@ accounts keep their password; the document activity has no file attached.
 
 ## Web (stage 2) (2026-10-03, phase 0 skeleton)
 
-Spec: `docs/MODERNIZATION-STAGE-2.md`; code: `apps/web-2`. One entry per Ф0 assumption (spec 12),
+Spec: `docs/archive/MODERNIZATION-STAGE-2.md`; code: `apps/web` (`apps/web-2` until 2026-10-04). One entry per Ф0 assumption (spec 12),
 then deviations from the spec.
 
 - **srvx + Start handler: confirmed.** `serve.ts` runs srvx 1.0.5 on Node 26 (types stripped by
@@ -1895,8 +1895,8 @@ then deviations from the spec.
   type checking itself is tsgolint (TS 7). tsconfig repeats `#/*` in `paths` because TS does not
   probe extensions for package `imports`. vitest and `@vitest/browser-playwright` stay on 5.0.1, the
   version vite-plus 1.0.0 pins. Scripts live in package.json (7.13); `vp run` rejects a name defined
-  in both places; `"workspaces": []` makes apps/web-2 its own `vp run` root (the repo root lists only
-  apps/web). G-07 is report-only until phase 7 (`gates/allowlist.json`). The login form is disabled
+  in both places; `"workspaces": []` makes the app its own `vp run` root (the repo root then listed only
+  the old apps/web; gone since the rename). G-07 is report-only until phase 7 (`gates/allowlist.json`). The login form is disabled
   until hydration: text typed earlier never reached TanStack Form state. The Dockerfile does not
   copy `openapi.v2.json`: the generated client is committed and the build never reads the contract.
 - **Kit on real shadcn (K-3, 2026-10-03).** Was: `shared/ui` was hand-written Base UI + cva that only looked
@@ -1916,7 +1916,7 @@ then deviations from the spec.
 ## Generator-friendly contract (2026-10-03, stage 2 S-01)
 
 `openapi.v2.json` is now described so a client generator needs no hand edits
-(web gate G-08, `apps/web-2/gates/contract.ts`). Nothing changed on the wire:
+(web gate G-08, `apps/web/gates/contract.ts`). Nothing changed on the wire:
 same URLs, status codes, bodies and accepted requests.
 
 - **Export-time pass** `ab-api/src/openapi.rs::finalize` runs on the utoipa

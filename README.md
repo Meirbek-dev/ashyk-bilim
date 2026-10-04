@@ -1,15 +1,15 @@
 # Ashyq Bilim
 
-Learning platform: Rust API (`apps/server`) and Next.js web app (`apps/web`).
+Learning platform: Rust API (`apps/server`) and TanStack Start web app (`apps/web`).
 
 ## Repo map
 
 | Path | What |
 | --- | --- |
 | `apps/server/` | Rust API (axum + sqlx), `/api/v2`, plus the job worker |
-| `apps/web/` | Next.js frontend (Vite+ toolchain) |
+| `apps/web/` | Web app: React + TanStack Start (Vite+ toolchain) |
 | `infra/` | nginx, Postgres init, Judge0, storage, env templates, ops scripts |
-| `compose*.yaml` | Stack definitions: shared, dev, prod, smoke |
+| `compose*.yaml` | Stack definitions: shared, dev, prod, smoke and e2e stand |
 | `justfile` | Single entry point for every task |
 | `docs/` | Architecture, decisions, infra, runbook, QA ledger |
 
@@ -20,7 +20,7 @@ Needs `just`, `bun`, a Rust toolchain and Docker or Podman.
 ```sh
 just dev-up        # Postgres, Redis, Zitadel, RustFS on 127.0.0.1
 just server dev    # API watch loop (just server test runs the suite)
-just web dev       # web app on http://localhost:3000
+just web dev       # web app on http://localhost:3000 (first: bun install in apps/web)
 ```
 
 `just --list` shows every recipe.

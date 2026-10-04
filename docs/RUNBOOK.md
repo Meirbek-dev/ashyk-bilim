@@ -55,8 +55,7 @@ for img in server web; do docker manifest inspect ghcr.io/meirbek-dev/ashyq-$img
 Run it without `docker login`: success means the GHCR packages are public and
 the release is green. `unauthorized` = packages still private (make them public
 in the GitHub package settings); `manifest unknown` = CI not green or not
-finished for that commit. The web image is built for the repo variable
-`PROD_DOMAIN`; it must be `cs-mooc.tou.edu.kz`.
+finished for that commit.
 
 P3. Record the legacy state (needed by every rollback, survives a new shell):
 
@@ -254,9 +253,8 @@ dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -tAc "SELECT rolname, 
 dc logs --tail 20 nginx                                     # remote_addr = public client addresses, not the proxy
 ```
 
-`web env` legitimately holds `INTERNAL_API_URL`, `APP_URL` and
-`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (the one web secret until stage 2) plus
-image defaults. Then in a browser, through the proxy: log in, open a course
+`web env` legitimately holds `PUBLIC_ORIGIN` and `INTERNAL_API_URL` plus image
+defaults (no secrets). Then in a browser, through the proxy: log in, open a course
 with images (`/content`), upload a file (presigned PUT), run code in a code
 challenge (Judge0 token and `judge0-tune`). Finally `just backup` and check the
 new archive appears in `backups/`.
@@ -397,7 +395,10 @@ just deploy
 ```
 
 Deploys `HEAD` (the compose files and the images must belong to the same
-commit). Steps and auto-rollback rules: INFRA "Build and release". History:
+commit). A `release/**` branch deploys the same way after `git switch <branch>`;
+the host is on `release/stage2` until the first `main` release after the web
+rename (`git fetch && git switch main`, then the `.env` cleanup in
+`docs/STAGE-2-CUTOVER.md`). Steps and auto-rollback rules: INFRA "Build and release". History:
 `tail .deploy-history`.
 
 ### 3.2 Rollback
@@ -481,7 +482,6 @@ for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ZITADEL_DB_PASSWORD RUSTFS_ACCESS_K
   sed -i "s/^$k=CHANGE_ME$/$k=$(openssl rand -hex 32)/" .env
 done
 sed -i "s/^ZITADEL_MASTERKEY=CHANGE_ME$/ZITADEL_MASTERKEY=$(openssl rand -hex 16)/" .env
-sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=CHANGE_ME$|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env
 pw=$(sed -n 's/^ASHYQ_DB_PASSWORD=//p' .env); sed -i "s|CHANGE_ME|$pw|" server.env; unset pw
 ```
 
@@ -544,9 +544,6 @@ consistent). `ALTER ROLE` uses the helper from section 0.
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
   the old values from that archive's `.env`.
-- **`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`**:
-  `sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=.*|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env`,
-  `dc up -d --wait web` (open pages must reload once).
 - **`server.env` integrations** (Google, Resend, AI keys, OTLP header): edit
   `server.env`, `dc up -d --wait server worker`.
 - **TLS key**: 3.7.
