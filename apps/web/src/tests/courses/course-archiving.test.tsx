@@ -51,7 +51,8 @@ const session = (userId: string, permissions: string[]) =>
 describe('course archiving (web)', () => {
   it('statusBadges: an archived course carries the archive badge alone', () => {
     expect(getCourseManagementContext(archived, 'row').statusBadges).toEqual(['archived'])
-    expect(getCourseManagementContext({ ...archived, archived_at_unix: null }, 'row').statusBadges[0]).toBe('public')
+    // QA-D: visibility only - the list has no data to judge readiness by.
+    expect(getCourseManagementContext({ ...archived, archived_at_unix: null }, 'row').statusBadges).toEqual(['public'])
   })
 
   it('deriveCourseWorkspaceCapabilities: archived turns every edit flag off, keeps the tabs readable', () => {

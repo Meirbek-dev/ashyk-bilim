@@ -195,11 +195,8 @@ export function getCourseManagementContext(course: AppCourse, surface: CourseMan
     // are frozen with it (COURSE_ARCHIVING 9.1).
     statusBadges: (isCourseArchived(course)
       ? ['archived']
-      : [
-          course.public ? 'public' : 'private',
-          readiness.readyToPublish ? 'ready' : 'needs-review',
-          // «Есть замечания» already says it; a second «Внимание» badge only repeats it.
-          ...(readiness.readyToPublish && courseNeedsAttention(course) ? ['attention'] : []),
-        ]) as readonly CourseStatusBadgeKind[],
+      : // QA-D: no readiness badge here - a list row carries no chapters, contributors or certificate, so the
+        // checklist judged every course «Есть замечания» while its workspace (server readiness) said «Готов».
+        [course.public ? 'public' : 'private']) as readonly CourseStatusBadgeKind[],
   }
 }
