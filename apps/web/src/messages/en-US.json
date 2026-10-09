@@ -1949,16 +1949,16 @@
     },
     "ManageUsers": {
       "actionsHeader": "Actions",
-      "linkButton": "Link",
-      "linkError": "Error linking user: {error}",
-      "linkSuccess": "User linked successfully",
-      "linkedHeader": "Linked",
-      "linkedStatus": "Linked",
-      "notLinkedStatus": "Not Linked",
+      "linkButton": "Add",
+      "linkError": "Could not add the user: {error}",
+      "linkSuccess": "User added to the group",
+      "linkedHeader": "In group",
+      "linkedStatus": "In group",
+      "notLinkedStatus": "Not in group",
       "unknownError": "Unknown error",
-      "unlinkButton": "Unlink",
-      "unlinkError": "Error unlinking user: {error}",
-      "unlinkSuccess": "User unlinked successfully",
+      "unlinkButton": "Remove",
+      "unlinkError": "Could not remove the user: {error}",
+      "unlinkSuccess": "User removed from the group",
       "searchPlaceholder": "Search people by name or username",
       "searching": "Searching…",
       "searchHint": "Showing group members and matching users.",
@@ -4935,7 +4935,7 @@
           }
         ],
         "userGroupLinksImmediateTitle": "User-group links apply immediately",
-        "userGroupLinksImmediateDescription": "These links take effect as soon as you confirm them. Keep access policy changes above separate and save them explicitly."
+        "userGroupLinksImmediateDescription": "A group gets access as soon as you link it - «Save» is only for the access choice above."
       },
       "CoursePage": {
         "access": "Access",

@@ -1939,16 +1939,16 @@
     },
     "ManageUsers": {
       "actionsHeader": "Действия",
-      "linkButton": "Связать",
-      "linkError": "Ошибка привязки пользователя: {error}",
-      "linkSuccess": "Пользователь успешно связан",
-      "linkedHeader": "Связан",
-      "linkedStatus": "Связан",
-      "notLinkedStatus": "Не связан",
+      "linkButton": "Добавить",
+      "linkError": "Не удалось добавить пользователя: {error}",
+      "linkSuccess": "Пользователь добавлен в группу",
+      "linkedHeader": "В группе",
+      "linkedStatus": "В группе",
+      "notLinkedStatus": "Не в группе",
       "unknownError": "Неизвестная ошибка",
-      "unlinkButton": "Отвязать",
-      "unlinkError": "Ошибка отвязки пользователя: {error}",
-      "unlinkSuccess": "Пользователь успешно отвязан",
+      "unlinkButton": "Убрать",
+      "unlinkError": "Не удалось убрать пользователя: {error}",
+      "unlinkSuccess": "Пользователь убран из группы",
       "searchPlaceholder": "Поиск людей по имени или логину",
       "searching": "Ищем…",
       "searchHint": "Показаны участники группы и найденные пользователи.",
@@ -5049,7 +5049,7 @@
           }
         ],
         "userGroupLinksImmediateTitle": "Привязки групп пользователей применяются немедленно",
-        "userGroupLinksImmediateDescription": "Эти привязки вступают в силу сразу после подтверждения. Храните изменения политики доступа отдельно и сохраняйте явно."
+        "userGroupLinksImmediateDescription": "Группа получает доступ сразу после привязки - кнопка «Сохранить» нужна только для выбора доступа выше."
       },
       "CoursePage": {
         "access": "Доступ",
