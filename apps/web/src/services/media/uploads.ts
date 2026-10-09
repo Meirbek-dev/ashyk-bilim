@@ -182,8 +182,11 @@ export async function uploadFile(
   purpose: UploadPurpose,
   options: UploadFileOptions = {},
 ): Promise<FinalizedUploadType> {
-  const guard = typeof window === 'undefined' ? null : window
-  if (guard && inFlightUploads++ === 0) guard.addEventListener('beforeunload', confirmLeavingUpload)
+  const guard = typeof globalThis.addEventListener === 'function' ? globalThis : null
+  if (guard) {
+    inFlightUploads += 1
+    if (inFlightUploads === 1) guard.addEventListener('beforeunload', confirmLeavingUpload)
+  }
   try {
     const created = await createUpload(file, purpose)
     throwIfCancelled(options.signal)
@@ -191,7 +194,10 @@ export async function uploadFile(
     throwIfCancelled(options.signal)
     return await finalizeUpload(created.id)
   } finally {
-    if (guard && --inFlightUploads === 0) guard.removeEventListener('beforeunload', confirmLeavingUpload)
+    if (guard) {
+      inFlightUploads -= 1
+      if (inFlightUploads === 0) guard.removeEventListener('beforeunload', confirmLeavingUpload)
+    }
   }
 }
 

@@ -15,8 +15,8 @@ export function probeVideoFile(file: Blob, timeoutMs = 8000): Promise<VideoProbe
     const video = document.createElement('video')
     const done = (result: VideoProbe) => {
       clearTimeout(timer)
-      video.onloadedmetadata = null
-      video.onerror = null
+      video.removeEventListener('loadedmetadata', onMetadata)
+      video.removeEventListener('error', onError)
       video.removeAttribute('src')
       URL.revokeObjectURL(url)
       resolve(result)
@@ -24,8 +24,10 @@ export function probeVideoFile(file: Blob, timeoutMs = 8000): Promise<VideoProbe
     const timer = setTimeout(() => done('ok'), timeoutMs)
     video.preload = 'metadata'
     video.muted = true
-    video.onloadedmetadata = () => done(video.videoWidth > 0 ? 'ok' : 'no-picture')
-    video.onerror = () => done('unplayable')
+    const onMetadata = () => done(video.videoWidth > 0 ? 'ok' : 'no-picture')
+    const onError = () => done('unplayable')
+    video.addEventListener('loadedmetadata', onMetadata)
+    video.addEventListener('error', onError)
     video.src = url
   })
 }
