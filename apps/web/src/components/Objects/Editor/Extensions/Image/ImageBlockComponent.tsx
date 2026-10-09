@@ -487,7 +487,7 @@ export default function ImageBlockComponent({ node, updateAttributes, deleteNode
 
         {/* Edit Mode */}
         {blockObject && imageUrl && isEditable && (
-          <div className={cn('group relative', alignmentClass)} style={{ width }}>
+          <div className={cn('group relative max-w-full', alignmentClass)} style={{ width }}>
             <NextImage
               src={imageUrl}
               alt=""
@@ -512,7 +512,7 @@ export default function ImageBlockComponent({ node, updateAttributes, deleteNode
 
         {/* View Mode */}
         {blockObject && imageUrl && !isEditable && (
-          <div className={cn('group relative', alignmentClass)} style={{ width }}>
+          <div className={cn('group relative max-w-full', alignmentClass)} style={{ width }}>
             <NextImage
               src={imageUrl}
               alt=""
