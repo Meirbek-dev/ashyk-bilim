@@ -112,12 +112,12 @@ function UserEditGeneral() {
       return
     }
     if (!SUPPORTED_AVATAR_MIME_TYPES.has(file.type) || file.name.toLowerCase().endsWith('.svg')) {
-      setError(t('avatarError'))
+      setError(t('avatarUnsupported'))
       setIsLoading(false)
       return
     }
     if (file.size > MAX_AVATAR_SOURCE_BYTES) {
-      setError(t('avatarError'))
+      setError(t('avatarTooLarge', { size: MAX_AVATAR_SOURCE_BYTES / 1024 / 1024 }))
       setIsLoading(false)
       return
     }

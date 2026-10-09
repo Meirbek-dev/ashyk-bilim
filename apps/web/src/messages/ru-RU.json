@@ -6394,6 +6394,8 @@
       "activityUpdateErrorGeneric": "Не удалось обновить активность",
       "activityUpdateSuccess": "Активность успешно обновлена",
       "avatarError": "Не удалось обновить аватар",
+      "avatarUnsupported": "Поддерживаются изображения JPG, PNG, WebP, GIF и AVIF.",
+      "avatarTooLarge": "Файл слишком большой: не более {size} МБ.",
       "avatarSuccess": "Аватар успешно обновлен",
       "avatarRemoved": "Аватар удалён",
       "changingJoinMethod": "Изменение метода присоединения...",

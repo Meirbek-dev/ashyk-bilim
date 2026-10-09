@@ -5915,6 +5915,8 @@
       "activityUpdateErrorGeneric": "Белсенділікті жаңарту мүмкін болмады",
       "activityUpdateSuccess": "Белсенділік сәтті жаңартылды",
       "avatarError": "Аватарды жаңарту мүмкін болмады",
+      "avatarUnsupported": "JPG, PNG, WebP, GIF және AVIF суреттері қолдау көрсетіледі.",
+      "avatarTooLarge": "Файл тым үлкен: {size} МБ-тан аспауы керек.",
       "avatarSuccess": "Аватар сәтті жаңартылды",
       "avatarRemoved": "Аватар жойылды",
       "changingJoinMethod": "Қосылу әдісі өзгертілуде...",

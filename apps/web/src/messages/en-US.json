@@ -6264,6 +6264,8 @@
       "activityUpdateErrorGeneric": "Failed to update activity",
       "activityUpdateSuccess": "Activity updated successfully",
       "avatarError": "Failed to update an avatar",
+      "avatarUnsupported": "Supported images: JPG, PNG, WebP, GIF and AVIF.",
+      "avatarTooLarge": "The file is too large: {size} MB at most.",
       "avatarSuccess": "Avatar updated successfully",
       "avatarRemoved": "Avatar removed",
       "changingJoinMethod": "Changing join method...",
