@@ -230,7 +230,7 @@ export default function CourseReviewPublish({
 
         {readinessQuery.isError ? (
           <InlineError className="mt-4" description={t('readinessUnavailable')} />
-        ) : readinessQuery.isLoading ? (
+        ) : readinessQuery.isPending ? (
           <div className="text-muted-foreground mt-4 flex items-center gap-2 text-sm">
             <Loader2 className="animate-spin" aria-hidden />
             {t('loadingReadiness')}
