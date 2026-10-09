@@ -237,8 +237,10 @@ function EditCourseGeneral() {
           lastKnownUpdateDate: course.courseStructure.update_date,
         }),
       {
+        // QA-D: no `form.reset(values)` here - the hydrate effect above already takes the saved course (the
+        // optimistic cache, then the refetch); resetting to the submitted values as well left the form unable to
+        // turn dirty again, so «Сохранить» stayed disabled for every later edit until a reload.
         onSuccess: () => {
-          form.reset(values)
           setError('')
         },
       },
