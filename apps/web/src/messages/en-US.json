@@ -13138,7 +13138,7 @@
     "description": "Assignments, reviews and courses waiting for you.",
     "browseLabel": "Browse",
     "toolsTitle": "Tools and sections",
-    "toolsDescription": "Explore courses, reports, people, and settings when you are not responding to queued work.",
+    "toolsDescription": "Courses, settings and the rest of the platform when no queued work needs you.",
     "openLabel": "Open",
     "groups": {
       "today": "Today",

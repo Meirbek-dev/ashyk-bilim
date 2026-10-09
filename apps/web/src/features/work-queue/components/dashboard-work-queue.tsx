@@ -2,7 +2,6 @@
 
 import {
   ArrowRight,
-  BarChart3,
   BookOpen,
   BriefcaseBusiness,
   CalendarClock,
@@ -214,7 +213,7 @@ function DashboardToolCard({ tool, openLabel }: { tool: DashboardToolItem; openL
       </div>
       <Button variant="ghost" nativeButton={false} render={<AppLink href={tool.href} />} className="self-start px-0">
         {openLabel}
-        <BarChart3 data-icon="inline-end" aria-hidden="true" />
+        <ArrowRight data-icon="inline-end" aria-hidden="true" />
       </Button>
     </article>
   )
