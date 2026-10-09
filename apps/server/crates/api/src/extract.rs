@@ -215,7 +215,17 @@ where
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let Json(value) = Json::<serde_json::Value>::from_request(req, state)
             .await
-            .map_err(|err| invalid_json(&err))?;
+            .map_err(|err| {
+                // QA-D: a body past the limit is a 413, not a field error.
+                if err.status() == StatusCode::PAYLOAD_TOO_LARGE {
+                    ApiError(Error::app(
+                        ErrorCode::PayloadTooLarge,
+                        "the request body is too large",
+                    ))
+                } else {
+                    invalid_json(&err)
+                }
+            })?;
         Self::from_value(value).map(Self)
     }
 }

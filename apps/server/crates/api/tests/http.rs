@@ -292,3 +292,45 @@ async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
         );
     }
 }
+
+/// QA-D: a body past the limit answers 413 problem+json - on raw-body routes
+/// (axum's plain-text rejection before the handler) and on `ValidJson` ones
+/// (was a 422 «invalid-json» field error).
+#[sqlx::test(migrations = "../../migrations")]
+async fn oversized_bodies_answer_problem_json_413(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("big", "big@example.com", &["user"]).await;
+    let who = app.mint_session_for(user, &[]).await;
+    let huge = format!("{{\"content\":\"{}\"}}", "x".repeat(3 * 1024 * 1024));
+    let raw = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/activities/{}", uuid::Uuid::now_v7()))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &who.cookie)
+                .body(Body::from(huge.clone()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(raw.status, StatusCode::PAYLOAD_TOO_LARGE, "{}", raw.text());
+    assert_eq!(raw.content_type(), "application/problem+json");
+    assert_eq!(raw.json()["code"], "payload-too-large");
+    let typed = app
+        .send(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/login")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(huge))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(
+        typed.status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "{}",
+        typed.text()
+    );
+    assert_eq!(typed.json()["code"], "payload-too-large");
+}

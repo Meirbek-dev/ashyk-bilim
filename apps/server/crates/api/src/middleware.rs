@@ -141,3 +141,23 @@ pub async fn lang_query(mut request: Request, next: Next) -> Response {
     }
     next.run(request).await
 }
+
+/// A 413 answers problem+json like everything else (QA-D).
+///
+/// axum's body limit answers a plain-text 413 for `Bytes` bodies, before any
+/// handler code runs; a lesson saved past the limit showed «Исправьте
+/// выделенные поля».
+pub async fn problem_payload_too_large(request: Request, next: Next) -> Response {
+    let response = next.run(request).await;
+    let is_problem = response
+        .headers()
+        .get(axum::http::header::CONTENT_TYPE)
+        .is_some_and(|v| v.as_bytes().starts_with(b"application/problem+json"));
+    if response.status() != axum::http::StatusCode::PAYLOAD_TOO_LARGE || is_problem {
+        return response;
+    }
+    axum::response::IntoResponse::into_response(ApiError(Error::app(
+        ErrorCode::PayloadTooLarge,
+        "the request body is too large",
+    )))
+}

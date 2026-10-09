@@ -521,6 +521,9 @@ pub fn build_router(state: AppState) -> Result<Router> {
         })
         .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
         .layer(axum::middleware::from_fn(crate::middleware::lang_query))
+        .layer(axum::middleware::from_fn(
+            crate::middleware::problem_payload_too_large,
+        ))
         // Inside `SetRequestIdLayer`: makes the id reachable from
         // `ApiError::into_response` (problem+json `request_id`).
         .layer(axum::middleware::from_fn(
