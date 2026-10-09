@@ -90,5 +90,6 @@ it('toasts a rejected chapter rename from the error-code catalog', async () => {
   fireEvent.click(screen.getByRole('button', { name: ruMessages.CourseEdit.save }))
 
   await waitFor(() => expect(mocks.toastError).toHaveBeenCalled())
-  expect(mocks.toastError.mock.calls[0]?.[0]).toBe(ruMessages.Errors.codes['validation-failed'])
+  // UX-292 / BUG-B5: no form to highlight the field in - the caller's localized fallback names what failed.
+  expect(mocks.toastError.mock.calls[0]?.[0]).toBe(ruMessages.CourseEdit.chapterUpdateFailed)
 })
