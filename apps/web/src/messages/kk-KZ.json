@@ -1327,6 +1327,24 @@
     "leaveWithoutSaving": "Сақтамай шығу"
   },
   "Components": {
+    "NotificationBell": {
+      "title": "Хабарландырулар",
+      "open": "Хабарландырулар",
+      "openUnread": "Хабарландырулар: оқылмаған {count}",
+      "markAllRead": "Барлығын оқу",
+      "loading": "Жүктелуде…",
+      "loadFailed": "Хабарландыруларды жүктеу мүмкін болмады.",
+      "empty": "Жаңа хабарландыру жоқ.",
+      "types": {
+        "grade_published": "Баға жарияланды: «{activity}»",
+        "submission_returned": "Жұмыс пысықтауға қайтарылды: «{activity}»",
+        "deadline_extended": "Мерзім ұзартылды: «{activity}»",
+        "deadline_approaching": "Тапсыру мерзімі жақын: «{activity}»",
+        "course_update": "Жаңа хабарландыру: «{title}»",
+        "discussion_reply": "{author} талқылауда жауап берді",
+        "contributor_application": "{applicant} курстың қосалқы авторы болғысы келеді"
+      }
+    },
     "WidgetErrorBoundary": {
       "defaultTitle": "Компонентті көрсету мүмкін болмады",
       "defaultDescription": "Бұл беттің бөлігін көрсету мүмкін болмады. Әрекетті қайталаңыз немесе қате қайталанса, бетті қайта жүктеңіз.",

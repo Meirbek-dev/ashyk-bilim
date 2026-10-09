@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { ThemeModeToggle } from '@/components/theme-mode-toggle'
 import { SearchBar } from '@/components/Objects/Search/SearchBar'
 import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher'
+import { NotificationBell } from '@/components/Objects/Menus/NotificationBell'
 import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox'
 
 // Hooks & Config
@@ -276,6 +277,8 @@ export default function NavBar() {
           </div>
 
           <ThemeModeToggle className="mx-1" />
+
+          {isAuthenticated ? <NotificationBell /> : null}
 
           <div className="hidden md:flex">
             <HeaderProfileBox />

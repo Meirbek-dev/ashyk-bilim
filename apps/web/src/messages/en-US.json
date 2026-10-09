@@ -1428,6 +1428,24 @@
     "leaveWithoutSaving": "Leave without saving"
   },
   "Components": {
+    "NotificationBell": {
+      "title": "Notifications",
+      "open": "Notifications",
+      "openUnread": "Notifications: {count} unread",
+      "markAllRead": "Mark all read",
+      "loading": "Loading…",
+      "loadFailed": "Could not load notifications.",
+      "empty": "No new notifications.",
+      "types": {
+        "grade_published": "Grade released: “{activity}”",
+        "submission_returned": "Work returned for revision: “{activity}”",
+        "deadline_extended": "Deadline extended: “{activity}”",
+        "deadline_approaching": "Due soon: “{activity}”",
+        "course_update": "New announcement: “{title}”",
+        "discussion_reply": "{author} replied in a discussion",
+        "contributor_application": "{applicant} wants to co-author the course"
+      }
+    },
     "WidgetErrorBoundary": {
       "defaultTitle": "Failed to render component",
       "defaultDescription": "This part of the page could not be displayed. Retry, or reload the page if it keeps failing.",

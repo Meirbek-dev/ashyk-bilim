@@ -1432,6 +1432,24 @@
     "leaveWithoutSaving": "Выйти без сохранения"
   },
   "Components": {
+    "NotificationBell": {
+      "title": "Уведомления",
+      "open": "Уведомления",
+      "openUnread": "Уведомления: непрочитанных {count}",
+      "markAllRead": "Прочитать все",
+      "loading": "Загрузка…",
+      "loadFailed": "Не удалось загрузить уведомления.",
+      "empty": "Новых уведомлений нет.",
+      "types": {
+        "grade_published": "Опубликована оценка: «{activity}»",
+        "submission_returned": "Работа возвращена на доработку: «{activity}»",
+        "deadline_extended": "Срок продлён: «{activity}»",
+        "deadline_approaching": "Скоро срок сдачи: «{activity}»",
+        "course_update": "Новое объявление: «{title}»",
+        "discussion_reply": "{author} ответил(а) в обсуждении",
+        "contributor_application": "{applicant} хочет стать соавтором курса"
+      }
+    },
     "WidgetErrorBoundary": {
       "defaultTitle": "Не удалось отобразить компонент",
       "defaultDescription": "Эта часть страницы не может быть отображена. Попробуйте еще раз или перезагрузите страницу, если ошибка повторится.",
