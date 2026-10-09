@@ -45,8 +45,15 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
   })
 
   async function setContent(content: unknown) {
-    // The header already shows the conflict notice; nothing may overwrite the other tab's save.
-    if (activityAutosave.saveStatus === 'conflict' || activityAutosave.saveStatus === 'forbidden') return
+    // Nothing may overwrite the other tab's save - but a click on «Сохранить» says why nothing happened.
+    if (activityAutosave.saveStatus === 'conflict') {
+      toast.error(t('conflictSaveBlocked'))
+      return
+    }
+    if (activityAutosave.saveStatus === 'forbidden') {
+      toast.error(t('noAccess'))
+      return
+    }
     toast.promise(activityAutosave.flush(contentPayload(content)), {
       loading: t('saving'),
       success: () => <b>{t('saveSuccess')}</b>,
