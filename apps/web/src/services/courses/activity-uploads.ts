@@ -83,8 +83,13 @@ export async function createFileActivity(
 }
 
 /**
- * Swap the file of an existing video / PDF activity: upload, point `content` at
- * the new key (optimistic lock on `version`), then claim the upload as a block.
+ * Swap the file of an existing video / PDF activity: upload, claim the upload
+ * as a block, point `content` at the new key (optimistic lock on `version`),
+ * then drop the blocks of the replaced file.
+ *
+ * BUG-B9: the claim comes first so `content` never names an upload the reaper
+ * may collect, and the old block is deleted - it kept every replaced lecture
+ * in storage forever.
  */
 export async function replaceActivityFile(
   activity: { activity_uuid: string; version?: unknown },
@@ -93,13 +98,12 @@ export async function replaceActivityFile(
   onProgress?: (progress: UploadProgress) => void,
 ) {
   const kind = FILE_ACTIVITY_KINDS[type]!
+  const id = activity.activity_uuid
   const upload = await uploadFile(file, kind.purpose, {
     onProgress: progress => onProgress?.({ percentage: progress.percentage }),
   })
-  const content = { filename: upload.key, upload_id: upload.id, file_name: file.name }
-  const updated = await updateActivity({ content, version: activity.version }, activity.activity_uuid)
-  await apiJson(
-    `activities/${updated.activity_uuid}/blocks`,
+  const block = await apiJson(
+    `activities/${id}/blocks`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,5 +111,25 @@ export async function replaceActivityFile(
     },
     (body: unknown) => Block.parse(body),
   )
+  const content = { filename: upload.key, upload_id: upload.id, file_name: file.name }
+  let updated
+  try {
+    updated = await updateActivity({ content, version: activity.version }, id)
+  } catch (error) {
+    // Not shown anywhere: release the new file instead of keeping it.
+    await deleteBlock(block.id)
+    throw error
+  }
+  const blocks = await apiJson(`activities/${id}/blocks`, {}, (body: unknown) => Block.array().parse(body)).catch(
+    () => [],
+  )
+  await Promise.all(blocks.filter(old => old.id !== block.id).map(old => deleteBlock(old.id)))
   return { ...updated, content }
 }
+
+/** Best effort: a block left behind only keeps its file in storage. */
+const deleteBlock = (blockId: string) =>
+  apiJson(`blocks/${blockId}`, { method: 'DELETE' }).then(
+    () => undefined,
+    () => undefined,
+  )

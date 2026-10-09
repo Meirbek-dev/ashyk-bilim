@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson, apiResult: mocks.apiResult }))
 vi.mock('@services/media/uploads', () => ({ uploadFile: mocks.uploadFile }))
 
-import { createFileActivity } from '@services/courses/activity-uploads'
+import { createFileActivity, replaceActivityFile } from '@services/courses/activity-uploads'
 
 const CHAPTER_ID = '01a09100-0000-7000-8000-0000000000c1'
 const COURSE_ID = '01a09100-0000-7000-8000-0000000000d1'
@@ -134,5 +134,50 @@ describe('createFileActivity (v2)', () => {
     expect(mocks.uploadFile).not.toHaveBeenCalled()
     expect(mocks.apiResult).not.toHaveBeenCalled()
     expect(mocks.apiJson).not.toHaveBeenCalled()
+  })
+})
+
+// BUG-B9: replacing a video claims the new upload before `content` names it and
+// deletes the replaced file's block (it kept the old lecture in storage forever).
+describe('replaceActivityFile', () => {
+  const NEW_BLOCK = '01a09100-0000-7000-8000-0000000000b2'
+  const OLD_BLOCK = '01a09100-0000-7000-8000-0000000000b1'
+  const block = (id: string) => ({ id, activity_id: ACTIVITY_ID, block_type: 'video', content: {}, created_at_unix: 1 })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.uploadFile.mockResolvedValue({ id: UPLOAD_ID, key: 'block-video/new', size_bytes: 10 })
+    mocks.apiResult.mockImplementation(async (_path: string, _init: Init, parse: (data: unknown) => unknown) => ({
+      data: parse(wireActivity('video', 'video_hosted', 4)),
+      headers: { etag: '"4"' },
+    }))
+    mocks.apiJson.mockImplementation(
+      async (path: string, init: { method?: string }, parse?: (d: unknown) => unknown) => {
+        if (init.method === 'POST') return parse!(block(NEW_BLOCK))
+        if (init.method === 'DELETE') return undefined
+        return parse!([block(OLD_BLOCK), block(NEW_BLOCK)])
+      },
+    )
+  })
+
+  it('claims, then repoints content, then deletes only the old block', async () => {
+    const file = new File(['x'], 'IMG_0001.MOV', { type: 'video/quicktime' })
+    await replaceActivityFile({ activity_uuid: ACTIVITY_ID, version: 3 }, file, 'video')
+    const calls = mocks.apiJson.mock.calls.map(
+      ([path, init]) => `${(init as { method?: string }).method ?? 'GET'} ${path}`,
+    )
+    expect(calls).toEqual([
+      `POST activities/${ACTIVITY_ID}/blocks`,
+      `GET activities/${ACTIVITY_ID}/blocks`,
+      `DELETE blocks/${OLD_BLOCK}`,
+    ])
+    expect(mocks.apiJson.mock.invocationCallOrder[0]!).toBeLessThan(mocks.apiResult.mock.invocationCallOrder[0]!)
+  })
+
+  it('releases the new block when the content save loses a race', async () => {
+    mocks.apiResult.mockRejectedValue(new Error('412'))
+    const file = new File(['x'], 'a.mp4', { type: 'video/mp4' })
+    await expect(replaceActivityFile({ activity_uuid: ACTIVITY_ID, version: 3 }, file, 'video')).rejects.toThrow('412')
+    expect(mocks.apiJson.mock.calls.at(-1)!.slice(0, 2)).toEqual([`blocks/${NEW_BLOCK}`, { method: 'DELETE' }])
   })
 })
