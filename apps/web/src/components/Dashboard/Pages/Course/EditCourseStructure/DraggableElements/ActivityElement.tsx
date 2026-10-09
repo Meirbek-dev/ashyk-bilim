@@ -30,7 +30,17 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
-import { useListCourseAssessments } from '@/lib/api/generated/assessments/assessments'
+import {
+  lifecycle as transitionAssessment,
+  useListCourseAssessments,
+} from '@/lib/api/generated/assessments/assessments'
+import {
+  getFileSubmissionByActivity,
+  publishFileSubmissionActivity,
+} from '@/features/file-submissions/services/file-submissions'
+import { courseKeys } from '@/hooks/courses/courseKeys'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { useQueryClient } from '@tanstack/react-query'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid, isCourseAuthor } from '@/lib/course-management'
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -224,6 +234,31 @@ function ActivityElement({
     }
   }
 
+  const queryClient = useQueryClient()
+  // An assessment / file-submission activity goes live through its backing object (the server
+  // refuses the raw toggle with `activity-not-ready` while that is a draft): publish it instead,
+  // its transition flips the activity. Returns false when the raw toggle is the right call.
+  const publishBackingObject = async (): Promise<boolean> => {
+    if (activity.activity_type === 'TYPE_FILE_SUBMISSION') {
+      const config = await getFileSubmissionByActivity(activityId)
+      if (config.lifecycle === 'published') return false
+      await publishFileSubmissionActivity(config.id)
+    } else if (isAssessment && assessmentLifecycle === 'draft') {
+      const assessmentId = assessments.data?.find(a => a.activity_id === activityId)?.id
+      if (!assessmentId) return false
+      await transitionAssessment(assessmentId, { to: 'published' })
+    } else {
+      return false
+    }
+    const courseId = cleanCourseUuid(course_uuid)
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: courseKeys.structure(courseId).slice(0, 3) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.courses.readiness(courseId) }),
+      assessments.refetch(),
+    ])
+    return true
+  }
+
   const handleTogglePublish = async () => {
     // The optimistic update rewrites `activity` in place — read it first.
     const unpublishing = activity.published
@@ -231,14 +266,16 @@ function ActivityElement({
     setIsUpdatingPublish(true)
     const toastId = toast.loading(t('updating'))
     try {
-      await updateActivity(activity.activity_uuid, {
-        published: !unpublishing,
-      })
+      if (unpublishing || !(await publishBackingObject())) {
+        await updateActivity(activity.activity_uuid, {
+          published: !unpublishing,
+        })
+      }
       toast.success(unpublishing ? t('unpublishedToast') : t('activityUpdateSuccess'))
     } catch (error: unknown) {
-      // `activity-not-ready` (file-submission config still a draft) and the
-      // rest are localized through the error-code catalog.
-      toastApiError(error, undefined, t('updateFailed'))
+      // A draft that fails its readiness checks (422) is fixed in the editor, not here.
+      if (!unpublishing && hasErrorCode(error, 'validation-failed')) toast.error(t('notReadyToPublish'))
+      else toastApiError(error, undefined, t('updateFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsUpdatingPublish(false)

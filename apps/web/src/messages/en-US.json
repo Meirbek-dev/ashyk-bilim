@@ -2917,6 +2917,7 @@
       "unpublish": "Unpublish",
       "unpublishButton": "Unpublish",
       "updateFailed": "Failed to update activity",
+      "notReadyToPublish": "Not ready to publish yet: open the editor and fix the listed issues.",
       "updating": "Updating activity...",
       "editButton": "Edit",
       "draftBadge": "Draft",
