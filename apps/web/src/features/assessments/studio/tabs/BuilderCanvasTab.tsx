@@ -1151,6 +1151,7 @@ function ItemPreviewPanel({
 
 function PreviewAnswerBody({ item }: { item: EditableItem }) {
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
+  const tFieldTypes = useTranslations('Features.Assessments.Studio.NativeItemStudio.Items.Form.fieldTypes')
 
   if (item.body.kind === 'CHOICE') {
     return (
@@ -1197,7 +1198,8 @@ function PreviewAnswerBody({ item }: { item: EditableItem }) {
             <p className="text-sm font-medium">{field.label || tBuilder('previewEmptyField')}</p>
             <p className="text-muted-foreground text-xs">
               {tBuilder('previewFieldMeta', {
-                type: field.field_type,
+                // The raw wire type («text») was shown in the preview.
+                type: tFieldTypes.has(field.field_type) ? tFieldTypes(field.field_type) : field.field_type,
                 required: field.required ? tBuilder('required') : tBuilder('optional'),
               })}
             </p>
