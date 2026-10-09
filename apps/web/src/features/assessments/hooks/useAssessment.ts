@@ -305,7 +305,11 @@ function useAssessment(
         : null,
     latePenaltyPct: visible && latest?.late_penalty_pct ? latest.late_penalty_pct : null,
     autoSubmitReason: latest?.auto_submit_reason ?? null,
-    generalFeedback: visible && latest?.grading?.feedback?.trim() ? latest.grading.feedback : null,
+    // A returned attempt's comment is what the learner must act on (release.ts: feedback visible).
+    generalFeedback:
+      (visible || latest?.release_state === 'returned_for_revision') && latest?.grading?.feedback?.trim()
+        ? latest.grading.feedback
+        : null,
     pendingAttemptNumber,
     recommendedAction,
     primaryButtonLabelKey: recommendedAction,

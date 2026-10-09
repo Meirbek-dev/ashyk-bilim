@@ -14,6 +14,7 @@ import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
+import { MarkdownContent } from '@/features/content-markdown'
 
 interface AttemptEntryCardProps {
   vm: AttemptViewModel
@@ -183,6 +184,13 @@ export default function AttemptEntryCard({
                   <p className="text-muted-foreground mt-1 text-sm">
                     {isAwaitingRelease ? t('waitingForRelease') : t('readyToStartSubtitle')}
                   </p>
+                  {/* The returned attempt's comment is what to revise - it was not shown anywhere. */}
+                  {isRevision && vm.generalFeedback ? (
+                    <div className="mt-3 border-t pt-3 text-sm" data-testid="revision-feedback">
+                      <p className="text-muted-foreground mb-1 text-xs font-medium">{t('teacherFeedback')}</p>
+                      <MarkdownContent content={vm.generalFeedback} mode="compactRichText" />
+                    </div>
+                  ) : null}
                   {typeof vm.nextAttemptCapPercent === 'number' ? (
                     <p className="text-muted-foreground mt-1 text-sm" data-testid="attempt-cap-note">
                       {t('attemptCapNote', { percent: percent(vm.nextAttemptCapPercent) })}
