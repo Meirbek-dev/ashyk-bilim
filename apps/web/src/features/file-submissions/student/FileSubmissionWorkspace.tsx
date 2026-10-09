@@ -503,7 +503,10 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
               ) : (
                 <RotateCcw className="size-4" />
               )}
-              {t('newAttempt', { number: data.attempts.length + 1, max: data.max_attempts ?? 0 })}
+              {/* Unlimited attempts used to read «Новая попытка (2 из 0)». */}
+              {data.max_attempts == null
+                ? t('newAttemptUnlimited', { number: data.attempts.length + 1 })
+                : t('newAttempt', { number: data.attempts.length + 1, max: data.max_attempts })}
             </Button>
           </div>
         ) : null}

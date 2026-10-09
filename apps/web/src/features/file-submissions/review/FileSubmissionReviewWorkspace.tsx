@@ -557,7 +557,12 @@ export default function FileSubmissionReviewWorkspace({
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium">{file.filename}</p>
                             <p className="text-muted-foreground text-xs">
-                              {formatBytes(file.size_bytes ?? 0)} · {t(`scan_${file.scan_status}`)}
+                              {formatBytes(file.size_bytes ?? 0)}
+                              {/* No scanner runs yet: every file stays `pending`, which read as «проверка ожидается»
+                                  next to the grading - only a verdict worth acting on is shown. */}
+                              {file.scan_status === 'flagged' || file.scan_status === 'error'
+                                ? ` · ${t(`scan_${file.scan_status}`)}`
+                                : null}
                             </p>
                           </div>
                         </div>

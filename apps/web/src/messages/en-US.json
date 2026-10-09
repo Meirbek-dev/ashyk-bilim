@@ -12540,6 +12540,7 @@
       "returned": "Returned"
     },
     "newAttempt": "New attempt ({number} of {max})",
+    "newAttemptUnlimited": "New attempt (#{number})",
     "bytes": {
       "B": "{value} B",
       "KB": "{value} KB",

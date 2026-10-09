@@ -11829,6 +11829,7 @@
       "returned": "Қайтарылды"
     },
     "newAttempt": "Жаңа әрекет ({number} / {max})",
+    "newAttemptUnlimited": "Жаңа әрекет (№{number})",
     "bytes": {
       "B": "{value} Б",
       "KB": "{value} КБ",

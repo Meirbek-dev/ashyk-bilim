@@ -12814,6 +12814,7 @@
       "returned": "Возвращено"
     },
     "newAttempt": "Новая попытка ({number} из {max})",
+    "newAttemptUnlimited": "Новая попытка (№{number})",
     "bytes": {
       "B": "{value} Б",
       "KB": "{value} КБ",
