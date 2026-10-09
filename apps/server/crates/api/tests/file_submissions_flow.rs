@@ -1847,3 +1847,71 @@ async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
     })
     .await;
 }
+
+/// A revision handed in after «Вернуть на доработку» opens a new review
+/// round: the grader's form no longer carries the return comment (typing a
+/// new one appended to it), the grading history still does.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_resubmitted_revision_clears_the_return_comment(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let first = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let attempt_id = first.json()["id"].as_str().unwrap().to_owned();
+    let version = first.json()["version"].to_string();
+    let returned = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+            Some(&version),
+            &serde_json::json!({ "action": "return", "feedback": "Add references" }),
+        ))
+        .await;
+    assert_eq!(returned.status, StatusCode::OK, "{}", returned.text());
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}/me"))
+        .await;
+    assert_eq!(seen.json()[0]["feedback"], "Add references");
+
+    let again = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+    assert_eq!(again.json()["id"], attempt_id.as_str());
+    let graders_view = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}"),
+        )
+        .await;
+    assert_eq!(graders_view.json()["status"], "submitted");
+    assert!(
+        graders_view.json()["feedback"]
+            .as_str()
+            .is_none_or(str::is_empty),
+        "{}",
+        graders_view.text()
+    );
+    let history = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/file-submission-attempts/{attempt_id}/grading-history"),
+        )
+        .await;
+    assert_eq!(history.json()[0]["feedback"], "Add references");
+}

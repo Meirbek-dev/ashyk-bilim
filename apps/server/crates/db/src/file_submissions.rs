@@ -506,8 +506,11 @@ pub async fn submit_attempt(
     late_penalty_pct: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
+        // A revision handed in starts a new review round: the return comment
+        // stays in the grading history, not on the form the grader reopens.
         r#"UPDATE file_submission_attempts SET
                status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4,
+               feedback = CASE WHEN status = 'returned' THEN '' ELSE feedback END,
                version = version + 1
            WHERE id = $1 AND version = $2 AND status IN ('draft', 'returned')"#,
         id.0,
