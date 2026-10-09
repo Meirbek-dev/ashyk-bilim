@@ -84,3 +84,23 @@ describe('FileSubmissionWorkspace history', () => {
     expect(screen.getByText('teacherFeedback')).toBeTruthy()
   })
 })
+
+// QA-A: «Вернуть на доработку» without a score hid the teacher's comment - the learner
+// saw only the draft editor and had to guess what to revise.
+describe('FileSubmissionWorkspace returned without a score', () => {
+  it('shows the comment above the revision editor', async () => {
+    const returned = { ...published, status: 'returned', final_score: null, feedback: 'Добавьте список литературы' }
+    mocks.getActivity.mockResolvedValue({ ...config, current_attempt: returned, attempts: [returned] })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <FileSubmissionWorkspace
+          activity={{ activity_uuid: `activity_${ACTIVITY_ID}`, activity_type: 'TYPE_FILE_SUBMISSION' } as Activity}
+          course={{ course_uuid: 'course_c1' } as CourseStructure}
+        />
+      </QueryClientProvider>,
+    )
+    expect((await screen.findAllByText('Добавьте список литературы')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('yourScore')).toBeNull()
+  })
+})

@@ -31,13 +31,17 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      {/* Score block */}
+      {/* Score block (a return without a score shows only its badge and comment) */}
       <div className="bg-muted/30 border-border flex items-center justify-between gap-4 rounded-xl border p-6">
         <div>
-          <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
-          <p className="text-4xl font-bold tabular-nums">
-            {typeof final_score === 'number' ? formatPercent(final_score) : '-'}
-          </p>
+          {typeof final_score === 'number' || !isReturned ? (
+            <>
+              <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
+              <p className="text-4xl font-bold tabular-nums">
+                {typeof final_score === 'number' ? formatPercent(final_score) : '-'}
+              </p>
+            </>
+          ) : null}
           {late_penalty_pct > 0 ? (
             <p className="text-muted-foreground mt-1 text-xs">{t('latePenalty', { percent: late_penalty_pct })}</p>
           ) : null}

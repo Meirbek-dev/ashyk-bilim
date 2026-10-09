@@ -474,8 +474,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   // ── State: published → result ─────────────────────────────────────────────
 
   if ((status === 'published' || status === 'returned') && activeAttempt) {
-    const showResult =
-      status === 'published' || (status === 'returned' && typeof activeAttempt.final_score === 'number')
+    // A return without a score still carries the comment on what to revise (it was hidden).
+    const showResult = status === 'published' || (status === 'returned' && hasResult(activeAttempt))
     const canRevise = status === 'returned'
     const handleRevise = canRevise
       ? async () => {
@@ -489,7 +489,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
 
     return (
       <div className="space-y-6">
-        {canRevise ? null : <TaskInstructions instructions={data.instructions} />}
+        {/* The task stays readable while revising. */}
+        <TaskInstructions instructions={data.instructions} />
         {showResult ? (
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
