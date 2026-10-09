@@ -584,7 +584,9 @@
       }
     },
     "DocumentPdf": {
-      "viewerTitle": "Просмотрщик PDF-документов"
+      "viewerTitle": "Просмотрщик PDF-документов",
+      "openInNewTab": "Открыть в новой вкладке",
+      "download": "Скачать"
     },
     "ExamActivity": {
       "unansweredQuestions": "Неотвеченные вопросы",

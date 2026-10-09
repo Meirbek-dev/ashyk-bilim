@@ -589,7 +589,9 @@
       }
     },
     "DocumentPdf": {
-      "viewerTitle": "PDF Document Viewer"
+      "viewerTitle": "PDF Document Viewer",
+      "openInNewTab": "Open in a new tab",
+      "download": "Download"
     },
     "ExamActivity": {
       "unansweredQuestions": "Unanswered questions",

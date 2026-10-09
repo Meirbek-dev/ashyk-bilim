@@ -552,7 +552,9 @@
       }
     },
     "DocumentPdf": {
-      "viewerTitle": "PDF құжаттарды қарау құралы"
+      "viewerTitle": "PDF құжаттарды қарау құралы",
+      "openInNewTab": "Жаңа қойындыда ашу",
+      "download": "Жүктеп алу"
     },
     "ExamActivity": {
       "unansweredQuestions": "Жауап берілмеген сұрақтар",
