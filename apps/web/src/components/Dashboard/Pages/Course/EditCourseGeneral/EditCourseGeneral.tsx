@@ -77,6 +77,8 @@ function LearningsEditor({
 }) {
   const t = useTranslations('CourseEdit.General.LearningItems')
   const validationT = useTranslations('Validation')
+  // The row «Добавить пункт» just added takes the focus, so typing goes into it.
+  const [addedId, setAddedId] = useState<string | null>(null)
   const update = (index: number, patch: Partial<LearningValue>) =>
     onChange(value.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   const move = (from: number, to: number) => {
@@ -106,6 +108,13 @@ function LearningsEditor({
                 value={item.text}
                 onChange={event => update(index, { text: event.target.value })}
                 placeholder={t('placeholder')}
+                aria-label={t('placeholder')}
+                ref={element => {
+                  if (element && item.id === addedId) {
+                    element.focus()
+                    setAddedId(null)
+                  }
+                }}
                 maxLength={300}
                 aria-invalid={Boolean(message)}
                 className="min-w-0 flex-1"
@@ -154,7 +163,11 @@ function LearningsEditor({
         size="sm"
         className="self-start"
         disabled={value.length >= 30}
-        onClick={() => onChange([...value, { id: crypto.randomUUID(), text: '', emoji: '' }])}
+        onClick={() => {
+          const id = crypto.randomUUID()
+          setAddedId(id)
+          onChange([...value, { id, text: '', emoji: '' }])
+        }}
       >
         <Plus aria-hidden="true" />
         {t('addItemButton')}
@@ -176,6 +189,8 @@ function EditCourseGeneral() {
   const { updateMetadata } = useCoursesMutations(courseStructure?.course_uuid ?? '')
 
   const serverValues = useMemo(() => buildFormValues(courseStructure), [courseStructure])
+  // The SSR value of the name field; it must not change afterwards (Base UI warns on a changing defaultValue).
+  const [ssrName] = useState(serverValues.name)
 
   type CourseGeneralInputValues = v.InferInput<typeof courseGeneralSchema>
 
@@ -275,7 +290,7 @@ function EditCourseGeneral() {
                 <Input
                   {...form.register('name')}
                   // In the server HTML too: `register` only fills the field once hydrated.
-                  defaultValue={serverValues.name}
+                  defaultValue={ssrName}
                   id="name"
                   placeholder={t('name.placeholder')}
                   className="text-lg"

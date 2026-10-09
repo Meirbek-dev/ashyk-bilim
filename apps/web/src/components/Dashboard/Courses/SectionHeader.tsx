@@ -47,7 +47,7 @@ export function SectionHeader({
   const tCommon = useTranslations('Common')
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="space-y-1">
         <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
         {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}

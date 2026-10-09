@@ -81,7 +81,7 @@ export function DashBreadcrumbs({ type, last_breadcrumb }: DashBreadcrumbsProps)
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{last_breadcrumb}</BreadcrumbPage>
+                <BreadcrumbPage className="max-w-[60vw] truncate">{last_breadcrumb}</BreadcrumbPage>
               </BreadcrumbItem>
             </>
           ) : null}
