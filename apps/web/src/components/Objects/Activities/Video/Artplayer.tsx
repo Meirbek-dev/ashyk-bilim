@@ -1,5 +1,5 @@
 import type ArtplayerType from 'artplayer'
-import { useEffect, useEffectEvent, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import Artplayer from 'artplayer'
 import { useTranslations } from 'next-intl'
 import { MediaUnavailable, useMediaMissing } from '@components/Objects/Activities/Media/MediaUnavailable'
@@ -38,9 +38,13 @@ export default function ArtPlayer({
   const t = useTranslations('Components.VideoPlayer')
   // UX-221: a missing object would only ever show «Reconnect: N».
   const missing = useMediaMissing(option.url as string | undefined)
+  // A file the browser cannot open (a renamed non-video, AVI/FLV, a corrupt upload) would
+  // otherwise spin on «Reconnect: N» forever.
+  const [unplayable, setUnplayable] = useState(false)
   useEffect(() => {
-    if (missing && instanceRef.current && !instanceRef.current.isDestroy) instanceRef.current.destroy(false)
-  }, [missing])
+    if ((missing || unplayable) && instanceRef.current && !instanceRef.current.isDestroy)
+      instanceRef.current.destroy(false)
+  }, [missing, unplayable])
 
   // One player per mount: the props are read when the container mounts.
   const createPlayer = useEffectEvent((container: HTMLDivElement) => {
@@ -69,35 +73,43 @@ export default function ArtPlayer({
       autoPlayback: true,
       airplay: true,
       theme: '#23ade5',
-      settings: [
-        {
-          width: 200,
-          html: t('subtitles'),
-          icon: captionsSVGString,
-          selector: [
-            {
-              html: t('enableSubtitles'),
-              switch: true,
-              onSwitch: item => {
-                art.subtitle.show = !item.switch
-                return !item.switch
+      // No subtitle files: no subtitle menu (it would only offer a switch for nothing).
+      settings:
+        subtitle || subtitleEntries.length > 0
+          ? [
+              {
+                width: 200,
+                html: t('subtitles'),
+                icon: captionsSVGString,
+                selector: [
+                  {
+                    html: t('enableSubtitles'),
+                    switch: true,
+                    onSwitch: item => {
+                      art.subtitle.show = !item.switch
+                      return !item.switch
+                    },
+                  },
+                  ...subtitleEntries,
+                ],
+                onSelect: item => {
+                  art.subtitle.switch(item.url, {
+                    name: item.html,
+                  })
+                  return item.html
+                },
               },
-            },
-            ...subtitleEntries,
-          ],
-          onSelect: item => {
-            art.subtitle.switch(item.url, {
-              name: item.html,
-            })
-            return item.html
-          },
-        },
-      ],
+            ]
+          : [],
       // Only include subtitle config if a subtitle prop was provided to avoid requesting a non-existent default file
       ...(subtitle ? { subtitle } : {}),
     })
 
     instanceRef.current = art
+    const handleMediaError = () => {
+      if (isUnplayableMediaError(art.video.error)) setUnplayable(true)
+    }
+    art.video.addEventListener('error', handleMediaError)
     if (getInstance && typeof getInstance === 'function') {
       getInstance(art)
     }
@@ -124,6 +136,7 @@ export default function ArtPlayer({
     }
 
     return () => {
+      art.video.removeEventListener('error', handleMediaError)
       art.off('ready', handleReady)
       if (handleTimeUpdate) {
         art.off('timeupdate', handleTimeUpdate)
@@ -140,5 +153,21 @@ export default function ArtPlayer({
   }, [])
 
   if (missing) return <MediaUnavailable kind="video" />
+  if (unplayable) return <MediaUnavailable kind="video" unplayable />
   return <div ref={artRef} {...rest} />
+}
+
+/**
+ * Decode errors, and «format» errors from the demuxer itself (Chromium names
+ * it in the message; Firefox reports NS_ERROR_DOM_MEDIA_*). A plain format
+ * error with no such detail is also what a 404 or an offline fetch gives -
+ * those keep the player's own reconnect / missing-file handling.
+ */
+export function isUnplayableMediaError(error: MediaError | null): boolean {
+  if (!error) return false
+  if (error.code === 3) return true // MEDIA_ERR_DECODE
+  return (
+    error.code === 4 && // MEDIA_ERR_SRC_NOT_SUPPORTED
+    /DEMUXER|DECODER|PIPELINE_ERROR|NS_ERROR_DOM_MEDIA/i.test(error.message)
+  )
 }

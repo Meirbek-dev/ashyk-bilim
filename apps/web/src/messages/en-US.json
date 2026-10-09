@@ -2609,7 +2609,8 @@
     "MediaUnavailable": {
       "video": "Video unavailable",
       "pdf": "Document unavailable",
-      "hint": "The file is missing from storage. Let the course teacher know."
+      "hint": "The file is missing from storage. Let the course teacher know.",
+      "unplayableHint": "The browser cannot play this file: it is damaged or in an unsupported format. Let the course teacher know."
     },
     "VideoPlayer": {
       "subtitles": "Subtitles",

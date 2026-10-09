@@ -24,7 +24,8 @@ export function useMediaMissing(url: string | null | undefined): boolean {
   return missing
 }
 
-export function MediaUnavailable({ kind }: { kind: 'video' | 'pdf' }) {
+/** `unplayable`: the object is there but the browser cannot demux or decode it. */
+export function MediaUnavailable({ kind, unplayable = false }: { kind: 'video' | 'pdf'; unplayable?: boolean }) {
   const t = useTranslations('Components.MediaUnavailable')
   return (
     <div
@@ -33,7 +34,7 @@ export function MediaUnavailable({ kind }: { kind: 'video' | 'pdf' }) {
     >
       <FileWarning className="size-8" aria-hidden="true" />
       <p className="text-foreground font-medium">{t(kind)}</p>
-      <p className="text-sm">{t('hint')}</p>
+      <p className="text-sm">{t(unplayable ? 'unplayableHint' : 'hint')}</p>
     </div>
   )
 }
