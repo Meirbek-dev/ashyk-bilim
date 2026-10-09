@@ -88,3 +88,40 @@ describe('a save refused because the session ended', () => {
     expect(sessionStorage.length).toBe(0)
   }, 10_000)
 })
+
+// The teacher returned the exam to draft mid-attempt: the save's 404 keeps the
+// answer on this device with its own message; after republishing it comes back.
+describe('a save refused because the assessment was unpublished', () => {
+  it('keeps the answer, says the teacher closed it, and restores it on return', async () => {
+    let published = false
+    const saved: unknown[] = []
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      const url = String(path)
+      if (url.endsWith('/draft') && init?.method === 'PATCH') {
+        if (!published) throw new APIError({ code: 'not-found', status: 404, message: 'assessment not found' })
+        const body = JSON.parse(String(init.body)) as { answers: unknown }
+        saved.push(body.answers)
+        return parse!({ ...draft, answers: body.answers, draft_version: 3 })
+      }
+      if (url.endsWith('/me')) return parse!([draft])
+      return parse!(draft)
+    })
+
+    const first = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(first.result.current.isLoading).toBe(false))
+    act(() => first.result.current.setItemAnswer(itemId, changed[itemId]))
+    act(() => first.result.current.save())
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Features.ActivityWorkspace.assessmentUnavailable', {
+        id: 'assessment-unavailable',
+      }),
+    )
+    expect(first.result.current.saveState).toBe('dirty')
+    first.unmount()
+
+    published = true
+    renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    await waitFor(() => expect(saved).toEqual([changedWire]))
+    expect(toast.info).toHaveBeenCalledWith('Features.ActivityWorkspace.sessionEndedRestored')
+  }, 10_000)
+})

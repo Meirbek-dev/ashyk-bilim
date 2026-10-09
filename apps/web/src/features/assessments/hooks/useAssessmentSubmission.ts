@@ -86,6 +86,13 @@ function dropKeptAnswers(submissionId: string): void {
   }
 }
 
+// The teacher returned the assessment to draft (or hid it) under the open
+// form: save / submit answer 404. Keep the answers on this device like a 401
+// does - they come back (and save) when the draft reopens after republishing.
+function isAssessmentGone(error: unknown): boolean {
+  return isApiError(error) && error.status === 404
+}
+
 function isOfflineRecoverable(error: unknown): boolean {
   if (!isApiError(error)) return false
   return error.status === 0 || error.code === 'CLIENT_TIMEOUT' || error.code === 'NETWORK_UNAVAILABLE'
@@ -310,6 +317,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         toast.error(t('sessionEnded'))
         return
       }
+      if (isAssessmentGone(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('assessmentUnavailable'), { id: 'assessment-unavailable' })
+        return
+      }
       if (isApiError(error) && error.status === 409) {
         const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
         if (latest) {
@@ -417,6 +430,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         keepAnswers(submissionIdRef.current, localAnswersRef.current)
         setSaveState('dirty')
         toast.error(t('sessionEnded'))
+        return
+      }
+      if (isAssessmentGone(error)) {
+        keepAnswers(submissionIdRef.current, localAnswersRef.current)
+        setSaveState('dirty')
+        toast.error(t('assessmentUnavailable'), { id: 'assessment-unavailable' })
         return
       }
       if (isApiError(error) && error.status === 409 && error.details?.field === 'content_version' && assessmentUuid) {
