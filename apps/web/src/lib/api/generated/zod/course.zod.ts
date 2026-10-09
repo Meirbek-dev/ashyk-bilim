@@ -48,6 +48,7 @@ export const Course = zod.object({
       'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
     ),
   updated_at_unix: zod.int(),
+  version: zod.int().optional().describe('Optimistic lock: `If-Match` on `PATCH`; the `ETag` of `GET`.'),
 })
 
 export type Course = zod.input<typeof Course>

@@ -11,6 +11,7 @@ import {
 
 interface MutationOptions {
   lastKnownUpdateDate?: string | null | undefined
+  version?: number | undefined
 }
 
 export function useCoursesMutations(courseUuid: string, withUnpublishedActivities = true) {

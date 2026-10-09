@@ -23,6 +23,8 @@ const toTagArray = (raw: unknown): string[] => {
 
 interface CourseWriteOptions {
   lastKnownUpdateDate?: string | null | undefined
+  /** The course `version` the edit started from: sent as `If-Match`, a newer save elsewhere answers 412. */
+  version?: number | undefined
   includeEditableList?: boolean
   includePublicList?: boolean
 }
@@ -45,11 +47,19 @@ const toUpdateCourseRequest = (data: AppPayload) => ({
     : {}),
 })
 
-async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>) {
+async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdateCourseRequest>, version?: number) {
   const id = stripEntityPrefix(course_uuid)
   const result = await apiResult(
     `courses/${id}`,
-    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        // QA-D: without it a second author's save silently overwrote the first one's.
+        ...(typeof version === 'number' ? { 'If-Match': `"${version}"` } : {}),
+      },
+      body: JSON.stringify(body),
+    },
     value => Course.parse(value),
   )
   await revalidateCourse(id)
@@ -57,8 +67,8 @@ async function patchCourse(course_uuid: string, body: ReturnType<typeof toUpdate
 }
 
 /** `thumbnail_type` is not in the v2 `UpdateCourseRequest` and is dropped. */
-export async function updateCourseMetadata(course_uuid: string, data: AppPayload, _options?: CourseWriteOptions) {
-  return patchCourse(course_uuid, toUpdateCourseRequest(data))
+export async function updateCourseMetadata(course_uuid: string, data: AppPayload, options?: CourseWriteOptions) {
+  return patchCourse(course_uuid, toUpdateCourseRequest(data), options?.version)
 }
 
 /** `public` goes through the lifecycle route; everything else is a plain course PATCH. */

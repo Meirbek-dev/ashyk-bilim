@@ -115,6 +115,19 @@ export function useSaveSection<TFieldValues extends FieldValues = FieldValues>(
         options?.onSuccess?.()
       } catch (error: unknown) {
         const apiError = error as AppApiError
+        // QA-D: 412 = another author saved since this page loaded (If-Match). «Сохранить всё равно» first
+        // loads the current course (its version), then sends these edits again.
+        if (apiError.status === 412) {
+          setConflict({
+            serverVersion: null,
+            message: '',
+            pendingSave: async () => {
+              await refreshCourseMeta()
+              await runSaveRef.current?.(saveFn, invocationOptions)
+            },
+          })
+          return
+        }
         if (apiError.status === 409) {
           setConflict({
             serverVersion: (apiError.data as { update_date?: string | null } | null) ?? null,

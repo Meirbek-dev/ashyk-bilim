@@ -14,10 +14,13 @@ import { uploadFile } from '@services/media/uploads'
 
 interface MutationOptions {
   lastKnownUpdateDate?: string | null | undefined
+  version?: number | undefined
 }
 
-const buildMutationOptions = (lastKnownUpdateDate: string | null | undefined): MutationOptions =>
-  lastKnownUpdateDate !== undefined ? { lastKnownUpdateDate } : {}
+const buildMutationOptions = (lastKnownUpdateDate: string | null | undefined, version?: number): MutationOptions => ({
+  ...(lastKnownUpdateDate !== undefined ? { lastKnownUpdateDate } : {}),
+  ...(version !== undefined ? { version } : {}),
+})
 
 export function updateCourseMetadataMutationOptions(
   courseUuid: string,
@@ -26,8 +29,17 @@ export function updateCourseMetadataMutationOptions(
   detailKey: readonly unknown[],
 ) {
   return mutationOptions({
+    // QA-D: the version the cache holds when the save runs (`If-Match`): a stale page answers 412, and a
+    // retry after a refresh carries the fresh one.
     mutationFn: async ({ options, payload }: { options: MutationOptions; payload: Partial<CourseGeneralValues> }) =>
-      updateCourseMetadata(courseUuid, payload, buildMutationOptions(options.lastKnownUpdateDate)),
+      updateCourseMetadata(
+        courseUuid,
+        payload,
+        buildMutationOptions(
+          options.lastKnownUpdateDate,
+          options.version ?? queryClient.getQueryData<{ version?: number }>(structureKey)?.version,
+        ),
+      ),
     onMutate: async ({ payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData<AppCourse>(structureKey)
@@ -41,6 +53,12 @@ export function updateCourseMetadataMutationOptions(
     },
     onSuccess: async (response: Awaited<ReturnType<typeof updateCourseMetadata>>) => {
       useCourseEditorStore.getState().syncLastKnownUpdateDate(response?.data?.update_date)
+      // The next save (before the refetch lands) must carry the version this one produced.
+      const version = response?.data?.version
+      if (typeof version === 'number')
+        queryClient.setQueryData(structureKey, (current: AppCourse | undefined) =>
+          current ? { ...current, version } : current,
+        )
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: structureKey }),
         queryClient.invalidateQueries({ queryKey: detailKey }),
