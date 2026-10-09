@@ -25,6 +25,7 @@ vi.mock('@/hooks/useSession', () => ({
 }))
 vi.mock('@components/Objects/UserAvatar', () => ({ default: () => null }))
 vi.mock('@/components/Utils/LocaleSwitcher', () => ({ LocaleSwitcher: () => <select aria-label="locale-switcher" /> }))
+vi.mock('@/components/Objects/Menus/NotificationBell', () => ({ NotificationBell: () => null }))
 
 afterEach(cleanup)
 

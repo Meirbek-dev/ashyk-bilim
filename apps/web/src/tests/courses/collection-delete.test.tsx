@@ -51,13 +51,13 @@ describe('CollectionThumbnail delete (UX-124)', () => {
   it('maps can_delete from the wire and hides the control without it', () => {
     expect(toAppCollection(wire(true)).can_delete).toBe(true)
     renderCard(false)
-    expect(screen.queryByRole('button', { name: 'Удалить Подборка?' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Удалить «Подборка»?' })).not.toBeInTheDocument()
   })
 
   it('confirms, deletes through the client fetcher, toasts and invalidates the list', async () => {
     const queryClient = renderCard(true)
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить Подборка?' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить «Подборка»?' }))
     await screen.findByRole('alertdialog')
     expect(deleteCollection).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Удалить коллекцию' }))
