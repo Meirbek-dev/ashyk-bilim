@@ -1068,13 +1068,18 @@ pub fn build_detail(
 
     let question_breakdown = build_question_breakdown(&records, a.passing_score);
     let mut common_failures: Vec<CommonFailureRow> = match a.kind {
-        AssessmentKind::Quiz => question_breakdown
+        // An exam has questions too: a question every learner missed is its
+        // most common failure (it was «no cluster» next to a 0 % question).
+        AssessmentKind::Quiz | AssessmentKind::Exam => question_breakdown
             .iter()
             .filter(|q| q.accuracy_pct.is_some_and(|acc| acc < 80.0))
             .take(5)
             .map(|q| {
+                // 1 of 3 missed is 33 %, not 34 (100 - trunc(66.67)).
                 #[allow(clippy::cast_possible_truncation, reason = "clamped to 0..=100 first")]
-                let missed = 100 - q.accuracy_pct.unwrap_or(0.0).trunc().clamp(0.0, 100.0) as i64;
+                let missed = (100.0 - q.accuracy_pct.unwrap_or(0.0))
+                    .clamp(0.0, 100.0)
+                    .round() as i64;
                 CommonFailureRow {
                     key: q.question_id.clone(),
                     label: q.question_label.clone(),
@@ -1082,7 +1087,7 @@ pub fn build_detail(
                 }
             })
             .collect(),
-        AssessmentKind::Exam | AssessmentKind::CodeChallenge => Vec::new(),
+        AssessmentKind::CodeChallenge => Vec::new(),
     };
 
     let manual_required = a.grading_mode != ab_core::assessments::GradingMode::Auto

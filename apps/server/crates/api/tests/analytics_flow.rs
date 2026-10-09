@@ -2646,3 +2646,58 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
     let in_other = quality(format!("?cohort_ids={other}")).await;
     assert_eq!(in_other["excluded_teacher_attempts"], 0, "{in_other}");
 }
+
+/// An exam's «Частые ошибки» lists the questions most learners missed, like a
+/// quiz's (it said «no cluster» next to a 0 % question); 1 of 3 missed is 33.
+#[sqlx::test(migrations = "../../migrations")]
+async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Exam misses").await;
+    let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "exam", "title": "Final" }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let exam_id = uuid::Uuid::parse_str(created.json()["id"].as_str().unwrap()).unwrap();
+    let (hard, easy) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
+    for (i, hard_correct) in [false, true, true].into_iter().enumerate() {
+        let who = learner(&app, &format!("l{i}")).await;
+        enrol(&pool, &course_id, who.user_id, 50.0).await;
+        let grading = serde_json::json!({ "items": [
+            { "item_id": hard, "item_text": "Hard one", "score": if hard_correct { 50.0 } else { 0.0 },
+              "max_score": 50.0, "correct": hard_correct },
+            { "item_id": easy, "item_text": "Easy one", "score": 50.0, "max_score": 50.0, "correct": true },
+        ] });
+        sqlx::query(
+            "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
+                                      final_score, grading, submitted_at, graded_at)
+             VALUES ($1, $2, $3, 'published', 1, $4, $5, now(), now())",
+        )
+        .bind(exam_id)
+        .bind(course_uuid)
+        .bind(who.user_id.0)
+        .bind(if hard_correct { 100.0 } else { 50.0 })
+        .bind(&grading)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let detail = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/analytics/teacher/assessments/exam/{exam_id}"),
+        )
+        .await;
+    assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
+    let failures = detail.json()["common_failures"].clone();
+    let rows = failures.as_array().unwrap();
+    assert_eq!(rows.len(), 1, "{failures}");
+    assert_eq!(rows[0]["key"], hard.to_string(), "{failures}");
+    assert_eq!(rows[0]["label"], "Hard one", "{failures}");
+    assert_eq!(rows[0]["count"], 33, "{failures}");
+}
