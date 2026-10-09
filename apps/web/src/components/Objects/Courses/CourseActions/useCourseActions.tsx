@@ -188,7 +188,10 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState, auto
     autoStarted.current = true
     url.searchParams.delete(START_INTENT)
     globalThis.history.replaceState(globalThis.history.state, '', `${url.pathname}${url.search}${url.hash}`)
-    if ((action === 'start' || action === 'continue') && !hideCta && !hasNoLiveActivities) void handleCourseAction()
+    if ((action === 'start' || action === 'continue') && !hideCta && !hasNoLiveActivities) {
+      // Not inside the effect body: the action sets its loading state.
+      queueMicrotask(() => void handleCourseAction())
+    }
   })
 
   return {
