@@ -13015,7 +13015,7 @@
       "requestLimitLabel": "Request token limit",
       "outputLimitLabel": "Output token limit",
       "featureFlags": "Feature flags",
-      "flagsDescription": "Read-only runtime view. Change flags in backend environment.",
+      "flagsDescription": "Turn AI features on and off for the whole platform. A feature turned off on the server cannot be turned on here.",
       "loading": "Loading AI usage."
     },
     "operationsConsole": {
@@ -13089,6 +13089,9 @@
     "featureToggles": {
       "description": "Managed by backend feature flags.",
       "enabled": "Enabled",
+      "saved": "AI setting saved",
+      "saveFailed": "Could not save the AI setting.",
+      "disabledByEnvironment": "Turned off on the server",
       "disabled": "Disabled",
       "source": "Source: {source}",
       "empty": "No AI feature flags found",
@@ -13100,7 +13103,8 @@
       "lecture-authoring": "Lecture authoring",
       "semantic-memory": "Semantic memory",
       "sources": {
-        "environment": "server environment"
+        "environment": "server environment",
+        "runtime": "admin settings"
       }
     },
     "evalDashboard": {
