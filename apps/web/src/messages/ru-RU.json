@@ -10585,7 +10585,7 @@
               "unsupportedKind": "Неподдерживаемый тип элемента."
             }
           },
-          "deleteConfirmTitle": "Удалить: {itemNoun}?",
+          "deleteConfirmTitle": "Удалить {itemNoun}?",
           "deleteConfirmDescription": "Это действие нельзя отменить."
         },
         "policyTitle": "Политика {kind}",

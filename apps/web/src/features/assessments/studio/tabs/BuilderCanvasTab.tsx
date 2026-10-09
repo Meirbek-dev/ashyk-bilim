@@ -945,6 +945,9 @@ function ItemCanvas({
   renderBodyEditor: (item: EditableItem) => React.ReactNode
 }) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
+  // Controlled: the action button does not close the dialog by itself - it stayed open (over the next
+  // item) after a successful delete, blocking the page.
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas')
   const tCommon = useTranslations('Common')
   const itemIssueList = dedupeIssues([
@@ -996,7 +999,7 @@ function ItemCanvas({
               {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
               {t('duplicate')}
             </Button>
-            <AlertDialog>
+            <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
               <AlertDialogTrigger
                 render={
                   <Button type="button" variant="destructive" size="sm" disabled={!isEditable || isDeleting}>
@@ -1012,7 +1015,13 @@ function ItemCanvas({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
-                  <AlertDialogAction variant="destructive" onClick={onDelete}>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={() => {
+                      setIsDeleteOpen(false)
+                      onDelete()
+                    }}
+                  >
                     {t('delete')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
