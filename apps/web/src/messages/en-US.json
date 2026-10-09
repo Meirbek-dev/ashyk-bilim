@@ -5201,7 +5201,7 @@
       "contributorPolicyStagedTitle": "Contributor policy is staged until you save",
       "contributorPolicyStagedDescription": "The open or closed contribution policy stays local until you save this section.",
       "rosterActionsImmediateTitle": "Roster actions apply immediately",
-      "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above.",
+      "rosterActionsImmediateDescription": "Adding, removing and changing a contributor's role or status take effect at once - «Save» is only for the setting above.",
       "addButton": "Add",
       "addedContributor": "@{username} added as a contributor",
       "removedContributor": "@{username} removed from contributors",
