@@ -22,6 +22,14 @@ export function EditorSaveIndicator({ saveState }: EditorSaveIndicatorProps) {
     )
   }
 
+  if (saveState === 'tooLarge') {
+    return (
+      <span role="alert" className="text-destructive rounded-md px-2 py-0.5 text-xs font-medium">
+        {t('tooLarge')}
+      </span>
+    )
+  }
+
   if (saveState === 'conflict') {
     return (
       <span

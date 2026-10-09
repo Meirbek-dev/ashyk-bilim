@@ -59,6 +59,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       success: () => <b>{t('saveSuccess')}</b>,
       error: err => {
         if (err?.status === 403) return <b>{t('noAccess')}</b>
+        if (err?.status === 413) return <b>{t('tooLarge')}</b>
         return <b>{handleApiError(err, undefined, t('saveError')).message}</b>
       },
     })

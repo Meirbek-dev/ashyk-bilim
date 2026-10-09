@@ -5248,6 +5248,7 @@
         "saveSuccess": "Saved",
         "saving": "Saving...",
         "conflict": "This activity was changed in another tab. Autosave stopped so it is not overwritten.",
+        "tooLarge": "This lesson is too large to save (over 2 MB). Split it into several pages.",
         "conflictSaveBlocked": "Not saved: the activity was changed in another tab. Copy your text, reload the page and paste it again.",
         "reload": "Reload page",
         "noAccess": "You no longer have access to this course — changes are not saved."

@@ -31,6 +31,9 @@ interface Lane {
   stopped: unknown
 }
 
+/** The API's request body limit (axum's default 2 MiB) less some slack. */
+const MAX_BODY_BYTES = 2_000_000
+
 // BUG-376: key order differs between the editor's JSON and jsonb's.
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)
@@ -125,6 +128,18 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
           continue
         }
         setStatus(id, 'saving')
+        // QA-D: past the API's 2 MB body limit the server answers 413 before reading the
+        // upload - the browser often sees a reset connection («нет сети»). Refuse it here.
+        if (new Blob([JSON.stringify(payload)]).size > MAX_BODY_BYTES) {
+          const error = new APIError({
+            status: 413,
+            code: 'payload-too-large',
+            message: 'The lesson is too large to save',
+          })
+          setStatus(id, 'tooLarge')
+          for (const waiter of waiters) waiter.reject(error)
+          continue
+        }
         let rebased = false
         for (;;) {
           try {
@@ -150,7 +165,9 @@ export function useActivityAutosave(options: ActivityAutosaveOptions) {
               ? 'conflict'
               : isApiError(error) && error.status === 403
                 ? 'forbidden'
-                : 'error'
+                : hasErrorCode(error, 'payload-too-large')
+                  ? 'tooLarge'
+                  : 'error'
             if (status !== 'error') entry.stopped = error
             setStatus(id, status)
             for (const waiter of waiters) waiter.reject(error)

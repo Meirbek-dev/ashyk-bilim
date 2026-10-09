@@ -53,6 +53,18 @@ describe('useActivityAutosave scope', () => {
     act(() => result.current.onChange({ version: 1 }))
     expect(result.current.saveStatus).toBe('forbidden')
   })
+
+  // QA-D: a lesson past the API body limit is refused before upload (the 413 often arrived as a reset connection).
+  it('refuses a lesson over 2 MB without sending it, and the next smaller save goes through', async () => {
+    const { result } = renderHook(() => useActivityAutosave({ activityUuid: 'act-d', courseUuid: 'course-1' }))
+    const error = await act(() => result.current.flush({ version: 1, content: 'x'.repeat(2_100_000) }).catch(e => e))
+    expect(error).toMatchObject({ status: 413, code: 'payload-too-large' })
+    expect(updateActivity).not.toHaveBeenCalled()
+    expect(result.current.saveStatus).toBe('tooLarge')
+    updateActivity.mockResolvedValueOnce({ version: 2 })
+    await act(() => result.current.flush({ version: 1, content: 'small' }))
+    expect(result.current.saveStatus).toBe('saved')
+  })
 })
 
 // BUG-339 (audit AUD-001): writes are serialized per activity, carry the
