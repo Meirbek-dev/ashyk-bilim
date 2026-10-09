@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy'
-import { gradeOfRecord, submitVerdict } from '@/features/assessments/domain/grade-of-record'
+import { submitVerdict } from '@/features/assessments/domain/grade-of-record'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items'
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
@@ -37,9 +37,8 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const t = useTranslations('Activities.ExamActivity')
   const queryClient = useQueryClient()
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null)
-  // UX-140: feedback comes from the grade of record (projection), the same
-  // source the result card and the outline sidebar use.
-  const learnerState = useQuery(learnerCourseStateQueryOptions(courseUuid))
+  // Keeps the learner projection loaded: the submit toast reads the counted result from its cache.
+  useQuery(learnerCourseStateQueryOptions(courseUuid))
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW
   const assessmentUuid = vm?.assessmentUuid ?? null
   // Every item the server returns is a question - no kind filter (BUG-110).
@@ -97,14 +96,11 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   }
 
   const latestCompleted = submissionState.submissions.find(submission => submission.status !== 'DRAFT')
-  const record = gradeOfRecord(
-    vm,
-    learnerState.data?.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === vm.activityUuid),
-  )
   // Mid-attempt only the returned-for-revision feedback matters; an older
   // attempt's score would read as this attempt's result.
+  // A returned attempt is never `isResultVisible` (that is a `visible` release), so read its own comment.
   const revisionFeedback =
-    latestCompleted?.status === 'RETURNED' && vm.isResultVisible ? (record.recordAttempt?.generalFeedback ?? null) : null
+    latestCompleted?.status === 'RETURNED' ? latestCompleted.grading?.feedback?.trim() || null : null
 
   return (
     <ExamTakingContent
