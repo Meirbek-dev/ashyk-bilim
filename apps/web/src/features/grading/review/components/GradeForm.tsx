@@ -508,12 +508,14 @@ export default function GradeForm({
               {t('staleDraft.serverScoreLabel')}{' '}
               <strong>
                 {submission.final_score != null
-                  ? format.number(submission.final_score, { maximumFractionDigits: 2 })
+                  ? `${format.number(submission.final_score, { maximumFractionDigits: 2 })}%`
                   : '—'}
               </strong>
               . {t('staleDraft.yourDraftLabel')}{' '}
               <strong>
-                {calculatedTotal !== null ? format.number(calculatedTotal, { maximumFractionDigits: 2 }) : draft.score}
+                {calculatedTotal !== null
+                  ? `${format.number(calculatedTotal, { maximumFractionDigits: 2 })}%`
+                  : draft.score}
               </strong>
               .
             </p>
