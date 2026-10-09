@@ -11388,7 +11388,7 @@
           "archiveTitle": "Archive",
           "archiveDesc": "This assessment will no longer be accessible to students.",
           "revertConfirmTitle": "Revert to draft?",
-          "revertConfirmMessage": "Learners will lose access to this assessment and their attempts in it until you publish it again."
+          "revertConfirmMessage": "Learners will lose access to this assessment and their attempts in it until you publish it again. Started attempts are kept: after publishing, learners continue them with the edited questions."
         },
         "AccessManagement": {
           "title": "Learner access",
