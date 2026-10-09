@@ -5024,6 +5024,8 @@
         "expand": "Кеңейту",
         "pdfDocument": "PDF құжаты",
         "pdfViewer": "PDF қарау құралы",
+        "fileTooLarge": "Файл {size} МБ-тан үлкен",
+        "uploadFailed": "PDF жүктеу мүмкін болмады",
         "remove": "PDF файлын өшіру"
       },
       "Scenarios": {

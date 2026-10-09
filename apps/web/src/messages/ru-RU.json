@@ -5464,6 +5464,8 @@
         "expand": "Развернуть",
         "pdfDocument": "PDF документ",
         "pdfViewer": "Просмотрщик PDF",
+        "fileTooLarge": "Файл больше {size} МБ",
+        "uploadFailed": "Не удалось загрузить PDF",
         "remove": "Удалить PDF"
       },
       "Scenarios": {

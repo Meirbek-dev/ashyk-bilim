@@ -5346,6 +5346,8 @@
         "expand": "Expand",
         "pdfDocument": "PDF Document",
         "pdfViewer": "PDF Viewer",
+        "fileTooLarge": "The file is larger than {size} MB",
+        "uploadFailed": "Could not upload the PDF",
         "remove": "Remove PDF"
       },
       "Scenarios": {

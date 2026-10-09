@@ -5,6 +5,9 @@ import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
 import { getBlockFileUrl } from '@services/blocks/upload'
+import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
+import { useApiError } from '@/hooks/useApiError'
+import { toast } from 'sonner'
 import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavailable'
 import type { BlockFileContent } from '@services/blocks/upload'
 import { constructAcceptValue } from '@/lib/constants'
@@ -49,6 +52,7 @@ function normalizeSize(size?: Partial<PdfBlockSize> | null): PdfBlockSize {
 
 function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) {
   const t = useTranslations('DashPage.Editor.PDFBlock')
+  const { toastApiError } = useApiError()
   const [pdf, setPDF] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [blockObject, setblockObject] = useState(props.node.attrs.blockObject)
@@ -112,13 +116,23 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
 
   const handleSubmit = async () => {
     if (!pdf) return // Guard: only proceed if pdf is not null
+    // BUG-B8: a failed upload left the spinner on forever with no message.
+    if (pdf.size > UPLOAD_MAX_BYTES['block-pdf']) {
+      toast.error(t('fileTooLarge', { size: uploadMaxMb('block-pdf') }))
+      return
+    }
     setIsLoading(true)
-    const object = await uploadNewPDFFile(pdf, props.extension.options.activity.activity_uuid)
-    setIsLoading(false)
-    setblockObject(object)
-    props.updateAttributes({
-      blockObject: object,
-    })
+    try {
+      const object = await uploadNewPDFFile(pdf, props.extension.options.activity.activity_uuid)
+      setblockObject(object)
+      props.updateAttributes({
+        blockObject: object,
+      })
+    } catch (error) {
+      toastApiError(error, { fallback: t('uploadFailed') })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleDownload = () => {

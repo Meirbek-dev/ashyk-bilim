@@ -23,6 +23,7 @@ import { getBlockFileUrl } from '@services/blocks/upload'
 import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { constructAcceptValue } from '@/lib/constants'
+import { useApiError } from '@/hooks/useApiError'
 import { cn } from '@/lib/utils'
 import { compressImage } from '@/lib/image-compression'
 
@@ -84,6 +85,7 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
   const [preview, setPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { handleApiError } = useApiError()
 
   const handleFileSelect = useCallback(
     async (selectedFile: File | null) => {
@@ -131,11 +133,12 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
       setFile(null)
       setPreview(null)
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : t('uploadFailed'))
+      // Localized, never the raw server/transport detail (BUG-B7).
+      setError(handleApiError(uploadError, { fallback: t('uploadFailed') }).message)
     } finally {
       setIsUploading(false)
     }
-  }, [file, activityUuid, onSuccess, t])
+  }, [file, activityUuid, onSuccess, t, handleApiError])
 
   const reset = useCallback(() => {
     setFile(null)
