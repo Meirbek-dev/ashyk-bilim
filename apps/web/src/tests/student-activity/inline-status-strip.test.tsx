@@ -80,7 +80,7 @@ describe('InlineStatusStrip (UX-009)', () => {
 
   it('never reads more attempts used than the cap (UX-189)', () => {
     renderStrip(2)
-    expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()
+    expect(screen.getByText('Использовано 1 из 1 попытки')).toBeInTheDocument()
   })
 
   it('shows the exam attempt limit and localized time limit from the effective policy', () => {
@@ -95,7 +95,7 @@ describe('InlineStatusStrip (UX-009)', () => {
     )
 
     expect(screen.queryByText('Неограниченное количество попыток')).toBeNull()
-    expect(screen.getByText('Использовано 1 из 1 попыток')).toBeInTheDocument()
+    expect(screen.getByText('Использовано 1 из 1 попытки')).toBeInTheDocument()
     expect(screen.getByText('50 мин')).toBeInTheDocument()
     expect(screen.getByText('Экзамен')).toBeInTheDocument()
   })
