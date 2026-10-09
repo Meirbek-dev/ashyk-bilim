@@ -23,9 +23,13 @@ export function saveCodeChallengeSettingsMutationOptions(activityUuid: string, q
   return mutationOptions({
     mutationFn: (settings: Record<string, unknown>) => saveCodeChallengeSettings(activityUuid, settings),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.codeChallenges.settings(activityUuid),
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.codeChallenges.settings(activityUuid) }),
+        // The studio header reads the assessment: a renamed task shows its new title at once.
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
+        }),
+      ])
     },
   })
 }
