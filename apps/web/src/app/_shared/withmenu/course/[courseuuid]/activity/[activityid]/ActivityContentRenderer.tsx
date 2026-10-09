@@ -42,12 +42,15 @@ export function ActivityContentRenderer({
   course,
   courseuuid,
   isCourseEnd,
+  onMediaEnded,
 }: {
   activity: Activity | null
   canView: boolean
   course: CourseStructure
   courseuuid: string
   isCourseEnd: boolean
+  /** A lesson video played to the end: completes the lesson like «Отметить как завершённое». */
+  onMediaEnded?: (() => void) | undefined
 }) {
   const t = useTranslations('ActivityPage')
 
@@ -80,7 +83,11 @@ export function ActivityContentRenderer({
     case 'TYPE_VIDEO': {
       return (
         <section className="w-full">
-          <VideoActivity course={course} activity={activity as never} />
+          <VideoActivity
+            course={course}
+            activity={activity as never}
+            {...(onMediaEnded ? { onEnded: onMediaEnded } : {})}
+          />
         </section>
       )
     }

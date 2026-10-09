@@ -38,9 +38,11 @@ interface VideoActivityProps {
   course: {
     course_uuid: string
   }
+  /** A hosted video played to the end (YouTube embeds do not report it). */
+  onEnded?: () => void
 }
 
-function VideoActivity({ activity, course }: VideoActivityProps) {
+function VideoActivity({ activity, course, onEnded }: VideoActivityProps) {
   const fullLocale = useLocale()
   const locale = fullLocale.split('-')[0]
   const t = useTranslations('ActivityPage')
@@ -152,6 +154,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
                     {...(activity.details?.startTime === undefined ? {} : { startTime: activity.details.startTime })}
                     {...(activity.details?.endTime === undefined ? {} : { endTime: activity.details.endTime })}
                     onPlayerReady={(_art: ArtplayerType) => {}}
+                    {...(onEnded ? { onEnded } : {})}
                   />
                 )
               })()}

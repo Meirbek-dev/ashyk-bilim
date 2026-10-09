@@ -229,7 +229,8 @@ function NavChevron({
 
 // Helpers
 
-function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
+/** Mark / unmark the current lesson (the bar's button and a video played to the end). */
+export function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('ActivityPage')

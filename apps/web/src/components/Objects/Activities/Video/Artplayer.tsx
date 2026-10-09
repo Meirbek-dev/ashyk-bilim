@@ -17,6 +17,8 @@ interface PlayerProps {
   startTime?: number
   endTime?: number | null
   onPlayerReady?: (art: Artplayer) => void
+  /** Played to the end (or to `endTime`): the lesson player marks the activity complete. */
+  onEnded?: () => void
   [key: string]: unknown
 }
 const captionsSVGString = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-captions-icon lucide-captions"><rect width="18" height="14" x="3" y="5" rx="2" ry="2" /><path d="M7 15h4M15 15h2M7 11h2M13 11h4" /></svg>`
@@ -31,6 +33,7 @@ export default function ArtPlayer({
   startTime,
   endTime,
   onPlayerReady,
+  onEnded,
   ...rest
 }: PlayerProps) {
   const artRef = useRef<HTMLDivElement>(null)
@@ -68,6 +71,9 @@ export default function ArtPlayer({
     Reconnect: t('ui.reconnect'),
     Close: t('ui.close'),
   })
+
+  // The player lives for the whole mount; the latest callback runs when it ends.
+  const fireEnded = useEffectEvent(() => onEnded?.())
 
   // One player per mount: the props are read when the container mounts.
   const createPlayer = useEffectEvent((container: HTMLDivElement) => {
@@ -136,6 +142,8 @@ export default function ArtPlayer({
       if (isUnplayableMediaError(art.video.error)) setUnplayable(true)
     }
     art.video.addEventListener('error', handleMediaError)
+    const handleEnded = () => fireEnded()
+    art.video.addEventListener('ended', handleEnded)
     if (getInstance && typeof getInstance === 'function') {
       getInstance(art)
     }
@@ -156,6 +164,7 @@ export default function ArtPlayer({
         if (art.currentTime >= endTime) {
           art.pause()
           if (handleTimeUpdate) art.off('timeupdate', handleTimeUpdate)
+          fireEnded()
         }
       }
       art.on('timeupdate', handleTimeUpdate)
@@ -163,6 +172,7 @@ export default function ArtPlayer({
 
     return () => {
       art.video.removeEventListener('error', handleMediaError)
+      art.video.removeEventListener('ended', handleEnded)
       art.off('ready', handleReady)
       if (handleTimeUpdate) {
         art.off('timeupdate', handleTimeUpdate)
