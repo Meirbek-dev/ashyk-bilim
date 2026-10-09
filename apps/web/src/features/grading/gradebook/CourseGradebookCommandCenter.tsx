@@ -73,7 +73,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
       ...(trimmedSearch ? { search: trimmedSearch } : {}),
     }
   }, [chosenFilters.activityType, chosenFilters.savedFilter, chosenFilters.search, page])
-  const { data, error, isError, isLoading, refetch } = useQuery(
+  const { data, error, isError, isPending, refetch } = useQuery(
     courseGradebookQueryOptions(courseUuid, gradebookQueryParams, { live }),
   )
   // The implicit default ("needs grading", no `filter` in the URL) would show
@@ -129,7 +129,9 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     return filterGradebookStudents(data, visibleActivities, cellMap, filters)
   }, [cellMap, data, filters, visibleActivities])
 
-  if (isLoading) return <div className="text-muted-foreground text-sm">{t('loading')}</div>
+  // `isPending`, not `isLoading`: the server render never fetches (isLoading false) and printed
+  // «Журнал оценок недоступен» - a hydration mismatch and a flash of the error text.
+  if (isPending) return <div className="text-muted-foreground text-sm">{t('loading')}</div>
 
   if (isError) {
     // UX-258: the problem+json code, localized — never the server's English `detail`.
