@@ -7931,6 +7931,10 @@
     "activityLoadErrorTitle": "Activity failed to load",
     "activityLoadErrorDescription": "This activity could not be loaded. Retry the request or use the support reference if it keeps failing.",
     "codes": {
+      "reset-code-invalid": "The password reset code is invalid or has expired. Request a new code.",
+      "attempt-time-expired": "The time for this attempt is up. Answers can no longer be changed.",
+      "attempt-past-due": "The due date has passed. New attempts and answers are no longer accepted.",
+      "remediation-required": "Complete the remediation session first, then start a new attempt.",
       "internal": "Internal server error. Please try again later.",
       "not-found": "The requested resource was not found.",
       "method-not-allowed": "This request method is not supported.",
