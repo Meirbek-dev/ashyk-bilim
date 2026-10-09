@@ -2646,7 +2646,29 @@
     },
     "VideoPlayer": {
       "subtitles": "Субтитры",
-      "enableSubtitles": "Включить"
+      "enableSubtitles": "Включить",
+      "ui": {
+        "play": "Воспроизвести",
+        "pause": "Пауза",
+        "volume": "Громкость",
+        "mute": "Без звука",
+        "playSpeed": "Скорость",
+        "normal": "Обычная",
+        "fullscreen": "Во весь экран",
+        "exitFullscreen": "Выйти из полноэкранного режима",
+        "pipMode": "Картинка в картинке",
+        "exitPipMode": "Выйти из режима «картинка в картинке»",
+        "pipNotSupported": "Режим «картинка в картинке» не поддерживается",
+        "fullscreenNotSupported": "Полноэкранный режим не поддерживается",
+        "miniPlayer": "Мини-плеер",
+        "showSetting": "Настройки",
+        "hideSetting": "Скрыть настройки",
+        "lastSeen": "Вы остановились на",
+        "jumpPlay": "Продолжить",
+        "videoLoadFailed": "Не удалось загрузить видео",
+        "reconnect": "Повторное подключение",
+        "close": "Закрыть"
+      }
     }
   },
   "Contexts": {

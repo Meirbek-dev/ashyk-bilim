@@ -2614,7 +2614,29 @@
     },
     "VideoPlayer": {
       "subtitles": "Subtitles",
-      "enableSubtitles": "Enable"
+      "enableSubtitles": "Enable",
+      "ui": {
+        "play": "Play",
+        "pause": "Pause",
+        "volume": "Volume",
+        "mute": "Mute",
+        "playSpeed": "Speed",
+        "normal": "Normal",
+        "fullscreen": "Fullscreen",
+        "exitFullscreen": "Exit fullscreen",
+        "pipMode": "Picture in picture",
+        "exitPipMode": "Exit picture in picture",
+        "pipNotSupported": "Picture in picture is not supported",
+        "fullscreenNotSupported": "Fullscreen is not supported",
+        "miniPlayer": "Mini player",
+        "showSetting": "Settings",
+        "hideSetting": "Hide settings",
+        "lastSeen": "You stopped at",
+        "jumpPlay": "Resume",
+        "videoLoadFailed": "Could not load the video",
+        "reconnect": "Reconnecting",
+        "close": "Close"
+      }
     }
   },
   "Contexts": {

@@ -46,6 +46,29 @@ export default function ArtPlayer({
       instanceRef.current.destroy(false)
   }, [missing, unplayable])
 
+  const playerStrings = () => ({
+    Play: t('ui.play'),
+    Pause: t('ui.pause'),
+    Volume: t('ui.volume'),
+    Mute: t('ui.mute'),
+    'Play Speed': t('ui.playSpeed'),
+    Normal: t('ui.normal'),
+    Fullscreen: t('ui.fullscreen'),
+    'Exit Fullscreen': t('ui.exitFullscreen'),
+    'PIP Mode': t('ui.pipMode'),
+    'Exit PIP Mode': t('ui.exitPipMode'),
+    'PIP Not Supported': t('ui.pipNotSupported'),
+    'Fullscreen Not Supported': t('ui.fullscreenNotSupported'),
+    'Mini Player': t('ui.miniPlayer'),
+    'Show Setting': t('ui.showSetting'),
+    'Hide Setting': t('ui.hideSetting'),
+    'Last Seen': t('ui.lastSeen'),
+    'Jump Play': t('ui.jumpPlay'),
+    'Video Load Failed': t('ui.videoLoadFailed'),
+    Reconnect: t('ui.reconnect'),
+    Close: t('ui.close'),
+  })
+
   // One player per mount: the props are read when the container mounts.
   const createPlayer = useEffectEvent((container: HTMLDivElement) => {
     const art: ArtplayerType = new Artplayer({
@@ -73,6 +96,9 @@ export default function ArtPlayer({
       autoPlayback: true,
       airplay: true,
       theme: '#23ade5',
+      // UX-B4: Artplayer ships English (and no Kazakh); its tooltips and «Last Seen / Jump Play»
+      // resume prompt come from our messages for whatever `lang` the page passes.
+      i18n: { [String(option.lang ?? 'en')]: playerStrings() },
       // No subtitle files: no subtitle menu (it would only offer a switch for nothing).
       settings:
         subtitle || subtitleEntries.length > 0

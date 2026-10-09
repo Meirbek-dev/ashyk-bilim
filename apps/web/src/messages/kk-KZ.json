@@ -2515,7 +2515,29 @@
     },
     "VideoPlayer": {
       "subtitles": "Субтитрлер",
-      "enableSubtitles": "Қосу"
+      "enableSubtitles": "Қосу",
+      "ui": {
+        "play": "Ойнату",
+        "pause": "Кідірту",
+        "volume": "Дыбыс деңгейі",
+        "mute": "Дыбыссыз",
+        "playSpeed": "Жылдамдық",
+        "normal": "Қалыпты",
+        "fullscreen": "Толық экран",
+        "exitFullscreen": "Толық экраннан шығу",
+        "pipMode": "Сурет ішіндегі сурет",
+        "exitPipMode": "«Сурет ішіндегі сурет» режимінен шығу",
+        "pipNotSupported": "«Сурет ішіндегі сурет» режиміне қолдау көрсетілмейді",
+        "fullscreenNotSupported": "Толық экран режиміне қолдау көрсетілмейді",
+        "miniPlayer": "Шағын ойнатқыш",
+        "showSetting": "Баптаулар",
+        "hideSetting": "Баптауларды жасыру",
+        "lastSeen": "Сіз тоқтаған жер",
+        "jumpPlay": "Жалғастыру",
+        "videoLoadFailed": "Бейнені жүктеу мүмкін болмады",
+        "reconnect": "Қайта қосылу",
+        "close": "Жабу"
+      }
     }
   },
   "Contexts": {
