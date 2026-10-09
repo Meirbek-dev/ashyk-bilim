@@ -55,7 +55,7 @@ function hrefFor({ payload }: Notification): string {
   return `/course/${payload.course_id}`
 }
 
-export function NotificationBell() {
+export function NotificationBell({ className }: { className?: string }) {
   const t = useTranslations('Components.NotificationBell')
   // The type is runtime data (filtered by KNOWN_TYPES); the typed `t` cannot see that.
   const tType = t as unknown as (key: string, values: Record<string, string>) => string
@@ -96,14 +96,14 @@ export function NotificationBell() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-10 w-10"
+            className={cn('relative h-10 w-10', className)}
             aria-label={count > 0 ? t('openUnread', { count }) : t('open')}
           />
         }
       >
         <Bell className="size-5" aria-hidden />
         {count > 0 ? (
-          <span className="bg-destructive text-destructive-foreground absolute top-1.5 right-1.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-semibold tabular-nums">
+          <span className="bg-destructive text-destructive-foreground absolute top-0 right-0 min-w-4 rounded-full px-1 text-[10px] leading-4 font-semibold tabular-nums">
             {count > 99 ? '99+' : count}
           </span>
         ) : null}
