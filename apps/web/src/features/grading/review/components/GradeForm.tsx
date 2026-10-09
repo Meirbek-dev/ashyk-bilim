@@ -698,6 +698,7 @@ export default function GradeForm({
               value={draft.feedback}
               disabled={!editable || isSaving}
               preset="explanation"
+              label={tItemGrading('overallFeedback')}
               minHeight={140}
               onChange={markdown => editDraft({ feedback: markdown })}
             />
@@ -781,6 +782,7 @@ export default function GradeForm({
               value={draft.feedback}
               disabled={!editable || isSaving}
               preset="explanation"
+              label={t('feedback')}
               minHeight={160}
               onChange={markdown => editDraft({ feedback: markdown })}
             />

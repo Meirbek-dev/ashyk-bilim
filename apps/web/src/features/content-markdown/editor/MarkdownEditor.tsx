@@ -37,6 +37,8 @@ interface MarkdownEditorProps {
   onValidationChange?: (issues: MarkdownValidationIssue[]) => void
   onModeChange?: (mode: ViewMode) => void
   onBlur?: () => void
+  /** The field's own name when the preset's label does not fit (a rubric, a grader's comment). */
+  label?: string
 }
 
 export function MarkdownEditor({
@@ -54,9 +56,13 @@ export function MarkdownEditor({
   onValidationChange,
   onModeChange,
   onBlur,
+  label,
 }: MarkdownEditorProps) {
   const t = useTranslations('MarkdownEditor')
-  const config = useMemo(() => getMarkdownPreset(preset, t), [preset, t])
+  const config = useMemo(() => {
+    const presetConfig = getMarkdownPreset(preset, t)
+    return label ? { ...presetConfig, label } : presetConfig
+  }, [label, preset, t])
   const [viewMode, setViewMode] = useState<ViewMode>('write')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const sourceValue = (value ?? '').replace(/\r\n?/g, '\n')

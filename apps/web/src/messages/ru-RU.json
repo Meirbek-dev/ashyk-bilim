@@ -10578,6 +10578,7 @@
               },
               "requiredLabel": "Обязательно",
               "addField": "Добавить поле",
+              "removeField": "Удалить поле {number}",
               "unsupportedKind": "Неподдерживаемый тип элемента."
             }
           },

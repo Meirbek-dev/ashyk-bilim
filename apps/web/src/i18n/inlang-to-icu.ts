@@ -18,8 +18,10 @@ interface Local {
   options: Record<string, string>
 }
 
+// A doubled backslash is the inlang escape for one («$\LaTeX$» rendered with two backslashes).
 const markup = (pattern: string): string =>
   pattern
+    .replaceAll('\\\\', '\\')
     .replaceAll(/\{#([\w-]+)\/\}/g, '<$1></$1>')
     .replaceAll(/\{#([\w-]+)\}/g, '<$1>')
     .replaceAll(/\{\/([\w-]+)\}/g, '</$1>')

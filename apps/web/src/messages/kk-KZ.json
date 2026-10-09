@@ -9598,6 +9598,7 @@
               },
               "requiredLabel": "Міндетті",
               "addField": "Өріс қосу",
+              "removeField": "{number}-өрісті жою",
               "unsupportedKind": "Элемент түрі қолданылмайды."
             }
           },
@@ -10224,7 +10225,7 @@
           "selectMatch": "Сәйкестікті таңдаңыз",
           "points": "{count} ұпай",
           "prompt": "Сұрақ",
-          "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\\\LaTeX$ қолдаылады.",
+          "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\\\LaTeX$ қолданылады.",
           "type": "Түрі",
           "trueLabel": "Дұрыс",
           "falseLabel": "Бұрыс",

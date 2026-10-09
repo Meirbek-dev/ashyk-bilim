@@ -775,6 +775,7 @@ function GradeEditor({
   onSubmit: (payload: FileSubmissionGradePayload) => void
 }) {
   const t = useTranslations('FileSubmissionReview')
+  const tPanel = useTranslations('Grading.Panel')
   const tErrors = useTranslations('Errors.codes')
   const disabled = remoteDisabled || own
   // UX-121: reopen with the raw score — `final_score` already carries the late penalty.
@@ -901,6 +902,7 @@ function GradeEditor({
             onDirtyChange(true)
           }}
           preset="explanation"
+          label={tPanel('feedback')}
           minHeight={160}
           placeholder={t('feedbackPlaceholder')}
         />

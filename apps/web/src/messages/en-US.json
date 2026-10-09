@@ -11019,6 +11019,7 @@
               },
               "requiredLabel": "Required",
               "addField": "Add field",
+              "removeField": "Remove field {number}",
               "unsupportedKind": "Unsupported item kind."
             }
           },

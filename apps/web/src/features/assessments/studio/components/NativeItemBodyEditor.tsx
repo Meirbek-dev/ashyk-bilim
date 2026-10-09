@@ -24,7 +24,7 @@ export function ToggleRow({ label, checked, disabled, onChange }: ToggleRowProps
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
       <span className="text-sm font-medium">{label}</span>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+      <Switch checked={checked} disabled={disabled} aria-label={label} onCheckedChange={onChange} />
     </div>
   )
 }
@@ -120,6 +120,7 @@ export function NativeItemBodyEditor({ item, disabled, issues, onChange }: Nativ
               value={body.rubric ?? ''}
               disabled={disabled}
               preset="explanation"
+              label={t('Items.OpenText.rubric')}
               minHeight={140}
               onChange={markdown =>
                 onChange({
@@ -162,6 +163,7 @@ export function NativeItemBodyEditor({ item, disabled, issues, onChange }: Nativ
                   type="button"
                   variant="ghost"
                   size="icon"
+                  aria-label={t('Items.Form.removeField', { number: index + 1 })}
                   disabled={disabled || body.fields.length <= 1}
                   onClick={() =>
                     onChange({

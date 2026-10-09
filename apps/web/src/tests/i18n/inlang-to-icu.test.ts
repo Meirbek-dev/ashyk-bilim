@@ -27,6 +27,8 @@ describe('inlangToIcu', () => {
     expect(t('Activities.ExamActivity.points', { count: 3 })).toBe('3 балла')
     expect(t('Activities.ExamActivity.points', { count: 25 })).toBe('25 баллов')
     expect(t('Activities.ExamActivity.minutes', { count: 1 })).toBe('1 минута')
+    // The inlang escape `\` is one backslash.
+    expect(t('Features.Assessments.Items.Choice.promptPlaceholder')).toContain(String.raw`$\LaTeX$`)
     // A literal `#` inside a plural branch is not the count.
     expect(t('FileSubmissionReview.attemptInfo', { attemptNumber: 2, count: 3 })).toBe('Попытка №2 · 3 файла')
   })
