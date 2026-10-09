@@ -458,7 +458,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
       </AlertDialog>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-        <div className={cn('grid grid-cols-1 gap-5 lg:grid-cols-2', mode !== 'restricted' && 'opacity-60')}>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <AccessList
             title={t('students')}
             count={selectedUsers.size}
@@ -471,7 +471,10 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
                 key={user.id}
                 user={user}
                 selected={selectedUsers.has(user.id)}
-                disabled={disabled || mode !== 'restricted'}
+                // Learners stay selectable in «all learners» mode: the selection is who the individual
+                // conditions (extension, extra attempt) apply to - an extension used to require
+                // restricting the whole assessment. Saving access ignores it unless restricted.
+                disabled={disabled}
                 hasOverride={overrideByUserId.has(user.id)}
                 onToggle={() => toggleSet(setSelectedUsers, user.id)}
               />
@@ -479,6 +482,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           </AccessList>
 
           <AccessList
+            className={mode !== 'restricted' ? 'opacity-60' : undefined}
             title={t('usergroups')}
             count={selectedGroups.size}
             search={groupQuery}
@@ -640,6 +644,7 @@ function AccessList({
   searchPlaceholder,
   onSearch,
   children,
+  className,
 }: {
   title: string
   count: number
@@ -647,9 +652,10 @@ function AccessList({
   searchPlaceholder: string
   onSearch: (value: string) => void
   children: ReactNode
+  className?: string | undefined
 }) {
   return (
-    <section className="bg-card flex min-h-[620px] flex-col rounded-lg border shadow-sm">
+    <section className={cn('bg-card flex min-h-[620px] flex-col rounded-lg border shadow-sm', className)}>
       <div className="border-b p-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold">{title}</h3>
