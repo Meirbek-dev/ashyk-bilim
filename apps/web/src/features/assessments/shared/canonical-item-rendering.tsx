@@ -72,15 +72,25 @@ export function CanonicalAttemptItem({
   }
 
   if (body.kind === 'OPEN_TEXT') {
+    const text = answer?.kind === 'OPEN_TEXT' ? answer.text : ''
+    const minWords = body.min_words ?? 0
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0
     return (
       <div className="space-y-3">
         {body.prompt ? <MarkdownContent content={body.prompt} mode="prompt" /> : null}
         <Textarea
-          value={answer?.kind === 'OPEN_TEXT' ? answer.text : ''}
+          value={text}
           disabled={disabled}
+          aria-label={t('OpenText.answerLabel')}
           className="min-h-36"
           onChange={event => onChange({ kind: 'OPEN_TEXT', text: event.target.value })}
         />
+        {/* The learner used to get no hint of the author's minimum length. */}
+        {minWords > 0 ? (
+          <p className={words < minWords ? 'text-muted-foreground text-xs' : 'text-xs text-emerald-600'}>
+            {t('OpenText.wordCount', { count: words, min: minWords })}
+          </p>
+        ) : null}
       </div>
     )
   }
@@ -93,7 +103,7 @@ export function CanonicalAttemptItem({
         {body.fields.map((field, fieldIndex) => (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={`${item.item_uuid}-${field.id}`}>
-              {field.label || `Field ${fieldIndex + 1}`}
+              {field.label || t('Form.answerLabel', { number: fieldIndex + 1 })}
               {field.required ? ' *' : ''}
             </Label>
             {field.field_type === 'textarea' ? (

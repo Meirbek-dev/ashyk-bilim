@@ -10328,14 +10328,17 @@
           "minWords": "Ең аз сөздер саны",
           "rubric": "Рубрика",
           "rubricGuidance": "Рубрика нұсқаулығы",
-          "noTextRecorded": "Мәтін тіркелмеген"
+          "noTextRecorded": "Мәтін тіркелмеген",
+          "answerLabel": "Сіздің жауабыңыз",
+          "wordCount": "Сөз саны: {count} (кемінде {min})"
         },
         "Code": {
           "language": "Тіл",
           "languageValue": "{language} тілі"
         },
         "unsupportedItem": "Қолданылмайтын элемент.",
-        "unsupported": "Қолданылмайды"
+        "unsupported": "Қолданылмайды",
+        "noAnswer": "Жауап берілмеген"
       },
       "Attempt": {
         "Exam": {

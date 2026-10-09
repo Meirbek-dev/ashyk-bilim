@@ -11368,14 +11368,17 @@
           "minWords": "Минимум слов",
           "rubric": "Критерии оценивания",
           "rubricGuidance": "Критерии оценивания",
-          "noTextRecorded": "Текст не сохранён"
+          "noTextRecorded": "Текст не сохранён",
+          "answerLabel": "Ваш ответ",
+          "wordCount": "Слов: {count} (минимум {min})"
         },
         "Code": {
           "language": "Язык",
           "languageValue": "Язык {language}"
         },
         "unsupportedItem": "Неподдерживаемый элемент.",
-        "unsupported": "Неподдерживается"
+        "unsupported": "Неподдерживается",
+        "noAnswer": "Ответ не дан"
       },
       "Attempt": {
         "Exam": {

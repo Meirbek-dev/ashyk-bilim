@@ -84,10 +84,7 @@ export function ChoiceItemAttempt({
         {item.options.map((option, index) => {
           const id = optionId(option, index)
           return (
-            <Label
-              key={String(id)}
-              className={OPTION_CARD}
-            >
+            <Label key={String(id)} className={OPTION_CARD}>
               <Checkbox
                 checked={selected.includes(id)}
                 disabled={disabled}
@@ -117,10 +114,7 @@ export function ChoiceItemAttempt({
       {item.options.map((option, index) => {
         const id = optionId(option, index)
         return (
-          <Label
-            key={String(id)}
-            className={OPTION_CARD}
-          >
+          <Label key={String(id)} className={OPTION_CARD}>
             <RadioGroupItem value={String(id)} />
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
               <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
@@ -503,6 +497,7 @@ const CHOICE_KIND_LABEL_KEYS: Record<ChoiceAttemptItem['kind'], string> = {
 
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
   const t = useTranslations('Features.Assessments.Items.Choice')
+  const tItems = useTranslations('Features.Assessments.Items')
 
   if (!item) {
     return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>
@@ -533,7 +528,11 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         ) : null}
       </div>
       <MarkdownContent mode="compactRichText" content={item.prompt} compact />
-      <pre className="mt-2 font-sans text-sm whitespace-pre-wrap">{answerLabel}</pre>
+      {answerLabel && answerLabel !== '-' ? (
+        <pre className="mt-2 font-sans text-sm whitespace-pre-wrap">{answerLabel}</pre>
+      ) : (
+        <p className="text-muted-foreground mt-2 text-sm italic">{tItems('noAnswer')}</p>
+      )}
     </div>
   )
 }

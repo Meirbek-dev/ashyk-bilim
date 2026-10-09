@@ -301,13 +301,28 @@ export function FormItemAttempt({
   )
 }
 
+/** Each field as "label: value" (was a raw JSON dump keyed by field ids). */
 export function FormItemReviewDetail({
+  item,
   answer,
 }: ItemReviewDetailProps<FormItemValue & { taskUuid?: string }, FormAnswer | null>) {
+  const t = useTranslations('Features.Assessments.Items')
+  const values = answer?.form_data?.answers ?? {}
+  const blanks = item?.questions.flatMap(question => question.blanks) ?? []
   return (
-    <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">
-      {JSON.stringify(answer?.form_data?.answers ?? {}, null, 2)}
-    </pre>
+    <dl className="bg-card space-y-2 rounded-md border p-3 text-sm">
+      {blanks.map((blank, index) => {
+        const value = values[blank.blankUUID]?.trim()
+        return (
+          <div key={blank.blankUUID}>
+            <dt className="text-muted-foreground text-xs">
+              {blank.placeholder || t('Form.answerLabel', { number: index + 1 })}
+            </dt>
+            <dd className={value ? 'whitespace-pre-wrap' : 'text-muted-foreground italic'}>{value || t('noAnswer')}</dd>
+          </div>
+        )
+      })}
+    </dl>
   )
 }
 

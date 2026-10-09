@@ -10263,14 +10263,17 @@
           "minWords": "Minimum words",
           "rubric": "Rubric",
           "rubricGuidance": "Rubric guidance",
-          "noTextRecorded": "No text recorded"
+          "noTextRecorded": "No text recorded",
+          "answerLabel": "Your answer",
+          "wordCount": "Words: {count} (minimum {min})"
         },
         "Code": {
           "language": "Language",
           "languageValue": "Language {language}"
         },
         "unsupportedItem": "Unsupported item.",
-        "unsupported": "Unsupported"
+        "unsupported": "Unsupported",
+        "noAnswer": "No answer"
       },
       "Attempt": {
         "Exam": {
