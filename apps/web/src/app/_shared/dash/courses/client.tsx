@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   buildCourseCreationPath,
+  buildCourseWorkspacePath,
   getCourseContentStats,
   getCourseManagementContext,
   isCourseArchived,
@@ -24,6 +25,7 @@ import {
   AlertTriangle,
   Archive,
   ArchiveRestore,
+  Copy,
   Globe,
   LayoutGrid,
   List,
@@ -41,7 +43,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { CourseArchiveDialog, CourseRestoreDialog } from '@components/Dashboard/Courses/CourseArchiveDialog'
 import { setCourseArchived, updateCourseAccess } from '@services/courses/course-writes'
-import { deleteCourseFromBackend } from '@services/courses/course-delete'
+import { deleteCourseFromBackend, duplicateCourse } from '@services/courses/course-delete'
 import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
@@ -854,6 +856,25 @@ export function CourseRowActions({
     (isCourseCreator(course, user?.id) && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
   const context = getCourseManagementContext(course as AppCourse, 'row')
 
+  // The full copy (activities, tests, settings) - «Использовать как шаблон» copies chapter names only.
+  const handleDuplicate = () => {
+    startTransition(async () => {
+      const toastId = toast.loading(t('rowActions.duplicating'))
+      try {
+        // The server's default is «<name> (copy)»; the editor caps names at 100 characters.
+        const suffix = t('rowActions.copySuffix')
+        const copyId = await duplicateCourse(
+          course.course_uuid,
+          `${course.name.slice(0, 100 - suffix.length)}${suffix}`,
+        )
+        toast.success(t('rowActions.duplicateSuccess'), { id: toastId })
+        router.push(buildCourseWorkspacePath(copyId))
+      } catch (error) {
+        toastApiError(error, { fallback: t('rowActions.duplicateError'), toastId })
+      }
+    })
+  }
+
   const handleDelete = () => {
     if (!canDeleteCourse) return
 
@@ -919,6 +940,12 @@ export function CourseRowActions({
             <LayoutGrid className="size-4" />
             {t('rowActions.useAsTemplate')}
           </DropdownMenuItem>
+          {canManageCourse ? (
+            <DropdownMenuItem onClick={handleDuplicate}>
+              <Copy className="size-4" />
+              {t('rowActions.duplicate')}
+            </DropdownMenuItem>
+          ) : null}
           {canManageCourse && !isArchived ? (
             <DropdownMenuItem onClick={handleToggleVisibility}>
               {course.public ? <Lock className="size-4" /> : <Globe className="size-4" />}
