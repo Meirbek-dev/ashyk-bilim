@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"id: SubmissionId\"\n           FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n           LEFT JOIN assessment_overrides o\n             ON o.assessment_id = s.assessment_id AND o.user_id = s.user_id\n           WHERE s.status = 'draft'\n             AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())\n             AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL\n                   AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())\n               -- `AssessmentsService::policy_at`'s due date at now() (late work off, no preview).\n               OR (NOT a.allow_late AND NOT s.preview\n                   AND COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended\n                                     THEN o.due_at_override END,\n                                a.due_at) <= now()))\n           ORDER BY s.started_at\n           LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "187862205c7a0ac27e2f9d8c9777c9f7a0c815a9028041b6340f1d7d40508ce2"
+}

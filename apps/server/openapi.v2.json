@@ -3243,7 +3243,8 @@
       "AutoSubmitReason": {
         "enum": [
           "time_expired",
-          "integrity_violation"
+          "integrity_violation",
+          "deadline_passed"
         ],
         "type": "string"
       },

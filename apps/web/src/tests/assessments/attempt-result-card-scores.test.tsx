@@ -34,7 +34,15 @@ const vm = {
   policy: DEFAULT_POLICY_VIEW,
   items: [
     { id: itemId, item_uuid: itemId, order: 0, kind: 'CHOICE', title: 'Вопрос', body: { prompt: '' }, max_score: 1 },
-    { id: matchingId, item_uuid: matchingId, order: 1, kind: 'MATCHING', title: 'Столицы', body: { prompt: '' }, max_score: 3 },
+    {
+      id: matchingId,
+      item_uuid: matchingId,
+      order: 1,
+      kind: 'MATCHING',
+      title: 'Столицы',
+      body: { prompt: '' },
+      max_score: 3,
+    },
     { id: prose, item_uuid: prose, order: 2, kind: 'OPEN_TEXT', title: 'Эссе', body: { prompt: '' }, max_score: 10 },
   ],
   itemScores: {
@@ -128,6 +136,18 @@ describe('AttemptResultCard breakdown (BUG-028)', () => {
     expect(feedback.querySelector('table')).not.toBeNull()
     expect(feedback).toHaveTextContent('Полнота')
     expect(feedback).not.toHaveTextContent('---')
+  })
+
+  // QA-D: a draft open at a strict due date is handed in by the server.
+  it('says the due date handed the attempt in', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <AttemptResultCard vm={{ ...vm, autoSubmitReason: 'deadline_passed' }} />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByTestId('score-adjustments')).toHaveTextContent(
+      'Срок сдачи истёк: попытка сдана автоматически с сохранёнными ответами.',
+    )
   })
 
   it('shows nothing extra for a plain released attempt', () => {

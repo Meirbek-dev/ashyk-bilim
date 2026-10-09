@@ -1010,8 +1010,9 @@ pub async fn list_submitters(pool: &PgPool, assessment_id: AssessmentId) -> Resu
 
 // ── Timer sweep ─────────────────────────────────────────────────────────────
 
-/// Open timed drafts past their deadline (time limit + grace period,
-/// BUG-326) and not backing off.
+/// Open drafts past their deadline and not backing off: the timer (time
+/// limit + grace period, BUG-326) or a strict due date - late work off, the
+/// learner's override applied (QA-D, `deadline_passed`).
 ///
 /// No retry cap: the last allowed failure hands the draft in for review
 /// (BUG-379); only a failing database keeps one here, retried hourly.
@@ -1019,10 +1020,17 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
     let ids = sqlx::query_scalar!(
         r#"SELECT s.id AS "id: SubmissionId"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE s.status = 'draft' AND s.started_at IS NOT NULL
-             AND a.time_limit_seconds IS NOT NULL
-             AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now()
+           LEFT JOIN assessment_overrides o
+             ON o.assessment_id = s.assessment_id AND o.user_id = s.user_id
+           WHERE s.status = 'draft'
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
+             AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
+                   AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())
+               -- `AssessmentsService::policy_at`'s due date at now() (late work off, no preview).
+               OR (NOT a.allow_late AND NOT s.preview
+                   AND COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended
+                                     THEN o.due_at_override END,
+                                a.due_at) <= now()))
            ORDER BY s.started_at
            LIMIT $1"#,
         limit

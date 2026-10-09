@@ -140,7 +140,7 @@ export interface AttemptViewModel {
   /** Late penalty deducted from the shown attempt, null when none or hidden (UX-060). */
   latePenaltyPct: number | null
   /** Why the server closed the shown attempt; null when the learner submitted. */
-  autoSubmitReason: 'time_expired' | 'integrity_violation' | null
+  autoSubmitReason: 'time_expired' | 'integrity_violation' | 'deadline_passed' | null
   /** Teacher's overall comment on the shown attempt, null until released (UX-063). */
   generalFeedback: string | null
   /** UX-123: a newer hand-in awaiting the teacher while the card shows the released grade of record. */

@@ -41,7 +41,7 @@ export interface Submission {
   /** BUG-174: the stored raw when it is a manual override (teacher view only). */
   score_override?: number | null
   /** UX-117: `integrity_violation` = annulled, the raw stays 0 unless overridden. */
-  auto_submit_reason?: 'time_expired' | 'integrity_violation' | null
+  auto_submit_reason?: 'time_expired' | 'integrity_violation' | 'deadline_passed' | null
   version?: number
   /** UX-167: `false` = not a course member (left) — no per-learner actions. */
   enrolled?: boolean

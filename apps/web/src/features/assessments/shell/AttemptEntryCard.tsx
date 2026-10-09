@@ -65,6 +65,10 @@ export default function AttemptEntryCard({
               : t('assessmentBlocked')}
           </p>
         )}
+        {vm.submissionStatus === 'DRAFT' &&
+        vm.disabledActionReasons.some(r => r === 'PAST_DUE' || r === 'TIME_LIMIT_EXPIRED') ? (
+          <p className="text-muted-foreground max-w-md text-sm">{t('closedDraftAutoSubmit')}</p>
+        ) : null}
       </div>
     )
   }

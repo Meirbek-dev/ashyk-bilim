@@ -49,7 +49,7 @@ export const TeacherSubmission = zod
     assessment_id: zod.uuid(),
     attempt_number: zod.int(),
     auto_score: zod.number().nullish(),
-    auto_submit_reason: zod.union([zod.enum(['time_expired', 'integrity_violation']), zod.null()]).optional(),
+    auto_submit_reason: zod.union([zod.enum(['time_expired', 'integrity_violation', 'deadline_passed']), zod.null()]).optional(),
     content_version: zod.int(),
     duration_seconds: zod.int().nullish(),
     feedback: zod.array(

@@ -1323,13 +1323,6 @@ impl SubmissionsService {
         // sweep got to it - lateness, the override in force (BUG-307) and
         // `submitted_at` (what settling re-judges) all use it.
         // BUG-326: the clock runs out after the grace period.
-        let submitted_at = match (submission.started_at, assessment.time_limit_seconds) {
-            (Some(started), Some(limit)) => {
-                (started + i64::from(limit) + i64::from(assessment.grace_period_minutes) * 60)
-                    .min(now_unix())
-            }
-            _ => now_unix(),
-        };
         // BUG-279: the attempt's own preview flag - the same policy rule as
         // a manual submit (a preview carries no late penalty).
         let preview = submission.preview;
@@ -1338,6 +1331,26 @@ impl SubmissionsService {
         } else {
             ab_db::assessments::get_override(pool, assessment.id, submission.user_id).await?
         };
+        let now = now_unix();
+        let timer_end = match (submission.started_at, assessment.time_limit_seconds) {
+            (Some(started), Some(limit)) => {
+                Some(started + i64::from(limit) + i64::from(assessment.grace_period_minutes) * 60)
+            }
+            _ => None,
+        };
+        // QA-D: a strict due date (no late work) closes the draft too - it is
+        // handed in as saved, like Moodle's "open attempts are submitted
+        // automatically". `list_expired_drafts` mirrors this rule in SQL.
+        let due_end = (!assessment.allow_late && !preview)
+            .then(|| AssessmentsService::policy_at(&assessment, row.as_ref(), preview, now).due_at)
+            .flatten();
+        let (submitted_at, reason) = match (timer_end, due_end) {
+            (Some(timer), Some(due)) if due < timer => (due, AutoSubmitReason::DeadlinePassed),
+            (None, Some(due)) => (due, AutoSubmitReason::DeadlinePassed),
+            (Some(timer), _) => (timer, AutoSubmitReason::TimeExpired),
+            (None, None) => (now, AutoSubmitReason::TimeExpired),
+        };
+        let submitted_at = submitted_at.min(now);
         let effective =
             AssessmentsService::policy_at(&assessment, row.as_ref(), preview, submitted_at);
         let answers = if for_review {
@@ -1372,7 +1385,7 @@ impl SubmissionsService {
             FinalizeOptions {
                 skip_constraints: true,
                 violation_count,
-                auto_submit_reason: Some(AutoSubmitReason::TimeExpired),
+                auto_submit_reason: Some(reason),
                 submitted_at: Some(submitted_at),
                 arrived_at: None,
             },

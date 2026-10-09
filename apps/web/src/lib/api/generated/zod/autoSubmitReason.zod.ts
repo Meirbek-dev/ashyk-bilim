@@ -7,7 +7,7 @@
  */
 import * as zod from 'zod'
 
-export const AutoSubmitReason = zod.enum(['time_expired', 'integrity_violation'])
+export const AutoSubmitReason = zod.enum(['time_expired', 'integrity_violation', 'deadline_passed'])
 
 export type AutoSubmitReason = zod.input<typeof AutoSubmitReason>
 export type AutoSubmitReasonOutput = zod.output<typeof AutoSubmitReason>

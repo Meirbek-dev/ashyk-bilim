@@ -154,7 +154,15 @@ export default function AttemptResultCard({
       {vm.autoSubmitReason || vm.latePenaltyPct !== null || vm.attemptCapPercent !== null ? (
         <ul className="text-muted-foreground mb-4 space-y-1 text-sm" data-testid="score-adjustments">
           {vm.autoSubmitReason ? (
-            <li>{t(vm.autoSubmitReason === 'time_expired' ? 'autoSubmittedTimeExpired' : 'autoSubmittedViolation')}</li>
+            <li>
+              {t(
+                vm.autoSubmitReason === 'time_expired'
+                  ? 'autoSubmittedTimeExpired'
+                  : vm.autoSubmitReason === 'deadline_passed'
+                    ? 'autoSubmittedDeadline'
+                    : 'autoSubmittedViolation',
+              )}
+            </li>
           ) : null}
           {vm.latePenaltyPct !== null ? (
             <li>{t('latePenaltyApplied', { percent: percent(vm.latePenaltyPct) })}</li>

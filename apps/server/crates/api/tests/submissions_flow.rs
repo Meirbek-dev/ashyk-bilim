@@ -699,6 +699,103 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     );
 }
 
+/// QA-D: with late work off, a draft still open at the due date is handed in
+/// by the sweep with what was saved (`deadline_passed`, submitted at the due
+/// date); a learner whose override extends the date keeps working.
+#[sqlx::test(migrations = "../../migrations")]
+async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let now = i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+    .unwrap();
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false, "due_at_unix": now + 3600 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let mut drafts = Vec::new();
+    for name in ["alice", "bob"] {
+        let who = learner(&app, name).await;
+        let draft = app.post_as(&who, &start_path, &serde_json::json!({})).await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let saved = app
+            .send(patch_draft(&who, &sub_id, Some("1"), &answer))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        drafts.push((who, sub_id));
+    }
+    let (bob, bob_sub) = &drafts[1];
+    let extended = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", bob.user_id),
+            &serde_json::json!({ "due_at_override_unix": now + 86_400 }),
+        )
+        .await;
+    assert_eq!(extended.status, StatusCode::CREATED, "{}", extended.text());
+    let runner = app.code_runner();
+    let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
+    assert_eq!(sweep().await.unwrap(), 0, "before the due date");
+
+    // The due date passes (one minute ago).
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        sweep().await.unwrap(),
+        1,
+        "alice only: bob's date is extended"
+    );
+    let (alice, alice_sub) = &drafts[0];
+    let mine = app
+        .get_as(alice, &format!("/api/v2/submissions/{alice_sub}"))
+        .await;
+    assert_eq!(mine.json()["status"], "published", "{}", mine.text());
+    assert_eq!(mine.json()["auto_score"], 100.0);
+    assert_eq!(mine.json()["auto_submit_reason"], "deadline_passed");
+    let submitted = mine.json()["submitted_at_unix"].as_i64().unwrap();
+    assert!(
+        (now - 120..=now).contains(&submitted),
+        "submitted at the due date, not at the sweep: {submitted} vs {now}"
+    );
+    let theirs = app
+        .get_as(bob, &format!("/api/v2/submissions/{bob_sub}"))
+        .await;
+    assert_eq!(theirs.json()["status"], "draft", "{}", theirs.text());
+    assert_eq!(sweep().await.unwrap(), 0);
+
+    // The extension runs out too: bob's draft is handed in.
+    sqlx::query(
+        "UPDATE assessment_overrides SET due_at_override = now() - interval '1 second'
+         WHERE user_id = $1",
+    )
+    .bind(bob.user_id.0)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(sweep().await.unwrap(), 1);
+    let theirs = app
+        .get_as(bob, &format!("/api/v2/submissions/{bob_sub}"))
+        .await;
+    assert_eq!(theirs.json()["auto_submit_reason"], "deadline_passed");
+}
+
 /// BUG-326: the grace period extends the timer - the sweep waits for it
 /// and a submit past the limit but inside the grace is accepted.
 #[sqlx::test(migrations = "../../migrations")]

@@ -2359,3 +2359,25 @@ takes over an hour, and a reap sweep (every 6 h) that ran after the hour
 deleted the row and the object under the running upload: finalize then
 answered 404 and the teacher lost the upload. `CLAIM_WINDOW` is 12 h now; an
 abandoned pending object is kept that much longer, which is harmless.
+
+## A strict due date hands open drafts in (2026-10-09, QA cluster D)
+
+With late work off (`allow_late = false`), a quiz/exam/code draft the learner
+opened before the due date was refused at save and submit once the date
+passed, and nothing ever handed it in: the answers were saved but never
+graded, and the attempt never counted. The owner chose the LMS-standard
+behaviour (Moodle's "open attempts are submitted automatically"): the
+existing `submissions:auto-submit` sweep (every minute) now also picks up
+drafts past their effective due date - the learner's override applied, the
+same rule as `AssessmentsService::policy_at` - and grades the stored answers
+with `submitted_at` = the due date and the new `auto_submit_reason =
+deadline_passed` (migration `20261009000001`, schema enum value). The
+earlier of timer and due date wins. Teacher previews are never handed in by
+the due date. A job rather than a lazy hand-in on read: the sweep already
+owns the timer case, its retries and the code-runner path, and a draft
+nobody looks at still lands in the gradebook. On the first deploy the sweep
+hands in every such draft left open in the past (graded as of its due date);
+that is the intended outcome. File-submission drafts are out of scope and
+unchanged. The learner's page says, while the draft waits for the sweep,
+that the saved answers will be handed in within a minute, and the result
+names the reason.

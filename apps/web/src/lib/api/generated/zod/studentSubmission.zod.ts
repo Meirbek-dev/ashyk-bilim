@@ -59,7 +59,7 @@ export const StudentSubmission = zod
     auto_submit_reason: zod
       .union([
         zod
-          .enum(['time_expired', 'integrity_violation'])
+          .enum(['time_expired', 'integrity_violation', 'deadline_passed'])
           .describe(
             'Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted.',
           ),

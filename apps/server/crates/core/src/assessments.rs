@@ -196,6 +196,7 @@ text_enum!(
     AutoSubmitReason {
         TimeExpired => "time_expired",
         IntegrityViolation => "integrity_violation",
+        DeadlinePassed => "deadline_passed",
     }
 );
 
