@@ -3097,7 +3097,7 @@
       "buttonText": "Добавить активность",
       "description": "Создайте новую активность для этой главы.",
       "quickCreate": {
-        "codeChallengeName": "Новый код-челлендж",
+        "codeChallengeName": "Новая задача с кодом",
         "dynamicPageName": "Новая страница"
       },
       "title": "Добавить активность"

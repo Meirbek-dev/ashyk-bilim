@@ -21,6 +21,8 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { courseKeys } from '@/hooks/courses/courseKeys'
+import { useRouter } from '@/i18n/navigation'
+import { cleanCourseUuid } from '@/lib/course-management'
 import type { ActivityCreateValues } from '@/schemas/activitySchemas'
 
 interface NewActivityButtonProps {
@@ -31,6 +33,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
   const [newActivityModal, setNewActivityModal] = useState(false)
   const course = useCourse()
   const queryClient = useQueryClient()
+  const router = useRouter()
   const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true)
   const t = useTranslations('CourseEdit.NewActivityModal')
   const tNotify = useTranslations('DashPage.Notifications')
@@ -111,7 +114,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
       try {
         // v2 `CreateAssessmentRequest` is `{chapter_id, kind, title, description?, grading_type?}`
         // (`additionalProperties: false`); the policy starts from the kind's preset.
-        await apiJson('assessments', {
+        const created = await apiJson<{ activity_id?: string }>('assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -129,6 +132,13 @@ function NewActivityButton(props: NewActivityButtonProps) {
 
         toast.success(tNotify('activityCreatedSuccess'))
         setNewActivityModal(false)
+        // Like a new quiz/exam: the challenge is empty and unpublished - open its studio (it was left
+        // as «Новый код-челлендж» in the curriculum, with nothing telling the teacher where to fill it in).
+        if (created?.activity_id) {
+          router.push(
+            `/dash/courses/${cleanCourseUuid(course.courseStructure.course_uuid)}/activity/${created.activity_id}/studio`,
+          )
+        }
       } catch (error: unknown) {
         toastApiError(error, undefined, tNotify('activityCreateFailed'))
         throw error

@@ -2924,7 +2924,7 @@
       "buttonText": "Белсенділік қосу",
       "description": "Осы тарау үшін жаңа белсенділік жасаңыз.",
       "quickCreate": {
-        "codeChallengeName": "Жаңа код оқу әрекеті",
+        "codeChallengeName": "Жаңа код тапсырмасы",
         "dynamicPageName": "Жаңа бет"
       },
       "title": "Белсенділік қосу"

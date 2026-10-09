@@ -17,6 +17,8 @@ vi.mock('sonner', () => ({
   toast: { loading: vi.fn(() => 'toast'), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
 }))
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
+const push = vi.hoisted(() => vi.fn())
+vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }))
 vi.mock('@components/Contexts/CourseContext', () => ({
   useCourse: () => ({ courseStructure: { id: 'course-1', course_uuid: 'course-1' }, withUnpublishedActivities: true }),
 }))
@@ -60,5 +62,7 @@ describe('NewActivityButton code challenge quick create', () => {
       grading_type: 'percentage',
     })
     await waitFor(() => expect(invalidate).toHaveBeenCalled())
+    // QA-A: the empty challenge opens in its studio, like a new quiz.
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dash/courses/course-1/activity/act-1/studio'))
   })
 })
