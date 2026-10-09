@@ -7,6 +7,9 @@ import { generateUUID } from './lib/utils'
 
 const handleI18nRouting = createMiddleware(routing)
 
+/** `/kk/...` (the ISO code people type) and the full tags lead to the configured prefixes; next-intl would prefix them again (`/kz/kk/...`, a 404). */
+const LOCALE_ALIASES: Record<string, string> = { kk: 'kz', 'kk-kz': 'kz', 'ru-ru': 'ru', 'en-us': 'en' }
+
 export const config = {
   matcher: [
     /*
@@ -96,6 +99,13 @@ export function proxy(req: NextRequest) {
       return withRequestId(NextResponse.redirect(new URL(pathnameWithoutLocale, req.url)), requestId)
     }
     return withRequestId(NextResponse.next(), requestId)
+  }
+
+  const [, first = '', ...rest] = pathname.split('/')
+  const alias = LOCALE_ALIASES[first.toLowerCase()]
+  if (alias) {
+    const target = new URL(['', alias, ...rest].join('/') + search, req.url)
+    return withRequestId(NextResponse.redirect(target, 308), requestId)
   }
 
   if (pathname === '/sitemap.xml') {
