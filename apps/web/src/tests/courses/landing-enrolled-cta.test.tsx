@@ -161,7 +161,7 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     mocks.user = null
     renderActions(null)
     fireEvent.click(screen.getByRole('button', { name: /Начать курс|Войти/ }))
-    expect(mocks.push).toHaveBeenCalledWith('/login?returnTo=%2Fcourse%2Fc1')
+    expect(mocks.push).toHaveBeenCalledWith('/login?returnTo=%2Fcourse%2Fc1%3Fstart%3D1')
   })
 
   // UX-023: a pending applicant may withdraw (`DELETE contributors/{self}`).
@@ -244,5 +244,35 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     renderActions(enrolledWithoutRun)
     fireEvent.click(screen.getByRole('button', { name: ruMessages.Courses.CoursesActions.aria.applyToBecome }))
     await waitFor(() => expect(mocks.apply).toHaveBeenCalled())
+  })
+})
+
+// Back from the login with `?start=1`: the landing enrols by itself (no second «Начать курс»),
+// once, from the desktop copy only (both copies are mounted).
+describe('«Начать курс» intent survives the login', () => {
+  it('enrols once and drops ?start=1 from the address bar', async () => {
+    globalThis.history.replaceState(null, '', '/course/c1?start=1')
+    const notEnrolled = { ...enrolledWithoutRun, enrolled: false } as LearnerCourseState
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages}>
+          <CoursesActions
+            courseuuid="c1"
+            course={course}
+            trailData={{ runs: [] } as never}
+            learnerState={notEnrolled}
+          />
+          <CourseActionsMobile
+            courseuuid="c1"
+            course={course}
+            trailData={{ runs: [] } as never}
+            learnerState={notEnrolled}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    )
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(expect.stringContaining('/course/c1/activity/a1')))
+    expect(mocks.apiJson).toHaveBeenCalledTimes(1)
+    expect(globalThis.location.search).toBe('')
   })
 })

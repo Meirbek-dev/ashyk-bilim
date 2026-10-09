@@ -7,8 +7,8 @@
  */
 import { ArrowRight, CheckCircle2, Clock, Loader2, UserPen } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { queryKeys } from '@/lib/react-query/queryKeys'
@@ -45,11 +45,20 @@ interface CourseCtaInput {
   course: AppCourse
   trailData?: AppTrailData | null | undefined
   learnerState?: LearnerCourseState | null | undefined
+  /**
+   * Run the CTA once when the URL carries `?start=1` (set on the login
+   * returnTo by an anonymous «Начать курс»). Only one mounted copy may own it.
+   */
+  autoStartFromUrl?: boolean
 }
 
-export function useCourseCta({ courseuuid, course, trailData, learnerState }: CourseCtaInput) {
+/** Query flag the anonymous «Начать курс» puts on its returnTo. */
+const START_INTENT = 'start'
+
+export function useCourseCta({ courseuuid, course, trailData, learnerState, autoStartFromUrl }: CourseCtaInput) {
   const queryClient = useQueryClient()
   const router = useRouter()
+  const pathname = usePathname() ?? `/course/${courseuuid}`
   const { user: currentUser } = useSession()
   const { toastApiError } = useApiError()
   const t = useTranslations('Courses.CoursesActions')
@@ -117,7 +126,8 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
 
   const handleCourseAction = async () => {
     if (!currentUser) {
-      router.push(buildLoginRedirect(`/course/${courseuuid}`))
+      // The intent survives the login: back on the landing the CTA runs by itself.
+      router.push(buildLoginRedirect(`${pathname}?${START_INTENT}=1`))
       return
     }
     // A completed course with a certificate leads to the certificate, not back into the course.
@@ -168,6 +178,18 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState }: Co
       setIsActionLoading(false)
     }
   }
+
+  // Back from the login with `?start=1`: enrol / continue without a second click.
+  const autoStarted = useRef(false)
+  useEffect(() => {
+    if (!autoStartFromUrl || autoStarted.current || !currentUser || learnerState === undefined) return
+    const url = new URL(globalThis.location.href)
+    if (url.searchParams.get(START_INTENT) !== '1') return
+    autoStarted.current = true
+    url.searchParams.delete(START_INTENT)
+    globalThis.history.replaceState(globalThis.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+    if ((action === 'start' || action === 'continue') && !hideCta && !hasNoLiveActivities) void handleCourseAction()
+  })
 
   return {
     action,

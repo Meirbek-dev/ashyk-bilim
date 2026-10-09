@@ -29,7 +29,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
     handleCourseAction,
     isProgressOpen,
     setIsProgressOpen,
-  } = useCourseCta({ courseuuid, course, trailData, learnerState })
+  } = useCourseCta({ courseuuid, course, trailData, learnerState, autoStartFromUrl: true })
 
   const renderActionButton = (action: CourseCta) => {
     const icon =
