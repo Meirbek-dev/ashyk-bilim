@@ -89,7 +89,8 @@ function UserBlockComponent(props: TypedNodeViewProps<UserNodeAttrs>) {
   const [error, setError] = useState<string | null>(null)
 
   const { updateAttributes, node } = props
-  const userId = typeof node.attrs.user_id === 'string' ? node.attrs.user_id : null
+  // A fresh block carries `user_id: ''` - no lookup (it 404'd on every load of the page).
+  const userId = typeof node.attrs.user_id === 'string' && node.attrs.user_id ? node.attrs.user_id : null
   const userByIdQuery = useUserByIdQuery(userId, { enabled: userId !== null })
   const userByUsernameQuery = useUserByUsernameQuery(submittedUsername, {
     enabled: Boolean(submittedUsername && submittedUsername.trim().length > 0),

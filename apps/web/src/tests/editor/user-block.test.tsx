@@ -19,7 +19,7 @@ vi.mock('@tiptap/react', () => ({
   NodeViewWrapper: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }))
 vi.mock('@/features/users/hooks/useUsers', () => ({
-  useUserByIdQuery: () => byId(),
+  useUserByIdQuery: (...args: unknown[]) => byId(...args),
   useUserByUsernameQuery: () => ({ data: undefined, error: null, isFetching: false }),
 }))
 
@@ -28,9 +28,9 @@ import UserBlockComponent from '@components/Objects/Editor/Extensions/Users/User
 
 const userId = '0199a8d5-da4c-753e-9a55-3c1b2c4d5e6f'
 
-function renderBlock() {
+function renderBlock(id: string = userId) {
   const updateAttributes = vi.fn()
-  const props = { node: { attrs: { user_id: userId } }, updateAttributes } as unknown as Parameters<
+  const props = { node: { attrs: { user_id: id } }, updateAttributes } as unknown as Parameters<
     typeof UserBlockComponent
   >[0]
   render(<UserBlockComponent {...props} />)
@@ -45,6 +45,13 @@ describe('user block', () => {
     const user = await getUserById(userId)
     expect(apiJson).toHaveBeenCalledWith(`users/by-id/${userId}`)
     expect(user).toMatchObject({ id: userId, username: 'meirbek', display_name: 'Meirbek' })
+  })
+
+  // QA-D: a block just inserted (no user picked yet) asked for GET /users/by-id/ - a 404 on every page load.
+  it('does not look up a block without a user', () => {
+    byId.mockReturnValue({ data: undefined, error: null, isFetching: false })
+    renderBlock('')
+    expect(byId).toHaveBeenCalledWith(null, { enabled: false })
   })
 
   it('keeps user_id when the lookup fails', async () => {
