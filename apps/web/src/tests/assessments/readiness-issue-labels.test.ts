@@ -4,9 +4,14 @@ import type { AbstractIntlMessages } from 'next-intl'
 
 import { localizeValidationIssue, validationIssueMessageKey } from '@/features/assessments/domain/readiness'
 import { ITEM_KIND_LABEL_KEYS } from '@/features/assessments/domain/items'
-import ruMessages from '@/messages/ru-RU.json'
-import kkMessages from '@/messages/kk-KZ.json'
-import enMessages from '@/messages/en-US.json'
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
+import ruCatalog from '@/messages/ru-RU.json'
+import kkCatalog from '@/messages/kk-KZ.json'
+import enCatalog from '@/messages/en-US.json'
+
+const ruMessages = inlangToIcu(ruCatalog) as AbstractIntlMessages
+const kkMessages = inlangToIcu(kkCatalog) as AbstractIntlMessages
+const enMessages = inlangToIcu(enCatalog) as AbstractIntlMessages
 
 // BUG-029: the studio readiness strip rendered the server's English `message`
 // and raw `code` ("add at least one item / assessment.empty"). Every code the

@@ -1,11 +1,15 @@
-import { createTranslator } from 'next-intl'
+import { createTranslator, type AbstractIntlMessages } from 'next-intl'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import ruMessages from '@/messages/ru-RU.json'
 
 // at_risk_total counts learner×course pairs: they read as «регистрации», with the ru few form.
 describe('ru enrollment counts', () => {
-  const t = createTranslator({ locale: 'ru', messages: ruMessages })
+  const t = createTranslator({
+    locale: 'ru',
+    messages: inlangToIcu(ruMessages) as AbstractIntlMessages,
+  }) as unknown as (key: string, values?: Record<string, number | string>) => string
 
   it('declines «регистрация» for 1 / 3 / 5 / 21', () => {
     expect([1, 3, 5, 21].map(count => t('DashPage.Admin.enrollments', { count }))).toEqual([

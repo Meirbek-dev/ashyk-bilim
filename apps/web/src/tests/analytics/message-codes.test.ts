@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { AnalyticsCode } from '@/lib/api/generated/zod'
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import en from '@/messages/en-US.json'
 import kk from '@/messages/kk-KZ.json'
 import ru from '@/messages/ru-RU.json'
@@ -12,7 +13,7 @@ describe('TeacherAnalytics.messages', () => {
   const catalogs = { 'ru-RU': ru, 'kk-KZ': kk, 'en-US': en } as const
 
   it.each(Object.entries(catalogs))('%s has a title and body for every AnalyticsCode', (_locale, catalog) => {
-    const messages = catalog.TeacherAnalytics.messages as Record<string, { title?: string; body?: string }>
+    const messages = inlangToIcu(catalog.TeacherAnalytics.messages) as Record<string, { title?: string; body?: string }>
     for (const code of AnalyticsCode.options) {
       expect(messages[code]?.title?.trim(), `${code}.title`).toBeTruthy()
       expect(messages[code]?.body?.trim(), `${code}.body`).toBeTruthy()

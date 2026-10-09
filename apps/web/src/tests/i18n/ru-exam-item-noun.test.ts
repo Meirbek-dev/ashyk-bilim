@@ -1,15 +1,16 @@
-import { createTranslator } from 'next-intl'
+import { createTranslator, type AbstractIntlMessages } from 'next-intl'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import ruMessages from '@/messages/ru-RU.json'
 
 // «Структура Вопрос» / «Метаданные Вопрос»: the noun needs the genitive in ru.
 describe('ru exam editor item noun agreement', () => {
   const t = createTranslator({
     locale: 'ru',
-    messages: ruMessages,
+    messages: inlangToIcu(ruMessages) as AbstractIntlMessages,
     namespace: 'Features.Assessments.Studio.NativeItemStudio',
-  })
+  }) as unknown as (key: string, values?: Record<string, number | string>) => string
 
   it('declines «Вопрос» and keeps a readable fallback for other nouns', () => {
     expect(t('outlineTitle', { itemNoun: 'Вопрос' })).toBe('Структура вопросов')

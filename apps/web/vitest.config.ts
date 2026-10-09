@@ -1,10 +1,24 @@
 import { defineConfig } from 'vite-plus'
 import { playwright } from 'vite-plus/test/browser-playwright'
 import react from '@vitejs/plugin-react'
+import { inlangToIcu } from './src/i18n/inlang-to-icu'
 
 export default defineConfig({
-  // eslint-disable-next-line typescript/no-explicit-any
-  plugins: [react() as any],
+  plugins: [
+    // eslint-disable-next-line typescript/no-explicit-any
+    react() as any,
+    // The app converts the inlang (Paraglide) catalogs to ICU when it loads them (src/i18n/request.ts);
+    // tests import the JSON directly, so they get the same conversion here.
+    {
+      name: 'inlang-catalogs-as-icu',
+      enforce: 'pre',
+      transform(code: string, id: string) {
+        return /\/src\/messages\/[\w-]+\.json$/.test(id)
+          ? { code: JSON.stringify(inlangToIcu(JSON.parse(code))), map: null }
+          : undefined
+      },
+    },
+  ],
   resolve: {
     // Vite now handles this natively, so we can remove the external plugin
     tsconfigPaths: true,

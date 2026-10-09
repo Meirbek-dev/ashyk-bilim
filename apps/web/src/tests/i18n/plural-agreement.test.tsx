@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { NextIntlClientProvider, useTranslations } from 'next-intl'
+import { NextIntlClientProvider, useTranslations, type AbstractIntlMessages } from 'next-intl'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import ruMessages from '@/messages/ru-RU.json'
 
 // Regression test for the Russian one/few/many plural-agreement defect:
@@ -14,7 +15,7 @@ function ScopedCourses({ count }: { count: number }) {
 
 function renderScopedCourses(count: number) {
   render(
-    <NextIntlClientProvider locale="ru" messages={ruMessages}>
+    <NextIntlClientProvider locale="ru" messages={inlangToIcu(ruMessages) as AbstractIntlMessages}>
       <ScopedCourses count={count} />
     </NextIntlClientProvider>,
   )

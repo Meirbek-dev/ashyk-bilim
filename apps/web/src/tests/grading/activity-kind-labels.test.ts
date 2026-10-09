@@ -3,6 +3,7 @@ import { createTranslator } from 'next-intl'
 import type { AbstractIntlMessages } from 'next-intl'
 
 import { labelActivityType } from '@/features/grading/gradebook/GradebookToolbar'
+import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import ruMessages from '@/messages/ru-RU.json'
 
 // BUG-031: the gradebook column subtitle showed raw "QUIZ" for a quiz assessment
@@ -12,7 +13,7 @@ describe('gradebook activity kind labels (BUG-031)', () => {
   // Loosely typed: the wire kinds under test are data, not statically known keys.
   const t = createTranslator({
     locale: 'ru',
-    messages: ruMessages as AbstractIntlMessages,
+    messages: inlangToIcu(ruMessages) as AbstractIntlMessages,
     namespace: 'Features.Grading.Gradebook',
   }) as unknown as (key: string) => string
 
