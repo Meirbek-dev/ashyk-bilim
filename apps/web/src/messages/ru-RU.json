@@ -8096,6 +8096,8 @@
     "activityUnavailableMessage": "Эта активность ещё не опубликована. Вернитесь к курсу, чтобы продолжить.",
     "courseNotFound": "Курс не найден",
     "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
+    "signInMayHelp": "Если у вас есть доступ, войдите в аккаунт.",
+    "signIn": "Войти",
     "collectionNotFound": "Коллекция не найдена",
     "collectionNotFoundMessage": "Запрашиваемая коллекция не существует или была удалена.",
     "userNotFound": "Пользователь не найден",

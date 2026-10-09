@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { Home, Compass, BookOpen } from 'lucide-react'
+import { Home, Compass, BookOpen, LogIn } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@components/ui/button'
+import { buildLoginRedirect } from '@/lib/auth/return-to'
 
 interface ResourceNotFoundProps {
   courseuuid?: string
@@ -44,8 +45,10 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
             ? tErrors('userNotFoundMessage')
             : tErrors('courseNotFoundMessage')
 
-  const inDash = usePathname().includes('/dash/')
-  void session
+  const pathname = usePathname()
+  const inDash = pathname.includes('/dash/')
+  // A private course answers «not found» to a guest: it may well open after signing in.
+  const signedOut = !session
 
   const handleBackToCourse = () => {
     if (!courseuuid) return
@@ -62,7 +65,10 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
 
         <h1 className="text-foreground mb-2 text-xl font-semibold tracking-tight">{heading}</h1>
 
-        <p className="text-muted-foreground mb-8 text-sm leading-relaxed">{message}</p>
+        <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
+          {message}
+          {signedOut ? ` ${tErrors('signInMayHelp')}` : null}
+        </p>
 
         <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-center">
           {courseuuid ? (
@@ -87,6 +93,16 @@ export default function ResourceNotFound({ courseuuid, session, type = 'generic'
               {tErrors('backToCourses')}
             </Button>
           )}
+          {signedOut ? (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => router.push(buildLoginRedirect(pathname))}
+            >
+              <LogIn className="h-4 w-4" />
+              {tErrors('signIn')}
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

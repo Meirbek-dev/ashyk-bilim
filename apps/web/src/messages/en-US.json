@@ -7979,6 +7979,8 @@
     "activityUnavailableMessage": "This activity is not published yet. Go back to the course to continue.",
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
+    "signInMayHelp": "If you have access, sign in.",
+    "signIn": "Sign in",
     "collectionNotFound": "Collection not found",
     "collectionNotFoundMessage": "The collection you are looking for does not exist or has been removed.",
     "userNotFound": "User not found",

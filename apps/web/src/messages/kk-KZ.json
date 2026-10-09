@@ -7565,6 +7565,8 @@
     "activityUnavailableMessage": "Бұл белсенділік әлі жарияланбаған. Жалғастыру үшін курсқа оралыңыз.",
     "courseNotFound": "Курс табылмады",
     "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
+    "signInMayHelp": "Егер сізде рұқсат болса, аккаунтқа кіріңіз.",
+    "signIn": "Кіру",
     "collectionNotFound": "Жинақ табылмады",
     "collectionNotFoundMessage": "Сіз іздеген жинақ жоқ немесе жойылған.",
     "userNotFound": "Пайдаланушы табылмады",
