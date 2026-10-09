@@ -7,7 +7,7 @@ import ruRU from '@/messages/ru-RU.json'
 describe('getMimeCategories', () => {
   it('returns catalog keys (no hard-coded labels), one per distinct category', () => {
     const keys = getMimeCategories(['application/pdf', 'image/png', 'image/jpeg', 'text/x-python']).map(c => c.key)
-    expect(keys).toEqual(['documents', 'images', 'code'])
+    expect(keys).toEqual(['pdf', 'images', 'code'])
     expect(getMimeCategories([]).map(c => c.key)).toEqual(['anyFile'])
     expect(getMimeCategories(['application/octet-stream']).map(c => c.key)).toEqual(['anyFile'])
   })

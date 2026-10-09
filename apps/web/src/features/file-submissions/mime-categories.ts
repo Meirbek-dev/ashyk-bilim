@@ -52,7 +52,8 @@ const MIME_PREFIXES: [string, MimeCategoryKey][] = [
   ['text/plain', 'text'],
   ['text/markdown', 'text'],
   ['application/json', 'text'],
-  ['application/pdf', 'documents'],
+  // PDF is its own choice in the authoring form; a PDF-only task said «Документы» to learners.
+  ['application/pdf', 'pdf'],
   ['application/msword', 'documents'],
   ['application/vnd.openxmlformats-officedocument.wordprocessingml', 'documents'],
   ['application/vnd.oasis.opendocument.text', 'documents'],
