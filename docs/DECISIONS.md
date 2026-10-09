@@ -2349,3 +2349,13 @@ All additive to the live old web's contract; removals are listed in
   `WorkSort`) are registered in `app.rs`, because utoipa does not collect
   them and the client typed them `unknown`. The web contract gate (G-08) now
   fails on any `$ref` that points to a missing schema.
+
+## Pending uploads stay finalizable for 12 h (2026-10-09, QA cluster B)
+
+ARCHITECTURE §11 reaps abandoned `pending` uploads after 1 h. The presigned
+PUT only has to *start* within its 15 min (storage checks the expiry when the
+request arrives), but a 500 MB `block-video` over a 1 Mbit/s university link
+takes over an hour, and a reap sweep (every 6 h) that ran after the hour
+deleted the row and the object under the running upload: finalize then
+answered 404 and the teacher lost the upload. `CLAIM_WINDOW` is 12 h now; an
+abandoned pending object is kept that much longer, which is harmless.

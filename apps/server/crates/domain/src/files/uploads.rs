@@ -15,8 +15,12 @@ use uuid::Uuid;
 
 use crate::identity::Actor;
 
-/// How long a presigned PUT (and the pending row) stays claimable.
-pub const CLAIM_WINDOW: Duration = Duration::from_hours(1);
+/// How long a pending row stays finalizable.
+///
+/// The presigned PUT must *start*
+/// within its 15 min, but a 500 MB lecture over a slow university link runs
+/// for hours, and a reap sweep in that window lost the whole upload (BUG-B12).
+pub const CLAIM_WINDOW: Duration = Duration::from_hours(12);
 /// Grace period for finalized-but-unreferenced objects.
 pub const UNREFERENCED_GRACE: Duration = Duration::from_hours(24);
 const PRESIGN_PUT_TTL: Duration = Duration::from_mins(15);
