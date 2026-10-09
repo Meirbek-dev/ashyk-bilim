@@ -114,6 +114,13 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
         return
       }
 
+      // The ratio check reads the picked file: after compression its error named the shrunk size
+      // («900x675» for a 1600x1200 photo).
+      const originalUrl = URL.createObjectURL(file)
+      const ratioOk = await validateImageAspectRatio(originalUrl)
+      URL.revokeObjectURL(originalUrl)
+      if (!ratioOk) return
+
       let fileToUse = file
       try {
         fileToUse = await compressImage(file, { maxWidth: 1200, maxHeight: 675, quality: 0.8 })
@@ -124,10 +131,6 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
       if (!validateFile(fileToUse)) return
 
       const blobUrl = URL.createObjectURL(fileToUse)
-      if (!(await validateImageAspectRatio(blobUrl))) {
-        URL.revokeObjectURL(blobUrl)
-        return
-      }
 
       setLocalUrl(blobUrl)
       await saveWithoutRefresh(async () => updateThumbnail(fileToUse), {
