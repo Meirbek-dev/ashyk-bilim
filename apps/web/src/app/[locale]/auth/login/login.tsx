@@ -274,6 +274,12 @@ function LoginClient() {
               <FieldError>{fieldErrors.password}</FieldError>
             </Field>
 
+            <p className="-mt-2 text-right text-sm">
+              <Link href="/auth/reset-password" className="text-muted-foreground underline">
+                {t('forgotPassword')}
+              </Link>
+            </p>
+
             <AuthSubmitButton isPending={anyPending} label={t('login')} pendingLabel={t('loading')} />
           </>
         ) : (

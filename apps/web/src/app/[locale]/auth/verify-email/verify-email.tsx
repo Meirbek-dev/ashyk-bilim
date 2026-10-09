@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { toast } from 'sonner'
 import * as v from 'valibot'
@@ -12,7 +12,7 @@ import AuthLogo from '@components/auth/logo'
 import AuthCard from '@components/auth/card'
 import Link from '@components/ui/AppLink'
 import { getAbsoluteUrl } from '@services/config/config'
-import { verifyEmailAction } from '@/app/actions/auth'
+import { resendVerificationAction, verifyEmailAction } from '@/app/actions/auth'
 
 interface VerifyState {
   /** Submitted values, re-applied after a failure (the form action resets uncontrolled inputs). */
@@ -39,6 +39,7 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
   const t = useTranslations('Auth.VerifyEmail')
   const validationT = useTranslations('Validation')
   const errorsT = useTranslations('Errors')
+  const locale = useLocale()
   const router = useRouter()
 
   const schema = v.object({
@@ -51,6 +52,20 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
     async (prev: VerifyState, formData: FormData): Promise<VerifyState> => {
       const version = prev.version + 1
       const values = { email: String(formData.get('email') ?? ''), code: String(formData.get('code') ?? '') }
+      if (formData.get('intent') === 'resend') {
+        // A lost or expired code: mail a fresh one to the address in the form.
+        const parsedEmail = v.safeParse(schema.entries.email, values.email)
+        if (!parsedEmail.success) {
+          return { values, error: null, fieldErrors: { email: parsedEmail.issues[0].message }, version }
+        }
+        const result = await resendVerificationAction({ email: parsedEmail.output, locale })
+        if (!result.ok) {
+          const key = `codes.${result.code}`
+          return { values, error: errorsT.has(key) ? errorsT(key) : t('resendFailed'), fieldErrors: {}, version }
+        }
+        toast.success(t('resent'))
+        return { values: { ...values, code: '' }, error: null, fieldErrors: {}, version }
+      }
       const parsed = v.safeParse(schema, values)
       if (!parsed.success) {
         const flat = v.flatten<typeof schema>(parsed.issues)
@@ -120,6 +135,16 @@ function VerifyEmailClient({ email, code }: VerifyEmailClientProps) {
           <FieldError>{state.fieldErrors.code}</FieldError>
         </Field>
         <AuthSubmitButton isPending={isPending} label={t('submit')} pendingLabel={t('submitting')} />
+        <button
+          type="submit"
+          name="intent"
+          value="resend"
+          formNoValidate
+          disabled={isPending}
+          className="text-muted-foreground block w-full text-center text-sm underline"
+        >
+          {t('resend')}
+        </button>
       </form>
 
       <p className="text-muted-foreground mt-5 text-center text-sm">

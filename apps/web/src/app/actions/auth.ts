@@ -15,8 +15,8 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/types'
  * the headless Zitadel password (+ TOTP) check and answers with the session
  * cookie, which the action copies onto the app origin. `POST /auth/register`
  * creates the account (no session - the user logs in next) and
- * `POST /auth/verify-email` confirms the emailed code. Password reset is not
- * part of the v2 contract (DECISIONS.md 2026-09-12).
+ * `POST /auth/verify-email` confirms the emailed code; `POST /auth/password-reset`
+ * (+ `/confirm`) resets a forgotten password with an emailed code (S-08).
  */
 
 interface LoginActionInput {
@@ -167,24 +167,29 @@ async function problemResult(response: Response): Promise<RegisterActionResult> 
 
 /** `POST /auth/register` - creates the account; the user then logs in. */
 export async function registerAction(input: RegisterActionInput): Promise<RegisterActionResult> {
+  return postPublic(
+    'auth/register',
+    {
+      username: input.username.trim(),
+      email: input.email.trim(),
+      password: input.password,
+      first_name: input.firstName.trim(),
+      last_name: input.lastName.trim(),
+      organization: input.organization.trim(),
+    },
+    // Not the browser's Accept-Language: the link must land on the UI locale (UX-101).
+    input.locale,
+  )
+}
+
+/** A public auth POST (no session); `locale` picks the language of the emailed link. */
+async function postPublic(path: string, body: unknown, locale?: string | null): Promise<RegisterActionResult> {
   let response: Response
   try {
-    response = await postAuthJson(
-      'auth/register',
-      {
-        username: input.username.trim(),
-        email: input.email.trim(),
-        password: input.password,
-        first_name: input.firstName.trim(),
-        last_name: input.lastName.trim(),
-        organization: input.organization.trim(),
-      },
-      {
-        includeAuthCookies: false,
-        // Not the browser's Accept-Language: the link must land on the UI locale (UX-101).
-        ...(input.locale ? { headers: { 'accept-language': input.locale } } : {}),
-      },
-    )
+    response = await postAuthJson(path, body, {
+      includeAuthCookies: false,
+      ...(locale ? { headers: { 'accept-language': locale } } : {}),
+    })
   } catch {
     return { ok: false, code: 'service-unavailable' }
   }
@@ -194,16 +199,34 @@ export async function registerAction(input: RegisterActionInput): Promise<Regist
 
 /** `POST /auth/verify-email` - confirms the emailed code. */
 export async function verifyEmailAction(input: { email: string; code: string }): Promise<RegisterActionResult> {
-  let response: Response
-  try {
-    response = await postAuthJson(
-      'auth/verify-email',
-      { email: input.email.trim(), code: input.code.trim().toUpperCase() },
-      { includeAuthCookies: false },
-    )
-  } catch {
-    return { ok: false, code: 'service-unavailable' }
-  }
-  if (!response.ok) return problemResult(response)
-  return { ok: true }
+  return postPublic('auth/verify-email', { email: input.email.trim(), code: input.code.trim().toUpperCase() })
+}
+
+/** `POST /auth/verify-email/resend` - mails a fresh code (always 202: no enumeration). */
+export async function resendVerificationAction(input: {
+  email: string
+  locale?: string | null
+}): Promise<RegisterActionResult> {
+  return postPublic('auth/verify-email/resend', { email: input.email.trim() }, input.locale)
+}
+
+/** `POST /auth/password-reset` - mails a reset code (always 202: no enumeration). */
+export async function requestPasswordResetAction(input: {
+  login: string
+  locale?: string | null
+}): Promise<RegisterActionResult> {
+  return postPublic('auth/password-reset', { login: input.login.trim() }, input.locale)
+}
+
+/** `POST /auth/password-reset/confirm` - sets the new password; every session is closed. */
+export async function confirmPasswordResetAction(input: {
+  login: string
+  code: string
+  newPassword: string
+}): Promise<RegisterActionResult> {
+  return postPublic('auth/password-reset/confirm', {
+    login: input.login.trim(),
+    code: input.code.trim().toUpperCase(),
+    new_password: input.newPassword,
+  })
 }

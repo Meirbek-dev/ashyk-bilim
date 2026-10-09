@@ -1024,7 +1024,8 @@
       "backToPassword": "Back to login",
       "accountDisabled": "This account is disabled. Contact an administrator.",
       "invalidTotpCode": "Invalid one-time code.",
-      "googleCancelled": "Google sign-in was cancelled."
+      "googleCancelled": "Google sign-in was cancelled.",
+      "forgotPassword": "Forgot your password?"
     },
     "hidePassword": "Hide password",
     "password": "Password",
@@ -1067,7 +1068,31 @@
       "success": "Email address verified",
       "invalidCode": "The code is invalid or has expired.",
       "failed": "Could not verify the address. Please try again.",
-      "backToLogin": "Go to sign in"
+      "backToLogin": "Go to sign in",
+      "resend": "Send the code again",
+      "resent": "If the address is registered and not yet verified, we sent a new code to it.",
+      "resendFailed": "Could not send the code. Please try again."
+    },
+    "ResetPassword": {
+      "title": "Reset password - Ashyq Bilim",
+      "heading": "Reset your password",
+      "requestHint": "Enter your email or username - we will email you a code to set a new password.",
+      "codeSent": "If the account «{login}» exists, we sent a code to its email. Enter the code and a new password.",
+      "login": "Email or username",
+      "sendCode": "Send code",
+      "sending": "Sending...",
+      "code": "Code from the email",
+      "codeHint": "The 6-character code from the password reset email.",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the password",
+      "submit": "Change password",
+      "submitting": "Saving...",
+      "success": "Password changed. Sign in with the new password.",
+      "invalidCode": "The code is invalid or has expired. Request a new code.",
+      "failed": "Could not change the password. Please try again.",
+      "requestAgain": "Request a new code",
+      "backToLogin": "Back to sign in",
+      "passwordRule": "At least 8 characters, including an uppercase and a lowercase Latin letter, a digit and a symbol. At most 72 Latin or 36 Cyrillic characters."
     }
   },
   "Certificates": {

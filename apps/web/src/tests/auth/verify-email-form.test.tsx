@@ -6,6 +6,7 @@ import VerifyEmailClient from '@/app/[locale]/auth/verify-email/verify-email'
 
 vi.mock('next-intl', () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+  useLocale: () => 'ru-RU',
 }))
 const push = vi.fn()
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }))
@@ -20,7 +21,11 @@ vi.mock('@components/auth/card', () => ({
 }))
 
 const verifyEmailAction = vi.fn()
-vi.mock('@/app/actions/auth', () => ({ verifyEmailAction: (...args: unknown[]) => verifyEmailAction(...args) }))
+const resendVerificationAction = vi.fn()
+vi.mock('@/app/actions/auth', () => ({
+  verifyEmailAction: (...args: unknown[]) => verifyEmailAction(...args),
+  resendVerificationAction: (...args: unknown[]) => resendVerificationAction(...args),
+}))
 
 const input = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]`)!
 
@@ -40,5 +45,23 @@ describe('/auth/verify-email', () => {
     expect(input('email').value).toBe('aigerim@example.com')
     expect(input('code').value).toBe('WRONG1')
     expect(verifyEmailAction).toHaveBeenCalledWith({ email: 'aigerim@example.com', code: 'WRONG1' })
+  })
+
+  // A lost or expired code had no way out: «resend» mails a fresh one without verifying.
+  it('resends the code to the typed address', async () => {
+    resendVerificationAction.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    render(<VerifyEmailClient email="" code="" />)
+    await user.click(screen.getByRole('button', { name: 'resend' }))
+    await waitFor(() => expect(screen.getByText('required')).toBeInTheDocument())
+    expect(resendVerificationAction).not.toHaveBeenCalled()
+
+    await user.type(input('email'), 'aigerim@example.com')
+    await user.click(screen.getByRole('button', { name: 'resend' }))
+    await waitFor(() =>
+      expect(resendVerificationAction).toHaveBeenCalledWith({ email: 'aigerim@example.com', locale: 'ru-RU' }),
+    )
+    expect(verifyEmailAction).not.toHaveBeenCalled()
+    expect(input('email').value).toBe('aigerim@example.com')
   })
 })

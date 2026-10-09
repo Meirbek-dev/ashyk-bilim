@@ -132,8 +132,9 @@ details,field_errors,request_id}`). `APIError` (`@/lib/api/assertSuccess`)
 
 ## Not in v2 (do not re-add without a contract change)
 
-Password reset (self-registration `/signup`, email verification and
-password change came back 2026-09-12 - DECISIONS.md), refresh tokens, numeric ids,
+Refresh tokens (self-registration `/signup`, email verification and
+password change came back 2026-09-12 - DECISIONS.md; password reset at
+`/auth/reset-password` on the S-08 endpoints 2026-10-09), numeric ids,
 `*_uuid` strings, multipart uploads through the API, offset pagination,
 `/members`, `/roles/{id}` numeric role ids,
 batch grading, bulk zip download of file submissions, `/trail/start`.
