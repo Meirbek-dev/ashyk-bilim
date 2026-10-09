@@ -43,6 +43,44 @@ export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
 
 export const uploadMaxMb = (purpose: UploadPurpose) => UPLOAD_MAX_BYTES[purpose] / MB
 
+/**
+ * The type the server's policy matches exactly. Browsers disagree per OS:
+ * Chromium on Windows says `video/matroska` for .mkv, `video/avi` for .avi,
+ * and some systems give an empty type - so a type outside this table falls
+ * back to the one the extension names.
+ */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+  flv: 'video/x-flv',
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  avif: 'image/avif',
+}
+
+const CANONICAL_TYPES = new Set(Object.values(MIME_BY_EXTENSION))
+
+export function uploadMime(file: Blob): string {
+  if (CANONICAL_TYPES.has(file.type)) return file.type
+  const name = 'name' in file && typeof file.name === 'string' ? file.name : ''
+  const dot = name.lastIndexOf('.')
+  const fromExtension = dot === -1 ? undefined : MIME_BY_EXTENSION[name.slice(dot + 1).toLowerCase()]
+  return fromExtension ?? (file.type || 'application/octet-stream')
+}
+
+/** Video containers a browser can play (`block-video` also stores AVI/FLV, which no browser plays). */
+const PLAYABLE_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime'])
+export const VIDEO_UPLOAD_ACCEPT = '.mp4,.m4v,.webm,.mkv,.mov,video/mp4,video/webm,video/x-matroska,video/quicktime'
+export const isPlayableVideoUpload = (file: File) => PLAYABLE_VIDEO_TYPES.has(uploadMime(file))
+
 export interface UploadProgress {
   uploadedBytes: number
   totalBytes: number
@@ -62,7 +100,7 @@ export async function createUpload(file: Blob, purpose: UploadPurpose): Promise<
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         purpose,
-        mime: file.type || 'application/octet-stream',
+        mime: uploadMime(file),
         size_bytes: file.size,
       }),
     },
@@ -77,7 +115,8 @@ export async function finalizeUpload(uploadId: string): Promise<FinalizedUploadT
 }
 
 async function putWithProgress(url: string, file: Blob, options: UploadFileOptions): Promise<void> {
-  const contentType = file.type || 'application/octet-stream'
+  // Signed into the URL: must be exactly what `createUpload` declared.
+  const contentType = uploadMime(file)
 
   // XMLHttpRequest is the only browser primitive with upload progress events.
   if (typeof XMLHttpRequest !== 'undefined' && options.onProgress) {
@@ -143,7 +182,25 @@ export async function uploadFile(
   purpose: UploadPurpose,
   options: UploadFileOptions = {},
 ): Promise<FinalizedUploadType> {
-  const created = await createUpload(file, purpose)
-  await putWithProgress(created.put_url, file, options)
-  return finalizeUpload(created.id)
+  const guard = typeof window === 'undefined' ? null : window
+  if (guard && inFlightUploads++ === 0) guard.addEventListener('beforeunload', confirmLeavingUpload)
+  try {
+    const created = await createUpload(file, purpose)
+    throwIfCancelled(options.signal)
+    await putWithProgress(created.put_url, file, options)
+    throwIfCancelled(options.signal)
+    return await finalizeUpload(created.id)
+  } finally {
+    if (guard && --inFlightUploads === 0) guard.removeEventListener('beforeunload', confirmLeavingUpload)
+  }
+}
+
+function throwIfCancelled(signal: AbortSignal | undefined) {
+  if (signal?.aborted) throw clientApiError('REQUEST_ABORTED', 'Upload was aborted', { path: 'uploads' })
+}
+
+/** A reload or tab close kills an in-flight PUT (a lecture video takes minutes): the browser asks first. */
+let inFlightUploads = 0
+function confirmLeavingUpload(event: BeforeUnloadEvent) {
+  event.preventDefault()
 }

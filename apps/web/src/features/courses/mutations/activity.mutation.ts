@@ -141,19 +141,21 @@ export function createFileActivityMutationOptions(queryClient: QueryClient, stru
       file,
       onProgress,
       payload,
+      signal,
       type,
     }: {
       chapterId: string
       file: File
       onProgress?: (progress: { percentage: number }) => void
       payload: Partial<ActivityCreateValues>
+      signal?: AbortSignal
       type: string
     }) => {
       const data: AppPayload = {
         ...payload,
         details: payload.details as AppPayload['details'],
       }
-      return createFileActivity(file, type, data, chapterId, onProgress)
+      return createFileActivity(file, type, data, chapterId, onProgress, signal)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })

@@ -3,7 +3,6 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, FileVideo, Loader2, Plus, Upload } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import { SiYoutube } from '@icons-pack/react-simple-icons'
-import { constructAcceptValue } from '@/lib/constants'
 import { AnimatePresence, motion } from 'motion/react'
 import { useId, useState } from 'react'
 import { Button } from '@components/ui/button'
@@ -14,11 +13,12 @@ import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { getYouTubeVideoId } from '@/lib/utils'
+import { probeVideoFile } from '@services/media/video-probe'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
 import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
-const SUPPORTED_VIDEO_FILES = constructAcceptValue(['mp4', 'mkv', 'webm', 'mov', 'avi', 'flv'])
 const MAX_VIDEO_MB = uploadMaxMb('block-video')
 
 interface VideoDetails {
@@ -54,7 +54,8 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const isYouTubeUrlValid = youtubeUrl ? /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(youtubeUrl) : false
+  // The player embeds by video id: a link it cannot read one from (a channel, a playlist) is not valid.
+  const isYouTubeUrlValid = Boolean(getYouTubeVideoId(youtubeUrl))
 
   const validateForm = ({
     activityName,
@@ -69,9 +70,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
   }) => {
     const newErrors: Record<string, string> = {}
 
-    const youtubeUrlIsValid = submittedYoutubeUrl
-      ? /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(submittedYoutubeUrl)
-      : false
+    const youtubeUrlIsValid = Boolean(getYouTubeVideoId(submittedYoutubeUrl))
 
     if (!activityName.trim()) {
       newErrors.name = t('errorActivityNameRequired')
@@ -97,33 +96,33 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     return Object.keys(newErrors).length === 0
   }
 
-  const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0]
-    if (selectedFile) {
-      // The server's `block-video` policy (UX-084).
-      if (selectedFile.size > UPLOAD_MAX_BYTES['block-video']) {
-        toast.error(t('errorFileSizeLimit', { size: MAX_VIDEO_MB }))
-        return
-      }
+  const handleVideoChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target
+    const selectedFile = input.files?.[0]
+    if (!selectedFile) return
+    // A rejected pick must not stay in the input: «Create» reads the form's file (BUG-B3).
+    const reject = (message: string) => {
+      input.value = ''
+      toast.error(message)
+    }
+    // The server's `block-video` policy (UX-084).
+    if (selectedFile.size > UPLOAD_MAX_BYTES['block-video'])
+      return reject(t('errorFileSizeLimit', { size: MAX_VIDEO_MB }))
+    if (selectedFile.size === 0) return reject(t('errorEmptyFile'))
+    // By extension too: Chromium on Windows types .mkv as `video/matroska` (BUG-B1).
+    if (!isPlayableVideoUpload(selectedFile)) return reject(t('errorInvalidVideoFileType'))
+    const probe = await probeVideoFile(selectedFile)
+    if (probe === 'unplayable') return reject(t('errorUnplayableVideo'))
+    if (probe === 'no-picture') toast.warning(t('warningNoPicture'))
 
-      // Validate file type
-      const validTypes = ['video/mp4', 'video/webm', 'video/x-matroska']
-      if (!validTypes.includes(selectedFile.type)) {
-        toast.error(t('errorInvalidVideoFileType'))
-        return
-      }
+    setVideo(selectedFile)
+    setErrors(prev => ({ ...prev, video: '' }))
 
-      setVideo(selectedFile)
-      setErrors(prev => ({ ...prev, video: '' }))
-
-      // Auto-populate name if empty
-      if (!name) {
-        const fileName = selectedFile.name.replace(/\.[^/.]+$/, '')
-        setName(fileName)
-        setErrors(prev => ({ ...prev, name: '' }))
-      }
-
-      toast.success(t('successVideoFileSelected'))
+    // Auto-populate name if empty
+    if (!name) {
+      const fileName = selectedFile.name.replace(/\.[^/.]+$/, '')
+      setName(fileName)
+      setErrors(prev => ({ ...prev, name: '' }))
     }
   }
 
@@ -272,8 +271,8 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                   id={fileInputId}
                   name="videoFile"
                   type="file"
-                  accept={SUPPORTED_VIDEO_FILES}
-                  onChange={handleVideoChange}
+                  accept={VIDEO_UPLOAD_ACCEPT}
+                  onChange={event => void handleVideoChange(event)}
                   className="hidden"
                   aria-label={t('ariaLabel')}
                 />

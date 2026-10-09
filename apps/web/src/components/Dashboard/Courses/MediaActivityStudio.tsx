@@ -14,12 +14,12 @@ import { VideoSettingsForm } from '@/components/Objects/Modals/Activities/Create
 import { useApiError } from '@/hooks/useApiError'
 import { updateActivity } from '@services/courses/activities'
 import { replaceActivityFile } from '@services/courses/activity-uploads'
-import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { probeVideoFile } from '@services/media/video-probe'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
+import { getYouTubeVideoId } from '@/lib/utils'
 import VideoActivity from '@components/Objects/Activities/Video/Video'
 import DocumentPdfActivity from '@components/Objects/Activities/DocumentPdf/DocumentPdf'
-
-const YOUTUBE_URL = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/
 
 interface VideoDetails {
   startTime: number
@@ -57,7 +57,7 @@ export default function MediaActivityStudio({
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<number | null>(null)
 
-  const urlInvalid = isYouTube && !YOUTUBE_URL.test(url.trim())
+  const urlInvalid = isYouTube && !getYouTubeVideoId(url.trim())
   const dirty = JSON.stringify({ url, details }) !== saved
   const purpose = isVideo ? 'block-video' : 'block-pdf'
   const learnerHref = `/course/${stripEntityPrefix(courseUuid)}/activity/${stripEntityPrefix(activity.activity_uuid)}`
@@ -84,6 +84,14 @@ export default function MediaActivityStudio({
     if (file.size > UPLOAD_MAX_BYTES[purpose]) {
       toast.error(t('fileTooLarge', { size: uploadMaxMb(purpose) }))
       return
+    }
+    // The checks the create dialog runs (BUG-B1/B4): a wrong pick fails here, not after the upload.
+    if (file.size === 0) return void toast.error(tVideo('errorEmptyFile'))
+    if (isVideo) {
+      if (!isPlayableVideoUpload(file)) return void toast.error(tVideo('errorInvalidVideoFileType'))
+      const probe = await probeVideoFile(file)
+      if (probe === 'unplayable') return void toast.error(tVideo('errorUnplayableVideo'))
+      if (probe === 'no-picture') toast.warning(tVideo('warningNoPicture'))
     }
     setBusy(true)
     setProgress(0)
@@ -128,7 +136,7 @@ export default function MediaActivityStudio({
               ref={fileInput}
               type="file"
               hidden
-              accept={isVideo ? 'video/mp4,video/webm,video/x-matroska' : 'application/pdf'}
+              accept={isVideo ? VIDEO_UPLOAD_ACCEPT : 'application/pdf'}
               onChange={event => {
                 const file = event.target.files?.[0]
                 event.target.value = ''

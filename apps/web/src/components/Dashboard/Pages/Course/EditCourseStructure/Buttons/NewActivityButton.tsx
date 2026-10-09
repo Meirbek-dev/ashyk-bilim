@@ -14,6 +14,7 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { apiJson } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { useApiError } from '@/hooks/useApiError'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { useTranslations } from 'next-intl'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
@@ -55,7 +56,10 @@ function NewActivityButton(props: NewActivityButtonProps) {
   }
 
   const submitFileActivity = async ({ file, type, activity, chapterId }: AppFileActivityInput) => {
-    const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
+    // A lecture video takes minutes on a slow network: the progress toast can stop it.
+    const upload = new AbortController()
+    const cancel = { label: tNotify('cancelUpload'), onClick: () => upload.abort() }
+    const toast_loading = toast.loading(tNotify('uploadingAndCreating'), { cancel })
     const courseUuid = course.courseStructure.course_uuid
     const activityPayload = courseUuid ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid } : activity
 
@@ -68,17 +72,19 @@ function NewActivityButton(props: NewActivityButtonProps) {
         progress => {
           toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
             id: toast_loading,
+            cancel,
           })
         },
+        upload.signal,
       )
 
       setNewActivityModal(false)
       toast.dismiss(toast_loading)
-      toast.success(tNotify('fileUploadSuccess'))
       toast.success(tNotify('activityCreatedSuccess'))
     } catch (error: unknown) {
       toast.dismiss(toast_loading)
-      toastApiError(error, undefined, tNotify('activityCreateFailed'))
+      if (hasErrorCode(error, 'REQUEST_ABORTED')) toast.info(tNotify('uploadCancelled'))
+      else toastApiError(error, undefined, tNotify('activityCreateFailed'))
     }
   }
 

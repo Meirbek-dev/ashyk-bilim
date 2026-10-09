@@ -6,9 +6,11 @@ import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewVideoFile } from '@services/blocks/Video/video'
 import { getBlockFileUrl } from '@services/blocks/upload'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { probeVideoFile } from '@services/media/video-probe'
+import { useApiError } from '@/hooks/useApiError'
 import type { BlockFileContent } from '@services/blocks/upload'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
-import { constructAcceptValue } from '@/lib/constants'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
@@ -18,8 +20,6 @@ import { NodeViewWrapper } from '@tiptap/react'
 import type ArtplayerType from 'artplayer'
 import type { Node } from '@tiptap/core'
 import { cn } from '@/lib/utils'
-
-const SUPPORTED_FILES = constructAcceptValue(['webm', 'mkv', 'mp4', 'mov', 'avi', 'flv'])
 
 const VIDEO_SIZES = {
   small: { width: 480, label: 'sizeSmall' },
@@ -61,11 +61,8 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   const { node, extension, updateAttributes } = props
   usePlatform()
 
-  const subtitleEntries = [
-    { html: t('subtitles.russian'), url: '/subtitle.ru.srt' },
-    { html: t('subtitles.english'), url: '/subtitle.en.srt' },
-    { html: t('subtitles.kazakh'), url: '/subtitle.kz.srt' },
-  ]
+  const tVideo = useTranslations('Components.VideoModal')
+  const { handleApiError } = useApiError()
   const editorState = useEditorProvider()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadZoneRef = useRef<HTMLDivElement>(null)
@@ -90,13 +87,28 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
 
   const isEditable = editorState?.isEditable
 
+  // Same checks as the video activity dialog, for the picker and a drop alike.
+  const pickVideo = async (file: File | undefined) => {
+    if (!file) return
+    let problem: string | null = null
+    if (file.size > UPLOAD_MAX_BYTES['block-video'])
+      problem = tVideo('errorFileSizeLimit', { size: uploadMaxMb('block-video') })
+    else if (file.size === 0) problem = tVideo('errorEmptyFile')
+    else if (!isPlayableVideoUpload(file)) problem = tVideo('errorInvalidVideoFileType')
+    else if ((await probeVideoFile(file)) === 'unplayable') problem = tVideo('errorUnplayableVideo')
+    if (problem) {
+      setError(problem)
+      return
+    }
+    setVideo(file)
+    setError(null)
+    void handleUpload(file)
+  }
+
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
-      setVideo(file)
-      setError(null)
-      handleUpload(file)
-    }
+    event.target.value = ''
+    void pickVideo(file)
   }
 
   const handleDragEnter = (e: DragEvent) => {
@@ -118,16 +130,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
     e.stopPropagation()
     setIsDragging(false)
 
-    const file = e.dataTransfer.files[0]
-    const fileExtension = file?.name.split('.').pop()?.toLowerCase()
-
-    if (file && fileExtension && ['mkv', 'mp4', 'webm'].includes(fileExtension)) {
-      setVideo(file)
-      setError(null)
-      handleUpload(file)
-    } else {
-      setError(t('errorFormat'))
-    }
+    void pickVideo(e.dataTransfer.files[0])
   }
 
   const handleUpload = async (file: File) => {
@@ -153,9 +156,8 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
         setUploadProgress(0)
       }, 1000)
     } catch (uploadError: unknown) {
-      console.error(t('errorUpload'), uploadError)
-      const err = uploadError as Error | AppApiError
-      setError((err && 'message' in err ? err.message : '') || t('errorUpload'))
+      // Localized like every other API failure, never the server's English detail.
+      setError(handleApiError(uploadError, { fallback: t('errorUpload') }).message)
     } finally {
       setIsLoading(false)
     }
@@ -243,7 +245,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
                   // Do not provide a default subtitle in the editor preview -
                   // subtitles should only be loaded when an actual file exists
                   locale={locale}
-                  subtitleEntries={subtitleEntries}
                   className="aspect-video w-full rounded-lg shadow-sm"
                   onPlayerReady={(_art: ArtplayerType) => {}}
                 />
@@ -327,7 +328,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
                 ref={fileInputRef}
                 type="file"
                 onChange={handleVideoChange}
-                accept={SUPPORTED_FILES}
+                accept={VIDEO_UPLOAD_ACCEPT}
                 className="hidden"
                 aria-label={t('ariaLabel')}
                 title={t('selectVideoFile')}
@@ -453,7 +454,6 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
                       // Do not provide a default subtitle in the editor preview -
                       // subtitles should only be loaded when an actual file exists
                       locale={locale}
-                      subtitleEntries={subtitleEntries}
                       className={cn(
                         'aspect-video w-full bg-black/95 shadow-sm transition-all duration-200',
                         isLoading && 'opacity-50 blur-sm',

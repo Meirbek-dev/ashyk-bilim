@@ -40,6 +40,7 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
       payload: Partial<ActivityCreateValues>,
       chapterId: string,
       onProgress?: (progress: { percentage: number }) => void,
+      signal?: AbortSignal,
     ) => {
       const mutationInput = {
         chapterId,
@@ -47,6 +48,7 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
         payload,
         type,
         ...(onProgress ? { onProgress } : {}),
+        ...(signal ? { signal } : {}),
       }
 
       return createFileActivityMutation.mutateAsync(mutationInput)

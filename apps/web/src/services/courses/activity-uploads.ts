@@ -43,6 +43,7 @@ export async function createFileActivity(
   data: AppPayload,
   chapterId: string,
   onProgress?: (progress: UploadProgress) => void,
+  signal?: AbortSignal,
 ) {
   const kind = FILE_ACTIVITY_KINDS[type]
   if (!kind) {
@@ -54,6 +55,7 @@ export async function createFileActivity(
 
   const upload = await uploadFile(file, kind.purpose, {
     onProgress: progress => onProgress?.({ percentage: progress.percentage }),
+    ...(signal ? { signal } : {}),
   })
 
   const activity = await createActivity(
