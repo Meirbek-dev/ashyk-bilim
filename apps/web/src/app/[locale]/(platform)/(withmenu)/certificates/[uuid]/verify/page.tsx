@@ -3,6 +3,8 @@ import { getCertificateByCode } from '@services/courses/certifications'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { isApiError } from '@/lib/api/assertSuccess'
+import { APP_NAME } from '@/lib/constants'
 
 interface CertificateVerifyPageProps {
   params: Promise<{
@@ -52,11 +54,12 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
       }
     }
   } catch (error) {
-    console.error('Error fetching certificate for metadata:', error)
+    // An unknown code is the page's own «not found» state, not a server error.
+    if (!(isApiError(error) && error.status === 404)) console.error('Error fetching certificate for metadata:', error)
   }
 
   return {
-    title: t('fallback.title'),
+    title: `${t('fallback.title')} - ${APP_NAME}`,
     description: t('fallback.description'),
     robots: {
       index: false,
