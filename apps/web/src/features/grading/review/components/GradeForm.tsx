@@ -26,7 +26,6 @@ import {
   localizeItemFeedback,
   roundScoreInput,
   sumScores,
-  toItemScale,
 } from '@/features/grading/domain'
 import type { GradedItem, GradingBreakdown, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
@@ -133,17 +132,30 @@ export default function GradeForm({
     [assessment],
   )
   const scaleReady = !hasItemGrading || Boolean(assessment)
+  // The teacher grades in the author's item points ("4 / 5", what the learner sees); the breakdown keeps
+  // each item as its share of 100, so totals convert back. Unknown scale → the share itself.
+  const scale = useMemo(() => {
+    const ratio = (item: GradedItem) => {
+      const points = itemScaleById.get(item.item_id)
+      return points !== undefined && points > 0 && item.max_score > 0 ? points / item.max_score : 1
+    }
+    return {
+      max: (item: GradedItem) => item.max_score * ratio(item),
+      toPoints: (share: number, item: GradedItem) => share * ratio(item),
+      toShare: (points: number, item: GradedItem) => points / ratio(item),
+    }
+  }, [itemScaleById])
 
-  // Calculated total from item drafts (0 to sum of max_scores)
+  // Calculated total from item drafts, on the breakdown scale (0 to the sum of the shares)
   const calculatedTotal = useMemo(() => {
     if (!hasItemGrading) return null
     return sumScores(
       gradedItems.map(item => {
-        const val = Number.parseFloat(itemDrafts[item.item_id]?.score ?? String(item.score))
-        return Number.isNaN(val) ? 0 : Math.min(val, item.max_score)
+        const val = Number.parseFloat(itemDrafts[item.item_id]?.score ?? String(scale.toPoints(item.score, item)))
+        return Number.isNaN(val) ? 0 : scale.toShare(Math.min(val, scale.max(item)), item)
       }),
     )
-  }, [hasItemGrading, gradedItems, itemDrafts])
+  }, [hasItemGrading, gradedItems, itemDrafts, scale])
 
   const maxPossible = useMemo(() => sumScores(gradedItems.map(item => item.max_score)), [gradedItems])
 
@@ -158,14 +170,15 @@ export default function GradeForm({
     () =>
       new Set(
         gradedItems
-          .filter(item => isScoreInputInvalid(itemDrafts[item.item_id]?.score ?? '', item.max_score))
+          .filter(item => isScoreInputInvalid(itemDrafts[item.item_id]?.score ?? '', scale.max(item)))
           .map(item => item.item_id),
       ),
-    [gradedItems, itemDrafts],
+    [gradedItems, itemDrafts, scale],
   )
   const hasInvalidScore = finalScoreInvalid || invalidItemIds.size > 0
 
-  const syncTrigger = `${submission?.submission_uuid ?? ''}-${submission?.version ?? ''}-${submission?.final_score ?? ''}-${submission?.score_override ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
+  // `scaleReady`: the drafts reseed in item points once the item scale arrives (inputs are disabled until then).
+  const syncTrigger = `${scaleReady}-${submission?.submission_uuid ?? ''}-${submission?.version ?? ''}-${submission?.final_score ?? ''}-${submission?.score_override ?? ''}-${submission?.grading_json ? JSON.stringify(submission.grading_json) : ''}`
   const [lastSeed, setLastSeed] = useState({ uuid: '', trigger: '' })
 
   const seedDrafts = () => {
@@ -188,7 +201,7 @@ export default function GradeForm({
         next[item.item_id] = {
           // BUG-197: an item still awaiting its manual score has none — the
           // field starts blank (a save sends no score; publish stays disabled).
-          score: item.needs_manual_review ? '' : String(item.score),
+          score: item.needs_manual_review ? '' : String(scale.toPoints(item.score, item)),
           feedback: item.feedback ?? '',
         }
       }
@@ -240,7 +253,7 @@ export default function GradeForm({
         .filter(item => edited(item.item_id))
         .map(item => {
           const entry = itemDrafts[item.item_id]
-          const rawScore = entry?.score ?? String(item.score)
+          const rawScore = entry?.score ?? String(scale.toPoints(item.score, item))
           const parsed = Number.parseFloat(rawScore)
           const baseFeedback = entry?.feedback ?? item.feedback ?? ''
           const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? [])
@@ -248,9 +261,7 @@ export default function GradeForm({
             item_uuid: item.item_id,
             // BUG-197: a blank score is no score — feedback only, the item
             // keeps waiting for its manual review (never a client-side 0).
-            score: Number.isNaN(parsed)
-              ? null
-              : toItemScale(Math.min(parsed, item.max_score), item.max_score, itemScaleById.get(item.item_id)),
+            score: Number.isNaN(parsed) ? null : Math.min(parsed, scale.max(item)),
             feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
             is_manual: true,
           }
@@ -279,6 +290,7 @@ export default function GradeForm({
         gradedItems,
         itemDrafts,
         overrideReason,
+        scale,
         status,
         itemGrades,
         finalScore: typedScore ? (finalScore ?? null) : null,
@@ -362,7 +374,7 @@ export default function GradeForm({
       clearAnnotations,
       calculatedTotal,
       queryClient,
-      itemScaleById,
+      scale,
       scaleReady,
       remoteUpdate,
       baseVersion,
@@ -564,16 +576,16 @@ export default function GradeForm({
                     <Input
                       type="number"
                       min={0}
-                      max={item.max_score}
+                      max={scale.max(item)}
                       step={0.5}
                       // UX-226: an untouched seed shows at the grading precision (hundredths),
                       // never `0.6666666666666667`; the total still sums the raw seeds.
                       value={
                         dirtyItems.has(item.item_id)
                           ? (entry?.score ?? '')
-                          : roundScoreInput(entry?.score ?? String(item.score))
+                          : roundScoreInput(entry?.score ?? String(scale.toPoints(item.score, item)))
                       }
-                      disabled={!editable || isSaving}
+                      disabled={!editable || isSaving || !scaleReady}
                       aria-label={`${idx + 1}. ${item.item_text || item.item_id}`}
                       aria-invalid={invalidItemIds.has(item.item_id) || undefined}
                       aria-describedby={
@@ -582,9 +594,8 @@ export default function GradeForm({
                       className="w-20"
                       onChange={e => patchItemDraft(item.item_id, 'score', e.target.value)}
                     />
-                    {/* Inputs are on the breakdown scale (the item's share of the 100-point total), not the author's item points. */}
                     <span className="text-muted-foreground text-xs">
-                      / {format.number(item.max_score)} · {tItemGrading('shareOfTotal')}
+                      / {format.number(scale.max(item), { maximumFractionDigits: 2 })} {tItemGrading('pointsUnit')}
                     </span>
                     {item.needs_manual_review && (
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
@@ -597,7 +608,9 @@ export default function GradeForm({
                   ) : null}
                   {invalidItemIds.has(item.item_id) ? (
                     <p id={`item-score-error-${item.item_id}`} className="text-destructive text-xs" role="alert">
-                      {tItemGrading('invalidItemScore', { max: format.number(item.max_score) })}
+                      {tItemGrading('invalidItemScore', {
+                        max: format.number(scale.max(item), { maximumFractionDigits: 2 }),
+                      })}
                     </p>
                   ) : null}
                   {/* A short per-item note; the rich editor is kept for the overall feedback. */}
@@ -869,6 +882,7 @@ function buildOptimisticSubmission(
     gradedItems: GradedItem[]
     itemDrafts: Record<string, { score: string; feedback: string }>
     overrideReason: string
+    scale: { max: (item: GradedItem) => number; toShare: (points: number, item: GradedItem) => number }
     status: 'save' | 'publish' | 'return'
     itemGrades: ItemGradeEntry[]
     finalScore: number | null
@@ -893,11 +907,10 @@ function buildOptimisticSubmission(
     feedback: args.draft.feedback,
     items: args.gradedItems.map(item => {
       const entry = args.itemDrafts[item.item_id]
-      const rawScore = entry?.score ?? String(item.score)
-      const parsed = Number.parseFloat(rawScore)
+      const parsed = Number.parseFloat(entry?.score ?? '')
       return {
         ...item,
-        score: Number.isNaN(parsed) ? item.score : Math.min(parsed, item.max_score),
+        score: Number.isNaN(parsed) ? item.score : args.scale.toShare(Math.min(parsed, args.scale.max(item)), item),
         feedback: entry?.feedback ?? item.feedback ?? '',
         needs_manual_review: item.needs_manual_review && !scored.has(item.item_id),
       }

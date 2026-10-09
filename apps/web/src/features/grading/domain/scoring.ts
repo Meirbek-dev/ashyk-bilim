@@ -10,15 +10,6 @@ export function isScoreInputInvalid(value: string, maxScore = 100): boolean {
 }
 
 /**
- * The grade save takes item scores on the item's own `max_score` scale, while
- * the breakdown the grader edits keeps them as a share of 100 — convert on the
- * way out (the server converts back). Unknown scale → send as typed.
- */
-export function toItemScale(score: number, breakdownMax: number, itemMax: number | undefined): number {
-  return itemMax !== undefined && itemMax > 0 && breakdownMax > 0 ? (score / breakdownMax) * itemMax : score
-}
-
-/**
  * Sum the raw scores, then round once to hundredths (the display precision) so
  * binary-float drift (`0.1 + 0.2`) never shows. Rounding each item first
  * inflates many small items: 150 × 0.6667 summed as 150 × 0.67 = 100.5.

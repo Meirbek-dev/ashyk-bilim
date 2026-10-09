@@ -10355,7 +10355,7 @@
           "addKind": "Добавить {kind}",
           "outlineEmptyMessage": "Добавьте {itemNoun}, чтобы начать.",
           "newQuestion": "Новый вопрос",
-          "noItemSelectedTitle": "{itemNoun} не выбран",
+          "noItemSelectedTitle": "Ничего не выбрано",
           "noItemSelectedDescription": "Создайте или выберите {itemNoun} из списка.",
           "untitledItem": "Элемент без названия ({itemNoun})",
           "itemCreated": "{itemNoun} создан",
@@ -10462,7 +10462,7 @@
           "releaseStepLabel": "Публикация",
           "releaseStepDescription": "Проверьте предпросмотр, расписание или публикацию после успешных проверок.",
           "validation": {
-            "assessment_empty": "Оценка не содержит учебных задач.",
+            "assessment_empty": "Добавьте хотя бы один вопрос.",
             "assessment_title_missing": "Название обязательно.",
             "policy_max_attempts_invalid": "Лимит попыток должен быть от 1 до {max}.",
             "policy_time_limit_invalid": "Ограничение по времени должно быть больше нуля.",
@@ -10500,7 +10500,7 @@
             "code_prompt_missing": "Требуется формулировка задачи по коду.",
             "code_test_io_missing": "Каждый тестовый сценарий должен содержать входные и ожидаемые выходные данные.",
             "code_test_weight_invalid": "Вес тестового сценария должен быть больше нуля.",
-            "item_kind_forbidden": "Этот тип вопроса недоступен для данной оценки.",
+            "item_kind_forbidden": "Этот тип вопроса недоступен в этой работе.",
             "schedule_after_due_at": "Дата публикации должна быть раньше срока сдачи."
           },
           "duplicate": "Дублировать",
@@ -12696,7 +12696,7 @@
     },
     "invalidItemScore": "Балл должен быть от 0 до {max}",
     "republish": "Опубликовать заново",
-    "shareOfTotal": "доля итога"
+    "pointsUnit": "б."
   },
   "FileSubmission": {
     "mimeCategories": {

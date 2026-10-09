@@ -10840,7 +10840,7 @@
           "addKind": "Add {kind}",
           "outlineEmptyMessage": "Add a {itemNoun} to begin.",
           "newQuestion": "New question",
-          "noItemSelectedTitle": "No {itemNoun} selected",
+          "noItemSelectedTitle": "Nothing selected",
           "noItemSelectedDescription": "Create or select a {itemNoun} from the outline.",
           "untitledItem": "Untitled {itemNoun}",
           "itemCreated": "{itemNoun} created",
@@ -10909,7 +10909,7 @@
           "releaseStepLabel": "Release",
           "releaseStepDescription": "Preview, schedule, or publish when checks pass.",
           "validation": {
-            "assessment_empty": "Assessment has no items.",
+            "assessment_empty": "Add at least one question.",
             "assessment_title_missing": "Assessment title is required.",
             "policy_max_attempts_invalid": "Attempt limit must be between 1 and {max}.",
             "policy_time_limit_invalid": "Time limit must be greater than zero.",
@@ -12437,7 +12437,7 @@
     },
     "invalidItemScore": "Score must be between 0 and {max}",
     "republish": "Publish again",
-    "shareOfTotal": "share of the total"
+    "pointsUnit": "pts"
   },
   "FileSubmission": {
     "mimeCategories": {

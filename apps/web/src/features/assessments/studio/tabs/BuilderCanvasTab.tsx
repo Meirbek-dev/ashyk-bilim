@@ -496,9 +496,7 @@ export default function BuilderCanvasTab({
               <div className="bg-muted mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
                 <BookOpen className="text-muted-foreground size-7" />
               </div>
-              <h3 className="text-lg font-semibold">
-                {t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}
-              </h3>
+              <h3 className="text-lg font-semibold">{t('noItemSelectedTitle')}</h3>
               <p className="text-muted-foreground mt-1.5 text-sm">
                 {t('noItemSelectedDescription', {
                   itemNoun: itemNoun.toLowerCase(),
@@ -510,7 +508,7 @@ export default function BuilderCanvasTab({
                     return (
                       <Button className="mt-4" onClick={() => createItem(firstKind)} disabled={isCreating}>
                         <Plus className="size-4" />
-                        {t('addKind', { kind: kindLabels[firstKind] })}
+                        {tBuilder('newQuestion')}
                       </Button>
                     )
                   })()

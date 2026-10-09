@@ -754,7 +754,9 @@ describe('teacher review controls', () => {
       const republish = screen.getByRole('button', { name: 'republish' })
       await waitFor(() => expect(republish).toBeEnabled())
 
-      fireEvent.change(screen.getByLabelText('2. Q2'), { target: { value: '30' } })
+      // Item inputs are in the author's points: Q2 is a 10-point item (its share of the total is 50).
+      await waitFor(() => expect(screen.getByLabelText('2. Q2')).toHaveValue(2))
+      fireEvent.change(screen.getByLabelText('2. Q2'), { target: { value: '6' } })
       fireEvent.click(republish)
       await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
       expect(lastPayload()).toMatchObject({ final_score: 55, item_grades: [{ item_uuid: 'item_2', score: 6 }] })
@@ -922,7 +924,8 @@ describe('teacher review controls', () => {
       )
       renderPendingEssay()
       const publish = screen.getByRole('button', { name: 'publish' })
-      fireEvent.change(screen.getByRole('spinbutton', { name: '2. Essay' }), { target: { value: '30' } })
+      await waitFor(() => expect(screen.getByRole('spinbutton', { name: '2. Essay' })).toBeEnabled())
+      fireEvent.change(screen.getByRole('spinbutton', { name: '2. Essay' }), { target: { value: '6' } })
       await waitFor(() => expect(publish).toBeEnabled())
       fireEvent.click(publish)
       await waitFor(() => expect(mocks.toastErrorMock).toHaveBeenCalledWith('toasts.unscoredItems'))

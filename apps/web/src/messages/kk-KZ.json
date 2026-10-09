@@ -9421,7 +9421,7 @@
           "addKind": "{kind} қосу",
           "outlineEmptyMessage": "Бастау үшін {itemNoun} қосыңыз.",
           "newQuestion": "Жаңа сұрақ",
-          "noItemSelectedTitle": "{itemNoun} таңдалмады",
+          "noItemSelectedTitle": "Ештеңе таңдалмаған",
           "noItemSelectedDescription": "Тізімнен {itemNoun} жасаңыз немесе таңдаңыз.",
           "untitledItem": "Атаусыз элемент ({itemNoun})",
           "itemCreated": "{itemNoun} жасалды",
@@ -9531,7 +9531,7 @@
             "code_test_weight_invalid": "Тест сценарийінің салмағы нөлден үлкен болуы керек.",
             "item_kind_forbidden": "Бұл сұрақ түрі осы бағалау үшін қолжетімсіз.",
             "schedule_after_due_at": "Жариялау күні тапсыру мерзімінен ерте болуы керек.",
-            "assessment_empty": "Бағалауда оқу тапсырмалары жоқ."
+            "assessment_empty": "Кемінде бір сұрақ қосыңыз."
           },
           "duplicate": "Көшірмесін жасау",
           "delete": "Жою",
@@ -11726,7 +11726,7 @@
     },
     "invalidItemScore": "Балл 0 мен {max} аралығында болуы керек",
     "republish": "Қайта жариялау",
-    "shareOfTotal": "қорытындының үлесі"
+    "pointsUnit": "ұп."
   },
   "FileSubmission": {
     "mimeCategories": {
