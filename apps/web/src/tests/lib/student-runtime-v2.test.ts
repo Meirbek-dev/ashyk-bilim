@@ -83,6 +83,22 @@ describe('learner runtime v2 adapter', () => {
     })
   })
 
+  // The summary page with the certificate was reachable only through a tiny trophy icon:
+  // finishing the last lesson offered just «Назад к курсу».
+  it('leads from the last finished activity to the course-end page; staff go back to the course', async () => {
+    state.outline[0]!.activities[0]!.complete = true
+    state.outline[0]!.activities[0]!.state = 'complete'
+    expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toEqual({
+      id: 'course_end',
+      enabled: true,
+    })
+    state.permissions.denial_reason = 'staff_preview'
+    expect((await getStudentActivityRuntime(courseId, activityId))?.primary_action).toEqual({
+      id: 'back_to_course',
+      enabled: true,
+    })
+  })
+
   it('builds the course-end runtime from the real outline, not a hard-coded «done» (UX-079)', async () => {
     const runtime = (await getStudentActivityRuntime(courseId, 'end'))!
     expect(runtime.activity).toBeNull()

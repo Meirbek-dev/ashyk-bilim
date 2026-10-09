@@ -118,6 +118,19 @@ function RuntimeCTA({
     )
   }
 
+  if (action.id === 'course_end') {
+    return (
+      <Button
+        className={PRIMARY_BUTTON_CLASSNAME}
+        nativeButton={false}
+        render={<Link href={`/course/${cleanUuid(runtime.course.uuid, 'course_')}/activity/end`} />}
+      >
+        <span className="min-w-0 truncate">{t('courseSummary')}</span>
+        <ChevronRight className="size-4" />
+      </Button>
+    )
+  }
+
   if (action.id === 'next_activity' && action.target_activity_uuid) {
     return (
       <Button

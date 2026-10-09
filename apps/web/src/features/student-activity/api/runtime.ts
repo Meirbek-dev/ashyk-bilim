@@ -85,6 +85,8 @@ export interface StudentActivityRuntime {
       | 'next_activity'
       | 'review_policy'
       | 'back_to_course'
+      /** The last activity is done: the course-end page (summary, certificate). */
+      | 'course_end'
       | 'none'
     reason?: string | null
     target_activity_uuid?: string | null
@@ -141,7 +143,7 @@ function primaryAction(
   const action = liveAction(current, next, staffPreview)
   // COURSE_ARCHIVING 9.4: reading and moving on stay; marking, starting and
   // handing in are frozen (the server answers 409 `course-archived`).
-  if (courseArchived && action.id !== 'next_activity' && action.id !== 'back_to_course') {
+  if (courseArchived && !['next_activity', 'back_to_course', 'course_end'].includes(action.id)) {
     return { id: 'none', enabled: false, reason: 'course_archived' }
   }
   return action
@@ -167,7 +169,8 @@ function liveAction(
   if (current.complete || VIEW_STATES.has(current.state) || (isLesson && staffPreview)) {
     return next
       ? { id: 'next_activity', enabled: next.published && next.state !== 'locked', target_activity_uuid: next.uuid }
-      : { id: 'back_to_course', enabled: true }
+      : // The last one done: the summary page with the certificate, not just the course page.
+        { id: staffPreview ? 'back_to_course' : 'course_end', enabled: true }
   }
   if (isLesson) {
     return { id: 'mark_complete', enabled: true }

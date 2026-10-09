@@ -17,13 +17,19 @@ vi.mock('@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/Activi
   ActivityContentRenderer: () => null,
 }))
 vi.mock('@/features/student-activity/api/runtime', () => ({ getStudentActivityRuntime: vi.fn() }))
+vi.mock('@/features/student-activity/shell/BottomActionBar', () => ({
+  useRuntimeAction: () => ({ isPending: false, run: vi.fn() }),
+}))
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity'
 
 describe('ActivityClient runtime query', () => {
   it('seeds the runtime query from the server and refetches on focus after 5 s', () => {
     const queryClient = new QueryClient()
-    const runtime = { permissions: { can_view: true } } as StudentActivityRuntime
+    const runtime = {
+      permissions: { can_view: true },
+      primary_action: { id: 'mark_complete', enabled: true },
+    } as StudentActivityRuntime
     render(
       <QueryClientProvider client={queryClient}>
         <ActivityClient activityid="a1" courseuuid="c1" activity={null} course={{} as never} runtime={runtime} />

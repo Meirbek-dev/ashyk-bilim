@@ -876,6 +876,7 @@
     "assessmentDescription": "This activity is an assessment. Please use the button below to start or continue your attempt.",
     "assessmentUnavailable": "This assessment is not available yet.",
     "backToCourse": "Back to course",
+    "courseSummary": "Course summary",
     "courseComplete": "Course complete",
     "fileSubmissionInlineAction": "Use the submission form",
     "needsRevision": "Needs revision",
