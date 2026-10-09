@@ -229,7 +229,7 @@ function AttemptHistory({ submission }: { submission: Submission }) {
   return (
     <section className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">{t('submissionInspector.attemptHistory')}</h3>
-      <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
         <HistoryItem label={t('submissionInspector.started')} value={formatDate(format, submission.started_at)} />
         <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(format, submission.submitted_at)} />
         <HistoryItem label={t('submissionInspector.graded')} value={formatDate(format, submission.graded_at)} />
