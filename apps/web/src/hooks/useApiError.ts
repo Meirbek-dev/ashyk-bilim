@@ -45,7 +45,8 @@ function normalizeOptions<TFieldValues extends FieldValues>(
   if (typeof setErrorOrOptions === 'function') {
     return fallback === undefined ? { setError: setErrorOrOptions } : { setError: setErrorOrOptions, fallback }
   }
-  return setErrorOrOptions ?? {}
+  // `toastApiError(error, undefined, fallback)` - the fallback still counts.
+  return setErrorOrOptions ?? (fallback === undefined ? {} : { fallback })
 }
 
 /**

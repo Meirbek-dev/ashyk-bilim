@@ -47,4 +47,12 @@ describe('useApiError with a form', () => {
     result.current.toastApiError(invalidName(), { fallback: 'reorder failed' })
     expect(toast.error).toHaveBeenCalledWith('reorder failed', {})
   })
+
+  // BUG-B5: the positional form `toastApiError(error, undefined, fallback)` dropped the fallback.
+  it('keeps the fallback passed positionally after an undefined form', () => {
+    vi.mocked(toast.error).mockClear()
+    const { result } = renderHook(() => useApiError())
+    result.current.toastApiError(invalidName(), undefined, 'activity not created')
+    expect(toast.error).toHaveBeenCalledWith('activity not created', {})
+  })
 })
