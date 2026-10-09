@@ -323,7 +323,7 @@ function ActivityElement({
         type="button"
         size="icon-sm"
         variant="ghost"
-        aria-label={activity.name}
+        aria-label={t('dragActivity', { name: activity.name })}
         className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}

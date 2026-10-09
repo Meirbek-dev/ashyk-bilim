@@ -2958,7 +2958,7 @@
       "ActivityTypes": {
         "codeChallenge": "Задача с кодом",
         "document": "Документ",
-        "dynamic": "Динамический",
+        "dynamic": "Страница",
         "exam": "Экзамен",
         "fileSubmission": "Отправка файлов",
         "quiz": "Тест",
@@ -2974,7 +2974,7 @@
       "deleteAssessmentConfirmation": "Вы уверены, что хотите удалить эту активность? Все ответы учащихся на этот тест будут удалены безвозвратно.",
       "lockedAssessment": "Тест нельзя переименовать: он запланирован, в архиве или уже имеет ответы. Снимите его с публикации в студии.",
       "deleteFailed": "Не удалось удалить активность",
-      "deleteTitle": "Удалить {name}?",
+      "deleteTitle": "Удалить «{name}»?",
       "deleting": "Удаление...",
       "deletingActivity": "Удаление активности...",
       "editPageButton": "Редактировать страницу",
@@ -2993,6 +2993,7 @@
       "notReadyToPublish": "Задание ещё не готово к публикации: откройте редактор и устраните замечания.",
       "updating": "Обновление активности...",
       "editButton": "Редактировать",
+      "dragActivity": "Переместить «{name}» (перетащите или нажмите пробел)",
       "draftBadge": "Черновик",
       "liveBadge": "Опубликовано",
       "save": "Сохранить",
@@ -3006,7 +3007,7 @@
       "chapterNamePlaceholder": "Название главы",
       "deleteChapterButton": "Удалить главу",
       "deleteChapterConfirmation": "Вы уверены, что хотите удалить эту главу?",
-      "deleteChapterTitle": "Удалить {name}?"
+      "deleteChapterTitle": "Удалить «{name}»?"
     },
     "dragChapter": "Перетащите, чтобы изменить порядок глав",
     "General": {
@@ -3173,14 +3174,14 @@
     "activityNamePlaceholder": "Название активности",
     "activityTypes": {
       "document": "Документ",
-      "dynamic": "Динамический",
+      "dynamic": "Страница",
       "video": "Видео"
     },
     "addActivityButton": "Добавить активность",
     "chapterNamePlaceholder": "Название главы",
     "deleteActivityButton": "Удалить активность",
     "deleteActivityConfirmation": "Вы уверены, что хотите удалить эту активность?",
-    "deleteActivityTitle": "Удалить {name}?",
+    "deleteActivityTitle": "Удалить «{name}»?",
     "deleteChapter": "Удалить главу",
     "deleteChapterButton": "Удалить главу",
     "deleteChapterConfirmation": "Вы уверены, что хотите удалить эту главу?",
@@ -3196,7 +3197,7 @@
         }
       }
     ],
-    "deleteChapterTitle": "Удалить {name}?",
+    "deleteChapterTitle": "Удалить «{name}»?",
     "chapterUpdatedSuccess": "Название главы обновлено",
     "chapterUpdateFailed": "Не удалось обновить главу",
     "chapterDeletedSuccess": "Глава удалена",
@@ -3216,10 +3217,10 @@
         ],
         "selectors": ["count", "count_plural"],
         "match": {
-          "count=0, count_plural=*": "Это безвозвратно удалит раздел и его 0 занятий ({published} опубликованных, {drafts} черновиков).",
-          "count=*, count_plural=one": "Это безвозвратно удалит раздел и его {count_number} занятие ({published} опубликованных, {drafts} черновиков).",
-          "count=*, count_plural=few": "Это безвозвратно удалит раздел и его {count_number} занятия ({published} опубликованных, {drafts} черновиков).",
-          "count=*, count_plural=*": "Это безвозвратно удалит раздел и его {count_number} занятий ({published} опубликованных, {drafts} черновиков)."
+          "count=0, count_plural=*": "Пустая глава будет удалена безвозвратно.",
+          "count=*, count_plural=one": "Глава и {count_number} активность в ней будут удалены безвозвратно (опубликовано: {published}, черновиков: {drafts}).",
+          "count=*, count_plural=few": "Глава и {count_number} активности в ней будут удалены безвозвратно (опубликовано: {published}, черновиков: {drafts}).",
+          "count=*, count_plural=*": "Глава и {count_number} активностей в ней будут удалены безвозвратно (опубликовано: {published}, черновиков: {drafts})."
         }
       }
     ],

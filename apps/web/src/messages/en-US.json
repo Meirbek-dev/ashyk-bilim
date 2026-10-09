@@ -2913,7 +2913,7 @@
       "ActivityTypes": {
         "codeChallenge": "Code Challenge",
         "document": "Document",
-        "dynamic": "Dynamic",
+        "dynamic": "Page",
         "exam": "Exam",
         "fileSubmission": "File Submission",
         "quiz": "Quiz",
@@ -2948,6 +2948,7 @@
       "notReadyToPublish": "Not ready to publish yet: open the editor and fix the listed issues.",
       "updating": "Updating activity...",
       "editButton": "Edit",
+      "dragActivity": "Move “{name}” (drag, or press Space)",
       "draftBadge": "Draft",
       "liveBadge": "Live",
       "save": "Save draft",
@@ -3128,7 +3129,7 @@
     "activityNamePlaceholder": "Activity name",
     "activityTypes": {
       "document": "Document",
-      "dynamic": "Dynamic",
+      "dynamic": "Page",
       "video": "Video"
     },
     "addActivityButton": "Add Activity",
@@ -3170,7 +3171,7 @@
         ],
         "selectors": ["count", "count_plural"],
         "match": {
-          "count=0, count_plural=*": "This will permanently delete the chapter and its 0 activities ({published} published, {drafts} drafts).",
+          "count=0, count_plural=*": "The empty chapter will be deleted permanently.",
           "count=*, count_plural=one": "This will permanently delete the chapter and its {count_number} activity ({published} published, {drafts} drafts).",
           "count=*, count_plural=*": "This will permanently delete the chapter and its {count_number} activities ({published} published, {drafts} drafts)."
         }

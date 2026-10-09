@@ -2796,7 +2796,7 @@
       "ActivityTypes": {
         "codeChallenge": "Код оқу әрекеті",
         "document": "Құжат",
-        "dynamic": "Динамикалық",
+        "dynamic": "Бет",
         "exam": "Емтихан",
         "fileSubmission": "Файл жіберу",
         "quiz": "Тест",
@@ -2812,7 +2812,7 @@
       "deleteAssessmentConfirmation": "Бұл белсенділікті жойғыңыз келетініне сенімдісіз бе? Оқушылардың осы тестке берген барлық жауаптары қайтарымсыз жойылады.",
       "lockedAssessment": "Тесттің атын өзгерту мүмкін емес: ол жоспарланған, мұрағатта немесе жауаптары бар. Студияда оны жариялаудан алып тастаңыз.",
       "deleteFailed": "Белсенділікті жою мүмкін болмады",
-      "deleteTitle": "{name} жою керек пе?",
+      "deleteTitle": "«{name}» жою керек пе?",
       "deleting": "Жойылуда...",
       "deletingActivity": "Белсенділік жойылуда...",
       "editPageButton": "Бетті өңдеу",
@@ -2831,6 +2831,7 @@
       "notReadyToPublish": "Тапсырма жариялауға әлі дайын емес: редакторды ашып, ескертулерді түзетіңіз.",
       "updating": "Белсенділік жаңартылуда...",
       "editButton": "Өңдеу",
+      "dragActivity": "«{name}» жылжыту (сүйреңіз немесе бос орын пернесін басыңыз)",
       "draftBadge": "Нобай",
       "liveBadge": "Жарияланған",
       "save": "Сақтау",
@@ -2844,7 +2845,7 @@
       "chapterNamePlaceholder": "Тарау атауы",
       "deleteChapterButton": "Тарауды жою",
       "deleteChapterConfirmation": "Бұл тарауды жойғыңыз келетініне сенімдісіз бе?",
-      "deleteChapterTitle": "{name} жою керек пе?"
+      "deleteChapterTitle": "«{name}» жою керек пе?"
     },
     "General": {
       "LearningItems": {
@@ -3001,14 +3002,14 @@
     "activityNamePlaceholder": "Белсенділік атауы",
     "activityTypes": {
       "document": "Құжат",
-      "dynamic": "Динамикалық",
+      "dynamic": "Бет",
       "video": "Бейне"
     },
     "addActivityButton": "Белсенділік қосу",
     "chapterNamePlaceholder": "Тарау атауы",
     "deleteActivityButton": "Белсенділікті жою",
     "deleteActivityConfirmation": "Бұл белсенділікті жойғыңыз келетініне сенімдісіз бе?",
-    "deleteActivityTitle": "{name} жою керек пе?",
+    "deleteActivityTitle": "«{name}» жою керек пе?",
     "deleteChapter": "Тарауды жою",
     "deleteChapterButton": "Тарауды жою",
     "deleteChapterConfirmation": "Бұл тарауды жойғыңыз келетініне сенімдісіз бе?",
@@ -3023,7 +3024,7 @@
         }
       }
     ],
-    "deleteChapterTitle": "{name} жою керек пе?",
+    "deleteChapterTitle": "«{name}» жою керек пе?",
     "chapterUpdatedSuccess": "Тарау атауы жаңартылды",
     "chapterUpdateFailed": "Тарауды жаңарту мүмкін болмады",
     "chapterDeletedSuccess": "Тарау жойылды",
@@ -3043,7 +3044,7 @@
         ],
         "selectors": ["count", "count_plural"],
         "match": {
-          "count=0, count_plural=*": "Бұл тарауды және оның 0 сабақты ({published} жарияланған, {drafts} нобай) біржола жояды.",
+          "count=0, count_plural=*": "Бос тарау біржола жойылады.",
           "count=*, count_plural=one": "Бұл тарауды және оның {count_number} сабақты ({published} жарияланған, {drafts} нобай) біржола жояды.",
           "count=*, count_plural=*": "Бұл тарауды және оның {count_number} сабақты ({published} жарияланған, {drafts} нобай) біржола жояды."
         }
