@@ -144,9 +144,14 @@ export function NativeItemAuthor({
     lastSavedAssessmentRef.current = serializeAssessmentState(toAssessmentEditorState(assessment))
   }, [assessment])
 
+  // Per-field snapshot of the server's item: a save sends only the fields this tab changed, so a
+  // co-author's (or another tab's) edit to a different field is not reverted by a stale copy.
+  const savedItemFieldsRef = useRef<{ uuid: string; fields: Record<string, string> } | null>(null)
+
   useEffect(() => {
     const nextItem = item ? toEditableItem(item) : null
     lastSavedItemRef.current = nextItem ? serializeItemState(nextItem) : ''
+    savedItemFieldsRef.current = nextItem ? { uuid: nextItem.item_uuid, fields: itemWireFields(nextItem) } : null
   }, [item])
 
   const saveAssessment = useCallback(
@@ -185,16 +190,21 @@ export function NativeItemAuthor({
       setItemSaveState('saving')
       setSentItem(serializeItemState(nextItem))
       try {
-        await apiJson(`assessment-items/${nextItem.item_uuid}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: nextItem.title,
-            max_score: nextItem.max_score,
-            body: itemBodyToWire(nextItem.body),
-            metadata: nextItem.metadata,
-          }),
-        })
+        const fields = itemWireFields(nextItem)
+        const saved = savedItemFieldsRef.current?.uuid === nextItem.item_uuid ? savedItemFieldsRef.current.fields : null
+        const changed = Object.fromEntries(
+          Object.entries(fields)
+            .filter(([key, value]) => saved?.[key] !== value)
+            .map(([key, value]) => [key, JSON.parse(value) as unknown]),
+        )
+        if (Object.keys(changed).length > 0) {
+          await apiJson(`assessment-items/${nextItem.item_uuid}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(changed),
+          })
+        }
+        savedItemFieldsRef.current = { uuid: nextItem.item_uuid, fields }
         lastSavedItemRef.current = serializeItemState(nextItem)
         setItemSaveState('saved')
         await refresh()
@@ -485,4 +495,14 @@ export function NativeItemAuthor({
     ) : null
 
   return <AssessmentWorkspaceShell navItems={navItems} banner={banner} renderView={view => renderView(view)} />
+}
+
+/** The PATCH fields of an item, each JSON-encoded for comparison. */
+function itemWireFields(item: EditableItem): Record<string, string> {
+  return {
+    title: JSON.stringify(item.title),
+    max_score: JSON.stringify(item.max_score),
+    body: JSON.stringify(itemBodyToWire(item.body)),
+    metadata: JSON.stringify(item.metadata),
+  }
 }

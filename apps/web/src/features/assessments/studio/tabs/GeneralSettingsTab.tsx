@@ -360,6 +360,7 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
                   <Switch
                     checked={state[key]}
                     disabled={disabled}
+                    aria-label={t(labelKey)}
                     onCheckedChange={checked => onChange({ ...state, [key]: checked })}
                     className="shrink-0"
                   />
@@ -561,7 +562,13 @@ function ToggleFeatureRow({
         <p className="text-sm font-medium">{label}</p>
         <p className="text-muted-foreground text-xs">{description}</p>
       </div>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} className="shrink-0" />
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        onCheckedChange={onChange}
+        className="shrink-0"
+      />
     </div>
   )
 }
