@@ -9874,7 +9874,7 @@
           "needs_grading": "Ждут учителя",
           "overdue": "Просрочено",
           "returned": "Возвращено",
-          "failed": "Не сдано",
+          "failed": "Не пройдено",
           "not_started": "Не начато"
         },
         "states": {
@@ -9884,8 +9884,8 @@
           "needs_grading": "На проверке",
           "returned": "Возвращено",
           "graded": "Оценено",
-          "passed": "Сдано",
-          "failed": "Не сдано",
+          "passed": "Пройдено",
+          "failed": "Не пройдено",
           "completed": "Завершено"
         },
         "rollups": {
@@ -11980,7 +11980,7 @@
             "needs_grading": "На проверке",
             "overdue": "Просрочено",
             "returned": "Возвращено",
-            "failed": "Не сдано",
+            "failed": "Не пройдено",
             "not_started": "Не начато"
           },
           "states": {
@@ -11990,8 +11990,8 @@
             "needs_grading": "На проверке",
             "returned": "Возвращено",
             "graded": "Оценено",
-            "passed": "Сдано",
-            "failed": "Не сдано",
+            "passed": "Пройдено",
+            "failed": "Не пройдено",
             "completed": "Завершено"
           },
           "rollups": {
