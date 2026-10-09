@@ -640,13 +640,18 @@ function Header({
   return (
     <div className="space-y-4">
       {/* ── Status strip ─────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant={LIFECYCLE_BADGE[lifecycleKey] ?? 'secondary'}>
-          {tLifecycle.has(lifecycleKey) ? tLifecycle(lifecycleKey) : lifecycleKey}
-        </Badge>
-        {attempt ? <StatusBadge status={attempt.status} /> : null}
-        {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-      </div>
+      {/* The activity header already shows the attempt state; «Опубликовано» (the teacher's lifecycle) is
+          noise for a learner, who only ever sees published tasks («Черновик Опубликовано Черновик»). */}
+      {lifecycleKey !== 'published' || attempt?.is_late ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {lifecycleKey !== 'published' ? (
+            <Badge variant={LIFECYCLE_BADGE[lifecycleKey] ?? 'secondary'}>
+              {tLifecycle.has(lifecycleKey) ? tLifecycle(lifecycleKey) : lifecycleKey}
+            </Badge>
+          ) : null}
+          {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
+        </div>
+      ) : null}
 
       {/* ── Instructions ─────────────────────────────────────── */}
       {instructions ? (
