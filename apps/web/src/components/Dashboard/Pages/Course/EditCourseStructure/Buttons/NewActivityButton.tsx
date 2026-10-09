@@ -155,7 +155,7 @@ function NewActivityButton(props: NewActivityButtonProps) {
           <Plus className="h-3.5 w-3.5" />
           {t('title')}
         </DialogTrigger>
-        <DialogContent className="max-h-[85vh] max-w-full min-w-fit overflow-y-auto">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:min-w-fit [&>*]:min-w-0">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{t('title')}</DialogTitle>
             <DialogDescription className="text-sm">{t('description')}</DialogDescription>
