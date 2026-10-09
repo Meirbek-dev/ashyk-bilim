@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, FileVideo, Loader2, Plus, Upl
 import type { ChangeEvent } from 'react'
 import { SiYoutube } from '@icons-pack/react-simple-icons'
 import { AnimatePresence, motion } from 'motion/react'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Button } from '@components/ui/button'
 import { cn } from '@/lib/utils'
 import { Label } from '@components/ui/label'
@@ -43,6 +43,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
   const formatBytes = useFormatBytes()
   const [video, setVideo] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const submitting = useRef(false)
   const [name, setName] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [selectedView, setSelectedView] = useState<'file' | 'youtube'>('file')
@@ -119,14 +120,14 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
     setErrors(prev => ({ ...prev, video: '' }))
 
     // Auto-populate name if empty
-    if (!name) {
-      const fileName = selectedFile.name.replace(/\.[^/.]+$/, '')
-      setName(fileName)
-      setErrors(prev => ({ ...prev, name: '' }))
-    }
+    // Functional: a name typed while the file was being checked wins.
+    setName(prev => prev || selectedFile.name.replace(/\.[^/.]+$/, ''))
+    setErrors(prev => ({ ...prev, name: '' }))
   }
 
   const handleSubmit = async (formData: FormData) => {
+    // BUG-B10: a double click on «Create» uploaded the lecture twice and made two activities.
+    if (submitting.current) return
     const submittedName = String(formData.get('name') ?? '').trim()
     const submittedYoutubeUrl = String(formData.get('youtubeUrl') ?? '').trim()
     const submittedVideo = formData.get('videoFile')
@@ -152,6 +153,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
       return
     }
 
+    submitting.current = true
     setIsSubmitting(true)
 
     try {
@@ -186,6 +188,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
       console.error('Error creating video activity:', error)
       toast.error(t('errorFailedToCreateVideoActivity'))
     } finally {
+      submitting.current = false
       setIsSubmitting(false)
     }
   }
@@ -195,7 +198,16 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
   return (
     <div className="mx-auto max-w-2xl">
       {/* UX-238: validateForm marks every field inline (trimmed name included), as the other create dialogs do. */}
-      <form action={handleSubmit} noValidate className="space-y-5">
+      {/* onSubmit, not a form action: state set inside an action stays invisible until it ends,
+          so the button never showed «Creating…» nor disabled itself during a long upload. */}
+      <form
+        onSubmit={event => {
+          event.preventDefault()
+          void handleSubmit(new FormData(event.currentTarget))
+        }}
+        noValidate
+        className="space-y-5"
+      >
         {/* Activity Name */}
         <div className="space-y-1.5">
           <Label htmlFor="video-activity-name" className="text-foreground/80 text-sm font-medium">

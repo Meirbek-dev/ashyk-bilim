@@ -152,7 +152,7 @@ describe('replaceActivityFile', () => {
       headers: { etag: '"4"' },
     }))
     mocks.apiJson.mockImplementation(
-      async (path: string, init: { method?: string }, parse?: (d: unknown) => unknown) => {
+      async (_path: string, init: { method?: string }, parse?: (d: unknown) => unknown) => {
         if (init.method === 'POST') return parse!(block(NEW_BLOCK))
         if (init.method === 'DELETE') return undefined
         return parse!([block(OLD_BLOCK), block(NEW_BLOCK)])
