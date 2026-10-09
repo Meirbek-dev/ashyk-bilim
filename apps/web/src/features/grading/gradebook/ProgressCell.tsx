@@ -1,6 +1,6 @@
 'use client'
 
-import { formatGradebookStateKey } from '@/features/grading/domain'
+import { formatGradebookStateKey, isActivityProgressOverdue } from '@/features/grading/domain'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { ActivityProgressCell } from '@/features/grading/domain'
 import { cn } from '@/lib/utils'
@@ -53,7 +53,9 @@ export default function ProgressCell({
       }}
       className={cn(
         'flex min-h-10 w-full flex-col justify-center rounded-md px-2 py-1 text-left text-xs transition-colors',
-        STATE_TONE[cell.state] ?? 'text-muted-foreground',
+        isMissedDeadline(cell)
+          ? 'bg-red-500/10 text-red-800 dark:text-red-300'
+          : (STATE_TONE[cell.state] ?? 'text-muted-foreground'),
         canOpen ? 'cursor-pointer hover:brightness-95' : 'cursor-default',
       )}
     >
@@ -82,6 +84,11 @@ const STATE_TONE: Partial<Record<ActivityProgressCell['state'], string>> = {
   IN_PROGRESS: 'bg-sky-500/10 text-sky-900 dark:text-sky-300',
 }
 
-export function progressStateLabelKey(state: ActivityProgressCell['state']) {
-  return `states.${formatGradebookStateKey(state)}`
+/** Never handed in and past the due date - «Просрочено», not «Не начато». */
+function isMissedDeadline(cell: ActivityProgressCell) {
+  return cell.state === 'NOT_STARTED' && isActivityProgressOverdue(cell)
+}
+
+export function progressStateLabelKey(cell: ActivityProgressCell) {
+  return isMissedDeadline(cell) ? 'summary.overdue' : `states.${formatGradebookStateKey(cell.state)}`
 }

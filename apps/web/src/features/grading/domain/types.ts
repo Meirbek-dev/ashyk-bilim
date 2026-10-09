@@ -94,6 +94,8 @@ export interface GradebookActivity {
   name: string
   activity_type: string
   assessment_type?: string | null
+  /** The activity's own due date: work a learner never handed in is overdue after it. */
+  due_at?: string | null
 }
 export type GradebookStudent = SubmissionUser
 export interface GradebookSummary {

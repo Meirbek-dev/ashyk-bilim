@@ -140,6 +140,7 @@ export function gradebookFromWire(
     name: columnName(a.activity_id, a.title),
     activity_type: `TYPE_${a.kind.toUpperCase()}`,
     assessment_type: a.kind,
+    due_at: unixToIso(a.due_at_unix),
   }))
   const files = [...fileMap.values()].map(f => ({
     id: f.activity_id,
@@ -147,6 +148,7 @@ export function gradebookFromWire(
     name: columnName(f.activity_id, f.title),
     activity_type: 'TYPE_FILE_SUBMISSION',
     assessment_type: 'file_submission',
+    due_at: unixToIso(f.due_at_unix),
   }))
   const activities = [...graded, ...files]
   const now = Date.now()
@@ -164,8 +166,12 @@ export function gradebookFromWire(
       needs_grading_count: cells.filter(c => c.teacher_action_required).length,
       awaiting_release_count: cells.filter(c => c.teacher_action_required && c.awaiting_release).length,
       not_started_count: users.size * activities.length - cells.length,
-      overdue_count: cells.filter(c => c.due_at && Date.parse(c.due_at) < now && !isActivityProgressComplete(c.state))
-        .length,
+      // Work never handed in has no cell: count it from the activity's due date too.
+      overdue_count:
+        cells.filter(c => c.due_at && Date.parse(c.due_at) < now && !isActivityProgressComplete(c.state)).length +
+        activities
+          .filter(a => a.due_at && Date.parse(a.due_at) < now)
+          .reduce((sum, a) => sum + users.size - cells.filter(c => c.activity_id === a.id).length, 0),
     },
     teacher_actions: cells
       .filter(c => c.teacher_action_required)

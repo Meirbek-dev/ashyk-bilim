@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test'
 import type { Course, Curriculum, GradebookPage } from '@/lib/api/generated/zod'
 import { gradebookFromWire, reviewTarget } from '@/features/grading/domain/wire'
-import { localizeItemFeedback, matchesGradebookSavedFilter } from '@/features/grading/domain'
+import {
+  buildGradebookRollups,
+  emptyGradebookCell,
+  localizeItemFeedback,
+  matchesGradebookSavedFilter,
+} from '@/features/grading/domain'
+import { progressStateLabelKey } from '@/features/grading/gradebook/ProgressCell'
 
 const COURSE_ID = '01a0910d-2963-7483-a97d-40dc56e9aa20'
 const EXAM_ID = '01a0917d-e89b-7b39-8060-bd90a28efa9f'
@@ -211,5 +217,26 @@ describe('localizeItemFeedback (Q-2026-09-11-2)', () => {
     expect(localizeItemFeedback({ feedback: 'Хорошая работа' }, t)).toBe('Хорошая работа')
     expect(localizeItemFeedback({ feedback: 'Something new', feedback_code: 'future-code' }, t)).toBe('Something new')
     expect(localizeItemFeedback({ feedback: null }, t)).toBe('')
+  })
+})
+
+// QA-A: work a learner never handed in has no cell - it read «Не начато» forever and the
+// «Просрочено» tile / filter stayed at 0 after the due date.
+describe('missing work past the due date', () => {
+  const pastDue = { ...page([]), assessments: [{ ...exam, due_at_unix: 1_000 }] }
+
+  it('counts and filters the never-started learner as overdue', () => {
+    const data = gradebookFromWire([pastDue], course)
+    expect(data.activities[0]!.due_at).not.toBeNull()
+    expect(data.summary.overdue_count).toBe(1)
+    const cell = emptyGradebookCell(USER_ID, data.activities[0]!)
+    expect(matchesGradebookSavedFilter(cell, 'overdue')).toBe(true)
+    expect(buildGradebookRollups(data, 'activity')[0]!.overdue).toBe(1)
+  })
+
+  it('labels it «overdue», not «not started»', () => {
+    const data = gradebookFromWire([pastDue], course)
+    expect(progressStateLabelKey(emptyGradebookCell(USER_ID, data.activities[0]!))).toBe('summary.overdue')
+    expect(progressStateLabelKey(emptyGradebookCell(USER_ID, { id: 'x', due_at: null }))).toBe('states.not_started')
   })
 })

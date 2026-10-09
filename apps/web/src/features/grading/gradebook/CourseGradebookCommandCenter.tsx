@@ -247,7 +247,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                   </TableCell>
                   {visibleActivities.map(activity => {
                     const key = gradebookCellKey(student.id, activity.id)
-                    const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id)
+                    const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity)
                     return (
                       <GradebookActivityCell
                         key={key}
@@ -256,7 +256,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                           actionRequired: t('actionRequired'),
                           attempts: t('attempts', { count: cell.attempt_count }),
                           late: t('late'),
-                          state: t(progressStateLabelKey(cell.state)),
+                          state: t(progressStateLabelKey(cell)),
                           // UX-146: a scored attempt waits for a release; otherwise only when the
                           // pending attempt is not the one the cell ranks (BUG-175).
                           pendingAttempt:
@@ -348,7 +348,7 @@ function MobileGradebookList({
       {students.map(student => {
         const cells = activities.map(activity => ({
           activity,
-          cell: cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id),
+          cell: cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity),
         }))
         const relevant = cells.filter(({ cell }) => cell.state !== 'NOT_STARTED' || cell.teacher_action_required)
         const visible = (relevant.length > 0 ? relevant : cells).slice(0, 5)
@@ -370,7 +370,7 @@ function MobileGradebookList({
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{activity.name}</span>
-                    <span className="text-muted-foreground block text-xs">{t(progressStateLabelKey(cell.state))}</span>
+                    <span className="text-muted-foreground block text-xs">{t(progressStateLabelKey(cell))}</span>
                   </span>
                   {cell.teacher_action_required ? (
                     <span className="text-xs font-medium">

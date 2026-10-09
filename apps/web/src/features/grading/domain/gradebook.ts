@@ -55,10 +55,15 @@ export function gradebookActivityKind(activity: GradebookActivity) {
   return activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
 }
 
-export function emptyGradebookCell(userId: string, activityId: string): ActivityProgressCell {
+/** A learner × activity the API returned no row for: never handed in (overdue once the due date passed). */
+export function emptyGradebookCell(
+  userId: string,
+  activity: Pick<GradebookActivity, 'id' | 'due_at'>,
+): ActivityProgressCell {
   return {
     user_id: userId,
-    activity_id: activityId,
+    activity_id: activity.id,
+    due_at: activity.due_at ?? null,
     state: 'NOT_STARTED',
     is_late: false,
     teacher_action_required: false,
@@ -91,7 +96,7 @@ export function filterGradebookStudents(
     const searchable = `${gradebookLearnerName(student)} ${student.username} ${student.email}`.toLowerCase()
     if (normalizedSearch && !searchable.includes(normalizedSearch)) return false
     return visibleActivities.some(activity => {
-      const cell = cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id)
+      const cell = cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity)
       return matchesGradebookSavedFilter(cell, filters.savedFilter)
     })
   })
@@ -106,8 +111,7 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
   const cells = [...data.cells]
   for (const student of data.students) {
     for (const activity of data.activities) {
-      if (!returned.has(gradebookCellKey(student.id, activity.id)))
-        cells.push(emptyGradebookCell(student.id, activity.id))
+      if (!returned.has(gradebookCellKey(student.id, activity.id))) cells.push(emptyGradebookCell(student.id, activity))
     }
   }
 
