@@ -132,6 +132,8 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 future_not_send = "allow"
 option_if_let_else = "allow"
+# Rust 1.99: wants assert_eq!(x, []) with a typed empty literal instead of assert!(x.is_empty()) in tests.
+assert_is_empty = "allow"
 
 [profile.release]
 lto = "thin"

@@ -117,7 +117,7 @@ pub fn course_top_alert(
 #[must_use]
 pub fn content_health_score(days_since_update: Option<i64>, avg_progress_pct: f64) -> f64 {
     let days = f64::from(i32::try_from(days_since_update.unwrap_or(90)).unwrap_or(i32::MAX));
-    let freshness = round1(100.0 - days * 3.5).max(0.0);
+    let freshness = round1(days.mul_add(-3.5, 100.0)).max(0.0);
     round1(freshness.mul_add(0.55, avg_progress_pct * 0.45))
 }
 

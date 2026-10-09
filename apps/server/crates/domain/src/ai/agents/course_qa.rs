@@ -746,7 +746,6 @@ impl AiService {
 
     /// Stream one prepared turn. Dropping the stream before it settles
     /// (polled or not) aborts the run and keeps the partial answer.
-    #[must_use]
     pub fn stream_qa(&self, mut session: QaSession) -> QaStream {
         let service = self.clone();
         Box::pin(async_stream::stream! {
