@@ -90,7 +90,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
   const [title, setTitle] = useState('')
   const [instructions, setInstructions] = useState('')
   const [dueAt, setDueAt] = useState('')
-  const [maxFiles, setMaxFiles] = useState(1)
+  const [maxFiles, setMaxFiles] = useState<number | ''>(1)
   const [maxSize, setMaxSize] = useState<number | ''>(25)
   const [selectedMimes, setSelectedMimes] = useState<string[]>(() => MIME_PRESETS.flatMap(preset => preset.mimes))
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -134,7 +134,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
         title,
         instructions,
         due_at_unix: dueAt ? toUnix(new Date(dueAt)) : null,
-        max_files: maxFiles,
+        max_files: maxFiles === '' ? 1 : Math.min(25, Math.max(1, maxFiles)),
         max_file_size_mb: maxSize === '' ? null : maxSize,
         allowed_mime_types: selectedMimes,
         chapter_id: chapterId,
@@ -190,21 +190,24 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
           </FieldContent>
         </Field>
         <Field>
-          <FieldLabel>{t('maxFiles')}</FieldLabel>
+          <FieldLabel htmlFor="file-submission-max-files">{t('maxFiles')}</FieldLabel>
           <FieldContent>
             <Input
+              id="file-submission-max-files"
               type="number"
               min={1}
               max={25}
               value={maxFiles}
-              onChange={event => setMaxFiles(Math.max(1, Number(event.target.value) || 1))}
+              // Empty while typing (clamped on save): forcing 1 here turned «⌫ 3» into 13.
+              onChange={event => setMaxFiles(event.target.value ? Number(event.target.value) : '')}
             />
           </FieldContent>
         </Field>
         <Field>
-          <FieldLabel>{t('maxSize')}</FieldLabel>
+          <FieldLabel htmlFor="file-submission-max-size">{t('maxSize')}</FieldLabel>
           <FieldContent>
             <Input
+              id="file-submission-max-size"
               type="number"
               min={1}
               value={maxSize}

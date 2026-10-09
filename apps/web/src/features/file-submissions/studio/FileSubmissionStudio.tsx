@@ -360,18 +360,20 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               ) : null}
             </Field>
             <Field>
-              <FieldLabel>{t('maxFiles')}</FieldLabel>
+              <FieldLabel htmlFor="file-studio-max-files">{t('maxFiles')}</FieldLabel>
               <Input
+                id="file-studio-max-files"
                 type="number"
                 min={1}
-                max={20}
+                max={25}
                 value={maxFiles}
                 onChange={event => setMaxFiles(Number(event.target.value))}
               />
             </Field>
             <Field>
-              <FieldLabel>{t('maxSize')}</FieldLabel>
+              <FieldLabel htmlFor="file-studio-max-size">{t('maxSize')}</FieldLabel>
               <Input
+                id="file-studio-max-size"
                 type="number"
                 min={1}
                 value={maxFileSizeMb}
