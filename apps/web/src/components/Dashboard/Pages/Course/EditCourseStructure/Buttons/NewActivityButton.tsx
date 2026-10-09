@@ -155,7 +155,12 @@ function NewActivityButton(props: NewActivityButtonProps) {
       activity_sub_type: 'SUBTYPE_DYNAMIC_PAGE',
     }
 
-    await createActivity(activityPayload)
+    const created = (await createActivity(activityPayload)) as { id?: unknown } | undefined
+    // QA-D: like a new code challenge - open the page's editor. It was left as one more identical «Новая
+    // страница» row in the curriculum, with nothing pointing at where to write it or rename it.
+    if (typeof created?.id === 'string') {
+      router.push(`/dash/courses/${cleanCourseUuid(course.courseStructure.course_uuid)}/activity/${created.id}/studio`)
+    }
   }
 
   return (
