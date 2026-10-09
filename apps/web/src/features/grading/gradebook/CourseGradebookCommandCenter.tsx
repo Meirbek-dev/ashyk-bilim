@@ -336,6 +336,7 @@ function MobileGradebookList({
   onOpenCell: (cell: ActivityProgressCell) => void
 }) {
   const t = useTranslations('Features.Grading.Gradebook')
+  const percent = usePercentFormat()
   if (students.length === 0) {
     return (
       <div className="rounded-lg border p-6 text-center">
@@ -378,7 +379,10 @@ function MobileGradebookList({
                     <span className="text-xs font-medium">
                       {t(cell.awaiting_release ? 'releaseGrade' : 'submissionReview')}
                     </span>
-                  ) : null}
+                  ) : cell.score === null || cell.score === undefined ? null : (
+                    // The desktop grid shows the score; the phone card dropped it.
+                    <span className="text-sm font-semibold tabular-nums">{percent(cell.score)}</span>
+                  )}
                 </Button>
               ))}
             </div>
@@ -467,7 +471,8 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
           <h2 className="text-sm font-semibold">{t('rollups.title')}</h2>
           <p className="text-muted-foreground text-xs">{t('rollups.description')}</p>
         </div>
-        <TabsList>
+        {/* Four labels do not fit a phone: the list wraps instead of pushing the page sideways. */}
+        <TabsList className="h-auto max-w-full flex-wrap">
           {ROLLUP_KINDS.map(item => (
             <TabsTrigger key={item} value={item}>
               {t(`rollups.${item}`)}
