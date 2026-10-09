@@ -756,6 +756,13 @@ async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
     assert_eq!(done.status, StatusCode::OK, "{}", done.text());
     assert!(done.json()["auto_submit_reason"].is_null());
 
+    // QA-A: the learner's timer hands it in at limit + grace - recorded as timed out,
+    // so the result card says the time ran out (the sweeper's reason).
+    let timed = start_aged(&app, &alice, &id, 121.0).await;
+    let done = app.send(submit(&alice, &timed, None, &answer)).await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    assert_eq!(done.json()["auto_submit_reason"], "time_expired");
+
     // Past limit + grace: the sweep hands it in.
     let second = start_aged(&app, &alice, &id, 125.0).await;
     assert_eq!(sweep().await.unwrap(), 1);

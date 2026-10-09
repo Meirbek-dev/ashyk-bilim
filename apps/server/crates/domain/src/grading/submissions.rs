@@ -41,6 +41,8 @@ use crate::progress::ProgressProjector;
 
 /// Legacy `SUBMIT_GRACE_SECONDS`.
 pub const SUBMIT_GRACE_SECONDS: i64 = 30;
+/// How far ahead of the server a learner's timer may run out (clock skew + latency).
+const CLIENT_TIMER_SLACK_SECONDS: i64 = 2;
 /// Draft saves: one per submission per this window (legacy 5s throttle).
 pub const DRAFT_SAVE_WINDOW: Duration = Duration::from_secs(5);
 /// Submits: 3 per learner per 10s (legacy rate limit dependency).
@@ -864,6 +866,15 @@ impl SubmissionsService {
                 limited = true;
             }
             let preview = ctx.preview;
+            // The learner's timer hands the attempt in when it reaches zero: a submit arriving
+            // then is that auto-submit (or a click racing it). Record it like the sweeper does,
+            // so the result says the time ran out. ponytail: fixed slack for the client clock
+            // running ahead; a contract field from the client would be exact.
+            let timed_out = ctx
+                .submission
+                .started_at
+                .and_then(|started| ctx.effective.timer_deadline(started))
+                .is_some_and(|deadline| arrived_at >= deadline - CLIENT_TIMER_SLACK_SECONDS);
             let Some((fresh, effective, total)) = Self::finalize(
                 &self.runner,
                 self.events.as_ref(),
@@ -872,7 +883,7 @@ impl SubmissionsService {
                 FinalizeOptions {
                     skip_constraints: false,
                     violation_count,
-                    auto_submit_reason: None,
+                    auto_submit_reason: timed_out.then_some(AutoSubmitReason::TimeExpired),
                     submitted_at: None,
                     arrived_at: Some(arrived_at),
                 },
