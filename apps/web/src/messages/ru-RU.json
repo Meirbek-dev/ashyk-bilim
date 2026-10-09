@@ -12752,6 +12752,7 @@
     ],
     "fileTooLarge": "Файл больше {size} МБ",
     "fileTypeNotAllowed": "Недопустимый тип файла ({type})",
+    "fileEmpty": "Файл пустой (0 байт)",
     "noExtension": "без расширения",
     "confirmSubmitTitle": "Отправить файлы?",
     "confirmSubmitDescription": "Это использует попытку {number} из {max}. После отправки изменить файлы нельзя.",

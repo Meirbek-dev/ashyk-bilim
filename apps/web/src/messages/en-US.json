@@ -12480,6 +12480,7 @@
     ],
     "fileTooLarge": "File exceeds {size} MB",
     "fileTypeNotAllowed": "File type not allowed ({type})",
+    "fileEmpty": "The file is empty (0 bytes)",
     "noExtension": "no extension",
     "confirmSubmitTitle": "Submit files?",
     "confirmSubmitDescription": "This uses attempt {number} of {max}. Files cannot be changed after submitting.",

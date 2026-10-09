@@ -11769,6 +11769,7 @@
     ],
     "fileTooLarge": "Файл {size} МБ-тан үлкен",
     "fileTypeNotAllowed": "Файл түріне рұқсат жоқ ({type})",
+    "fileEmpty": "Файл бос (0 байт)",
     "noExtension": "кеңейтімсіз",
     "confirmSubmitTitle": "Файлдарды жіберу керек пе?",
     "confirmSubmitDescription": "Бұл {max} әрекеттің {number}-сін жұмсайды. Жібергеннен кейін файлдарды өзгерту мүмкін емес.",

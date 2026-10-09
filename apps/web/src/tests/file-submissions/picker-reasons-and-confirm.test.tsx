@@ -116,3 +116,11 @@ describe('fileRejection type label', () => {
     })
   })
 })
+
+// BUG-B11: a 0-byte pick is refused in the list, not by a generic upload failure.
+it('fileRejection refuses an empty file', async () => {
+  const { fileRejection } = await import('@/features/file-submissions/student/FileSubmissionWorkspace')
+  expect(fileRejection(new File([], 'report.pdf', { type: 'application/pdf' }), ['application/pdf'], 1)).toEqual({
+    key: 'fileEmpty',
+  })
+})

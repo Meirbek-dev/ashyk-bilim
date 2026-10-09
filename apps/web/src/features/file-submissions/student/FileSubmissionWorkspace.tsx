@@ -102,8 +102,14 @@ export function fileRejection(
   file: File,
   allowedMimes: string[],
   maxMb: number | null | undefined,
-): { key: 'fileTooLarge'; size: number } | { key: 'fileTypeNotAllowed'; type: string | null } | null {
+):
+  | { key: 'fileTooLarge'; size: number }
+  | { key: 'fileTypeNotAllowed'; type: string | null }
+  | { key: 'fileEmpty' }
+  | null {
   if (maxMb && file.size > maxMb * 1024 * 1024) return { key: 'fileTooLarge', size: maxMb }
+  // The upload policy refuses 0 bytes; said here instead of a generic «upload failed» (BUG-B11).
+  if (file.size === 0) return { key: 'fileEmpty' }
   if (allowedMimes.length === 0) return null
   const allowed = allowedMimes.some(mime =>
     mime.endsWith('/*') ? file.type.startsWith(mime.slice(0, -1)) : file.type === mime,
