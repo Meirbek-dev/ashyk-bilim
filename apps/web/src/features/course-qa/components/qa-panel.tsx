@@ -35,6 +35,7 @@ import type { QAMessage, QAThreadSummary } from '../lib/types'
 
 export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | null; courseUuid: string }) {
   const t = useTranslations('AiExperience.qaInput')
+  const tErrorCodes = useTranslations('Errors.codes')
   const { setThread, thread: selectedThreadUuid } = useActivityAIUrlState('ask')
   const threadQuery = useQAThread(courseUuid, selectedThreadUuid ?? '')
   // Archived course: the thread is history, no new questions (COURSE_ARCHIVING 9.4).
@@ -90,7 +91,7 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
   }
 
   return (
-    <section className="@container/qa-panel grid min-h-full shrink-0 gap-4 @min-[40rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem] @min-[40rem]/qa-panel:grid-rows-1">
+    <section className="@container/qa-panel grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)] gap-4 @min-[40rem]/qa-panel:grid-cols-[minmax(0,1fr)_12rem] @min-[40rem]/qa-panel:grid-rows-1">
       <div className="flex min-h-0 flex-col gap-4">
         <AICommandList
           surface="course"
@@ -120,21 +121,25 @@ export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | 
           {chat.status === 'streaming' ? t('streamingStatus') : null}
           {chat.status === 'cancelled' ? t('cancelledStatus') : null}
         </div>
-        {chat.errorCode === 'ai-disabled' ? (
-          <p className="text-muted-foreground rounded-lg border p-3 text-sm">{t('unavailable')}</p>
-        ) : chat.errorCode ? (
-          <div className="border-destructive/30 bg-destructive/5 flex flex-wrap items-center gap-2 rounded-lg border p-3">
-            <p className="min-w-0 flex-1 text-sm">{t('error')}</p>
-            <Button type="button" size="sm" variant="outline" onClick={chat.retry}>
-              {t('retry')}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={chat.reset}>
-              {t('dismiss')}
-            </Button>
-          </div>
-        ) : null}
-        {/* The question box stays in reach while the panel scrolls. */}
-        <div className="bg-background sticky bottom-0 z-10 pt-1">
+        {/* The question box stays in reach while the panel scrolls; a failure shows right above it (QA-D: on a phone it
+            sat under the sticky box, so a refused question just hung with no answer). */}
+        <div className="bg-background sticky bottom-0 z-10 flex flex-col gap-2 pt-1">
+          {chat.errorCode === 'ai-disabled' ? (
+            <p className="text-muted-foreground rounded-lg border p-3 text-sm">{t('unavailable')}</p>
+          ) : chat.errorCode ? (
+            <div className="border-destructive/30 bg-destructive/5 flex flex-wrap items-center gap-2 rounded-lg border p-3">
+              {/* QA-D: a known contract code (hourly limit, budget, …) says what happened, not just «error». */}
+              <p className="min-w-0 flex-1 text-sm">
+                {tErrorCodes.has(chat.errorCode as never) ? tErrorCodes(chat.errorCode as never) : t('error')}
+              </p>
+              <Button type="button" size="sm" variant="outline" onClick={chat.retry}>
+                {t('retry')}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={chat.reset}>
+                {t('dismiss')}
+              </Button>
+            </div>
+          ) : null}
           <QAInput
             pending={chat.pending}
             disabledReason={courseArchived ? t('courseArchived') : null}
