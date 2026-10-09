@@ -9118,6 +9118,7 @@
       "assessmentQuestionTitle": "Question difficulty",
       "assessmentQuestionDesc": "Lower accuracy highlights items that may be unclear or too difficult.",
       "assessmentCommonFailuresTitle": "Common failures",
+      "assessmentCommonFailureMissed": "{label} · {percent}% missed",
       "assessmentNoCommonFailures": "No common failure cluster detected in the current data.",
       "assessmentOpsTitle": "Operational readiness",
       "assessmentOpsDescription": "Live grading, release, audit, and cutover signals for this assessment.",

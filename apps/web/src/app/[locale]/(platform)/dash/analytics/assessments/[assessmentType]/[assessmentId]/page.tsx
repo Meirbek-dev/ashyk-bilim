@@ -168,8 +168,12 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           {detail.common_failures.length ? (
             detail.common_failures.map(failure => (
               <Badge key={failure.key} variant="outline">
-                {/* UX-261: the wire `label` is the English key; `TeacherAnalytics.codes` has it. */}
-                {getAnalyticsCodeLabel(t, failure.key)} · {failure.count}
+                {/* UX-261: a workflow row's `label` is the English key; `TeacherAnalytics.codes` has it.
+                    A quiz row is keyed by the question id: its label is the question title and the
+                    count the share of learners who missed it (was rendered as a raw UUID · 50). */}
+                {/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(failure.key)
+                  ? t('pages.assessmentCommonFailureMissed', { label: failure.label, percent: failure.count })
+                  : `${getAnalyticsCodeLabel(t, failure.key)} · ${failure.count}`}
               </Badge>
             ))
           ) : (

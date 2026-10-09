@@ -8619,6 +8619,7 @@
       "assessmentQuestionTitle": "Сұрақ қиындығы",
       "assessmentQuestionDesc": "Төмен дәлдік нақты емес немесе тым қиын оқу әрекеттерін белгілейді.",
       "assessmentCommonFailuresTitle": "Жалпы қателіктер",
+      "assessmentCommonFailureMissed": "{label} · {percent}% қате",
       "assessmentNoCommonFailures": "Ағымдағы деректерде жалпы қателік кластері табылмады.",
       "assessmentOpsTitle": "Операциялық дайындық",
       "assessmentOpsDescription": "Осы бағалау үшін тексеру, жариялау, аудит және көшуге дайындық сигналдары.",

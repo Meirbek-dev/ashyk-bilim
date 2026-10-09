@@ -9260,6 +9260,7 @@
       "assessmentQuestionTitle": "Сложность вопросов",
       "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные учебные задачи.",
       "assessmentCommonFailuresTitle": "Частые ошибки",
+      "assessmentCommonFailureMissed": "{label} · {percent}% ошибок",
       "assessmentNoCommonFailures": "В текущих данных не обнаружено кластера частых ошибок.",
       "assessmentOpsTitle": "Операционная готовность",
       "assessmentOpsDescription": "Сигналы по проверке, публикации, аудиту и готовности к переходу для этой оценки.",
