@@ -96,7 +96,9 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
           {displayEntries.map((entry, index) => {
             const isCurrentUser = entry.user_id === currentUserId
             const isTop3 = entry.rank <= 3
-            const showSeparator = !showFull && index === 3 && userIndex >= 3
+            // «···» only where rows are skipped: the viewer's context starts at userIndex - 2,
+            // so a viewer at row 4-6 continues the top 3 directly.
+            const showSeparator = !showFull && index === 3 && userIndex > 5
 
             return (
               <div key={entry.user_id}>

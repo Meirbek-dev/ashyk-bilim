@@ -55,6 +55,15 @@ describe('trail leaderboard viewer rank (UX-185)', () => {
     expect(screen.queryByText(line('u4'))).not.toBeInTheDocument()
   })
 
+  // «···» sat between #3 and #4 for a viewer at #4: nothing was skipped.
+  it('marks skipped rows with «···» only when rows are skipped', () => {
+    const { unmount } = renderBoard({ entries: rows(8), currentUserId: 'u3', userRank: 4 })
+    expect(screen.queryByText('···')).not.toBeInTheDocument()
+    unmount()
+    renderBoard({ entries: rows(10), currentUserId: 'u7', userRank: 8 })
+    expect(screen.getByText('···')).toBeInTheDocument()
+  })
+
   it('offers «Показать все» on /trail when the board has more rows than shown', () => {
     render(
       <NextIntlClientProvider locale="ru" messages={ruMessages}>
