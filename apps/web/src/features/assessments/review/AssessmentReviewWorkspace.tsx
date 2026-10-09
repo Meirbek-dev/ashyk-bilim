@@ -66,7 +66,7 @@ export default function AssessmentReviewWorkspace({
 
   const {
     data: assessment,
-    isLoading,
+    isPending,
     error,
   } = useQuery(
     queryOptions({
@@ -104,7 +104,9 @@ export default function AssessmentReviewWorkspace({
     }
   }, [assessment?.assessment_uuid, assessment?.review_projection, cleanUuid])
 
-  if (isLoading) {
+  // `isPending`, not `isLoading`: the server render does not fetch, so `isLoading` was false there and the
+  // «unavailable» branch rendered first - a hydration mismatch and a flash of the error text.
+  if (isPending) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />

@@ -85,7 +85,7 @@ describe('readiness issue labels (BUG-029)', () => {
   it('renders the Russian catalog text for a known code, never the server message', () => {
     const resolve = resolverFor(ruMessages, 'ru')
     expect(localizeValidationIssue({ code: 'assessment.empty', message: 'add at least one item' }, resolve)).toBe(
-      'Оценка не содержит учебных задач.',
+      'Добавьте хотя бы один вопрос.',
     )
     expect(localizeValidationIssue({ code: 'choice.prompt_missing', message: 'prompt is empty' }, resolve)).toBe(
       'Требуется формулировка вопроса выбора.',

@@ -120,7 +120,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     surface: 'teacher-studio',
   }
 
-  const { data, isLoading, error } = useQuery(
+  const { data, isPending, error } = useQuery(
     queryOptions({
       queryKey: queryKey(cleanActivityUuid),
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
@@ -229,7 +229,9 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     required: true,
   })
 
-  if (isLoading) {
+  // `isPending`, not `isLoading`: the server render does not fetch, so `isLoading` was false there and the
+  // «unavailable» branch rendered first - a hydration mismatch and a flash of the error text.
+  if (isPending) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />

@@ -170,7 +170,7 @@ export default function FileSubmissionReviewWorkspace({
     data: config,
     error: configError,
     isError: isConfigError,
-    isLoading: isConfigLoading,
+    isPending: isConfigPending,
     refetch: refetchConfig,
   } = useQuery(
     queryOptions({
@@ -200,7 +200,7 @@ export default function FileSubmissionReviewWorkspace({
     data: queue,
     error: queueError,
     isError: isQueueError,
-    isLoading: isQueueLoading,
+    isPending: isQueuePending,
     refetch: refetchQueue,
   } = useQuery(
     queryOptions({
@@ -343,7 +343,9 @@ export default function FileSubmissionReviewWorkspace({
     }
   }
 
-  if (isConfigLoading || isQueueLoading) {
+  // `isPending`, not `isLoading`: the server render does not fetch, so `isLoading` was false there and the
+  // «unavailable» branch rendered first - a hydration mismatch and a flash of the error text.
+  if (isConfigPending || (config && isQueuePending)) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
