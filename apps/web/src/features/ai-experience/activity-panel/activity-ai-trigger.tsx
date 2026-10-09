@@ -14,8 +14,10 @@ export function ActivityAITrigger({ scope }: { scope: AIScope }) {
   const t = useTranslations('Activities.AiAssistantPanel')
   const { setOpen } = useActivityAIUrlState(scope.surface === 'student-activity' ? 'ask' : 'review')
   const capabilities = useAIScopeCapabilities(scope)
-  const available = capabilities.data?.available ?? true
-  const disabled = capabilities.isLoading || !available
+  // Not isLoading: the server renders the query as loading while the client may already hold
+  // it (persisted cache), and disabled then differs between SSR and hydration. The panel shows
+  // its own loading state.
+  const disabled = capabilities.data ? !capabilities.data.available : false
   const label = t('title')
   const reason = capabilities.data?.reason
 
