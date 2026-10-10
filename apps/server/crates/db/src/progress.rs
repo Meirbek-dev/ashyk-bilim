@@ -501,6 +501,28 @@ pub async fn has_trail_run<'e>(
     Ok(exists)
 }
 
+/// Enrolled for taking assessments (`courses.assessments_require_enrollment`):
+/// a run on the course, or membership of a usergroup linked to it - the
+/// teacher enrolled the group.
+pub async fn takes_assessments<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let enrolled = sqlx::query_scalar!(
+        r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)
+               OR EXISTS(SELECT 1 FROM usergroup_courses uc
+                         JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
+                         WHERE uc.course_id = $1 AND m.user_id = $2)
+           AS "enrolled!""#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(enrolled)
+}
+
 /// The course's staff (`is_course_staff`, BUG-287): never enrolled.
 pub async fn is_course_staff<'e>(
     db: impl sqlx::PgExecutor<'e>,

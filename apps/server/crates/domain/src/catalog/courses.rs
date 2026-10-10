@@ -84,6 +84,8 @@ pub struct CourseChanges {
     pub about: Option<String>,
     pub tags: Option<Vec<String>>,
     pub open_to_contributors: Option<bool>,
+    /// Only enrolled learners take the course's assessments.
+    pub assessments_require_enrollment: Option<bool>,
     /// `Some(Some(id))`: claim that finalized `course-thumbnail` upload;
     /// `Some(None)`: remove the thumbnail. The replaced object is released
     /// for reaping either way.
@@ -420,6 +422,7 @@ impl CoursesService {
                 about: changes.about.as_deref().map(str::trim),
                 tags: tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
+                assessments_require_enrollment: changes.assessments_require_enrollment,
                 learnings: learnings.as_ref(),
             },
         )

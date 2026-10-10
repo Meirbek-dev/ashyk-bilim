@@ -269,7 +269,7 @@ pub async fn list_collection_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT c.id AS "id: CourseId", c.name, c.description, c.about, c.tags,
-                  c.public, c.open_to_contributors,
+                  c.public, c.open_to_contributors, c.assessments_require_enrollment,
                   c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,
                   c.creator_id AS "creator_id: UserId",
                   (extract(epoch FROM c.archived_at))::bigint AS "archived_at?",

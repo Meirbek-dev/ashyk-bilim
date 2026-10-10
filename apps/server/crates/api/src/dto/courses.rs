@@ -12,6 +12,11 @@ pub struct Course {
     pub tags: Vec<String>,
     pub public: bool,
     pub open_to_contributors: bool,
+    /// Only enrolled learners (a run on the course, or a linked usergroup)
+    /// take its quizzes, exams, code challenges and file tasks; anyone else
+    /// gets `NOT_ENROLLED` in the attempt state and 403
+    /// `enrollment-required` on start / save / submit. Default `true`.
+    pub assessments_require_enrollment: bool,
     /// Storage key of the thumbnail image, served at `/content/<key>`.
     pub thumbnail_key: Option<String>,
     /// Storage key of the legacy video thumbnail (migrated courses only;
@@ -51,6 +56,7 @@ impl Course {
             tags: c.tags,
             public: c.public,
             open_to_contributors: c.open_to_contributors,
+            assessments_require_enrollment: c.assessments_require_enrollment,
             learnings: ab_domain::catalog::courses::learnings(&c.learnings)
                 .into_iter()
                 .map(Into::into)
@@ -263,6 +269,9 @@ pub struct UpdateCourseRequest {
     pub tags: Option<Vec<String>>,
     #[garde(skip)]
     pub open_to_contributors: Option<bool>,
+    /// See `Course.assessments_require_enrollment`.
+    #[garde(skip)]
+    pub assessments_require_enrollment: Option<bool>,
     /// Finalized `course-thumbnail` upload to claim as the thumbnail;
     /// `null` removes the current one.
     #[garde(skip)]

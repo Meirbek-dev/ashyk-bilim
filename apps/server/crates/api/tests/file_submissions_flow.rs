@@ -1915,3 +1915,52 @@ async fn a_resubmitted_revision_clears_the_return_comment(pool: PgPool) {
         .await;
     assert_eq!(history.json()[0]["feedback"], "Add references");
 }
+
+/// Cluster G: a course taking assessments from enrolled learners only
+/// (`assessments_require_enrollment`, the default) shows a stranger the
+/// task with `NOT_ENROLLED` and refuses the draft with a typed 403;
+/// enrolled, they start.
+#[sqlx::test(migrations = "../../migrations")]
+async fn file_task_requires_enrollment(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let closed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}"),
+            &serde_json::json!({ "assessments_require_enrollment": true }),
+        )
+        .await;
+    assert_eq!(closed.status, StatusCode::OK, "{}", closed.text());
+    let alice = learner(&app, "alice").await;
+    let view = app
+        .get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
+        .await;
+    assert_eq!(view.status, StatusCode::OK, "{}", view.text());
+    assert_eq!(
+        view.json()["disabled_reasons"],
+        serde_json::json!(["NOT_ENROLLED"])
+    );
+    let start = format!("/api/v2/file-submissions/{id}/draft");
+    let refused = app.post_as(&alice, &start, &serde_json::json!({})).await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "enrollment-required");
+
+    let trail_id: uuid::Uuid =
+        sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
+            .bind(alice.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+        .bind(trail_id)
+        .bind(&course_id)
+        .bind(alice.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let started = app.post_as(&alice, &start, &serde_json::json!({})).await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+}

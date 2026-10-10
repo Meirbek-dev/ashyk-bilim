@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)\n               OR EXISTS(SELECT 1 FROM usergroup_courses uc\n                         JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id\n                         WHERE uc.course_id = $1 AND m.user_id = $2)\n           AS \"enrolled!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "enrolled!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "687f32ab0ae30f145fcba1ca5353146c12098ea32421108d531460ab6c28c323"
+}

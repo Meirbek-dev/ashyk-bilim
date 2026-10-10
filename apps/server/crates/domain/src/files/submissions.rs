@@ -983,6 +983,10 @@ impl FileSubmissionsService {
         if preview {
             return Ok(reasons);
         }
+        // Cluster G: the course takes assessments from enrolled learners only.
+        if self.assessments.enrollment_blocks(course, user_id).await? {
+            reasons.push(DisabledReason::NotEnrolled);
+        }
         if !row.allow_late
             && self
                 .own_due(row, user_id)

@@ -1535,3 +1535,192 @@ async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
         assert_eq!(refused.json()["field_errors"][0]["code"], "staff");
     }
 }
+
+/// Cluster G: `assessments_require_enrollment` (default on, also on a course
+/// made public later) - a signed-in visitor reads the quiz but takes it only
+/// once enrolled, and a refused start enrols nobody; a linked usergroup
+/// counts as enrolled; off restores the open rule; a draft opened while the
+/// course was open stays readable but frozen until its owner enrols again;
+/// only course writers flip it.
+#[sqlx::test(migrations = "../../migrations")]
+async fn assessments_require_enrollment(pool: PgPool) {
+    fn draft_request(
+        session: &MintedSession,
+        method: &str,
+        uri: String,
+        body: &serde_json::Value,
+    ) -> axum::http::Request<axum::body::Body> {
+        axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &session.cookie)
+            .header(axum::http::header::IF_MATCH, "1")
+            .body(axum::body::Body::from(body.to_string()))
+            .unwrap()
+    }
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, id) = private_course_with_quiz(&app, &teacher).await;
+    sqlx::query("UPDATE courses SET public = true WHERE id = $1::uuid")
+        .bind(&course_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let course_path = format!("/api/v2/courses/{course_id}");
+    let course = app.get_as(&teacher, &course_path).await;
+    assert_eq!(course.json()["assessments_require_enrollment"], true);
+    let state_path = format!("/api/v2/assessments/{id}/attempt-state");
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let runs = |user: UserId| {
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+            .bind(user.0)
+            .fetch_one(&app.pool)
+    };
+
+    // Not enrolled: the state says why, the start is refused with a typed code.
+    let (alice, alice_session) = learner(&app, "alice").await;
+    let state = app.get_as(&alice_session, &state_path).await;
+    assert_eq!(state.status, StatusCode::OK, "{}", state.text());
+    assert_eq!(state.json()["can_start"], false);
+    assert_eq!(
+        state.json()["disabled_reasons"],
+        serde_json::json!(["NOT_ENROLLED"])
+    );
+    let refused = app
+        .post_as(&alice_session, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    assert_eq!(refused.json()["code"], "enrollment-required");
+    assert_eq!(
+        refused.json()["details"]["reasons"],
+        serde_json::json!(["NOT_ENROLLED"])
+    );
+    assert_eq!(
+        runs(alice).await.unwrap(),
+        0,
+        "a refused start enrols nobody"
+    );
+    // Enrolled: the start goes through.
+    enrol(&app.pool, &course_id, alice).await;
+    let state = app.get_as(&alice_session, &state_path).await;
+    assert_eq!(state.json()["can_start"], true, "{}", state.text());
+    let started = app
+        .post_as(&alice_session, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+
+    // A linked usergroup is an enrolment by the teacher.
+    let (bob, bob_session) = learner(&app, "bob").await;
+    let group = app
+        .post_as(
+            &teacher,
+            "/api/v2/usergroups",
+            &serde_json::json!({ "name": "Cohort A" }),
+        )
+        .await;
+    let group_id = group.json()["id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/members"),
+        &serde_json::json!({ "user_ids": [bob] }),
+    )
+    .await;
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/usergroups/{group_id}/courses"),
+        &serde_json::json!({ "course_ids": [course_id] }),
+    )
+    .await;
+    let state = app.get_as(&bob_session, &state_path).await;
+    assert_eq!(state.json()["can_start"], true, "{}", state.text());
+
+    // Only course writers flip it.
+    let (_, carol_session) = learner(&app, "carol").await;
+    let stranger = app
+        .patch_as(
+            &carol_session,
+            &course_path,
+            &serde_json::json!({ "assessments_require_enrollment": false }),
+        )
+        .await;
+    assert!(
+        matches!(
+            stranger.status,
+            StatusCode::FORBIDDEN | StatusCode::NOT_FOUND
+        ),
+        "{}",
+        stranger.text()
+    );
+    // Off: the open rule - carol starts without enrolling (and the start
+    // enrols her, as before).
+    let opened = app
+        .patch_as(
+            &teacher,
+            &course_path,
+            &serde_json::json!({ "assessments_require_enrollment": false }),
+        )
+        .await;
+    assert_eq!(opened.status, StatusCode::OK, "{}", opened.text());
+    assert_eq!(opened.json()["assessments_require_enrollment"], false);
+    let draft = app
+        .post_as(&carol_session, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let draft_id = draft.json()["id"].as_str().unwrap().to_owned();
+
+    // She leaves and the course closes again: her draft is readable, frozen.
+    sqlx::query("DELETE FROM trail_runs WHERE user_id = (SELECT user_id FROM submissions WHERE id = $1::uuid)")
+        .bind(&draft_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let closed = app
+        .patch_as(
+            &teacher,
+            &course_path,
+            &serde_json::json!({ "assessments_require_enrollment": true }),
+        )
+        .await;
+    assert_eq!(closed.status, StatusCode::OK, "{}", closed.text());
+    let state = app.get_as(&carol_session, &state_path).await;
+    assert_eq!(state.json()["can_continue"], false, "{}", state.text());
+    assert_eq!(state.json()["draft_id"], draft_id.as_str());
+    assert_eq!(
+        state.json()["disabled_reasons"],
+        serde_json::json!(["NOT_ENROLLED"])
+    );
+    let mine = app
+        .get_as(
+            &carol_session,
+            &format!("/api/v2/assessments/{id}/submissions/me"),
+        )
+        .await;
+    assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    assert_eq!(mine.json().as_array().unwrap().len(), 1);
+    let saved = app
+        .send(draft_request(
+            &carol_session,
+            "PATCH",
+            format!("/api/v2/submissions/{draft_id}/draft"),
+            &serde_json::json!({ "answers": {} }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::FORBIDDEN, "{}", saved.text());
+    assert_eq!(saved.json()["code"], "enrollment-required");
+    let submitted = app
+        .send(draft_request(
+            &carol_session,
+            "POST",
+            format!("/api/v2/submissions/{draft_id}/submit"),
+            &serde_json::json!({}),
+        ))
+        .await;
+    assert_eq!(
+        submitted.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        submitted.text()
+    );
+    assert_eq!(submitted.json()["code"], "enrollment-required");
+}

@@ -3,8 +3,9 @@
 //! Access (ported from `_require_submit_access`): teacher-preview users
 //! (course creator / platform authors) bypass everything; otherwise the
 //! learner needs course access (public course, or a usergroup linked to the
-//! course), the assessment's allowlist when restricted, and
-//! `assessment:submit:assigned`. Per-student overrides layer on the policy:
+//! course), enrolment when the course asks for it
+//! (`assessments_require_enrollment`), the assessment's allowlist when
+//! restricted, and `assessment:submit:assigned`. Per-student overrides layer on the policy:
 //! `max_attempts` and `due_at` (the legacy never let overrides touch the
 //! time limit).
 
@@ -176,6 +177,10 @@ pub enum DisabledReason {
     /// Off a restricted assessment's access list: the learner reads their
     /// own attempts but starts none (UX-227).
     AccessRestricted,
+    /// The course takes assessments from enrolled learners only and the
+    /// caller is not one: they read their own attempts, start none
+    /// (cluster G).
+    NotEnrolled,
 }
 
 impl DisabledReason {
@@ -192,12 +197,13 @@ impl DisabledReason {
             Self::TimeLimitExpired => "TIME_LIMIT_EXPIRED",
             Self::RemediationRequired => "REMEDIATION_REQUIRED",
             Self::AccessRestricted => "ACCESS_RESTRICTED",
+            Self::NotEnrolled => "NOT_ENROLLED",
         }
     }
 
     /// The 403 refusing an attempt write: the first gate with a typed code
     /// names it (`attempt-time-expired`, `attempt-past-due`,
-    /// `remediation-required`), else `forbidden`; `detail` keeps the legacy
+    /// `remediation-required`, `enrollment-required`), else `forbidden`; `detail` keeps the legacy
     /// text (the old web matches the reason in it) and `details.reasons`
     /// lists every gate.
     #[must_use]
@@ -208,6 +214,7 @@ impl DisabledReason {
                 Self::TimeLimitExpired => Some(ab_core::ErrorCode::AttemptTimeExpired),
                 Self::PastDue => Some(ab_core::ErrorCode::AttemptPastDue),
                 Self::RemediationRequired => Some(ab_core::ErrorCode::RemediationRequired),
+                Self::NotEnrolled => Some(ab_core::ErrorCode::EnrollmentRequired),
                 _ => None,
             })
             .unwrap_or(ab_core::ErrorCode::Forbidden);
@@ -254,6 +261,14 @@ impl AssessmentsService {
             return Ok(true);
         }
         ab_db::catalog::course_visible(&self.pool, course.id, Some(user_id), false).await
+    }
+
+    /// The course takes assessments from enrolled learners only and
+    /// `user_id` is none (a run, or a linked usergroup). Staff never reach
+    /// this: they preview.
+    pub(crate) async fn enrollment_blocks(&self, course: &Course, user_id: UserId) -> Result<bool> {
+        Ok(course.assessments_require_enrollment
+            && !ab_db::progress::takes_assessments(&self.pool, course.id, user_id).await?)
     }
 
     /// The user row must exist before an access-list / override insert -
@@ -365,6 +380,14 @@ impl AssessmentsService {
         }
         if !self.user_has_course_access(course, actor.user_id).await? {
             return Err(Error::forbidden("no access to this course"));
+        }
+        // Cluster G: taking a test no longer enrols by the way; reading the
+        // attempts made before stays open (`NotEnrolled` in the state).
+        if take && self.enrollment_blocks(course, actor.user_id).await? {
+            return Err(DisabledReason::refusal(
+                &[DisabledReason::NotEnrolled],
+                "enroll in the course first: NOT_ENROLLED",
+            ));
         }
         if take
             && assessment.access_mode == AccessMode::Restricted
@@ -857,6 +880,9 @@ impl AssessmentsService {
         }
         if off_list {
             reasons.push(DisabledReason::AccessRestricted);
+        }
+        if !take && !staff && self.enrollment_blocks(&course, actor.user_id).await? {
+            reasons.push(DisabledReason::NotEnrolled);
         }
         let attempts_remaining = effective
             .max_attempts

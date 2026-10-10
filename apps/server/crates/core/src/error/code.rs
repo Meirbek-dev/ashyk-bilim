@@ -91,6 +91,7 @@ error_codes! {
     AttemptTimeExpired => ("attempt-time-expired", 403, "The attempt's time limit has expired"),
     AttemptPastDue => ("attempt-past-due", 403, "The due date or late cutoff has passed"),
     RemediationRequired => ("remediation-required", 403, "A remediation session must be passed first"),
+    EnrollmentRequired => ("enrollment-required", 403, "Enroll in the course to take its assessments"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
     GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),

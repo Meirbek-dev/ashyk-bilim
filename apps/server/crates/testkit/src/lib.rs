@@ -274,10 +274,15 @@ impl TestApp {
 
     /// Fixture-level publish: flip `courses.public` directly, skipping the
     /// readiness gate of `POST /courses/{id}/lifecycle` (which refuses a
-    /// course without a live activity - most fixtures have none).
+    /// course without a live activity - most fixtures have none). The
+    /// fixture course is open: any signed-in learner takes its assessments
+    /// without enrolling (`assessments_require_enrollment = false`, the rule
+    /// before 2026-10-10); the enrolment-gate tests switch it back on.
     pub async fn publish_course(&self, course_id: &str) {
         let id: uuid::Uuid = course_id.parse().expect("course id");
-        sqlx::query("UPDATE courses SET public = true WHERE id = $1")
+        sqlx::query(
+            "UPDATE courses SET public = true, assessments_require_enrollment = false WHERE id = $1",
+        )
             .bind(id)
             .execute(&self.pool)
             .await

@@ -75,6 +75,10 @@ expression: registry
     409,
     "Email is already registered"
   ],
+  "enrollment-required": [
+    403,
+    "Enroll in the course to take its assessments"
+  ],
   "forbidden": [
     403,
     "Forbidden"

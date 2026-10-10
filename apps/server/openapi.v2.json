@@ -4944,6 +4944,10 @@
               }
             ]
           },
+          "assessments_require_enrollment": {
+            "description": "Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.",
+            "type": "boolean"
+          },
           "contributor_ids": {
             "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.",
             "items": {
@@ -5023,6 +5027,7 @@
           "tags",
           "public",
           "open_to_contributors",
+          "assessments_require_enrollment",
           "learnings",
           "contributor_ids",
           "allowed_actions",
@@ -6754,7 +6759,8 @@
           "MAX_ATTEMPTS_REACHED",
           "TIME_LIMIT_EXPIRED",
           "REMEDIATION_REQUIRED",
-          "ACCESS_RESTRICTED"
+          "ACCESS_RESTRICTED",
+          "NOT_ENROLLED"
         ],
         "type": "string"
       },
@@ -7521,6 +7527,7 @@
           "attempt-time-expired",
           "attempt-past-due",
           "remediation-required",
+          "enrollment-required",
           "grade-not-released",
           "grade-own-attempt",
           "ai-disabled",
@@ -17904,6 +17911,10 @@
           "about": {
             "maxLength": 20000,
             "type": "string"
+          },
+          "assessments_require_enrollment": {
+            "description": "See `Course.assessments_require_enrollment`.",
+            "type": "boolean"
           },
           "description": {
             "maxLength": 5000,
