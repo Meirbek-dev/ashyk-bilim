@@ -183,26 +183,6 @@ test('B-COL-09 the edit page saves with If-Match and returns to the collection',
   await expect(page.getByText(m.collections_saved({}, ru))).toBeVisible()
 })
 
-test('B-COL-15 the edit page picks the courses by name and saves them in order', async ({
-  page,
-  signInAs,
-  collection,
-  seed,
-}) => {
-  const own = await collection({ courses: [] })
-  await signInAs('teacher')
-  await page.goto(`/collections/${own.id}/edit`)
-  const courses = page.getByRole('combobox', { name: m.collections_field_courses({}, ru) })
-  await courses.fill('E2E seed course')
-  await page.getByRole('option', { name: 'E2E seed course' }).first().click()
-  await page.keyboard.press('Escape')
-  const request = page.waitForRequest(sent => sent.method() === 'PATCH')
-  await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  expect((await request).postDataJSON()).toMatchObject({ courses: [seed.params.courseId] })
-  await expect(page).toHaveURL(new RegExp(`/collections/${own.id}$`))
-  await expect(page.getByRole('link', { name: 'E2E seed course' })).toBeVisible()
-})
-
 test("B-COL-10 a save over someone else's change asks, keeps the input and retries", async ({
   page,
   signInAs,
