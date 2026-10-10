@@ -142,7 +142,7 @@ const forbiddenExceptA = forbiddenElements.filter(entry => entry.element !== 'a'
 
 const lint: OxlintConfig = {
   plugins: ['eslint', 'typescript', 'oxc', 'react', 'jsx-a11y', 'import', 'promise', 'unicorn', 'vitest'],
-  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, './gates/lint-plugin.ts'],
+  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, './gates/lint-plugin.ts', '@shadcn/lint'],
   categories: { correctness: 'error', suspicious: 'error' },
   options: { typeAware: true, typeCheck: true },
   ignorePatterns: ['src/shared/api/gen/**', 'src/paraglide/**', 'src/routeTree.gen.ts', 'dist/**'],

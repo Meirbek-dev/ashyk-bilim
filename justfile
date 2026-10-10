@@ -129,3 +129,7 @@ server *args:
 # Scripts of apps/web/package.json (just web dev).
 web *args:
     bun run --cwd apps/web {{ args }}
+
+# Scripts of the active frontend (just web2 check).
+web2 *args:
+    bun run --cwd apps/web-2 {{ args }}
