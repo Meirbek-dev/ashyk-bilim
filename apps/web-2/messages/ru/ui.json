@@ -36,6 +36,7 @@
   "ui_file_retry": "Повторить",
   "ui_file_progress": "{done} из {total}",
   "ui_file_checking": "Проверяем файл…",
+  "ui_pdf_open": "Открыть PDF в новой вкладке",
   "ui_options_empty": "Ничего не найдено",
   "ui_option_remove": "Убрать «{label}»"
 }

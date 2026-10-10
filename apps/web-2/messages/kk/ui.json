@@ -36,6 +36,7 @@
   "ui_file_retry": "Қайталау",
   "ui_file_progress": "{total} ішінен {done}",
   "ui_file_checking": "Файл тексерілуде…",
+  "ui_pdf_open": "PDF-ті жаңа қойындыда ашу",
   "ui_options_empty": "Ештеңе табылмады",
   "ui_option_remove": "«{label}» алып тастау"
 }

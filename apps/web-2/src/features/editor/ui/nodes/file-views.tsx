@@ -27,7 +27,7 @@ export function FileView(props: ReactNodeViewProps) {
   if (node.type.name === 'blockPDF')
     return (
       <NodeViewWrapper className="my-4 flex flex-col gap-2">
-        <PdfFrame src={url} title={m.editor_pdf_title()} height={height(node.attrs['size'])} />
+        <PdfFrame src={url} title={m.editor_pdf_title()} height={height(node.attrs['size'])} fallback={null} />
         <Link to={url} target="_blank" rel="noopener noreferrer">
           <FileText aria-hidden className="mr-1 inline size-4" />
           {m.editor_pdf_open()}

@@ -72,6 +72,7 @@ beforeAll(() => import('./block-editor'), 120_000)
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
   FakeStorage.gate = Promise.resolve()
 })
 
@@ -146,6 +147,8 @@ describe('paste and drop', () => {
 
   test('B-EDT-18 a PDF dropped onto the page becomes a PDF block; other files are left to the editor', async () => {
     const { release, api } = stubNetwork()
+    // Headless Chromium draws no PDF in a page: the block would show its open link instead of the frame.
+    vi.spyOn(navigator, 'pdfViewerEnabled', 'get').mockReturnValue(true)
     const { screen, textbox } = await renderEditor()
     dropFile(textbox, new File(['zip'], 'notes.zip', { type: 'application/zip' }))
     expect(api).not.toHaveBeenCalled()

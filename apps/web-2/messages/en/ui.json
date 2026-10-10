@@ -36,6 +36,7 @@
   "ui_file_retry": "Retry",
   "ui_file_progress": "{done} of {total}",
   "ui_file_checking": "Checking the file…",
+  "ui_pdf_open": "Open the PDF in a new tab",
   "ui_options_empty": "Nothing found",
   "ui_option_remove": "Remove “{label}”"
 }

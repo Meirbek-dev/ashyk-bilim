@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Editor } from '@tiptap/core'
 import * as fc from 'fast-check'
 import { Suspense, type ReactNode } from 'react'
-import { describe, expect, test } from 'vite-plus/test'
+import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 
 import { m } from '#/paraglide/messages'
 import { publicProfileByIdQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -156,7 +156,10 @@ describe('B-EDT-19 media', () => {
     expect(screen.getByRole('button', { name: m.editor_video_play() }).query()).toBeNull()
   })
 
+  afterEach(() => vi.restoreAllMocks())
+
   test('B-EDT-19 a hosted video plays with kit controls; a PDF opens in an unsandboxed same-origin frame', async () => {
+    vi.spyOn(navigator, 'pdfViewerEnabled', 'get').mockReturnValue(true)
     const screen = await render(<BlockViewer content={doc('video', 'pdf')} />)
     await expect.element(screen.getByRole('button', { name: m.editor_video_play() })).toBeVisible()
     await expect.element(screen.getByRole('slider', { name: m.editor_video_position() })).toBeInTheDocument()
@@ -170,6 +173,15 @@ describe('B-EDT-19 media', () => {
     const pdf = screen.getByTitle(m.editor_pdf_title())
     await expect.element(pdf).toHaveAttribute('src', '/content/handout.pdf')
     expect(pdf.element().hasAttribute('sandbox')).toBe(false)
+  })
+
+  test('B-EDT-19 a browser that draws no PDF in a page (a phone) gets the open link, not a blank box', async () => {
+    vi.spyOn(navigator, 'pdfViewerEnabled', 'get').mockReturnValue(false)
+    const screen = await render(<BlockViewer content={doc('pdf')} />)
+    await expect
+      .element(screen.getByRole('link', { name: m.editor_pdf_open() }))
+      .toHaveAttribute('href', '/content/handout.pdf')
+    expect(screen.getByTitle(m.editor_pdf_title()).query()).toBeNull()
   })
 })
 
