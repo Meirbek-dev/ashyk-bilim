@@ -118,6 +118,13 @@
   .ab-prose th {
     @apply bg-muted font-medium;
   }
+  /* A cell's paragraph (every editor table cell holds one) keeps the block gap only between its own blocks. */
+  .ab-prose :where(th, td) > :first-child {
+    margin-top: 0;
+  }
+  .ab-prose :where(th, td) > :last-child {
+    margin-bottom: 0;
+  }
 
   /* Images and figures */
   .ab-prose img {
