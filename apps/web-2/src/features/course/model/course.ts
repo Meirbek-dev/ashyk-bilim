@@ -33,8 +33,11 @@ export function primaryAction(
   if (!state) return { kind: 'login' }
   const next = state.next_action
   if (state.enrolled && next?.enabled) {
-    if (next.activity_id && isActivityAction(next.id))
-      return { kind: 'activity', action: next.id, activityId: next.activity_id }
+    if (next.activity_id && isActivityAction(next.id)) {
+      // "Start" names the next activity; for a course already under way the header says "Continue" (the course).
+      const action = next.id === 'start' && state.progress.completed_required_count > 0 ? 'continue' : next.id
+      return { kind: 'activity', action, activityId: next.activity_id }
+    }
     if (next.id === 'view_certificate' || next.id === 'review_completion') return { kind: 'complete', action: next.id }
   }
   if (!state.enrolled && state.permissions.can_enroll) return { kind: 'enroll' }

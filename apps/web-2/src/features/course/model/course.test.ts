@@ -121,6 +121,15 @@ describe('primary action', () => {
       next_action: { ...next, id: 'continue' },
     })
     expect(primaryAction(course(), enrolled)).toEqual({ kind: 'activity', action: 'continue', activityId: 'a2' })
+    // The next activity is new, but the course is under way: "Continue", not "Start".
+    const underway = state({
+      enrolled: true,
+      progress: { ...state().progress, completed_required_count: 1 },
+      next_action: { ...next, id: 'start' },
+    })
+    expect(primaryAction(course(), underway)).toEqual({ kind: 'activity', action: 'continue', activityId: 'a2' })
+    const fresh = state({ enrolled: true, next_action: { ...next, id: 'start' } })
+    expect(primaryAction(course(), fresh)).toEqual({ kind: 'activity', action: 'start', activityId: 'a2' })
     const done = state({
       enrolled: true,
       enrollment_state: 'completed',
