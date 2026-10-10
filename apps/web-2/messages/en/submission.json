@@ -97,6 +97,7 @@
   "submission_field_max_files": "Number of files",
   "submission_field_max_size": "File size limit, MB",
   "submission_blank_no_limit": "Blank means no limit.",
+  "submission_max_size_hint": "1 to 100 MB. Blank means 100 MB, the upload limit.",
   "submission_field_types": "File types",
   "submission_field_types_hint": "No ticks means any type.",
   "submission_deadlines_title": "Deadline and attempts",

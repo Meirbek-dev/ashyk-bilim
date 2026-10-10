@@ -33,7 +33,7 @@ use crate::assessments::access::DisabledReason;
 use crate::assessments::service::{AssessmentsService, LatePolicy, perm};
 use crate::catalog::courses::Course;
 use crate::events::GradingEvents;
-use crate::files::uploads::UNREFERENCED_GRACE;
+use crate::files::uploads::{FILE_SUBMISSION_MAX_MB, UNREFERENCED_GRACE};
 use crate::grading::breakdown::round2;
 use crate::grading::penalties::{apply_late, late_penalty_pct};
 use crate::grading::teacher::{
@@ -314,8 +314,16 @@ fn validate_config(v: &FileSubmissionValues<'_>) -> Result<()> {
     if !(1..=25).contains(&v.max_files) {
         errors.push(field("max_files", "range", "between 1 and 25"));
     }
-    if v.max_file_size_mb.is_some_and(|m| !(1..=500).contains(&m)) {
-        errors.push(field("max_file_size_mb", "range", "between 1 and 500"));
+    // BUG-B-7: the legacy range said 500 while the upload pipeline takes 100 MB
+    // per file, so a task promised learners files it then refused.
+    if v.max_file_size_mb
+        .is_some_and(|m| !(1..=FILE_SUBMISSION_MAX_MB).contains(&m))
+    {
+        errors.push(field(
+            "max_file_size_mb",
+            "range",
+            format!("between 1 and {FILE_SUBMISSION_MAX_MB}"),
+        ));
     }
     if v.max_attempts.is_some_and(|m| !(1..=50).contains(&m)) {
         errors.push(field("max_attempts", "range", "between 1 and 50"));

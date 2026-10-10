@@ -97,6 +97,7 @@
   "submission_field_max_files": "Файл саны",
   "submission_field_max_size": "Файл өлшемінің шегі, МБ",
   "submission_blank_no_limit": "Бос болса, шек жоқ.",
+  "submission_max_size_hint": "1-ден 100 МБ-қа дейін. Бос болса, 100 МБ (жүктеу шегі).",
   "submission_field_types": "Файл түрлері",
   "submission_field_types_hint": "Ештеңе белгіленбесе, кез келген түр.",
   "submission_deadlines_title": "Мерзімдер мен әрекеттер",

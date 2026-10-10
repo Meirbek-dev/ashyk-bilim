@@ -2042,7 +2042,7 @@
       "dueDate": "Due Date",
       "instructions": "Instructions",
       "maxFiles": "Max files",
-      "maxSize": "Max size (MB)",
+      "maxSize": "Max size (MB, up to 100)",
       "selectAll": "Select all",
       "title": "Title"
     },
@@ -12786,7 +12786,7 @@
     "instructions": "Instructions",
     "dueDate": "Due date",
     "maxFiles": "Max files",
-    "maxSize": "Max size MB",
+    "maxSize": "Max size (MB, up to 100)",
     "allowedFileTypes": "Allowed file types",
     "selectAll": "Select all",
     "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",

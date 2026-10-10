@@ -376,6 +376,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 id="file-studio-max-size"
                 type="number"
                 min={1}
+                max={100}
                 value={maxFileSizeMb}
                 onChange={event => setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))}
               />

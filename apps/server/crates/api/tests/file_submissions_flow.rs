@@ -263,6 +263,21 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         )
         .await;
     assert_eq!(out_of_range.status, StatusCode::UNPROCESSABLE_ENTITY);
+    // BUG-B-7: a task cannot promise more than the 100 MB an upload may be.
+    for (mb, status) in [
+        (101, StatusCode::UNPROCESSABLE_ENTITY),
+        (100, StatusCode::OK),
+        (1, StatusCode::OK),
+    ] {
+        let size = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/file-submissions/{id}"),
+                &serde_json::json!({ "max_file_size_mb": mb }),
+            )
+            .await;
+        assert_eq!(size.status, status, "{mb} MB: {}", size.text());
+    }
     let published = app
         .post_as(
             &teacher,

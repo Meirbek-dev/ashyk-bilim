@@ -99,6 +99,7 @@
   "submission_field_max_files": "Сколько файлов",
   "submission_field_max_size": "Предел размера файла, МБ",
   "submission_blank_no_limit": "Пусто - без предела.",
+  "submission_max_size_hint": "От 1 до 100 МБ. Пусто - 100 МБ, предел загрузки.",
   "submission_field_types": "Типы файлов",
   "submission_field_types_hint": "Ни одной галочки - любые типы.",
   "submission_deadlines_title": "Сроки и попытки",

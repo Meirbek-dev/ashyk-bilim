@@ -36,7 +36,7 @@ export function FilesSection({ task }: { task: FileSubmission }) {
           {field => (
             <field.TextField
               label={m.submission_field_max_size()}
-              description={m.submission_blank_no_limit()}
+              description={m.submission_max_size_hint()}
               inputMode="numeric"
             />
           )}

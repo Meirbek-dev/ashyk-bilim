@@ -210,6 +210,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
               id="file-submission-max-size"
               type="number"
               min={1}
+              max={100}
               value={maxSize}
               onChange={event => setMaxSize(event.target.value ? Number(event.target.value) : '')}
             />

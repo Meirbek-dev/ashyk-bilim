@@ -28,6 +28,9 @@ const PRESIGN_GET_TTL: Duration = Duration::from_mins(5);
 
 const MB: i64 = 1024 * 1024;
 
+/// The `file-submission` cap in MB: a task's own limit can only be lower.
+pub const FILE_SUBMISSION_MAX_MB: i32 = 100;
+
 /// Legacy `file_validation.py` image allowlist - no SVG (scriptable) and no
 /// `image/*` prefix: the public bucket is served on the web origin.
 const IMAGES: &[&str] = &[
@@ -60,7 +63,7 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
         | "collection-cover" => Some((Bucket::Public, 10 * MB, IMAGES)),
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
         "block-video" => Some((Bucket::Public, 2048 * MB, VIDEOS)),
-        "file-submission" => Some((Bucket::Private, 100 * MB, &[])),
+        "file-submission" => Some((Bucket::Private, i64::from(FILE_SUBMISSION_MAX_MB) * MB, &[])),
         _ => None,
     }
 }
