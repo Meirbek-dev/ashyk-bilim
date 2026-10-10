@@ -25,6 +25,8 @@ Dev debuginfo is disabled. `CARGO_TARGET_DIR` overrides the cache; Windows other
 `LOCALAPPDATA/ashyq-bilim/cargo-target`, off the checkout drive. Do not delete the cache routinely.
 Rust is pinned in `rust-toolchain.toml` and Docker; tools in `tools.env`. Upgrade together.
 Run coverage sequentially per cache: llvm-cov cleans the instrumented workspace artifacts.
+Nextest runs four tests at once; `--test-threads` overrides. The latency stampede test runs alone.
+`just server cov --no-clean -E 'test(name)'` reuses coverage artifacts for a focused follow-up.
 Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check` always use the database.
 
 ## Invariants

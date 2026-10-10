@@ -2529,6 +2529,9 @@ override because WSL Podman may lack delegated controllers; production limits re
 normal stack configs and are validated before the override. Each check uses its own project.
 Rust compilation defaults to the committed SQLx cache; preparation and cache verification
 explicitly query the database, keeping unit builds independent of running containers.
+Nextest runs four tests concurrently; the one-second pool-starvation regression reserves
+all test slots so competing database suites cannot distort its latency assertions.
+Coverage accepts filters and `--no-clean` for focused follow-ups without rebuilding.
 
 ## One progress number: certificates no longer read as 100 % (2026-10-11)
 

@@ -1,0 +1,7 @@
+[profile.default]
+test-threads = 4
+
+[[profile.default.overrides]]
+# Measures pool starvation against a one-second deadline; needs an idle test DB.
+filter = 'test(mark_stampede_never_exhausts_the_pool)'
+threads-required = "num-test-threads"
