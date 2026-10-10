@@ -16,6 +16,7 @@ import {
   BoxIcon,
   Code,
   Edit2,
+  ExternalLink,
   GripHorizontal,
   GripVertical,
   HelpCircle,
@@ -845,6 +846,18 @@ function EmbedObjectsComponent(props: TypedNodeViewProps<EmbedNodeAttrs>) {
           </>
         )}
       </div>
+      {/* A framed page may need its own sign-in (Google Forms) or more room than a phone gives it. */}
+      {!isEditable && embedType === 'url' && /^https?:\/\//i.test(embedUrl) && !getYouTubeVideoId(embedUrl) ? (
+        <a
+          href={embedUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={`text-primary mt-1.5 flex w-fit items-center gap-1 text-xs hover:underline ${alignment === 'center' ? 'mx-auto' : ''}`}
+        >
+          {t('openInNewTab')}
+          <ExternalLink className="size-3" aria-hidden="true" />
+        </a>
+      ) : null}
     </NodeViewWrapper>
   )
 }

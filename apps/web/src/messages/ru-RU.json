@@ -5494,6 +5494,7 @@
         "defaultUrlTip": "Подсказка: Вставьте любой URL-адрес для встраивания объектов из YouTube, Spotify или других сервисов напрямую",
         "editEmbedTitle": "Редактировать встраивание",
         "embeddedContent": "Встроенное содержимое",
+        "openInNewTab": "Открыть в новой вкладке",
         "guide": "Руководство",
         "howToEmbed": "Как встроить {productName}",
         "loading": "Загрузка...",

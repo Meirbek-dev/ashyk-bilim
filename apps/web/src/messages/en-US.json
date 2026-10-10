@@ -5367,6 +5367,7 @@
         "defaultUrlTip": "Tip: Paste any YouTube, Spotify, or other embed URL directly",
         "editEmbedTitle": "Edit embed",
         "embeddedContent": "Embedded content",
+        "openInNewTab": "Open in a new tab",
         "guide": "Guide",
         "howToEmbed": "How to embed {productName}",
         "loading": "Loading...",
