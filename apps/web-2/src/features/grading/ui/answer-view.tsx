@@ -4,6 +4,8 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentItem, CorrectAnswer, ItemAnswer, MatchingPair } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 
+import { CodeLanguage } from './code-language'
+
 const isPairs = (key: CorrectAnswer | null): key is MatchingPair[] =>
   Array.isArray(key) && key.every(entry => typeof entry === 'object')
 
@@ -58,7 +60,7 @@ function given(item: AssessmentItem, answer: ItemAnswer | undefined) {
     case 'code':
       return (
         <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted-foreground">{m.grading_code_language({ id: answer.language })}</p>
+          <CodeLanguage id={answer.language} />
           <pre className="overflow-x-auto rounded-md border bg-muted p-4 font-mono text-sm">{answer.source}</pre>
         </div>
       )

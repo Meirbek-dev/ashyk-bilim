@@ -22,6 +22,7 @@ import {
   gradingHistoryQueryKey,
   groupsForCourseQueryKey,
   itemAnalyticsOptions,
+  languagesOptions,
   reviewSubmissionOptions,
   statsOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -172,6 +173,9 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
 }
 
 /** The review page's loader: the work under review and the queue it walks (B-GRD-10). */
+/** The platform's code languages: a code answer names its language, not the Judge0 id (read once per tab). */
+export const codeLanguagesOptions = () => ({ ...languagesOptions(), staleTime: Number.POSITIVE_INFINITY })
+
 export async function ensureReview(
   queryClient: QueryClient,
   activityId: ActivityId,
@@ -186,6 +190,8 @@ export async function ensureReview(
       : queryClient.ensureQueryData(attemptOptions(submissionId))
     ).catch(orNotFound),
     queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
+    // Without it (runner not configured) the language shows as its id.
+    work.kind === 'assessment' ? queryClient.ensureQueryData(codeLanguagesOptions()).catch(() => null) : null,
   ])
 }
 
