@@ -11,6 +11,10 @@ setup:
     cargo install cargo-binstall --locked
     cargo binstall -y sqlx-cli cargo-nextest cargo-llvm-cov cargo-deny cargo-machete bacon
 
+# Refresh the workspace lockfile to the latest compatible registry releases.
+update:
+    cargo update
+
 # Fast feedback: format check + lints. Run constantly.
 check: fmt-check clippy
 

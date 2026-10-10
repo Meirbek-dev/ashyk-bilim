@@ -56,7 +56,7 @@ networks:
 services:
   # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
   db:
-    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:60cddfb66e0c6c077f33a81c974ad12f688f2d26e055d38cd696004af7911cd8
+    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -143,7 +143,7 @@ services:
 
   # The only place holding the Postgres admin credentials for Zitadel.
   zitadel-init:
-    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:956a298405189a8f6cd4ec92e8828b1bd10caa7da8b139c39d251d7053e33784 # v4.19.2
+    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:90a3045b80a2b5b395e1e770302076906af3a5911225af7c464b4f3bd00d0a1b # v4.19.4
     command: ['init']
     environment:
       <<: *zitadel-db
@@ -199,7 +199,7 @@ services:
 
   # --- Object storage (S3)
   rustfs:
-    image: docker.io/rustfs/rustfs:1.0.0
+    image: docker.io/rustfs/rustfs:1.0.1
     restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
@@ -219,7 +219,7 @@ services:
 
   # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
   storage-init:
-    image: docker.io/amazon/aws-cli:2.37.5
+    image: docker.io/amazon/aws-cli:2.37.12
     entrypoint: ['bash', '/storage/init.sh']
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}

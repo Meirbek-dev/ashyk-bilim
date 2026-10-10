@@ -3,7 +3,7 @@
 # Build context is the repository root: podman build -f apps/web-2/Dockerfile .
 # The root .dockerignore keeps host node_modules out of the context.
 
-FROM oven/bun:1.4.2-alpine AS deps
+FROM oven/bun:1.4.3-alpine AS deps
 WORKDIR /app
 COPY apps/web-2/package.json apps/web-2/bun.lock ./
 RUN bun install --frozen-lockfile --ignore-scripts

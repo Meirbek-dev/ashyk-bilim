@@ -132,6 +132,7 @@ export default defineConfig({
       // Match the repository's one-declaration-per-statement convention.
       'one-var': ['warn', 'never'],
       // Compiler diagnostics are provided by the React Hooks JS plugin.
+      'react/purity': 'off',
       'react-hooks-js/static-components': 'error',
       'react-hooks-js/use-memo': 'error',
       'react-hooks-js/preserve-manual-memoization': 'error',
@@ -221,6 +222,8 @@ export default defineConfig({
       ],
       'typescript/no-import-type-side-effects': 'error',
       'typescript/no-unused-vars': 'off',
+      // shortcut: Vite+ 1.1 bundles tsgolint without this rule; re-enable when its bundled tsgolint supports it.
+      'typescript/no-generated-empty-object-type': 'off',
       'typescript/no-extra-non-null-assertion': 'error',
       'typescript/no-unnecessary-type-constraint': 'error',
       'typescript/no-non-null-asserted-optional-chain': 'error',
