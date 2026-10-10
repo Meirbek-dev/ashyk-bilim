@@ -63,11 +63,13 @@ pub async fn get_discussion(
     Ok(row)
 }
 
-/// Active top-level posts of a course, newest first (keyset on id).
+/// Active top-level posts of a course, newest first (keyset on id);
+/// `include_hidden` (moderators) adds hidden ones so they can be restored.
 pub async fn list_posts(
     pool: &PgPool,
     course_id: CourseId,
     viewer: UserId,
+    include_hidden: bool,
     cursor: Option<DiscussionId>,
     limit: i64,
 ) -> Result<Vec<DiscussionRow>> {
@@ -87,25 +89,28 @@ pub async fn list_posts(
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
-           WHERE d.course_id = $1 AND d.parent_id IS NULL AND d.status = 'active'
+           WHERE d.course_id = $1 AND d.parent_id IS NULL
+             AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
            LIMIT $4"#,
         course_id.0,
         viewer.0,
         cursor.map(|c| c.0),
-        limit
+        limit,
+        include_hidden
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
 }
 
-/// Active replies under one post, oldest first (keyset on id).
+/// Active replies under one post, oldest first (keyset on id); `include_hidden` as in [`list_posts`].
 pub async fn list_replies(
     pool: &PgPool,
     parent_id: DiscussionId,
     viewer: UserId,
+    include_hidden: bool,
     cursor: Option<DiscussionId>,
     limit: i64,
 ) -> Result<Vec<DiscussionRow>> {
@@ -125,25 +130,28 @@ pub async fn list_replies(
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
-           WHERE d.parent_id = $1 AND d.status = 'active'
+           WHERE d.parent_id = $1
+             AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
              AND ($3::uuid IS NULL OR d.id > $3)
            ORDER BY d.id
            LIMIT $4"#,
         parent_id.0,
         viewer.0,
         cursor.map(|c| c.0),
-        limit
+        limit,
+        include_hidden
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
 }
 
-/// Every active reply under many posts, oldest first (embedding).
+/// Every active reply under many posts, oldest first (embedding); `include_hidden` as in [`list_posts`].
 pub async fn list_replies_for(
     pool: &PgPool,
     parent_ids: &[DiscussionId],
     viewer: UserId,
+    include_hidden: bool,
 ) -> Result<Vec<DiscussionRow>> {
     let ids: Vec<uuid::Uuid> = parent_ids.iter().map(|p| p.0).collect();
     let rows = sqlx::query_as!(
@@ -162,10 +170,12 @@ pub async fn list_replies_for(
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
-           WHERE d.parent_id = ANY($1) AND d.status = 'active'
+           WHERE d.parent_id = ANY($1)
+             AND (d.status = 'active' OR ($3 AND d.status = 'hidden'))
            ORDER BY d.id"#,
         &ids,
-        viewer.0
+        viewer.0,
+        include_hidden
     )
     .fetch_all(pool)
     .await?;

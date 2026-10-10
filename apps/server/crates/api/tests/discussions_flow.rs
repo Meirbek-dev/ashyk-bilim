@@ -279,6 +279,21 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
             .unwrap()
             .is_empty()
     );
+    // The moderator still lists what they hid, so they can restore it.
+    let as_moderator = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/discussions?include_replies=true"),
+        )
+        .await;
+    assert_eq!(
+        as_moderator.json()["items"][0]["replies"][0]["status"],
+        "hidden"
+    );
+    let replies_as_moderator = app
+        .get_as(&teacher, &format!("/api/v2/discussions/{post_id}/replies"))
+        .await;
+    assert_eq!(replies_as_moderator.json()["items"][0]["status"], "hidden");
     // A hidden post takes no reactions.
     assert_eq!(
         app.send(put(&bob, format!("/api/v2/discussions/{reply_id}/like")))

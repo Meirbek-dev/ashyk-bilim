@@ -280,11 +280,16 @@ impl DiscussionsService {
             return Err(Error::not_found("discussion"));
         }
         let replies = if row.parent_id.is_none() {
-            ab_db::discussions::list_replies_for(&self.pool, &[row.id], actor.user_id)
-                .await?
-                .into_iter()
-                .map(|r| abilities.resolve(actor, r, Vec::new()))
-                .collect()
+            ab_db::discussions::list_replies_for(
+                &self.pool,
+                &[row.id],
+                actor.user_id,
+                abilities.moderate,
+            )
+            .await?
+            .into_iter()
+            .map(|r| abilities.resolve(actor, r, Vec::new()))
+            .collect()
         } else {
             Vec::new()
         };
@@ -311,9 +316,15 @@ impl DiscussionsService {
         let course = self.readable_course(actor, course_id).await?;
         let abilities = Abilities::of(actor, &course);
         let limit = ab_core::page_limit(limit, MAX_PAGE)?;
-        let mut rows =
-            ab_db::discussions::list_posts(&self.pool, course_id, actor.user_id, cursor, limit + 1)
-                .await?;
+        let mut rows = ab_db::discussions::list_posts(
+            &self.pool,
+            course_id,
+            actor.user_id,
+            abilities.moderate,
+            cursor,
+            limit + 1,
+        )
+        .await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
         let next_cursor = if rows.len() > page {
             rows.truncate(page);
@@ -323,7 +334,13 @@ impl DiscussionsService {
         };
         let mut replies = if include_replies && !rows.is_empty() {
             let ids: Vec<DiscussionId> = rows.iter().map(|r| r.id).collect();
-            ab_db::discussions::list_replies_for(&self.pool, &ids, actor.user_id).await?
+            ab_db::discussions::list_replies_for(
+                &self.pool,
+                &ids,
+                actor.user_id,
+                abilities.moderate,
+            )
+            .await?
         } else {
             Vec::new()
         };
@@ -349,14 +366,20 @@ impl DiscussionsService {
         limit: i64,
     ) -> Result<DiscussionPage> {
         let (parent, course) = self.load(actor, id).await?;
-        if parent.status != DiscussionStatus::Active {
+        let abilities = Abilities::of(actor, &course);
+        if parent.status != DiscussionStatus::Active && !abilities.moderate {
             return Err(Error::not_found("discussion"));
         }
-        let abilities = Abilities::of(actor, &course);
         let limit = ab_core::page_limit(limit, MAX_PAGE)?;
-        let mut rows =
-            ab_db::discussions::list_replies(&self.pool, id, actor.user_id, cursor, limit + 1)
-                .await?;
+        let mut rows = ab_db::discussions::list_replies(
+            &self.pool,
+            id,
+            actor.user_id,
+            abilities.moderate,
+            cursor,
+            limit + 1,
+        )
+        .await?;
         let page = usize::try_from(limit).unwrap_or(usize::MAX);
         let next_cursor = if rows.len() > page {
             rows.truncate(page);

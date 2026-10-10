@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT cu.id AS \"id!: CourseUpdateId\", cu.course_id AS \"course_id!: CourseId\",\n                  cu.title AS \"title!\", cu.content AS \"content!\", cu.version AS \"version!\",\n                  cu.author_id AS \"author_id?: UserId\",\n                  u.display_name AS \"author_name?\",\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.course_id = $1\n           ORDER BY cu.id DESC",
+  "query": "SELECT cu.id AS \"id!: CourseUpdateId\", cu.course_id AS \"course_id!: CourseId\",\n                  cu.title AS \"title!\", cu.content AS \"content!\", cu.version AS \"version!\",\n                  cu.author_id AS \"author_id?: UserId\",\n                  -- Scalar lookup, not a LEFT JOIN: join nullability follows the plan (.sqlx drift).\n                  (SELECT u.display_name FROM users u WHERE u.id = cu.author_id) AS \"author_name?\",\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM course_updates cu WHERE cu.course_id = $1\n           ORDER BY cu.id DESC",
   "describe": {
     "columns": [
       {
@@ -73,12 +73,7 @@
         "ordinal": 6,
         "name": "author_name?",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "display_name"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 7,
@@ -105,10 +100,10 @@
       false,
       false,
       true,
-      false,
+      null,
       null,
       null
     ]
   },
-  "hash": "4eb039da9b1f00b47239c0030ac1a0e4bd9c5cdd6c1c4e6f7dc36c005ee4eda9"
+  "hash": "1ba1b68abd44c16a8a6c5a94b14a85d9ba21b6680fb855e9c013a68b83232000"
 }

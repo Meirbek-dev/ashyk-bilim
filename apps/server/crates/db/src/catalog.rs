@@ -1159,14 +1159,14 @@ pub async fn get_course_update(
 ) -> Result<Option<CourseUpdateRow>> {
     let row = sqlx::query_as!(
         CourseUpdateRow,
-        // `!`: the outer join's plan can make sqlx infer these nullable.
         r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
                   cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
                   cu.author_id AS "author_id?: UserId",
-                  u.display_name AS "author_name?",
+                  -- Scalar lookup, not a LEFT JOIN: join nullability follows the plan (.sqlx drift).
+                  (SELECT u.display_name FROM users u WHERE u.id = cu.author_id) AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
-           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.id = $1"#,
+           FROM course_updates cu WHERE cu.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -1184,10 +1184,11 @@ pub async fn list_course_updates(
         r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
                   cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
                   cu.author_id AS "author_id?: UserId",
-                  u.display_name AS "author_name?",
+                  -- Scalar lookup, not a LEFT JOIN: join nullability follows the plan (.sqlx drift).
+                  (SELECT u.display_name FROM users u WHERE u.id = cu.author_id) AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
-           FROM course_updates cu LEFT JOIN users u ON u.id = cu.author_id WHERE cu.course_id = $1
+           FROM course_updates cu WHERE cu.course_id = $1
            ORDER BY cu.id DESC"#,
         course_id.0
     )
