@@ -6,7 +6,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { AssessmentDetail, AttemptState, DisabledReason } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDateTime } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
 import { Button, buttonVariants } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
@@ -62,7 +62,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
           {action.reasons.map(reason => (
             <li key={reason}>{reasons[reason]()}</li>
           ))}
-          {state.opens_at_unix ? <li>{m.attempt_opens_at({ date: formatDate(state.opens_at_unix) })}</li> : null}
+          {state.opens_at_unix ? <li>{m.attempt_opens_at({ date: formatDateTime(state.opens_at_unix) })}</li> : null}
         </ul>
       </section>
     )

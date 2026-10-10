@@ -77,6 +77,7 @@
   "attempt_awaiting_text": "Баға кейінірек жарияланады.",
   "attempt_returned_text": "Жұмыс пысықтауға қайтарылды.",
   "attempt_auto_time": "Автоматты түрде тапсырылды: уақыт бітті.",
+  "attempt_auto_deadline": "Автоматты түрде тапсырылды: тапсыру мерзімі өтті.",
   "attempt_auto_violation": "Әрекет бұзушылықтар үшін нөлденді.",
   "attempt_late": "Кешігіп тапсырылды",
   "attempt_late_penalty": "Кешігу айыппұлы: {percent}",

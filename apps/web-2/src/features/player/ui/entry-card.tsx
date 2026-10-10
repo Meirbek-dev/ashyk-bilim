@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, WorkState } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate, formatNumber } from '#/shared/i18n/format'
+import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 
 type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'destructive'
 
@@ -31,7 +31,7 @@ export function EntryCard({ entry, action }: { entry: ActivityState; action: Rea
       </div>
       {entry.due_at_unix || typeof entry.score === 'number' ? (
         <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
-          {entry.due_at_unix ? <li>{m.player_due({ date: formatDate(entry.due_at_unix) })}</li> : null}
+          {entry.due_at_unix ? <li>{m.player_due({ date: formatDateTime(entry.due_at_unix) })}</li> : null}
           {typeof entry.score === 'number' ? (
             <li className="tabular-nums">{m.player_score({ score: formatNumber(entry.score) })}</li>
           ) : null}

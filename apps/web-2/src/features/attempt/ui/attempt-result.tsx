@@ -53,6 +53,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
           ) : null}
           {attempt.auto_submit_reason === 'time_expired' ? <li>{m.attempt_auto_time()}</li> : null}
           {attempt.auto_submit_reason === 'integrity_violation' ? <li>{m.attempt_auto_violation()}</li> : null}
+          {attempt.auto_submit_reason === 'deadline_passed' ? <li>{m.attempt_auto_deadline()}</li> : null}
           {attempt.late_penalty_pct ? (
             <li>{m.attempt_late_penalty({ percent: formatPercent(attempt.late_penalty_pct) })}</li>
           ) : null}

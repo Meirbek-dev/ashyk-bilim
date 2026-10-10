@@ -77,6 +77,7 @@
   "attempt_awaiting_text": "The grade will be published later.",
   "attempt_returned_text": "The submission was returned for revision.",
   "attempt_auto_time": "Submitted automatically: time ran out.",
+  "attempt_auto_deadline": "Submitted automatically: the due date passed.",
   "attempt_auto_violation": "The attempt scored zero because of violations.",
   "attempt_late": "Submitted late",
   "attempt_late_penalty": "Late penalty: {percent}",

@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, AttemptState, ReviewVisibility } from '#/shared/api/gen/types.gen'
-import { formatDate, formatNumber } from '#/shared/i18n/format'
+import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 
 import { protections, type Protection } from '../model/attempt'
 
@@ -38,7 +38,7 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
                 left: formatNumber(state.attempts_remaining),
               })}
         </li>
-        {effective.due_at_unix ? <li>{m.attempt_due({ date: formatDate(effective.due_at_unix) })}</li> : null}
+        {effective.due_at_unix ? <li>{m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}</li> : null}
         <li>{visibility[assessment.policy.review_visibility]()}</li>
       </ul>
       {rules.length ? (

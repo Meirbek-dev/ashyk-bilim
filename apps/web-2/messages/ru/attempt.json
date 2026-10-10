@@ -77,6 +77,7 @@
   "attempt_awaiting_text": "Оценка будет опубликована позже.",
   "attempt_returned_text": "Работа возвращена на доработку.",
   "attempt_auto_time": "Сдано автоматически: время вышло.",
+  "attempt_auto_deadline": "Сдано автоматически: срок сдачи прошёл.",
   "attempt_auto_violation": "Попытка обнулена из-за нарушений.",
   "attempt_late": "Сдано с опозданием",
   "attempt_late_penalty": "Штраф за опоздание: {percent}",
