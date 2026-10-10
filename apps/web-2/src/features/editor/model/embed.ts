@@ -38,6 +38,7 @@ const EMBED_HOSTS = [
   'explaineverything.com',
   'figma.com',
   'flip.com',
+  'forms.gle',
   'gamma.app',
   'genially.com',
   'geogebra.org',
@@ -193,6 +194,8 @@ const SOURCES: Record<string, (url: URL) => string> = {
   spotify: url => (url.pathname.startsWith('/embed/') ? url.href : `${url.origin}/embed${url.pathname}${url.search}`),
   'google-slides': url => url.href.replace(/\/edit(\?.*)?$/, '/embed'),
   'google-docs': url => (url.pathname.includes('/pub') ? url.href : url.href.replace(/\/edit([?#].*)?$/, '/preview')),
+  // A form page asks for the frame layout; a forms.gle short link redirects to it.
+  'google-forms': url => (hostIs(url, 'docs.google.com') ? withParam(url, 'embedded', 'true') : url.href),
   quizizz: url => url.href.replace('/admin/quiz/', '/embed/quiz/'),
   edpuzzle: url => url.href.replace('/media/', '/embed/media/'),
 }

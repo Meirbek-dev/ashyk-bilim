@@ -88,6 +88,11 @@ describe('B-EDT-08 embed addresses', () => {
       'https://docs.google.com/document/d/1/preview',
     )
     expect(embedTypeForUrl('https://forms.gle/x')).toBe('google-forms')
+    // Migrated «рубежный контроль» lessons: a short link frames as is, a form page asks for the frame layout.
+    expect(embedSrc('google-forms', 'https://forms.gle/hHB58xTbLtzisTUL6')).toBe('https://forms.gle/hHB58xTbLtzisTUL6')
+    expect(embedSrc('google-forms', 'https://docs.google.com/forms/d/e/1F/viewform?usp=sharing')).toBe(
+      'https://docs.google.com/forms/d/e/1F/viewform?usp=sharing&embedded=true',
+    )
     expect(embedSrc('excalidraw', 'https://excalidraw.com/#json=a,b')).toBe('https://excalidraw.com/?embed=1#json=a,b')
     expect(embedTypeForUrl('https://ppt-online.org/1')).toBe('url')
     expect(embedSrc('url', 'https://ppt-online.org/1')).toBe('https://ppt-online.org/1')
