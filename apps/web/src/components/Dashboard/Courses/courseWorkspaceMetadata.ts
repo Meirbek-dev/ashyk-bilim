@@ -8,6 +8,7 @@ type WorkspaceTab =
   | 'details'
   | 'content'
   | 'gradebook'
+  | 'learners'
   | 'settings'
   | 'collaboration'
   | 'certificate'

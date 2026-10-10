@@ -19,6 +19,7 @@ import {
   FileCog,
   FileStack,
   Globe,
+  GraduationCap,
   LayoutDashboard,
   LayoutGrid,
   Lock,
@@ -84,6 +85,7 @@ function CourseWorkspaceChrome({
     { key: 'details', label: t('tabs.details'), icon: FileCog, stage: 'details' },
     { key: 'curriculum', label: t('tabs.content'), icon: FileStack, stage: 'curriculum' },
     { key: 'gradebook', label: t('tabs.gradebook'), icon: LayoutDashboard, stage: 'gradebook' },
+    { key: 'learners', label: t('tabs.learners'), icon: GraduationCap, stage: 'learners' },
     { key: 'access', label: t('tabs.settings'), icon: Globe, stage: 'access' },
     { key: 'collaboration', label: t('tabs.collaboration'), icon: Users, stage: 'collaboration' },
     { key: 'certificate', label: t('tabs.certificate'), icon: Award, stage: 'certificate' },
@@ -166,7 +168,7 @@ function CourseWorkspaceChrome({
                     : 'border-transparent text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
                 )}
               >
-                <Icon className={cn('hidden size-4 shrink-0 xl:block', isActive && 'text-primary')} />
+                <Icon className={cn('hidden size-4 shrink-0 2xl:block', isActive && 'text-primary')} />
                 <span className="whitespace-nowrap">{stage.label}</span>
                 {mounted && stage.key === 'review' && readiness && !readiness.ready && blockerCount > 0 ? (
                   <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
@@ -207,8 +209,12 @@ function CourseWorkspaceChrome({
       <section className="min-w-0 flex-1 px-4 py-8 lg:px-8">
         <ConflictAlert />
         {/* Archived = view only: the native fieldset disables every control in the
-            editing tabs; gradebook (exports) and review (restore) stay live. */}
-        <fieldset disabled={isArchived && activeStage !== 'gradebook' && activeStage !== 'review'} className="contents">
+            editing tabs; gradebook (exports), learners (search, export) and review
+            (restore) stay live - the learners tab hides its own writes. */}
+        <fieldset
+          disabled={isArchived && !['gradebook', 'learners', 'review'].includes(activeStage)}
+          className="contents"
+        >
           {children}
         </fieldset>
       </section>

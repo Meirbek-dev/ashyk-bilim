@@ -42,6 +42,9 @@ export const queryKeys = {
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
     readiness: (courseUuid: string) => ['courses', courseUuid, 'readiness'] as const,
     learners: (courseUuid: string) => ['courses', 'learners', courseUuid] as const,
+    /** `GET /courses/{id}/learners` (the roster tab), per search. */
+    roster: (courseUuid: string, q?: string) =>
+      ['courses', 'roster', courseUuid, ...(q === undefined ? [] : [q])] as const,
     usergroups: (courseUuid: string) => ['courses', 'usergroups', courseUuid] as const,
     metadata: (courseUuid: string) => ['courses', 'metadata', courseUuid] as const,
     updates: (courseUuid: string) => ['courses', 'updates', courseUuid] as const,

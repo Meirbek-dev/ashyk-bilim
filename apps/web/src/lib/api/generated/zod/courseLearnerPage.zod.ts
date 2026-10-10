@@ -21,6 +21,7 @@ export const CourseLearnerPage = zod
             zod.null(),
           ]),
           display_name: zod.string(),
+          email: zod.string(),
           enrolled_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
           last_activity_at_unix: zod.union([
             zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),

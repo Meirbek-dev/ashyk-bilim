@@ -5,6 +5,7 @@ export type CourseWorkspaceStage =
   | 'details'
   | 'curriculum'
   | 'gradebook'
+  | 'learners'
   | 'access'
   | 'collaboration'
   | 'certificate'

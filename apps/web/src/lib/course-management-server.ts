@@ -88,6 +88,9 @@ export function deriveCourseWorkspaceCapabilities(
     details: canEditDetails,
     curriculum: canEditCurriculum,
     gradebook: canReviewCourse,
+    // `GET /courses/{id}/learners` is course write access (`require_write`);
+    // the writes check `manage_contributors` (roster managers) in the page.
+    learners: canEditDetails,
     access: canManageSettings,
     collaboration: canManageCollaboration,
     certificate: canManageCertificate,

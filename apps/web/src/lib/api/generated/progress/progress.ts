@@ -27,6 +27,8 @@ import {
   ActivityId,
   CourseId,
   CourseLearnerPage,
+  EnrollLearnersRequest,
+  EnrollLearnersResponse,
   GetTrailParams,
   LearnerCourseState,
   ListCourseLearnersParams,
@@ -37,7 +39,7 @@ import {
 } from '../zod'
 
 import { orvalMutator, stringifyQueryParam, voidParser } from '../../orval-mutator'
-import type { ErrorType } from '../../orval-mutator'
+import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
 
@@ -291,6 +293,8 @@ export const getListCourseLearnersUrl = (courseId: CourseId, params?: ListCourse
 }
 
 /**
+ * `q` searches username, display name and email. Members of a linked
+ * usergroup appear once they hold a run (opened the course or were enrolled).
  * @summary The course's members, newest first, with their progress (course write
 access). Keyset pages.
  */
@@ -514,6 +518,112 @@ export function useListCourseLearnersSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getEnrollCourseLearnersUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/learners`
+}
+
+/**
+ * Roster managers: the creator, an active maintainer,
+ * `course:manage:platform`; open course. One outcome per identifier, in order: `enrolled`, `already_enrolled`,
+ * `duplicate` (same user earlier in the list), `not_found`, `course_staff`,
+ * `account_disabled`. No account is created. `dry_run` previews the
+ * outcomes and writes nothing. Re-sending is safe (members answer
+ * `already_enrolled`).
+ * @summary Enrol existing users by email or username.
+ */
+export const enrollCourseLearners = async (
+  courseId: CourseId,
+  enrollLearnersRequest: EnrollLearnersRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<EnrollLearnersResponse> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<EnrollLearnersResponse>(
+    getEnrollCourseLearnersUrl(courseId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(enrollLearnersRequest),
+    },
+    EnrollLearnersResponse,
+  )
+}
+
+export const getEnrollCourseLearnersMutationKey = () => ['enrollCourseLearners'] as const
+
+export const getEnrollCourseLearnersMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enrollCourseLearners>>,
+    TError,
+    EnrollCourseLearnersMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof enrollCourseLearners>>,
+  TError,
+  EnrollCourseLearnersMutationVariables,
+  TContext
+> => {
+  const mutationKey = getEnrollCourseLearnersMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof enrollCourseLearners>>,
+    EnrollCourseLearnersMutationVariables
+  > = props => {
+    const { courseId, data } = props ?? {}
+
+    return enrollCourseLearners(courseId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type EnrollCourseLearnersMutationResult = NonNullable<Awaited<ReturnType<typeof enrollCourseLearners>>>
+export type EnrollCourseLearnersMutationBody = BodyType<EnrollLearnersRequest>
+export type EnrollCourseLearnersMutationError = ErrorType<Problem>
+export type EnrollCourseLearnersMutationVariables = { courseId: CourseId; data: BodyType<EnrollLearnersRequest> }
+
+/**
+ * @summary Enrol existing users by email or username.
+ */
+export const useEnrollCourseLearners = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof enrollCourseLearners>>,
+      TError,
+      EnrollCourseLearnersMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof enrollCourseLearners>>,
+  TError,
+  EnrollCourseLearnersMutationVariables,
+  TContext
+> => {
+  return useMutation(getEnrollCourseLearnersMutationOptions(options), queryClient)
+}
 export const getRemoveCourseLearnerUrl = (courseId: CourseId, userId: UserId) => {
   return `/api/v2/courses/${courseId}/learners/${userId}`
 }

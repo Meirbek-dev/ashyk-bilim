@@ -10,6 +10,7 @@ import * as zod from 'zod'
 export const ListCourseLearnersParams = zod.object({
   cursor: zod.string().optional(),
   limit: zod.int().optional(),
+  q: zod.string().optional(),
 })
 
 export type ListCourseLearnersParams = zod.input<typeof ListCourseLearnersParams>
