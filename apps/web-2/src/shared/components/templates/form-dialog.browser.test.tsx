@@ -72,4 +72,17 @@ describe('FormDialog', () => {
     await expect.element(dialog.getByText(m.validation_duplicate())).toBeVisible()
     await expect.element(dialog.getByRole('alert').filter({ hasText: m.errors_validation_failed() })).toBeVisible()
   })
+
+  test('a double click submits once: the second submit lands while the first is in flight', async () => {
+    const held = Promise.withResolvers<undefined>()
+    const submit = vi.fn<(body: Body) => Promise<void>>().mockReturnValue(held.promise)
+    const screen = await renderInRouter(<CreateDialog submit={submit} />)
+    const dialog = screen.getByRole('dialog', { name: text.title })
+    await dialog.getByLabelText(text.name).fill('Algebra')
+    await dialog.getByRole('button', { name: text.create }).dblClick()
+    await vi.waitFor(() => expect(submit).toHaveBeenCalled())
+    held.resolve(undefined)
+    await held.promise
+    expect(submit).toHaveBeenCalledTimes(1)
+  })
 })

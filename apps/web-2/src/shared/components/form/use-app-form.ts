@@ -1,4 +1,5 @@
 import { createFormHook, type DeepKeys } from '@tanstack/react-form'
+import { useRef } from 'react'
 import { setGlobalMessage, type GenericSchema } from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
@@ -35,10 +36,15 @@ export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmi
   // module has no side effect and stays out of bundles that only import a feature's index. A named import: the
   // build treats `v.<fn>()` calls as pure (vite.config.ts), which would drop this one.
   setGlobalMessage(validationMessage)
+  // The mutation starts only after the async validation, so `pending` cannot disable the button before a double
+  // click (or Enter pressed twice) submits again: a submit while one is in flight is dropped.
+  const submitting = useRef(false)
   const form = useKitForm({
     defaultValues,
     validators: { onSubmit: schema },
     onSubmit: async ({ value }) => {
+      if (submitting.current) return
+      submitting.current = true
       try {
         await onSubmit(value)
       } catch (error) {
@@ -49,6 +55,8 @@ export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmi
           if (isField(name))
             form.setFieldMeta(name, meta => ({ ...meta, errorMap: { ...meta.errorMap, onSubmit: message } }))
         }
+      } finally {
+        submitting.current = false
       }
     },
   })
