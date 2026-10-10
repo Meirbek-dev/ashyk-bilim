@@ -156,7 +156,8 @@
     pointer-events: none;
     color: var(--muted-foreground);
   }
-  .ab-prose .ProseMirror-selectednode {
+  /* Editable only: a read-only lesson that starts with a video or PDF got its first block outlined as "selected". */
+  .ab-prose .ProseMirror[contenteditable='true'] .ProseMirror-selectednode {
     outline: var(--focus-ring-width) solid var(--ring);
     outline-offset: var(--focus-ring-offset);
     @apply rounded-lg;
