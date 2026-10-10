@@ -52,6 +52,8 @@ function CurriculumEditor() {
   const [showChapterInput, setShowChapterInput] = useState(false)
   const [newChapterName, setNewChapterName] = useState('')
   const [isCreatingChapter, setIsCreatingChapter] = useState(false)
+  // A second Enter (or Enter + click) lands before the disabled input re-renders: it created the chapter twice.
+  const creatingChapterRef = useRef(false)
   const newChapterInputRef = useRef<HTMLInputElement>(null)
 
   const [structureStatus, setStructureStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -130,6 +132,8 @@ function CurriculumEditor() {
       return
     }
 
+    if (creatingChapterRef.current) return
+    creatingChapterRef.current = true
     setIsCreatingChapter(true)
 
     try {
@@ -140,6 +144,7 @@ function CurriculumEditor() {
     } catch {
       toast.error(t('chapterCreateFailed'))
     } finally {
+      creatingChapterRef.current = false
       setIsCreatingChapter(false)
     }
   }
