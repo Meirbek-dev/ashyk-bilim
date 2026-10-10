@@ -41,9 +41,9 @@ describe('DiscussionPost edited marker', () => {
           onVoteReply={() => {}}
           onDeletePost={() => {}}
           onDeleteReply={() => {}}
-          onEditPost={() => {}}
-          onEditReply={() => {}}
-          onSubmitReply={() => {}}
+          onEditPost={async () => true}
+          onEditReply={async () => true}
+          onSubmitReply={async () => true}
           onToggleHidden={() => {}}
         />
       </NextIntlClientProvider>,
@@ -64,9 +64,9 @@ describe('DiscussionPost moderation', () => {
           onVoteReply={() => {}}
           onDeletePost={() => {}}
           onDeleteReply={() => {}}
-          onEditPost={() => {}}
-          onEditReply={() => {}}
-          onSubmitReply={() => {}}
+          onEditPost={async () => true}
+          onEditReply={async () => true}
+          onSubmitReply={async () => true}
           onToggleHidden={onToggleHidden}
         />
       </NextIntlClientProvider>,

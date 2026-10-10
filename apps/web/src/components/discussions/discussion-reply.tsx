@@ -6,11 +6,11 @@ import RichContentRenderer from './rich-content-renderer'
 import RelativeTime from './relative-time'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { Button } from '@/components/ui/button'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
-import { hasMeaningfulText } from './text'
+import { hasMeaningfulText, useSubmitOnce } from './text'
 
 const RichTextEditor = dynamic(
   () =>
@@ -30,7 +30,7 @@ interface DiscussionReplyProps {
   postId: string
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
-  onEditReply: (postId: string, replyId: string, newMessage: string) => void
+  onEditReply: (postId: string, replyId: string, newMessage: string) => Promise<boolean>
   onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
 }
@@ -47,7 +47,6 @@ export default function DiscussionReply({
   const t = useTranslations('CoursePage')
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(reply.replyMessage)
-  const [_isPending, startTransition] = useTransition()
   // Capabilities come from the wire (`can_update` / `can_delete` are already
   // resolved against the viewer's grants server-side).
   const canUpdate = reply.can_update ?? false
@@ -63,14 +62,13 @@ export default function DiscussionReply({
     return `${first} ${last}`.trim() || reply.username
   }
 
-  const handleEditSubmit = (formData: FormData) => {
+  const { pending, run } = useSubmitOnce()
+  const handleEditSubmit = async (formData: FormData) => {
     const nextEditContent = String(formData.get('editContent') ?? '')
 
     if (!hasMeaningfulText(nextEditContent)) return
-    startTransition(() => {
-      onEditReply(postId, reply.id, nextEditContent)
-      setEditing(false)
-    })
+    if (!(await run(() => onEditReply(postId, reply.id, nextEditContent)))) return
+    setEditing(false)
   }
 
   return (
@@ -169,7 +167,13 @@ export default function DiscussionReply({
                 >
                   {t('cancel')}
                 </Button>
-                <Button type="submit" size="sm" disabled={!hasMeaningfulText(editContent)} className="h-8 px-3 text-sm">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!hasMeaningfulText(editContent) || pending}
+                  aria-busy={pending}
+                  className="h-8 px-3 text-sm"
+                >
                   {t('save')}
                 </Button>
               </div>

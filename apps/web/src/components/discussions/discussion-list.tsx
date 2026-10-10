@@ -140,7 +140,7 @@ export default function DiscussionList({
     }
   }, [anonymousLabel, initialPosts])
 
-  const handleSubmitDiscussion = async (content: string) => {
+  const handleSubmitDiscussion = async (content: string): Promise<boolean> => {
     try {
       const newDiscussion = await createDiscussion(courseUuid, {
         content,
@@ -162,17 +162,19 @@ export default function DiscussionList({
       if (onMutate) {
         onMutate()
       }
+      return true
     } catch (error) {
       toastApiError(error, { fallback: t('errors.createFailed') })
+      return false
     }
   }
 
-  const handleSubmitReply = async (postId: string, replyContent: string) => {
+  const handleSubmitReply = async (postId: string, replyContent: string): Promise<boolean> => {
     // Find the parent post to get its ID
     const parentPost = posts.find(post => post.id === postId)
     if (!parentPost) {
       console.error('Parent post not found:', postId)
-      return
+      return false
     }
 
     try {
@@ -202,8 +204,10 @@ export default function DiscussionList({
       if (onMutate) {
         onMutate()
       }
+      return true
     } catch (error) {
       toastApiError(error, { fallback: t('errors.replyFailed') })
+      return false
     }
   }
 
@@ -360,9 +364,9 @@ export default function DiscussionList({
     }
   }
 
-  const handleEditPost = async (postId: string, newMessage: string) => {
+  const handleEditPost = async (postId: string, newMessage: string): Promise<boolean> => {
     const post = posts.find(p => p.id === postId)
-    if (!post) return
+    if (!post) return false
 
     try {
       await updateDiscussion(courseUuid, post.discussion_uuid, {
@@ -385,8 +389,10 @@ export default function DiscussionList({
       if (onMutate) {
         onMutate()
       }
+      return true
     } catch (error) {
       toastApiError(error, { fallback: t('errors.updateFailed') })
+      return false
     }
   }
 
@@ -414,17 +420,17 @@ export default function DiscussionList({
     }
   }
 
-  const handleEditReply = async (postId: string, replyId: string, newMessage: string) => {
+  const handleEditReply = async (postId: string, replyId: string, newMessage: string): Promise<boolean> => {
     const post = posts.find(p => p.id === postId)
     if (!post) {
       console.error('Post not found:', postId)
-      return
+      return false
     }
 
     const reply = post.replies?.find((r: DiscussionReplyData) => r.id === replyId)
     if (!reply?.discussion_uuid) {
       console.error('Reply not found or missing discussion_uuid:', replyId)
-      return
+      return false
     }
 
     try {
@@ -457,8 +463,10 @@ export default function DiscussionList({
       if (onMutate) {
         onMutate()
       }
+      return true
     } catch (error) {
       toastApiError(error, { fallback: t('errors.updateFailed') })
+      return false
     }
   }
 

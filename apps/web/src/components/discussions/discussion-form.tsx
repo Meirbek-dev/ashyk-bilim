@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Send } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
-import { hasMeaningfulText } from './text'
+import { hasMeaningfulText, useSubmitOnce } from './text'
 
 const RichTextEditor = dynamic(
   () =>
@@ -21,7 +21,7 @@ const RichTextEditor = dynamic(
 
 interface DiscussionFormProps {
   currentUser: AppUserSummary
-  onSubmit: (content: string) => void
+  onSubmit: (content: string) => Promise<boolean>
 }
 
 export default function DiscussionForm({ currentUser, onSubmit }: DiscussionFormProps) {
@@ -30,11 +30,12 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
   // A one-line prompt until the reader wants to write; the full editor toolbar stays out of the way.
   const [expanded, setExpanded] = useState(false)
 
-  const handleSubmit = (formData: FormData) => {
+  const { pending, run } = useSubmitOnce()
+  const handleSubmit = async (formData: FormData) => {
     const nextContent = String(formData.get('content') ?? '')
 
     if (!hasMeaningfulText(nextContent)) return
-    onSubmit(nextContent)
+    if (!(await run(() => onSubmit(nextContent)))) return
     setContent('')
     setExpanded(false)
   }
@@ -75,7 +76,12 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
           <Button type="button" variant="ghost" onClick={() => setExpanded(false)}>
             {t('cancel')}
           </Button>
-          <Button type="submit" disabled={isContentEmpty} className="flex items-center gap-2">
+          <Button
+            type="submit"
+            disabled={isContentEmpty || pending}
+            aria-busy={pending}
+            className="flex items-center gap-2"
+          >
             <Send size={16} />
             <span>{t('postDiscussion')}</span>
           </Button>

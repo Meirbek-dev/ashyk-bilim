@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
-import { hasMeaningfulText } from './text'
+import { hasMeaningfulText, useSubmitOnce } from './text'
 
 const RichTextEditor = dynamic(
   () =>
@@ -36,9 +36,9 @@ interface DiscussionPostProps {
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeletePost: (postId: string) => void
   onDeleteReply: (postId: string, replyId: string) => void
-  onEditPost: (postId: string, newMessage: string) => void
-  onEditReply: (postId: string, replyId: string, newMessage: string) => void
-  onSubmitReply: (postId: string, replyText: string) => void
+  onEditPost: (postId: string, newMessage: string) => Promise<boolean>
+  onEditReply: (postId: string, replyId: string, newMessage: string) => Promise<boolean>
+  onSubmitReply: (postId: string, replyText: string) => Promise<boolean>
   onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
 }
@@ -76,20 +76,21 @@ export default function DiscussionPost({
     return `${first} ${last}`.trim() || post.username
   }
 
-  const handleSubmitReply = (formData: FormData) => {
+  const { pending, run } = useSubmitOnce()
+  const handleSubmitReply = async (formData: FormData) => {
     const nextReplyContent = String(formData.get('replyContent') ?? '')
 
     if (!hasMeaningfulText(nextReplyContent)) return
-    onSubmitReply(post.id, nextReplyContent)
+    if (!(await run(() => onSubmitReply(post.id, nextReplyContent)))) return
     setReplyContent('')
     setReplyingTo(false)
   }
 
-  const handleEditSubmit = (formData: FormData) => {
+  const handleEditSubmit = async (formData: FormData) => {
     const nextEditContent = String(formData.get('editContent') ?? '')
 
     if (!hasMeaningfulText(nextEditContent)) return
-    onEditPost(post.id, nextEditContent)
+    if (!(await run(() => onEditPost(post.id, nextEditContent)))) return
     setEditingPost(false)
   }
 
@@ -184,7 +185,12 @@ export default function DiscussionPost({
                     >
                       {t('cancel')}
                     </Button>
-                    <Button type="submit" size="sm" disabled={!hasMeaningfulText(editContent)}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={!hasMeaningfulText(editContent) || pending}
+                      aria-busy={pending}
+                    >
                       {t('save')}
                     </Button>
                   </div>
@@ -299,7 +305,8 @@ export default function DiscussionPost({
                         <Button
                           type="submit"
                           size="sm"
-                          disabled={!hasMeaningfulText(replyContent)}
+                          disabled={!hasMeaningfulText(replyContent) || pending}
+                          aria-busy={pending}
                           className="flex items-center gap-1"
                         >
                           <Send size={14} />
