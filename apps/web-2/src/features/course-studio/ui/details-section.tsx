@@ -54,13 +54,16 @@ export function DetailsSection({ course }: { course: Course }) {
         <form.AppField name="about">{field => <field.TextareaField label={m.studio_field_about()} />}</form.AppField>
         <form.AppField name="description">
           {field => (
-            <Suspense fallback={<Skeleton className="h-row w-full" />}>
-              <MarkdownEditor
-                label={m.studio_field_description()}
-                value={field.state.value ?? ''}
-                onChange={field.handleChange}
-              />
-            </Suspense>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{m.studio_field_description()}</span>
+              <Suspense fallback={<Skeleton className="h-row w-full" />}>
+                <MarkdownEditor
+                  label={m.studio_field_description()}
+                  value={field.state.value ?? ''}
+                  onChange={field.handleChange}
+                />
+              </Suspense>
+            </div>
           )}
         </form.AppField>
         <form.AppField name="open_to_contributors">
