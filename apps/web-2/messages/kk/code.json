@@ -14,6 +14,7 @@
   "code_io_input": "Енгізу",
   "code_io_expected": "Күтілетін нәтиже",
   "code_io_actual": "Алынған нәтиже",
+  "code_io_stderr": "Қате туралы хабар",
   "code_difficulty_easy": "Жеңіл",
   "code_difficulty_medium": "Орташа",
   "code_difficulty_hard": "Күрделі",

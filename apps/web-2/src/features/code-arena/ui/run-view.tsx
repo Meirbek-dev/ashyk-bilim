@@ -33,13 +33,15 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
       {run.compile_output ? <Io label={m.code_compile_output()} text={run.compile_output} /> : null}
       <ol className="flex flex-col divide-y">
         {run.cases.map((result, index) => {
-          const verdict = caseStatus[caseVerdict(result)]
+          const kind = caseVerdict(result)
+          const verdict = caseStatus[kind]
           return (
             <li key={result.test_id} className="flex min-w-0 flex-col gap-2 py-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-medium">{result.description || m.code_case({ number: index + 1 })}</span>
                 <StatusBadge tone={verdict.tone}>{verdict.label()}</StatusBadge>
-                {result.time_seconds === null && result.memory_kb === null ? null : (
+                {/* A killed run's numbers are the sandbox's last sample («4 мс» on a time limit): not shown. */}
+                {kind === 'time_limit' || (result.time_seconds === null && result.memory_kb === null) ? null : (
                   <span className="text-sm text-muted-foreground tabular-nums">
                     {m.code_case_usage({ ms: ms(result.time_seconds), mb: mb(result.memory_kb) })}
                   </span>
@@ -52,6 +54,8 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
                   {result.actual === null ? null : <Io label={m.code_io_actual()} text={result.actual} />}
                 </div>
               ) : null}
+              {/* Why a visible test crashed (the traceback, «SyntaxError»): the learner cannot fix it blind. */}
+              {result.is_visible && result.stderr ? <Io label={m.code_io_stderr()} text={result.stderr} /> : null}
             </li>
           )
         })}

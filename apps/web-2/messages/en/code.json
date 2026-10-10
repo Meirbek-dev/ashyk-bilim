@@ -14,6 +14,7 @@
   "code_io_input": "Input",
   "code_io_expected": "Expected output",
   "code_io_actual": "Actual output",
+  "code_io_stderr": "Error message",
   "code_difficulty_easy": "Easy",
   "code_difficulty_medium": "Medium",
   "code_difficulty_hard": "Hard",

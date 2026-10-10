@@ -14,6 +14,7 @@
   "code_io_input": "Ввод",
   "code_io_expected": "Ожидаемый вывод",
   "code_io_actual": "Полученный вывод",
+  "code_io_stderr": "Сообщение об ошибке",
   "code_difficulty_easy": "Лёгкая",
   "code_difficulty_medium": "Средняя",
   "code_difficulty_hard": "Сложная",
