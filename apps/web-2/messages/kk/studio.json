@@ -191,7 +191,7 @@
   "studio_youtube_field": "YouTube сілтемесі",
   "studio_youtube_hint": "youtube.com немесе youtu.be мекенжайы.",
   "studio_video_file_field": "Жаңа бейне файлы",
-  "studio_video_types": "500 МБ-қа дейінгі MP4, WebM, MKV, MOV, AVI немесе FLV.",
+  "studio_video_types": "2 ГБ-қа дейінгі MP4, WebM, MKV, MOV, AVI немесе FLV.",
   "studio_pdf_file_field": "Жаңа PDF файлы",
   "studio_pdf_types": "50 МБ-қа дейінгі PDF.",
   "studio_media_current": "Ағымдағы файл: {name}",

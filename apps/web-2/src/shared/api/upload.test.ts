@@ -5,6 +5,14 @@ import { checkUpload } from './upload'
 const MB = 1024 * 1024
 
 describe('upload pre-check', () => {
+  test('videos accept 2 GB exactly and reject one byte more', () => {
+    expect(checkUpload({ size: 2048 * MB, type: 'video/mp4' }, 'block-video')).toBeNull()
+    expect(checkUpload({ size: 2048 * MB + 1, type: 'video/mp4' }, 'block-video')).toEqual({
+      kind: 'too-large',
+      maxBytes: 2048 * MB,
+    })
+  })
+
   test('a file over the purpose cap is too large; the cap is inclusive', () => {
     expect(checkUpload({ size: 10 * MB, type: 'image/png' }, 'course-thumbnail')).toBeNull()
     expect(checkUpload({ size: 10 * MB + 1, type: 'image/png' }, 'course-thumbnail')).toEqual({

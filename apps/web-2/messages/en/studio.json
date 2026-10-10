@@ -191,7 +191,7 @@
   "studio_youtube_field": "YouTube link",
   "studio_youtube_hint": "A youtube.com or youtu.be address.",
   "studio_video_file_field": "New video file",
-  "studio_video_types": "MP4, WebM, MKV, MOV, AVI or FLV up to 500 MB.",
+  "studio_video_types": "MP4, WebM, MKV, MOV, AVI or FLV up to 2 GB.",
   "studio_pdf_file_field": "New PDF file",
   "studio_pdf_types": "PDF up to 50 MB.",
   "studio_media_current": "Current file: {name}",

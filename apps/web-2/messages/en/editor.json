@@ -58,7 +58,7 @@
   "editor_block_pdf": "PDF document",
   "editor_image_hint": "JPEG, PNG, GIF, WebP or AVIF up to 10 MB",
   "editor_pdf_hint": "PDF up to 50 MB",
-  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI or FLV up to 500 MB",
+  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI or FLV up to 2 GB",
   "editor_video_play": "Play",
   "editor_video_pause": "Pause",
   "editor_video_position": "Playback position",

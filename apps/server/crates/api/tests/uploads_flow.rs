@@ -117,6 +117,21 @@ async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
     assert_eq!(oversize.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(oversize.json()["field_errors"][0]["field"], "size_bytes");
 
+    for (size_bytes, status) in [
+        (2_147_483_648_i64, StatusCode::OK),
+        (2_147_483_649_i64, StatusCode::UNPROCESSABLE_ENTITY),
+    ] {
+        let video = app
+            .post_as(
+                &session,
+                "/api/v2/uploads",
+                &serde_json::json!({ "purpose": "block-video", "mime": "video/mp4",
+                                      "size_bytes": size_bytes }),
+            )
+            .await;
+        assert_eq!(video.status, status, "{}", video.text());
+    }
+
     let wrong_mime = app
         .post_as(
             &session,

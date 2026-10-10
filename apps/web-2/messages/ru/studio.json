@@ -195,7 +195,7 @@
   "studio_youtube_field": "Ссылка на YouTube",
   "studio_youtube_hint": "Адрес youtube.com или youtu.be.",
   "studio_video_file_field": "Новый файл видео",
-  "studio_video_types": "MP4, WebM, MKV, MOV, AVI или FLV до 500 МБ.",
+  "studio_video_types": "MP4, WebM, MKV, MOV, AVI или FLV до 2 ГБ.",
   "studio_pdf_file_field": "Новый файл PDF",
   "studio_pdf_types": "PDF до 50 МБ.",
   "studio_media_current": "Текущий файл: {name}",

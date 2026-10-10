@@ -59,7 +59,7 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
         "course-thumbnail" | "block-image" | "platform-logo" | "platform-thumbnail"
         | "collection-cover" => Some((Bucket::Public, 10 * MB, IMAGES)),
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
-        "block-video" => Some((Bucket::Public, 500 * MB, VIDEOS)),
+        "block-video" => Some((Bucket::Public, 2048 * MB, VIDEOS)),
         "file-submission" => Some((Bucket::Private, 100 * MB, &[])),
         _ => None,
     }
@@ -69,7 +69,7 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
 /// Platform branding needs the platform grant; course thumbnails and
 /// content blocks need course write access (the curriculum gate is
 /// `course:update:own` as author or `course:update:platform`) - otherwise
-/// any learner could park a 500 MB video on the public bucket for the
+/// any learner could park a 2 GB video on the public bucket for the
 /// reap grace and serve it from `/content/…`.
 fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
     let course_update = |scope| Permission {

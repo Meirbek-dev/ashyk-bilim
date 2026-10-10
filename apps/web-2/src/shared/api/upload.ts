@@ -21,7 +21,7 @@ const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly st
   'course-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
   'block-image': { maxBytes: 10 * MB, mimes: IMAGES },
   'block-pdf': { maxBytes: 50 * MB, mimes: ['application/pdf'] },
-  'block-video': { maxBytes: 500 * MB, mimes: VIDEOS },
+  'block-video': { maxBytes: 2048 * MB, mimes: VIDEOS },
   'file-submission': { maxBytes: 100 * MB, mimes: [] },
   'platform-logo': { maxBytes: 10 * MB, mimes: IMAGES },
   'platform-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
