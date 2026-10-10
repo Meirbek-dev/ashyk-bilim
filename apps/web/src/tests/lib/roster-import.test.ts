@@ -49,7 +49,7 @@ describe('parseRosterCsv', () => {
           ['username', 'email'],
           ['alice', 'alice@x.kz'],
         ],
-        ';',
+        'ru-RU',
       ).arrayBuffer(),
     )
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])

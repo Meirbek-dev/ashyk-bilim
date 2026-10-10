@@ -1,7 +1,7 @@
 'use client'
 
 import { csvBlob, saveBlob } from '@/lib/download'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import * as React from 'react'
 
 import {
@@ -162,6 +162,7 @@ export default function DataTable<TData extends RowData>({
   csvFileName = `table-${new Date().toISOString()}.csv`,
 }: DataTableProps<TData>) {
   const t = useTranslations('Common.DataTable')
+  const locale = useLocale()
   // Derive whether server-side modes are active from prop presence
   const isServerSorted = !!onSortingChangeProp
   const isServerFiltered = !!onGlobalFilterChangeProp
@@ -398,7 +399,7 @@ export default function DataTable<TData extends RowData>({
       ),
     )
 
-    saveBlob(csvBlob([headerRow, ...bodyRows]), csvFileName)
+    saveBlob(csvBlob([headerRow, ...bodyRows], locale), csvFileName)
     toast.success(resolvedLabels.exportStarted)
   }
 

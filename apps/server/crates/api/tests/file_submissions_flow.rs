@@ -703,10 +703,10 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
     let text = csv.text();
     // UX-108: BOM + Russian by default, like the grading exports.
     assert!(
-        text.starts_with("\u{feff}ID попытки,Студент,Email,Статус"),
+        text.starts_with("\u{feff}ID попытки;Студент;Email;Статус"),
         "{text}"
     );
-    assert!(text.contains("alice@example.com,Опубликовано,1,"), "{text}");
+    assert!(text.contains("alice@example.com;Опубликовано;1;"), "{text}");
     let kk = app
         .send(
             Request::builder()
@@ -720,10 +720,10 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         .await;
     let kk_text = kk.text();
     assert!(
-        kk_text.starts_with("\u{feff}Әрекет ID,Білім алушы,Email,Мәртебе"),
+        kk_text.starts_with("\u{feff}Әрекет ID;Білім алушы;Email;Мәртебе"),
         "{kk_text}"
     );
-    assert!(kk_text.contains(",Жарияланды,1,"), "{kk_text}");
+    assert!(kk_text.contains(";Жарияланды;1;"), "{kk_text}");
 }
 
 /// BUG-113: a submit retried with the same `Idempotency-Key` replays the

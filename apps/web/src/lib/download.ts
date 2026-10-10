@@ -37,9 +37,15 @@ export function csvField(value: unknown): string {
 /**
  * A client-built CSV in the shape the server exports use (`ab_domain::csv`):
  * UTF-8 BOM so Excel opens Cyrillic, CRLF rows, every cell through `csvField`.
- * `;` is what Excel in the ru/kk locales splits on.
+ * Excel splits on the Windows list separator: `;` with a decimal comma in the
+ * ru/kk locales (a `,` file opened as one column, `8.7` became 8 July), `,` in English.
  */
-export function csvBlob(rows: readonly (readonly unknown[])[], delimiter: ',' | ';' = ','): Blob {
-  const text = rows.map(row => row.map(csvField).join(delimiter)).join('\r\n')
+export function csvBlob(rows: readonly (readonly unknown[])[], locale: string): Blob {
+  const english = locale.startsWith('en')
+  const cell = (value: unknown) =>
+    !english && (typeof value === 'number' || typeof value === 'string') && /^-?\d+\.\d+$/.test(String(value))
+      ? String(value).replace('.', ',')
+      : value
+  const text = rows.map(row => row.map(value => csvField(cell(value))).join(english ? ',' : ';')).join('\r\n')
   return new Blob([`\uFEFF${text}\r\n`], { type: 'text/csv;charset=utf-8' })
 }

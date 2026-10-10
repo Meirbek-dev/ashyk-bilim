@@ -207,7 +207,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       event.affected_count ?? '',
       auditSummary(event),
     ])
-    saveBlob(csvBlob([headers, ...rows]), `${detail.assessment_type}-${detail.assessment_id}-audit.csv`)
+    saveBlob(csvBlob([headers, ...rows], locale), `${detail.assessment_type}-${detail.assessment_id}-audit.csv`)
   }
 
   const resetAuditFilters = () => {

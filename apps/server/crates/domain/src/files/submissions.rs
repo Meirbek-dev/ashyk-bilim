@@ -1609,7 +1609,7 @@ impl FileSubmissionsService {
             .map(|s| (*s).to_owned())
             .collect();
         let mut out = String::from("\u{feff}");
-        out.push_str(&csv_row(&header));
+        out.push_str(&csv_row(&header, language));
         for a in views {
             let user = a.user.unwrap_or(UserSummary {
                 id: a.row.user_id,
@@ -1633,7 +1633,7 @@ impl FileSubmissionsService {
                 a.row.final_score.map(|s| s.to_string()).unwrap_or_default(),
                 a.files.len().to_string(),
             ];
-            out.push_str(&csv_row(&fields));
+            out.push_str(&csv_row(&fields, language));
         }
         Ok(out)
     }

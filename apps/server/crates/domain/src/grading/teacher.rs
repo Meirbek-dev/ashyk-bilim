@@ -1053,7 +1053,7 @@ impl GradingService {
                 .map(|i| format!("{}: {}", language.item_prefix(), i.title)),
         );
         let mut out = String::from("\u{feff}");
-        out.push_str(&csv_row(&header));
+        out.push_str(&csv_row(&header, language));
         for row in rows {
             let user = user_or_placeholder(&users, row.user_id);
             let breakdown = GradingBreakdown::from_value(&row.grading);
@@ -1095,7 +1095,7 @@ impl GradingService {
                     .map(ToString::to_string)
                     .unwrap_or_default()
             }));
-            out.push_str(&csv_row(&fields));
+            out.push_str(&csv_row(&fields, language));
         }
         Ok(out)
     }
@@ -1851,7 +1851,7 @@ impl GradingService {
         let mut header = vec![language.learner().to_owned(), "Email".to_owned()];
         header.extend(columns.iter().map(|(_, title)| title.clone()));
         let mut out = String::from("\u{feff}");
-        out.push_str(&csv_row(&header));
+        out.push_str(&csv_row(&header, language));
         for user in &users {
             let mut fields = vec![
                 if user.display_name.is_empty() {
@@ -1868,7 +1868,7 @@ impl GradingService {
                     |score| score.to_string(),
                 )
             }));
-            out.push_str(&csv_row(&fields));
+            out.push_str(&csv_row(&fields, language));
         }
         Ok(out)
     }

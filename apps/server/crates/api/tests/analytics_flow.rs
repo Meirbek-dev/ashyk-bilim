@@ -910,12 +910,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(lines.len(), 2, "header + the pending submission: {text}");
     // UX-114: BOM + Russian by default, enum cells localized too.
     assert!(
-        lines[0].starts_with("\u{feff}ID учащегося,Логин,"),
+        lines[0].starts_with("\u{feff}ID учащегося;Логин;"),
         "{text}"
     );
     assert!(lines[1].contains("bob"), "{text}");
-    assert!(lines[1].contains(",Тест,"), "{text}");
-    assert!(lines[1].contains(",На проверке,"), "{text}");
+    assert!(lines[1].contains(";Тест;"), "{text}");
+    assert!(lines[1].contains(";На проверке;"), "{text}");
     for name in ["at-risk", "course-progress", "assessment-outcomes"] {
         let res = app
             .get_as(
@@ -939,12 +939,12 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         )
         .await;
     let kk_text = kk.text();
-    assert!(kk_text.starts_with("\u{feff}Курс ID,Курс,"), "{kk_text}");
+    assert!(kk_text.starts_with("\u{feff}Курс ID;Курс;"), "{kk_text}");
     assert!(
         kk_text
             .lines()
             .skip(1)
-            .all(|l| l.ends_with(",Иә") || l.ends_with(",Жоқ")),
+            .all(|l| l.ends_with(";Иә") || l.ends_with(";Жоқ")),
         "{kk_text}"
     );
     let no_export = app.mint_session(&["analytics:read:assigned"]).await;
@@ -1967,9 +1967,9 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     let text = csv.text();
     let line = text.lines().nth(1).unwrap();
     // …,submission_rate,pass_rate,median_score,difficulty,signals
-    assert!(line.contains(",0,30,"), "{line}");
+    assert!(line.contains(";0;30;"), "{line}");
     // UX-135: the «Сигналы» cell is the watchlist label, not the wire code.
-    assert!(line.ends_with(",Низкая точность"), "{line}");
+    assert!(line.ends_with(";Низкая точность"), "{line}");
 
     // BUG-196: a learner-controlled cell that starts a formula is defused
     // in every export (one `csv_field`).
@@ -1987,10 +1987,10 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
         .await;
     let text = progress.text();
     assert!(
-        text.contains(",\"'=HYPERLINK(\"\"http://evil\"\",\"\"x\"\") +1-1\","),
+        text.contains(";\"'=HYPERLINK(\"\"http://evil\"\",\"\"x\"\") +1-1\";"),
         "{text}"
     );
-    assert!(!text.contains(",=HYPERLINK"), "{text}");
+    assert!(!text.contains(";=HYPERLINK"), "{text}");
 }
 
 /// UX-142: a code-challenge attempt that is graded but not released is not

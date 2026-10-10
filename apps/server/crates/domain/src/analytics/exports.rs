@@ -24,13 +24,18 @@ fn iso8601(unix: i64) -> String {
     jiff::Timestamp::from_second(unix).map_or_else(|_| unix.to_string(), |t| t.to_string())
 }
 
-fn document(header: &[&str], rows: impl Iterator<Item = Vec<String>>) -> String {
+fn document(
+    language: CsvLanguage,
+    header: &[&str],
+    rows: impl Iterator<Item = Vec<String>>,
+) -> String {
     let mut out = String::from("\u{feff}");
     out.push_str(&csv_row(
         &header.iter().map(|h| (*h).to_owned()).collect::<Vec<_>>(),
+        language,
     ));
     for row in rows.take(MAX_EXPORT_ROWS) {
-        out.push_str(&csv_row(&row));
+        out.push_str(&csv_row(&row, language));
     }
     out
 }
@@ -279,6 +284,7 @@ pub fn at_risk_csv(
 ) -> String {
     let rows = build_risk_rows(ctx, filters);
     document(
+        language,
         &at_risk_header(language),
         rows.into_iter()
             .filter(|r| r.risk_level.is_at_risk())
@@ -329,7 +335,7 @@ pub fn grading_backlog_csv(
                 iso8601(submitted_at(s)),
             ])
         });
-    document(&grading_backlog_header(language), rows)
+    document(language, &grading_backlog_header(language), rows)
 }
 
 #[must_use]
@@ -341,6 +347,7 @@ pub fn course_progress_csv(
     let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
     let snapshots = progress_snapshots(ctx, allowed.as_ref());
     document(
+        language,
         &course_progress_header(language),
         snapshots.values().map(|s| {
             vec![
@@ -365,6 +372,7 @@ pub fn assessment_outcomes_csv(
     language: CsvLanguage,
 ) -> String {
     document(
+        language,
         &assessment_outcomes_header(language),
         build_assessment_rows(ctx, filters).into_iter().map(|r| {
             vec![
@@ -393,8 +401,11 @@ mod tests {
 
     #[test]
     fn fields_are_quoted_per_rfc_4180() {
-        let doc = document(&["h1", "h2"], std::iter::once(vec!["1".into(), "2".into()]));
-        assert_eq!(doc, "\u{feff}h1,h2\r\n1,2\r\n");
+        let row = || std::iter::once(vec!["1.5".into(), "2".into()]);
+        let doc = document(CsvLanguage::En, &["h1", "h2"], row());
+        assert_eq!(doc, "\u{feff}h1,h2\r\n1.5,2\r\n");
+        let doc = document(CsvLanguage::Ru, &["h1", "h2"], row());
+        assert_eq!(doc, "\u{feff}h1;h2\r\n1,5;2\r\n");
     }
 
     #[test]

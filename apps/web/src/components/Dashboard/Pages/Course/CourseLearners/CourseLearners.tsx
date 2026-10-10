@@ -210,7 +210,7 @@ export default function CourseLearners() {
       ])
       const header = [t('colName'), t('colUsername'), t('colEmail'), t('colEnrolled'), `${t('colProgress')}, %`]
       const name = (courseStructure?.name || 'course').replace(/[\\/:*?"<>|]+/g, '_')
-      saveBlob(csvBlob([header, ...rows], ';'), `${name} - ${t('exportFileSuffix')}.csv`)
+      saveBlob(csvBlob([header, ...rows], locale), `${name} - ${t('exportFileSuffix')}.csv`)
     } catch (error) {
       toastApiError(error, undefined, t('exportFailed'))
     }

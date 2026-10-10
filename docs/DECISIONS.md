@@ -2495,3 +2495,15 @@ the certificate type label and verification footer. Existing issuance and verifi
 The course studio adds optional `course_start`, `course_end` (YYYY-MM-DD) and `training_hours` (whole
 hours 1–100000, stored as text) in certification config. Blank values are omitted from the PDF. Both
 the form and domain service validate dates, date order and hours. No schema migration or new route.
+
+## CSV exports follow the export language's Excel convention (2026-10-10, QA P2)
+
+Every CSV export (gradebook, test grades, file-task attempts, the four analytics exports, the roster
+and the client-built table / audit exports) was comma-separated with a decimal point, except the
+roster (`;`). Teachers here open CSVs in Excel with Russian/Kazakh Windows regional settings, whose list
+separator is `;`: a comma file opened as one column, and a score such as `8.7` turned into the date
+8 July. The export language (server: `Accept-Language`, web: the UI locale) now decides: ru / kk write
+`;` and a decimal comma (`93,33`), en keeps `,` and `93.33`. The rule lives in the one cell writer on
+each side (`ab_domain::csv::csv_row`, web `csvBlob`): a cell that is a plain decimal number
+(`-?\d+\.\d+`) gets the comma; ids, timestamps and versions (`3.8.1`) are untouched. BOM, CRLF and the
+formula defusing are unchanged. Replaces the comma-only exports of UX-114 / BUG-196.

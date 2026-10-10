@@ -580,15 +580,15 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
     let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
     assert_eq!(
         lines[0],
-        "Студент,Email,Попытка,Статус,Просрочено,Отправлено,Автооценка,Итоговый балл,Задание: Q1,Задание: Essay"
+        "Студент;Email;Попытка;Статус;Просрочено;Отправлено;Автооценка;Итоговый балл;Задание: Q1;Задание: Essay"
     );
     assert_eq!(lines.len(), 4);
     assert!(
-        lines[1].starts_with("alice,alice@example.com,1,Опубликовано,Нет,"),
+        lines[1].starts_with("alice;alice@example.com;1;Опубликовано;Нет;"),
         "{}",
         lines[1]
     );
-    assert!(lines[1].ends_with(",95,10,8"), "{}", lines[1]);
+    assert!(lines[1].ends_with(";95;10;8"), "{}", lines[1]);
     let english = app
         .send(
             Request::builder()
@@ -804,7 +804,7 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
     assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
     let text = csv.text();
     let row = text.lines().find(|l| l.starts_with("bob")).unwrap();
-    assert!(row.ends_with(",76"), "{row}");
+    assert!(row.ends_with(";76"), "{row}");
 }
 
 /// BUG-351: `sort`/`order` order the whole queue, not one page - a walk of
@@ -1321,7 +1321,7 @@ async fn pending_retake_never_outranks_the_released_grade(pool: PgPool) {
         .await;
     let text = csv.text();
     let row = text.lines().find(|l| l.starts_with("bob")).unwrap();
-    assert!(row.ends_with(",40"), "{row}");
+    assert!(row.ends_with(";40"), "{row}");
 }
 
 /// BUG-187: only a released grade is the grade of record - a returned
@@ -1403,7 +1403,7 @@ async fn returned_or_unreleased_retake_never_outranks_the_released_grade(pool: P
         .await;
     let text = csv.text();
     let row = text.lines().find(|l| l.starts_with("bob")).unwrap();
-    assert!(row.ends_with(",30"), "{row}");
+    assert!(row.ends_with(";30"), "{row}");
 }
 
 /// BUG-138: a publish-only save (no score, no item grades) keeps the raw
@@ -2877,8 +2877,8 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
     let text = csv.text();
     assert!(text.starts_with('\u{feff}'), "BOM first");
     let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
-    assert_eq!(lines[0], "Студент,Email,Quiz,Project Upload");
-    assert_eq!(lines[1], "alice,alice@example.com,95,77");
+    assert_eq!(lines[0], "Студент;Email;Quiz;Project Upload");
+    assert_eq!(lines[1], "alice;alice@example.com;95;77");
     assert_eq!(lines.len(), 2);
     let english = app
         .send(
