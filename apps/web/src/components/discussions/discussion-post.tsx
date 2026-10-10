@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowBigDown, ArrowBigUp, Clock, Edit, Reply, Send, Trash2 } from 'lucide-react'
+import { ArrowBigDown, ArrowBigUp, Clock, Edit, Eye, EyeOff, Reply, Send, Trash2 } from 'lucide-react'
 import { PermissionTooltip } from '@/components/Utils/PermissionTooltip'
 import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
@@ -39,6 +39,7 @@ interface DiscussionPostProps {
   onEditPost: (postId: string, newMessage: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
   onSubmitReply: (postId: string, replyText: string) => void
+  onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
 }
 
@@ -52,6 +53,7 @@ export default function DiscussionPost({
   onEditPost,
   onEditReply,
   onSubmitReply,
+  onToggleHidden,
   readOnly = false,
 }: DiscussionPostProps) {
   const t = useTranslations('CoursePage')
@@ -63,6 +65,7 @@ export default function DiscussionPost({
   // Use backend permission metadata
   const canUpdate = post.can_update ?? false
   const canDelete = post.can_delete ?? false
+  const canModerate = post.can_moderate ?? false
   const isOwner = post.is_owner ?? false
 
   const netScore = post.upvotes - post.downvotes
@@ -106,13 +109,30 @@ export default function DiscussionPost({
                       {t('you')}
                     </Badge>
                   )}
+                  {post.hidden && (
+                    <Badge variant="outline" className="h-auto px-1.5 py-0.5 text-xs">
+                      {t('discussionHidden')}
+                    </Badge>
+                  )}
                   <div className="text-muted-foreground flex items-center gap-1 text-xs">
                     <Clock size={12} />
                     <RelativeTime date={post.createDate} />
                   </div>
                 </div>
-                {(canDelete || canUpdate) && !editingPost && !readOnly && (
-                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {(canDelete || canUpdate || canModerate) && !editingPost && !readOnly && (
+                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    {canModerate && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onToggleHidden(post.id)}
+                        aria-label={t(post.hidden ? 'discussionRestore' : 'discussionHide')}
+                        title={t(post.hidden ? 'discussionRestore' : 'discussionHide')}
+                        className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
+                      >
+                        {post.hidden ? <Eye size={12} /> : <EyeOff size={12} />}
+                      </Button>
+                    )}
                     <PermissionTooltip enabled={canUpdate} action="update">
                       <Button
                         variant="ghost"
@@ -307,6 +327,7 @@ export default function DiscussionPost({
                   onVoteReply={onVoteReply}
                   onDeleteReply={onDeleteReply}
                   onEditReply={onEditReply}
+                  onToggleHidden={onToggleHidden}
                   readOnly={readOnly}
                 />
               ))}

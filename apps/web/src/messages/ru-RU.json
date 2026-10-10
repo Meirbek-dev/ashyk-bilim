@@ -3360,6 +3360,9 @@
     "whatYouWillLearn": "Что вы изучите",
     "writeReplyPlaceholder": "Написать ответ...",
     "you": "Вы",
+    "discussionHide": "Скрыть",
+    "discussionRestore": "Вернуть",
+    "discussionHidden": "Скрыто",
     "errors": {
       "createFailed": "Не удалось опубликовать обсуждение",
       "replyFailed": "Не удалось отправить ответ",
@@ -3371,7 +3374,9 @@
       "posted": "Сообщение опубликовано",
       "replied": "Ответ отправлен",
       "edited": "Изменения сохранены",
-      "deleted": "Сообщение удалено"
+      "deleted": "Сообщение удалено",
+      "hidden": "Скрыто от слушателей",
+      "restored": "Снова видно слушателям"
     },
     "quiz": "Тест",
     "editCourse": "Редактировать",

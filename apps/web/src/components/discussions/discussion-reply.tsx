@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react'
+import { ArrowBigDown, ArrowBigUp, Clock, Edit, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import RichContentRenderer from './rich-content-renderer'
 import RelativeTime from './relative-time'
@@ -31,6 +31,7 @@ interface DiscussionReplyProps {
   onVoteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void
   onDeleteReply: (postId: string, replyId: string) => void
   onEditReply: (postId: string, replyId: string, newMessage: string) => void
+  onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
 }
 
@@ -40,6 +41,7 @@ export default function DiscussionReply({
   onVoteReply,
   onDeleteReply,
   onEditReply,
+  onToggleHidden,
   readOnly = false,
 }: DiscussionReplyProps) {
   const t = useTranslations('CoursePage')
@@ -50,6 +52,7 @@ export default function DiscussionReply({
   // resolved against the viewer's grants server-side).
   const canUpdate = reply.can_update ?? false
   const canDelete = reply.can_delete ?? false
+  const canModerate = reply.can_moderate ?? false
   const isOwner = reply.is_owner ?? false
 
   const netScore = reply.upvotes - reply.downvotes
@@ -91,6 +94,11 @@ export default function DiscussionReply({
                   {t('you')}
                 </Badge>
               )}
+              {reply.hidden && (
+                <Badge variant="outline" className="h-auto px-1.5 py-0.5 text-xs">
+                  {t('discussionHidden')}
+                </Badge>
+              )}
               <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
                 <Clock size={12} />
                 <RelativeTime date={reply.createDate} />
@@ -98,8 +106,20 @@ export default function DiscussionReply({
             </div>
 
             {/* Action buttons */}
-            {(canUpdate || canDelete) && !editing && !readOnly && (
-              <div className="mr-5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            {(canUpdate || canDelete || canModerate) && !editing && !readOnly && (
+              <div className="mr-5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                {canModerate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onToggleHidden(postId, reply.id)}
+                    aria-label={t(reply.hidden ? 'discussionRestore' : 'discussionHide')}
+                    title={t(reply.hidden ? 'discussionRestore' : 'discussionHide')}
+                    className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
+                  >
+                    {reply.hidden ? <Eye size={12} /> : <EyeOff size={12} />}
+                  </Button>
+                )}
                 {canUpdate && (
                   <Button
                     variant="ghost"

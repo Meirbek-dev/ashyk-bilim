@@ -2,7 +2,7 @@
 // Gauntlet: `updated_at` is bumped by a DB trigger on every row update (likes,
 // reply counters), so it is not an edit signal - no "(edited)" marker from it.
 import { describe, expect, it, vi } from 'vite-plus/test'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import DiscussionPost from '@/components/discussions/discussion-post'
 import type { DiscussionPostData } from '@/components/discussions/types'
@@ -44,9 +44,35 @@ describe('DiscussionPost edited marker', () => {
           onEditPost={() => {}}
           onEditReply={() => {}}
           onSubmitReply={() => {}}
+          onToggleHidden={() => {}}
         />
       </NextIntlClientProvider>,
     )
     expect(screen.queryByText(/Отредактировано/)).toBeNull()
+  })
+})
+
+describe('DiscussionPost moderation', () => {
+  it('marks a hidden post and lets a moderator restore it', () => {
+    const onToggleHidden = vi.fn()
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <DiscussionPost
+          post={{ ...post, hidden: true, can_moderate: true }}
+          currentUser={{ id: 'me', username: 'me' } as AppUserSummary}
+          onVotePost={() => {}}
+          onVoteReply={() => {}}
+          onDeletePost={() => {}}
+          onDeleteReply={() => {}}
+          onEditPost={() => {}}
+          onEditReply={() => {}}
+          onSubmitReply={() => {}}
+          onToggleHidden={onToggleHidden}
+        />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByText('Скрыто')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Вернуть' }))
+    expect(onToggleHidden).toHaveBeenCalledWith(post.id)
   })
 })

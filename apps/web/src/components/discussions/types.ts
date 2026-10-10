@@ -14,6 +14,9 @@ export interface DiscussionReplyData {
   is_disliked?: boolean
   can_update?: boolean
   can_delete?: boolean
+  can_moderate?: boolean
+  /** Hidden by a moderator: only moderators (and the author) still see it. */
+  hidden?: boolean
   is_owner?: boolean
 }
 
@@ -35,6 +38,7 @@ export interface DiscussionPostData {
   can_update?: boolean
   can_delete?: boolean
   can_moderate?: boolean
+  hidden?: boolean
   is_owner?: boolean
   is_creator?: boolean
   available_actions?: string[]

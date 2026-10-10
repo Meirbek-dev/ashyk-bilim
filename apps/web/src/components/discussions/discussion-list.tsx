@@ -71,6 +71,8 @@ const toReplyData = (reply: Discussion, anonymousLabel: string): DiscussionReply
   // `allowed_actions` supersedes the `can_*` flags: it also folds in the archived-course freeze (409).
   can_update: reply.allowed_actions.includes('update'),
   can_delete: reply.allowed_actions.includes('delete'),
+  can_moderate: reply.allowed_actions.includes('moderate'),
+  hidden: reply.status === 'hidden',
   is_owner: reply.is_owner,
 })
 
@@ -79,6 +81,7 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
   can_update: discussion.allowed_actions.includes('update'),
   can_delete: discussion.allowed_actions.includes('delete'),
   can_moderate: discussion.allowed_actions.includes('moderate'),
+  hidden: discussion.status === 'hidden',
   is_owner: discussion.is_owner,
   id: discussion.id,
   discussion_uuid: discussion.discussion_uuid,
@@ -387,6 +390,30 @@ export default function DiscussionList({
     }
   }
 
+  /** A moderator hides or restores a post (`replyId` absent) or one reply. */
+  const handleToggleHidden = async (postId: string, replyId?: string) => {
+    const post = posts.find(p => p.id === postId)
+    const target = replyId ? post?.replies.find(r => r.id === replyId) : post
+    if (!post || !target) return
+    const hidden = !target.hidden
+    try {
+      await updateDiscussion(courseUuid, target.discussion_uuid, { status: hidden ? 'hidden' : 'active' })
+      setPosts(current =>
+        current.map(p =>
+          p.id !== postId
+            ? p
+            : replyId
+              ? { ...p, replies: p.replies.map(r => (r.id === replyId ? { ...r, hidden } : r)) }
+              : { ...p, hidden },
+        ),
+      )
+      toast.success(t(hidden ? 'toasts.hidden' : 'toasts.restored'))
+      onMutate?.()
+    } catch (error) {
+      toastApiError(error, { fallback: t('errors.updateFailed') })
+    }
+  }
+
   const handleEditReply = async (postId: string, replyId: string, newMessage: string) => {
     const post = posts.find(p => p.id === postId)
     if (!post) {
@@ -476,6 +503,7 @@ export default function DiscussionList({
             onDeleteReply={(postId, replyId) => setPendingDelete({ postId, replyId })}
             onEditPost={handleEditPost}
             onEditReply={handleEditReply}
+            onToggleHidden={handleToggleHidden}
             onSubmitReply={handleSubmitReply}
             readOnly={readOnly}
           />

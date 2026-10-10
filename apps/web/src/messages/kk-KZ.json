@@ -3166,6 +3166,9 @@
     "whatYouWillLearn": "Не үйренесіз",
     "writeReplyPlaceholder": "Жауап жазу...",
     "you": "Сіз",
+    "discussionHide": "Жасыру",
+    "discussionRestore": "Қайтару",
+    "discussionHidden": "Жасырылған",
     "errors": {
       "createFailed": "Талқылауды жариялау мүмкін болмады",
       "replyFailed": "Жауапты жіберу мүмкін болмады",
@@ -3177,7 +3180,9 @@
       "posted": "Хабарлама жарияланды",
       "replied": "Жауап жіберілді",
       "edited": "Өзгерістер сақталды",
-      "deleted": "Хабарлама жойылды"
+      "deleted": "Хабарлама жойылды",
+      "hidden": "Тыңдаушылардан жасырылды",
+      "restored": "Тыңдаушыларға қайта көрінеді"
     },
     "quiz": "Тест",
     "editCourse": "Өңдеу",
