@@ -1,4 +1,4 @@
-# One workflow for gates, images, stack smoke and publish. Only release/** branches
+# One workflow for gates, images, stack smoke and publish. main and release/** branches
 # publish: server, the old web (production since the 2026-10-04 rollback) and, when web2-e2e
 # is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md).
 # Pull requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
@@ -30,12 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      # Forced on release/** (production runs the old web): otherwise publish re-tags the
+      server: ${{ steps.filter.outputs.server == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+      # Forced on main and release/** (production runs the old web): otherwise publish re-tags the
       # last built ashyq-web and the release ships stale web code.
-      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      web2: ${{ steps.filter.outputs.web2 == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
+      web: ${{ steps.filter.outputs.web == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+      web2: ${{ steps.filter.outputs.web2 == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+      infra: ${{ steps.filter.outputs.infra == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
@@ -464,10 +464,10 @@ jobs:
 
   publish:
     needs: [changes, server-lint, server-test, web2-gates, infra-gates, stack-smoke, web2-e2e]
-    # Release branches only (every gate runs there). A red web2-e2e withholds ashyq-web-2 but
+    # main and release branches (every gate runs there). A red web2-e2e withholds ashyq-web-2 but
     # not a server release; any red gate withholds everything (images no longer wait for gates).
     if: >-
-      startsWith(github.ref, 'refs/heads/release/') && !cancelled() &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !cancelled() &&
       needs.server-lint.result == 'success' && needs.server-test.result == 'success' &&
       needs.web2-gates.result == 'success' && needs.infra-gates.result == 'success' &&
       needs.stack-smoke.result == 'success'

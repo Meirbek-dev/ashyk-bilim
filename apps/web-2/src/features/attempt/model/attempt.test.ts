@@ -167,7 +167,13 @@ describe('attempt answers and outcomes', () => {
     const form: ItemBody = { kind: 'form', fields: [{ id: 'f', label: 'Name' }] }
     expect(answerText(form, { kind: 'form', values: { f: 'Ann' } })).toBe('Name: Ann')
     // The form's field order, not the stored (id-sorted) one.
-    const two: ItemBody = { kind: 'form', fields: [{ id: 'z', label: 'City' }, { id: 'a', label: 'Age' }] }
+    const two: ItemBody = {
+      kind: 'form',
+      fields: [
+        { id: 'z', label: 'City' },
+        { id: 'a', label: 'Age' },
+      ],
+    }
     expect(answerText(two, { kind: 'form', values: { a: '20', z: 'Astana' } })).toBe('City: Astana; Age: 20')
     expect(answerText(choice, null)).toBe('')
   })

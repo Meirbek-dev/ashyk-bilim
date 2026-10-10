@@ -38,7 +38,7 @@ export function FilterForm({ filters, courses, cohorts, onApplied }: FilterFormP
     <search>
       <form
         aria-label={m.ui_filters()}
-        className="grid items-end gap-4 @2xl:grid-cols-3 @5xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]"
+        className="grid items-end gap-4 @2xl:grid-cols-3 @5xl:grid-cols-6"
         onSubmit={event => {
           event.preventDefault()
           void form.handleSubmit()
