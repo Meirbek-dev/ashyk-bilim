@@ -1,3 +1,4 @@
+import { m } from '#/paraglide/messages'
 import type {
   AssessmentItem,
   AssessmentKind,
@@ -28,10 +29,13 @@ export function itemKindOf(item: Pick<AssessmentItem, 'body'>): NewItemKind {
 
 const newId = () => crypto.randomUUID()
 
-/** The fixed options of a true/false question: their texts are the server's labels, not the author's. */
+/**
+ * The fixed options of a true/false question. Learners (both frontends) read `text`, so it is the author's wording
+ * in the interface language («Верно» / «Неверно»), as the old builder wrote it; ids stay `true` / `false`.
+ */
 const trueFalseOptions = (correct: 'true' | 'false' = 'true') => [
-  { id: 'true', text: 'true', is_correct: correct === 'true' },
-  { id: 'false', text: 'false', is_correct: correct === 'false' },
+  { id: 'true', text: m.assessments_option_true(), is_correct: correct === 'true' },
+  { id: 'false', text: m.assessments_option_false(), is_correct: correct === 'false' },
 ]
 
 const choice = (variant: ChoiceVariant, options: Choice['options']): Choice => ({
