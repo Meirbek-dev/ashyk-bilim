@@ -1,7 +1,6 @@
 # One workflow for gates, images, stack smoke and publish. Only release/** branches
-# publish: server, the frozen old web (the rollback target until Ф9) and, when web2-e2e
-# is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md). main cannot
-# build the old web (QUESTIONS.md Q-2026-10-03-1), so it publishes nothing until Ф9.
+# publish: server, the old web (production since the 2026-10-04 rollback) and, when web2-e2e
+# is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md).
 # Pull requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
 # only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
 name: ci
@@ -45,9 +44,8 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
-            # Frozen old web (G-13): only its image, and only when it changed (Legacy-Hotfix,
-            # from a release/stage1 lineage). Its catalogs are Paraglide since 34d8cd2, so it no
-            # longer builds on main (QUESTIONS.md Q-2026-10-03-1).
+            # Old web: its image only when it changed. It reads the Paraglide catalogs (34d8cd2)
+            # through a load-time conversion; the G-13 freeze is lifted (DECISIONS 2026-10-10).
             web:
               - 'apps/web/**'
               - 'package.json'

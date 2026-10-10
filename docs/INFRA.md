@@ -527,11 +527,11 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
   The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
   First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
   on it: 160 s, row counts match prod (RTO target 2 h met with margin).
-- **`main` publishes nothing until Ф9.** The old web no longer builds on `main`
-  (34d8cd2 moved its catalogs to Paraglide; `apps/web` is frozen), so releases
-  come from `release/**`; they carry the newest published `ashyq-web` under
-  their own `<sha>`. Stage 2 cutover: `docs/STAGE-2-CUTOVER.md`. See
-  `QUESTIONS.md` Q-2026-10-03-1.
+- **Releases come from `release/**`** (only those publish). Since 2026-10-10 the
+  old web builds on `main` again: it reads the Paraglide catalogs (34d8cd2)
+  through a load-time conversion and the G-13 freeze is lifted, so a release
+  branch cut from `main` carries the current `apps/web`. Stage 2 cutover:
+  `docs/STAGE-2-CUTOVER.md`.
 - **Judge0 in CI smoke is off** (privileged). Verified on prod at the cutover:
   healthy, 401 without token, `judge0-tune` applied.
 - **No external monitoring** (owner decision 2026-10-02: no external
