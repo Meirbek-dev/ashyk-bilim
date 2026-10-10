@@ -100,6 +100,11 @@ test('B-CST-20 the cover is shown and can be removed', async ({ page, studio, se
   await page.getByRole('button', { name: m.studio_thumbnail_remove({}, ru) }).click()
   await expect(page.getByText(m.studio_thumbnail_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_thumbnail_none({}, ru))).toBeVisible()
+  // A picked image is the cover at once: no Save to miss.
+  await page
+    .getByLabel(m.studio_thumbnail_field({}, ru))
+    .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: PIXEL })
+  await expect(page.getByRole('img', { name: m.studio_thumbnail_alt({}, ru) })).toBeVisible()
 })
 
 test('B-CST-21 the certificate is switched on, configured, and switched off', async ({ page, studio }) => {

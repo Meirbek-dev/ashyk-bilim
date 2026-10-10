@@ -16,7 +16,7 @@ import { useIfMatch } from './use-if-match'
 
 const defaultValues: UpdateCourseRequest = { thumbnail_upload_id: undefined }
 
-/** "Cover": the current image, a new one uploaded as `course-thumbnail` and claimed on Save, or removed. */
+/** "Cover": the current image, a new one uploaded as `course-thumbnail` and claimed at once, or removed. */
 export function ThumbnailSection({ course }: { course: Course }) {
   const queryClient = useQueryClient()
   const update = useMutation(updateCourseOptions(queryClient, course.id))
@@ -33,7 +33,11 @@ export function ThumbnailSection({ course }: { course: Course }) {
   )
   const form = useAppForm(vUpdateCourseRequest, {
     defaultValues,
-    onSubmit: body => write.save(body, course.version),
+    // Saved, the upload is the course's: a later Save must not claim it again.
+    onSubmit: async body => {
+      await write.save(body, course.version)
+      form.reset()
+    },
   })
   // Other errors are on `update.error` (shown by the section).
   const remove = () => void write.save({ thumbnail_upload_id: null }, course.version).catch(() => undefined)
@@ -60,7 +64,8 @@ export function ThumbnailSection({ course }: { course: Course }) {
         ) : (
           <p className="text-sm text-muted-foreground">{m.studio_thumbnail_none()}</p>
         )}
-        <form.AppField name="thumbnail_upload_id">
+        {/* A picked image is the new cover at once: it was left unsaved when the teacher missed the Save. */}
+        <form.AppField name="thumbnail_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>
           {() => (
             <FileField
               label={m.studio_thumbnail_field()}
