@@ -964,8 +964,8 @@
       "failed": "Аккаунт жасалмады. Қайталап көріңіз.",
       "haveAccount": "Аккаунтыңыз бар ма?",
       "login": "Кіру",
-      "organization": "Ұйым",
-      "organizationPlaceholder": "Университет, мектеп, колледж немесе компания"
+      "organization": "Ұйымның атауы",
+      "organizationPlaceholder": "Мысалы, № 25 мектеп"
     },
     "VerifyEmail": {
       "title": "Поштаны растау - Ashyq Bilim",
@@ -7226,8 +7226,8 @@
         "uploadingAvatar": "Жүктелуде",
         "username": "Пайдаланушы аты",
         "usernamePlaceholder": "Пайдаланушы атыңызды енгізіңіз",
-        "organization": "Ұйым",
-        "organizationPlaceholder": "Университет, мектеп, колледж немесе компания"
+        "organization": "Ұйымның атауы",
+        "organizationPlaceholder": "Мысалы, № 25 мектеп"
       },
       "profile": "Профиль",
       "profileSection": {

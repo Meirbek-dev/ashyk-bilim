@@ -1056,8 +1056,8 @@
       "failed": "Could not create the account. Please try again.",
       "haveAccount": "Already have an account?",
       "login": "Sign in",
-      "organization": "Organization",
-      "organizationPlaceholder": "University, school, college or company"
+      "organization": "Organization name",
+      "organizationPlaceholder": "For example, School No. 25"
     },
     "VerifyEmail": {
       "title": "Verify email - Ashyq Bilim",
@@ -7638,8 +7638,8 @@
         "uploadingAvatar": "Uploading",
         "username": "Username",
         "usernamePlaceholder": "Enter your username",
-        "organization": "Organization",
-        "organizationPlaceholder": "University, school, college or company"
+        "organization": "Organization name",
+        "organizationPlaceholder": "For example, School No. 25"
       },
       "profile": "Profile",
       "profileSection": {

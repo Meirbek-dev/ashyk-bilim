@@ -1059,8 +1059,8 @@
       "failed": "Не удалось создать аккаунт. Попробуйте ещё раз.",
       "haveAccount": "Уже есть аккаунт?",
       "login": "Войти",
-      "organization": "Организация",
-      "organizationPlaceholder": "Университет, школа, колледж или компания"
+      "organization": "Название организации",
+      "organizationPlaceholder": "Например, школа № 25"
     },
     "VerifyEmail": {
       "title": "Подтверждение почты - Ashyq Bilim",
@@ -7753,8 +7753,8 @@
         "uploadingAvatar": "Загрузка",
         "username": "Имя пользователя",
         "usernamePlaceholder": "Введите имя пользователя",
-        "organization": "Организация",
-        "organizationPlaceholder": "Университет, школа, колледж или компания"
+        "organization": "Название организации",
+        "organizationPlaceholder": "Например, школа № 25"
       },
       "profile": "Профиль",
       "profileSection": {
