@@ -91,6 +91,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   const platform = usePlatform()
   const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes')
   const t = useTranslations('Certificates.CertificatePreview')
+  const tPatterns = useTranslations('Certificates.EditCourseCertification.certificatePatterns')
   const layout = getCertificateLayout(certificatePattern)
   const typeLabel =
     certificationType && tTypes.has(certificationType) ? tTypes(certificationType) : tTypes('completion')
@@ -244,9 +245,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                     {t('template')}
                   </div>
                   <div className="text-foreground mt-2 text-sm font-medium">
-                    {t(`certificatePatterns.${certificatePattern}`, {
-                      defaultValue: t('certificate'),
-                    })}
+                    {tPatterns.has(certificatePattern) ? tPatterns(certificatePattern) : t('certificate')}
                   </div>
                 </div>
 
