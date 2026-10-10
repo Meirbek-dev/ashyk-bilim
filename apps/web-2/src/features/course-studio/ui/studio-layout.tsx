@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { ActivityDetail } from '#/shared/api/gen/types.gen'
+import type { ActivityDetail, ActivityType } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/ui/button'
@@ -19,6 +19,19 @@ const saveLabels: Record<SaveState, () => string> = {
   saved: m.studio_save_saved,
   failed: m.studio_save_failed,
 }
+
+// Pages, videos and documents are not handed in: their studio has no "Submissions" and "Results" tabs.
+const HANDED_IN = {
+  quiz: true,
+  exam: true,
+  code_challenge: true,
+  file_submission: true,
+  dynamic: false,
+  video: false,
+  document: false,
+  custom: false,
+} satisfies Record<ActivityType, boolean>
+const WORK_TABS = ['/submissions', '/results']
 
 type CourseStudioLayoutProps = {
   /** The header's published control of activities backed by another object (assessments, slice 5.1); null: the switch. */
@@ -60,11 +73,13 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
     >
       <div className="flex flex-col gap-gutter">
         <nav aria-label={m.ui_sections()} className="flex overflow-x-auto border-b">
-          {(staticData.tabs ?? []).map(tab => (
-            <Link key={tab.to} variant="tab" to={tab.to} params={{ courseId, activityId }}>
-              {tab.label()}
-            </Link>
-          ))}
+          {(staticData.tabs ?? [])
+            .filter(tab => HANDED_IN[activity.activity_type] || !WORK_TABS.some(work => tab.to.endsWith(work)))
+            .map(tab => (
+              <Link key={tab.to} variant="tab" to={tab.to} params={{ courseId, activityId }}>
+                {tab.label()}
+              </Link>
+            ))}
         </nav>
         <SaveStatusContext value={(id, next) => setSave({ activityId: id, state: next })}>
           <Outlet />
