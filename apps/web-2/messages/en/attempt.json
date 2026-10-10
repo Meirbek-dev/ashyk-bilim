@@ -65,6 +65,7 @@
   "attempt_choose_many": "Choose all correct answers",
   "attempt_your_answer": "Your answer",
   "attempt_min_words": "At least {count} words",
+  "attempt_word_count": "Words: {count}",
   "attempt_match_pick": "Pick a match",
   "attempt_code_open": "Open the code editor",
   "attempt_submit_title": "Submit the attempt?",

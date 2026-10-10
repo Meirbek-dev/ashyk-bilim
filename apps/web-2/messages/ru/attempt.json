@@ -65,6 +65,7 @@
   "attempt_choose_many": "Выберите все верные ответы",
   "attempt_your_answer": "Ваш ответ",
   "attempt_min_words": "Не меньше {count} слов",
+  "attempt_word_count": "Слов: {count}",
   "attempt_match_pick": "Выберите пару",
   "attempt_code_open": "Открыть редактор кода",
   "attempt_submit_title": "Сдать попытку?",

@@ -65,6 +65,7 @@
   "attempt_choose_many": "Барлық дұрыс жауаптарды таңдаңыз",
   "attempt_your_answer": "Сіздің жауабыңыз",
   "attempt_min_words": "Кемінде {count} сөз",
+  "attempt_word_count": "Сөз саны: {count}",
   "attempt_match_pick": "Жұбын таңдаңыз",
   "attempt_code_open": "Код редакторын ашу",
   "attempt_submit_title": "Әрекетті тапсырасыз ба?",

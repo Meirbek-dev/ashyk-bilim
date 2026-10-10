@@ -37,9 +37,12 @@ export function FormItem({ body, answer, onChange, disabled }: FormProps) {
         }
         return (
           <Field key={field.id}>
-            <FieldLabel htmlFor={fieldId}>{field.label}</FieldLabel>
+            <FieldLabel htmlFor={fieldId}>
+              {field.label}
+              {field.required ? <span aria-hidden="true">*</span> : null}
+            </FieldLabel>
             {field.field_type === 'textarea' ? (
-              <Textarea rows={4} {...common} />
+              <Textarea rows={4} className="min-h-24" {...common} />
             ) : (
               <Input type={inputTypes[field.field_type ?? 'text']} {...common} />
             )}
