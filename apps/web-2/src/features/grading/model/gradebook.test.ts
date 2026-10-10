@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { GradebookCell, GradebookPage } from '#/shared/api/gen/types.gen'
 
-import { gradebookColumns, gradebookQuery, gradebookRows, reviewTarget } from './gradebook'
+import { gradebookColumns, gradebookQuery, gradebookRows, reviewTarget, waitingNote } from './gradebook'
 import { gradebookSearchSchema } from '../route'
 
 const user = (name: string) => ({ id: `u-${name}`, display_name: `Name ${name}`, username: name, email: '' })
@@ -55,6 +55,18 @@ describe('gradebook', () => {
     expect(reviewTarget(cell('u', 'x'))).toBe('sub-1')
     expect(reviewTarget(cell('u', 'x', { pending_attempt_id: 'newer' }))).toBe('newer')
     expect(reviewTarget(cell('u', 'x', { submission_id: null, attempt_id: 'att' }))).toBe('att')
+  })
+
+  test('B-GRD-19 a newer waiting attempt is noted; the shown attempt waiting is not', () => {
+    expect(
+      waitingNote(cell('u', 'x', { status: 'graded', pending_attempt: 1, pending_attempt_status: 'graded' })),
+    ).toBe(null)
+    expect(
+      waitingNote(cell('u', 'x', { attempt_number: 1, pending_attempt: 2, pending_attempt_status: 'pending' })),
+    ).toBe('grade')
+    expect(
+      waitingNote(cell('u', 'x', { attempt_number: 1, pending_attempt: 2, pending_attempt_status: 'graded' })),
+    ).toBe('release')
   })
 
   test('B-GRD-20 search and "has work to review" go to the server; unknown URL values are dropped', () => {

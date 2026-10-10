@@ -5,7 +5,7 @@ import type { GradebookCell as Cell } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { linkVariants } from '#/shared/components/link-variants'
 
-import { reviewTarget } from '../model/gradebook'
+import { reviewTarget, waitingNote } from '../model/gradebook'
 import { scoreText, statusMeta } from './labels'
 
 type GradebookCellProps = { courseId: string; cell: Cell | undefined; learner: string; activity: string }
@@ -15,12 +15,15 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
   if (!cell) return <span className="text-muted-foreground">{m.grading_cell_none()}</span>
   const target = reviewTarget(cell)
   const status = statusMeta[cell.status]
+  const note = waitingNote(cell)
   const content = (
     <span className="flex flex-wrap items-center gap-2">
       <span className="tabular-nums">{scoreText(cell.final_score)}</span>
       <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-      {cell.pending_attempt_id && cell.status !== 'pending' ? (
-        <span className="text-xs text-muted-foreground">{m.grading_cell_waiting()}</span>
+      {note ? (
+        <span className="text-xs text-muted-foreground">
+          {note === 'release' ? m.grading_cell_waiting_release() : m.grading_cell_waiting()}
+        </span>
       ) : null}
     </span>
   )

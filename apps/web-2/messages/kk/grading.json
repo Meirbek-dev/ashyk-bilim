@@ -138,5 +138,6 @@
   "grading_pending_only": "Тексеруге жұмыстары бар",
   "grading_cell_none": "Жұмыс жоқ",
   "grading_cell_waiting": "Жаңа әрекет тексеруді күтуде",
+  "grading_cell_waiting_release": "Жаңа әрекеттің бағасы жариялауды күтуде",
   "grading_cell_link": "Жұмыс: {learner}, {activity}"
 }

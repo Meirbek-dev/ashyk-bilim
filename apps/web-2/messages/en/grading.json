@@ -138,5 +138,6 @@
   "grading_pending_only": "Has submissions to review",
   "grading_cell_none": "No submission",
   "grading_cell_waiting": "A new attempt awaits review",
+  "grading_cell_waiting_release": "A new attempt's grade awaits release",
   "grading_cell_link": "Submission: {learner}, {activity}"
 }

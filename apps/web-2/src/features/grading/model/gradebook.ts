@@ -44,3 +44,15 @@ export function gradebookRows(pages: readonly GradebookPage[]): GradebookRow[] {
  */
 export const reviewTarget = (cell: GradebookCell): string | null =>
   cell.pending_attempt_id ?? cell.submission_id ?? cell.attempt_id
+
+/**
+ * What a cell adds under its grade when a newer attempt than the one shown waits for the teacher: a grade, or the
+ * release of one. Nothing when the shown attempt is the waiting one (a single held attempt said «Новая попытка ждёт
+ * проверки»).
+ */
+export const waitingNote = (cell: GradebookCell): 'grade' | 'release' | null =>
+  cell.pending_attempt === null || cell.pending_attempt === cell.attempt_number
+    ? null
+    : cell.pending_attempt_status === 'graded'
+      ? 'release'
+      : 'grade'
