@@ -7,7 +7,38 @@ import { createUpload, finalizeUpload } from './gen/sdk.gen'
 
 const MB = 1024 * 1024
 const IMAGES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']
-const VIDEOS = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime', 'video/x-msvideo', 'video/x-flv']
+// The server also stores AVI and FLV, which no browser plays: a lesson made of one shows learners nothing.
+const VIDEOS = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime']
+
+/**
+ * The type the server's policy matches exactly. Browsers disagree per OS: Chromium on Windows says
+ * `video/matroska` for .mkv and `video/avi` for .avi, and a file without a registered type has none, so a type
+ * outside this table falls back to the one the extension names.
+ */
+const TYPE_BY_EXTENSION: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+  flv: 'video/x-flv',
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  avif: 'image/avif',
+}
+const KNOWN_TYPES = new Set(Object.values(TYPE_BY_EXTENSION))
+
+/** The type a file is declared (and stored) with: see `TYPE_BY_EXTENSION`. */
+export function uploadType(file: { name?: string; type: string }): string {
+  if (KNOWN_TYPES.has(file.type)) return file.type
+  const extension = file.name?.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : ''
+  return TYPE_BY_EXTENSION[extension] ?? file.type
+}
 
 export type { UploadPurpose }
 
@@ -29,7 +60,10 @@ const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly st
   'discussion-image': { maxBytes: 5 * MB, mimes: IMAGES },
 }
 
-export type UploadProblem = { kind: 'too-large'; maxBytes: number } | { kind: 'wrong-type'; mimes: readonly string[] }
+export type UploadProblem =
+  | { kind: 'empty' }
+  | { kind: 'too-large'; maxBytes: number }
+  | { kind: 'wrong-type'; mimes: readonly string[] }
 
 /**
  * Narrower rules of the resource the file is for (a file-submission task's types and size): an empty or absent
@@ -47,19 +81,27 @@ const policyOf = (purpose: UploadPurpose, limits: UploadLimits) => {
 
 /** Why this file cannot be uploaded for this purpose, or null. Show it before any request (DESIGN 10 tone). */
 export function checkUpload(
-  file: { size: number; type: string },
+  file: { name?: string; size: number; type: string },
   purpose: UploadPurpose,
   limits: UploadLimits = {},
 ): UploadProblem | null {
   const { maxBytes, mimes } = policyOf(purpose, limits)
+  // The server refuses an empty upload with a bare "validation failed".
+  if (file.size === 0) return { kind: 'empty' }
   if (file.size > maxBytes) return { kind: 'too-large', maxBytes }
-  if (mimes.length > 0 && !mimes.includes(file.type)) return { kind: 'wrong-type', mimes }
+  if (mimes.length > 0 && !mimes.includes(uploadType(file))) return { kind: 'wrong-type', mimes }
   return null
 }
 
 /** The `accept` attribute of a file picker for this purpose ("" = any type). */
-export const uploadAccept = (purpose: UploadPurpose, limits: UploadLimits = {}): string =>
-  policyOf(purpose, limits).mimes.join(',')
+export const uploadAccept = (purpose: UploadPurpose, limits: UploadLimits = {}): string => {
+  const mimes = policyOf(purpose, limits).mimes
+  // The extensions too: a picker filters by the OS's type of a file, which may differ (`video/matroska`).
+  const extensions = Object.entries(TYPE_BY_EXTENSION).flatMap(([extension, type]) =>
+    mimes.includes(type) ? [`.${extension}`] : [],
+  )
+  return [...extensions, ...mimes].join(',')
+}
 
 /** The image of a paste (a screenshot, a copied picture), or null when the clipboard holds none. */
 export function clipboardImage(clipboard: DataTransfer | null): File | null {
@@ -76,7 +118,8 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('PUT', url)
-    request.setRequestHeader('Content-Type', file.type)
+    // Signed into the URL: exactly the declared type.
+    request.setRequestHeader('Content-Type', uploadType(file))
     // The presigned URL writes the object once; a replay answers 412 instead of overwriting.
     request.setRequestHeader('If-None-Match', '*')
     request.upload.addEventListener('progress', event => {
@@ -108,7 +151,7 @@ export async function upload(
   options: UploadOptions = {},
 ): Promise<FinalizedUpload> {
   const { data: slot } = await createUpload({
-    body: { purpose, mime: file.type, size_bytes: file.size },
+    body: { purpose, mime: uploadType(file), size_bytes: file.size },
     signal: options.signal,
     throwOnError: true,
   })

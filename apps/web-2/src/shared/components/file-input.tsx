@@ -5,9 +5,10 @@ import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { uploadAccept, type UploadLimits, type UploadPurpose } from '#/shared/api/upload'
 import { useUpload } from '#/shared/hooks/use-upload'
 import { cn } from '#/shared/lib/utils'
-import { buttonVariants } from '#/shared/ui/button'
+import { Button, buttonVariants } from '#/shared/ui/button'
 import { Input } from '#/shared/ui/input'
-import { Progress } from '#/shared/ui/progress'
+
+import { UploadProgress } from './upload-progress'
 
 type FileInputProps = {
   label: string
@@ -43,17 +44,19 @@ function useHandedFile(file: File | undefined, take: (file: File) => Promise<voi
 export function FileInput(props: FileInputProps) {
   const { label, description, purpose, limits = {}, onUploaded, file, error, disabled = false } = props
   const id = useId()
-  const { start, progress, error: uploadError, pending } = useUpload(purpose, limits)
+  const { start, cancel, failed, progress, error: uploadError, pending } = useUpload(purpose, limits)
   const [dragging, setDragging] = useState(false)
   const [uploaded, setUploaded] = useState<string | null>(null)
+  const [picked, setPicked] = useState<File | null>(null)
   const shownError = uploadError ?? error
   const inactive = disabled || pending
 
-  async function take(picked: File | undefined) {
-    if (!picked || inactive) return
-    const done = await start(picked)
-    setUploaded(done ? picked.name : null)
-    if (done) onUploaded(done, picked)
+  async function take(next: File | undefined) {
+    if (!next || inactive) return
+    setPicked(next)
+    const done = await start(next)
+    setUploaded(done ? next.name : null)
+    if (done) onUploaded(done, next)
   }
   useHandedFile(file, take)
   function drop(event: DragEvent) {
@@ -103,12 +106,18 @@ export function FileInput(props: FileInputProps) {
         </label>
         <span>{m.ui_file_drop()}</span>
       </div>
-      {progress === null ? null : <Progress value={Math.round(progress * 100)} aria-label={m.ui_file_uploading()} />}
+      {progress === null ? null : <UploadProgress progress={progress} file={picked} onCancel={cancel} />}
       <div id={`${id}-status`} aria-live="polite" className="flex flex-col gap-1 text-sm">
         {description ? <p className="text-muted-foreground">{description}</p> : null}
+        {pending && progress === null ? <p className="text-muted-foreground">{m.ui_file_checking()}</p> : null}
         {uploaded && !shownError ? <p>{m.ui_file_uploaded({ name: uploaded })}</p> : null}
         {shownError ? <p className="text-destructive">{shownError}</p> : null}
       </div>
+      {failed && !pending ? (
+        <Button variant="outline" size="sm" className="self-start" onClick={() => void take(failed)}>
+          {m.ui_file_retry()}
+        </Button>
+      ) : null}
     </div>
   )
 }

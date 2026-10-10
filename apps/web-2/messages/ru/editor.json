@@ -58,11 +58,12 @@
   "editor_block_pdf": "PDF-документ",
   "editor_image_hint": "JPEG, PNG, GIF, WebP или AVIF до 10 МБ",
   "editor_pdf_hint": "PDF до 50 МБ",
-  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI или FLV до 2 ГБ",
+  "editor_video_hint": "MP4, WebM, MKV или MOV до 2 ГБ",
   "editor_video_play": "Воспроизвести",
   "editor_video_pause": "Пауза",
   "editor_video_position": "Позиция воспроизведения",
   "editor_video_mute": "Выключить звук",
   "editor_video_fullscreen": "Во весь экран",
+  "editor_video_failed": "Видео не воспроизводится: файл повреждён или в формате, который браузер не поддерживает. Сообщите преподавателю.",
   "editor_embed_own_origin": "Страницы этого сайта нельзя встроить. Вставьте адрес внешнего сервиса (YouTube, Google Docs…)."
 }

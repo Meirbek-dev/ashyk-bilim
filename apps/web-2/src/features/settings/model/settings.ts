@@ -17,6 +17,7 @@ export const AVATAR_MAX_MB = 5
 export function avatarProblem(file: { size: number; type: string }): string | null {
   const problem = checkUpload(file, 'avatar')
   if (!problem) return null
+  if (problem.kind === 'empty') return m.ui_file_empty()
   return problem.kind === 'too-large'
     ? m.settings_avatar_too_large({ mb: Math.round(problem.maxBytes / MB) })
     : m.settings_avatar_wrong_type()

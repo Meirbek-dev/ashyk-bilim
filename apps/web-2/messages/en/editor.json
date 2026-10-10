@@ -58,11 +58,12 @@
   "editor_block_pdf": "PDF document",
   "editor_image_hint": "JPEG, PNG, GIF, WebP or AVIF up to 10 MB",
   "editor_pdf_hint": "PDF up to 50 MB",
-  "editor_video_hint": "MP4, WebM, MKV, MOV, AVI or FLV up to 2 GB",
+  "editor_video_hint": "MP4, WebM, MKV or MOV up to 2 GB",
   "editor_video_play": "Play",
   "editor_video_pause": "Pause",
   "editor_video_position": "Playback position",
   "editor_video_mute": "Mute",
   "editor_video_fullscreen": "Full screen",
+  "editor_video_failed": "The video does not play: the file is damaged or in a format this browser does not support. Tell your teacher.",
   "editor_embed_own_origin": "Pages of this site cannot be embedded. Paste the address of an outside service (YouTube, Google Docs…)."
 }

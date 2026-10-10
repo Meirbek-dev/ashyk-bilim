@@ -104,3 +104,20 @@ export function formatPercent(value: number, locale: string = getLocale()): stri
   const format = new Intl.NumberFormat(locale === 'kk' ? 'ru' : locale, { style: 'percent', maximumFractionDigits: 1 })
   return format.format(value / 100)
 }
+
+const FILE_UNITS = [
+  ['gigabyte', 1024 ** 3],
+  ['megabyte', 1024 ** 2],
+  ['kilobyte', 1024],
+] as const
+
+/** A file size in the largest fitting unit, e.g. "2 ГБ" / "450,5 МБ" / "2 GB"; kk formats as ru (see formatNumber). */
+export function formatFileSize(bytes: number, locale: string = getLocale()): string {
+  const [unit, size] = FILE_UNITS.find(([, step]) => bytes >= step) ?? ['byte', 1]
+  const format = new Intl.NumberFormat(locale === 'kk' ? 'ru' : locale, {
+    style: 'unit',
+    unit,
+    maximumFractionDigits: 1,
+  })
+  return format.format(bytes / size)
+}

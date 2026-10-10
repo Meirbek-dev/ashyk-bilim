@@ -104,14 +104,27 @@ describe('file blocks', () => {
     const { release } = stubNetwork(forbidden)
     const { screen, onChange } = await renderEditor()
     await screen.getByRole('button', { name: m.editor_insert() }).click()
-    await screen.getByRole('option', { name: m.editor_block_video() }).click()
+    await screen.getByRole('option', { name: m.editor_block_pdf() }).click()
     release()
     await userEvent.upload(
-      screen.getByLabelText(m.editor_block_video()),
-      new File(['abcd'], 'intro.mp4', { type: 'video/mp4' }),
+      screen.getByLabelText(m.editor_block_pdf()),
+      new File(['%PDF'], 'intro.pdf', { type: 'application/pdf' }),
     )
     await expect.element(screen.getByText(m.errors_forbidden())).toBeVisible()
-    expect(find(last(onChange), 'blockVideo')).toBeUndefined()
+    expect(find(last(onChange), 'blockPDF')).toBeUndefined()
+  })
+
+  test('B-EDT-17 a video the browser cannot open is refused before any request', async () => {
+    const { api } = stubNetwork()
+    const { screen } = await renderEditor()
+    await screen.getByRole('button', { name: m.editor_insert() }).click()
+    await screen.getByRole('option', { name: m.editor_block_video() }).click()
+    await userEvent.upload(
+      screen.getByLabelText(m.editor_block_video()),
+      new File(['not a video'], 'intro.mp4', { type: 'video/mp4' }),
+    )
+    await expect.element(screen.getByText(m.ui_file_unplayable())).toBeVisible()
+    expect(api).not.toHaveBeenCalled()
   })
 })
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { checkUpload } from './upload'
+import { checkUpload, uploadAccept, uploadType } from './upload'
 
 const MB = 1024 * 1024
 
@@ -46,5 +46,30 @@ describe('upload pre-check', () => {
       maxBytes: 100 * MB,
     })
     expect(checkUpload({ size: 1, type: 'x/y' }, 'file-submission', { mimes: [], maxBytes: null })).toBeNull()
+  })
+})
+
+describe('declared type', () => {
+  test('what Chromium on Windows reports maps to the type the server policy matches', () => {
+    expect(uploadType({ name: 'lecture.mkv', type: 'video/matroska' })).toBe('video/x-matroska')
+    expect(uploadType({ name: 'lecture.MKV', type: '' })).toBe('video/x-matroska')
+    expect(uploadType({ name: 'IMG_0001.MOV', type: 'video/quicktime' })).toBe('video/quicktime')
+    expect(uploadType({ name: 'essay.docx', type: 'application/msword' })).toBe('application/msword')
+    expect(uploadType({ name: 'noext', type: '' })).toBe('')
+    expect(checkUpload({ name: 'lecture.mkv', size: 1, type: 'video/matroska' }, 'block-video')).toBeNull()
+  })
+
+  test('an empty file is refused before any request', () => {
+    expect(checkUpload({ size: 0, type: 'video/mp4' }, 'block-video')).toEqual({ kind: 'empty' })
+    expect(checkUpload({ size: 0, type: '' }, 'file-submission')).toEqual({ kind: 'empty' })
+  })
+
+  test('a video lesson takes only what browsers play; the picker lists the extensions too', () => {
+    expect(checkUpload({ name: 'old.avi', size: 1, type: 'video/avi' }, 'block-video')).toMatchObject({
+      kind: 'wrong-type',
+    })
+    expect(uploadAccept('block-video')).toContain('.mkv')
+    expect(uploadAccept('block-video')).not.toContain('avi')
+    expect(uploadAccept('file-submission')).toBe('')
   })
 })

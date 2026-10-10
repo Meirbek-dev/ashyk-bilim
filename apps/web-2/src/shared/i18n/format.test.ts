@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { formatDate, formatDateTime, formatDayMonth, formatPercent, fromDateTimeInput, toDateTimeInput } from './format'
+import {
+  formatDate,
+  formatDateTime,
+  formatDayMonth,
+  formatFileSize,
+  formatPercent,
+  fromDateTimeInput,
+  toDateTimeInput,
+} from './format'
 
 // 2026-01-31T20:30:00Z is already 1 February in Asia/Almaty (UTC+5).
 const LATE_EVENING_UTC = 1_769_891_400
@@ -37,5 +45,16 @@ describe('date and time in the platform zone', () => {
   test('a datetime-local value round-trips through the platform zone, not the host one', () => {
     expect(toDateTimeInput(LATE_EVENING_UTC)).toBe('2026-02-01T01:30')
     expect(fromDateTimeInput('2026-02-01T01:30')).toBe(LATE_EVENING_UTC)
+  })
+})
+
+describe('formatFileSize', () => {
+  test('the largest fitting unit, one decimal at most', () => {
+    expect(formatFileSize(2048 * 1024 * 1024, 'en')).toBe('2 GB')
+    expect(formatFileSize(10 * 1024 * 1024, 'en')).toBe('10 MB')
+    expect(formatFileSize(1536, 'en')).toBe('1.5 kB')
+    expect(formatFileSize(12, 'en')).toBe('12 byte')
+    expect(formatFileSize(450.5 * 1024 * 1024, 'ru')).toBe('450,5 МБ')
+    expect(formatFileSize(2048 * 1024 * 1024, 'kk')).toBe(formatFileSize(2048 * 1024 * 1024, 'ru'))
   })
 })

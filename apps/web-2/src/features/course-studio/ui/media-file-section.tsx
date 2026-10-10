@@ -27,7 +27,10 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
         body: { content: fileContent(upload, file.name) },
         headers: { 'If-Match': activity.version },
       },
-      { onSuccess: () => toast.add({ title: m.studio_media_replaced() }) },
+      {
+        onSuccess: () =>
+          toast.add({ title: source.kind === 'file' ? m.studio_media_replaced() : m.studio_media_uploaded() }),
+      },
     )
   const replace = (upload: FinalizedUpload, file: File) =>
     claim.mutate(
