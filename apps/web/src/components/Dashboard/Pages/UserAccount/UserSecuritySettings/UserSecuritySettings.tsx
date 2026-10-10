@@ -5,6 +5,7 @@ import { describeUserAgent } from '@/lib/user-agent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import QRCode from 'qrcode'
 import { KeyRound, Loader2, LockKeyhole, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@components/ui/button'
 import {
@@ -444,6 +445,7 @@ function TotpSection({
       {enrollment ? (
         <form onSubmit={submitCode} className="flex flex-col gap-4 rounded-md border p-4">
           <p className="text-sm">{t('totpScanHint')}</p>
+          <TotpQrCode uri={enrollment.uri} label={t('totpQrLabel')} />
           <code className="bg-muted rounded p-2 text-xs break-all" aria-label={t('totpSecretLabel')}>
             {enrollment.secret}
           </code>
@@ -516,4 +518,14 @@ function TotpSection({
       )}
     </section>
   )
+}
+
+/** The `otpauth://` URI as a QR code: authenticator apps on a phone scan it from the computer screen. */
+function TotpQrCode({ uri, label }: { uri: string; label: string }) {
+  const { data } = useQuery({
+    queryKey: ['totp-qr', uri],
+    queryFn: () => QRCode.toDataURL(uri, { margin: 1, width: 192 }),
+    staleTime: Infinity,
+  })
+  return data ? <img src={data} alt={label} width={192} height={192} className="rounded border bg-white" /> : null
 }

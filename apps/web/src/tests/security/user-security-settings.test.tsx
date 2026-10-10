@@ -237,6 +237,22 @@ describe('UserSecuritySettings', () => {
 
   // UX-110: the enrolment was activated in another tab - verify's 409 is the
   // same «already active» re-sync as enrol's, not a generic conflict toast.
+  // An authenticator on a phone scans the enrolment from the screen; a bare secret had to be typed by hand.
+  it('shows the enrolment as a QR code', async () => {
+    mockListSessions.mockResolvedValue([])
+    mockStartTotpEnrollment.mockResolvedValue({ secret: 'ABC', uri: 'otpauth://totp/Ashyq:me?secret=ABC' })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <UserSecuritySettings />
+      </QueryClientProvider>,
+    )
+    await user.click(await screen.findByText('enableTotp'))
+    const qr = await screen.findByRole('img', { name: 'totpQrLabel' })
+    expect(qr.getAttribute('src')).toMatch(/^data:image\/png;base64,/)
+  })
+
   it('re-syncs to the active state when verify answers 409', async () => {
     const { APIError } = await import('@/lib/api/assertSuccess')
     mockListSessions.mockResolvedValue([])
