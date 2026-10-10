@@ -301,7 +301,9 @@ function ExamTakingContent({
           countedActivity(),
           passingScore,
         )
-        toast.success(
+        // A failed verdict is no success: no green check over «Тест не пройден».
+        const notify = verdict?.passed === false ? toast.warning : toast.success
+        notify(
           verdict
             ? [
                 t(verdict.passed ? 'examSubmittedPassed' : 'examSubmittedFailed', {

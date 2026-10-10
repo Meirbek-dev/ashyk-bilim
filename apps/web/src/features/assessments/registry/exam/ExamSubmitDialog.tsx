@@ -180,7 +180,7 @@ function SummaryMetric({ label, value, tone = 'muted' }: { label: string; value:
       >
         {value}
       </span>
-      <span className="text-muted-foreground truncate text-xs">{label}</span>
+      <span className="text-muted-foreground text-xs leading-tight break-words">{label}</span>
     </div>
   )
 }
