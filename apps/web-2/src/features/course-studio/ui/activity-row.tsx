@@ -57,6 +57,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
       {allowed('move') ? (
         <IconButton
           ref={handleRef}
+          aria-roledescription={m.studio_drag_role()}
           label={m.studio_drag_named({ name: activity.name })}
           icon={<GripVertical aria-hidden />}
         />

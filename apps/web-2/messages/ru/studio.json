@@ -253,5 +253,11 @@
   "studio_roster_col_enrolled": "Записан",
   "studio_roster_col_progress": "Прогресс, %",
   "studio_roster_col_completed": "Завершён",
-  "studio_roster_filename": "{course} - учащиеся"
+  "studio_roster_filename": "{course} - учащиеся",
+  "studio_drag_role": "перемещаемый элемент",
+  "studio_drag_instructions": "Чтобы взять элемент, нажмите пробел. Стрелками переместите его, пробелом положите на новое место, Escape отменяет.",
+  "studio_drag_picked": "Взят элемент «{name}».",
+  "studio_drag_over": "«{name}» над «{target}».",
+  "studio_drag_dropped": "«{name}» перемещён.",
+  "studio_drag_canceled": "Перемещение «{name}» отменено."
 }

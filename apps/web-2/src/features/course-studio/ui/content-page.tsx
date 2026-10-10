@@ -1,3 +1,4 @@
+import { Accessibility } from '@dnd-kit/dom'
 import { DragDropProvider, type DragEndEvent, type DragOverEvent } from '@dnd-kit/react'
 import { move } from '@dnd-kit/helpers'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
@@ -14,6 +15,7 @@ import { can } from '../model/course'
 import { courseOptions } from '../queries'
 import { ChapterSection } from './chapter-section'
 import { CreateChapterDialog } from './create-chapter-dialog'
+import { dragAccessibility } from './drag-accessibility'
 
 /**
  * `content`: chapters and their activities in order. Dragging (pointer or keyboard on a handle) rearranges a
@@ -64,6 +66,8 @@ export function ContentPage() {
     }
   }
 
+  const accessibility = dragAccessibility(curriculum)
+
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
     <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
@@ -72,7 +76,12 @@ export function ContentPage() {
       {shown.chapters.length === 0 ? (
         <p className="py-8 text-muted-foreground">{m.studio_content_empty()}</p>
       ) : (
-        <DragDropProvider onDragStart={() => place(layoutOf(curriculum))} onDragOver={over} onDragEnd={drop}>
+        <DragDropProvider
+          plugins={defaults => defaults.map(plugin => (plugin === Accessibility ? accessibility : plugin))}
+          onDragStart={() => place(layoutOf(curriculum))}
+          onDragOver={over}
+          onDragEnd={drop}
+        >
           <ol className="flex flex-col gap-gutter">
             {shown.chapters.map((chapter, index) => (
               <ChapterSection key={chapter.id} courseId={courseId} chapter={chapter} index={index} />

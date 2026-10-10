@@ -68,6 +68,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
         {allowed('move') ? (
           <IconButton
             ref={handleRef}
+            aria-roledescription={m.studio_drag_role()}
             label={m.studio_drag_named({ name: chapter.name })}
             icon={<GripVertical aria-hidden />}
           />

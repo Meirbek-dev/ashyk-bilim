@@ -249,5 +249,11 @@
   "studio_roster_col_enrolled": "Тіркелген",
   "studio_roster_col_progress": "Үлгерім, %",
   "studio_roster_col_completed": "Аяқтаған",
-  "studio_roster_filename": "{course} - білім алушылар"
+  "studio_roster_filename": "{course} - білім алушылар",
+  "studio_drag_role": "жылжытылатын элемент",
+  "studio_drag_instructions": "Элементті алу үшін бос орын пернесін басыңыз. Оны көрсеткілермен жылжытып, бос орын пернесімен жаңа орынға қойыңыз; Escape болдырмайды.",
+  "studio_drag_picked": "«{name}» алынды.",
+  "studio_drag_over": "«{name}» - «{target}» үстінде.",
+  "studio_drag_dropped": "«{name}» жылжытылды.",
+  "studio_drag_canceled": "«{name}» жылжытуы болдырылмады."
 }

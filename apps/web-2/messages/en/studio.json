@@ -249,5 +249,11 @@
   "studio_roster_col_enrolled": "Enrolled",
   "studio_roster_col_progress": "Progress, %",
   "studio_roster_col_completed": "Completed",
-  "studio_roster_filename": "{course} - learners"
+  "studio_roster_filename": "{course} - learners",
+  "studio_drag_role": "movable item",
+  "studio_drag_instructions": "To pick up an item, press Space. Move it with the arrow keys and press Space again to drop it in its new place; Escape cancels.",
+  "studio_drag_picked": "Picked up «{name}».",
+  "studio_drag_over": "«{name}» is over «{target}».",
+  "studio_drag_dropped": "«{name}» was moved.",
+  "studio_drag_canceled": "Moving «{name}» was cancelled."
 }
