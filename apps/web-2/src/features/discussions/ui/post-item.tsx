@@ -60,6 +60,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
           pending={update.isPending}
           error={update.error}
           onCancel={cancel}
+          focusOnMount
         />
       ) : (
         <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>

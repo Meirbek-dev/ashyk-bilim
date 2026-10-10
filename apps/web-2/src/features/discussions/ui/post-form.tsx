@@ -33,10 +33,20 @@ type PostFormProps = {
   pending: boolean
   error: unknown
   onCancel?: () => void
+  /** An edit: the editor takes the focus of the «Изменить» button it replaces. */
+  focusOnMount?: boolean
 }
 
 /** A post, reply or edit: the `discussion` editor preset, its error under it, and the form's actions. */
-export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, onCancel }: PostFormProps) {
+export function PostForm({
+  initial = '',
+  submitLabel,
+  onSubmit,
+  pending,
+  error,
+  onCancel,
+  focusOnMount,
+}: PostFormProps) {
   // Images uploaded while writing; one removed again before saving is not claimed (the server reaps it).
   const images = useRef<{ id: string; key: string }[]>([])
   const form = useAppForm(schema, {
@@ -64,6 +74,7 @@ export function PostForm({ initial = '', submitLabel, onSubmit, pending, error, 
                 content={field.state.value}
                 onChange={doc => field.handleChange(JSON.stringify(doc))}
                 onImage={image => images.current.push(image)}
+                focusOnMount={focusOnMount}
               />
             </Suspense>
             {errorText(field.state.meta.errors) ? (

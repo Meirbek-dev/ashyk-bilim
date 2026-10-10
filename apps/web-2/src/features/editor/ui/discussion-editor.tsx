@@ -15,10 +15,12 @@ type DiscussionEditorProps = {
   onChange: (doc: EditorDocument) => void
   /** An image uploaded into the post (`discussion-image`): the post claims it with `upload_ids` when saved. */
   onImage: (image: { id: string; key: string }) => void
+  /** Caret at the end once shown: editing a post moves focus here from its «Изменить» button. */
+  focusOnMount?: boolean
 }
 
 /** A discussion post or reply: rich text, code, links and images (picked or pasted); embeds of old posts are kept. */
-export function DiscussionEditor({ content, onChange, onImage }: DiscussionEditorProps) {
+export function DiscussionEditor({ content, onChange, onImage, focusOnMount = false }: DiscussionEditorProps) {
   const upload = useUpload('discussion-image')
   const insert = async (file: File) => {
     const done = await upload.start(file)
@@ -35,6 +37,7 @@ export function DiscussionEditor({ content, onChange, onImage }: DiscussionEdito
     content,
     onChange,
     onPasteImage: file => void insert(file),
+    focusOnMount,
   })
   return (
     <div className="flex flex-col gap-2">

@@ -24,6 +24,8 @@ type Options = {
   onSlash?: (anchor: MenuAnchor) => void
   /** A pasted image (discussions: uploaded and inserted by the caller); absent = the editor's own handling. */
   onPasteImage?: (file: File) => void
+  /** Put the caret at the end once mounted (an edit opened by a button that then unmounts). */
+  focusOnMount?: boolean
 }
 
 /**
@@ -31,7 +33,7 @@ type Options = {
  * become canonical), external content changes are applied without an update event, and `onChange` gets the
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
-export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteImage }: Options) {
+export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteImage, focusOnMount }: Options) {
   const readOnly = preset === 'view' || preset === 'discussion-view'
   // What this editor last emitted: a parent that passes it back as `content` must not reset the cursor.
   const emitted = useRef<unknown>(undefined)
@@ -40,6 +42,7 @@ export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteI
     content: loadable(content),
     editable: !readOnly,
     immediatelyRender: false,
+    autofocus: focusOnMount ? 'end' : false,
     editorProps: {
       handlePaste: (_view, event) => {
         const image = onPasteImage ? clipboardImage(event.clipboardData) : null
@@ -52,7 +55,7 @@ export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteI
         return anchor !== null
       },
       attributes: {
-        'aria-label': m.editor_label(),
+        'aria-label': preset === 'discussion' ? m.editor_label_post() : m.editor_label(),
         class: `ab-prose max-w-none ${readOnly ? '' : 'min-h-40 rounded-md border border-input bg-background p-4'}`,
         ...(readOnly ? { role: 'article' } : { role: 'textbox', 'aria-multiline': 'true' }),
       },

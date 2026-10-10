@@ -1,5 +1,6 @@
 {
   "editor_label": "Page content",
+  "editor_label_post": "Message text",
   "editor_placeholder": "Start writing, or type / to add a block",
   "editor_callout_info": "Note",
   "editor_callout_warning": "Warning",

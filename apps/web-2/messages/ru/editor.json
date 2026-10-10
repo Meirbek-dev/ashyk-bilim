@@ -1,5 +1,6 @@
 {
   "editor_label": "Содержание страницы",
+  "editor_label_post": "Текст сообщения",
   "editor_placeholder": "Начните писать или введите «/», чтобы вставить блок",
   "editor_callout_info": "Заметка",
   "editor_callout_warning": "Внимание",
