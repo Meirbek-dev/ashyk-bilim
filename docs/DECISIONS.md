@@ -2439,3 +2439,16 @@ earlier stay as they are (learners cannot hand them in anyway, so old
 gradebooks do not change on deploy). The older time-limit sweep is not
 affected. Deleting the row turns date hand-ins off.
 
+
+## "Not found" pages stay HTTP 200 + noindex in apps/web (2026-10-10)
+
+A course, profile, collection or assessment page whose id does not exist (or is
+private to an anonymous visitor) answers HTTP 200: the locale-wide and
+course-level `loading.tsx` stream the shell before the page knows the answer.
+Checked on the dev stack with a browser and a Googlebot user agent: every such
+page carries `<meta name="robots" content="noindex">`, valid public pages carry
+`index, follow`, and unknown URLs answer a real 404. A 404 status would need
+the loading skeletons removed (every navigation then waits for its data on the
+university network) and would replace the "sign in to see this course" state a
+signed-out visitor gets for a private course with a bare 404. Kept as is; the
+search-engine outcome is the same.
