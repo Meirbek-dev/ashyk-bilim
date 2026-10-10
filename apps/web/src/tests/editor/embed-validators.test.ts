@@ -124,8 +124,9 @@ describe('validateExcalidrawUrl', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildExcalidrawSrc', () => {
-  it('appends ?embed=1 when no query string present', () => {
-    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe('https://excalidraw.com/#room=abc?embed=1')
+  it('puts ?embed=1 before the scene fragment (a #json= link keeps its drawing)', () => {
+    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe('https://excalidraw.com/?embed=1#room=abc')
+    expect(buildExcalidrawSrc('https://excalidraw.com/#json=a1,b2')).toBe('https://excalidraw.com/?embed=1#json=a1,b2')
   })
 
   it('appends &embed=1 when query string already present', () => {

@@ -111,13 +111,14 @@ export function validateExcalidrawUrl(url: string): null | EmbedValidationError 
 }
 
 /**
- * Builds the `src` for an Excalidraw `<iframe>` by appending `?embed=1`
- * (or `&embed=1` if the URL already contains a query string).
+ * Builds the `src` for an Excalidraw `<iframe>`: `embed=1` goes into the query,
+ * before the `#json=` / `#room=` fragment (appended after it, it corrupted the
+ * scene key and the embed opened an empty canvas).
  *
  * Assumes the caller has already validated the URL with `validateExcalidrawUrl`.
  */
 export function buildExcalidrawSrc(url: string): string {
-  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`
+  return appendQueryParam(url, 'embed', '1')
 }
 
 // ---------------------------------------------------------------------------
@@ -156,13 +157,12 @@ export function validateTldrawUrl(url: string): null | EmbedValidationError {
 }
 
 /**
- * Builds the `src` for a tldraw `<iframe>` by appending `?embed=1`
- * (or `&embed=1` if the URL already contains a query string).
+ * Builds the `src` for a tldraw `<iframe>`: `embed=1` in the query (before any fragment).
  *
  * Assumes the caller has already validated the URL with `validateTldrawUrl`.
  */
 export function buildTldrawSrc(url: string): string {
-  return url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`
+  return appendQueryParam(url, 'embed', '1')
 }
 
 // ---------------------------------------------------------------------------
