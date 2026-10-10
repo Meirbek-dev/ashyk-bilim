@@ -1,3 +1,7 @@
+> Current overrides (2026-10-10): production runs apps/web; G-13 is lifted. Section 8.1 now uses
+> focused checks during edits and one full verification at pre-commit; per-edit/Stop hooks are removed.
+> Root command recipes and setup: AGENTS.md; rationale: docs/DECISIONS.md (Development command contract).
+
 # Модернизация, этап 2 (v2): ТЗ и техническая архитектура нового веба
 
 Статус: черновик v2 на утверждение владельцем. Дата: 2026-10-03.

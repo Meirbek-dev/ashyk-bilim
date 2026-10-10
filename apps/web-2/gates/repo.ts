@@ -1,7 +1,7 @@
 // Gates that need tools or git: G-04 knip, G-05 budgets, G-09 codegen drift (G-13 freeze lifted).
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { basename, relative, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 import * as v from 'valibot'
@@ -51,8 +51,8 @@ export function knip(): Finding[] {
 /** G-09: regenerating the API client and the route tree must not change a byte. */
 export async function codegenDrift(): Promise<Finding[]> {
   const findings: Finding[] = []
-  const scratch = 'src/shared/api/gen.check-tmp'
-  const scratchTree = 'src/routeTree.check-tmp.ts'
+  const scratch = relative(appDir, mkdtempSync(resolve(appDir, 'src/shared/api/gen.check-tmp-'))).replaceAll('\\', '/')
+  const scratchTree = `src/routeTree.check-tmp-${basename(scratch)}.ts`
   try {
     generateApi(`./${scratch}`)
     await generateRouteTree(`./${scratchTree}`)

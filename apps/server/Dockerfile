@@ -5,8 +5,8 @@
 # #24/#25 died on Docker Hub's anonymous pull rate limit on shared GitHub
 # runner IPs; the mirror serves the same official images without the limit.
 
-FROM public.ecr.aws/docker/library/rust:1-slim-trixie AS chef
-RUN cargo install cargo-chef --locked
+FROM public.ecr.aws/docker/library/rust:1.99.0-slim-trixie AS chef
+RUN cargo install cargo-chef --version 0.1.78 --locked
 WORKDIR /build
 
 FROM chef AS planner
@@ -20,7 +20,7 @@ COPY apps/server/ .
 ENV SQLX_OFFLINE=true
 # The binary moves out and target/ goes in the same layer: the layer (and the gha
 # cache it is exported to) stays small instead of ~0.5 GB of build output.
-RUN cargo build --release -p ashyq-server \
+RUN cargo build --locked --release -p ashyq-server \
     && mv target/release/ashyq /usr/local/bin/ashyq && rm -rf target
 
 FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime

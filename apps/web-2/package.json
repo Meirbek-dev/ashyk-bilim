@@ -18,7 +18,7 @@
     "check": "vp check",
     "test": "vp test run",
     "e2e": "playwright test -c e2e/playwright.config.ts",
-    "gates": "bun gates/gates.ts all",
+    "gates": "bun gates/gates.ts",
     "g15": "G15=1 vp test run --project themes",
     "verify": "vp check && vp test run && bun gates/gates.ts all"
   },

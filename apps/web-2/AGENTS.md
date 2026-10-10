@@ -1,8 +1,8 @@
 # apps/web-2
 
 The new web (stage 2): React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on
-Node 26. Standalone bun project (own `bun.lock`, not in the root workspace). The old `apps/web` is
-frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until its phase 9).
+Node from `.node-version`. Standalone bun project (own `bun.lock`, not in the root workspace).
+Production runs `apps/web` after rollback; its freeze is lifted. Spec: `docs/MODERNIZATION-STAGE-2.md`.
 
 ## Map
 
@@ -21,7 +21,7 @@ frozen: never edit it (gate G-13). Spec: `docs/MODERNIZATION-STAGE-2.md` (until 
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP           |
 | `serve.ts`                          | production entry: srvx static files + the Start handler                        |
 | `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                   |
-| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`, hooks    |
+| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`           |
 | `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)      |
 
 Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
@@ -33,11 +33,11 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                                    |
 | `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                          |
-| `vp check`                       | format + lint + types (G-01); the edit hook runs `vp check --no-fmt`                                               |
+| `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                         |
 | `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
 | `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
 | `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
-| `vp run verify`                  | check + test + all gates; the Stop hook runs it                                                                    |
+| `vp run verify`                  | check + test + all gates; pre-commit runs it once, no per-edit/Stop hooks                                          |
 | `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
 | `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
 | `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
@@ -113,7 +113,7 @@ PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node 
    "Не переносится" (<= 150 lines). Reference: `src/features/collections/`.
 2. Add `messages/{ru,kk,en}/<name>.json` and list the file in `project.inlang/settings.json`.
 3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`; bind it in `src/routes/`. Each `B-` id is in a test title (G-10).
-4. `vp run verify` and `bun run build` green. A gate you cannot satisfy is a question for the orchestrator.
+4. Focused tests while editing; pre-commit verifies the completed batch. `just ci-web2` also checks build budgets.
 
 Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator; ask
 for a missing primitive or operation. Gates print `file:line rule - what to do` (<= 30 lines each); Playwright uses

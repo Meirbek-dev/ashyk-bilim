@@ -3,13 +3,27 @@
 # the same recipes one by one. See AGENTS.md.
 
 set dotenv-load := true
+set positional-arguments := true
+[unix]
+set shell := ["bash", "-cu"]
+[windows]
+set shell := ["sh", "-cu"]
+[unix]
+set script-interpreter := ["bash", "-eu"]
+[windows]
+set script-interpreter := ["sh", "-eu"]
+
+# Bounds Windows linker memory; override on larger machines.
+export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", "4")
+export CARGO_TARGET_DIR := env("CARGO_TARGET_DIR", if os() == "windows" { env("LOCALAPPDATA") / "ashyq-bilim/cargo-target" } else { justfile_directory() / "target" })
+just_bin := quote(replace(just_executable(), '\\', '/'))
 
 default: check
 
 # Install the required cargo tooling (one-time per machine).
 setup:
-    cargo install cargo-binstall --locked
-    cargo binstall -y sqlx-cli cargo-nextest cargo-llvm-cov cargo-deny cargo-machete bacon
+    cargo install cargo-binstall --version 1.25.2 --locked
+    source tools.env && cargo binstall -y ${LINT_TOOLS//,/ } ${TEST_TOOLS//,/ } ${DEV_TOOLS//,/ }
 
 # Refresh the workspace lockfile to the latest compatible registry releases.
 update:
@@ -25,50 +39,50 @@ fmt-check:
     cargo fmt --all --check
 
 clippy:
-    cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy --locked --workspace --all-targets -- -D warnings
 
 # Full test suite (integration tests in crates/*/tests need `just services`).
-test:
-    cargo nextest run --workspace
+test *args:
+    cargo nextest run --locked --workspace "$@"
 
 # Unit tests only - no Postgres/Redis/Docker required (Windows sessions).
-test-unit:
-    cargo nextest run --workspace --lib --bins
+test-unit *args:
+    cargo nextest run --locked --workspace --lib --bins "$@"
 
 # Verify the committed .sqlx offline cache matches the schema + queries.
-# Skips cleanly until the first query! macro lands (no .sqlx dir yet).
+# Missing or stale cache is an error.
 sqlx-check:
-    @if [ -d .sqlx ]; then cargo sqlx prepare --check --workspace; else echo "sqlx-check: no .sqlx cache yet - skipped"; fi
+    cargo sqlx prepare --check --workspace -- --locked
 
 # Refresh .sqlx after changing any SQL. Commit the result.
 prepare:
-    cargo sqlx prepare --workspace
+    cargo sqlx prepare --workspace -- --locked
 
 migrate:
     sqlx migrate run --source migrations
 
 # Create a new migration: just migration add_users_table
 migration NAME:
-    sqlx migrate add --source migrations {{NAME}}
+    sqlx migrate add --source migrations "$@"
 
 # Export the OpenAPI contract artifact.
 openapi:
-    cargo run -p ashyq-server -- openapi > openapi.v2.json
+    cargo run --locked -p ashyq-server -- openapi > openapi.v2.json
 
 # Fail if the committed openapi.v2.json differs from a fresh export.
+[script]
 openapi-check:
-    #!/usr/bin/env bash
     set -euo pipefail
     tmp="$(mktemp)"
     trap 'rm -f "$tmp"' EXIT
-    cargo run -q -p ashyq-server -- openapi > "$tmp"
+    cargo run --locked -q -p ashyq-server -- openapi > "$tmp"
     diff -u openapi.v2.json "$tmp"
 
 # Coverage with floor (ratchet up as phases land - never down).
 # Scaffold floor 30 -> 80 after P3 (measured 88% lines, 2026-09-05).
 # main.rs is the process entrypoint and is not held to the floor.
 cov:
-    cargo llvm-cov nextest --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/]server[\\/]src[\\/]main\.rs'
+    cargo llvm-cov nextest --locked --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/]server[\\/]src[\\/]main\.rs'
 
 deny:
     cargo deny check
@@ -77,20 +91,20 @@ machete:
     cargo machete
 
 # Everything CI runs, in CI order. Green here == green CI.
-ci: fmt-check clippy sqlx-check test deny machete cov openapi-check
+ci: fmt-check clippy deny machete openapi-check sqlx-check cov
 
 # Web e2e fixtures (accounts + a published course; idempotent). Needs the
 # dev stack incl. Zitadel and E2E_PASSWORD; refuses AB__ENVIRONMENT=production.
 seed-e2e:
-    cargo run -p ashyq-server -- admin seed-e2e
+    cargo run --locked -p ashyq-server -- admin seed-e2e
 
 # Dev stack (db, redis, zitadel, rustfs) via the root justfile.
 services:
-    just --justfile ../../justfile dev-up
+    {{ just_bin }} --justfile ../../justfile dev-up
 
 dev:
     bacon
 
 # Run the API without the file watcher.
 serve:
-    cargo run -p ashyq-server -- serve
+    cargo run --locked -p ashyq-server -- serve

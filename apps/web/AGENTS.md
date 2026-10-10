@@ -12,14 +12,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Using Vite+, the Unified Toolchain for the Web
 
-This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
+This app uses Next.js for dev/build and Vite+ for lint/format/test. Run package scripts through
+`just web <script>`; `vp dev`/`vp build` are not this app's server/build commands.
 
 Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
 
 ## Review Checklist
 
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
+- [ ] Run root `just setup` for dependencies/tools/hooks; use frozen lockfiles.
+- [ ] Run focused tests while editing and root `just ci-web` after a coherent batch.
 - [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
@@ -35,11 +36,12 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 
 - `bun install`, `bun run dev`, `bun run build`.
 - From the repo root use `just web <script>` (= `bun run --cwd apps/web <script>`).
-- CI gates (`.github/workflows/ci.yaml`, web job): `bun run lint` (oxlint via
+- Local gates (`just ci-web`): `bun run lint` (oxlint via
   `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
-  `bun run test` (vitest, `src/tests/**`), `bun run generate:api-types` +
+  `bun run test` (vitest, `src/tests/**`),
   `bun run check:contracts` (generated client matches `openapi.v2.json`),
-  `bun run check:error-codes`. Baseline: `docs/INFRA.md`.
+  `bun run check:error-codes`, `bun run check:messages`. Hosted CI currently builds the image
+  and stack-smokes this app; it has no separate lint/test job. Production fixes are allowed.
 - `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
   unrelated files, so run it deliberately and review the diff.
 - `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`

@@ -37,8 +37,19 @@ jobs:
       web2: ${{ steps.filter.outputs.web2 == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
       infra: ${{ steps.filter.outputs.infra == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
+      lint-tools: ${{ steps.tools.outputs.lint-tools }}
+      test-tools: ${{ steps.tools.outputs.test-tools }}
+      just-tool: ${{ steps.tools.outputs.just-tool }}
     steps:
       - uses: actions/checkout@v7
+      - id: tools
+        run: |
+          source apps/server/tools.env
+          {
+            echo "lint-tools=$LINT_TOOLS,$JUST_TOOL"
+            echo "test-tools=$TEST_TOOLS,$JUST_TOOL"
+            echo "just-tool=$JUST_TOOL"
+          } >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -97,7 +108,7 @@ jobs:
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-deny,cargo-machete,just
+          tool: ${{ needs.changes.outputs.lint-tools }}
 
       - name: Format
         run: just fmt-check
@@ -150,7 +161,7 @@ jobs:
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest,cargo-llvm-cov,sqlx-cli,just
+          tool: ${{ needs.changes.outputs.test-tools }}
 
       - name: Dev services (db, redis, zitadel, rustfs)
         working-directory: .
@@ -166,6 +177,7 @@ jobs:
         run: just cov
 
   infra-gates:
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -175,10 +187,13 @@ jobs:
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: just
+          tool: ${{ needs.changes.outputs.just-tool }}
 
       - name: just ci-infra
         run: just ci-infra
+
+      - name: Development workflow regression checks
+        run: just test-dev
 
       - name: shellcheck
         run: shellcheck -x -S warning infra/scripts/*.sh infra/storage/*.sh
@@ -191,7 +206,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
-  # production build with chunk budgets. The freeze gate (G-13) needs the pushed range and origin/main.
+  # production build with chunk budgets. Regeneration must not repair uncommitted artifacts silently.
   web2-gates:
     needs: changes
     if: needs.changes.outputs.web2 == 'true'
@@ -220,7 +235,10 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Codegen (paraglide; client and route tree must already be committed)
-        run: bun run codegen
+        run: |
+          bun run codegen
+          git diff --exit-code HEAD -- src/shared/api/gen src/routeTree.gen.ts
+          test -z "$(git ls-files --others --exclude-standard -- src/shared/api/gen src/routeTree.gen.ts)"
 
       - name: Verify (check, tests, gates)
         env:
@@ -316,7 +334,7 @@ jobs:
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: just
+          tool: ${{ needs.changes.outputs.just-tool }}
 
       - uses: docker/login-action@v4
         with:
@@ -392,7 +410,7 @@ jobs:
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: just
+          tool: ${{ needs.changes.outputs.just-tool }}
 
       - uses: oven-sh/setup-bun@v2
         with:

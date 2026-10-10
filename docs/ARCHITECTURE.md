@@ -598,7 +598,7 @@ Runs on pushes to `main` and on pull requests when `apps/server/**` or infra
 files change. The services come from the dev stack (`just dev-up`: Postgres 18
 + pgvector, Redis, Zitadel, RustFS). Steps, all `just` recipes, in two parallel jobs: `fmt-check -> clippy -> deny
 -> machete -> openapi-check` (offline `.sqlx`) and `migrate -> sqlx-check -> cov`
-(`cov` runs the nextest suite, unit+db+http, once and enforces the floor); `just ci`
+(`cov` runs the nextest suite, unit+db+http, once and enforces the floor); `just ci-server`
 runs the same list locally. The server image is built by the `images` job in
 parallel with the gates and published as `<sha>` only after every gate and the
 full-stack smoke passed (`docs/INFRA.md`). Agents

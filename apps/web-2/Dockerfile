@@ -16,7 +16,7 @@ RUN bun run build
 FROM deps AS runtime-deps
 RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
-FROM node:26-alpine
+FROM node:26.11.1-alpine
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000

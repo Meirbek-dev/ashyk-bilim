@@ -3,7 +3,7 @@
   // Start, Vite, Vitest and Playwright entries are detected by knip's plugins.
   "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs", "e2e/prod-stand.ts"],
   "project": ["src/**/*.{ts,tsx}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
-  "ignore": ["src/shared/api/gen/**"],
+  "ignore": ["src/shared/api/gen/**", "src/shared/api/gen.check-tmp*/**", "src/routeTree.check-tmp*.ts"],
   // Stock shadcn files (`bunx shadcn add`) keep their full export list so `shadcn add --overwrite` stays a no-op diff;
   // an unused stock FILE is still reported (remove it).
   "ignoreIssues": { "src/shared/ui/**": ["exports", "types"] },

@@ -13,7 +13,7 @@ export const read = (path: string): string => readFileSync(resolve(appDir, path)
 
 /** Files under `dir` (relative to apps/web-2) whose path matches `include`, generated code skipped. */
 export function walk(dir: string, include: RegExp): string[] {
-  const skip = /(^|\/)(node_modules|dist|paraglide|gen|gen\.check-tmp)(\/|$)|routeTree\.gen\.ts$/
+  const skip = /(^|\/)(node_modules|dist|paraglide|gen|gen\.check-tmp[^/]*)(\/|$)|routeTree\.(gen|check-tmp[^/]*)\.ts$/
   const found: string[] = []
   const visit = (absolute: string) => {
     for (const entry of readdirSync(absolute, { withFileTypes: true })) {

@@ -135,6 +135,9 @@ option_if_let_else = "allow"
 # Rust 1.99: wants assert_eq!(x, []) with a typed empty literal instead of assert!(x.is_empty()) in tests.
 assert_is_empty = "allow"
 
+[profile.dev]
+debug = 0
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

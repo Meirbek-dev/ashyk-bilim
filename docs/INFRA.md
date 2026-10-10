@@ -419,7 +419,10 @@ command is `lint:fix`); `apps/web/vite.config.ts` excludes
 
 Server (`apps/server`): `fmt-check`, `clippy`, `openapi-check` green locally;
 `sqlx-check`, `test`, `deny`, `machete`, `cov` need the dev stack and run in CI.
-`just ci` runs the same list in CI order.
+`just ci-server` runs the same server gates locally; `just ci` runs all local app/infra gates.
+Image builds, secret scans and stack/E2E jobs remain hosted checks. `just setup` installs versions
+from `apps/server/tools.env`, dependencies, generated Claude skill copies and the commit hook.
+`just doctor` checks prerequisites in the recipe shell. Windows recipes use Git Bash's `sh`.
 
 ## Web contract for stage 2
 

@@ -2507,3 +2507,14 @@ separator is `;`: a comma file opened as one column, and a score such as `8.7` t
 each side (`ab_domain::csv::csv_row`, web `csvBlob`): a cell that is a plain decimal number
 (`-?\d+\.\d+`) gets the comma; ids, timestamps and versions (`3.8.1`) are untouched. BOM, CRLF and the
 formula defusing are unchanged. Replaces the comma-only exports of UX-114 / BUG-196.
+
+## Development command contract (2026-10-10)
+
+Root just recipes now distinguish per-app gates from hosted image, E2E and secret checks.
+Rust/Node and Cargo tools are pinned; workspace tests accept filters, default to four build
+jobs and run once through coverage in full server CI. Windows uses Git Bash rather than WSL.
+Per-edit and Stop hooks are removed: focused checks during edits, full web-2 verification
+at pre-commit. The short server guide links task-specific detail instead of requiring the
+whole architecture each session. .agents/skills is canonical; Claude copies are generated.
+CI checks tracked and new generated artifacts immediately after regeneration. Drift checks
+use unique scratch paths so simultaneous checks cannot delete each other's output.
