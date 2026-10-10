@@ -42,8 +42,8 @@ vi.mock('@/stores/gamification', () => ({
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useUserCertificateByCourse: () => ({ data: null, isPending: false, error: null }),
 }))
-vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
-  default: () => null,
+vi.mock('@/features/certifications/components/CertificatePdfPreview', () => ({
+  CertificatePdfPreview: () => null,
 }))
 vi.mock('@components/Objects/Activities/Video/Artplayer', () => ({ default: () => <div>player</div> }))
 vi.mock('@/components/ui/youtube-embed-fill', () => ({ YouTubeEmbedFill: () => <div>youtube</div> }))

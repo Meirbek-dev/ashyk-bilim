@@ -1,9 +1,12 @@
 'use client'
 
-import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, Shield, XCircle } from 'lucide-react'
 import { useCertificateByUuid } from '@/features/certifications/hooks/useCertifications'
-import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
+import {
+  CertificatePdfDownloadButton,
+  downloadCertificatePdf,
+} from '@/features/certifications/components/CertificatePdfDownloadButton'
+import { CertificatePdfPreview } from '@/features/certifications/components/CertificatePdfPreview'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useLocale, useTranslations } from 'next-intl'
@@ -150,8 +153,6 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
     return null
   }
 
-  const qrCodeLink = getAbsoluteUrl(`/certificates/${certificateData.certificate_user.user_certification_uuid}/verify`)
-
   return (
     <div className="bg-background text-foreground min-h-screen py-8">
       <div className="mx-auto max-w-6xl px-4">
@@ -183,29 +184,18 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Certificate Preview and Course Info */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Certificate Preview */}
-            <div className="soft-shadow border-border bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificatePreview')}</h2>
-              <div className="mx-auto max-w-2xl" id="certificate-preview">
-                <CertificatePreview
-                  certificationName={
-                    certificateData.certification.config.certification_name || certificateData.course.name || ''
-                  }
-                  certificationDescription={certificateData.certification.config.certification_description ?? ''}
-                  certificationType={certificateData.certification.config.certification_type}
-                  certificatePattern={certificateData.certification.config.certificate_pattern ?? ''}
-                  certificateInstructor={certificateData.instructor_name ?? undefined}
-                  recipientName={certificateData.holder?.display_name}
-                  certificateId={certificateData.certificate_user.user_certification_uuid}
-                  awardedDate={new Date(certificateData.certificate_user.created_at).toLocaleDateString(locale, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                  qrCodeLink={qrCodeLink}
-                />
-              </div>
-            </div>
+            {/* The certificate as printed: the server's PDF (DECISIONS «Automatic bilingual certificates»). */}
+            <CertificatePdfPreview
+              queryKey={[certificateData.certificate_user.user_certification_uuid, locale]}
+              load={() => downloadCertificatePdf(certificateData.certificate_user.user_certification_uuid, locale)}
+              title={t('certificatePreview')}
+              frame={preview => (
+                <div className="soft-shadow border-border bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
+                  <h2 className="text-foreground mb-4 text-xl font-semibold">{t('certificatePreview')}</h2>
+                  {preview}
+                </div>
+              )}
+            />
 
             {/* Course Information */}
             <div className="border-border bg-card overflow-hidden rounded-lg border p-4 shadow-sm">

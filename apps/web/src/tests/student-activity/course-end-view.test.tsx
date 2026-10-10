@@ -19,8 +19,8 @@ const certificate: { data: unknown } = { data: null }
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useUserCertificateByCourse: () => ({ data: certificate.data, isPending: false, error: null }),
 }))
-vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
-  default: () => null,
+vi.mock('@/features/certifications/components/CertificatePdfPreview', () => ({
+  CertificatePdfPreview: () => null,
 }))
 
 const courseId = '11111111-1111-4111-8111-111111111111'
@@ -36,6 +36,7 @@ function state(): LearnerCourseState {
     state: 'complete' as const,
     allowed_actions: [],
     blocked_reason: null,
+    opens_at_unix: null,
     due_at_unix: null,
     passed: null,
     score: null,

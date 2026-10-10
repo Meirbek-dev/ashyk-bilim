@@ -1,10 +1,11 @@
-import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications'
-import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
+import {
+  CertificatePdfDownloadButton,
+  downloadCertificatePdf,
+} from '@/features/certifications/components/CertificatePdfDownloadButton'
+import { CertificatePdfPreview } from '@/features/certifications/components/CertificatePdfPreview'
 import { ArrowLeft, BookOpen, Loader2, Shield, Target, Trophy } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { getUserDisplayName } from '@services/media/avatar'
-import { useSession } from '@/hooks/useSession'
 import { useGamificationStore } from '@/stores/gamification'
 import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { useQuery } from '@tanstack/react-query'
@@ -26,7 +27,6 @@ interface CourseEndViewProps {
 
 const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage }) => {
   const locale = useLocale()
-  const { user } = useSession()
   const t = useTranslations('Certificates.CourseEndView')
 
   const gamificationProfile = useGamificationStore(s => s.profile)
@@ -59,7 +59,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     : !isLoadingCertificate && isCourseCompleted && !userCertificate
       ? t('noCertificateFound')
       : null
-  const qrCodeLink = getAbsoluteUrl(`/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`)
 
   useEffect(() => {
     if (!userCertificate || typeof gamificationRefetch !== 'function') return
@@ -266,25 +265,11 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             <div className="space-y-4">
               <h2 className="text-foreground text-2xl font-semibold">{t('earnedCertificate')}</h2>
               <div className="mx-auto max-w-2xl" id="certificate-preview">
-                <div id="certificate-content">
-                  <CertificatePreview
-                    certificationName={
-                      userCertificate.certification.config.certification_name || userCertificate.course.name || ''
-                    }
-                    certificationDescription={userCertificate.certification.config.certification_description ?? ''}
-                    certificationType={userCertificate.certification.config.certification_type}
-                    certificatePattern={userCertificate.certification.config.certificate_pattern ?? ''}
-                    certificateInstructor={userCertificate.instructor_name ?? undefined}
-                    recipientName={getUserDisplayName(user) || undefined}
-                    certificateId={userCertificate.certificate_user.user_certification_uuid}
-                    awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    qrCodeLink={qrCodeLink}
-                  />
-                </div>
+                <CertificatePdfPreview
+                  queryKey={[userCertificate.certificate_user.user_certification_uuid, locale]}
+                  load={() => downloadCertificatePdf(userCertificate.certificate_user.user_certification_uuid, locale)}
+                  title={t('earnedCertificate')}
+                />
               </div>
               <div className="flex justify-center space-x-4">
                 {/* The server PDF names the holder; the old in-browser pdfme copy did not. */}

@@ -4,25 +4,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { createCertification, deleteCertification, updateCertification } from '@services/courses/certifications'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import type { LucideIcon } from 'lucide-react'
-import {
-  AlertTriangle,
-  Award,
-  BriefcaseBusiness,
-  Circle,
-  Crown,
-  Diamond,
-  FileText,
-  GraduationCap,
-  Laptop,
-  Leaf,
-  Palette,
-  ScrollText,
-  Sparkles,
-  Waves,
-} from 'lucide-react'
-import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
+import { AlertTriangle, Award, CalendarDays, FileText } from 'lucide-react'
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { CourseEditorStagedSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { useSyncDirtySection } from '@/hooks/useSyncDirtySection'
 import { InlineError } from '@/components/ui/error-state'
@@ -32,64 +15,52 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useSaveSection } from '@/hooks/useSaveSection'
 import { Separator } from '@/components/ui/separator'
-import CertificatePreview from './CertificatePreview'
-import { Textarea } from '@/components/ui/textarea'
+import { CertificatePdfPreview } from '@/features/certifications/components/CertificatePdfPreview'
+import { apiBody } from '@/lib/api-client'
 import { Spinner } from '@components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import * as v from 'valibot'
-
-const CERTIFICATE_PATTERNS = [
-  { value: 'royal', icon: Crown },
-  { value: 'tech', icon: Laptop },
-  { value: 'nature', icon: Leaf },
-  { value: 'geometric', icon: Diamond },
-  { value: 'vintage', icon: ScrollText },
-  { value: 'waves', icon: Waves },
-  { value: 'minimal', icon: Circle },
-  { value: 'professional', icon: BriefcaseBusiness },
-  { value: 'academic', icon: GraduationCap },
-  { value: 'modern', icon: Sparkles },
-] as const satisfies readonly { value: string; icon: LucideIcon }[]
 
 interface CourseCertificationResource {
   id: string
+  version?: number
   config: AppCertification['certification']['config']
 }
+
+const CERTIFICATION_TYPES = [
+  'completion',
+  'achievement',
+  'assessment',
+  'participation',
+  'mastery',
+  'professional',
+  'continuing',
+  'workshop',
+  'specialization',
+] as const
+
+/** Blank, or a real calendar day `YYYY-MM-DD` (what `<input type="date">` gives). */
+const isOptionalDate = (value: string) =>
+  value === '' ||
+  (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(value)) &&
+    new Date(value).toISOString().slice(0, 10) === value)
+const isOptionalHours = (value: string) =>
+  value === '' || (/^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 100_000)
 
 // Module-level type-only schema (no translated messages needed for type inference)
 const _certFormSchemaForTypes = v.object({
   enable_certification: v.boolean(),
   certification_name: v.string(),
-  certification_description: v.string(),
-  certification_type: v.picklist([
-    'completion',
-    'achievement',
-    'assessment',
-    'participation',
-    'mastery',
-    'professional',
-    'continuing',
-    'workshop',
-    'specialization',
-  ] as const),
-  certificate_pattern: v.picklist([
-    'royal',
-    'tech',
-    'nature',
-    'geometric',
-    'vintage',
-    'waves',
-    'minimal',
-    'professional',
-    'academic',
-    'modern',
-  ] as const),
+  certification_type: v.picklist(CERTIFICATION_TYPES),
   certificate_instructor: v.optional(v.string()),
+  course_start: v.string(),
+  course_end: v.string(),
+  training_hours: v.string(),
 })
 
 type FormValues = v.InferOutput<typeof _certFormSchemaForTypes>
@@ -105,23 +76,12 @@ function EditCourseCertification() {
   const tCommon = useTranslations('Common')
 
   const certificationTypeItems = useMemo(
-    () =>
-      (
-        [
-          'completion',
-          'achievement',
-          'assessment',
-          'participation',
-          'mastery',
-          'professional',
-          'continuing',
-          'workshop',
-          'specialization',
-        ] as const
-      ).map(type => ({ value: type, label: t(`certificationTypes.${type}`) })),
+    () => CERTIFICATION_TYPES.map(type => ({ value: type, label: t(`certificationTypes.${type}`) })),
     [t],
   )
 
+  // The printed certificate reads the name, type, teacher and the optional training dates / hours
+  // (DECISIONS «Automatic bilingual certificates»); the server checks the same rules.
   const formSchema = useMemo(
     () =>
       v.pipe(
@@ -129,51 +89,24 @@ function EditCourseCertification() {
           enable_certification: v.boolean(),
           certification_name: v.pipe(
             v.string(t('certificationNameRequired')),
+            v.trim(),
             v.minLength(1, t('certificationNameRequired')),
             v.maxLength(100, t('maxCharacters100')),
           ),
-          certification_description: v.pipe(
-            v.string(t('certificationDescriptionRequired')),
-            v.minLength(1, t('certificationDescriptionRequired')),
-            v.maxLength(700, t('maxCharacters500')),
-          ),
-          certification_type: v.picklist(
-            [
-              'completion',
-              'achievement',
-              'assessment',
-              'participation',
-              'mastery',
-              'professional',
-              'continuing',
-              'workshop',
-              'specialization',
-            ],
-            t('certificationTypeRequired'),
-          ),
-          certificate_pattern: v.picklist(
-            [
-              'royal',
-              'tech',
-              'nature',
-              'geometric',
-              'vintage',
-              'waves',
-              'minimal',
-              'professional',
-              'academic',
-              'modern',
-            ],
-            t('certificatePatternRequired'),
-          ),
-          certificate_instructor: v.optional(v.string()),
+          certification_type: v.picklist(CERTIFICATION_TYPES, t('certificationTypeRequired')),
+          certificate_instructor: v.optional(v.pipe(v.string(), v.trim())),
+          course_start: v.pipe(v.string(), v.trim(), v.check(isOptionalDate, t('invalidDate'))),
+          course_end: v.pipe(v.string(), v.trim(), v.check(isOptionalDate, t('invalidDate'))),
+          training_hours: v.pipe(v.string(), v.trim(), v.check(isOptionalHours, t('invalidHours'))),
         }),
-        v.check(data => {
-          if (data.enable_certification) {
-            return Boolean(data.certification_name?.trim() && data.certification_description?.trim())
-          }
-          return true
-        }, t('validationRequiredFields')),
+        v.forward(
+          v.partialCheck(
+            [['course_start'], ['course_end']],
+            ({ course_start, course_end }) => !course_start || !course_end || course_start <= course_end,
+            t('endBeforeStart'),
+          ),
+          ['course_end'],
+        ),
       ),
     [t],
   )
@@ -190,10 +123,11 @@ function EditCourseCertification() {
     defaultValues: {
       enable_certification: false,
       certification_name: '',
-      certification_description: '',
       certification_type: 'completion',
-      certificate_pattern: 'professional',
       certificate_instructor: '',
+      course_start: '',
+      course_end: '',
+      training_hours: '',
     },
   })
 
@@ -205,10 +139,11 @@ function EditCourseCertification() {
     return {
       enable_certification: hasExistingCertification,
       certification_name: config.certification_name || courseStructure?.name || '',
-      certification_description: config.certification_description || courseStructure?.description || '',
       certification_type: config.certification_type || 'completion',
-      certificate_pattern: config.certificate_pattern || 'professional',
       certificate_instructor: config.certificate_instructor || getInstructorName(),
+      course_start: config.course_start ?? '',
+      course_end: config.course_end ?? '',
+      training_hours: config.training_hours ?? '',
     }
   }, [courseStructure, editorData.contributors.data, existingCertification, hasExistingCertification])
 
@@ -239,6 +174,7 @@ function EditCourseCertification() {
     errorMessage: t('certificationError'),
     onError: setError,
   })
+  const locale = useLocale()
 
   // Hydrate form from server data on load / when server data changes.
   useEffect(() => {
@@ -254,43 +190,20 @@ function EditCourseCertification() {
     name: 'enable_certification',
     defaultValue: false,
   })
-  const certificationName = useWatch({
-    control: form.control,
-    name: 'certification_name',
-    defaultValue: '',
-  })
-  const certificationDescription = useWatch({
-    control: form.control,
-    name: 'certification_description',
-    defaultValue: '',
-  })
-  const certificationType = useWatch({
-    control: form.control,
-    name: 'certification_type',
-    defaultValue: 'completion',
-  })
-  const certificatePattern = useWatch({
-    control: form.control,
-    name: 'certificate_pattern',
-    defaultValue: 'professional',
-  })
-  const certificateInstructor = useWatch({
-    control: form.control,
-    name: 'certificate_instructor',
-    defaultValue: '',
-  })
-
   const handleSaveCertification = form.handleSubmit(async values => {
     if (!courseStructure || !isDirty) return
 
     const isCertificationEnabled = values.enable_certification
 
+    // Keys this form does not edit (an older design, a description) survive the save.
     const config = {
+      ...existingCertification?.config,
       certification_name: values.certification_name,
-      certification_description: values.certification_description,
       certification_type: values.certification_type,
-      certificate_pattern: values.certificate_pattern,
-      certificate_instructor: values.certificate_instructor,
+      certificate_instructor: values.certificate_instructor ?? '',
+      course_start: values.course_start,
+      course_end: values.course_end,
+      training_hours: values.training_hours,
     }
 
     setError('')
@@ -443,17 +356,12 @@ function EditCourseCertification() {
 
                     <Controller
                       control={form.control}
-                      name="certification_description"
+                      name="certificate_instructor"
                       render={({ field, fieldState }) => (
                         <Field className="sm:col-span-2">
-                          <FieldLabel htmlFor={field.name}>{t('certificationDescription')}</FieldLabel>
+                          <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
                           <FieldContent>
-                            <Textarea
-                              id={field.name}
-                              {...field}
-                              placeholder={t('certificationDescriptionPlaceholder')}
-                              className="min-h-[120px] resize-none"
-                            />
+                            <Input id={field.name} {...field} placeholder={t('certificateInstructorPlaceholder')} />
                           </FieldContent>
                           <FieldError errors={[fieldState.error]} />
                         </Field>
@@ -462,74 +370,59 @@ function EditCourseCertification() {
                   </div>
                 </div>
 
-                {/* Design Section */}
+                {/* Training details printed on the certificate (optional). */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Palette className="text-muted-foreground h-5 w-5" />
-                    <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
+                    <CalendarDays className="text-muted-foreground h-5 w-5" />
+                    <h3 className="text-lg font-semibold">{t('trainingDetails')}</h3>
                   </div>
-                  <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>
+                  <p className="text-muted-foreground text-sm">{t('trainingDetailsDesc')}</p>
                   <Separator />
 
-                  <Controller
-                    control={form.control}
-                    name="certificate_pattern"
-                    render={({ field, fieldState }) => (
-                      <Field>
-                        <FieldLabel>{t('certificatePattern')}</FieldLabel>
-                        <RadioGroup
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
-                        >
-                          {CERTIFICATE_PATTERNS.map(pattern => {
-                            const Icon = pattern.icon
-                            return (
-                              <Label
-                                key={pattern.value}
-                                htmlFor={`pattern-${pattern.value}`}
-                                className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                                  field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
-                                }`}
-                              >
-                                <RadioGroupItem
-                                  value={pattern.value}
-                                  id={`pattern-${pattern.value}`}
-                                  className="sr-only"
-                                />
-                                <Icon className="text-muted-foreground size-5" aria-hidden />
-                                <span className="text-xs font-medium">{t(`certificatePatterns.${pattern.value}`)}</span>
-                                {field.value === pattern.value && (
-                                  <Badge variant="secondary" className="absolute -top-2 -right-2">
-                                    {t('selectedIcon')}
-                                  </Badge>
-                                )}
-                              </Label>
-                            )
-                          })}
-                        </RadioGroup>
-                        <FieldError errors={[fieldState.error]} />
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    control={form.control}
-                    name="certificate_instructor"
-                    render={({ field, fieldState }) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
-                        <FieldContent>
-                          <Input id={field.name} {...field} placeholder={t('certificateInstructorPlaceholder')} />
-                        </FieldContent>
-                        <FieldError errors={[fieldState.error]} />
-                      </Field>
-                    )}
-                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {(['course_start', 'course_end'] as const).map(name => (
+                      <Controller
+                        key={name}
+                        control={form.control}
+                        name={name}
+                        render={({ field, fieldState }) => (
+                          <Field>
+                            <FieldLabel htmlFor={field.name}>
+                              {t(name === 'course_start' ? 'courseStart' : 'courseEnd')}
+                            </FieldLabel>
+                            <FieldContent>
+                              <Input id={field.name} type="date" {...field} aria-invalid={fieldState.invalid} />
+                            </FieldContent>
+                            <FieldError errors={[fieldState.error]} />
+                          </Field>
+                        )}
+                      />
+                    ))}
+                    <Controller
+                      control={form.control}
+                      name="training_hours"
+                      render={({ field, fieldState }) => (
+                        <Field className="sm:col-span-2">
+                          <FieldLabel htmlFor={field.name}>{t('trainingHours')}</FieldLabel>
+                          <FieldContent>
+                            <Input
+                              id={field.name}
+                              inputMode="numeric"
+                              {...field}
+                              className="max-w-40"
+                              aria-invalid={fieldState.invalid}
+                            />
+                          </FieldContent>
+                          <FieldDescription>{t('optionalHint')}</FieldDescription>
+                          <FieldError errors={[fieldState.error]} />
+                        </Field>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Preview */}
+              {/* Preview: the server's PDF of the saved settings, exactly what learners download. */}
               <div className="w-full max-w-md xl:col-span-2 xl:max-w-none">
                 <div className="sticky top-6">
                   <Card>
@@ -538,18 +431,24 @@ function EditCourseCertification() {
                         <Award className="h-4 w-4" />
                         {t('previewCertificate')}
                       </CardTitle>
-                      <CardDescription>{t('livePreviewCertificate')}</CardDescription>
+                      <CardDescription>
+                        {existingCertification && !isDirty ? t('pdfPreviewSaved') : t('pdfPreviewUnsaved')}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <CertificatePreview
-                        certificationName={certificationName}
-                        certificationDescription={certificationDescription}
-                        certificationType={certificationType}
-                        certificatePattern={certificatePattern}
-                        {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
-                        sample
-                      />
-                    </CardContent>
+                    {existingCertification && !isDirty ? (
+                      <CardContent>
+                        <CertificatePdfPreview
+                          queryKey={['preview', existingCertification.id, existingCertification.version, locale]}
+                          load={() =>
+                            apiBody<Blob, 'blob'>(`certifications/${existingCertification.id}/preview.pdf`, {
+                              responseType: 'blob',
+                              headers: { 'Accept-Language': locale },
+                            })
+                          }
+                          title={t('previewCertificate')}
+                        />
+                      </CardContent>
+                    ) : null}
                   </Card>
                 </div>
               </div>

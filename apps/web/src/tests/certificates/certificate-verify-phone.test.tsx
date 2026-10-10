@@ -9,11 +9,12 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 import CertificateVerificationPage from '@components/Pages/Certificate/CertificateVerificationPage'
 import ruMessages from '@/messages/ru-RU.json'
 
-vi.mock('@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview', () => ({
-  default: ({ recipientName }: { recipientName?: string }) => <span>{recipientName}</span>,
+vi.mock('@/features/certifications/components/CertificatePdfPreview', () => ({
+  CertificatePdfPreview: ({ queryKey }: { queryKey: unknown[] }) => <span data-testid="pdf">{queryKey.join(' ')}</span>,
 }))
 vi.mock('@/features/certifications/components/CertificatePdfDownloadButton', () => ({
   CertificatePdfDownloadButton: () => null,
+  downloadCertificatePdf: vi.fn(),
 }))
 vi.mock('@/features/certifications/hooks/useCertifications', () => ({
   useCertificateByUuid: () => ({
@@ -51,8 +52,17 @@ describe('certificate verify page on a phone (UX-179)', () => {
         <CertificateVerificationPage certificateUuid="ABCD-EFGH-IJKL-MNOP" />
       </NextIntlClientProvider>,
     )
-    // UX-312: in the details and on the on-screen certificate itself.
-    expect(await screen.findAllByText('Айгерим Сапарова')).toHaveLength(2)
+    expect(await screen.findByText('Айгерим Сапарова')).toBeInTheDocument()
     expect(screen.getByText(ruMessages.Certificates.CertificateVerificationPage.certificateHolder)).toBeInTheDocument()
+  })
+
+  // The on-screen certificate is the server PDF (the university template), not a look-alike drawn in the browser.
+  it('shows the printed PDF of this certificate', async () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages}>
+        <CertificateVerificationPage certificateUuid="ABCD-EFGH-IJKL-MNOP" />
+      </NextIntlClientProvider>,
+    )
+    expect(await screen.findByTestId('pdf')).toHaveTextContent('ABCD-EFGH-IJKL-MNOP ru')
   })
 })
