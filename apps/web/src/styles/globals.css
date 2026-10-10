@@ -306,3 +306,9 @@ html[data-layout-mode='active-attempt'] main,
 html[data-activity-focus='true'] main {
   padding-top: 0 !important;
 }
+
+/* Recharts measures label widths in a body-level span at left: 0; a long label (a course name)
+   made every analytics page scroll sideways into blank space. Measure it off-screen to the left. */
+#recharts_measurement_span {
+  left: -20000px !important;
+}
