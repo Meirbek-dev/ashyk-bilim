@@ -427,3 +427,50 @@ async fn html_file_submission_downloads_as_an_attachment(pool: PgPool) {
     );
     assert_eq!(fetched.bytes().await.unwrap().to_vec(), payload);
 }
+
+/// BUG-B-9: the purpose policy and the uploads table's purpose CHECK drifted
+/// (`discussion-image` answered 500). Every purpose the API accepts can be
+/// stored.
+#[sqlx::test(migrations = "../../migrations")]
+async fn every_policy_purpose_can_be_stored(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app.create_user("author", "a@example.com", &["user"]).await;
+    let session = app
+        .mint_session_for(
+            user,
+            &[
+                "file:create:own",
+                "course:update:own",
+                "platform:update:platform",
+                "collection:create:platform",
+            ],
+        )
+        .await;
+    for (purpose, mime) in [
+        ("avatar", "image/png"),
+        ("discussion-image", "image/png"),
+        ("course-thumbnail", "image/png"),
+        ("block-image", "image/png"),
+        ("platform-logo", "image/png"),
+        ("platform-thumbnail", "image/png"),
+        ("collection-cover", "image/png"),
+        ("block-pdf", "application/pdf"),
+        ("block-video", "video/mp4"),
+        ("file-submission", "application/zip"),
+    ] {
+        assert!(ab_domain::files::uploads::is_purpose(purpose), "{purpose}");
+        let created = app
+            .post_as(
+                &session,
+                "/api/v2/uploads",
+                &serde_json::json!({ "purpose": purpose, "mime": mime, "size_bytes": 10 }),
+            )
+            .await;
+        assert_eq!(
+            created.status,
+            StatusCode::OK,
+            "{purpose}: {}",
+            created.text()
+        );
+    }
+}
