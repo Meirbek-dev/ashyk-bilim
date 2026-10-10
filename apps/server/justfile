@@ -90,3 +90,7 @@ services:
 
 dev:
     bacon
+
+# Run the API without the file watcher.
+serve:
+    cargo run -p ashyq-server -- serve
