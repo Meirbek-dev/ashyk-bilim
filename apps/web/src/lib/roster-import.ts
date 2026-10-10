@@ -30,7 +30,8 @@ export function decodeCsv(bytes: ArrayBuffer): string {
 /**
  * A roster CSV: UTF-8 with or without BOM, `;` (Excel in the ru locale) or `,`
  * delimited, an optional header. Each row gives one identifier: the cell that
- * holds an email, else the first non-empty cell. Blank rows are skipped.
+ * holds an email, else the cell under the email/login header, else the first
+ * non-empty cell. Blank rows are skipped.
  */
 export function parseRosterCsv(text: string): string[] {
   const lines = text
@@ -39,8 +40,12 @@ export function parseRosterCsv(text: string): string[] {
     .filter(line => line.trim())
   const first = lines[0] ?? ''
   const delimiter = (first.match(/;/g)?.length ?? 0) >= (first.match(/,/g)?.length ?? 0) ? ';' : ','
-  const rows = lines.map(line => line.split(delimiter).map(unquote).filter(Boolean))
+  const rows = lines.map(line => line.split(delimiter).map(unquote))
   const head = rows[0] ?? []
-  if (head.some(cell => HEADER.test(cell)) && !head.some(cell => cell.includes('@'))) rows.shift()
-  return rows.map(cells => cells.find(cell => cell.includes('@')) ?? cells[0] ?? '').filter(Boolean)
+  // A header names the column to read («ФИО;Логин» reads the logins, not the names).
+  const column = head.some(cell => cell.includes('@')) ? -1 : head.findIndex(cell => HEADER.test(cell))
+  if (column >= 0) rows.shift()
+  return rows
+    .map(cells => cells.find(cell => cell.includes('@')) ?? (column >= 0 ? cells[column] : cells.find(Boolean)) ?? '')
+    .filter(Boolean)
 }

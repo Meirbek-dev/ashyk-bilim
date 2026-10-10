@@ -37,6 +37,10 @@ describe('parseRosterCsv', () => {
     expect(parseRosterCsv('alice\nbob\n')).toEqual(['alice', 'bob'])
   })
 
+  it('reads the column under the login header, not the name before it', () => {
+    expect(parseRosterCsv('ФИО;Логин\r\nИванов Иван;ivanov\r\nПетрова;petrova\r\n')).toEqual(['ivanov', 'petrova'])
+  })
+
   it('drops a lone username header', () => {
     expect(parseRosterCsv('username\nalice')).toEqual(['alice'])
     expect(parseRosterCsv('Email,Name\nalice@x.kz,Alice')).toEqual(['alice@x.kz'])

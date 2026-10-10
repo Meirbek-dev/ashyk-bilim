@@ -205,7 +205,8 @@ export default function CourseLearners() {
         l.display_name,
         l.username,
         l.email,
-        unixToIso(l.enrolled_at_unix)?.slice(0, 10) ?? '',
+        // The local day, as on the page («sv-SE» prints YYYY-MM-DD), not the UTC one.
+        new Date(l.enrolled_at_unix * 1000).toLocaleDateString('sv-SE'),
         l.progress_pct === null ? '' : Math.round(l.progress_pct),
       ])
       const header = [t('colName'), t('colUsername'), t('colEmail'), t('colEnrolled'), `${t('colProgress')}, %`]
