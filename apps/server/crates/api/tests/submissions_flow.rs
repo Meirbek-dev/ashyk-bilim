@@ -2850,3 +2850,64 @@ async fn concurrent_submits_beyond_the_pool_size_all_land(pool: PgPool) {
         assert_eq!(res.json()["status"], "published");
     }
 }
+
+/// A revision of returned work opens with the returned answers, not a blank
+/// page: the learner fixes what the teacher asked for.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_revision_starts_from_the_returned_answers(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "max_attempts": 1 }),
+        &[choice_item("Q1"), open_text_item("Essay")],
+    )
+    .await;
+    let path = format!("/api/v2/assessments/{id}/submissions");
+    let empty = serde_json::json!({});
+    let first = app.post_as(&alice, &path, &empty).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let answers = serde_json::json!({
+        &items[0]: { "kind": "choice", "selected": ["a"] },
+        &items[1]: { "kind": "open_text", "text": "My long essay." },
+    });
+    let submitted = app
+        .send(submit(
+            &alice,
+            &first,
+            None,
+            &serde_json::json!({ "answers": answers }),
+        ))
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let returned = app
+        .send(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/api/v2/submissions/{first}/grade"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .header(header::IF_MATCH, "1")
+                .body(Body::from(
+                    serde_json::json!({ "action": "return", "feedback": "expand" }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(returned.status, StatusCode::OK, "{}", returned.text());
+    let revision = app.post_as(&alice, &path, &empty).await;
+    assert_eq!(revision.status, StatusCode::CREATED, "{}", revision.text());
+    assert_eq!(revision.json()["attempt_number"], 2);
+    assert_eq!(
+        revision.json()["answers"][&items[1]]["text"],
+        "My long essay."
+    );
+    assert_eq!(revision.json()["answers"][&items[0]]["selected"][0], "a");
+}

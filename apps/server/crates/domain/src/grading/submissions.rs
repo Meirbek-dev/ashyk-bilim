@@ -638,6 +638,15 @@ impl SubmissionsService {
             .await?
             // Unreachable under `lock_attempts`; never a second draft.
             .ok_or_else(|| Error::conflict("an attempt is already open"))?;
+            // A revision starts from the returned work (newest attempt first),
+            // not a blank page: the learner fixes what the teacher asked for.
+            if let Some(returned) = prior
+                .iter()
+                .find(|s| s.status != SubmissionStatus::Draft)
+                .filter(|s| s.status == SubmissionStatus::Returned)
+            {
+                ab_db::submissions::seed_draft_answers(&mut tx, id, &returned.answers).await?;
+            }
             (id, true)
         };
         if rules_accepted {

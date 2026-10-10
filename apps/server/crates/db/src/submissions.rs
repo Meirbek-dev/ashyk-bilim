@@ -105,6 +105,20 @@ pub async fn insert_draft<'e>(
     Ok(id)
 }
 
+/// A fresh draft starts from these answers (a revision of returned work).
+pub async fn seed_draft_answers(
+    conn: &mut sqlx::PgConnection,
+    id: SubmissionId,
+    answers: &serde_json::Value,
+) -> Result<()> {
+    sqlx::query("UPDATE submissions SET answers = $2 WHERE id = $1 AND status = 'draft'")
+        .bind(id.0)
+        .bind(answers)
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
 /// BUG-239: serialize `start` per (assessment, learner) until commit, so
 /// the attempt count and the cap are read with no other start in flight.
 pub async fn lock_attempts(
