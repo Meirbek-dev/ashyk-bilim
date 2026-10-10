@@ -184,7 +184,7 @@ describe('discussion images', () => {
         </Suspense>
       </QueryClientProvider>,
     )
-    const textbox = screen.getByRole('textbox', { name: m.editor_label() })
+    const textbox = screen.getByRole('textbox', { name: m.editor_label_post() })
     await userEvent.click(textbox)
     const clipboard = new DataTransfer()
     clipboard.items.add(new File(['png'], 'shot.png', { type: 'image/png' }))
