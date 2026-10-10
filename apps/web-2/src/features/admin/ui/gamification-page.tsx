@@ -38,6 +38,7 @@ export function GamificationPage() {
   // Captured once: the cache write after saving must not reset what the user typed.
   const [defaultValues] = useState(() => rulesForm(config))
   const form = useAppForm(rulesFormSchema, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: values => write.save(rulesBody(values, config)),
   })

@@ -36,6 +36,7 @@ export function RoleEditSection({ role, base }: { role: Role; base: BaseVersion 
     priority: String(role.priority),
   }))
   const form = useAppForm(roleEditSchema, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: ({ priority, ...text }) => write.save({ ...text, priority: Number(priority) }),
   })

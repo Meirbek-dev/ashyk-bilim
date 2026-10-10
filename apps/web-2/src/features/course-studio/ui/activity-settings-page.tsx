@@ -38,6 +38,7 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
     onError: (error: unknown) => setConflict(isStale(error)),
   }
   const form = useAppForm(nameSchema, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: ({ name }) => update.mutateAsync(request(name, query.data.version), callbacks),
   })
