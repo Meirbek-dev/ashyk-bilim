@@ -11,7 +11,7 @@ import {
 
 import { m } from '#/paraglide/messages'
 import type { NotificationPayload, NotificationType } from '#/shared/api/gen/types.gen'
-import { formatDateTime, formatNumber } from '#/shared/i18n/format'
+import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 /** The type's name: the item's heading and the settings switch (B-NOT-04, B-NOT-09). */
 export const notificationTypeLabels: Record<NotificationType, () => string> = {
@@ -41,7 +41,7 @@ export function notificationLines(payload: NotificationPayload): string[] {
       const what = m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name })
       return payload.final_score === null
         ? [what]
-        : [what, m.notifications_text_score({ score: formatNumber(payload.final_score) })]
+        : [what, m.notifications_text_score({ score: formatPercent(payload.final_score) })]
     }
     case 'submission_returned':
       return [m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name })]

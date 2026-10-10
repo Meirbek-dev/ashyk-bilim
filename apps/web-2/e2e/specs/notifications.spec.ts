@@ -11,6 +11,7 @@ import {
   getNotificationPreferences,
   updatePreferences,
 } from '#/shared/api/gen/sdk.gen'
+import { formatPercent } from '#/shared/i18n/format'
 
 import { expectReread } from '../fixtures/test'
 import type { MadeCourse } from '../fixtures/learning'
@@ -90,7 +91,7 @@ test2(
     })
     await expect(link).toBeVisible()
     await expect(page.getByText(m.notifications_type_grade_published({}, ru))).toBeVisible()
-    await expect(page.getByText(m.notifications_text_score({ score: '85' }, ru))).toBeVisible()
+    await expect(page.getByText(m.notifications_text_score({ score: formatPercent(85, 'ru') }, ru))).toBeVisible()
     await expect(bell(page, 1)).toBeVisible()
     await link.click()
     await expect(page).toHaveURL(`/learn/${course.id}/${task.activity_id}/submission`)
