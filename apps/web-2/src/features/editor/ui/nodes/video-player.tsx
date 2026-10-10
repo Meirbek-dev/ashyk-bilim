@@ -8,6 +8,15 @@ import { Slider } from '#/shared/ui/slider'
 import { clock } from '../../model/file-blocks'
 import { VideoEndedContext } from '../../model/video-ended'
 
+/** The player full screen; iPhone Safari has no element full screen, only the video's own. */
+function fullscreen(
+  frame: HTMLElement | null,
+  video: (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null,
+) {
+  if (frame?.requestFullscreen) void frame.requestFullscreen().catch(() => null)
+  else video?.webkitEnterFullscreen?.()
+}
+
 /**
  * A hosted video file: the native `<video>` with kit controls (play, position, time, sound, full screen). A file
  * the browser cannot decode (a renamed document, an unsupported codec) says so instead of an empty frame.
@@ -86,7 +95,7 @@ export function VideoPlayer({ src }: { src: string }) {
         <IconButton
           label={m.editor_video_fullscreen()}
           icon={<Maximize aria-hidden />}
-          onClick={() => void frame.current?.requestFullscreen().catch(() => null)}
+          onClick={() => fullscreen(frame.current, video.current)}
         />
       </div>
     </div>
