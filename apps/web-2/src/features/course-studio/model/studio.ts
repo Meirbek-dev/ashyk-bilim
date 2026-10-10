@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { youTubeId } from '#/features/editor'
 
 import type {
   ActivityDetail,
@@ -201,9 +202,17 @@ export function mediaSource(activity: Pick<ActivityDetail, 'activity_sub_type' |
     : { kind: 'none' }
 }
 
-const YOUTUBE_URL = /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\/\S+$/i
-
-export const youtubeSchema = v.object({ uri: v.pipe(v.string(), v.trim(), v.regex(YOUTUBE_URL)) })
+/**
+ * A link the lesson player can embed (`youTubeId`): any youtube.com / youtu.be address used to pass, and a channel
+ * page or a cut-off id saved fine but showed learners "this address cannot be embedded".
+ */
+export const youtubeSchema = v.object({
+  uri: v.pipe(
+    v.string(),
+    v.trim(),
+    v.check(uri => uri.startsWith('https://') && youTubeId(uri) !== null),
+  ),
+})
 
 export const youtubeContent = (uri: string) => ({ uri, type: 'youtube' })
 

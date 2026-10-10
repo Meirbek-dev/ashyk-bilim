@@ -136,7 +136,7 @@ const onHosts = (url: URL, hosts: readonly string[]) => hosts.some(host => hostI
 const YOUTUBE_ID = /^[\w-]{11}$/
 const videoId = (id: string | null | undefined) => (id && YOUTUBE_ID.test(id) ? id : null)
 
-/** The video id of a youtube.com/watch, youtu.be, /embed/ or /shorts/ URL, or a bare 11-character id. */
+/** The video id of a youtube.com/watch, youtu.be, /embed/, /shorts/ or /live/ URL, or a bare 11-character id. */
 export function youTubeId(value: string): string | null {
   const url = parse(value)
   if (!url) return videoId(value.trim())
@@ -144,7 +144,7 @@ export function youTubeId(value: string): string | null {
   if (url.hostname === 'youtu.be') return videoId(url.pathname.slice(1).split('/')[0])
   if (!hostIs(url, 'youtube.com')) return null
   if (url.pathname === '/watch') return videoId(url.searchParams.get('v'))
-  return videoId(/^\/(embed|shorts)\/([^/?#]+)/.exec(url.pathname)?.[2])
+  return videoId(/^\/(embed|shorts|live|v)\/([^/?#]+)/.exec(url.pathname)?.[2])
 }
 
 // Host (and path, for Google) -> provider id. Only providers whose iframe address differs from the page

@@ -159,13 +159,25 @@ describe('certificate', () => {
 })
 
 describe('media', () => {
-  test('B-CST-29 a YouTube link must be youtube.com or youtu.be over https', () => {
-    expect(v.safeParse(youtubeSchema, { uri: ' https://youtu.be/abc ' }).output).toEqual({
-      uri: 'https://youtu.be/abc',
+  test('B-CST-29 a YouTube link must be a video the player can embed, over https', () => {
+    expect(v.safeParse(youtubeSchema, { uri: ' https://youtu.be/dQw4w9WgXcQ?si=x ' }).output).toEqual({
+      uri: 'https://youtu.be/dQw4w9WgXcQ?si=x',
     })
-    expect(v.safeParse(youtubeSchema, { uri: 'https://www.youtube.com/watch?v=1' }).success).toBe(true)
-    expect(v.safeParse(youtubeSchema, { uri: 'https://vimeo.com/1' }).success).toBe(false)
-    expect(v.safeParse(youtubeSchema, { uri: 'http://youtu.be/abc' }).success).toBe(false)
+    for (const uri of [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s',
+      'https://m.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+      'https://www.youtube.com/live/dQw4w9WgXcQ?si=x',
+    ])
+      expect({ uri, ok: v.safeParse(youtubeSchema, { uri }).success }).toEqual({ uri, ok: true })
+    for (const uri of [
+      'https://www.youtube.com/watch?v=1',
+      'https://www.youtube.com/@channel',
+      'https://vimeo.com/1',
+      'http://youtu.be/dQw4w9WgXcQ',
+      'dQw4w9WgXcQ',
+    ])
+      expect({ uri, ok: v.safeParse(youtubeSchema, { uri }).success }).toEqual({ uri, ok: false })
   })
 
   test('B-CST-29 stored shapes: YouTube {uri}, an uploaded file {filename: key, file_name}', () => {
