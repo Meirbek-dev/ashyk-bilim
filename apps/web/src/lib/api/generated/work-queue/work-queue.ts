@@ -58,8 +58,9 @@ export const getWorkQueueUrl = (params?: WorkQueueParams) => {
 
 /**
  * `role=learner` (default) lists the caller's own open activities; `role=teacher` lists submissions to grade
- * or release across the courses the caller created or co-authors. Sorted
- * by priority, then due/created time, then id; paged by an opaque cursor.
+ * or release across the courses the caller created or co-authors. `kind` and
+ * `course_id` filter; `sort` orders (default: priority, then due/created
+ * time, then id). Paged by an opaque cursor (same filters and order).
  * @summary Ranked work items for the caller.
  */
 export const workQueue = async (

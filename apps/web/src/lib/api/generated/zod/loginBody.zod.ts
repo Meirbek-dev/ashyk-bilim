@@ -7,11 +7,23 @@
  */
 import * as zod from 'zod'
 
+export const loginBodyLoginMax = 320
+
+export const loginBodyPasswordMax = 200
+
+export const loginBodyTotpCodeMin = 6
+export const loginBodyTotpCodeMax = 8
+
 export const LoginBody = zod
   .object({
-    login: zod.string().describe('Username or email.'),
-    password: zod.string(),
-    totp_code: zod.string().nullish().describe('Second factor - resubmit after a 401 `mfa-required`.'),
+    login: zod.string().min(1).max(loginBodyLoginMax).describe('Username or email.'),
+    password: zod.string().min(1).max(loginBodyPasswordMax),
+    totp_code: zod
+      .string()
+      .min(loginBodyTotpCodeMin)
+      .max(loginBodyTotpCodeMax)
+      .optional()
+      .describe('Second factor - resubmit after a 401 `mfa-required`.'),
   })
   .describe('Password login. No `Debug` derive - the password must never format.')
 

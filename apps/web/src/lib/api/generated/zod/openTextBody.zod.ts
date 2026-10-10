@@ -7,10 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const openTextBodyPromptMax = 20000
+
+export const openTextBodyRubricMax = 20000
+
 export const OpenTextBody = zod.object({
-  min_words: zod.int().nullish(),
-  prompt: zod.string().optional(),
-  rubric: zod.string().nullish(),
+  min_words: zod.int().nullable(),
+  prompt: zod.string().max(openTextBodyPromptMax).optional(),
+  rubric: zod.string().max(openTextBodyRubricMax).nullable(),
 })
 
 export type OpenTextBody = zod.input<typeof OpenTextBody>

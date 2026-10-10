@@ -8,9 +8,10 @@
 import * as zod from 'zod'
 
 export const NextAction = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]),
+  course_id: zod.uuid().describe('The course the action is in (build the web URL from the ids).'),
   enabled: zod.boolean(),
-  href: zod.string().nullish(),
+  href: zod.string().nullable().describe('Legacy web URL (old `/course/...` scheme) - kept for the old web.'),
   id: zod.enum([
     'enroll',
     'start',
@@ -22,8 +23,22 @@ export const NextAction = zod.object({
     'review_completion',
     'none',
   ]),
-  label: zod.string(),
-  reason: zod.string(),
+  label: zod.string().describe('English fallback; the web localizes by `id` + `reason`.'),
+  reason: zod
+    .enum([
+      'not_enrolled',
+      'returned_for_revision',
+      'overdue',
+      'in_progress',
+      'due_soon',
+      'next_required',
+      'certificate_issued',
+      'course_complete',
+      'waiting_for_grade',
+      'optional',
+      'no_available_action',
+    ])
+    .describe('Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).'),
 })
 
 export type NextAction = zod.input<typeof NextAction>

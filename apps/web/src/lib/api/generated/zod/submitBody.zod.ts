@@ -7,6 +7,8 @@
  */
 import * as zod from 'zod'
 
+export const submitBodyViolationCountMin = 0
+
 export const SubmitBody = zod.object({
   answers: zod
     .record(
@@ -46,10 +48,11 @@ export const SubmitBody = zod.object({
           'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
         ),
     )
-    .nullish()
+    .optional()
     .describe('A last patch applied before grading.'),
   violation_count: zod
     .int()
+    .min(submitBodyViolationCountMin)
     .optional()
     .describe("The client's anti-cheat count; the server's own count wins when higher."),
 })

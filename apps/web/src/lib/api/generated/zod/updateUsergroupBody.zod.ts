@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const updateUsergroupBodyDescriptionMax = 5000
+
+export const updateUsergroupBodyNameMax = 500
+
 export const UpdateUsergroupBody = zod.object({
-  description: zod.string().nullish(),
-  name: zod.string().nullish(),
+  description: zod.string().max(updateUsergroupBodyDescriptionMax).optional(),
+  name: zod.string().max(updateUsergroupBodyNameMax).optional(),
 })
 
 export type UpdateUsergroupBody = zod.input<typeof UpdateUsergroupBody>

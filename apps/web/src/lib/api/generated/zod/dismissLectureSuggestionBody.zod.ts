@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const dismissLectureSuggestionBodySuggestionIdMax = 200
+
 export const DismissLectureSuggestionBody = zod.object({
-  suggestion_id: zod.string(),
+  suggestion_id: zod.string().min(1).max(dismissLectureSuggestionBodySuggestionIdMax),
 })
 
 export type DismissLectureSuggestionBody = zod.input<typeof DismissLectureSuggestionBody>

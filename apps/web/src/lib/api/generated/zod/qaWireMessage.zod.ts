@@ -7,19 +7,37 @@
  */
 import * as zod from 'zod'
 
+export const qaWireMessageContentMax = 20000
+
+export const qaWireMessageIdMax = 200
+
+export const qaWireMessageRoleMax = 32
+
 export const QaWireMessage = zod
   .object({
-    content: zod.string().nullish(),
-    encryptedValue: zod.string().nullish(),
-    id: zod.string().nullish(),
-    metadata: zod.looseObject({}).nullish(),
-    name: zod.string().nullish().describe('AG-UI 1.0 message members; accepted and ignored.'),
+    content: zod.string().max(qaWireMessageContentMax).optional(),
+    encryptedValue: zod.string().optional(),
+    id: zod.string().max(qaWireMessageIdMax).optional(),
+    metadata: zod
+      .unknown()
+      .optional()
+      .describe(
+        'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+      ),
+    name: zod.string().optional().describe('AG-UI 1.0 message members; accepted and ignored.'),
     parts: zod
-      .array(zod.looseObject({}))
-      .nullish()
+      .array(
+        zod
+          .object({
+            content: zod.string().optional(),
+            type: zod.string(),
+          })
+          .describe('One part of an AG-UI message: `{type: "text", content: "…"}`; only text\nparts are read.'),
+      )
+      .optional()
       .describe('`[{type: "text", content: "…"}, …]` - an alternative to `content`.'),
-    role: zod.string(),
-    subagentRunId: zod.string().nullish(),
+    role: zod.string().min(1).max(qaWireMessageRoleMax),
+    subagentRunId: zod.string().optional(),
   })
   .describe('One message of the AG-UI conversation the client sends back.')
 

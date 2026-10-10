@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const Certificate = zod.object({
   certification_id: zod.uuid(),
   id: zod.uuid(),
-  issued_at_unix: zod.int(),
+  issued_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   user_id: zod.uuid(),
   verify_code: zod.string().describe('Public verification code; the client links `/certificates/{code}/verify`.'),
 })

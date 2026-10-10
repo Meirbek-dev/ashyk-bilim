@@ -7,12 +7,16 @@
  */
 import * as zod from 'zod'
 
+export const findingReviewRequestFindingIdMax = 200
+
+export const findingReviewRequestNoteMax = 1000
+
 export const FindingReviewRequest = zod.object({
   action: zod
     .enum(['accepted', 'dismissed', 'task_created'])
     .describe('Teacher review verdict on one course-analysis finding.'),
-  finding_id: zod.string(),
-  note: zod.string().nullish(),
+  finding_id: zod.string().min(1).max(findingReviewRequestFindingIdMax),
+  note: zod.string().max(findingReviewRequestNoteMax).optional(),
 })
 
 export type FindingReviewRequest = zod.input<typeof FindingReviewRequest>

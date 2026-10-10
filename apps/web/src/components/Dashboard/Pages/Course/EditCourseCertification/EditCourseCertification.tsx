@@ -206,8 +206,8 @@ function EditCourseCertification() {
       enable_certification: hasExistingCertification,
       certification_name: config.certification_name || courseStructure?.name || '',
       certification_description: config.certification_description || courseStructure?.description || '',
-      certification_type: (config.certification_type as FormValues['certification_type']) || 'completion',
-      certificate_pattern: (config.certificate_pattern as FormValues['certificate_pattern']) || 'professional',
+      certification_type: config.certification_type || 'completion',
+      certificate_pattern: config.certificate_pattern || 'professional',
       certificate_instructor: config.certificate_instructor || getInstructorName(),
     }
   }, [courseStructure, editorData.contributors.data, existingCertification, hasExistingCertification])

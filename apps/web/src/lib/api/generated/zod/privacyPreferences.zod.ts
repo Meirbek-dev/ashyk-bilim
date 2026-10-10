@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const PrivacyPreferences = zod.object({
   showOnLeaderboard: zod
     .boolean()
-    .nullish()
+    .optional()
     .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
 })
 

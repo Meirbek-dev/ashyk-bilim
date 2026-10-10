@@ -9,22 +9,25 @@ import * as zod from 'zod'
 
 export const AssessmentLearnerRow = zod.object({
   attempts: zod.int(),
-  best_score: zod.number().nullish(),
-  graded_at_unix: zod.int().nullish(),
-  last_score: zod.number().nullish(),
+  best_score: zod.number().nullable(),
+  graded_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
+  last_score: zod.number().nullable(),
   pending_attempt: zod
     .int()
-    .nullish()
+    .nullable()
     .describe(
       'The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any - it may be newer than the ranked attempt.',
     ),
   status: zod
     .string()
-    .nullish()
+    .nullable()
     .describe(
       "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) - the gradebook cell's rule.",
     ),
-  submitted_at_unix: zod.int().nullish(),
+  submitted_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   user_display_name: zod.string(),
   user_id: zod.uuid(),
 })

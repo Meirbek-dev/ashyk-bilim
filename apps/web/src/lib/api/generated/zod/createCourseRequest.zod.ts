@@ -7,11 +7,19 @@
  */
 import * as zod from 'zod'
 
+export const createCourseRequestAboutMax = 20000
+
+export const createCourseRequestDescriptionMax = 5000
+
+export const createCourseRequestNameMax = 500
+
+export const createCourseRequestTagsMax = 20
+
 export const CreateCourseRequest = zod.object({
-  about: zod.string().nullish(),
-  description: zod.string().nullish(),
-  name: zod.string(),
-  tags: zod.array(zod.string()).nullish(),
+  about: zod.string().max(createCourseRequestAboutMax).optional(),
+  description: zod.string().max(createCourseRequestDescriptionMax).optional(),
+  name: zod.string().max(createCourseRequestNameMax),
+  tags: zod.array(zod.string()).max(createCourseRequestTagsMax).optional(),
 })
 
 export type CreateCourseRequest = zod.input<typeof CreateCourseRequest>

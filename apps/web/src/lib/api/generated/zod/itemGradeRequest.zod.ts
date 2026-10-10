@@ -7,10 +7,18 @@
  */
 import * as zod from 'zod'
 
+export const itemGradeRequestFeedbackMax = 5000
+
+export const itemGradeRequestScoreMin = 0
+
 export const ItemGradeRequest = zod.object({
-  feedback: zod.string().optional(),
+  feedback: zod.string().max(itemGradeRequestFeedbackMax).optional(),
   item_id: zod.uuid(),
-  score: zod.number().nullish().describe('Points for this item (its `max_score` scale).'),
+  score: zod
+    .number()
+    .min(itemGradeRequestScoreMin)
+    .optional()
+    .describe('Points for this item (its `max_score` scale).'),
 })
 
 export type ItemGradeRequest = zod.input<typeof ItemGradeRequest>

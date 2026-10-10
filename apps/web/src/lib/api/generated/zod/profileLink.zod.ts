@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const ProfileLink = zod.object({
-  icon: zod.string().nullish(),
+  icon: zod.string().optional(),
   title: zod.string(),
   url: zod.string(),
 })

@@ -137,16 +137,21 @@ export const useCreateUpload = <TError = ErrorType<Problem>, TContext = unknown>
 ): UseMutationResult<Awaited<ReturnType<typeof createUpload>>, TError, CreateUploadMutationVariables, TContext> => {
   return useMutation(getCreateUploadMutationOptions(options), queryClient)
 }
-export const getDownloadUploadUrl = (id: string) => {
-  return `/api/v2/uploads/${id}/download`
+export const getDownloadUploadUrl = (uploadId: string) => {
+  return `/api/v2/uploads/${uploadId}/download`
 }
 
 /**
+ * Raster images, PDF, audio, video and plain text open inline; every other
+ * type downloads as `application/octet-stream`.
  * @summary Redirect to a short-lived presigned download URL.
  */
-export const downloadUpload = async (id: string, options?: Parameters<typeof orvalMutator>[1]): Promise<unknown> => {
+export const downloadUpload = async (
+  uploadId: string,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<unknown> => {
   return orvalMutator<unknown>(
-    getDownloadUploadUrl(id),
+    getDownloadUploadUrl(uploadId),
     {
       ...options,
       method: 'GET',
@@ -155,15 +160,15 @@ export const downloadUpload = async (id: string, options?: Parameters<typeof orv
   )
 }
 
-export const getDownloadUploadQueryKey = (id: string) => {
-  return [`/api/v2/uploads/${id}/download`] as const
+export const getDownloadUploadQueryKey = (uploadId: string) => {
+  return [`/api/v2/uploads/${uploadId}/download`] as const
 }
 
 export const getDownloadUploadQueryOptions = <
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -171,16 +176,19 @@ export const getDownloadUploadQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(uploadId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) =>
-    downloadUpload(id, { signal, ...requestOptions })
+    downloadUpload(uploadId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof downloadUpload>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: uploadId !== null && uploadId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type DownloadUploadQueryResult = NonNullable<Awaited<ReturnType<typeof downloadUpload>>>
@@ -190,7 +198,7 @@ export function useDownloadUpload<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> &
       Pick<
@@ -209,7 +217,7 @@ export function useDownloadUpload<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>> &
       Pick<
@@ -228,7 +236,7 @@ export function useDownloadUpload<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -243,14 +251,14 @@ export function useDownloadUpload<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getDownloadUploadQueryOptions(id, options)
+  const queryOptions = getDownloadUploadQueryOptions(uploadId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -263,7 +271,7 @@ export const getDownloadUploadSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -271,10 +279,10 @@ export const getDownloadUploadSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getDownloadUploadQueryKey(uploadId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadUpload>>> = ({ signal }) =>
-    downloadUpload(id, { signal, ...requestOptions })
+    downloadUpload(uploadId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -292,7 +300,7 @@ export function useDownloadUploadSuspense<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -303,7 +311,7 @@ export function useDownloadUploadSuspense<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -314,7 +322,7 @@ export function useDownloadUploadSuspense<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -329,14 +337,14 @@ export function useDownloadUploadSuspense<
   TData = Awaited<ReturnType<typeof downloadUpload>>,
   TError = ErrorType<void | Problem>,
 >(
-  id: string,
+  uploadId: string,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof downloadUpload>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getDownloadUploadSuspenseQueryOptions(id, options)
+  const queryOptions = getDownloadUploadSuspenseQueryOptions(uploadId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -345,8 +353,8 @@ export function useDownloadUploadSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getFinalizeUploadUrl = (id: string) => {
-  return `/api/v2/uploads/${id}/finalize`
+export const getFinalizeUploadUrl = (uploadId: string) => {
+  return `/api/v2/uploads/${uploadId}/finalize`
 }
 
 /**
@@ -355,11 +363,11 @@ With an `Idempotency-Key`, a retry replays the original 200 for 24h
 instead of the "already finalized" 409.
  */
 export const finalizeUpload = async (
-  id: string,
+  uploadId: string,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<FinalizedUpload> => {
   return orvalMutator<FinalizedUpload>(
-    getFinalizeUploadUrl(id),
+    getFinalizeUploadUrl(uploadId),
     {
       ...options,
       method: 'POST',
@@ -395,9 +403,9 @@ export const getFinalizeUploadMutationOptions = <TError = ErrorType<Problem>, TC
     Awaited<ReturnType<typeof finalizeUpload>>,
     FinalizeUploadMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { uploadId } = props ?? {}
 
-    return finalizeUpload(id, requestOptions)
+    return finalizeUpload(uploadId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -406,7 +414,7 @@ export const getFinalizeUploadMutationOptions = <TError = ErrorType<Problem>, TC
 export type FinalizeUploadMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeUpload>>>
 
 export type FinalizeUploadMutationError = ErrorType<Problem>
-export type FinalizeUploadMutationVariables = { id: string }
+export type FinalizeUploadMutationVariables = { uploadId: string }
 
 /**
  * @summary Finalize after the PUT: verifies the object exists and is within policy.

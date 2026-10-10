@@ -14,7 +14,9 @@ export const AnalyticsDataQuality = zod.object({
       course_id: zod.uuid(),
       course_name: zod.string(),
       learner_count: zod.int(),
-      reason: zod.string(),
+      reason: zod
+        .enum(['fewer_than_5_learners'])
+        .describe("Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS)."),
     }),
   ),
   excluded_preview_attempts: zod.int(),
@@ -51,16 +53,26 @@ export const AnalyticsDataQuality = zod.object({
         .describe(
           'Every server-composed analytics message. The client localises the code\nwith the item\'s `params` (DECISIONS "Pass-6 contract gaps": codes +\nparams on the wire, no prose). Param names per code:\n\n- alerts: `grading_backlog {count}`, `engagement_dropped {delta_pct}`,\n  `content_stale {days}`, `risk_spike {count}`, `grading_slo_breached`\n  / `grading_slo_watch {assessment_title, course_name, breaches,\n  awaiting, oldest_hours?, target_hours}`;\n- forecasts: `completion_target_miss {course_name, count}`,\n  `course_completion_deadline {course_name, expected_pct}`,\n  `grading_backlog_7d {count}`, `assessment_failure_risk\n  {assessment_title, expected_pct}`;\n- anomalies: `sharp_engagement_drop` / `submission_spike {course_name}`,\n  `fast_quiz_completion` / `score_distribution_shift {assessment_title}`;\n- insights: `new_at_risk_learners {course_name, count}`, `low_pass_rate`\n  / `low_pass_rate_with_diagnostics {assessment_title, pass_rate}`,\n  `content_bottleneck {activity_name, signal}`, `workload_backlog {count,\n  breaches, forecast_7d, target_hours}`, `completion_improved\n  {course_name, delta_pts}`;\n- data quality: `missing_event_sources {sources[]}`, `thin_course_data\n  {count}`, `stale_rollup {}`.',
         ),
-      course_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      course_id: zod.union([zod.uuid(), zod.null()]),
       id: zod.string(),
-      params: zod.looseObject({}),
+      params: zod
+        .record(
+          zod.string(),
+          zod
+            .union([zod.string(), zod.number()])
+            .describe('A string or a number: a message placeholder value, a saved query value.'),
+        )
+        .describe('Placeholders for a stable message `code`, by name.'),
       severity: zod.enum(['info', 'warning', 'critical']),
-      source: zod.string().nullish(),
+      source: zod.string().nullable(),
     }),
   ),
-  last_rollup_time_unix: zod.int().nullish(),
+  last_rollup_time_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   missing_event_sources: zod.array(zod.string()),
-  mode: zod.string().describe('`live` | `rollup`.'),
+  mode: zod.enum(['live', 'rollup']).describe('Where the analytics read came from.'),
 })
 
 export type AnalyticsDataQuality = zod.input<typeof AnalyticsDataQuality>

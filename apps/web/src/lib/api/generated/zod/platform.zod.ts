@@ -9,12 +9,18 @@ import * as zod from 'zod'
 
 export const Platform = zod.object({
   about: zod.string(),
+  allowed_actions: zod
+    .array(
+      zod.enum(['update']).describe('What the caller may do to the platform settings (`Platform.allowed_actions`).'),
+    )
+    .describe('What the caller may do to the settings (empty for anonymous readers).'),
   description: zod.string(),
   email: zod.string(),
-  label: zod.string().nullish(),
-  logo_key: zod.string().nullish().describe('Public-bucket storage keys (served via the CDN /content route).'),
+  label: zod.string().nullable(),
+  logo_key: zod.string().nullable().describe('Public-bucket storage keys (served via the CDN /content route).'),
   name: zod.string(),
-  thumbnail_key: zod.string().nullish(),
+  thumbnail_key: zod.string().nullable(),
+  version: zod.int().describe('Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.'),
 })
 
 export type Platform = zod.input<typeof Platform>

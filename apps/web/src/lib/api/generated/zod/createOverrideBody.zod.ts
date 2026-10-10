@@ -7,12 +7,37 @@
  */
 import * as zod from 'zod'
 
+export const createOverrideBodyDueAtOverrideUnixMin = 0
+export const createOverrideBodyDueAtOverrideUnixMax = 253402300799
+
+export const createOverrideBodyExpiresAtUnixMin = 0
+export const createOverrideBodyExpiresAtUnixMax = 253402300799
+
+export const createOverrideBodyMaxAttemptsOverrideMax = 10
+
+export const createOverrideBodyNoteMax = 1000
+
 export const CreateOverrideBody = zod
   .object({
-    due_at_override_unix: zod.int().nullish(),
-    expires_at_unix: zod.int().nullish().describe('After this the override is ignored.'),
-    max_attempts_override: zod.int().nullish().describe("1..=10; `null` keeps the assessment's limit."),
-    note: zod.string().optional(),
+    due_at_override_unix: zod
+      .int()
+      .min(createOverrideBodyDueAtOverrideUnixMin)
+      .max(createOverrideBodyDueAtOverrideUnixMax)
+      .optional()
+      .describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    expires_at_unix: zod
+      .int()
+      .min(createOverrideBodyExpiresAtUnixMin)
+      .max(createOverrideBodyExpiresAtUnixMax)
+      .optional()
+      .describe('After this the override is ignored.'),
+    max_attempts_override: zod
+      .int()
+      .min(1)
+      .max(createOverrideBodyMaxAttemptsOverrideMax)
+      .optional()
+      .describe("1..=10; `null` keeps the assessment's limit."),
+    note: zod.string().max(createOverrideBodyNoteMax).optional(),
     waive_late_penalty: zod.boolean().optional(),
   })
   .describe('Full override block (create and update share it).')

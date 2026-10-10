@@ -32,6 +32,11 @@ const submitted: StudentSubmission = {
   final_score: 100,
   started_at_unix: 1777982400,
   submitted_at_unix: 1777982500,
+  auto_submit_reason: null,
+  graded_at_unix: null,
+  grading: null,
+  late_penalty_pct: null,
+  time_remaining_seconds: null,
 }
 const draft: StudentSubmission = {
   ...submitted,

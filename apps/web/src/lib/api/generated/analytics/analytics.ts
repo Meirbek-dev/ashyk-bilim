@@ -46,6 +46,7 @@ import {
   ExportCourseProgressParams,
   ExportGradingBacklogParams,
   Intervention,
+  InterventionId,
   InterventionList,
   ListInterventionsParams,
   ListSavedViewsParams,
@@ -61,6 +62,8 @@ import {
   TeacherCourseListResponse,
   TeacherOverviewParams,
   TeacherOverviewResponse,
+  UpdateInterventionParams,
+  UpdateInterventionRequest,
 } from '../zod'
 
 import { orvalMutator, stringParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
@@ -931,7 +934,7 @@ export function useCourseListSuspense<TData = Awaited<ReturnType<typeof courseLi
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getCourseDetailUrl = (id: CourseId, params?: CourseDetailParams) => {
+export const getCourseDetailUrl = (courseId: CourseId, params?: CourseDetailParams) => {
   const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -943,20 +946,20 @@ export const getCourseDetailUrl = (id: CourseId, params?: CourseDetailParams) =>
   const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0
-    ? `/api/v2/analytics/teacher/courses/${id}?${stringifiedParams}`
-    : `/api/v2/analytics/teacher/courses/${id}`
+    ? `/api/v2/analytics/teacher/courses/${courseId}?${stringifiedParams}`
+    : `/api/v2/analytics/teacher/courses/${courseId}`
 }
 
 /**
  * @summary 404 for a course outside the caller's scope.
  */
 export const courseDetail = async (
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<TeacherCourseDetailResponse> => {
   return orvalMutator<TeacherCourseDetailResponse>(
-    getCourseDetailUrl(id, params),
+    getCourseDetailUrl(courseId, params),
     {
       ...options,
       method: 'GET',
@@ -965,15 +968,15 @@ export const courseDetail = async (
   )
 }
 
-export const getCourseDetailQueryKey = (id: CourseId, params?: CourseDetailParams) => {
-  return [`/api/v2/analytics/teacher/courses/${id}`, ...(params ? [params] : [])] as const
+export const getCourseDetailQueryKey = (courseId: CourseId, params?: CourseDetailParams) => {
+  return [`/api/v2/analytics/teacher/courses/${courseId}`, ...(params ? [params] : [])] as const
 }
 
 export const getCourseDetailQueryOptions = <
   TData = Awaited<ReturnType<typeof courseDetail>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -982,23 +985,26 @@ export const getCourseDetailQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCourseDetailQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getCourseDetailQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseDetail>>> = ({ signal }) =>
-    courseDetail(id, params, { signal, ...requestOptions })
+    courseDetail(courseId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof courseDetail>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type CourseDetailQueryResult = NonNullable<Awaited<ReturnType<typeof courseDetail>>>
 export type CourseDetailQueryError = ErrorType<Problem>
 
 export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | CourseDetailParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>> &
@@ -1015,7 +1021,7 @@ export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>> &
@@ -1032,7 +1038,7 @@ export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1045,7 +1051,7 @@ export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>
  */
 
 export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1053,7 +1059,7 @@ export function useCourseDetail<TData = Awaited<ReturnType<typeof courseDetail>>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCourseDetailQueryOptions(id, params, options)
+  const queryOptions = getCourseDetailQueryOptions(courseId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1066,7 +1072,7 @@ export const getCourseDetailSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof courseDetail>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1075,10 +1081,10 @@ export const getCourseDetailSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCourseDetailQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getCourseDetailQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseDetail>>> = ({ signal }) =>
-    courseDetail(id, params, { signal, ...requestOptions })
+    courseDetail(courseId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1093,7 +1099,7 @@ export type CourseDetailSuspenseQueryResult = NonNullable<Awaited<ReturnType<typ
 export type CourseDetailSuspenseQueryError = ErrorType<Problem>
 
 export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | CourseDetailParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1102,7 +1108,7 @@ export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof course
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1111,7 +1117,7 @@ export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof course
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1124,7 +1130,7 @@ export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof course
  */
 
 export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof courseDetail>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: CourseDetailParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDetail>>, TError, TData>>
@@ -1132,7 +1138,7 @@ export function useCourseDetailSuspense<TData = Awaited<ReturnType<typeof course
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCourseDetailSuspenseQueryOptions(id, params, options)
+  const queryOptions = getCourseDetailSuspenseQueryOptions(courseId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2529,6 +2535,127 @@ export const useCreateIntervention = <TError = ErrorType<Problem>, TContext = un
   TContext
 > => {
   return useMutation(getCreateInterventionMutationOptions(options), queryClient)
+}
+export const getUpdateInterventionUrl = (interventionId: InterventionId, params?: UpdateInterventionParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/analytics/teacher/interventions/${interventionId}?${stringifiedParams}`
+    : `/api/v2/analytics/teacher/interventions/${interventionId}`
+}
+
+/**
+ * @summary Update or close an intervention (status, outcome, notes) - the caller's
+own, in a course in scope (404 otherwise). `status: resolved` stamps
+`resolved_at` and records the learner's risk then.
+ */
+export const updateIntervention = async (
+  interventionId: InterventionId,
+  updateInterventionRequest: UpdateInterventionRequest,
+  params?: UpdateInterventionParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Intervention> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Intervention>(
+    getUpdateInterventionUrl(interventionId, params),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateInterventionRequest),
+    },
+    Intervention,
+  )
+}
+
+export const getUpdateInterventionMutationKey = () => ['updateIntervention'] as const
+
+export const getUpdateInterventionMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateIntervention>>,
+    TError,
+    UpdateInterventionMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateIntervention>>,
+  TError,
+  UpdateInterventionMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUpdateInterventionMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateIntervention>>,
+    UpdateInterventionMutationVariables
+  > = props => {
+    const { interventionId, data, params } = props ?? {}
+
+    return updateIntervention(interventionId, data, params, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type UpdateInterventionMutationResult = NonNullable<Awaited<ReturnType<typeof updateIntervention>>>
+export type UpdateInterventionMutationBody = BodyType<UpdateInterventionRequest>
+export type UpdateInterventionMutationError = ErrorType<Problem>
+export type UpdateInterventionMutationVariables = {
+  interventionId: InterventionId
+  data: BodyType<UpdateInterventionRequest>
+  params?: UpdateInterventionParams
+}
+
+/**
+ * @summary Update or close an intervention (status, outcome, notes) - the caller's
+own, in a course in scope (404 otherwise). `status: resolved` stamps
+`resolved_at` and records the learner's risk then.
+ */
+export const useUpdateIntervention = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateIntervention>>,
+      TError,
+      UpdateInterventionMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateIntervention>>,
+  TError,
+  UpdateInterventionMutationVariables,
+  TContext
+> => {
+  return useMutation(getUpdateInterventionMutationOptions(options), queryClient)
 }
 export const getAtRiskLearnersUrl = (params?: AtRiskLearnersParams) => {
   const normalizedParams = new URLSearchParams()

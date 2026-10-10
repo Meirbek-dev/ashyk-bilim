@@ -7,9 +7,12 @@
  */
 import * as zod from 'zod'
 
+export const effectivePolicyLatePolicyTwoPercentPerDayMin = 0
+export const effectivePolicyLatePolicyTwoPercentPerDayMax = 100
+
 export const EffectivePolicy = zod.object({
   allow_late: zod.boolean(),
-  due_at_unix: zod.int().nullish(),
+  due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
   late_policy: zod
     .union([
       zod.object({
@@ -17,19 +20,22 @@ export const EffectivePolicy = zod.object({
       }),
       zod.object({
         kind: zod.enum(['penalty']),
-        max_days: zod.int(),
-        percent_per_day: zod.number(),
+        max_days: zod.int().min(1),
+        percent_per_day: zod
+          .number()
+          .min(effectivePolicyLatePolicyTwoPercentPerDayMin)
+          .max(effectivePolicyLatePolicyTwoPercentPerDayMax),
       }),
       zod.object({
-        cutoff_at_unix: zod.int(),
+        cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
         kind: zod.enum(['cutoff']),
       }),
     ])
     .describe('Late-submission handling.'),
-  max_attempts: zod.int().nullish(),
+  max_attempts: zod.int().nullable(),
   override_applied: zod.boolean().describe('An unexpired per-student override shaped this.'),
   passing_score: zod.number(),
-  time_limit_seconds: zod.int().nullish(),
+  time_limit_seconds: zod.int().nullable(),
   waive_late_penalty: zod.boolean(),
 })
 

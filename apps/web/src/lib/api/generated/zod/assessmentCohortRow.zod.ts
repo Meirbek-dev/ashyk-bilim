@@ -8,16 +8,16 @@
 import * as zod from 'zod'
 
 export const AssessmentCohortRow = zod.object({
-  avg_attempts: zod.number().nullish(),
+  avg_attempts: zod.number().nullable(),
   awaiting_grading: zod.int(),
   cohort_id: zod.uuid(),
   cohort_name: zod.string(),
   eligible_learners: zod.int(),
-  median_score: zod.number().nullish(),
-  pass_rate: zod.number().nullish(),
+  median_score: zod.number().nullable(),
+  pass_rate: zod.number().nullable(),
   released_learners: zod.int(),
   returned_for_resubmission: zod.int(),
-  submission_rate: zod.number().nullish(),
+  submission_rate: zod.number().nullable(),
   submitted_learners: zod.int(),
 })
 

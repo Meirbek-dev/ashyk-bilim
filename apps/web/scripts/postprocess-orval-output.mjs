@@ -30,6 +30,7 @@ const generatedDir = path.resolve(import.meta.dirname, '..', 'src/lib/api/genera
 const mutatorHelpers = new Set([
   'arrayParser',
   'nullableParser',
+  'optionalParser',
   'stringParser',
   'stringifyQueryParam',
   'unknownParser',
@@ -122,6 +123,12 @@ function parserForType(typeName, helpersUsed) {
   if (nullableMatch) {
     helpersUsed.add('nullableParser')
     return `nullableParser(${parserForType(nullableMatch[1], helpersUsed)})`
+  }
+
+  const optionalMatch = normalized.match(/^(.+)\s+\|\s+void$/u) ?? normalized.match(/^void\s+\|\s+(.+)$/u)
+  if (optionalMatch) {
+    helpersUsed.add('optionalParser')
+    return `optionalParser(${parserForType(optionalMatch[1], helpersUsed)})`
   }
 
   if (normalized === 'void') {

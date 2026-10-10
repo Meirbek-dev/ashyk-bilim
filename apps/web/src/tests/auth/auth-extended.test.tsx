@@ -57,6 +57,8 @@ const mockSession: Session = {
     organization: '',
     profile: { sections: [] },
     theme: null,
+    language: 'en',
+    version: 1,
   },
   userId: '0198c0ae-0000-7000-8000-000000000001',
   roles: [],

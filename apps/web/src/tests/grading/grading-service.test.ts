@@ -45,6 +45,10 @@ function wireTeacherSubmission(overrides: Record<string, unknown> = {}) {
     started_at_unix: 1_700_000_000,
     submitted_at_unix: 1_700_000_100,
     graded_at_unix: 1_700_000_200,
+    allowed_actions: [],
+    auto_submit_reason: null,
+    duration_seconds: 100,
+    score_override: null,
     ...overrides,
   }
 }

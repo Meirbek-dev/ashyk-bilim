@@ -7,19 +7,30 @@
  */
 import * as zod from 'zod'
 
+export const matchingBodyExplanationMax = 20000
+
+export const matchingBodyPairsItemLeftMax = 20000
+
+export const matchingBodyPairsItemRightMax = 20000
+
+export const matchingBodyPairsMax = 200
+
+export const matchingBodyPromptMax = 20000
+
 export const MatchingBody = zod.object({
-  explanation: zod.string().nullish(),
+  explanation: zod.string().max(matchingBodyExplanationMax).nullable(),
   pairs: zod
     .array(
       zod.object({
-        left: zod.string(),
-        right: zod.string(),
+        left: zod.string().max(matchingBodyPairsItemLeftMax),
+        right: zod.string().max(matchingBodyPairsItemRightMax),
       }),
     )
+    .max(matchingBodyPairsMax)
     .describe(
       "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
     ),
-  prompt: zod.string().optional(),
+  prompt: zod.string().max(matchingBodyPromptMax).optional(),
 })
 
 export type MatchingBody = zod.input<typeof MatchingBody>

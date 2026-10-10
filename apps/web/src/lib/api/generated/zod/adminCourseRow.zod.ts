@@ -11,7 +11,7 @@ export const AdminCourseRow = zod.object({
   active_learners_7d: zod.int(),
   at_risk_learners: zod.int(),
   completion_rate: zod.number(),
-  content_roi_score: zod.number().nullish(),
+  content_roi_score: zod.number().nullable(),
   course_id: zod.uuid(),
   course_name: zod.string(),
   health_score: zod.number(),

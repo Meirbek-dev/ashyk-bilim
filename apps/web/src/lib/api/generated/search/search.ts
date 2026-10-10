@@ -20,7 +20,7 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import { SearchParams, SearchResults } from '../zod'
+import { Problem, SearchParams, SearchResults } from '../zod'
 
 import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType } from '../../orval-mutator'
@@ -78,7 +78,7 @@ export const getSearchQueryKey = (params?: SearchParams) => {
   return [`/api/v2/search`, ...(params ? [params] : [])] as const
 }
 
-export const getSearchQueryOptions = <TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export const getSearchQueryOptions = <TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -100,9 +100,9 @@ export const getSearchQueryOptions = <TData = Awaited<ReturnType<typeof search>>
 }
 
 export type SearchQueryResult = NonNullable<Awaited<ReturnType<typeof search>>>
-export type SearchQueryError = ErrorType<unknown>
+export type SearchQueryError = ErrorType<Problem>
 
-export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>> &
@@ -114,7 +114,7 @@ export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = E
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>> &
@@ -126,7 +126,7 @@ export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = E
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -139,7 +139,7 @@ export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = E
 see public content only and no people section.
  */
 
-export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -156,7 +156,7 @@ export function useSearch<TData = Awaited<ReturnType<typeof search>>, TError = E
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getSearchSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export const getSearchSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -180,9 +180,9 @@ export const getSearchSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof 
 }
 
 export type SearchSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof search>>>
-export type SearchSuspenseQueryError = ErrorType<unknown>
+export type SearchSuspenseQueryError = ErrorType<Problem>
 
-export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -190,7 +190,7 @@ export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TE
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -198,7 +198,7 @@ export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TE
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>
@@ -211,7 +211,7 @@ export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TE
 see public content only and no people section.
  */
 
-export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<unknown>>(
+export function useSearchSuspense<TData = Awaited<ReturnType<typeof search>>, TError = ErrorType<Problem>>(
   params: SearchParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof search>>, TError, TData>>

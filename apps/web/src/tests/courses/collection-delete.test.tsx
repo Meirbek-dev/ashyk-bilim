@@ -21,19 +21,20 @@ vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, ge
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const id = '01a0910d-2963-7483-a97d-40dc56e9aa20'
-const wire = (can_delete: boolean): Collection =>
-  ({
-    id,
-    name: 'Подборка',
-    description: '',
-    public: true,
-    creator_id: null,
-    courses: [],
-    can_delete,
-    created_at_unix: 0,
-    updated_at_unix: 0,
-    version: 1,
-  }) as Collection
+const wire = (can_delete: boolean): Collection => ({
+  id,
+  name: 'Подборка',
+  description: '',
+  public: true,
+  creator_id: null,
+  courses: [],
+  can_delete,
+  allowed_actions: can_delete ? ['update', 'delete'] : ['update'],
+  cover_key: null,
+  created_at_unix: 0,
+  updated_at_unix: 0,
+  version: 1,
+})
 
 function renderCard(can_delete: boolean) {
   const queryClient = new QueryClient()

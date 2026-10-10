@@ -238,14 +238,7 @@ declare global {
     /** The public verification view names the holder (UX-300); issued listings do not. */
     holder?: { display_name: string }
     certification: {
-      config: {
-        certification_name?: string
-        certification_type?: string
-        certification_description?: string
-        certificate_pattern?: string
-        certificate_instructor?: string | null
-        [key: string]: unknown
-      }
+      config: import('@/lib/api/generated/zod').CertificationConfig
       [key: string]: unknown
     }
     [key: string]: unknown

@@ -9,18 +9,68 @@ import * as zod from 'zod'
 
 export const RunStatus = zod
   .object({
-    completed_at_unix: zod.int().nullish(),
-    duration_ms: zod.int().nullish(),
-    error_code: zod.string().nullish(),
+    completed_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
+    duration_ms: zod.int().nullable(),
+    error_code: zod.string().nullable(),
     id: zod.uuid(),
-    input_tokens: zod.int().nullish(),
+    input_tokens: zod.int().nullable(),
     kind: zod
       .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
       .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
-    metadata: zod.looseObject({}),
-    model_name: zod.string().nullish(),
-    output_tokens: zod.int().nullish(),
-    started_at_unix: zod.int(),
+    metadata: zod
+      .object({
+        activity_id: zod.uuid().nullish(),
+        assessment_id: zod.uuid().nullish(),
+        citation_validation: zod
+          .object({
+            invalid_citation_ids: zod.array(zod.string()).optional(),
+            invalid_count: zod.int().optional(),
+            source_count: zod.int().optional(),
+            valid_count: zod.int().optional(),
+            validation: zod.enum(['not_applicable']).optional(),
+          })
+          .optional()
+          .describe('Set when the run finished.'),
+        client_turn_id: zod.string().nullish(),
+        context_source_count: zod.int().optional(),
+        course_id: zod.uuid().optional(),
+        file_count: zod.int().optional(),
+        file_submission_attempt_id: zod.uuid().optional(),
+        file_submission_id: zod.uuid().optional(),
+        gate_mode: zod.boolean().optional().describe("Remediation: the result blocks the learner's next attempt."),
+        item_count: zod.int().optional(),
+        kind: zod
+          .enum([
+            'course_analysis',
+            'submission_analysis',
+            'remediation',
+            'study_companion',
+            'lecture_review',
+            'course_qa',
+          ])
+          .optional()
+          .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
+        language: zod.string().optional().describe('Requested answer language (`auto`, `ru`, `kk`, `en`).'),
+        mode: zod
+          .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
+          .optional()
+          .describe('Study companion modes (legacy `StudyMode`).'),
+        parent_run_id: zod.uuid().optional().describe('The run whose analysis a remediation was generated from.'),
+        question: zod.string().optional().describe("The learner's question (Q&A, study companion)."),
+        retry_count: zod.int().optional().describe('1 when a Q&A turn was replayed for the same `client_turn_id`.'),
+        submission_id: zod.uuid().optional(),
+        thread_id: zod.uuid().optional(),
+        time_to_first_text_ms: zod.int().optional(),
+      })
+      .describe(
+        '`ai_runs.metadata`: what the run was started for, merged as it runs.\nEvery key is optional; which ones appear depends on `kind`.',
+      ),
+    model_name: zod.string().nullable(),
+    output_tokens: zod.int().nullable(),
+    started_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     status: zod
       .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
       .describe(

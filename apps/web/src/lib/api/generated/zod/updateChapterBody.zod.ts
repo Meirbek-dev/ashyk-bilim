@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const updateChapterBodyDescriptionMax = 5000
+
+export const updateChapterBodyNameMax = 500
+
 export const UpdateChapterBody = zod.object({
-  description: zod.string().nullish(),
-  name: zod.string().nullish(),
+  description: zod.string().max(updateChapterBodyDescriptionMax).optional(),
+  name: zod.string().max(updateChapterBodyNameMax).optional(),
 })
 
 export type UpdateChapterBody = zod.input<typeof UpdateChapterBody>

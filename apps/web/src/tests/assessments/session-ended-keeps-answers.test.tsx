@@ -39,6 +39,14 @@ const draft: StudentSubmission = {
   is_late: false,
   violation_count: 0,
   started_at_unix: 1777982400,
+  auto_score: null,
+  auto_submit_reason: null,
+  final_score: null,
+  graded_at_unix: null,
+  grading: null,
+  late_penalty_pct: null,
+  submitted_at_unix: null,
+  time_remaining_seconds: null,
 }
 const changed = { [itemId]: { kind: 'OPEN_TEXT' as const, text: 'Алматы' } }
 const changedWire = { [itemId]: { kind: 'open_text', text: 'Алматы' } }

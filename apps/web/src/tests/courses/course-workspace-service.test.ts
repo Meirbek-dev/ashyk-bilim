@@ -49,6 +49,8 @@ describe('getCourseMetadata learner shape', () => {
     name: id,
     description: '',
     position: 1,
+    version: 1,
+    allowed_actions: [],
     activities: published.map((flag, index) => ({
       id: `${id.slice(0, 35)}${index}`,
       chapter_id: id,
@@ -59,6 +61,7 @@ describe('getCourseMetadata learner shape', () => {
       activity_type: 'dynamic',
       activity_sub_type: 'dynamic_page',
       version: 1,
+      allowed_actions: [],
     })),
   })
   const curriculum = {
@@ -85,6 +88,13 @@ describe('getCourseMetadata learner shape', () => {
                 open_to_contributors: false,
                 created_at_unix: 1,
                 updated_at_unix: 1,
+                allowed_actions: [],
+                archived_at_unix: null,
+                archived_by: null,
+                creator_id: null,
+                thumbnail_key: null,
+                thumbnail_video_key: null,
+                version: 1,
               }
             : curriculum
         return parse ? parse(value) : value

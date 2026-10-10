@@ -28,13 +28,15 @@ import {
   AssessmentItemId,
   CodeRun,
   CodeRunId,
+  CodeRunnerInfo,
   LanguageInfo,
+  ListMyCodeRunsParams,
   Problem,
   ReferenceCheckResponse,
   RunRequest,
 } from '../zod'
 
-import { orvalMutator, arrayParser } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -54,8 +56,320 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result
 }
 
-export const getRunItemUrl = (id: AssessmentItemId) => {
-  return `/api/v2/assessment-items/${id}/runs`
+export const getReferenceCheckItemUrl = (itemId: AssessmentItemId) => {
+  return `/api/v2/assessment-items/${itemId}/reference-check`
+}
+
+/**
+ * One entry per language the item allows. Retry-safe with
+ * `Idempotency-Key` (a replay answers the stored verdicts without
+ * spending runner time again).
+ * @summary Run one code item's stored reference solutions against all its tests
+(authors only).
+ */
+export const referenceCheckItem = async (
+  itemId: AssessmentItemId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<ReferenceCheckResponse> => {
+  return orvalMutator<ReferenceCheckResponse>(
+    getReferenceCheckItemUrl(itemId),
+    {
+      ...options,
+      method: 'POST',
+    },
+    ReferenceCheckResponse,
+  )
+}
+
+export const getReferenceCheckItemMutationKey = () => ['referenceCheckItem'] as const
+
+export const getReferenceCheckItemMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof referenceCheckItem>>,
+    TError,
+    ReferenceCheckItemMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof referenceCheckItem>>,
+  TError,
+  ReferenceCheckItemMutationVariables,
+  TContext
+> => {
+  const mutationKey = getReferenceCheckItemMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof referenceCheckItem>>,
+    ReferenceCheckItemMutationVariables
+  > = props => {
+    const { itemId } = props ?? {}
+
+    return referenceCheckItem(itemId, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ReferenceCheckItemMutationResult = NonNullable<Awaited<ReturnType<typeof referenceCheckItem>>>
+
+export type ReferenceCheckItemMutationError = ErrorType<Problem>
+export type ReferenceCheckItemMutationVariables = { itemId: AssessmentItemId }
+
+/**
+ * @summary Run one code item's stored reference solutions against all its tests
+(authors only).
+ */
+export const useReferenceCheckItem = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof referenceCheckItem>>,
+      TError,
+      ReferenceCheckItemMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof referenceCheckItem>>,
+  TError,
+  ReferenceCheckItemMutationVariables,
+  TContext
+> => {
+  return useMutation(getReferenceCheckItemMutationOptions(options), queryClient)
+}
+export const getListMyCodeRunsUrl = (itemId: AssessmentItemId, params?: ListMyCodeRunsParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/assessment-items/${itemId}/runs?${stringifiedParams}`
+    : `/api/v2/assessment-items/${itemId}/runs`
+}
+
+/**
+ * Masked like `GET /code-runs/{id}` (authors see hidden-test data). With
+ * `submission_id` + `purpose=final`: the run a submission was graded on.
+ * @summary The caller's own runs of an item, newest first.
+ */
+export const listMyCodeRuns = async (
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CodeRun[]> => {
+  return orvalMutator<CodeRun[]>(
+    getListMyCodeRunsUrl(itemId, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(CodeRun),
+  )
+}
+
+export const getListMyCodeRunsQueryKey = (itemId: AssessmentItemId, params?: ListMyCodeRunsParams) => {
+  return [`/api/v2/assessment-items/${itemId}/runs`, ...(params ? [params] : [])] as const
+}
+
+export const getListMyCodeRunsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListMyCodeRunsQueryKey(itemId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyCodeRuns>>> = ({ signal }) =>
+    listMyCodeRuns(itemId, params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: itemId !== null && itemId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyCodeRuns>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMyCodeRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyCodeRuns>>>
+export type ListMyCodeRunsQueryError = ErrorType<unknown>
+
+export function useListMyCodeRuns<TData = Awaited<ReturnType<typeof listMyCodeRuns>>, TError = ErrorType<unknown>>(
+  itemId: AssessmentItemId,
+  params: undefined | ListMyCodeRunsParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyCodeRuns>>,
+          TError,
+          Awaited<ReturnType<typeof listMyCodeRuns>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyCodeRuns<TData = Awaited<ReturnType<typeof listMyCodeRuns>>, TError = ErrorType<unknown>>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyCodeRuns>>,
+          TError,
+          Awaited<ReturnType<typeof listMyCodeRuns>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyCodeRuns<TData = Awaited<ReturnType<typeof listMyCodeRuns>>, TError = ErrorType<unknown>>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's own runs of an item, newest first.
+ */
+
+export function useListMyCodeRuns<TData = Awaited<ReturnType<typeof listMyCodeRuns>>, TError = ErrorType<unknown>>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListMyCodeRunsQueryOptions(itemId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListMyCodeRunsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListMyCodeRunsQueryKey(itemId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyCodeRuns>>> = ({ signal }) =>
+    listMyCodeRuns(itemId, params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListMyCodeRunsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listMyCodeRuns>>>
+export type ListMyCodeRunsSuspenseQueryError = ErrorType<unknown>
+
+export function useListMyCodeRunsSuspense<
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params: undefined | ListMyCodeRunsParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyCodeRunsSuspense<
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyCodeRunsSuspense<
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's own runs of an item, newest first.
+ */
+
+export function useListMyCodeRunsSuspense<
+  TData = Awaited<ReturnType<typeof listMyCodeRuns>>,
+  TError = ErrorType<unknown>,
+>(
+  itemId: AssessmentItemId,
+  params?: ListMyCodeRunsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listMyCodeRuns>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListMyCodeRunsSuspenseQueryOptions(itemId, params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getRunItemUrl = (itemId: AssessmentItemId) => {
+  return `/api/v2/assessment-items/${itemId}/runs`
 }
 
 /**
@@ -67,7 +381,7 @@ export const getRunItemUrl = (id: AssessmentItemId) => {
  * @summary Run code against an item's visible tests (or one custom input).
  */
 export const runItem = async (
-  id: AssessmentItemId,
+  itemId: AssessmentItemId,
   runRequest: RunRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<CodeRun> => {
@@ -86,7 +400,7 @@ export const runItem = async (
     return headers
   }
   return orvalMutator<CodeRun>(
-    getRunItemUrl(id),
+    getRunItemUrl(itemId),
     {
       ...options,
       method: 'POST',
@@ -111,9 +425,9 @@ export const getRunItemMutationOptions = <TError = ErrorType<Problem>, TContext 
     : { mutation: { mutationKey }, request: undefined }
 
   const mutationFn: MutationFunction<Awaited<ReturnType<typeof runItem>>, RunItemMutationVariables> = props => {
-    const { id, data } = props ?? {}
+    const { itemId, data } = props ?? {}
 
-    return runItem(id, data, requestOptions)
+    return runItem(itemId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -122,7 +436,7 @@ export const getRunItemMutationOptions = <TError = ErrorType<Problem>, TContext 
 export type RunItemMutationResult = NonNullable<Awaited<ReturnType<typeof runItem>>>
 export type RunItemMutationBody = BodyType<RunRequest>
 export type RunItemMutationError = ErrorType<Problem>
-export type RunItemMutationVariables = { id: AssessmentItemId; data: BodyType<RunRequest> }
+export type RunItemMutationVariables = { itemId: AssessmentItemId; data: BodyType<RunRequest> }
 
 /**
  * @summary Run code against an item's visible tests (or one custom input).
@@ -136,21 +450,22 @@ export const useRunItem = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof runItem>>, TError, RunItemMutationVariables, TContext> => {
   return useMutation(getRunItemMutationOptions(options), queryClient)
 }
-export const getReferenceCheckUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/reference-check`
+export const getReferenceCheckUrl = (assessmentId: AssessmentId) => {
+  return `/api/v2/assessments/${assessmentId}/reference-check`
 }
 
 /**
  * One entry per language the item allows; `missing_solution` when no
  * reference is stored for it.
+ * @deprecated
  * @summary Run every reference solution against the full test set (authors only).
  */
 export const referenceCheck = async (
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<ReferenceCheckResponse> => {
   return orvalMutator<ReferenceCheckResponse>(
-    getReferenceCheckUrl(id),
+    getReferenceCheckUrl(assessmentId),
     {
       ...options,
       method: 'POST',
@@ -186,9 +501,9 @@ export const getReferenceCheckMutationOptions = <TError = ErrorType<Problem>, TC
     Awaited<ReturnType<typeof referenceCheck>>,
     ReferenceCheckMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { assessmentId } = props ?? {}
 
-    return referenceCheck(id, requestOptions)
+    return referenceCheck(assessmentId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -197,9 +512,10 @@ export const getReferenceCheckMutationOptions = <TError = ErrorType<Problem>, TC
 export type ReferenceCheckMutationResult = NonNullable<Awaited<ReturnType<typeof referenceCheck>>>
 
 export type ReferenceCheckMutationError = ErrorType<Problem>
-export type ReferenceCheckMutationVariables = { id: AssessmentId }
+export type ReferenceCheckMutationVariables = { assessmentId: AssessmentId }
 
 /**
+ * @deprecated
  * @summary Run every reference solution against the full test set (authors only).
  */
 export const useReferenceCheck = <TError = ErrorType<Problem>, TContext = unknown>(
@@ -216,16 +532,16 @@ export const useReferenceCheck = <TError = ErrorType<Problem>, TContext = unknow
 ): UseMutationResult<Awaited<ReturnType<typeof referenceCheck>>, TError, ReferenceCheckMutationVariables, TContext> => {
   return useMutation(getReferenceCheckMutationOptions(options), queryClient)
 }
-export const getCodeGetRunUrl = (id: CodeRunId) => {
-  return `/api/v2/code-runs/${id}`
+export const getGetCodeRunUrl = (runId: CodeRunId) => {
+  return `/api/v2/code-runs/${runId}`
 }
 
 /**
  * @summary A run by id: its owner (hidden tests masked) or an assessment author.
  */
-export const codeGetRun = async (id: CodeRunId, options?: Parameters<typeof orvalMutator>[1]): Promise<CodeRun> => {
+export const getCodeRun = async (runId: CodeRunId, options?: Parameters<typeof orvalMutator>[1]): Promise<CodeRun> => {
   return orvalMutator<CodeRun>(
-    getCodeGetRunUrl(id),
+    getGetCodeRunUrl(runId),
     {
       ...options,
       method: 'GET',
@@ -234,43 +550,43 @@ export const codeGetRun = async (id: CodeRunId, options?: Parameters<typeof orva
   )
 }
 
-export const getCodeGetRunQueryKey = (id: CodeRunId) => {
-  return [`/api/v2/code-runs/${id}`] as const
+export const getGetCodeRunQueryKey = (runId: CodeRunId) => {
+  return [`/api/v2/code-runs/${runId}`] as const
 }
 
-export const getCodeGetRunQueryOptions = <TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export const getGetCodeRunQueryOptions = <TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCodeGetRunQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGetCodeRunQueryKey(runId)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof codeGetRun>>> = ({ signal }) =>
-    codeGetRun(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCodeRun>>> = ({ signal }) =>
+    getCodeRun(runId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof codeGetRun>>,
+  return { queryKey, queryFn, enabled: runId !== null && runId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCodeRun>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CodeGetRunQueryResult = NonNullable<Awaited<ReturnType<typeof codeGetRun>>>
-export type CodeGetRunQueryError = ErrorType<Problem>
+export type GetCodeRunQueryResult = NonNullable<Awaited<ReturnType<typeof getCodeRun>>>
+export type GetCodeRunQueryError = ErrorType<Problem>
 
-export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRun<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>> &
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>> &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof codeGetRun>>,
+          Awaited<ReturnType<typeof getCodeRun>>,
           TError,
-          Awaited<ReturnType<typeof codeGetRun>>
+          Awaited<ReturnType<typeof getCodeRun>>
         >,
         'initialData'
       >
@@ -278,15 +594,15 @@ export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TE
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRun<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>> &
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>> &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof codeGetRun>>,
+          Awaited<ReturnType<typeof getCodeRun>>,
           TError,
-          Awaited<ReturnType<typeof codeGetRun>>
+          Awaited<ReturnType<typeof getCodeRun>>
         >,
         'initialData'
       >
@@ -294,10 +610,10 @@ export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TE
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRun<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -306,15 +622,15 @@ export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TE
  * @summary A run by id: its owner (hidden tests masked) or an assessment author.
  */
 
-export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRun<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCodeGetRunQueryOptions(id, options)
+  const queryOptions = getGetCodeRunQueryOptions(runId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -323,55 +639,55 @@ export function useCodeGetRun<TData = Awaited<ReturnType<typeof codeGetRun>>, TE
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getCodeGetRunSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof codeGetRun>>,
+export const getGetCodeRunSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCodeRun>>,
   TError = ErrorType<Problem>,
 >(
-  id: CodeRunId,
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCodeGetRunQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGetCodeRunQueryKey(runId)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof codeGetRun>>> = ({ signal }) =>
-    codeGetRun(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCodeRun>>> = ({ signal }) =>
+    getCodeRun(runId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
     ...queryOptions,
     queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData> & {
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData> & {
     queryKey: DataTag<QueryKey, TData, TError>
   } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
-export type CodeGetRunSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof codeGetRun>>>
-export type CodeGetRunSuspenseQueryError = ErrorType<Problem>
+export type GetCodeRunSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCodeRun>>>
+export type GetCodeRunSuspenseQueryError = ErrorType<Problem>
 
-export function useCodeGetRunSuspense<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRunSuspense<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCodeGetRunSuspense<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRunSuspense<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCodeGetRunSuspense<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRunSuspense<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -380,15 +696,15 @@ export function useCodeGetRunSuspense<TData = Awaited<ReturnType<typeof codeGetR
  * @summary A run by id: its owner (hidden tests masked) or an assessment author.
  */
 
-export function useCodeGetRunSuspense<TData = Awaited<ReturnType<typeof codeGetRun>>, TError = ErrorType<Problem>>(
-  id: CodeRunId,
+export function useGetCodeRunSuspense<TData = Awaited<ReturnType<typeof getCodeRun>>, TError = ErrorType<Problem>>(
+  runId: CodeRunId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof codeGetRun>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCodeRun>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCodeGetRunSuspenseQueryOptions(id, options)
+  const queryOptions = getGetCodeRunSuspenseQueryOptions(runId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -402,6 +718,7 @@ export const getLanguagesUrl = () => {
 }
 
 /**
+ * @deprecated
  * @summary Languages the platform allows for code items (from Judge0, cached).
  */
 export const languages = async (options?: Parameters<typeof orvalMutator>[1]): Promise<LanguageInfo[]> => {
@@ -477,6 +794,7 @@ export function useLanguages<TData = Awaited<ReturnType<typeof languages>>, TErr
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Languages the platform allows for code items (from Judge0, cached).
  */
 
@@ -544,6 +862,7 @@ export function useLanguagesSuspense<TData = Awaited<ReturnType<typeof languages
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Languages the platform allows for code items (from Judge0, cached).
  */
 
@@ -555,6 +874,170 @@ export function useLanguagesSuspense<TData = Awaited<ReturnType<typeof languages
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getLanguagesSuspenseQueryOptions(options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getRunnerUrl = () => {
+  return `/api/v2/code/runner`
+}
+
+/**
+ * Answers `runner_configured: false` with no languages (never 503) when
+ * no Judge0 endpoint is configured; replaces `GET /code/languages`.
+ * @summary The code runner's state and the platform's languages.
+ */
+export const runner = async (options?: Parameters<typeof orvalMutator>[1]): Promise<CodeRunnerInfo> => {
+  return orvalMutator<CodeRunnerInfo>(
+    getRunnerUrl(),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CodeRunnerInfo,
+  )
+}
+
+export const getRunnerQueryKey = () => {
+  return [`/api/v2/code/runner`] as const
+}
+
+export const getRunnerQueryOptions = <
+  TData = Awaited<ReturnType<typeof runner>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getRunnerQueryKey()
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof runner>>> = ({ signal }) =>
+    runner({ signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof runner>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RunnerQueryResult = NonNullable<Awaited<ReturnType<typeof runner>>>
+export type RunnerQueryError = ErrorType<Problem>
+
+export function useRunner<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof runner>>, TError, Awaited<ReturnType<typeof runner>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRunner<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof runner>>, TError, Awaited<ReturnType<typeof runner>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRunner<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The code runner's state and the platform's languages.
+ */
+
+export function useRunner<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getRunnerQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getRunnerSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof runner>>,
+  TError = ErrorType<Problem>,
+>(options?: {
+  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+  request?: SecondParameter<typeof orvalMutator>
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getRunnerQueryKey()
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof runner>>> = ({ signal }) =>
+    runner({ signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type RunnerSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof runner>>>
+export type RunnerSuspenseQueryError = ErrorType<Problem>
+
+export function useRunnerSuspense<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRunnerSuspense<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRunnerSuspense<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The code runner's state and the platform's languages.
+ */
+
+export function useRunnerSuspense<TData = Awaited<ReturnType<typeof runner>>, TError = ErrorType<Problem>>(
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof runner>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getRunnerSuspenseQueryOptions(options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

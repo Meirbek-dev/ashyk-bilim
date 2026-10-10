@@ -7,6 +7,9 @@
  */
 import * as zod from 'zod'
 
+export const latePolicyTwoPercentPerDayMin = 0
+export const latePolicyTwoPercentPerDayMax = 100
+
 export const LatePolicy = zod
   .union([
     zod.object({
@@ -14,11 +17,11 @@ export const LatePolicy = zod
     }),
     zod.object({
       kind: zod.enum(['penalty']),
-      max_days: zod.int(),
-      percent_per_day: zod.number(),
+      max_days: zod.int().min(1),
+      percent_per_day: zod.number().min(latePolicyTwoPercentPerDayMin).max(latePolicyTwoPercentPerDayMax),
     }),
     zod.object({
-      cutoff_at_unix: zod.int(),
+      cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       kind: zod.enum(['cutoff']),
     }),
   ])

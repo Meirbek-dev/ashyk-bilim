@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const AttachedFile = zod.object({
   content_type: zod.string(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   filename: zod.string(),
   id: zod.uuid(),
   position: zod.int(),
@@ -18,7 +18,7 @@ export const AttachedFile = zod.object({
     .describe(
       'Malware-scan status of an attached file (scanning itself is a later\nslice; everything is `pending` until then).',
     ),
-  size_bytes: zod.int().nullish(),
+  size_bytes: zod.int().nullable(),
   upload_id: zod.uuid(),
 })
 

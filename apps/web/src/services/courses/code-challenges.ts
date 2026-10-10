@@ -4,7 +4,7 @@ import type { AssessmentItem, AssessmentItemMetadata, ItemBody } from '@/feature
 import { getActivityAssessment } from '@/lib/api/generated/assessments/assessments'
 import { itemBodyToWire, itemFromWire } from '@/features/assessments/domain/assessment-wire'
 import { unixToIso } from '@/lib/api/contract'
-import { codeGetRun, languages as fetchLanguages, runItem } from '@/lib/api/generated/code/code'
+import { getCodeRun, languages as fetchLanguages, runItem } from '@/lib/api/generated/code/code'
 import { mySubmissions } from '@/lib/api/generated/submissions/submissions'
 import type { CodeRun, StudentSubmission } from '@/lib/api/generated/zod'
 import { idempotencyHeaders } from '@/lib/api/headers'
@@ -496,7 +496,7 @@ export async function awaitCodeRun(run: CodeRun): Promise<CodeRun> {
   let current = run
   while (current.status === 'queued' || current.status === 'running') {
     await new Promise(resolve => setTimeout(resolve, CODE_RUN_POLL_MS))
-    current = await codeGetRun(current.id)
+    current = await getCodeRun(current.id)
   }
   return current
 }

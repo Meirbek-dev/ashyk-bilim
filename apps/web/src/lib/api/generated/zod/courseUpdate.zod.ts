@@ -9,12 +9,29 @@ import * as zod from 'zod'
 
 export const CourseUpdate = zod
   .object({
+    allowed_actions: zod
+      .array(
+        zod
+          .enum(['update', 'delete'])
+          .describe("`CourseUpdate.allowed_actions`: an announcement's writes follow the\ncourse's `update`."),
+      )
+      .describe('What the caller may do to this announcement now.'),
+    author: zod.union([
+      zod
+        .object({
+          display_name: zod.string(),
+          id: zod.uuid(),
+        })
+        .describe('Who posted it; `null` for announcements older than authorship\ntracking, or a deleted account.'),
+      zod.null(),
+    ]),
     content: zod.string(),
     course_id: zod.uuid(),
-    created_at_unix: zod.int(),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     id: zod.uuid(),
     title: zod.string(),
-    updated_at_unix: zod.int(),
+    updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    version: zod.int().describe('Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412).'),
   })
   .describe('One announcement in the course changelog feed.')
 

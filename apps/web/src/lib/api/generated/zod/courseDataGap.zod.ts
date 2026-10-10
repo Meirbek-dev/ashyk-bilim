@@ -11,7 +11,9 @@ export const CourseDataGap = zod.object({
   course_id: zod.uuid(),
   course_name: zod.string(),
   learner_count: zod.int(),
-  reason: zod.string(),
+  reason: zod
+    .enum(['fewer_than_5_learners'])
+    .describe("Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS)."),
 })
 
 export type CourseDataGap = zod.input<typeof CourseDataGap>

@@ -10,6 +10,7 @@ import * as zod from 'zod'
 export const LeaderboardParams = zod.object({
   limit: zod.int().nullish(),
   offset: zod.int().nullish(),
+  cursor: zod.string().nullish(),
 })
 
 export type LeaderboardParams = zod.input<typeof LeaderboardParams>

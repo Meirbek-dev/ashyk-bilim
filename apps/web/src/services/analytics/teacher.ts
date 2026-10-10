@@ -19,6 +19,10 @@ import {
   CourseId,
   AssessmentId,
   AssessmentKind,
+  Bucket,
+  Compare,
+  SortOrder,
+  Window as AnalyticsWindow,
 } from '@/lib/api/generated/zod'
 import { apiFetchRaw, apiJson } from '@/lib/api-client'
 import { parseApiError } from '@/lib/api/assertSuccess'
@@ -78,12 +82,13 @@ export function normalizeAnalyticsQuery(
   const bucketStart = getFirstQueryValue(searchParams.bucket_start)
 
   return {
-    window: getFirstQueryValue(searchParams.window) || '28d',
-    compare: getFirstQueryValue(searchParams.compare) || 'previous_period',
-    bucket: getFirstQueryValue(searchParams.bucket) || 'day',
+    // A stale or hand-edited URL value falls back to the default instead of a 422.
+    window: AnalyticsWindow.catch('28d').parse(getFirstQueryValue(searchParams.window)),
+    compare: Compare.catch('previous_period').parse(getFirstQueryValue(searchParams.compare)),
+    bucket: Bucket.catch('day').parse(getFirstQueryValue(searchParams.bucket)),
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
-    sort_order: getFirstQueryValue(searchParams.sort_order) || 'desc',
+    sort_order: SortOrder.catch('desc').parse(getFirstQueryValue(searchParams.sort_order)),
     course_ids: courseIds,
     cohort_ids: cohortIds,
     ...(teacherUserId ? { teacher_user_id: teacherUserId } : {}),

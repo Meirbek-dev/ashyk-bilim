@@ -8,13 +8,14 @@
 import * as zod from 'zod'
 
 export const AdminProgramRow = zod.object({
-  completion_rate: zod.number().nullish(),
+  completion_rate: zod.number().nullable(),
   course_count: zod.int(),
-  health_score: zod.number().nullish(),
+  health_score: zod.number().nullable(),
   learner_count: zod.int(),
-  program_id: zod
-    .union([zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'), zod.null()])
-    .optional(),
+  program_id: zod.union([
+    zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'),
+    zod.null(),
+  ]),
   program_name: zod.string(),
 })
 

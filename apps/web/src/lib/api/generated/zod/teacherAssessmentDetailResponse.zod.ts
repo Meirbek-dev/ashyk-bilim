@@ -22,34 +22,34 @@ export const TeacherAssessmentDetailResponse = zod.object({
   audit_history: zod.array(
     zod.object({
       action: zod.string(),
-      actor_display_name: zod.string().nullish(),
-      actor_user_id: zod.union([zod.uuid(), zod.null()]).optional(),
-      affected_count: zod.int().nullish(),
-      bulk_action_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      actor_display_name: zod.string().nullable(),
+      actor_user_id: zod.union([zod.uuid(), zod.null()]),
+      affected_count: zod.int().nullable(),
+      bulk_action_id: zod.union([zod.uuid(), zod.null()]),
       final_score: zod
         .number()
-        .nullish()
+        .nullable()
         .describe('The saved/published score of a grading entry; `None` for bulk actions.'),
-      grading_entry_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      grading_entry_id: zod.union([zod.uuid(), zod.null()]),
       id: zod.string(),
-      occurred_at_unix: zod.int(),
-      source: zod.string().describe('`grading_entry` | `bulk_action`.'),
-      status: zod.string().nullish(),
-      submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      occurred_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      source: zod.enum(['grading_entry', 'bulk_action']),
+      status: zod.string().nullable(),
+      submission_id: zod.union([zod.uuid(), zod.null()]),
     }),
   ),
   cohort_analytics: zod.array(
     zod.object({
-      avg_attempts: zod.number().nullish(),
+      avg_attempts: zod.number().nullable(),
       awaiting_grading: zod.int(),
       cohort_id: zod.uuid(),
       cohort_name: zod.string(),
       eligible_learners: zod.int(),
-      median_score: zod.number().nullish(),
-      pass_rate: zod.number().nullish(),
+      median_score: zod.number().nullable(),
+      pass_rate: zod.number().nullable(),
       released_learners: zod.int(),
       returned_for_resubmission: zod.int(),
-      submission_rate: zod.number().nullish(),
+      submission_rate: zod.number().nullable(),
       submitted_learners: zod.int(),
     }),
   ),
@@ -68,25 +68,25 @@ export const TeacherAssessmentDetailResponse = zod.object({
     late_submissions: zod.int(),
     manual_grading_required: zod.boolean(),
     missing_scores: zod.int(),
-    note: zod.string().nullish(),
+    note: zod.string().nullable(),
     released: zod.int(),
     returned_for_resubmission: zod.int(),
     stale_backlog: zod.int(),
     suspicious_attempts: zod.int(),
     total_attempt_records: zod.int(),
   }),
-  generated_at_unix: zod.int(),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   item_analytics: zod.array(
     zod.object({
-      accuracy_pct: zod.number().nullish(),
-      impact_rate: zod.number().nullish(),
+      accuracy_pct: zod.number().nullable(),
+      impact_rate: zod.number().nullable(),
       impacted_count: zod.int(),
       item_key: zod.string(),
       item_label: zod.string(),
-      item_type: zod.string().describe('`workflow` | `question` | `test`.'),
+      item_type: zod.enum(['workflow', 'question', 'test']),
       note: zod
         .string()
-        .nullish()
+        .nullable()
         .describe(
           'Stable code for workflow rows (`manual_review_pending`, …); questions\nand tests carry `accuracy_pct` instead.',
         ),
@@ -97,22 +97,28 @@ export const TeacherAssessmentDetailResponse = zod.object({
   learner_rows: zod.array(
     zod.object({
       attempts: zod.int(),
-      best_score: zod.number().nullish(),
-      graded_at_unix: zod.int().nullish(),
-      last_score: zod.number().nullish(),
+      best_score: zod.number().nullable(),
+      graded_at_unix: zod.union([
+        zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        zod.null(),
+      ]),
+      last_score: zod.number().nullable(),
       pending_attempt: zod
         .int()
-        .nullish()
+        .nullable()
         .describe(
           'The newest attempt still awaiting the teacher (`pending` or `graded`\nbut unreleased), if any - it may be newer than the ranked attempt.',
         ),
       status: zod
         .string()
-        .nullish()
+        .nullable()
         .describe(
           "Submission status of the grade-of-record attempt (`published`,\n`pending`, `graded`, …) - the gradebook cell's rule.",
         ),
-      submitted_at_unix: zod.int().nullish(),
+      submitted_at_unix: zod.union([
+        zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        zod.null(),
+      ]),
       user_display_name: zod.string(),
       user_id: zod.uuid(),
     }),
@@ -121,14 +127,14 @@ export const TeacherAssessmentDetailResponse = zod.object({
   pass_threshold_bucket_label: zod.string(),
   question_breakdown: zod.array(
     zod.object({
-      accuracy_pct: zod.number().nullish(),
-      avg_time_seconds: zod.number().nullish(),
-      discrimination_index: zod.number().nullish(),
+      accuracy_pct: zod.number().nullable(),
+      avg_time_seconds: zod.number().nullable(),
+      discrimination_index: zod.number().nullable(),
       distractor_issue_count: zod.int(),
       question_id: zod.string(),
       question_label: zod.string(),
-      strong_miss_pct: zod.number().nullish(),
-      weak_correct_pct: zod.number().nullish(),
+      strong_miss_pct: zod.number().nullable(),
+      weak_correct_pct: zod.number().nullable(),
     }),
   ),
   score_distribution: zod.array(
@@ -140,28 +146,26 @@ export const TeacherAssessmentDetailResponse = zod.object({
   slo: zod.object({
     backlog_count: zod.int(),
     note: zod.string(),
-    observed_p50_hours: zod.number().nullish(),
-    observed_p90_hours: zod.number().nullish(),
+    observed_p50_hours: zod.number().nullable(),
+    observed_p90_hours: zod.number().nullable(),
     overdue_backlog_count: zod.int(),
     status: zod.enum(['healthy', 'warning', 'breached', 'not_applicable']),
-    target_hours: zod.number().nullish(),
+    target_hours: zod.number().nullable(),
   }),
   summary: zod.object({
-    avg_attempts: zod.number().nullish(),
+    avg_attempts: zod.number().nullable(),
     eligible_learners: zod.int(),
-    grading_latency_hours_p50: zod.number().nullish(),
-    grading_latency_hours_p90: zod.number().nullish(),
-    median_score: zod.number().nullish(),
-    pass_rate: zod.number().nullish(),
-    submission_rate: zod.number().nullish(),
+    grading_latency_hours_p50: zod.number().nullable(),
+    grading_latency_hours_p90: zod.number().nullable(),
+    median_score: zod.number().nullable(),
+    pass_rate: zod.number().nullable(),
+    submission_rate: zod.number().nullable(),
     submitted_learners: zod.int(),
   }),
   support: zod.object({
     alerts: zod.array(
       zod.object({
-        code: zod
-          .string()
-          .describe('`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.'),
+        code: zod.enum(['grading_slo_breached', 'grading_slo_warning', 'suspicious_attempts', 'missing_scores']),
         severity: zod.enum(['info', 'warning', 'critical']),
         summary: zod.string(),
       }),

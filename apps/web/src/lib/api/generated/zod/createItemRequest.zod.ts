@@ -7,24 +7,72 @@
  */
 import * as zod from 'zod'
 
+export const createItemRequestBodyOneOneExplanationMax = 20000
+
+export const createItemRequestBodyOneOneOptionsItemTextMax = 20000
+
+export const createItemRequestBodyOneOneOptionsMax = 200
+
+export const createItemRequestBodyOneOnePromptMax = 20000
+
+export const createItemRequestBodyTwoOnePromptMax = 20000
+
+export const createItemRequestBodyTwoOneRubricMax = 20000
+
+export const createItemRequestBodyThreeOneFieldsItemLabelMax = 20000
+
+export const createItemRequestBodyThreeOneFieldsMax = 200
+
+export const createItemRequestBodyThreeOnePromptMax = 20000
+
+export const createItemRequestBodyFourOneInputSpecMax = 20000
+
+export const createItemRequestBodyFourOneOutputSpecMax = 20000
+
+export const createItemRequestBodyFourOnePromptMax = 20000
+
+export const createItemRequestBodyFourOneTestsItemDescriptionMax = 20000
+
+export const createItemRequestBodyFourOneTestsItemExpectedOutputMax = 20000
+
+export const createItemRequestBodyFourOneTestsItemInputMax = 20000
+
+export const createItemRequestBodyFourOneTestsMax = 200
+
+export const createItemRequestBodyFiveOneExplanationMax = 20000
+
+export const createItemRequestBodyFiveOnePairsItemLeftMax = 20000
+
+export const createItemRequestBodyFiveOnePairsItemRightMax = 20000
+
+export const createItemRequestBodyFiveOnePairsMax = 200
+
+export const createItemRequestBodyFiveOnePromptMax = 20000
+
+export const createItemRequestMaxScoreMin = 0
+export const createItemRequestMaxScoreMax = 10000
+
+export const createItemRequestTitleMax = 500
+
 export const CreateItemRequest = zod.object({
   body: zod
     .union([
       zod
         .object({
-          explanation: zod.string().nullish(),
+          explanation: zod.string().max(createItemRequestBodyOneOneExplanationMax).nullable(),
           multiple: zod.boolean().optional(),
           options: zod
             .array(
               zod.object({
                 id: zod.string(),
                 is_correct: zod.boolean().optional(),
-                text: zod.string().optional(),
+                text: zod.string().max(createItemRequestBodyOneOneOptionsItemTextMax).optional(),
               }),
             )
+            .max(createItemRequestBodyOneOneOptionsMax)
             .optional(),
-          prompt: zod.string().optional(),
-          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
+          prompt: zod.string().max(createItemRequestBodyOneOnePromptMax).optional(),
+          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]),
         })
         .and(
           zod.object({
@@ -33,9 +81,9 @@ export const CreateItemRequest = zod.object({
         ),
       zod
         .object({
-          min_words: zod.int().nullish(),
-          prompt: zod.string().optional(),
-          rubric: zod.string().nullish(),
+          min_words: zod.int().nullable(),
+          prompt: zod.string().max(createItemRequestBodyTwoOnePromptMax).optional(),
+          rubric: zod.string().max(createItemRequestBodyTwoOneRubricMax).nullable(),
         })
         .and(
           zod.object({
@@ -49,12 +97,13 @@ export const CreateItemRequest = zod.object({
               zod.object({
                 field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
                 id: zod.string(),
-                label: zod.string().optional(),
+                label: zod.string().max(createItemRequestBodyThreeOneFieldsItemLabelMax).optional(),
                 required: zod.boolean().optional(),
               }),
             )
+            .max(createItemRequestBodyThreeOneFieldsMax)
             .optional(),
-          prompt: zod.string().optional(),
+          prompt: zod.string().max(createItemRequestBodyThreeOnePromptMax).optional(),
         })
         .and(
           zod.object({
@@ -64,12 +113,12 @@ export const CreateItemRequest = zod.object({
       zod
         .object({
           constraints: zod.array(zod.string()).optional(),
-          input_spec: zod.string().optional(),
+          input_spec: zod.string().max(createItemRequestBodyFourOneInputSpecMax).optional(),
           languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
-          max_output_kb: zod.int().nullish(),
-          memory_limit_mb: zod.int().nullish(),
-          output_spec: zod.string().optional(),
-          prompt: zod.string().optional(),
+          max_output_kb: zod.int().nullable(),
+          memory_limit_mb: zod.int().nullable(),
+          output_spec: zod.string().max(createItemRequestBodyFourOneOutputSpecMax).optional(),
+          prompt: zod.string().max(createItemRequestBodyFourOnePromptMax).optional(),
           reference_solutions: zod.record(zod.string(), zod.string()).optional(),
           scoring_strategy: zod
             .enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission'])
@@ -81,10 +130,10 @@ export const CreateItemRequest = zod.object({
           tests: zod
             .array(
               zod.object({
-                description: zod.string().nullish(),
-                expected_output: zod.string().optional(),
+                description: zod.string().max(createItemRequestBodyFourOneTestsItemDescriptionMax).nullable(),
+                expected_output: zod.string().max(createItemRequestBodyFourOneTestsItemExpectedOutputMax).optional(),
                 id: zod.string(),
-                input: zod.string().optional(),
+                input: zod.string().max(createItemRequestBodyFourOneTestsItemInputMax).optional(),
                 is_visible: zod.boolean().optional(),
                 match_mode: zod
                   .enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
@@ -92,8 +141,9 @@ export const CreateItemRequest = zod.object({
                 weight: zod.int().optional(),
               }),
             )
+            .max(createItemRequestBodyFourOneTestsMax)
             .optional(),
-          time_limit_seconds: zod.int().nullish(),
+          time_limit_seconds: zod.int().nullable(),
         })
         .and(
           zod.object({
@@ -102,18 +152,19 @@ export const CreateItemRequest = zod.object({
         ),
       zod
         .object({
-          explanation: zod.string().nullish(),
+          explanation: zod.string().max(createItemRequestBodyFiveOneExplanationMax).nullable(),
           pairs: zod
             .array(
               zod.object({
-                left: zod.string(),
-                right: zod.string(),
+                left: zod.string().max(createItemRequestBodyFiveOnePairsItemLeftMax),
+                right: zod.string().max(createItemRequestBodyFiveOnePairsItemRightMax),
               }),
             )
+            .max(createItemRequestBodyFiveOnePairsMax)
             .describe(
               "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
             ),
-          prompt: zod.string().optional(),
+          prompt: zod.string().max(createItemRequestBodyFiveOnePromptMax).optional(),
         })
         .and(
           zod.object({
@@ -156,21 +207,20 @@ export const CreateItemRequest = zod.object({
     .describe('Tagged on `kind`; must be a kind the assessment allows.'),
   max_score: zod
     .number()
-    .nullish()
+    .min(createItemRequestMaxScoreMin)
+    .max(createItemRequestMaxScoreMax)
+    .optional()
     .describe('BUG-208: at most 10 000 - an unbounded score overflows the grade shares.'),
   metadata: zod
-    .union([
-      zod.object({
-        difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
-        estimated_minutes: zod.int().nullish(),
-        outcome_ids: zod.array(zod.string()).optional(),
-        section_label: zod.string().nullish(),
-        tags: zod.array(zod.string()).optional(),
-      }),
-      zod.null(),
-    ])
+    .object({
+      difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]),
+      estimated_minutes: zod.int().nullable(),
+      outcome_ids: zod.array(zod.string()).optional(),
+      section_label: zod.string().nullable(),
+      tags: zod.array(zod.string()).optional(),
+    })
     .optional(),
-  title: zod.string().nullish(),
+  title: zod.string().max(createItemRequestTitleMax).optional(),
 })
 
 export type CreateItemRequest = zod.input<typeof CreateItemRequest>

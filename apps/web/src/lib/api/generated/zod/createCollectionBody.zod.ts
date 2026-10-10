@@ -7,11 +7,22 @@
  */
 import * as zod from 'zod'
 
+export const createCollectionBodyCoursesMax = 100
+
+export const createCollectionBodyDescriptionMax = 5000
+
+export const createCollectionBodyNameMax = 500
+
 export const CreateCollectionBody = zod.object({
-  courses: zod.array(zod.uuid()).nullish().describe('Course membership; every course must be readable by the caller.'),
-  description: zod.string().nullish(),
-  name: zod.string(),
-  public: zod.boolean().nullish(),
+  courses: zod
+    .array(zod.uuid())
+    .max(createCollectionBodyCoursesMax)
+    .optional()
+    .describe('Course membership; every course must be readable by the caller.'),
+  cover_upload_id: zod.uuid().optional().describe('A finalized `collection-cover` upload of the caller.'),
+  description: zod.string().max(createCollectionBodyDescriptionMax).optional(),
+  name: zod.string().max(createCollectionBodyNameMax),
+  public: zod.boolean().optional(),
 })
 
 export type CreateCollectionBody = zod.input<typeof CreateCollectionBody>

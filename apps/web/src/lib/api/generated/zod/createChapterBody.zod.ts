@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const createChapterBodyDescriptionMax = 5000
+
+export const createChapterBodyNameMax = 500
+
 export const CreateChapterBody = zod.object({
-  description: zod.string().nullish(),
-  name: zod.string(),
+  description: zod.string().max(createChapterBodyDescriptionMax).optional(),
+  name: zod.string().max(createChapterBodyNameMax),
 })
 
 export type CreateChapterBody = zod.input<typeof CreateChapterBody>

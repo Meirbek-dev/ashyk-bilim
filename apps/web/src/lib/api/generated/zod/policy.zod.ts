@@ -7,16 +7,36 @@
  */
 import * as zod from 'zod'
 
+export const policyAttemptPenaltyPercentMin = 0
+export const policyAttemptPenaltyPercentMax = 100
+
+export const policyGracePeriodMinutesMin = 0
+
+export const policyLatePolicyTwoPercentPerDayMin = 0
+export const policyLatePolicyTwoPercentPerDayMax = 100
+
+export const policyMaxAttemptsMax = 10
+
+export const policyNegativeMarkingPercentMin = 0
+export const policyNegativeMarkingPercentMax = 100
+
+export const policyPassingScoreMin = 0
+export const policyPassingScoreMax = 100
+
 export const Policy = zod
   .object({
     allow_late: zod.boolean(),
-    attempt_penalty_percent: zod.number().describe('Max-score cap per extra attempt (0 = off).'),
+    attempt_penalty_percent: zod
+      .number()
+      .min(policyAttemptPenaltyPercentMin)
+      .max(policyAttemptPenaltyPercentMax)
+      .describe('Max-score cap per extra attempt (0 = off).'),
     completion_rule: zod.enum(['viewed', 'submitted', 'graded', 'passed', 'teacher_verified']),
     copy_paste_protection: zod.boolean(),
     devtools_detection: zod.boolean(),
-    due_at_unix: zod.int().nullish(),
+    due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
     fullscreen_required: zod.boolean(),
-    grace_period_minutes: zod.int(),
+    grace_period_minutes: zod.int().min(policyGracePeriodMinutesMin),
     grade_release_mode: zod.enum(['immediate', 'batch']),
     grading_mode: zod.enum(['auto', 'manual', 'auto_then_manual']),
     late_policy: zod
@@ -26,27 +46,30 @@ export const Policy = zod
         }),
         zod.object({
           kind: zod.enum(['penalty']),
-          max_days: zod.int(),
-          percent_per_day: zod.number(),
+          max_days: zod.int().min(1),
+          percent_per_day: zod
+            .number()
+            .min(policyLatePolicyTwoPercentPerDayMin)
+            .max(policyLatePolicyTwoPercentPerDayMax),
         }),
         zod.object({
-          cutoff_at_unix: zod.int(),
+          cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
           kind: zod.enum(['cutoff']),
         }),
       ])
       .describe('Late-submission handling.'),
-    max_attempts: zod.int().nullish().describe('`null` = unlimited.'),
-    negative_marking_percent: zod.number(),
+    max_attempts: zod.int().min(1).max(policyMaxAttemptsMax).nullable().describe('`null` = unlimited.'),
+    negative_marking_percent: zod.number().min(policyNegativeMarkingPercentMin).max(policyNegativeMarkingPercentMax),
     partial_credit: zod.boolean(),
-    passing_score: zod.number(),
+    passing_score: zod.number().min(policyPassingScoreMin).max(policyPassingScoreMax),
     randomize_options: zod.boolean(),
     randomize_questions: zod.boolean(),
     required: zod.boolean(),
     review_visibility: zod.enum(['none', 'score_only', 'full']),
     right_click_disabled: zod.boolean(),
     tab_switch_detection: zod.boolean(),
-    time_limit_seconds: zod.int().nullish().describe('`null` = no limit.'),
-    violation_threshold: zod.int(),
+    time_limit_seconds: zod.int().min(1).nullable().describe('`null` = no limit.'),
+    violation_threshold: zod.int().min(1),
   })
   .describe(
     'The complete policy block. Replaced wholesale via `PUT`; the same shape\nis returned on every assessment read. Ranges are validated server-side\n(422 with field errors).',

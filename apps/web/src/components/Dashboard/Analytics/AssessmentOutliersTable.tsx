@@ -90,15 +90,13 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
       accessorKey: 'outlier_reason_codes',
       header: t('assessmentOutliers.colSignals'),
       cell: ({ row }) =>
-        row.original.outlier_reason_codes.filter((code): code is string => Boolean(code)).length ? (
+        row.original.outlier_reason_codes.length ? (
           <div className="text-muted-foreground max-w-[240px] text-xs whitespace-normal">
-            {row.original.outlier_reason_codes
-              .filter((code): code is string => Boolean(code))
-              .map(code => (
-                <Badge key={code} variant="outline" className="mr-1 mb-1">
-                  {getAnalyticsReasonCodeLabel(t, code)}
-                </Badge>
-              ))}
+            {row.original.outlier_reason_codes.map(code => (
+              <Badge key={code} variant="outline" className="mr-1 mb-1">
+                {getAnalyticsReasonCodeLabel(t, code)}
+              </Badge>
+            ))}
           </div>
         ) : (
           t('assessmentOutliers.healthy')

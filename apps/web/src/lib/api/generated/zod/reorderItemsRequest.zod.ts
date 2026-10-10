@@ -7,8 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const reorderItemsRequestItemsMax = 200
+
 export const ReorderItemsRequest = zod.object({
-  items: zod.array(zod.uuid()).describe('Item ids in the desired order; omitted items follow in their\ncurrent order.'),
+  items: zod
+    .array(zod.uuid())
+    .min(1)
+    .max(reorderItemsRequestItemsMax)
+    .describe('Item ids in the desired order; omitted items follow in their\ncurrent order.'),
 })
 
 export type ReorderItemsRequest = zod.input<typeof ReorderItemsRequest>

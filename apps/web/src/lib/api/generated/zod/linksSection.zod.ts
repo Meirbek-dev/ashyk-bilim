@@ -11,7 +11,7 @@ export const LinksSection = zod.object({
   id: zod.string(),
   links: zod.array(
     zod.object({
-      icon: zod.string().nullish(),
+      icon: zod.string().optional(),
       title: zod.string(),
       url: zod.string(),
     }),

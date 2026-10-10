@@ -7,20 +7,29 @@
  */
 import * as zod from 'zod'
 
+export const choiceBodyExplanationMax = 20000
+
+export const choiceBodyOptionsItemTextMax = 20000
+
+export const choiceBodyOptionsMax = 200
+
+export const choiceBodyPromptMax = 20000
+
 export const ChoiceBody = zod.object({
-  explanation: zod.string().nullish(),
+  explanation: zod.string().max(choiceBodyExplanationMax).nullable(),
   multiple: zod.boolean().optional(),
   options: zod
     .array(
       zod.object({
         id: zod.string(),
         is_correct: zod.boolean().optional(),
-        text: zod.string().optional(),
+        text: zod.string().max(choiceBodyOptionsItemTextMax).optional(),
       }),
     )
+    .max(choiceBodyOptionsMax)
     .optional(),
-  prompt: zod.string().optional(),
-  variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
+  prompt: zod.string().max(choiceBodyPromptMax).optional(),
+  variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]),
 })
 
 export type ChoiceBody = zod.input<typeof ChoiceBody>

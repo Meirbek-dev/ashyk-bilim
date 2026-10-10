@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const removeUsergroupCoursesBodyCourseIdsMax = 100
+
 export const RemoveUsergroupCoursesBody = zod.object({
-  course_ids: zod.array(zod.uuid()),
+  course_ids: zod.array(zod.uuid()).min(1).max(removeUsergroupCoursesBodyCourseIdsMax),
 })
 
 export type RemoveUsergroupCoursesBody = zod.input<typeof RemoveUsergroupCoursesBody>

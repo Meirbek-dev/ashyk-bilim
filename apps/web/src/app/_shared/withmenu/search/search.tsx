@@ -99,7 +99,12 @@ function SearchPage() {
   const type = parseSearchType(searchParams.get('type'))
   const selectedType = type
   const searchResultsQuery = useSearchContent(query, { limit: 30 })
-  const searchResults: SearchResults = searchResultsQuery.data?.data ?? { courses: [], collections: [], users: [] }
+  const searchResults: SearchResults = searchResultsQuery.data?.data ?? {
+    courses: [],
+    collections: [],
+    users: [],
+    next_cursor: null,
+  }
   const hasQuery = query.trim().length > 0
   const isLoading = hasQuery && searchResultsQuery.isPending
   // BUG-249: a failed search is an error, not «Ищем…» forever or «Ничего не найдено».

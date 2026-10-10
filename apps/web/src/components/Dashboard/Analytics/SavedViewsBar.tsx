@@ -69,7 +69,9 @@ export default function SavedViewsBar({ query, viewType }: SavedViewsBarProps) {
         {
           name: trimmedName,
           view_type: viewType,
-          query: { ...query },
+          query: Object.fromEntries(
+            Object.entries(query).filter((entry): entry is [string, string | number] => entry[1] !== undefined),
+          ),
         },
         query,
       )

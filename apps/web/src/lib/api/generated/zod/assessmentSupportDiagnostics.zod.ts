@@ -10,9 +10,7 @@ import * as zod from 'zod'
 export const AssessmentSupportDiagnostics = zod.object({
   alerts: zod.array(
     zod.object({
-      code: zod
-        .string()
-        .describe('`grading_slo_breached` | `grading_slo_warning` | `suspicious_attempts` | `missing_scores`.'),
+      code: zod.enum(['grading_slo_breached', 'grading_slo_warning', 'suspicious_attempts', 'missing_scores']),
       severity: zod.enum(['info', 'warning', 'critical']),
       summary: zod.string(),
     }),

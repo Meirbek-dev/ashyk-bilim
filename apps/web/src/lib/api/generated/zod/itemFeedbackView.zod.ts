@@ -9,10 +9,10 @@ import * as zod from 'zod'
 
 export const ItemFeedbackView = zod.object({
   comment: zod.string(),
-  created_at_unix: zod.int(),
-  item_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  max_score: zod.number().nullish(),
-  score: zod.number().nullish(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  item_id: zod.union([zod.uuid(), zod.null()]),
+  max_score: zod.number().nullable(),
+  score: zod.number().nullable(),
 })
 
 export type ItemFeedbackView = zod.input<typeof ItemFeedbackView>

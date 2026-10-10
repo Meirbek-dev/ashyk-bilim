@@ -37,6 +37,8 @@ import {
   StreakUpdate,
   UpdateGamificationConfigRequest,
   UserRank,
+  XpHistoryPage,
+  XpHistoryParams,
 } from '../zod'
 
 import { orvalMutator, stringifyQueryParam } from '../../orval-mutator'
@@ -421,7 +423,7 @@ export const updateConfig = async (
 
 export const getUpdateConfigMutationKey = () => ['updateConfig'] as const
 
-export const getUpdateConfigMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getUpdateConfigMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateConfig>>,
     TError,
@@ -451,13 +453,13 @@ export const getUpdateConfigMutationOptions = <TError = ErrorType<unknown>, TCon
 
 export type UpdateConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateConfig>>>
 export type UpdateConfigMutationBody = BodyType<UpdateGamificationConfigRequest>
-export type UpdateConfigMutationError = ErrorType<unknown>
+export type UpdateConfigMutationError = ErrorType<Problem>
 export type UpdateConfigMutationVariables = { data: BodyType<UpdateGamificationConfigRequest> }
 
 /**
  * @summary Replace the policy overrides (`platform:manage`).
  */
-export const useUpdateConfig = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useUpdateConfig = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateConfig>>,
@@ -1062,4 +1064,198 @@ export const useAdminAward = <TError = ErrorType<Problem>, TContext = unknown>(
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof adminAward>>, TError, AdminAwardMutationVariables, TContext> => {
   return useMutation(getAdminAwardMutationOptions(options), queryClient)
+}
+export const getXpHistoryUrl = (params?: XpHistoryParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/gamification/xp/history?${stringifiedParams}`
+    : `/api/v2/gamification/xp/history`
+}
+
+/**
+ * @summary The caller's whole XP history, newest first, keyset-paged (the
+dashboard carries only the last 10).
+ */
+export const xpHistory = async (
+  params?: XpHistoryParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<XpHistoryPage> => {
+  return orvalMutator<XpHistoryPage>(
+    getXpHistoryUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    XpHistoryPage,
+  )
+}
+
+export const getXpHistoryQueryKey = (params?: XpHistoryParams) => {
+  return [`/api/v2/gamification/xp/history`, ...(params ? [params] : [])] as const
+}
+
+export const getXpHistoryQueryOptions = <TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getXpHistoryQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof xpHistory>>> = ({ signal }) =>
+    xpHistory(params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof xpHistory>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type XpHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof xpHistory>>>
+export type XpHistoryQueryError = ErrorType<Problem>
+
+export function useXpHistory<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params: undefined | XpHistoryParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof xpHistory>>, TError, Awaited<ReturnType<typeof xpHistory>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useXpHistory<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof xpHistory>>,
+          TError,
+          Awaited<ReturnType<typeof xpHistory>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useXpHistory<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's whole XP history, newest first, keyset-paged (the
+dashboard carries only the last 10).
+ */
+
+export function useXpHistory<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getXpHistoryQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getXpHistorySuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof xpHistory>>,
+  TError = ErrorType<Problem>,
+>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getXpHistoryQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof xpHistory>>> = ({ signal }) =>
+    xpHistory(params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type XpHistorySuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof xpHistory>>>
+export type XpHistorySuspenseQueryError = ErrorType<Problem>
+
+export function useXpHistorySuspense<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params: undefined | XpHistoryParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useXpHistorySuspense<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useXpHistorySuspense<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's whole XP history, newest first, keyset-paged (the
+dashboard carries only the last 10).
+ */
+
+export function useXpHistorySuspense<TData = Awaited<ReturnType<typeof xpHistory>>, TError = ErrorType<Problem>>(
+  params?: XpHistoryParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof xpHistory>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getXpHistorySuspenseQueryOptions(params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
 }

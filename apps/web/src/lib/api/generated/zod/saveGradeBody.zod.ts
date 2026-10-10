@@ -7,12 +7,33 @@
  */
 import * as zod from 'zod'
 
+export const saveGradeBodyAuditNoteMax = 1000
+
+export const saveGradeBodyFeedbackMax = 10000
+
+export const saveGradeBodyFinalScoreMin = 0
+export const saveGradeBodyFinalScoreMax = 100
+
+export const saveGradeBodyItemGradesItemFeedbackMax = 5000
+
+export const saveGradeBodyItemGradesItemScoreMin = 0
+
 export const SaveGradeBody = zod.object({
   action: zod.enum(['save', 'publish', 'return']),
-  audit_note: zod.string().nullish().describe("Grader's note for the audit trail; never shown to the learner."),
-  feedback: zod.string().nullish().describe('Overall feedback shown to the learner; omitted = keep the stored one.'),
+  audit_note: zod
+    .string()
+    .max(saveGradeBodyAuditNoteMax)
+    .optional()
+    .describe("Grader's note for the audit trail; never shown to the learner."),
+  feedback: zod
+    .string()
+    .max(saveGradeBodyFeedbackMax)
+    .optional()
+    .describe('Overall feedback shown to the learner; omitted = keep the stored one.'),
   final_score: zod
     .number()
+    .min(saveGradeBodyFinalScoreMin)
+    .max(saveGradeBodyFinalScoreMax)
     .nullish()
     .describe(
       'Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).',
@@ -20,9 +41,13 @@ export const SaveGradeBody = zod.object({
   item_grades: zod
     .array(
       zod.object({
-        feedback: zod.string().optional(),
+        feedback: zod.string().max(saveGradeBodyItemGradesItemFeedbackMax).optional(),
         item_id: zod.uuid(),
-        score: zod.number().nullish().describe('Points for this item (its `max_score` scale).'),
+        score: zod
+          .number()
+          .min(saveGradeBodyItemGradesItemScoreMin)
+          .optional()
+          .describe('Points for this item (its `max_score` scale).'),
       }),
     )
     .optional(),

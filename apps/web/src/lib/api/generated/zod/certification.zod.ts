@@ -8,11 +8,58 @@
 import * as zod from 'zod'
 
 export const Certification = zod.object({
-  config: zod.looseObject({}).describe("The client's PDF designer document (opaque to the server)."),
+  allowed_actions: zod
+    .array(
+      zod
+        .enum(['update', 'delete'])
+        .describe('What the caller may do to a certificate template (`Certification.allowed_actions`).'),
+    )
+    .describe('What the caller may do to this template now.'),
+  config: zod
+    .object({
+      certificate_instructor: zod
+        .string()
+        .optional()
+        .describe("The name signed on the certificate; blank = the course's teachers."),
+      certificate_pattern: zod
+        .enum([
+          'royal',
+          'tech',
+          'nature',
+          'geometric',
+          'vintage',
+          'waves',
+          'minimal',
+          'professional',
+          'academic',
+          'modern',
+        ])
+        .optional()
+        .describe("The certificate's background design."),
+      certification_description: zod.string().optional(),
+      certification_name: zod.string().optional(),
+      certification_type: zod
+        .enum([
+          'completion',
+          'achievement',
+          'assessment',
+          'participation',
+          'mastery',
+          'professional',
+          'continuing',
+          'workshop',
+          'specialization',
+        ])
+        .optional(),
+    })
+    .describe(
+      "`certifications.config`: what the certificate editor stores. The server\nreads `certification_name`, `certification_type` and\n`certificate_instructor`; the rest is the web's.",
+    ),
   course_id: zod.uuid(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   id: zod.uuid(),
-  updated_at_unix: zod.int(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  version: zod.int().describe('Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.'),
 })
 
 export type Certification = zod.input<typeof Certification>

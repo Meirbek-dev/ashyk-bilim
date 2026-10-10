@@ -8,12 +8,19 @@
 import * as zod from 'zod'
 
 export const SavedView = zod.object({
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   id: zod.uuid(),
   name: zod.string(),
-  query: zod.looseObject({}),
+  query: zod
+    .record(
+      zod.string(),
+      zod
+        .union([zod.string(), zod.number()])
+        .describe('A string or a number: a message placeholder value, a saved query value.'),
+    )
+    .describe('A saved analytics filter state: query-string parameters by name.'),
   teacher_user_id: zod.uuid(),
-  updated_at_unix: zod.int(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   view_type: zod.string(),
 })
 

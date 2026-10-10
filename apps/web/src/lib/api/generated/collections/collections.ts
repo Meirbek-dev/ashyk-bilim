@@ -68,7 +68,7 @@ export const getListCollectionsUrl = (params?: ListCollectionsParams) => {
 }
 
 /**
- * @summary Newest-first collection listing: public plus the caller's own.
+ * @summary Collection listing (newest first by default): public plus the caller's own.
  */
 export const listCollections = async (
   params?: ListCollectionsParams,
@@ -156,7 +156,7 @@ export function useListCollections<TData = Awaited<ReturnType<typeof listCollect
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest-first collection listing: public plus the caller's own.
+ * @summary Collection listing (newest first by default): public plus the caller's own.
  */
 
 export function useListCollections<TData = Awaited<ReturnType<typeof listCollections>>, TError = ErrorType<unknown>>(
@@ -239,7 +239,7 @@ export function useListCollectionsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest-first collection listing: public plus the caller's own.
+ * @summary Collection listing (newest first by default): public plus the caller's own.
  */
 
 export function useListCollectionsSuspense<
@@ -365,218 +365,19 @@ export const useCreateCollection = <TError = ErrorType<Problem>, TContext = unkn
 > => {
   return useMutation(getCreateCollectionMutationOptions(options), queryClient)
 }
-export const getGetCollectionUrl = (id: CollectionId) => {
-  return `/api/v2/collections/${id}`
-}
-
-/**
- * @summary One collection with its member courses (404 when invisible).
- */
-export const getCollection = async (
-  id: CollectionId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<Collection> => {
-  return orvalMutator<Collection>(
-    getGetCollectionUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    Collection,
-  )
-}
-
-export const getGetCollectionQueryKey = (id: CollectionId) => {
-  return [`/api/v2/collections/${id}`] as const
-}
-
-export const getGetCollectionQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetCollectionQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollection>>> = ({ signal }) =>
-    getCollection(id, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCollection>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetCollectionQueryResult = NonNullable<Awaited<ReturnType<typeof getCollection>>>
-export type GetCollectionQueryError = ErrorType<Problem>
-
-export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
-  id: CollectionId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>> &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCollection>>,
-          TError,
-          Awaited<ReturnType<typeof getCollection>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>> &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCollection>>,
-          TError,
-          Awaited<ReturnType<typeof getCollection>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One collection with its member courses (404 when invisible).
- */
-
-export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetCollectionQueryOptions(id, options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getGetCollectionSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetCollectionQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollection>>> = ({ signal }) =>
-    getCollection(id, { signal, ...requestOptions })
-
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type GetCollectionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCollection>>>
-export type GetCollectionSuspenseQueryError = ErrorType<Problem>
-
-export function useGetCollectionSuspense<
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCollectionSuspense<
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCollectionSuspense<
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One collection with its member courses (404 when invisible).
- */
-
-export function useGetCollectionSuspense<
-  TData = Awaited<ReturnType<typeof getCollection>>,
-  TError = ErrorType<Problem>,
->(
-  id: CollectionId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetCollectionSuspenseQueryOptions(id, options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getDeleteCollectionUrl = (id: CollectionId) => {
-  return `/api/v2/collections/${id}`
+export const getDeleteCollectionUrl = (collectionId: CollectionId) => {
+  return `/api/v2/collections/${collectionId}`
 }
 
 /**
  * @summary Delete a collection (membership rows cascade; courses stay).
  */
 export const deleteCollection = async (
-  id: CollectionId,
+  collectionId: CollectionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<void> => {
   return orvalMutator<void>(
-    getDeleteCollectionUrl(id),
+    getDeleteCollectionUrl(collectionId),
     {
       ...options,
       method: 'DELETE',
@@ -612,9 +413,9 @@ export const getDeleteCollectionMutationOptions = <TError = ErrorType<Problem>, 
     Awaited<ReturnType<typeof deleteCollection>>,
     DeleteCollectionMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { collectionId } = props ?? {}
 
-    return deleteCollection(id, requestOptions)
+    return deleteCollection(collectionId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -623,7 +424,7 @@ export const getDeleteCollectionMutationOptions = <TError = ErrorType<Problem>, 
 export type DeleteCollectionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCollection>>>
 
 export type DeleteCollectionMutationError = ErrorType<Problem>
-export type DeleteCollectionMutationVariables = { id: CollectionId }
+export type DeleteCollectionMutationVariables = { collectionId: CollectionId }
 
 /**
  * @summary Delete a collection (membership rows cascade; courses stay).
@@ -647,15 +448,217 @@ export const useDeleteCollection = <TError = ErrorType<Problem>, TContext = unkn
 > => {
   return useMutation(getDeleteCollectionMutationOptions(options), queryClient)
 }
-export const getUpdateCollectionUrl = (id: CollectionId) => {
-  return `/api/v2/collections/${id}`
+export const getGetCollectionUrl = (collectionId: CollectionId) => {
+  return `/api/v2/collections/${collectionId}`
+}
+
+/**
+ * @summary One collection with its member courses (404 when invisible).
+ */
+export const getCollection = async (
+  collectionId: CollectionId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Collection> => {
+  return orvalMutator<Collection>(
+    getGetCollectionUrl(collectionId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Collection,
+  )
+}
+
+export const getGetCollectionQueryKey = (collectionId: CollectionId) => {
+  return [`/api/v2/collections/${collectionId}`] as const
+}
+
+export const getGetCollectionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetCollectionQueryKey(collectionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollection>>> = ({ signal }) =>
+    getCollection(collectionId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: collectionId !== null && collectionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetCollectionQueryResult = NonNullable<Awaited<ReturnType<typeof getCollection>>>
+export type GetCollectionQueryError = ErrorType<Problem>
+
+export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
+  collectionId: CollectionId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCollection>>,
+          TError,
+          Awaited<ReturnType<typeof getCollection>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCollection>>,
+          TError,
+          Awaited<ReturnType<typeof getCollection>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One collection with its member courses (404 when invisible).
+ */
+
+export function useGetCollection<TData = Awaited<ReturnType<typeof getCollection>>, TError = ErrorType<Problem>>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCollectionQueryOptions(collectionId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetCollectionSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetCollectionQueryKey(collectionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollection>>> = ({ signal }) =>
+    getCollection(collectionId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetCollectionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCollection>>>
+export type GetCollectionSuspenseQueryError = ErrorType<Problem>
+
+export function useGetCollectionSuspense<
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCollectionSuspense<
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCollectionSuspense<
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One collection with its member courses (404 when invisible).
+ */
+
+export function useGetCollectionSuspense<
+  TData = Awaited<ReturnType<typeof getCollection>>,
+  TError = ErrorType<Problem>,
+>(
+  collectionId: CollectionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCollection>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCollectionSuspenseQueryOptions(collectionId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUpdateCollectionUrl = (collectionId: CollectionId) => {
+  return `/api/v2/collections/${collectionId}`
 }
 
 /**
  * @summary Partial update; `courses` replaces the whole membership when present.
  */
 export const updateCollection = async (
-  id: CollectionId,
+  collectionId: CollectionId,
   updateCollectionRequest: UpdateCollectionRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Collection> => {
@@ -674,7 +677,7 @@ export const updateCollection = async (
     return headers
   }
   return orvalMutator<Collection>(
-    getUpdateCollectionUrl(id),
+    getUpdateCollectionUrl(collectionId),
     {
       ...options,
       method: 'PATCH',
@@ -712,9 +715,9 @@ export const getUpdateCollectionMutationOptions = <TError = ErrorType<Problem>, 
     Awaited<ReturnType<typeof updateCollection>>,
     UpdateCollectionMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { collectionId, data } = props ?? {}
 
-    return updateCollection(id, data, requestOptions)
+    return updateCollection(collectionId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -723,7 +726,7 @@ export const getUpdateCollectionMutationOptions = <TError = ErrorType<Problem>, 
 export type UpdateCollectionMutationResult = NonNullable<Awaited<ReturnType<typeof updateCollection>>>
 export type UpdateCollectionMutationBody = BodyType<UpdateCollectionRequest>
 export type UpdateCollectionMutationError = ErrorType<Problem>
-export type UpdateCollectionMutationVariables = { id: CollectionId; data: BodyType<UpdateCollectionRequest> }
+export type UpdateCollectionMutationVariables = { collectionId: CollectionId; data: BodyType<UpdateCollectionRequest> }
 
 /**
  * @summary Partial update; `courses` replaces the whole membership when present.

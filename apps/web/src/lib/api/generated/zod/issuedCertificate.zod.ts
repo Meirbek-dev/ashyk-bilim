@@ -12,40 +12,104 @@ export const IssuedCertificate = zod
     certificate: zod.object({
       certification_id: zod.uuid(),
       id: zod.uuid(),
-      issued_at_unix: zod.int(),
+      issued_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       user_id: zod.uuid(),
       verify_code: zod.string().describe('Public verification code; the client links `/certificates/{code}/verify`.'),
     }),
     certification: zod.object({
-      config: zod.looseObject({}).describe("The client's PDF designer document (opaque to the server)."),
+      allowed_actions: zod
+        .array(
+          zod
+            .enum(['update', 'delete'])
+            .describe('What the caller may do to a certificate template (`Certification.allowed_actions`).'),
+        )
+        .describe('What the caller may do to this template now.'),
+      config: zod
+        .object({
+          certificate_instructor: zod
+            .string()
+            .optional()
+            .describe("The name signed on the certificate; blank = the course's teachers."),
+          certificate_pattern: zod
+            .enum([
+              'royal',
+              'tech',
+              'nature',
+              'geometric',
+              'vintage',
+              'waves',
+              'minimal',
+              'professional',
+              'academic',
+              'modern',
+            ])
+            .optional()
+            .describe("The certificate's background design."),
+          certification_description: zod.string().optional(),
+          certification_name: zod.string().optional(),
+          certification_type: zod
+            .enum([
+              'completion',
+              'achievement',
+              'assessment',
+              'participation',
+              'mastery',
+              'professional',
+              'continuing',
+              'workshop',
+              'specialization',
+            ])
+            .optional(),
+        })
+        .describe(
+          "`certifications.config`: what the certificate editor stores. The server\nreads `certification_name`, `certification_type` and\n`certificate_instructor`; the rest is the web's.",
+        ),
       course_id: zod.uuid(),
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       id: zod.uuid(),
-      updated_at_unix: zod.int(),
+      updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      version: zod.int().describe('Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.'),
     }),
     course: zod.object({
       about: zod.string(),
+      allowed_actions: zod
+        .array(
+          zod
+            .enum([
+              'update',
+              'publish',
+              'unpublish',
+              'archive',
+              'restore',
+              'delete',
+              'manage_contributors',
+              'apply_contributor',
+            ])
+            .describe(
+              'What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].',
+            ),
+        )
+        .describe('What the caller may do to this course now - draw only these actions.'),
       archived_at_unix: zod
-        .int()
-        .nullish()
+        .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
         .describe(
           'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
         ),
-      archived_by: zod.union([zod.uuid(), zod.null()]).optional(),
+      archived_by: zod.union([zod.uuid(), zod.null()]),
       contributor_ids: zod
         .array(zod.uuid())
         .describe(
           'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
         ),
-      created_at_unix: zod.int(),
-      creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      creator_id: zod.union([zod.uuid(), zod.null()]),
       description: zod.string(),
       id: zod.uuid(),
       learnings: zod
         .array(
           zod
             .object({
-              emoji: zod.string().nullish(),
+              emoji: zod.string().nullable(),
               id: zod.string(),
               text: zod.string(),
             })
@@ -56,18 +120,26 @@ export const IssuedCertificate = zod
       open_to_contributors: zod.boolean(),
       public: zod.boolean(),
       tags: zod.array(zod.string()),
-      thumbnail_key: zod.string().nullish().describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+      thumbnail_key: zod
+        .string()
+        .nullable()
+        .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
       thumbnail_video_key: zod
         .string()
-        .nullish()
+        .nullable()
         .describe(
           'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
         ),
-      updated_at_unix: zod.int(),
+      updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      version: zod
+        .int()
+        .describe(
+          'Optimistic lock: send it back as `If-Match` on `PATCH` and\nlifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.',
+        ),
     }),
     instructor_name: zod
       .string()
-      .nullish()
+      .nullable()
       .describe(
         "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
       ),

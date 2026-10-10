@@ -38,6 +38,7 @@ function attempt() {
     id: ATTEMPT_ID,
     status: 'draft',
     attempt_number: 1,
+    allowed_actions: [],
     files: [
       {
         id: FILE_ID,

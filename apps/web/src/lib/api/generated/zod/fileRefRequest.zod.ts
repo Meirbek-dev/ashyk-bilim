@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const fileRefRequestDisplayNameMax = 255
+
 export const FileRefRequest = zod.object({
-  display_name: zod.string().nullish(),
+  display_name: zod.string().max(fileRefRequestDisplayNameMax).optional(),
   upload_id: zod.uuid(),
 })
 

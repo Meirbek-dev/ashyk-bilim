@@ -23,7 +23,6 @@ import {
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
 import { useCourseSectionDraft } from '@/features/courses/editor/hooks/useCourseSectionDraft'
 import { useContributorMutations, useContributors } from '@/features/courses/hooks/useContributors'
-import type { ContributorRole, ContributorStatus } from '@/features/courses/hooks/useContributors'
 import { Check, ChevronDown, Loader2, Search, Trash2, UserPen, Users } from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { useCourse } from '@components/Contexts/CourseContext'
@@ -42,11 +41,11 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Contributor } from '@/lib/api/generated/zod'
+import type { Contributor, UpdateContributorRequest } from '@/lib/api/generated/zod'
 import type { Locale } from '@/i18n/config'
 import { toast } from 'sonner'
 
-const ASSIGNABLE_ROLES: Exclude<ContributorRole, 'creator'>[] = ['contributor', 'maintainer', 'reporter']
+const ASSIGNABLE_ROLES: NonNullable<UpdateContributorRequest['role']>[] = ['contributor', 'maintainer', 'reporter']
 
 const formatDate = (unix: number, locale: Locale) =>
   new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -108,7 +107,7 @@ function EditCourseContributors() {
     }
   }
 
-  const handleUpdate = async (row: Contributor, body: { role?: ContributorRole; status?: ContributorStatus }) => {
+  const handleUpdate = async (row: Contributor, body: UpdateContributorRequest) => {
     try {
       await update(row.user_id, body)
       toast.success(t('successfullyUpdatedContributor'))

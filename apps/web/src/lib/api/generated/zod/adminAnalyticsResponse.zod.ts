@@ -10,12 +10,12 @@ import * as zod from 'zod'
 export const AdminAnalyticsResponse = zod.object({
   cohort_retention: zod.array(
     zod.object({
-      avg_progress_pct: zod.number().nullish(),
+      avg_progress_pct: zod.number().nullable(),
       cohort_id: zod.uuid(),
       cohort_name: zod.string(),
       learners: zod.int(),
       retained_learners: zod.int(),
-      retention_rate: zod.number().nullish(),
+      retention_rate: zod.number().nullable(),
     }),
   ),
   content_roi: zod.array(
@@ -23,7 +23,7 @@ export const AdminAnalyticsResponse = zod.object({
       active_learners_7d: zod.int(),
       at_risk_learners: zod.int(),
       completion_rate: zod.number(),
-      content_roi_score: zod.number().nullish(),
+      content_roi_score: zod.number().nullable(),
       course_id: zod.uuid(),
       course_name: zod.string(),
       health_score: zod.number(),
@@ -34,7 +34,7 @@ export const AdminAnalyticsResponse = zod.object({
       active_learners_7d: zod.int(),
       at_risk_learners: zod.int(),
       completion_rate: zod.number(),
-      content_roi_score: zod.number().nullish(),
+      content_roi_score: zod.number().nullable(),
       course_id: zod.uuid(),
       course_name: zod.string(),
       health_score: zod.number(),
@@ -42,22 +42,23 @@ export const AdminAnalyticsResponse = zod.object({
   ),
   department_program_performance: zod.array(
     zod.object({
-      completion_rate: zod.number().nullish(),
+      completion_rate: zod.number().nullable(),
       course_count: zod.int(),
-      health_score: zod.number().nullish(),
+      health_score: zod.number().nullable(),
       learner_count: zod.int(),
-      program_id: zod
-        .union([zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'), zod.null()])
-        .optional(),
+      program_id: zod.union([
+        zod.uuid().describe('The creating teacher; `None` groups courses without a creator.'),
+        zod.null(),
+      ]),
       program_name: zod.string(),
     }),
   ),
-  generated_at_unix: zod.int(),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   teacher_workload_comparison: zod.array(
     zod.object({
       at_risk_learners: zod.int(),
       managed_course_count: zod.int(),
-      median_feedback_latency_hours: zod.number().nullish(),
+      median_feedback_latency_hours: zod.number().nullable(),
       sla_breaches: zod.int(),
       teacher_display_name: zod.string(),
       teacher_user_id: zod.uuid(),

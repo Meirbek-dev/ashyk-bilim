@@ -7,10 +7,28 @@
  */
 import * as zod from 'zod'
 
+export const createActivityBodyNameMax = 500
+
 export const CreateActivityBody = zod.object({
-  activity_sub_type: zod.string().describe('Must pair with `activity_type` (e.g. `video_youtube`).'),
-  activity_type: zod.string().describe('One of the closed activity-type set (e.g. `video`, `exam`).'),
-  name: zod.string(),
+  activity_sub_type: zod
+    .enum([
+      'dynamic_page',
+      'video_youtube',
+      'video_hosted',
+      'document_pdf',
+      'document_doc',
+      'quiz_standard',
+      'exam_standard',
+      'code_general',
+      'code_competitive',
+      'file_submission_standard',
+      'custom',
+    ])
+    .describe('Must pair with `activity_type` (e.g. `video_youtube`).'),
+  activity_type: zod
+    .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+    .describe('One of the closed activity-type set (e.g. `video`, `exam`).'),
+  name: zod.string().max(createActivityBodyNameMax),
 })
 
 export type CreateActivityBody = zod.input<typeof CreateActivityBody>

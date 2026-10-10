@@ -12,14 +12,14 @@ export const Funnels = zod.object({
     zod.object({
       count: zod.int(),
       label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-      pct_of_previous: zod.number().nullish(),
+      pct_of_previous: zod.number().nullable(),
     }),
   ),
   course_completion: zod.array(
     zod.object({
       count: zod.int(),
       label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-      pct_of_previous: zod.number().nullish(),
+      pct_of_previous: zod.number().nullable(),
     }),
   ),
 })

@@ -9,8 +9,11 @@
  */
 import type { FieldError, Problem } from '@/lib/api/generated/zod'
 
-/** Wire shape of a problem+json body (re-exported for callers). */
-export type ApiErrorEnvelope = Problem
+/**
+ * Wire shape of a problem+json body (re-exported for callers). `details` is
+ * read leniently: a key the client does not know yet never loses the error.
+ */
+export type ApiErrorEnvelope = Omit<Problem, 'details'> & { details?: Record<string, unknown> }
 export type ApiFieldError = FieldError
 
 /** Codes minted by the client transport (never by the server). */
@@ -74,15 +77,18 @@ export function parseApiErrorEnvelope(value: unknown): ApiErrorEnvelope | null {
   const status = typeof data.status === 'number' ? data.status : null
   if (!code || status === null) return null
 
+  const detail = readString(data, 'detail')
+  const details = asRecord(data.details)
+  const requestId = readString(data, 'request_id')
   return {
     type: readString(data, 'type') ?? `about:blank`,
     title: title ?? code,
     status,
     code: code as ApiErrorEnvelope['code'],
-    detail: readString(data, 'detail'),
-    details: asRecord(data.details),
     field_errors: readFieldErrors(data.field_errors),
-    request_id: readString(data, 'request_id'),
+    ...(detail ? { detail } : {}),
+    ...(details ? { details } : {}),
+    ...(requestId ? { request_id: requestId } : {}),
   }
 }
 

@@ -11,12 +11,20 @@ export const BulkAction = zod.object({
   action_type: zod.enum(['extend_deadline', 'release_grades', 'return_all', 'override_score', 'batch_grade']),
   affected_count: zod.int(),
   assessment_id: zod.uuid(),
-  completed_at_unix: zod.int().nullish(),
-  created_at_unix: zod.int(),
+  completed_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   error_log: zod.string(),
   id: zod.uuid(),
-  params: zod.looseObject({}),
-  performed_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  params: zod
+    .object({
+      new_due_at: zod.int().describe('Unix seconds.'),
+      reason: zod.string(),
+    })
+    .describe('`bulk_actions.params` of a deadline extension.'),
+  performed_by: zod.union([zod.uuid(), zod.null()]),
   status: zod.enum(['pending', 'running', 'completed', 'failed']),
   target_user_ids: zod.array(zod.uuid()),
 })

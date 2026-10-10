@@ -8,29 +8,74 @@
 import * as zod from 'zod'
 
 export const SubmissionAnalysis = zod.object({
-  analysis: zod.looseObject({}),
-  created_at_unix: zod.int(),
-  evidence: zod.looseObject({}),
-  file_submission_attempt_id: zod
-    .union([
-      zod
-        .uuid()
-        .describe(
-          'The analysed file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.',
-        ),
-      zod.null(),
-    ])
-    .optional(),
+  analysis: zod.object({
+    citations: zod
+      .array(
+        zod.object({
+          citation_id: zod.string(),
+          confidence: zod.number().optional(),
+          excerpt: zod.string().optional(),
+          label: zod.string(),
+          source_type: zod.string(),
+          source_uuid: zod.string().optional(),
+        }),
+      )
+      .optional(),
+    confidence: zod
+      .enum(['low', 'medium', 'high'])
+      .optional()
+      .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+    knowledge_gaps: zod
+      .array(
+        zod.object({
+          concept: zod.string(),
+          evidence: zod.string().optional(),
+          remediation_goal: zod.string().optional(),
+          severity: zod
+            .enum(['low', 'medium', 'high'])
+            .optional()
+            .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+        }),
+      )
+      .optional(),
+    language: zod.string().optional(),
+    next_action: zod.string().optional(),
+    summary: zod.string(),
+  }),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  evidence: zod
+    .object({
+      citations: zod
+        .array(
+          zod.object({
+            citation_id: zod.string(),
+            confidence: zod.number().optional(),
+            excerpt: zod.string().optional(),
+            label: zod.string(),
+            source_type: zod.string(),
+            source_uuid: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .describe('What an AI result was grounded on: `{citations: [...]}`, or `{}` (the\ncolumn default; Q&A questions).'),
+  file_submission_attempt_id: zod.union([
+    zod
+      .uuid()
+      .describe('The analysed file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.'),
+    zod.null(),
+  ]),
   gap_count: zod.int(),
   id: zod.uuid(),
   language: zod.string(),
-  model_name: zod.string().nullish(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  model_name: zod.string().nullable(),
+  run_id: zod.union([zod.uuid(), zod.null()]),
   status: zod.string(),
-  submission_id: zod
-    .union([zod.uuid().describe('The analysed assessment submission - `null` for a file attempt.'), zod.null()])
-    .optional(),
-  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  submission_id: zod.union([
+    zod.uuid().describe('The analysed assessment submission - `null` for a file attempt.'),
+    zod.null(),
+  ]),
+  triggered_by: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type SubmissionAnalysis = zod.input<typeof SubmissionAnalysis>

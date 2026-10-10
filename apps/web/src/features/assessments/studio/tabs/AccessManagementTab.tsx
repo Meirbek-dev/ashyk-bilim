@@ -276,7 +276,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   // earlier save stay unless this save proves them stale.
   const overrideMutation = useMutation({
     mutationFn: async () => {
-      const form: Required<Pick<OverrideRequest, OverrideField>> = {
+      const form: OverrideForm = {
         max_attempts_override: overrideAttempts ? Number(overrideAttempts) : null,
         due_at_override_unix: toUnix(overrideDueAt || null),
         waive_late_penalty: overrideWaiveLate,
@@ -288,7 +288,7 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
           const existing = overrideByUserId.get(userId)
           return existing
             ? updateOverride(assessmentUuid, userId, mergeOverride(existing, form, touchedOverrideFields))
-            : createOverride(assessmentUuid, userId, form)
+            : createOverride(assessmentUuid, userId, toOverrideRequest(form))
         }),
       )
       return results.map((result, index) => ({ userId: userIds[index] ?? '', result }))
@@ -1017,23 +1017,40 @@ function displayUser(user: AccessLearner) {
   return user.display_name.trim() || user.username
 }
 
-type OverrideField = 'max_attempts_override' | 'due_at_override_unix' | 'waive_late_penalty' | 'note'
+interface OverrideForm {
+  max_attempts_override: number | null
+  due_at_override_unix: number | null
+  waive_late_penalty: boolean
+  note: string
+}
+type OverrideField = keyof OverrideForm
+
+/** The contract has no `null` on the request: an absent limit/date is "none" (the PUT replaces the block). */
+function toOverrideRequest({
+  max_attempts_override,
+  due_at_override_unix,
+  expires_at_unix = null,
+  ...rest
+}: OverrideForm & { expires_at_unix?: number | null }): OverrideRequest {
+  return {
+    ...rest,
+    ...(max_attempts_override === null ? {} : { max_attempts_override }),
+    ...(due_at_override_unix === null ? {} : { due_at_override_unix }),
+    ...(expires_at_unix === null ? {} : { expires_at_unix }),
+  }
+}
 
 /** BUG-317: the PUT replaces the whole override - send the learner's own values (and expiry) for untouched fields. */
-function mergeOverride(
-  existing: StudentOverride,
-  form: Required<Pick<OverrideRequest, OverrideField>>,
-  touched: Set<OverrideField>,
-): OverrideRequest {
-  const pick = <K extends OverrideField>(field: K, current: OverrideRequest[K]) =>
+function mergeOverride(existing: StudentOverride, form: OverrideForm, touched: Set<OverrideField>): OverrideRequest {
+  const pick = <K extends OverrideField>(field: K, current: OverrideForm[K]) =>
     touched.has(field) ? form[field] : current
-  return {
-    max_attempts_override: pick('max_attempts_override', existing.max_attempts_override ?? null),
-    due_at_override_unix: pick('due_at_override_unix', existing.due_at_override_unix ?? null),
+  return toOverrideRequest({
+    max_attempts_override: pick('max_attempts_override', existing.max_attempts_override),
+    due_at_override_unix: pick('due_at_override_unix', existing.due_at_override_unix),
     waive_late_penalty: pick('waive_late_penalty', existing.waive_late_penalty),
     note: pick('note', existing.note),
-    expires_at_unix: existing.expires_at_unix ?? null,
-  }
+    expires_at_unix: existing.expires_at_unix,
+  })
 }
 
 function describeOverride(override: StudentOverride, t: ReturnType<typeof useTranslations>) {

@@ -7,14 +7,32 @@
  */
 import * as zod from 'zod'
 
+export const updatePlatformBodyAboutMax = 20000
+
+export const updatePlatformBodyDescriptionMax = 5000
+
+export const updatePlatformBodyEmailMax = 320
+
+export const updatePlatformBodyLabelMax = 500
+
+export const updatePlatformBodyNameMax = 500
+
 export const UpdatePlatformBody = zod.object({
-  about: zod.string().nullish(),
-  description: zod.string().nullish(),
-  email: zod.string().nullish(),
-  label: zod.string().nullish().describe('`null` clears the label; blank is stored as cleared too (UX-135).'),
-  logo_upload_id: zod.uuid().nullish().describe('Finalized `platform-logo` upload to claim as the new logo.'),
-  name: zod.string().nullish().describe('Blank → 422 `required` (trimmed in the service).'),
-  thumbnail_upload_id: zod.uuid().nullish().describe('Finalized `platform-thumbnail` upload to claim.'),
+  about: zod.string().max(updatePlatformBodyAboutMax).optional(),
+  description: zod.string().max(updatePlatformBodyDescriptionMax).optional(),
+  email: zod.string().max(updatePlatformBodyEmailMax).optional(),
+  label: zod
+    .string()
+    .max(updatePlatformBodyLabelMax)
+    .nullish()
+    .describe('`null` clears the label; blank is stored as cleared too (UX-135).'),
+  logo_upload_id: zod.uuid().optional().describe('Finalized `platform-logo` upload to claim as the new logo.'),
+  name: zod
+    .string()
+    .max(updatePlatformBodyNameMax)
+    .optional()
+    .describe('Blank → 422 `required` (trimmed in the service).'),
+  thumbnail_upload_id: zod.uuid().optional().describe('Finalized `platform-thumbnail` upload to claim.'),
 })
 
 export type UpdatePlatformBody = zod.input<typeof UpdatePlatformBody>

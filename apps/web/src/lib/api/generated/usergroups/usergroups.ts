@@ -26,6 +26,9 @@ import type {
 import {
   CourseId,
   CreateUsergroupRequest,
+  ListGroupMembersPageParams,
+  ListGroupsParams,
+  ListUsergroupMembersPageParams,
   ListUsergroupsParams,
   Problem,
   UpdateUsergroupRequest,
@@ -33,11 +36,12 @@ import {
   UsergroupCoursesRequest,
   UsergroupId,
   UsergroupMember,
+  UsergroupMemberPage,
   UsergroupMembersRequest,
   UsergroupPage,
 } from '../zod'
 
-import { orvalMutator, arrayParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
+import { orvalMutator, arrayParser, optionalParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -57,19 +61,20 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result
 }
 
-export const getUsergroupsForCourseUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/usergroups`
+export const getGroupsForCourseUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/groups`
 }
 
 /**
+ * S-10 name of [`usergroups_for_course`] (that path is deprecated).
  * @summary Groups linked to a course (course-settings view).
  */
-export const usergroupsForCourse = async (
-  id: CourseId,
+export const groupsForCourse = async (
+  courseId: CourseId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Usergroup[]> => {
   return orvalMutator<Usergroup[]>(
-    getUsergroupsForCourseUrl(id),
+    getGroupsForCourseUrl(courseId),
     {
       ...options,
       method: 'GET',
@@ -78,15 +83,218 @@ export const usergroupsForCourse = async (
   )
 }
 
-export const getUsergroupsForCourseQueryKey = (id: CourseId) => {
-  return [`/api/v2/courses/${id}/usergroups`] as const
+export const getGroupsForCourseQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/groups`] as const
+}
+
+export const getGroupsForCourseQueryOptions = <
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGroupsForCourseQueryKey(courseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof groupsForCourse>>> = ({ signal }) =>
+    groupsForCourse(courseId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GroupsForCourseQueryResult = NonNullable<Awaited<ReturnType<typeof groupsForCourse>>>
+export type GroupsForCourseQueryError = ErrorType<unknown>
+
+export function useGroupsForCourse<TData = Awaited<ReturnType<typeof groupsForCourse>>, TError = ErrorType<unknown>>(
+  courseId: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof groupsForCourse>>,
+          TError,
+          Awaited<ReturnType<typeof groupsForCourse>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGroupsForCourse<TData = Awaited<ReturnType<typeof groupsForCourse>>, TError = ErrorType<unknown>>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof groupsForCourse>>,
+          TError,
+          Awaited<ReturnType<typeof groupsForCourse>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGroupsForCourse<TData = Awaited<ReturnType<typeof groupsForCourse>>, TError = ErrorType<unknown>>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Groups linked to a course (course-settings view).
+ */
+
+export function useGroupsForCourse<TData = Awaited<ReturnType<typeof groupsForCourse>>, TError = ErrorType<unknown>>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGroupsForCourseQueryOptions(courseId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGroupsForCourseSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGroupsForCourseQueryKey(courseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof groupsForCourse>>> = ({ signal }) =>
+    groupsForCourse(courseId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GroupsForCourseSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof groupsForCourse>>>
+export type GroupsForCourseSuspenseQueryError = ErrorType<unknown>
+
+export function useGroupsForCourseSuspense<
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGroupsForCourseSuspense<
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGroupsForCourseSuspense<
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Groups linked to a course (course-settings view).
+ */
+
+export function useGroupsForCourseSuspense<
+  TData = Awaited<ReturnType<typeof groupsForCourse>>,
+  TError = ErrorType<unknown>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof groupsForCourse>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGroupsForCourseSuspenseQueryOptions(courseId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUsergroupsForCourseUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/usergroups`
+}
+
+/**
+ * @deprecated
+ * @summary Groups linked to a course (course-settings view).
+ */
+export const usergroupsForCourse = async (
+  courseId: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup[]> => {
+  return orvalMutator<Usergroup[]>(
+    getUsergroupsForCourseUrl(courseId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(Usergroup),
+  )
+}
+
+export const getUsergroupsForCourseQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/usergroups`] as const
 }
 
 export const getUsergroupsForCourseQueryOptions = <
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -94,16 +302,19 @@ export const getUsergroupsForCourseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getUsergroupsForCourseQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getUsergroupsForCourseQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof usergroupsForCourse>>> = ({ signal }) =>
-    usergroupsForCourse(id, { signal, ...requestOptions })
+    usergroupsForCourse(courseId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof usergroupsForCourse>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type UsergroupsForCourseQueryResult = NonNullable<Awaited<ReturnType<typeof usergroupsForCourse>>>
@@ -113,7 +324,7 @@ export function useUsergroupsForCourse<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>> &
       Pick<
@@ -132,7 +343,7 @@ export function useUsergroupsForCourse<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>> &
       Pick<
@@ -151,7 +362,7 @@ export function useUsergroupsForCourse<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -159,6 +370,7 @@ export function useUsergroupsForCourse<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Groups linked to a course (course-settings view).
  */
 
@@ -166,14 +378,14 @@ export function useUsergroupsForCourse<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getUsergroupsForCourseQueryOptions(id, options)
+  const queryOptions = getUsergroupsForCourseQueryOptions(courseId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -186,7 +398,7 @@ export const getUsergroupsForCourseSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -194,10 +406,10 @@ export const getUsergroupsForCourseSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getUsergroupsForCourseQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getUsergroupsForCourseQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof usergroupsForCourse>>> = ({ signal }) =>
-    usergroupsForCourse(id, { signal, ...requestOptions })
+    usergroupsForCourse(courseId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -215,7 +427,7 @@ export function useUsergroupsForCourseSuspense<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -226,7 +438,7 @@ export function useUsergroupsForCourseSuspense<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -237,7 +449,7 @@ export function useUsergroupsForCourseSuspense<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -245,6 +457,7 @@ export function useUsergroupsForCourseSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Groups linked to a course (course-settings view).
  */
 
@@ -252,14 +465,1656 @@ export function useUsergroupsForCourseSuspense<
   TData = Awaited<ReturnType<typeof usergroupsForCourse>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof usergroupsForCourse>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getUsergroupsForCourseSuspenseQueryOptions(id, options)
+  const queryOptions = getUsergroupsForCourseSuspenseQueryOptions(courseId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListGroupsUrl = (params?: ListGroupsParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0 ? `/api/v2/groups?${stringifiedParams}` : `/api/v2/groups`
+}
+
+/**
+ * S-10 name of [`list_usergroups`] (that path is deprecated).
+ * @summary Newest-first listing (requires `usergroup:read:platform`).
+ */
+export const listGroups = async (
+  params?: ListGroupsParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UsergroupPage> => {
+  return orvalMutator<UsergroupPage>(
+    getListGroupsUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UsergroupPage,
+  )
+}
+
+export const getListGroupsQueryKey = (params?: ListGroupsParams) => {
+  return [`/api/v2/groups`, ...(params ? [params] : [])] as const
+}
+
+export const getListGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupsQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroups>>> = ({ signal }) =>
+    listGroups(params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGroups>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listGroups>>>
+export type ListGroupsQueryError = ErrorType<unknown>
+
+export function useListGroups<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params: undefined | ListGroupsParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroups>>,
+          TError,
+          Awaited<ReturnType<typeof listGroups>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroups<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroups>>,
+          TError,
+          Awaited<ReturnType<typeof listGroups>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroups<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Newest-first listing (requires `usergroup:read:platform`).
+ */
+
+export function useListGroups<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupsQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListGroupsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroups>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupsQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroups>>> = ({ signal }) =>
+    listGroups(params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListGroupsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listGroups>>>
+export type ListGroupsSuspenseQueryError = ErrorType<unknown>
+
+export function useListGroupsSuspense<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params: undefined | ListGroupsParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupsSuspense<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupsSuspense<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Newest-first listing (requires `usergroup:read:platform`).
+ */
+
+export function useListGroupsSuspense<TData = Awaited<ReturnType<typeof listGroups>>, TError = ErrorType<unknown>>(
+  params?: ListGroupsParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroups>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupsSuspenseQueryOptions(params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCreateGroupUrl = () => {
+  return `/api/v2/groups`
+}
+
+/**
+ * S-10 name of [`create_usergroup`] (that path is deprecated).
+ * @summary Create a usergroup (requires `usergroup:create:platform`).
+ */
+export const createGroup = async (
+  createUsergroupRequest: CreateUsergroupRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Usergroup>(
+    getCreateGroupUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(createUsergroupRequest),
+    },
+    Usergroup,
+  )
+}
+
+export const getCreateGroupMutationKey = () => ['createGroup'] as const
+
+export const getCreateGroupMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof createGroup>>, TError, CreateGroupMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof createGroup>>, TError, CreateGroupMutationVariables, TContext> => {
+  const mutationKey = getCreateGroupMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGroup>>, CreateGroupMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return createGroup(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createGroup>>>
+export type CreateGroupMutationBody = BodyType<CreateUsergroupRequest>
+export type CreateGroupMutationError = ErrorType<Problem>
+export type CreateGroupMutationVariables = { data: BodyType<CreateUsergroupRequest> }
+
+/**
+ * @summary Create a usergroup (requires `usergroup:create:platform`).
+ */
+export const useCreateGroup = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createGroup>>,
+      TError,
+      CreateGroupMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof createGroup>>, TError, CreateGroupMutationVariables, TContext> => {
+  return useMutation(getCreateGroupMutationOptions(options), queryClient)
+}
+export const getDeleteGroupUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}`
+}
+
+/**
+ * S-10 name of [`delete_usergroup`] (that path is deprecated).
+ * @summary Delete a usergroup (membership/course links cascade).
+ */
+export const deleteGroup = async (
+  groupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  return orvalMutator<void>(
+    getDeleteGroupUrl(groupId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
+
+export const getDeleteGroupMutationKey = () => ['deleteGroup'] as const
+
+export const getDeleteGroupMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteGroup>>, TError, DeleteGroupMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof deleteGroup>>, TError, DeleteGroupMutationVariables, TContext> => {
+  const mutationKey = getDeleteGroupMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGroup>>, DeleteGroupMutationVariables> = props => {
+    const { groupId } = props ?? {}
+
+    return deleteGroup(groupId, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type DeleteGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGroup>>>
+
+export type DeleteGroupMutationError = ErrorType<Problem>
+export type DeleteGroupMutationVariables = { groupId: UsergroupId }
+
+/**
+ * @summary Delete a usergroup (membership/course links cascade).
+ */
+export const useDeleteGroup = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteGroup>>,
+      TError,
+      DeleteGroupMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof deleteGroup>>, TError, DeleteGroupMutationVariables, TContext> => {
+  return useMutation(getDeleteGroupMutationOptions(options), queryClient)
+}
+export const getGetGroupUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}`
+}
+
+/**
+ * S-10 name of [`get_usergroup`] (that path is deprecated).
+ * @summary One usergroup.
+ */
+export const getGroup = async (
+  groupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup> => {
+  return orvalMutator<Usergroup>(
+    getGetGroupUrl(groupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Usergroup,
+  )
+}
+
+export const getGetGroupQueryKey = (groupId: UsergroupId) => {
+  return [`/api/v2/groups/${groupId}`] as const
+}
+
+export const getGetGroupQueryOptions = <TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetGroupQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGroup>>> = ({ signal }) =>
+    getGroup(groupId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGroup>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGroupQueryResult = NonNullable<Awaited<ReturnType<typeof getGroup>>>
+export type GetGroupQueryError = ErrorType<Problem>
+
+export function useGetGroup<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof getGroup>>, TError, Awaited<ReturnType<typeof getGroup>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGroup<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof getGroup>>, TError, Awaited<ReturnType<typeof getGroup>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGroup<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One usergroup.
+ */
+
+export function useGetGroup<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetGroupQueryOptions(groupId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetGroupSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGroup>>,
+  TError = ErrorType<Problem>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetGroupQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGroup>>> = ({ signal }) =>
+    getGroup(groupId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetGroupSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getGroup>>>
+export type GetGroupSuspenseQueryError = ErrorType<Problem>
+
+export function useGetGroupSuspense<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGroupSuspense<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGroupSuspense<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One usergroup.
+ */
+
+export function useGetGroupSuspense<TData = Awaited<ReturnType<typeof getGroup>>, TError = ErrorType<Problem>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getGroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetGroupSuspenseQueryOptions(groupId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUpdateGroupUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}`
+}
+
+/**
+ * S-10 name of [`update_usergroup`] (that path is deprecated).
+ * @summary Rename/redescribe (creator or `usergroup:manage:platform`).
+ */
+export const updateGroup = async (
+  groupId: UsergroupId,
+  updateUsergroupRequest: UpdateUsergroupRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Usergroup>(
+    getUpdateGroupUrl(groupId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(updateUsergroupRequest),
+    },
+    Usergroup,
+  )
+}
+
+export const getUpdateGroupMutationKey = () => ['updateGroup'] as const
+
+export const getUpdateGroupMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateGroup>>, TError, UpdateGroupMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof updateGroup>>, TError, UpdateGroupMutationVariables, TContext> => {
+  const mutationKey = getUpdateGroupMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateGroup>>, UpdateGroupMutationVariables> = props => {
+    const { groupId, data } = props ?? {}
+
+    return updateGroup(groupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type UpdateGroupMutationResult = NonNullable<Awaited<ReturnType<typeof updateGroup>>>
+export type UpdateGroupMutationBody = BodyType<UpdateUsergroupRequest>
+export type UpdateGroupMutationError = ErrorType<Problem>
+export type UpdateGroupMutationVariables = { groupId: UsergroupId; data: BodyType<UpdateUsergroupRequest> }
+
+/**
+ * @summary Rename/redescribe (creator or `usergroup:manage:platform`).
+ */
+export const useUpdateGroup = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateGroup>>,
+      TError,
+      UpdateGroupMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof updateGroup>>, TError, UpdateGroupMutationVariables, TContext> => {
+  return useMutation(getUpdateGroupMutationOptions(options), queryClient)
+}
+export const getRemoveGroupCoursesUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/courses`
+}
+
+/**
+ * S-10 name of [`remove_usergroup_courses`] (that path is deprecated).
+ * @summary Unlink courses from the group.
+ */
+export const removeGroupCourses = async (
+  groupId: UsergroupId,
+  usergroupCoursesRequest: UsergroupCoursesRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getRemoveGroupCoursesUrl(groupId),
+    {
+      ...options,
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(usergroupCoursesRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getRemoveGroupCoursesMutationKey = () => ['removeGroupCourses'] as const
+
+export const getRemoveGroupCoursesMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeGroupCourses>>,
+    TError,
+    RemoveGroupCoursesMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeGroupCourses>>,
+  TError,
+  RemoveGroupCoursesMutationVariables,
+  TContext
+> => {
+  const mutationKey = getRemoveGroupCoursesMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeGroupCourses>>,
+    RemoveGroupCoursesMutationVariables
+  > = props => {
+    const { groupId, data } = props ?? {}
+
+    return removeGroupCourses(groupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type RemoveGroupCoursesMutationResult = NonNullable<Awaited<ReturnType<typeof removeGroupCourses>>>
+export type RemoveGroupCoursesMutationBody = BodyType<UsergroupCoursesRequest>
+export type RemoveGroupCoursesMutationError = ErrorType<unknown>
+export type RemoveGroupCoursesMutationVariables = { groupId: UsergroupId; data: BodyType<UsergroupCoursesRequest> }
+
+/**
+ * @summary Unlink courses from the group.
+ */
+export const useRemoveGroupCourses = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof removeGroupCourses>>,
+      TError,
+      RemoveGroupCoursesMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof removeGroupCourses>>,
+  TError,
+  RemoveGroupCoursesMutationVariables,
+  TContext
+> => {
+  return useMutation(getRemoveGroupCoursesMutationOptions(options), queryClient)
+}
+export const getListGroupCoursesUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/courses`
+}
+
+/**
+ * S-10 name of [`list_usergroup_courses`] (that path is deprecated).
+ * @summary Linked course ids.
+ */
+export const listGroupCourses = async (
+  groupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CourseId[]> => {
+  return orvalMutator<CourseId[]>(
+    getListGroupCoursesUrl(groupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(CourseId),
+  )
+}
+
+export const getListGroupCoursesQueryKey = (groupId: UsergroupId) => {
+  return [`/api/v2/groups/${groupId}/courses`] as const
+}
+
+export const getListGroupCoursesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupCoursesQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupCourses>>> = ({ signal }) =>
+    listGroupCourses(groupId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGroupCourses>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListGroupCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupCourses>>>
+export type ListGroupCoursesQueryError = ErrorType<unknown>
+
+export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupCourses>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupCourses>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupCourses>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupCourses>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupCourses>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupCourses>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupCourses>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Linked course ids.
+ */
+
+export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupCourses>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupCoursesQueryOptions(groupId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListGroupCoursesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupCoursesQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupCourses>>> = ({ signal }) =>
+    listGroupCourses(groupId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListGroupCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupCourses>>>
+export type ListGroupCoursesSuspenseQueryError = ErrorType<unknown>
+
+export function useListGroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Linked course ids.
+ */
+
+export function useListGroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listGroupCourses>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupCourses>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupCoursesSuspenseQueryOptions(groupId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getAddGroupCoursesUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/courses`
+}
+
+/**
+ * S-10 name of [`add_usergroup_courses`] (that path is deprecated).
+ * @summary Link courses to the group.
+ */
+export const addGroupCourses = async (
+  groupId: UsergroupId,
+  usergroupCoursesRequest: UsergroupCoursesRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getAddGroupCoursesUrl(groupId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(usergroupCoursesRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getAddGroupCoursesMutationKey = () => ['addGroupCourses'] as const
+
+export const getAddGroupCoursesMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addGroupCourses>>,
+    TError,
+    AddGroupCoursesMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addGroupCourses>>,
+  TError,
+  AddGroupCoursesMutationVariables,
+  TContext
+> => {
+  const mutationKey = getAddGroupCoursesMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addGroupCourses>>,
+    AddGroupCoursesMutationVariables
+  > = props => {
+    const { groupId, data } = props ?? {}
+
+    return addGroupCourses(groupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type AddGroupCoursesMutationResult = NonNullable<Awaited<ReturnType<typeof addGroupCourses>>>
+export type AddGroupCoursesMutationBody = BodyType<UsergroupCoursesRequest>
+export type AddGroupCoursesMutationError = ErrorType<unknown>
+export type AddGroupCoursesMutationVariables = { groupId: UsergroupId; data: BodyType<UsergroupCoursesRequest> }
+
+/**
+ * @summary Link courses to the group.
+ */
+export const useAddGroupCourses = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof addGroupCourses>>,
+      TError,
+      AddGroupCoursesMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof addGroupCourses>>,
+  TError,
+  AddGroupCoursesMutationVariables,
+  TContext
+> => {
+  return useMutation(getAddGroupCoursesMutationOptions(options), queryClient)
+}
+export const getRemoveGroupMembersUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/members`
+}
+
+/**
+ * S-10 name of [`remove_usergroup_members`] (that path is deprecated).
+ * @summary Batch-remove members.
+ */
+export const removeGroupMembers = async (
+  groupId: UsergroupId,
+  usergroupMembersRequest: UsergroupMembersRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup | void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Usergroup | void>(
+    getRemoveGroupMembersUrl(groupId),
+    {
+      ...options,
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(usergroupMembersRequest),
+    },
+    optionalParser(Usergroup),
+  )
+}
+
+export const getRemoveGroupMembersMutationKey = () => ['removeGroupMembers'] as const
+
+export const getRemoveGroupMembersMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeGroupMembers>>,
+    TError,
+    RemoveGroupMembersMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeGroupMembers>>,
+  TError,
+  RemoveGroupMembersMutationVariables,
+  TContext
+> => {
+  const mutationKey = getRemoveGroupMembersMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeGroupMembers>>,
+    RemoveGroupMembersMutationVariables
+  > = props => {
+    const { groupId, data } = props ?? {}
+
+    return removeGroupMembers(groupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type RemoveGroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof removeGroupMembers>>>
+export type RemoveGroupMembersMutationBody = BodyType<UsergroupMembersRequest>
+export type RemoveGroupMembersMutationError = ErrorType<unknown>
+export type RemoveGroupMembersMutationVariables = { groupId: UsergroupId; data: BodyType<UsergroupMembersRequest> }
+
+/**
+ * @summary Batch-remove members.
+ */
+export const useRemoveGroupMembers = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof removeGroupMembers>>,
+      TError,
+      RemoveGroupMembersMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof removeGroupMembers>>,
+  TError,
+  RemoveGroupMembersMutationVariables,
+  TContext
+> => {
+  return useMutation(getRemoveGroupMembersMutationOptions(options), queryClient)
+}
+export const getListGroupMembersUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/members`
+}
+
+/**
+ * S-10 name of [`list_usergroup_members`] (that path is deprecated).
+ * @summary Member profiles.
+ */
+export const listGroupMembers = async (
+  groupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UsergroupMember[]> => {
+  return orvalMutator<UsergroupMember[]>(
+    getListGroupMembersUrl(groupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UsergroupMember),
+  )
+}
+
+export const getListGroupMembersQueryKey = (groupId: UsergroupId) => {
+  return [`/api/v2/groups/${groupId}/members`] as const
+}
+
+export const getListGroupMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupMembersQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupMembers>>> = ({ signal }) =>
+    listGroupMembers(groupId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGroupMembers>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListGroupMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupMembers>>>
+export type ListGroupMembersQueryError = ErrorType<unknown>
+
+export function useListGroupMembers<TData = Awaited<ReturnType<typeof listGroupMembers>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupMembers>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembers<TData = Awaited<ReturnType<typeof listGroupMembers>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupMembers>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembers<TData = Awaited<ReturnType<typeof listGroupMembers>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Member profiles.
+ */
+
+export function useListGroupMembers<TData = Awaited<ReturnType<typeof listGroupMembers>>, TError = ErrorType<unknown>>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupMembersQueryOptions(groupId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListGroupMembersSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupMembersQueryKey(groupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupMembers>>> = ({ signal }) =>
+    listGroupMembers(groupId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListGroupMembersSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupMembers>>>
+export type ListGroupMembersSuspenseQueryError = ErrorType<unknown>
+
+export function useListGroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Member profiles.
+ */
+
+export function useListGroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupMembersSuspenseQueryOptions(groupId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getAddGroupMembersUrl = (groupId: UsergroupId) => {
+  return `/api/v2/groups/${groupId}/members`
+}
+
+/**
+ * S-10 name of [`add_usergroup_members`] (that path is deprecated).
+ * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ */
+export const addGroupMembers = async (
+  groupId: UsergroupId,
+  usergroupMembersRequest: UsergroupMembersRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup | void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Usergroup | void>(
+    getAddGroupMembersUrl(groupId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(usergroupMembersRequest),
+    },
+    optionalParser(Usergroup),
+  )
+}
+
+export const getAddGroupMembersMutationKey = () => ['addGroupMembers'] as const
+
+export const getAddGroupMembersMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addGroupMembers>>,
+    TError,
+    AddGroupMembersMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addGroupMembers>>,
+  TError,
+  AddGroupMembersMutationVariables,
+  TContext
+> => {
+  const mutationKey = getAddGroupMembersMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addGroupMembers>>,
+    AddGroupMembersMutationVariables
+  > = props => {
+    const { groupId, data } = props ?? {}
+
+    return addGroupMembers(groupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type AddGroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof addGroupMembers>>>
+export type AddGroupMembersMutationBody = BodyType<UsergroupMembersRequest>
+export type AddGroupMembersMutationError = ErrorType<unknown>
+export type AddGroupMembersMutationVariables = { groupId: UsergroupId; data: BodyType<UsergroupMembersRequest> }
+
+/**
+ * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ */
+export const useAddGroupMembers = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof addGroupMembers>>,
+      TError,
+      AddGroupMembersMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof addGroupMembers>>,
+  TError,
+  AddGroupMembersMutationVariables,
+  TContext
+> => {
+  return useMutation(getAddGroupMembersMutationOptions(options), queryClient)
+}
+export const getListGroupMembersPageUrl = (groupId: UsergroupId, params?: ListGroupMembersPageParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/groups/${groupId}/members/page?${stringifiedParams}`
+    : `/api/v2/groups/${groupId}/members/page`
+}
+
+/**
+ * S-10 name of [`list_usergroup_members_page`] (that path is deprecated).
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+export const listGroupMembersPage = async (
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UsergroupMemberPage> => {
+  return orvalMutator<UsergroupMemberPage>(
+    getListGroupMembersPageUrl(groupId, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UsergroupMemberPage,
+  )
+}
+
+export const getListGroupMembersPageQueryKey = (groupId: UsergroupId, params?: ListGroupMembersPageParams) => {
+  return [`/api/v2/groups/${groupId}/members/page`, ...(params ? [params] : [])] as const
+}
+
+export const getListGroupMembersPageQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupMembersPageQueryKey(groupId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupMembersPage>>> = ({ signal }) =>
+    listGroupMembersPage(groupId, params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: groupId !== null && groupId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGroupMembersPage>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListGroupMembersPageQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupMembersPage>>>
+export type ListGroupMembersPageQueryError = ErrorType<unknown>
+
+export function useListGroupMembersPage<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params: undefined | ListGroupMembersPageParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupMembersPage>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupMembersPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersPage<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGroupMembersPage>>,
+          TError,
+          Awaited<ReturnType<typeof listGroupMembersPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersPage<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+
+export function useListGroupMembersPage<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupMembersPageQueryOptions(groupId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListGroupMembersPageSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListGroupMembersPageQueryKey(groupId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupMembersPage>>> = ({ signal }) =>
+    listGroupMembersPage(groupId, params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListGroupMembersPageSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupMembersPage>>>
+export type ListGroupMembersPageSuspenseQueryError = ErrorType<unknown>
+
+export function useListGroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params: undefined | ListGroupMembersPageParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+
+export function useListGroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listGroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  groupId: UsergroupId,
+  params?: ListGroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listGroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListGroupMembersPageSuspenseQueryOptions(groupId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -283,6 +2138,7 @@ export const getListUsergroupsUrl = (params?: ListUsergroupsParams) => {
 }
 
 /**
+ * @deprecated
  * @summary Newest-first listing (requires `usergroup:read:platform`).
  */
 export const listUsergroups = async (
@@ -371,6 +2227,7 @@ export function useListUsergroups<TData = Awaited<ReturnType<typeof listUsergrou
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Newest-first listing (requires `usergroup:read:platform`).
  */
 
@@ -454,6 +2311,7 @@ export function useListUsergroupsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary Newest-first listing (requires `usergroup:read:platform`).
  */
 
@@ -482,6 +2340,7 @@ export const getCreateUsergroupUrl = () => {
 }
 
 /**
+ * @deprecated
  * @summary Create a usergroup (requires `usergroup:create:platform`).
  */
 export const createUsergroup = async (
@@ -555,6 +2414,7 @@ export type CreateUsergroupMutationError = ErrorType<Problem>
 export type CreateUsergroupMutationVariables = { data: BodyType<CreateUsergroupRequest> }
 
 /**
+ * @deprecated
  * @summary Create a usergroup (requires `usergroup:create:platform`).
  */
 export const useCreateUsergroup = <TError = ErrorType<Problem>, TContext = unknown>(
@@ -576,203 +2436,20 @@ export const useCreateUsergroup = <TError = ErrorType<Problem>, TContext = unkno
 > => {
   return useMutation(getCreateUsergroupMutationOptions(options), queryClient)
 }
-export const getGetUsergroupUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}`
+export const getDeleteUsergroupUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}`
 }
 
 /**
- * @summary One usergroup.
- */
-export const getUsergroup = async (
-  id: UsergroupId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<Usergroup> => {
-  return orvalMutator<Usergroup>(
-    getGetUsergroupUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    Usergroup,
-  )
-}
-
-export const getGetUsergroupQueryKey = (id: UsergroupId) => {
-  return [`/api/v2/usergroups/${id}`] as const
-}
-
-export const getGetUsergroupQueryOptions = <
-  TData = Awaited<ReturnType<typeof getUsergroup>>,
-  TError = ErrorType<Problem>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetUsergroupQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUsergroup>>> = ({ signal }) =>
-    getUsergroup(id, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getUsergroup>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetUsergroupQueryResult = NonNullable<Awaited<ReturnType<typeof getUsergroup>>>
-export type GetUsergroupQueryError = ErrorType<Problem>
-
-export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>> &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getUsergroup>>,
-          TError,
-          Awaited<ReturnType<typeof getUsergroup>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>> &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getUsergroup>>,
-          TError,
-          Awaited<ReturnType<typeof getUsergroup>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One usergroup.
- */
-
-export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetUsergroupQueryOptions(id, options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getGetUsergroupSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof getUsergroup>>,
-  TError = ErrorType<Problem>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetUsergroupQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUsergroup>>> = ({ signal }) =>
-    getUsergroup(id, { signal, ...requestOptions })
-
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type GetUsergroupSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getUsergroup>>>
-export type GetUsergroupSuspenseQueryError = ErrorType<Problem>
-
-export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One usergroup.
- */
-
-export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetUsergroupSuspenseQueryOptions(id, options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getDeleteUsergroupUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}`
-}
-
-/**
+ * @deprecated
  * @summary Delete a usergroup (membership/course links cascade).
  */
-export const deleteUsergroup = async (id: UsergroupId, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const deleteUsergroup = async (
+  usergroupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
   return orvalMutator<void>(
-    getDeleteUsergroupUrl(id),
+    getDeleteUsergroupUrl(usergroupId),
     {
       ...options,
       method: 'DELETE',
@@ -808,9 +2485,9 @@ export const getDeleteUsergroupMutationOptions = <TError = ErrorType<Problem>, T
     Awaited<ReturnType<typeof deleteUsergroup>>,
     DeleteUsergroupMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { usergroupId } = props ?? {}
 
-    return deleteUsergroup(id, requestOptions)
+    return deleteUsergroup(usergroupId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -819,9 +2496,10 @@ export const getDeleteUsergroupMutationOptions = <TError = ErrorType<Problem>, T
 export type DeleteUsergroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUsergroup>>>
 
 export type DeleteUsergroupMutationError = ErrorType<Problem>
-export type DeleteUsergroupMutationVariables = { id: UsergroupId }
+export type DeleteUsergroupMutationVariables = { usergroupId: UsergroupId }
 
 /**
+ * @deprecated
  * @summary Delete a usergroup (membership/course links cascade).
  */
 export const useDeleteUsergroup = <TError = ErrorType<Problem>, TContext = unknown>(
@@ -843,15 +2521,209 @@ export const useDeleteUsergroup = <TError = ErrorType<Problem>, TContext = unkno
 > => {
   return useMutation(getDeleteUsergroupMutationOptions(options), queryClient)
 }
-export const getUpdateUsergroupUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}`
+export const getGetUsergroupUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}`
 }
 
 /**
+ * @deprecated
+ * @summary One usergroup.
+ */
+export const getUsergroup = async (
+  usergroupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup> => {
+  return orvalMutator<Usergroup>(
+    getGetUsergroupUrl(usergroupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Usergroup,
+  )
+}
+
+export const getGetUsergroupQueryKey = (usergroupId: UsergroupId) => {
+  return [`/api/v2/usergroups/${usergroupId}`] as const
+}
+
+export const getGetUsergroupQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUsergroup>>,
+  TError = ErrorType<Problem>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetUsergroupQueryKey(usergroupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUsergroup>>> = ({ signal }) =>
+    getUsergroup(usergroupId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: usergroupId !== null && usergroupId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetUsergroupQueryResult = NonNullable<Awaited<ReturnType<typeof getUsergroup>>>
+export type GetUsergroupQueryError = ErrorType<Problem>
+
+export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUsergroup>>,
+          TError,
+          Awaited<ReturnType<typeof getUsergroup>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUsergroup>>,
+          TError,
+          Awaited<ReturnType<typeof getUsergroup>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary One usergroup.
+ */
+
+export function useGetUsergroup<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetUsergroupQueryOptions(usergroupId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetUsergroupSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUsergroup>>,
+  TError = ErrorType<Problem>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetUsergroupQueryKey(usergroupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUsergroup>>> = ({ signal }) =>
+    getUsergroup(usergroupId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetUsergroupSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getUsergroup>>>
+export type GetUsergroupSuspenseQueryError = ErrorType<Problem>
+
+export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary One usergroup.
+ */
+
+export function useGetUsergroupSuspense<TData = Awaited<ReturnType<typeof getUsergroup>>, TError = ErrorType<Problem>>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUsergroup>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetUsergroupSuspenseQueryOptions(usergroupId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUpdateUsergroupUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}`
+}
+
+/**
+ * @deprecated
  * @summary Rename/redescribe (creator or `usergroup:manage:platform`).
  */
 export const updateUsergroup = async (
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   updateUsergroupRequest: UpdateUsergroupRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Usergroup> => {
@@ -870,7 +2742,7 @@ export const updateUsergroup = async (
     return headers
   }
   return orvalMutator<Usergroup>(
-    getUpdateUsergroupUrl(id),
+    getUpdateUsergroupUrl(usergroupId),
     {
       ...options,
       method: 'PATCH',
@@ -908,9 +2780,9 @@ export const getUpdateUsergroupMutationOptions = <TError = ErrorType<Problem>, T
     Awaited<ReturnType<typeof updateUsergroup>>,
     UpdateUsergroupMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { usergroupId, data } = props ?? {}
 
-    return updateUsergroup(id, data, requestOptions)
+    return updateUsergroup(usergroupId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -919,9 +2791,10 @@ export const getUpdateUsergroupMutationOptions = <TError = ErrorType<Problem>, T
 export type UpdateUsergroupMutationResult = NonNullable<Awaited<ReturnType<typeof updateUsergroup>>>
 export type UpdateUsergroupMutationBody = BodyType<UpdateUsergroupRequest>
 export type UpdateUsergroupMutationError = ErrorType<Problem>
-export type UpdateUsergroupMutationVariables = { id: UsergroupId; data: BodyType<UpdateUsergroupRequest> }
+export type UpdateUsergroupMutationVariables = { usergroupId: UsergroupId; data: BodyType<UpdateUsergroupRequest> }
 
 /**
+ * @deprecated
  * @summary Rename/redescribe (creator or `usergroup:manage:platform`).
  */
 export const useUpdateUsergroup = <TError = ErrorType<Problem>, TContext = unknown>(
@@ -943,326 +2816,16 @@ export const useUpdateUsergroup = <TError = ErrorType<Problem>, TContext = unkno
 > => {
   return useMutation(getUpdateUsergroupMutationOptions(options), queryClient)
 }
-export const getListUsergroupCoursesUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/courses`
+export const getRemoveUsergroupCoursesUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/courses`
 }
 
 /**
- * @summary Linked course ids.
- */
-export const listUsergroupCourses = async (
-  id: UsergroupId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<CourseId[]> => {
-  return orvalMutator<CourseId[]>(
-    getListUsergroupCoursesUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    arrayParser(CourseId),
-  )
-}
-
-export const getListUsergroupCoursesQueryKey = (id: UsergroupId) => {
-  return [`/api/v2/usergroups/${id}/courses`] as const
-}
-
-export const getListUsergroupCoursesQueryOptions = <
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getListUsergroupCoursesQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupCourses>>> = ({ signal }) =>
-    listUsergroupCourses(id, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listUsergroupCourses>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListUsergroupCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupCourses>>>
-export type ListUsergroupCoursesQueryError = ErrorType<unknown>
-
-export function useListUsergroupCourses<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>> &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listUsergroupCourses>>,
-          TError,
-          Awaited<ReturnType<typeof listUsergroupCourses>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupCourses<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>> &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listUsergroupCourses>>,
-          TError,
-          Awaited<ReturnType<typeof listUsergroupCourses>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupCourses<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Linked course ids.
- */
-
-export function useListUsergroupCourses<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListUsergroupCoursesQueryOptions(id, options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getListUsergroupCoursesSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getListUsergroupCoursesQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupCourses>>> = ({ signal }) =>
-    listUsergroupCourses(id, { signal, ...requestOptions })
-
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type ListUsergroupCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupCourses>>>
-export type ListUsergroupCoursesSuspenseQueryError = ErrorType<unknown>
-
-export function useListUsergroupCoursesSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupCoursesSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupCoursesSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Linked course ids.
- */
-
-export function useListUsergroupCoursesSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
-  TError = ErrorType<unknown>,
->(
-  id: UsergroupId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListUsergroupCoursesSuspenseQueryOptions(id, options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getAddUsergroupCoursesUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/courses`
-}
-
-/**
- * @summary Link courses to the group.
- */
-export const addUsergroupCourses = async (
-  id: UsergroupId,
-  usergroupCoursesRequest: UsergroupCoursesRequest,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
-  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {}
-    if (h instanceof Headers) return Object.fromEntries(h.entries())
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
-      )
-    }
-    const headers: Record<string, string | readonly string[]> = {}
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value
-    }
-    return headers
-  }
-  return orvalMutator<void>(
-    getAddUsergroupCoursesUrl(id),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(usergroupCoursesRequest),
-    },
-    voidParser,
-  )
-}
-
-export const getAddUsergroupCoursesMutationKey = () => ['addUsergroupCourses'] as const
-
-export const getAddUsergroupCoursesMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof addUsergroupCourses>>,
-    TError,
-    AddUsergroupCoursesMutationVariables,
-    TContext
-  >
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof addUsergroupCourses>>,
-  TError,
-  AddUsergroupCoursesMutationVariables,
-  TContext
-> => {
-  const mutationKey = getAddUsergroupCoursesMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof addUsergroupCourses>>,
-    AddUsergroupCoursesMutationVariables
-  > = props => {
-    const { id, data } = props ?? {}
-
-    return addUsergroupCourses(id, data, requestOptions)
-  }
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type AddUsergroupCoursesMutationResult = NonNullable<Awaited<ReturnType<typeof addUsergroupCourses>>>
-export type AddUsergroupCoursesMutationBody = BodyType<UsergroupCoursesRequest>
-export type AddUsergroupCoursesMutationError = ErrorType<unknown>
-export type AddUsergroupCoursesMutationVariables = { id: UsergroupId; data: BodyType<UsergroupCoursesRequest> }
-
-/**
- * @summary Link courses to the group.
- */
-export const useAddUsergroupCourses = <TError = ErrorType<unknown>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof addUsergroupCourses>>,
-      TError,
-      AddUsergroupCoursesMutationVariables,
-      TContext
-    >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof addUsergroupCourses>>,
-  TError,
-  AddUsergroupCoursesMutationVariables,
-  TContext
-> => {
-  return useMutation(getAddUsergroupCoursesMutationOptions(options), queryClient)
-}
-export const getRemoveUsergroupCoursesUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/courses`
-}
-
-/**
+ * @deprecated
  * @summary Unlink courses from the group.
  */
 export const removeUsergroupCourses = async (
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   usergroupCoursesRequest: UsergroupCoursesRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<void> => {
@@ -1281,7 +2844,7 @@ export const removeUsergroupCourses = async (
     return headers
   }
   return orvalMutator<void>(
-    getRemoveUsergroupCoursesUrl(id),
+    getRemoveUsergroupCoursesUrl(usergroupId),
     {
       ...options,
       method: 'DELETE',
@@ -1319,9 +2882,9 @@ export const getRemoveUsergroupCoursesMutationOptions = <TError = ErrorType<unkn
     Awaited<ReturnType<typeof removeUsergroupCourses>>,
     RemoveUsergroupCoursesMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { usergroupId, data } = props ?? {}
 
-    return removeUsergroupCourses(id, data, requestOptions)
+    return removeUsergroupCourses(usergroupId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -1330,9 +2893,13 @@ export const getRemoveUsergroupCoursesMutationOptions = <TError = ErrorType<unkn
 export type RemoveUsergroupCoursesMutationResult = NonNullable<Awaited<ReturnType<typeof removeUsergroupCourses>>>
 export type RemoveUsergroupCoursesMutationBody = BodyType<UsergroupCoursesRequest>
 export type RemoveUsergroupCoursesMutationError = ErrorType<unknown>
-export type RemoveUsergroupCoursesMutationVariables = { id: UsergroupId; data: BodyType<UsergroupCoursesRequest> }
+export type RemoveUsergroupCoursesMutationVariables = {
+  usergroupId: UsergroupId
+  data: BodyType<UsergroupCoursesRequest>
+}
 
 /**
+ * @deprecated
  * @summary Unlink courses from the group.
  */
 export const useRemoveUsergroupCourses = <TError = ErrorType<unknown>, TContext = unknown>(
@@ -1354,70 +2921,74 @@ export const useRemoveUsergroupCourses = <TError = ErrorType<unknown>, TContext 
 > => {
   return useMutation(getRemoveUsergroupCoursesMutationOptions(options), queryClient)
 }
-export const getListUsergroupMembersUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/members`
+export const getListUsergroupCoursesUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/courses`
 }
 
 /**
- * @summary Member profiles.
+ * @deprecated
+ * @summary Linked course ids.
  */
-export const listUsergroupMembers = async (
-  id: UsergroupId,
+export const listUsergroupCourses = async (
+  usergroupId: UsergroupId,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<UsergroupMember[]> => {
-  return orvalMutator<UsergroupMember[]>(
-    getListUsergroupMembersUrl(id),
+): Promise<CourseId[]> => {
+  return orvalMutator<CourseId[]>(
+    getListUsergroupCoursesUrl(usergroupId),
     {
       ...options,
       method: 'GET',
     },
-    arrayParser(UsergroupMember),
+    arrayParser(CourseId),
   )
 }
 
-export const getListUsergroupMembersQueryKey = (id: UsergroupId) => {
-  return [`/api/v2/usergroups/${id}/members`] as const
+export const getListUsergroupCoursesQueryKey = (usergroupId: UsergroupId) => {
+  return [`/api/v2/usergroups/${usergroupId}/courses`] as const
 }
 
-export const getListUsergroupMembersQueryOptions = <
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export const getListUsergroupCoursesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupCoursesQueryKey(usergroupId)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembers>>> = ({ signal }) =>
-    listUsergroupMembers(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupCourses>>> = ({ signal }) =>
+    listUsergroupCourses(usergroupId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listUsergroupMembers>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: usergroupId !== null && usergroupId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
-export type ListUsergroupMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembers>>>
-export type ListUsergroupMembersQueryError = ErrorType<unknown>
+export type ListUsergroupCoursesQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupCourses>>>
+export type ListUsergroupCoursesQueryError = ErrorType<unknown>
 
-export function useListUsergroupMembers<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCourses<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>> &
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>> &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listUsergroupMembers>>,
+          Awaited<ReturnType<typeof listUsergroupCourses>>,
           TError,
-          Awaited<ReturnType<typeof listUsergroupMembers>>
+          Awaited<ReturnType<typeof listUsergroupCourses>>
         >,
         'initialData'
       >
@@ -1425,18 +2996,18 @@ export function useListUsergroupMembers<
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupMembers<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCourses<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>> &
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>> &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listUsergroupMembers>>,
+          Awaited<ReturnType<typeof listUsergroupCourses>>,
           TError,
-          Awaited<ReturnType<typeof listUsergroupMembers>>
+          Awaited<ReturnType<typeof listUsergroupCourses>>
         >,
         'initialData'
       >
@@ -1444,33 +3015,34 @@ export function useListUsergroupMembers<
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupMembers<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCourses<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Member profiles.
+ * @deprecated
+ * @summary Linked course ids.
  */
 
-export function useListUsergroupMembers<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCourses<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListUsergroupMembersQueryOptions(id, options)
+  const queryOptions = getListUsergroupCoursesQueryOptions(usergroupId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1479,84 +3051,85 @@ export function useListUsergroupMembers<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getListUsergroupMembersSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export const getListUsergroupCoursesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupCoursesQueryKey(usergroupId)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembers>>> = ({ signal }) =>
-    listUsergroupMembers(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupCourses>>> = ({ signal }) =>
+    listUsergroupCourses(usergroupId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
     ...queryOptions,
     queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData> & {
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData> & {
     queryKey: DataTag<QueryKey, TData, TError>
   } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
-export type ListUsergroupMembersSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembers>>>
-export type ListUsergroupMembersSuspenseQueryError = ErrorType<unknown>
+export type ListUsergroupCoursesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupCourses>>>
+export type ListUsergroupCoursesSuspenseQueryError = ErrorType<unknown>
 
-export function useListUsergroupMembersSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupMembersSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsergroupMembersSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Member profiles.
+ * @deprecated
+ * @summary Linked course ids.
  */
 
-export function useListUsergroupMembersSuspense<
-  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+export function useListUsergroupCoursesSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupCourses>>,
   TError = ErrorType<unknown>,
 >(
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupCourses>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListUsergroupMembersSuspenseQueryOptions(id, options)
+  const queryOptions = getListUsergroupCoursesSuspenseQueryOptions(usergroupId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1565,16 +3138,17 @@ export function useListUsergroupMembersSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getAddUsergroupMembersUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/members`
+export const getAddUsergroupCoursesUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/courses`
 }
 
 /**
- * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ * @deprecated
+ * @summary Link courses to the group.
  */
-export const addUsergroupMembers = async (
-  id: UsergroupId,
-  usergroupMembersRequest: UsergroupMembersRequest,
+export const addUsergroupCourses = async (
+  usergroupId: UsergroupId,
+  usergroupCoursesRequest: UsergroupCoursesRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -1592,34 +3166,34 @@ export const addUsergroupMembers = async (
     return headers
   }
   return orvalMutator<void>(
-    getAddUsergroupMembersUrl(id),
+    getAddUsergroupCoursesUrl(usergroupId),
     {
       ...options,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-      body: JSON.stringify(usergroupMembersRequest),
+      body: JSON.stringify(usergroupCoursesRequest),
     },
     voidParser,
   )
 }
 
-export const getAddUsergroupMembersMutationKey = () => ['addUsergroupMembers'] as const
+export const getAddUsergroupCoursesMutationKey = () => ['addUsergroupCourses'] as const
 
-export const getAddUsergroupMembersMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getAddUsergroupCoursesMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof addUsergroupMembers>>,
+    Awaited<ReturnType<typeof addUsergroupCourses>>,
     TError,
-    AddUsergroupMembersMutationVariables,
+    AddUsergroupCoursesMutationVariables,
     TContext
   >
   request?: SecondParameter<typeof orvalMutator>
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof addUsergroupMembers>>,
+  Awaited<ReturnType<typeof addUsergroupCourses>>,
   TError,
-  AddUsergroupMembersMutationVariables,
+  AddUsergroupCoursesMutationVariables,
   TContext
 > => {
-  const mutationKey = getAddUsergroupMembersMutationKey()
+  const mutationKey = getAddUsergroupCoursesMutationKey()
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
       ? options
@@ -1627,56 +3201,58 @@ export const getAddUsergroupMembersMutationOptions = <TError = ErrorType<unknown
     : { mutation: { mutationKey }, request: undefined }
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof addUsergroupMembers>>,
-    AddUsergroupMembersMutationVariables
+    Awaited<ReturnType<typeof addUsergroupCourses>>,
+    AddUsergroupCoursesMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { usergroupId, data } = props ?? {}
 
-    return addUsergroupMembers(id, data, requestOptions)
+    return addUsergroupCourses(usergroupId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
 }
 
-export type AddUsergroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof addUsergroupMembers>>>
-export type AddUsergroupMembersMutationBody = BodyType<UsergroupMembersRequest>
-export type AddUsergroupMembersMutationError = ErrorType<unknown>
-export type AddUsergroupMembersMutationVariables = { id: UsergroupId; data: BodyType<UsergroupMembersRequest> }
+export type AddUsergroupCoursesMutationResult = NonNullable<Awaited<ReturnType<typeof addUsergroupCourses>>>
+export type AddUsergroupCoursesMutationBody = BodyType<UsergroupCoursesRequest>
+export type AddUsergroupCoursesMutationError = ErrorType<unknown>
+export type AddUsergroupCoursesMutationVariables = { usergroupId: UsergroupId; data: BodyType<UsergroupCoursesRequest> }
 
 /**
- * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ * @deprecated
+ * @summary Link courses to the group.
  */
-export const useAddUsergroupMembers = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useAddUsergroupCourses = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof addUsergroupMembers>>,
+      Awaited<ReturnType<typeof addUsergroupCourses>>,
       TError,
-      AddUsergroupMembersMutationVariables,
+      AddUsergroupCoursesMutationVariables,
       TContext
     >
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof addUsergroupMembers>>,
+  Awaited<ReturnType<typeof addUsergroupCourses>>,
   TError,
-  AddUsergroupMembersMutationVariables,
+  AddUsergroupCoursesMutationVariables,
   TContext
 > => {
-  return useMutation(getAddUsergroupMembersMutationOptions(options), queryClient)
+  return useMutation(getAddUsergroupCoursesMutationOptions(options), queryClient)
 }
-export const getRemoveUsergroupMembersUrl = (id: UsergroupId) => {
-  return `/api/v2/usergroups/${id}/members`
+export const getRemoveUsergroupMembersUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/members`
 }
 
 /**
+ * @deprecated
  * @summary Batch-remove members.
  */
 export const removeUsergroupMembers = async (
-  id: UsergroupId,
+  usergroupId: UsergroupId,
   usergroupMembersRequest: UsergroupMembersRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<Usergroup | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -1691,15 +3267,15 @@ export const removeUsergroupMembers = async (
     }
     return headers
   }
-  return orvalMutator<void>(
-    getRemoveUsergroupMembersUrl(id),
+  return orvalMutator<Usergroup | void>(
+    getRemoveUsergroupMembersUrl(usergroupId),
     {
       ...options,
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(usergroupMembersRequest),
     },
-    voidParser,
+    optionalParser(Usergroup),
   )
 }
 
@@ -1730,9 +3306,9 @@ export const getRemoveUsergroupMembersMutationOptions = <TError = ErrorType<unkn
     Awaited<ReturnType<typeof removeUsergroupMembers>>,
     RemoveUsergroupMembersMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { usergroupId, data } = props ?? {}
 
-    return removeUsergroupMembers(id, data, requestOptions)
+    return removeUsergroupMembers(usergroupId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -1741,9 +3317,13 @@ export const getRemoveUsergroupMembersMutationOptions = <TError = ErrorType<unkn
 export type RemoveUsergroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof removeUsergroupMembers>>>
 export type RemoveUsergroupMembersMutationBody = BodyType<UsergroupMembersRequest>
 export type RemoveUsergroupMembersMutationError = ErrorType<unknown>
-export type RemoveUsergroupMembersMutationVariables = { id: UsergroupId; data: BodyType<UsergroupMembersRequest> }
+export type RemoveUsergroupMembersMutationVariables = {
+  usergroupId: UsergroupId
+  data: BodyType<UsergroupMembersRequest>
+}
 
 /**
+ * @deprecated
  * @summary Batch-remove members.
  */
 export const useRemoveUsergroupMembers = <TError = ErrorType<unknown>, TContext = unknown>(
@@ -1764,4 +3344,567 @@ export const useRemoveUsergroupMembers = <TError = ErrorType<unknown>, TContext 
   TContext
 > => {
   return useMutation(getRemoveUsergroupMembersMutationOptions(options), queryClient)
+}
+export const getListUsergroupMembersUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/members`
+}
+
+/**
+ * @deprecated
+ * @summary Member profiles.
+ */
+export const listUsergroupMembers = async (
+  usergroupId: UsergroupId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UsergroupMember[]> => {
+  return orvalMutator<UsergroupMember[]>(
+    getListUsergroupMembersUrl(usergroupId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(UsergroupMember),
+  )
+}
+
+export const getListUsergroupMembersQueryKey = (usergroupId: UsergroupId) => {
+  return [`/api/v2/usergroups/${usergroupId}/members`] as const
+}
+
+export const getListUsergroupMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersQueryKey(usergroupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembers>>> = ({ signal }) =>
+    listUsergroupMembers(usergroupId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: usergroupId !== null && usergroupId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type ListUsergroupMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembers>>>
+export type ListUsergroupMembersQueryError = ErrorType<unknown>
+
+export function useListUsergroupMembers<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsergroupMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listUsergroupMembers>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembers<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsergroupMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listUsergroupMembers>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembers<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary Member profiles.
+ */
+
+export function useListUsergroupMembers<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListUsergroupMembersQueryOptions(usergroupId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListUsergroupMembersSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersQueryKey(usergroupId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembers>>> = ({ signal }) =>
+    listUsergroupMembers(usergroupId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListUsergroupMembersSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembers>>>
+export type ListUsergroupMembersSuspenseQueryError = ErrorType<unknown>
+
+export function useListUsergroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary Member profiles.
+ */
+
+export function useListUsergroupMembersSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembers>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembers>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListUsergroupMembersSuspenseQueryOptions(usergroupId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getAddUsergroupMembersUrl = (usergroupId: UsergroupId) => {
+  return `/api/v2/usergroups/${usergroupId}/members`
+}
+
+/**
+ * @deprecated
+ * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ */
+export const addUsergroupMembers = async (
+  usergroupId: UsergroupId,
+  usergroupMembersRequest: UsergroupMembersRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Usergroup | void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<Usergroup | void>(
+    getAddUsergroupMembersUrl(usergroupId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(usergroupMembersRequest),
+    },
+    optionalParser(Usergroup),
+  )
+}
+
+export const getAddUsergroupMembersMutationKey = () => ['addUsergroupMembers'] as const
+
+export const getAddUsergroupMembersMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addUsergroupMembers>>,
+    TError,
+    AddUsergroupMembersMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addUsergroupMembers>>,
+  TError,
+  AddUsergroupMembersMutationVariables,
+  TContext
+> => {
+  const mutationKey = getAddUsergroupMembersMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addUsergroupMembers>>,
+    AddUsergroupMembersMutationVariables
+  > = props => {
+    const { usergroupId, data } = props ?? {}
+
+    return addUsergroupMembers(usergroupId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type AddUsergroupMembersMutationResult = NonNullable<Awaited<ReturnType<typeof addUsergroupMembers>>>
+export type AddUsergroupMembersMutationBody = BodyType<UsergroupMembersRequest>
+export type AddUsergroupMembersMutationError = ErrorType<unknown>
+export type AddUsergroupMembersMutationVariables = { usergroupId: UsergroupId; data: BodyType<UsergroupMembersRequest> }
+
+/**
+ * @deprecated
+ * @summary Batch-add members (duplicates ignored; unknown users 404 via FK).
+ */
+export const useAddUsergroupMembers = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof addUsergroupMembers>>,
+      TError,
+      AddUsergroupMembersMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof addUsergroupMembers>>,
+  TError,
+  AddUsergroupMembersMutationVariables,
+  TContext
+> => {
+  return useMutation(getAddUsergroupMembersMutationOptions(options), queryClient)
+}
+export const getListUsergroupMembersPageUrl = (usergroupId: UsergroupId, params?: ListUsergroupMembersPageParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/usergroups/${usergroupId}/members/page?${stringifiedParams}`
+    : `/api/v2/usergroups/${usergroupId}/members/page`
+}
+
+/**
+ * @deprecated
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+export const listUsergroupMembersPage = async (
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<UsergroupMemberPage> => {
+  return orvalMutator<UsergroupMemberPage>(
+    getListUsergroupMembersPageUrl(usergroupId, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    UsergroupMemberPage,
+  )
+}
+
+export const getListUsergroupMembersPageQueryKey = (
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+) => {
+  return [`/api/v2/usergroups/${usergroupId}/members/page`, ...(params ? [params] : [])] as const
+}
+
+export const getListUsergroupMembersPageQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersPageQueryKey(usergroupId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembersPage>>> = ({ signal }) =>
+    listUsergroupMembersPage(usergroupId, params, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: usergroupId !== null && usergroupId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type ListUsergroupMembersPageQueryResult = NonNullable<Awaited<ReturnType<typeof listUsergroupMembersPage>>>
+export type ListUsergroupMembersPageQueryError = ErrorType<unknown>
+
+export function useListUsergroupMembersPage<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params: undefined | ListUsergroupMembersPageParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+          TError,
+          Awaited<ReturnType<typeof listUsergroupMembersPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersPage<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+          TError,
+          Awaited<ReturnType<typeof listUsergroupMembersPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersPage<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+
+export function useListUsergroupMembersPage<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListUsergroupMembersPageQueryOptions(usergroupId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getListUsergroupMembersPageSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListUsergroupMembersPageQueryKey(usergroupId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsergroupMembersPage>>> = ({ signal }) =>
+    listUsergroupMembersPage(usergroupId, params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListUsergroupMembersPageSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUsergroupMembersPage>>
+>
+export type ListUsergroupMembersPageSuspenseQueryError = ErrorType<unknown>
+
+export function useListUsergroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params: undefined | ListUsergroupMembersPageParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsergroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @deprecated
+ * @summary Members as keyset pages (S-05; `GET .../members` stays the full list).
+ */
+
+export function useListUsergroupMembersPageSuspense<
+  TData = Awaited<ReturnType<typeof listUsergroupMembersPage>>,
+  TError = ErrorType<unknown>,
+>(
+  usergroupId: UsergroupId,
+  params?: ListUsergroupMembersPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listUsergroupMembersPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListUsergroupMembersPageSuspenseQueryOptions(usergroupId, params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
 }

@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const UserProfile = zod.object({
-  avatar_key: zod.string().nullish(),
+  avatar_key: zod.string().nullable(),
   bio: zod.string(),
   display_name: zod.string(),
   email: zod.string(),
@@ -19,7 +19,10 @@ export const UserProfile = zod.object({
       'The account has a password to change (`false`: Google-only - no\npassword can be set through the API). UX-188.',
     ),
   id: zod.uuid(),
-  locale: zod.string(),
+  language: zod.enum(['ru', 'kk', 'en']).describe('D-03: the UI language (`ru`, `kk`, `en`).'),
+  locale: zod
+    .enum(['ru-RU', 'kk-KZ', 'en-US'])
+    .describe('Legacy region tag (`ru-RU`, …) whatever is stored; removed in phase 9.'),
   mfa_enabled: zod
     .boolean()
     .describe('TOTP enrolled on the account (`false` where no session is involved,\ne.g. the registration answer).'),
@@ -31,163 +34,120 @@ export const UserProfile = zod.object({
       sections: zod.array(
         zod
           .union([
-            zod
-              .object({
-                id: zod.string(),
-                images: zod.array(
-                  zod.object({
-                    caption: zod.string().nullish(),
-                    url: zod.string(),
-                  }),
-                ),
-                title: zod.string(),
-              })
-              .and(
+            zod.object({
+              id: zod.string(),
+              images: zod.array(
                 zod.object({
-                  type: zod.enum(['image-gallery']),
+                  caption: zod.string().optional(),
+                  url: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                content: zod.string(),
-                id: zod.string(),
-                title: zod.string(),
-              })
-              .and(
+              title: zod.string(),
+              type: zod.enum(['image-gallery']),
+            }),
+            zod.object({
+              content: zod.string(),
+              id: zod.string(),
+              title: zod.string(),
+              type: zod.enum(['text']),
+            }),
+            zod.object({
+              id: zod.string(),
+              links: zod.array(
                 zod.object({
-                  type: zod.enum(['text']),
+                  icon: zod.string().optional(),
+                  title: zod.string(),
+                  url: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                id: zod.string(),
-                links: zod.array(
-                  zod.object({
-                    icon: zod.string().nullish(),
-                    title: zod.string(),
-                    url: zod.string(),
-                  }),
-                ),
-                title: zod.string(),
-              })
-              .and(
+              title: zod.string(),
+              type: zod.enum(['links']),
+            }),
+            zod.object({
+              id: zod.string(),
+              skills: zod.array(
                 zod.object({
-                  type: zod.enum(['links']),
+                  category: zod.string().optional(),
+                  level: zod.enum(['beginner', 'intermediate', 'advanced', 'expert']).optional(),
+                  name: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                id: zod.string(),
-                skills: zod.array(
-                  zod.object({
-                    category: zod.string().nullish(),
-                    level: zod
-                      .union([zod.enum(['beginner', 'intermediate', 'advanced', 'expert']), zod.null()])
-                      .optional(),
-                    name: zod.string(),
-                  }),
-                ),
-                title: zod.string(),
-              })
-              .and(
+              title: zod.string(),
+              type: zod.enum(['skills']),
+            }),
+            zod.object({
+              experiences: zod.array(
                 zod.object({
-                  type: zod.enum(['skills']),
+                  current: zod.boolean(),
+                  description: zod.string(),
+                  endDate: zod.string().optional(),
+                  organization: zod.string(),
+                  startDate: zod.string().describe("`YYYY-MM-DD` as the builder's date picker writes it."),
+                  title: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                experiences: zod.array(
-                  zod.object({
-                    current: zod.boolean(),
-                    description: zod.string(),
-                    endDate: zod.string().nullish(),
-                    organization: zod.string(),
-                    startDate: zod.string().describe("`YYYY-MM-DD` as the builder's date picker writes it."),
-                    title: zod.string(),
-                  }),
-                ),
-                id: zod.string(),
-                title: zod.string(),
-              })
-              .and(
+              id: zod.string(),
+              title: zod.string(),
+              type: zod.enum(['experience']),
+            }),
+            zod.object({
+              education: zod.array(
                 zod.object({
-                  type: zod.enum(['experience']),
+                  current: zod.boolean(),
+                  degree: zod.string(),
+                  description: zod.string().optional(),
+                  endDate: zod.string().optional(),
+                  field: zod.string(),
+                  institution: zod.string(),
+                  startDate: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                education: zod.array(
-                  zod.object({
-                    current: zod.boolean(),
-                    degree: zod.string(),
-                    description: zod.string().nullish(),
-                    endDate: zod.string().nullish(),
-                    field: zod.string(),
-                    institution: zod.string(),
-                    startDate: zod.string(),
-                  }),
-                ),
-                id: zod.string(),
-                title: zod.string(),
-              })
-              .and(
+              id: zod.string(),
+              title: zod.string(),
+              type: zod.enum(['education']),
+            }),
+            zod.object({
+              affiliations: zod.array(
                 zod.object({
-                  type: zod.enum(['education']),
+                  description: zod.string(),
+                  logoUrl: zod.string().describe('Blank or an `http(s)` URL.'),
+                  name: zod.string(),
                 }),
               ),
-            zod
-              .object({
-                affiliations: zod.array(
-                  zod.object({
-                    description: zod.string(),
-                    logoUrl: zod.string().describe('Blank or an `http(s)` URL.'),
-                    name: zod.string(),
-                  }),
-                ),
-                id: zod.string(),
-                title: zod.string(),
-              })
-              .and(
-                zod.object({
-                  type: zod.enum(['affiliation']),
-                }),
-              ),
-            zod
-              .object({
-                id: zod.string(),
-                title: zod.string(),
-              })
-              .describe("The user's authored courses; rendered from `GET /users/{username}/courses`.")
-              .and(
-                zod.object({
-                  type: zod.enum(['courses']),
-                }),
-              ),
-            zod
-              .object({
-                id: zod.string(),
-                settings: zod
-                  .object({
-                    showLeaderboard: zod.boolean().optional(),
-                    showLevel: zod.boolean().optional(),
-                    showStreaks: zod.boolean().optional(),
-                    showXp: zod.boolean().optional(),
-                  })
-                  .optional(),
-                title: zod.string(),
-              })
-              .and(
-                zod.object({
-                  type: zod.enum(['gamification']),
-                }),
-              ),
+              id: zod.string(),
+              title: zod.string(),
+              type: zod.enum(['affiliation']),
+            }),
+            zod.object({
+              id: zod.string(),
+              title: zod.string(),
+              type: zod.enum(['courses']),
+            }),
+            zod.object({
+              id: zod.string(),
+              settings: zod
+                .object({
+                  showLeaderboard: zod.boolean().optional(),
+                  showLevel: zod.boolean().optional(),
+                  showStreaks: zod.boolean().optional(),
+                  showXp: zod.boolean().optional(),
+                })
+                .optional(),
+              title: zod.string(),
+              type: zod.enum(['gamification']),
+            }),
           ])
           .describe('One builder section, tagged by `type` (legacy kebab-case kinds).'),
       ),
     })
     .describe('The profile builder document (`{"sections": []}` when unset).'),
-  theme: zod.string().nullish().describe('UI theme slug chosen by the user; `null` = the web default.'),
+  theme: zod.string().nullable().describe('UI theme slug chosen by the user; `null` = the web default.'),
   username: zod.string(),
+  version: zod
+    .int()
+    .describe(
+      'Optimistic-lock version of the profile (the `ETag` of\n`GET /users/me`): echo it as `If-Match` on `PATCH /users/me`.',
+    ),
 })
 
 export type UserProfile = zod.input<typeof UserProfile>

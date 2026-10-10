@@ -10,32 +10,45 @@ import * as zod from 'zod'
 export const DiscussionPage = zod.object({
   items: zod.array(
     zod.object({
-      author: zod
-        .union([
+      allowed_actions: zod
+        .array(
           zod
-            .object({
-              avatar_key: zod.string().nullish(),
-              display_name: zod.string(),
-              id: zod.uuid(),
-              username: zod.string(),
-            })
-            .describe("The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone."),
-          zod.null(),
-        ])
-        .optional(),
+            .enum(['update', 'delete', 'moderate', 'reply', 'react'])
+            .describe(
+              "What the caller may do to a post or reply (`Discussion.allowed_actions`):\nthe gates of `update`, `delete`, `create` (reply) and `toggle`, plus the\narchive freeze (409) and the post's state.",
+            ),
+        )
+        .describe('What the caller may do to this post now (supersedes the `can_*` flags).'),
+      author: zod.union([
+        zod
+          .object({
+            avatar_key: zod.string().nullable(),
+            display_name: zod.string(),
+            id: zod.uuid(),
+            username: zod.string(),
+          })
+          .describe("The post's author - no email (unlike the legacy `UserRead`); `null`\nonce the account is gone."),
+        zod.null(),
+      ]),
       can_delete: zod.boolean(),
       can_moderate: zod.boolean(),
       can_update: zod.boolean(),
       content: zod.string(),
       course_id: zod.uuid(),
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       dislikes_count: zod.int(),
       id: zod.uuid(),
       is_disliked: zod.boolean(),
       is_liked: zod.boolean(),
       is_owner: zod.boolean(),
       likes_count: zod.int(),
-      parent_id: zod.union([zod.uuid().describe('`null` for a top-level post.'), zod.null()]).optional(),
+      parent_id: zod.union([zod.uuid().describe('`null` for a top-level post.'), zod.null()]),
+      parent_replies_count: zod
+        .int()
+        .nullable()
+        .describe(
+          "On a reply-create response only: the parent's `replies_count` after\nthis reply (no list re-read needed); `null` everywhere else.",
+        ),
       replies: zod
         .array(zod.unknown())
         .describe(
@@ -45,10 +58,16 @@ export const DiscussionPage = zod.object({
       status: zod
         .enum(['active', 'hidden', 'deleted'])
         .describe('Course discussion visibility (legacy `DiscussionStatusEnum`).'),
-      updated_at_unix: zod.int(),
+      updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      version: zod
+        .int()
+        .optional()
+        .describe(
+          'Send back as `If-Match` on delete (stale -> 412). Likes do not move it.\nAlways present (schema-optional while client fixtures catch up).',
+        ),
     }),
   ),
-  next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+  next_cursor: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type DiscussionPage = zod.input<typeof DiscussionPage>

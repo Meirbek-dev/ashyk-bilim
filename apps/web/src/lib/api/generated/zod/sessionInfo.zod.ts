@@ -9,9 +9,53 @@ import * as zod from 'zod'
 
 export const SessionInfo = zod
   .object({
+    capabilities: zod
+      .array(
+        zod
+          .enum([
+            'teach',
+            'course.create',
+            'collection.create',
+            'groups.manage',
+            'groups.create',
+            'analytics.view',
+            'analytics.export',
+            'admin',
+            'admin.users',
+            'admin.users.create',
+            'admin.roles',
+            'admin.roles.create',
+            'admin.platform',
+            'admin.ai',
+            'admin.gamification',
+            'admin.analytics',
+          ])
+          .describe(
+            'A UI-level right: may the caller enter a workspace / see an entry point.\nClosed set; object-level rights travel as `allowed_actions` instead.',
+          ),
+      )
+      .describe(
+        'UI-level rights for navigation and route guards, computed by the\nserver from the grants (mapping: `ab_domain::identity::capabilities`).',
+      ),
     mfa_enabled: zod.boolean().describe('TOTP enrolled on the account.'),
-    permissions: zod.array(zod.string()),
+    permissions: zod
+      .array(zod.string())
+      .describe(
+        'Raw grant strings (legacy contract). New clients read\n`capabilities` and per-object `allowed_actions` instead and never\nparse these.',
+      ),
     roles: zod.array(zod.string()),
+    user: zod
+      .object({
+        avatar_key: zod.string().nullable(),
+        display_name: zod.string(),
+        email: zod.string(),
+        id: zod.uuid(),
+        language: zod.enum(['ru', 'kk', 'en']).describe('D-03: the UI language (`ru`, `kk`, `en`).'),
+        locale: zod.enum(['ru-RU', 'kk-KZ', 'en-US']).describe('Legacy region tag (`ru-RU`, …); removed in phase 9.'),
+        theme: zod.string().nullable().describe('UI theme slug; `null` = the web default.'),
+        username: zod.string(),
+      })
+      .describe('What the app shell draws (name, avatar, locale, theme) - no second\nrequest to `GET /users/me`.'),
     user_id: zod.uuid(),
   })
   .describe(

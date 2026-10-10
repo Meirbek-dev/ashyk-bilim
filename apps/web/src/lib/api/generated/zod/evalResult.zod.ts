@@ -8,14 +8,26 @@
 import * as zod from 'zod'
 
 export const EvalResult = zod.object({
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   dataset: zod.string(),
-  details: zod.looseObject({}),
+  details: zod
+    .object({
+      error: zod.string().optional().describe('The provider call failed.'),
+      reason: zod.string().optional().describe('The provider is not configured.'),
+      repaired: zod.boolean().optional().describe('The structured reply needed a repair pass.'),
+      usage: zod
+        .object({
+          input_tokens: zod.int().nullable(),
+          output_tokens: zod.int().nullable(),
+        })
+        .optional(),
+    })
+    .describe('`ai_eval_results.details` of the provider smoke eval.'),
   evaluator: zod.string(),
   id: zod.uuid(),
-  passed: zod.boolean().nullish(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  score: zod.number().nullish(),
+  passed: zod.boolean().nullable(),
+  run_id: zod.union([zod.uuid(), zod.null()]),
+  score: zod.number().nullable(),
 })
 
 export type EvalResult = zod.input<typeof EvalResult>

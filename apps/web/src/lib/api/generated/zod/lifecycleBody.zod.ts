@@ -7,9 +7,19 @@
  */
 import * as zod from 'zod'
 
+export const lifecycleBodyNoteMax = 1000
+
+export const lifecycleBodyScheduledAtUnixMin = 0
+export const lifecycleBodyScheduledAtUnixMax = 253402300799
+
 export const LifecycleBody = zod.object({
-  note: zod.string().nullish(),
-  scheduled_at_unix: zod.int().nullish().describe('Required when `to` is `scheduled`; must be in the future.'),
+  note: zod.string().max(lifecycleBodyNoteMax).optional(),
+  scheduled_at_unix: zod
+    .int()
+    .min(lifecycleBodyScheduledAtUnixMin)
+    .max(lifecycleBodyScheduledAtUnixMax)
+    .optional()
+    .describe('Required when `to` is `scheduled`; must be in the future.'),
   to: zod.enum(['draft', 'scheduled', 'published', 'archived']),
 })
 

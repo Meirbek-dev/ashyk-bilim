@@ -9,8 +9,31 @@ import * as zod from 'zod'
 
 export const ActivityDetail = zod
   .object({
-    activity_sub_type: zod.string(),
-    activity_type: zod.string(),
+    activity_sub_type: zod
+      .enum([
+        'dynamic_page',
+        'video_youtube',
+        'video_hosted',
+        'document_pdf',
+        'document_doc',
+        'quiz_standard',
+        'exam_standard',
+        'code_general',
+        'code_competitive',
+        'file_submission_standard',
+        'custom',
+      ])
+      .describe('Activity sub-kind; must pair with its [`ActivityType`].'),
+    activity_type: zod
+      .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+      .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
+    allowed_actions: zod
+      .array(
+        zod
+          .enum(['update', 'delete', 'move'])
+          .describe('What the caller may do to an activity (`Activity.allowed_actions`).'),
+      )
+      .describe('What the caller may do to this activity now.'),
     chapter_id: zod.uuid(),
     course_id: zod.uuid(),
     id: zod.uuid(),
@@ -21,9 +44,45 @@ export const ActivityDetail = zod
   })
   .and(
     zod.object({
-      content: zod.unknown().describe('Editor content (dynamic pages) or type-specific payload.'),
-      details: zod.unknown(),
-      settings: zod.unknown(),
+      content: zod
+        .union([
+          zod
+            .object({
+              content: zod.array(zod.looseObject({})),
+              type: zod.enum(['doc']),
+            })
+            .describe(
+              "The rich-text editor document (Tiptap / ProseMirror JSON). The node tree\nis the editor's business: nodes stay open objects. The one free-form\nschema in the contract.",
+            ),
+          zod
+            .object({
+              file_name: zod.string().optional().describe('Original file name, for display.'),
+              filename: zod.string().optional().describe('Storage key of the uploaded file.'),
+              upload_id: zod.uuid().optional(),
+              uri: zod.string().optional().describe('YouTube URL (`video_youtube`).'),
+            })
+            .describe(
+              'File-backed media activity content (video / document); every key is\noptional because the stored object grew over time.',
+            ),
+        ])
+        .describe('Editor content (dynamic pages) or type-specific payload.'),
+      details: zod
+        .object({
+          autoplay: zod.boolean().optional(),
+          endTime: zod.number().optional().describe('Seconds; absent = play to the end.'),
+          muted: zod.boolean().optional(),
+          startTime: zod.number().optional().describe('Seconds.'),
+        })
+        .describe(
+          '`activities.details`: player settings of video activities (camelCase as\nthe web writes them); `{}` for other kinds.',
+        ),
+      settings: zod
+        .object({
+          required: zod.boolean().optional().describe('Absent = required.'),
+        })
+        .describe(
+          '`activities.settings`.\n\nThe server reads `required` (progress: `false` makes the activity\noptional). Migrated legacy rows keep the legacy\nassessment settings they had (exam / code-challenge keys such as\n`time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.',
+        ),
     }),
   )
   .describe('Full activity view with the heavy jsonb columns.')

@@ -44,6 +44,7 @@ const SUBMISSION_ID = '01a091c9-0199-7e95-9346-d1ae4fc9823e'
 const wire = {
   id: '01a09221-0892-7eb4-b204-7047c305b883',
   submission_id: SUBMISSION_ID,
+  file_submission_attempt_id: null,
   run_id: '01a09221-082f-7a96-a640-56c5820d08e8',
   triggered_by: '01a0910c-796a-7bf1-8475-cb7d3130f81a',
   status: 'complete',

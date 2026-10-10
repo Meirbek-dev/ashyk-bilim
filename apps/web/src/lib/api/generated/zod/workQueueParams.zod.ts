@@ -9,6 +9,27 @@ import * as zod from 'zod'
 
 export const WorkQueueParams = zod.object({
   role: zod.union([zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'), zod.null()]).optional(),
+  kind: zod
+    .union([
+      zod
+        .enum([
+          'in_progress',
+          'overdue',
+          'waiting_for_grade',
+          'returned_for_revision',
+          'feedback_released',
+          'needs_grading',
+          'sla_breach',
+          'awaiting_release',
+        ])
+        .describe('The situation an item names.'),
+      zod.null(),
+    ])
+    .optional(),
+  course_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  sort: zod
+    .union([zod.enum(['priority', 'due', 'oldest', 'newest']).describe('`GET /work` order (INBOX-DATA).'), zod.null()])
+    .optional(),
   limit: zod.int().nullish(),
   cursor: zod.string().nullish(),
 })

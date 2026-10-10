@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const InterventionSummary = zod.object({
-  avg_risk_delta_after_intervention: zod.number().nullish(),
+  avg_risk_delta_after_intervention: zod.number().nullable(),
   open: zod.int(),
   recovered_learners: zod.int(),
   resolved: zod.int(),

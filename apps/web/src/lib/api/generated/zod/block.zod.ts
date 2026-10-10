@@ -10,8 +10,21 @@ import * as zod from 'zod'
 export const Block = zod.object({
   activity_id: zod.uuid(),
   block_type: zod.string().describe('`image`, `pdf`, `video` (or `custom` for migrated legacy rows).'),
-  content: zod.unknown().describe('`{upload_id, file_key, file_name, file_size, file_type}`.'),
-  created_at_unix: zod.int(),
+  content: zod
+    .object({
+      activity_uuid: zod.string().optional(),
+      file_format: zod.string().optional(),
+      file_id: zod.string().optional(),
+      file_key: zod.string().describe('Storage key, served at `/content/<key>`.'),
+      file_name: zod.string(),
+      file_size: zod.int(),
+      file_type: zod.string().describe('MIME type.'),
+      upload_id: zod.uuid().optional(),
+    })
+    .describe(
+      '`blocks.content`: the uploaded file a content block shows. Legacy rows\ncarry `file_id` / `file_format` / `activity_uuid` instead of `upload_id`.',
+    ),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   id: zod.uuid(),
 })
 

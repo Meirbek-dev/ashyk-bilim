@@ -7,8 +7,27 @@
  */
 import * as zod from 'zod'
 
+export const remediationCompletionRequestAnswersMax = 100
+
+export const remediationCompletionRequestScoreMin = 0
+export const remediationCompletionRequestScoreMax = 100
+
 export const RemediationCompletionRequest = zod.object({
-  score: zod.int(),
+  answers: zod
+    .array(zod.string())
+    .max(remediationCompletionRequestAnswersMax)
+    .optional()
+    .describe(
+      "The learner's answer to each practice question, in order (a missing\nor blank answer is wrong). Scored server-side: an answer equal to the\nquestion's `answer` (trimmed, case- and space-insensitive) is right;\nround(100 x right / all), 100 when the test has no questions.",
+    ),
+  score: zod
+    .int()
+    .min(remediationCompletionRequestScoreMin)
+    .max(remediationCompletionRequestScoreMax)
+    .optional()
+    .describe(
+      "Old-web contract: honoured only while the old web is live\n(`WEB_LINKS=legacy`) and `answers` is empty; otherwise ignored and\nthe server scores `answers` against the session's test (phase 9).",
+    ),
 })
 
 export type RemediationCompletionRequest = zod.input<typeof RemediationCompletionRequest>

@@ -55,6 +55,15 @@ describe('gradingDetailQueryOptions', () => {
       content_version: 1,
       policy_version: 1,
       feedback: [],
+      allowed_actions: [],
+      auto_score: null,
+      auto_submit_reason: null,
+      duration_seconds: null,
+      final_score: null,
+      graded_at_unix: null,
+      score_override: null,
+      started_at_unix: null,
+      submitted_at_unix: null,
     })
 
     const result = await gradingDetailQueryOptions(SUB_ID, ASM_ID).queryFn?.(
@@ -181,6 +190,7 @@ describe('submissionsQueryOptions', () => {
           graded_at_unix: 1_789_000_010,
           enrolled: false,
           staff: true,
+          allowed_actions: [],
         },
       ],
       next_cursor: null,

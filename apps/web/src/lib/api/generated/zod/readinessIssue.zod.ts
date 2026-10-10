@@ -9,11 +9,48 @@ import * as zod from 'zod'
 
 export const ReadinessIssue = zod
   .object({
-    area: zod.string().describe('`details` | `questions` | `policy` | `audience` | `publish`.'),
-    code: zod.string().describe('Stable machine key, e.g. `choice.options_missing`.'),
-    item_id: zod.union([zod.uuid(), zod.null()]).optional(),
+    area: zod
+      .enum(['details', 'questions', 'policy', 'audience', 'publish'])
+      .describe('[`ReadinessIssue::area`] values (schema only).'),
+    code: zod
+      .enum([
+        'assessment.title_missing',
+        'assessment.empty',
+        'schedule.after_due_at',
+        'policy.due_at_past',
+        'policy.cutoff_before_due',
+        'policy.penalty_without_late',
+        'item.kind_forbidden',
+        'item.title_missing',
+        'item.max_score_invalid',
+        'choice.correct_missing',
+        'choice.option_duplicate',
+        'choice.option_id_duplicate',
+        'choice.option_text_missing',
+        'choice.options_missing',
+        'choice.prompt_missing',
+        'choice.too_many_correct',
+        'code.languages_missing',
+        'code.prompt_missing',
+        'code.test_io_missing',
+        'code.test_weight_invalid',
+        'code.tests_missing',
+        'form.field_id_duplicate',
+        'form.field_label_missing',
+        'form.fields_missing',
+        'form.prompt_missing',
+        'matching.left_duplicate',
+        'matching.pair_value_missing',
+        'matching.pairs_missing',
+        'matching.prompt_missing',
+        'matching.right_duplicate',
+        'open_text.min_words_invalid',
+        'open_text.prompt_missing',
+      ])
+      .describe('Stable machine key, e.g. `choice.options_missing`.'),
+    item_id: zod.union([zod.uuid(), zod.null()]),
     message: zod.string(),
-    severity: zod.string().describe('`blocker` | `warning` | `advice` - every current rule is a blocker.'),
+    severity: zod.enum(['blocker', 'warning', 'advice']).describe('Every current rule is a blocker.'),
   })
   .describe('One thing blocking (or advising against) publication.')
 

@@ -7,9 +7,17 @@
  */
 import * as zod from 'zod'
 
+export const reportViolationBodyDetailMax = 500
+
+export const reportViolationBodyKindMax = 64
+
 export const ReportViolationBody = zod.object({
-  detail: zod.string().nullish(),
-  kind: zod.string().describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.'),
+  detail: zod.string().max(reportViolationBodyDetailMax).optional(),
+  kind: zod
+    .string()
+    .min(1)
+    .max(reportViolationBodyKindMax)
+    .describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.'),
 })
 
 export type ReportViolationBody = zod.input<typeof ReportViolationBody>

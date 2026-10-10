@@ -9,43 +9,333 @@ import * as zod from 'zod'
 
 export const AdminRunDetail = zod.object({
   artifacts: zod.array(
-    zod.object({
-      content: zod.looseObject({}),
-      created_at_unix: zod.int(),
-      final: zod.boolean(),
-      id: zod.uuid(),
-      kind: zod.string(),
-    }),
+    zod
+      .union([
+        zod.object({
+          content: zod.object({
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            confidence: zod
+              .enum(['low', 'medium', 'high'])
+              .optional()
+              .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+            finding_reviews: zod
+              .record(
+                zod.string(),
+                zod
+                  .object({
+                    action: zod
+                      .enum(['accepted', 'dismissed', 'task_created'])
+                      .describe('Teacher review verdict on one course-analysis finding.'),
+                    note: zod.string().nullable(),
+                    reviewed_at: zod.int().describe('Unix seconds.'),
+                    reviewed_by_user_id: zod.uuid(),
+                  })
+                  .describe('One stored verdict on a course-analysis finding.'),
+              )
+              .optional()
+              .describe(
+                "The teacher's verdict per recommendation, keyed by finding id:\n`finding-{index}` into `recommendations` (what\n`POST .../findings/review` takes). Absent until the first verdict.",
+              ),
+            language: zod.string().optional(),
+            public_score: zod.int(),
+            recommendations: zod
+              .array(
+                zod.object({
+                  action: zod.string().optional(),
+                  priority: zod
+                    .enum(['low', 'medium', 'high'])
+                    .optional()
+                    .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+                  rationale: zod.string().optional(),
+                  title: zod.string(),
+                }),
+              )
+              .optional(),
+            risks: zod.array(zod.string()).optional(),
+            strengths: zod.array(zod.string()).optional(),
+            summary: zod.string(),
+          }),
+          kind: zod.enum(['course_analysis']),
+        }),
+        zod.object({
+          content: zod.object({
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            confidence: zod
+              .enum(['low', 'medium', 'high'])
+              .optional()
+              .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+            knowledge_gaps: zod
+              .array(
+                zod.object({
+                  concept: zod.string(),
+                  evidence: zod.string().optional(),
+                  remediation_goal: zod.string().optional(),
+                  severity: zod
+                    .enum(['low', 'medium', 'high'])
+                    .optional()
+                    .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+                }),
+              )
+              .optional(),
+            language: zod.string().optional(),
+            next_action: zod.string().optional(),
+            summary: zod.string(),
+          }),
+          kind: zod.enum(['submission_analysis']),
+        }),
+        zod.object({
+          content: zod.object({
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            language: zod.string().optional(),
+            learning_objectives: zod.array(zod.string()).optional(),
+            micro_lecture_markdown: zod.string(),
+            pass_threshold: zod.int().optional(),
+            practice_questions: zod
+              .array(
+                zod.object({
+                  answer: zod.string().optional(),
+                  choices: zod.array(zod.string()).optional(),
+                  explanation: zod.string().optional(),
+                  prompt: zod.string(),
+                }),
+              )
+              .optional(),
+            title: zod.string(),
+          }),
+          kind: zod.enum(['remediation']),
+        }),
+        zod.object({
+          content: zod.object({
+            answer_markdown: zod.string(),
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            confidence: zod
+              .enum(['low', 'medium', 'high'])
+              .optional()
+              .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+            flashcards: zod
+              .array(
+                zod
+                  .unknown()
+                  .describe(
+                    'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+                  ),
+              )
+              .optional(),
+            follow_up_suggestions: zod.array(zod.string()).optional(),
+            mode: zod
+              .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
+              .describe('Study companion modes (legacy `StudyMode`).'),
+            practice_items: zod
+              .array(
+                zod.object({
+                  answer: zod.string().optional(),
+                  choices: zod.array(zod.string()).optional(),
+                  explanation: zod.string().optional(),
+                  prompt: zod.string(),
+                }),
+              )
+              .optional(),
+          }),
+          kind: zod.enum(['study_companion']),
+        }),
+        zod.object({
+          content: zod.object({
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            language: zod.string().optional(),
+            suggestions: zod
+              .array(
+                zod.object({
+                  location: zod.string().optional(),
+                  priority: zod
+                    .enum(['low', 'medium', 'high'])
+                    .optional()
+                    .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+                  rationale: zod.string().optional(),
+                  replacement_markdown: zod.string().optional(),
+                  suggestion_id: zod.string(),
+                  title: zod.string(),
+                }),
+              )
+              .optional(),
+            summary: zod.string(),
+          }),
+          kind: zod.enum(['lecture_review']),
+        }),
+        zod.object({
+          content: zod.object({
+            answer_markdown: zod.string(),
+            citations: zod
+              .array(
+                zod.object({
+                  citation_id: zod.string(),
+                  confidence: zod.number().optional(),
+                  excerpt: zod.string().optional(),
+                  label: zod.string(),
+                  source_type: zod.string(),
+                  source_uuid: zod.string().optional(),
+                }),
+              )
+              .optional(),
+            confidence: zod
+              .enum(['low', 'medium', 'high'])
+              .optional()
+              .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+            follow_up_suggestions: zod.array(zod.string()).optional(),
+            out_of_scope: zod.boolean().optional(),
+          }),
+          kind: zod.enum(['course_qa']),
+        }),
+      ])
+      .describe("`kind` + `content`: the agent's output by kind.")
+      .and(
+        zod.object({
+          created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          final: zod.boolean(),
+          id: zod.uuid(),
+        }),
+      ),
   ),
   events: zod.array(
     zod.object({
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       event_type: zod.string(),
       id: zod.uuid(),
-      payload: zod.looseObject({}),
+      payload: zod
+        .object({
+          citations_invalid: zod.int().optional(),
+          citations_valid: zod.int().optional(),
+          error_code: zod.string().optional(),
+          input_tokens: zod.int().optional(),
+          model_name: zod.string().optional(),
+          output_tokens: zod.int().optional(),
+          source_count: zod.int().optional(),
+          state: zod
+            .enum(['queued', 'running', 'collecting_context', 'checking_evidence', 'complete', 'failed', 'cancelled'])
+            .describe('Progress state an AI run event reports.'),
+        })
+        .describe(
+          '`ai_events.payload`.\n\n`state` is always set; the rest by event type:\n`collecting_context` -> `source_count`; `budget_checked` ->\n`input_tokens`; `finished` -> model, tokens and citation counts;\n`failed` / `cancelled` -> `error_code`.',
+        ),
       sequence: zod.int(),
     }),
   ),
   evidence: zod.array(
     zod.object({
-      artifact_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      artifact_id: zod.union([zod.uuid(), zod.null()]),
       citation_id: zod.string(),
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       excerpt: zod.string(),
       id: zod.uuid(),
       label: zod.string(),
-      score: zod.number().nullish(),
-      source_ref: zod.string().nullish(),
+      score: zod.number().nullable(),
+      source_ref: zod.string().nullable(),
       source_type: zod.string(),
     }),
   ),
   run: zod
     .object({
-      completed_at_unix: zod.int().nullish(),
-      context: zod.looseObject({}).describe('The allow-listed part of the run metadata.'),
-      cost_estimate: zod.number().nullish(),
-      duration_ms: zod.int().nullish(),
-      error_code: zod.string().nullish(),
+      completed_at_unix: zod.union([
+        zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        zod.null(),
+      ]),
+      context: zod
+        .object({
+          activity_id: zod.uuid().nullish(),
+          citation_validation: zod
+            .object({
+              invalid_citation_ids: zod.array(zod.string()).optional(),
+              invalid_count: zod.int().optional(),
+              source_count: zod.int().optional(),
+              valid_count: zod.int().optional(),
+              validation: zod.enum(['not_applicable']).optional(),
+            })
+            .optional()
+            .describe(
+              'How many of the model\'s citations named a supplied source; just\n`{validation: "not_applicable"}` for runs without context sources.',
+            ),
+          context_source_count: zod.int().optional(),
+          course_id: zod.uuid().optional(),
+          file_submission_attempt_id: zod.uuid().optional(),
+          kind: zod
+            .enum([
+              'course_analysis',
+              'submission_analysis',
+              'remediation',
+              'study_companion',
+              'lecture_review',
+              'course_qa',
+            ])
+            .optional()
+            .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
+          language: zod.string().optional(),
+          mode: zod
+            .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
+            .optional()
+            .describe('Study companion modes (legacy `StudyMode`).'),
+          retry_count: zod.int().optional(),
+          submission_id: zod.uuid().optional(),
+          thread_id: zod.uuid().optional(),
+          time_to_first_text_ms: zod.int().optional(),
+        })
+        .describe('The allow-listed part of the run metadata.'),
+      cost_estimate: zod.number().nullable(),
+      duration_ms: zod.int().nullable(),
+      error_code: zod.string().nullable(),
       feature: zod
         .enum([
           'course_analysis',
@@ -57,18 +347,18 @@ export const AdminRunDetail = zod.object({
         ])
         .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
       id: zod.uuid(),
-      input_tokens: zod.int().nullish(),
-      model_name: zod.string().nullish(),
-      output_tokens: zod.int().nullish(),
+      input_tokens: zod.int().nullable(),
+      model_name: zod.string().nullable(),
+      output_tokens: zod.int().nullable(),
       retry_count: zod.int(),
-      started_at_unix: zod.int(),
+      started_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       status: zod
         .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
         .describe(
           'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
         ),
       stuck: zod.boolean().describe('Queued or running for over ten minutes.'),
-      time_to_first_text_ms: zod.int().nullish(),
+      time_to_first_text_ms: zod.int().nullable(),
     })
     .describe('One run in the operations view (legacy `AIOperationRunRead`).'),
 })

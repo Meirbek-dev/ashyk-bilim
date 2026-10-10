@@ -7,10 +7,12 @@
  */
 import * as zod from 'zod'
 
+export const formFieldLabelMax = 20000
+
 export const FormField = zod.object({
   field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
   id: zod.string(),
-  label: zod.string().optional(),
+  label: zod.string().max(formFieldLabelMax).optional(),
   required: zod.boolean().optional(),
 })
 

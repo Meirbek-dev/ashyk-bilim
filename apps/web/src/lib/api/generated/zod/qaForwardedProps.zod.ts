@@ -7,19 +7,19 @@
  */
 import * as zod from 'zod'
 
+export const qaForwardedPropsClientTurnIdMax = 200
+
 export const QaForwardedProps = zod
   .object({
-    activity_id: zod
-      .union([zod.uuid().describe('Narrow the context to one activity of the course.'), zod.null()])
-      .optional(),
+    activity_id: zod.uuid().optional().describe('Narrow the context to one activity of the course.'),
     client_turn_id: zod
       .string()
-      .nullish()
+      .min(1)
+      .max(qaForwardedPropsClientTurnIdMax)
+      .optional()
       .describe('Client turn id: a retry with the same id replays the stored answer.'),
-    language: zod.string().nullish(),
-    thread_id: zod
-      .union([zod.uuid().describe('Continue an existing thread of the caller in this course.'), zod.null()])
-      .optional(),
+    language: zod.string().optional(),
+    thread_id: zod.uuid().optional().describe('Continue an existing thread of the caller in this course.'),
   })
   .describe('What this API reads from AG-UI `forwardedProps`.')
 

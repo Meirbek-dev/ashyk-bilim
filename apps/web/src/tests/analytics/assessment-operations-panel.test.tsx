@@ -40,6 +40,7 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
       median_score: 74,
       avg_attempts: 1.4,
       grading_latency_hours_p50: 18,
+      grading_latency_hours_p90: null,
     },
     pass_threshold: 60,
     pass_threshold_bucket_label: '60-69',
@@ -74,6 +75,8 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
         final_score: null,
         affected_count: 8,
         submission_id: null,
+        bulk_action_id: '00000000-0000-4000-8000-000000000005',
+        grading_entry_id: null,
       },
     ],
     slo: {
@@ -223,6 +226,8 @@ describe('AssessmentOperationsPanel', () => {
               final_score: null,
               affected_count: 8,
               submission_id: null,
+              bulk_action_id: '00000000-0000-4000-8000-000000000005',
+              grading_entry_id: null,
             },
             {
               id: 'grading-entry-1',
@@ -235,6 +240,8 @@ describe('AssessmentOperationsPanel', () => {
               final_score: 87.5,
               affected_count: 1,
               submission_id: '00000000-0000-4000-8000-000000000004',
+              bulk_action_id: null,
+              grading_entry_id: '00000000-0000-4000-8000-000000000006',
             },
           ],
         })}

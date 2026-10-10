@@ -12,7 +12,7 @@ export const ExperienceSection = zod.object({
     zod.object({
       current: zod.boolean(),
       description: zod.string(),
-      endDate: zod.string().nullish(),
+      endDate: zod.string().optional(),
       organization: zod.string(),
       startDate: zod.string().describe("`YYYY-MM-DD` as the builder's date picker writes it."),
       title: zod.string(),

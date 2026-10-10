@@ -11,7 +11,12 @@ export const CoursePermissions = zod.object({
   can_access: zod.boolean(),
   can_discover: zod.boolean(),
   can_enroll: zod.boolean(),
-  denial_reason: zod.string().nullish(),
+  denial_reason: zod.union([
+    zod
+      .enum(['course_archived', 'staff_preview'])
+      .describe('Why the caller cannot enrol (`CoursePermissions.denial_reason`).'),
+    zod.null(),
+  ]),
 })
 
 export type CoursePermissions = zod.input<typeof CoursePermissions>

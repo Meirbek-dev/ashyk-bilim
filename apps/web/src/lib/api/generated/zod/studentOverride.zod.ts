@@ -8,15 +8,26 @@
 import * as zod from 'zod'
 
 export const StudentOverride = zod.object({
-  created_at_unix: zod.int(),
-  due_at_override_unix: zod.int().nullish(),
-  expires_at_unix: zod.int().nullish(),
-  granted_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  due_at_override_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
+  expires_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
+  granted_by: zod.union([zod.uuid(), zod.null()]),
+  granted_by_name: zod.string().nullable(),
   id: zod.uuid(),
-  max_attempts_override: zod.int().nullish(),
+  max_attempts_override: zod.int().nullable(),
   note: zod.string(),
-  updated_at_unix: zod.int(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  user_display_name: zod.string().nullable().describe('Display names of the learner and the granter.'),
   user_id: zod.uuid(),
+  version: zod
+    .int()
+    .optional()
+    .describe(
+      'Send back as `If-Match` on the PUT (stale -> 412).\nAlways present (schema-optional while client fixtures catch up).',
+    ),
   waive_late_penalty: zod.boolean(),
 })
 

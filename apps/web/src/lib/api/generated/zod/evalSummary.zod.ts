@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const EvalSummary = zod.object({
-  average_score: zod.number().nullish(),
+  average_score: zod.number().nullable(),
   failed: zod.int(),
   passed: zod.int(),
   total: zod.int(),

@@ -7,21 +7,33 @@
  */
 import * as zod from 'zod'
 
+export const createInterventionBodyNotesMax = 4000
+
+export const createInterventionBodyOutcomeMax = 2000
+
 export const CreateInterventionBody = zod
   .object({
     course_id: zod.uuid(),
     intervention_type: zod
-      .string()
+      .enum(['message_sent', 'submission_graded', 'extension_granted', 'meeting_scheduled', 'learner_recovered'])
       .describe(
         '`message_sent`, `submission_graded`, `extension_granted`,\n`meeting_scheduled` or `learner_recovered`.',
       ),
-    notes: zod.string().nullish(),
-    outcome: zod.string().nullish(),
-    payload: zod
-      .looseObject({})
+    notes: zod.string().max(createInterventionBodyNotesMax).optional(),
+    outcome: zod.string().max(createInterventionBodyOutcomeMax).optional(),
+    outcome_code: zod
+      .enum(['improved', 'no_change', 'worsened', 'no_response'])
       .optional()
-      .describe('Free-form details (an object of at most 16 KiB serialized, UX-148).'),
-    status: zod.string().optional().describe('`planned`, `completed` or `resolved`.'),
+      .describe('The closed outcome (S-GAPS-2), next to the free-text `outcome`.'),
+    payload: zod
+      .object({
+        reason_codes: zod.array(zod.string()).optional(),
+        remediation_draft: zod.string().optional(),
+        risk_score: zod.number().optional(),
+      })
+      .optional()
+      .describe('An object of at most 16 KiB serialized (UX-148).'),
+    status: zod.enum(['planned', 'completed', 'resolved']).optional().describe('`planned`, `completed` or `resolved`.'),
     user_id: zod.uuid(),
   })
   .describe('Log a teacher action for an at-risk learner. `status` defaults to\n`completed` (legacy).')

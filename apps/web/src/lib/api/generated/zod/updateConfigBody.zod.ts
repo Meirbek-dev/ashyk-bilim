@@ -7,9 +7,12 @@
  */
 import * as zod from 'zod'
 
+export const updateConfigBodyDailyXpLimitMin = 0
+export const updateConfigBodyDailyXpLimitMax = 1000000
+
 export const UpdateConfigBody = zod.object({
-  daily_xp_limit: zod.int().nullish(),
-  rewards: zod.looseObject({}).optional(),
+  daily_xp_limit: zod.int().min(updateConfigBodyDailyXpLimitMin).max(updateConfigBodyDailyXpLimitMax).optional(),
+  rewards: zod.record(zod.string(), zod.int()).optional(),
 })
 
 export type UpdateConfigBody = zod.input<typeof UpdateConfigBody>

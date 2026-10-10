@@ -11,21 +11,22 @@ export const ContentBottleneckRow = zod.object({
   activity_id: zod.uuid(),
   activity_name: zod.string(),
   activity_type: zod.string(),
-  avg_time_seconds: zod.number().nullish(),
+  avg_time_seconds: zod.number().nullable(),
   completed_learners: zod.int(),
-  completion_rate: zod.number().nullish(),
+  completion_rate: zod.number().nullable(),
   course_id: zod.uuid(),
   course_name: zod.string(),
   exit_count: zod.int(),
   failed_assessments: zod.int(),
   note: zod.string(),
   severity: zod.enum(['info', 'warning', 'critical']),
-  signal: zod
-    .string()
-    .describe(
-      '`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`.',
-    ),
-  stale_days: zod.int().nullish(),
+  signal: zod.enum([
+    'high_time_low_completion',
+    'exit_after_open',
+    'repeated_assessment_failures',
+    'stale_low_performance',
+  ]),
+  stale_days: zod.int().nullable(),
   started_learners: zod.int(),
 })
 

@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const QueueLectureReviewBody = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  activity_id: zod.uuid().optional(),
   language: zod.string().optional(),
 })
 

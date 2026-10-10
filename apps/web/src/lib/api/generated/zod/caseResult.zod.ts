@@ -9,21 +9,21 @@ import * as zod from 'zod'
 
 export const CaseResult = zod
   .object({
-    actual: zod.string().nullish().describe('`stdout` with surrounding whitespace trimmed (what was compared).'),
-    compile_output: zod.string().nullish(),
+    actual: zod.string().nullable().describe('`stdout` with surrounding whitespace trimmed (what was compared).'),
+    compile_output: zod.string().nullable(),
     description: zod.string(),
-    expected: zod.string().nullish(),
+    expected: zod.string().nullable(),
     is_visible: zod.boolean(),
-    memory_kb: zod.int().nullish(),
-    message: zod.string().nullish(),
+    memory_kb: zod.int().nullable(),
+    message: zod.string().nullable(),
     passed: zod.boolean(),
     status_description: zod.string(),
-    status_id: zod.int().nullish(),
-    stderr: zod.string().nullish(),
-    stdin: zod.string().nullish(),
-    stdout: zod.string().nullish(),
+    status_id: zod.int().nullable(),
+    stderr: zod.string().nullable(),
+    stdin: zod.string().nullable(),
+    stdout: zod.string().nullable(),
     test_id: zod.string(),
-    time_seconds: zod.number().nullish(),
+    time_seconds: zod.number().nullable(),
     weight: zod.number(),
   })
   .describe(

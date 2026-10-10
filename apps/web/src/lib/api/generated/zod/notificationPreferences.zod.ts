@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const NotificationPreferences = zod.object({
-  xpGain: zod.boolean().nullish(),
+  xpGain: zod.boolean().optional(),
 })
 
 export type NotificationPreferences = zod.input<typeof NotificationPreferences>

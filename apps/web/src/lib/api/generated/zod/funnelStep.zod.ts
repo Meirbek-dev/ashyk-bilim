@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const FunnelStep = zod.object({
   count: zod.int(),
   label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-  pct_of_previous: zod.number().nullish(),
+  pct_of_previous: zod.number().nullable(),
 })
 
 export type FunnelStep = zod.input<typeof FunnelStep>

@@ -14,7 +14,7 @@ export const AssessmentDiagnosticsSnapshot = zod.object({
   late_submissions: zod.int(),
   manual_grading_required: zod.boolean(),
   missing_scores: zod.int(),
-  note: zod.string().nullish(),
+  note: zod.string().nullable(),
   released: zod.int(),
   returned_for_resubmission: zod.int(),
   stale_backlog: zod.int(),

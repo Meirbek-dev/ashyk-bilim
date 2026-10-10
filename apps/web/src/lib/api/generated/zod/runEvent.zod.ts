@@ -8,10 +8,25 @@
 import * as zod from 'zod'
 
 export const RunEvent = zod.object({
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   event_type: zod.string(),
   id: zod.uuid(),
-  payload: zod.looseObject({}),
+  payload: zod
+    .object({
+      citations_invalid: zod.int().optional(),
+      citations_valid: zod.int().optional(),
+      error_code: zod.string().optional(),
+      input_tokens: zod.int().optional(),
+      model_name: zod.string().optional(),
+      output_tokens: zod.int().optional(),
+      source_count: zod.int().optional(),
+      state: zod
+        .enum(['queued', 'running', 'collecting_context', 'checking_evidence', 'complete', 'failed', 'cancelled'])
+        .describe('Progress state an AI run event reports.'),
+    })
+    .describe(
+      '`ai_events.payload`.\n\n`state` is always set; the rest by event type:\n`collecting_context` -> `source_count`; `budget_checked` ->\n`input_tokens`; `finished` -> model, tokens and citation counts;\n`failed` / `cancelled` -> `error_code`.',
+    ),
   sequence: zod.int(),
 })
 

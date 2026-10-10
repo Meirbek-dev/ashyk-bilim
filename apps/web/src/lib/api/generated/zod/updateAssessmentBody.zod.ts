@@ -7,11 +7,23 @@
  */
 import * as zod from 'zod'
 
+export const updateAssessmentBodyDescriptionMax = 20000
+
+export const updateAssessmentBodyTitleMax = 500
+
+export const updateAssessmentBodyWeightMin = 0
+export const updateAssessmentBodyWeightMax = 100
+
 export const UpdateAssessmentBody = zod.object({
-  description: zod.string().nullish(),
-  grading_type: zod.union([zod.enum(['numeric', 'percentage']), zod.null()]).optional(),
-  title: zod.string().nullish(),
-  weight: zod.number().nullish().describe('BUG-208: 0–100 - an unbounded weight overflows the course average.'),
+  description: zod.string().max(updateAssessmentBodyDescriptionMax).optional(),
+  grading_type: zod.enum(['numeric', 'percentage']).optional(),
+  title: zod.string().min(1).max(updateAssessmentBodyTitleMax).optional(),
+  weight: zod
+    .number()
+    .min(updateAssessmentBodyWeightMin)
+    .max(updateAssessmentBodyWeightMax)
+    .optional()
+    .describe('BUG-208: 0–100 - an unbounded weight overflows the course average.'),
 })
 
 export type UpdateAssessmentBody = zod.input<typeof UpdateAssessmentBody>

@@ -7,11 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const setRolePermissionsBodyPermissionsMax = 200
+
 export const SetRolePermissionsBody = zod.object({
   permissions: zod
     .array(zod.string())
+    .max(setRolePermissionsBodyPermissionsMax)
     .describe(
-      'Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`).',
+      'Full replacement grant set; every entry must parse against the\npermission registry (`resource:action[:scope]`). Assessment rights\nare the `assessment` resource (`quiz` / `exam` still parse but grant\nnothing).',
     ),
 })
 

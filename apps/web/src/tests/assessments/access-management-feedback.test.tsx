@@ -26,21 +26,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: mocks.toastSuccess } }))
 vi.mock('@/lib/api-client', () => ({
-  apiJson: vi.fn(),
-  apiResult: async (path: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => {
+  // The access body carries its `version` (the `If-Match` of the next save); ids here are not UUIDs, so no parse.
+  apiJson: async (path: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => {
     if (init?.method === 'PUT') {
       const data = await mocks.setAccess(path, JSON.parse(init.body ?? '{}'), init.headers?.['If-Match'])
-      return { data, headers: { etag: '"4"' } }
+      return { ...(data as object), version: 4 }
     }
-    return {
-      data: {
-        mode: 'restricted',
-        effective_user_count: 1,
-        users: mocks.users,
-        usergroups: [],
-      },
-      headers: { etag: '"3"' },
-    }
+    return { mode: 'restricted', effective_user_count: 1, users: mocks.users, usergroups: [], version: 3 }
   },
 }))
 vi.mock('@/lib/api/generated/assessments/assessments', () => ({

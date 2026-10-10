@@ -20,13 +20,14 @@ export const AccessView = zod.object({
   users: zod
     .array(
       zod.object({
-        avatar_key: zod.string().nullish(),
+        avatar_key: zod.string().nullable(),
         display_name: zod.string(),
         id: zod.uuid(),
         username: zod.string(),
       }),
     )
     .describe('Only meaningful while `mode` is `restricted`.'),
+  version: zod.int().describe('The `If-Match` of `PUT .../access` (also the `ETag`).'),
 })
 
 export type AccessView = zod.input<typeof AccessView>

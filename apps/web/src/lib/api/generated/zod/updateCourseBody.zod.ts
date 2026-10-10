@@ -7,24 +7,39 @@
  */
 import * as zod from 'zod'
 
+export const updateCourseBodyAboutMax = 20000
+
+export const updateCourseBodyDescriptionMax = 5000
+
+export const updateCourseBodyLearningsItemEmojiMax = 16
+
+export const updateCourseBodyLearningsItemIdMax = 64
+
+export const updateCourseBodyLearningsMax = 30
+
+export const updateCourseBodyNameMax = 500
+
+export const updateCourseBodyTagsMax = 20
+
 export const UpdateCourseBody = zod.object({
-  about: zod.string().nullish(),
-  description: zod.string().nullish(),
+  about: zod.string().max(updateCourseBodyAboutMax).optional(),
+  description: zod.string().max(updateCourseBodyDescriptionMax).optional(),
   learnings: zod
     .array(
       zod
         .object({
-          emoji: zod.string().nullish(),
-          id: zod.string().nullish(),
+          emoji: zod.string().max(updateCourseBodyLearningsItemEmojiMax).optional(),
+          id: zod.string().max(updateCourseBodyLearningsItemIdMax).optional(),
           text: zod.string().describe('1..=300 characters after trimming.'),
         })
         .describe('One "What you\'ll learn" entry on write; omit `id` for a new one.'),
     )
-    .nullish()
+    .max(updateCourseBodyLearningsMax)
+    .optional()
     .describe('Replaces the whole "What you\'ll learn" list (≤ 30 entries).'),
-  name: zod.string().nullish(),
-  open_to_contributors: zod.boolean().nullish(),
-  tags: zod.array(zod.string()).nullish(),
+  name: zod.string().max(updateCourseBodyNameMax).optional(),
+  open_to_contributors: zod.boolean().optional(),
+  tags: zod.array(zod.string()).max(updateCourseBodyTagsMax).optional(),
   thumbnail_upload_id: zod
     .uuid()
     .nullish()

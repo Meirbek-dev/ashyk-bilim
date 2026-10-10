@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const Leaderboard = zod.object({
   entries: zod.array(
     zod.object({
-      avatar_key: zod.string().nullish(),
+      avatar_key: zod.string().nullable(),
       display_name: zod.string(),
       level: zod.int(),
       rank: zod.int(),
@@ -19,6 +19,10 @@ export const Leaderboard = zod.object({
       username: zod.string(),
     }),
   ),
+  next_cursor: zod
+    .string()
+    .nullable()
+    .describe('Keyset paging (`cursor` in, this out; `null` on the last page and\nfor `limit`/`offset` reads).'),
   total_participants: zod.int(),
 })
 

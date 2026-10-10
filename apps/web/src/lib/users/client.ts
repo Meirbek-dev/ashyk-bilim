@@ -5,6 +5,7 @@ import { ifMatchHeaders, parseEntityTagVersion } from '@/lib/api/headers'
 import { getQueryClient } from '@/lib/react-query/queryClient'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { UserProfile } from '@/lib/api/generated/zod'
+import type { Locale } from '@/i18n/config'
 import type {
   AdminUser,
   CoursePage,
@@ -129,6 +130,6 @@ export async function removeUserAvatar(): Promise<UserProfileType> {
   return updateProfile({ avatar_upload_id: null })
 }
 
-export async function updateUserLocale(locale: string): Promise<UserProfileType> {
+export async function updateUserLocale(locale: Locale): Promise<UserProfileType> {
   return updateProfile({ locale })
 }

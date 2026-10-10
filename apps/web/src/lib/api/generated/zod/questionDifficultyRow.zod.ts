@@ -8,14 +8,14 @@
 import * as zod from 'zod'
 
 export const QuestionDifficultyRow = zod.object({
-  accuracy_pct: zod.number().nullish(),
-  avg_time_seconds: zod.number().nullish(),
-  discrimination_index: zod.number().nullish(),
+  accuracy_pct: zod.number().nullable(),
+  avg_time_seconds: zod.number().nullable(),
+  discrimination_index: zod.number().nullable(),
   distractor_issue_count: zod.int(),
   question_id: zod.string(),
   question_label: zod.string(),
-  strong_miss_pct: zod.number().nullish(),
-  weak_correct_pct: zod.number().nullish(),
+  strong_miss_pct: zod.number().nullable(),
+  weak_correct_pct: zod.number().nullable(),
 })
 
 export type QuestionDifficultyRow = zod.input<typeof QuestionDifficultyRow>

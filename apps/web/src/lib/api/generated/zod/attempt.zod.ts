@@ -9,13 +9,16 @@ import * as zod from 'zod'
 
 export const Attempt = zod
   .object({
+    allowed_actions: zod
+      .array(zod.enum(['save', 'publish', 'return']))
+      .describe("The grade saves the caller may make now (`POST .../grade` `action`);\nempty on a learner's own view."),
     attempt_number: zod.int(),
-    created_at_unix: zod.int(),
-    feedback: zod.string().nullish(),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    feedback: zod.string().nullable(),
     files: zod.array(
       zod.object({
         content_type: zod.string(),
-        created_at_unix: zod.int(),
+        created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
         filename: zod.string(),
         id: zod.uuid(),
         position: zod.int(),
@@ -24,43 +27,64 @@ export const Attempt = zod
           .describe(
             'Malware-scan status of an attached file (scanning itself is a later\nslice; everything is `pending` until then).',
           ),
-        size_bytes: zod.int().nullish(),
+        size_bytes: zod.int().nullable(),
         upload_id: zod.uuid(),
       }),
     ),
-    final_score: zod.number().nullish(),
-    graded_at_unix: zod.int().nullish(),
+    final_score: zod.number().nullable(),
+    graded_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
     id: zod.uuid(),
     is_late: zod.boolean(),
     late_penalty_pct: zod.number(),
     raw_score: zod
       .number()
-      .nullish()
+      .nullable()
       .describe(
         "The grader's score before `late_penalty_pct` (UX-121); `final_score`\nis what counts. Same visibility as `final_score`.",
       ),
-    rubric_scores: zod.looseObject({}).nullish(),
-    started_at_unix: zod.int().nullish(),
+    rubric_scores: zod.union([
+      zod
+        .object({
+          criteria: zod
+            .array(
+              zod.object({
+                criterion_id: zod.string(),
+                label: zod.string(),
+                max_score: zod.number(),
+                score: zod.number(),
+              }),
+            )
+            .optional()
+            .describe('Absent when the activity has no rubric (`{}`).'),
+        })
+        .describe("A grader's per-criterion scores (`rubric_scores`), at most 4 KiB."),
+      zod.null(),
+    ]),
+    started_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
     status: zod
       .enum(['draft', 'submitted', 'graded', 'published', 'returned'])
       .describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).'),
-    submitted_at_unix: zod.int().nullish(),
-    updated_at_unix: zod.int(),
-    user: zod
-      .union([
-        zod
-          .object({
-            display_name: zod.string(),
-            email: zod.string(),
-            id: zod.uuid(),
-            username: zod.string(),
-          })
-          .describe(
-            "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
-          ),
-        zod.null(),
-      ])
-      .optional(),
+    submitted_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
+    updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    user: zod.union([
+      zod
+        .object({
+          display_name: zod.string(),
+          email: zod.string(),
+          id: zod.uuid(),
+          username: zod.string(),
+        })
+        .describe(
+          "Present on grader views and on `GET file-submission-attempts/{id}`\n(the owner's own summary there, UX-199).",
+        ),
+      zod.null(),
+    ]),
     version: zod.int().describe('Optimistic lock - send back as `If-Match`.'),
   })
   .describe(

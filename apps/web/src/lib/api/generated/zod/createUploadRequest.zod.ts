@@ -7,12 +7,25 @@
  */
 import * as zod from 'zod'
 
+export const createUploadRequestMimeMax = 255
+
 export const CreateUploadRequest = zod.object({
-  mime: zod.string(),
+  mime: zod.string().min(1).max(createUploadRequestMimeMax),
   purpose: zod
-    .string()
+    .enum([
+      'avatar',
+      'course-thumbnail',
+      'block-image',
+      'block-pdf',
+      'block-video',
+      'platform-logo',
+      'platform-thumbnail',
+      'file-submission',
+      'collection-cover',
+      'discussion-image',
+    ])
     .describe('One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission.'),
-  size_bytes: zod.int(),
+  size_bytes: zod.int().min(1),
 })
 
 export type CreateUploadRequest = zod.input<typeof CreateUploadRequest>

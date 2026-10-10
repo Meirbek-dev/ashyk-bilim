@@ -8,17 +8,50 @@
 import * as zod from 'zod'
 
 export const LectureReview = zod.object({
-  activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  activity_id: zod.union([zod.uuid(), zod.null()]),
   course_id: zod.uuid(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   dismissed_suggestion_ids: zod.array(zod.string()),
   id: zod.uuid(),
   language: zod.string(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  run_id: zod.union([zod.uuid(), zod.null()]),
   status: zod.enum(['active', 'superseded']).describe('Lecture review lifecycle.'),
-  suggestions: zod.looseObject({}),
-  superseded_at_unix: zod.int().nullish(),
-  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  suggestions: zod.object({
+    citations: zod
+      .array(
+        zod.object({
+          citation_id: zod.string(),
+          confidence: zod.number().optional(),
+          excerpt: zod.string().optional(),
+          label: zod.string(),
+          source_type: zod.string(),
+          source_uuid: zod.string().optional(),
+        }),
+      )
+      .optional(),
+    language: zod.string().optional(),
+    suggestions: zod
+      .array(
+        zod.object({
+          location: zod.string().optional(),
+          priority: zod
+            .enum(['low', 'medium', 'high'])
+            .optional()
+            .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+          rationale: zod.string().optional(),
+          replacement_markdown: zod.string().optional(),
+          suggestion_id: zod.string(),
+          title: zod.string(),
+        }),
+      )
+      .optional(),
+    summary: zod.string(),
+  }),
+  superseded_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
+  triggered_by: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type LectureReview = zod.input<typeof LectureReview>

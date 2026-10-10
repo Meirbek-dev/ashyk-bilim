@@ -7,18 +7,25 @@
  */
 import * as zod from 'zod'
 
+export const formBodyFieldsItemLabelMax = 20000
+
+export const formBodyFieldsMax = 200
+
+export const formBodyPromptMax = 20000
+
 export const FormBody = zod.object({
   fields: zod
     .array(
       zod.object({
         field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
         id: zod.string(),
-        label: zod.string().optional(),
+        label: zod.string().max(formBodyFieldsItemLabelMax).optional(),
         required: zod.boolean().optional(),
       }),
     )
+    .max(formBodyFieldsMax)
     .optional(),
-  prompt: zod.string().optional(),
+  prompt: zod.string().max(formBodyPromptMax).optional(),
 })
 
 export type FormBody = zod.input<typeof FormBody>

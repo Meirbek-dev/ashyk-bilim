@@ -30,6 +30,11 @@ const dashboard = {
     last_learning_at_unix: null,
     last_xp_award_at_unix: null,
     preferences: {},
+    settings: {
+      display: { animated_effects: null, compact_mode: null },
+      notifications: { xp_gain: null },
+      privacy: { show_on_leaderboard: null },
+    },
   },
   leaderboard: {
     entries: [
@@ -44,6 +49,7 @@ const dashboard = {
       },
     ],
     total_participants: 1,
+    next_cursor: null,
   },
   recent_transactions: [
     {
@@ -52,6 +58,7 @@ const dashboard = {
       amount: 10,
       source: 'login_bonus',
       source_id: null,
+      reason: null,
       created_at_unix: 1700000060,
       previous_level: 2,
       triggered_level_up: false,

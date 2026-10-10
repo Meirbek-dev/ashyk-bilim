@@ -9,12 +9,12 @@ import * as zod from 'zod'
 
 export const SessionSummary = zod
   .object({
-    created_at_unix: zod.int(),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     current: zod.boolean(),
     handle: zod.string(),
-    ip: zod.string().nullish(),
-    last_seen_unix: zod.int(),
-    user_agent: zod.string().nullish(),
+    ip: zod.string().nullable(),
+    last_seen_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    user_agent: zod.string().nullable(),
   })
   .describe(
     "One of the caller's live sessions. `handle` is a non-bearer identifier\n(raw session ids never leave the server).",

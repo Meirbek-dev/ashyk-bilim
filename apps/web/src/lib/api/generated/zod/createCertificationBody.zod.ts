@@ -8,7 +8,45 @@
 import * as zod from 'zod'
 
 export const CreateCertificationBody = zod.object({
-  config: zod.looseObject({}).optional().describe('The designer document: an object of at most 16 KiB serialized.'),
+  config: zod
+    .object({
+      certificate_instructor: zod
+        .string()
+        .optional()
+        .describe("The name signed on the certificate; blank = the course's teachers."),
+      certificate_pattern: zod
+        .enum([
+          'royal',
+          'tech',
+          'nature',
+          'geometric',
+          'vintage',
+          'waves',
+          'minimal',
+          'professional',
+          'academic',
+          'modern',
+        ])
+        .optional()
+        .describe("The certificate's background design."),
+      certification_description: zod.string().optional(),
+      certification_name: zod.string().optional(),
+      certification_type: zod
+        .enum([
+          'completion',
+          'achievement',
+          'assessment',
+          'participation',
+          'mastery',
+          'professional',
+          'continuing',
+          'workshop',
+          'specialization',
+        ])
+        .optional(),
+    })
+    .optional()
+    .describe('An object of at most 16 KiB serialized.'),
   course_id: zod.uuid(),
 })
 

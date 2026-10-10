@@ -13,53 +13,76 @@ export const LearnerCourseState = zod.object({
   certificate: zod.object({
     configured: zod.boolean(),
     eligible: zod.boolean(),
-    href: zod.string().nullish(),
+    href: zod.string().nullable(),
     issued: zod.boolean(),
-    verify_code: zod.string().nullish().describe('Public verification code of the issued certificate.'),
+    verify_code: zod.string().nullable().describe('Public verification code of the issued certificate.'),
   }),
   course_id: zod.uuid(),
   enrolled: zod.boolean(),
   enrollment_state: zod.enum(['not_enrolled', 'in_progress', 'completed']),
-  next_action: zod
-    .union([
-      zod
-        .object({
-          activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-          enabled: zod.boolean(),
-          href: zod.string().nullish(),
-          id: zod.enum([
-            'enroll',
-            'start',
-            'continue',
-            'revise',
-            'view_feedback',
-            'wait_for_grade',
-            'view_certificate',
-            'review_completion',
-            'none',
-          ]),
-          label: zod.string(),
-          reason: zod.string(),
-        })
-        .describe('`null` on an archived course: nothing is left to do there.'),
-      zod.null(),
-    ])
-    .optional(),
+  next_action: zod.union([
+    zod
+      .object({
+        activity_id: zod.union([zod.uuid(), zod.null()]),
+        course_id: zod.uuid().describe('The course the action is in (build the web URL from the ids).'),
+        enabled: zod.boolean(),
+        href: zod.string().nullable().describe('Legacy web URL (old `/course/...` scheme) - kept for the old web.'),
+        id: zod.enum([
+          'enroll',
+          'start',
+          'continue',
+          'revise',
+          'view_feedback',
+          'wait_for_grade',
+          'view_certificate',
+          'review_completion',
+          'none',
+        ]),
+        label: zod.string().describe('English fallback; the web localizes by `id` + `reason`.'),
+        reason: zod
+          .enum([
+            'not_enrolled',
+            'returned_for_revision',
+            'overdue',
+            'in_progress',
+            'due_soon',
+            'next_required',
+            'certificate_issued',
+            'course_complete',
+            'waiting_for_grade',
+            'optional',
+            'no_available_action',
+          ])
+          .describe('Why [`NextAction`] is the next step (ENUMS, S-GAPS-2; same wire strings).'),
+      })
+      .describe('`null` on an archived course: nothing is left to do there.'),
+    zod.null(),
+  ]),
   outline: zod.array(
     zod.object({
       activities: zod.array(
         zod.object({
-          activity_type: zod.string(),
+          activity_type: zod
+            .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+            .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
           allowed_actions: zod.array(zod.string()),
           available: zod.boolean(),
-          blocked_reason: zod.string().nullish(),
+          blocked_reason: zod.union([
+            zod
+              .enum(['restricted'])
+              .describe('Why an activity is not open to the learner (`ActivityState.blocked_reason`).'),
+            zod.null(),
+          ]),
           complete: zod.boolean(),
-          due_at_unix: zod.int().nullish(),
+          due_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
           id: zod.uuid(),
           is_late: zod.boolean(),
-          passed: zod.boolean().nullish(),
+          passed: zod.boolean().nullable(),
           required: zod.boolean(),
-          score: zod.number().nullish(),
+          score: zod.number().nullable(),
           state: zod
             .enum([
               'not_started',
@@ -89,12 +112,20 @@ export const LearnerCourseState = zod.object({
     can_access: zod.boolean(),
     can_discover: zod.boolean(),
     can_enroll: zod.boolean(),
-    denial_reason: zod.string().nullish(),
+    denial_reason: zod.union([
+      zod
+        .enum(['course_archived', 'staff_preview'])
+        .describe('Why the caller cannot enrol (`CoursePermissions.denial_reason`).'),
+      zod.null(),
+    ]),
   }),
   progress: zod.object({
-    completed_at_unix: zod.int().nullish(),
+    completed_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
     completed_required_count: zod.int(),
-    grade_average: zod.number().nullish(),
+    grade_average: zod.number().nullable(),
     missing_required_count: zod.int(),
     needs_grading_count: zod.int(),
     progress_pct: zod.number(),

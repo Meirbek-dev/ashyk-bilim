@@ -10,7 +10,10 @@ import * as zod from 'zod'
 export const FeatureCapability = zod.object({
   enabled: zod.boolean(),
   key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-  reason: zod.string().nullish(),
+  reason: zod.union([
+    zod.enum(['disabled']).describe('Why a feature is off (`FeatureCapability.reason`; ENUMS).'),
+    zod.null(),
+  ]),
 })
 
 export type FeatureCapability = zod.input<typeof FeatureCapability>

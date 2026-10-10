@@ -7,11 +7,16 @@
  */
 import * as zod from 'zod'
 
+export const addContributorBodyUsernameMax = 100
+
 export const AddContributorBody = zod
   .object({
-    role: zod.string().nullish().describe('`maintainer | contributor | reporter` (default `contributor`).'),
-    user_id: zod.union([zod.uuid(), zod.null()]).optional(),
-    username: zod.string().nullish(),
+    role: zod
+      .enum(['maintainer', 'contributor', 'reporter'])
+      .optional()
+      .describe('`maintainer | contributor | reporter` (default `contributor`).'),
+    user_id: zod.uuid().optional(),
+    username: zod.string().min(1).max(addContributorBodyUsernameMax).optional(),
   })
   .describe('Add someone to the roster by id or username (exactly one).')
 

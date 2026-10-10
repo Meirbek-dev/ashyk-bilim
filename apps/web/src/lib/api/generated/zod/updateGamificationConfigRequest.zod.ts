@@ -7,9 +7,16 @@
  */
 import * as zod from 'zod'
 
+export const updateGamificationConfigRequestDailyXpLimitMin = 0
+export const updateGamificationConfigRequestDailyXpLimitMax = 1000000
+
 export const UpdateGamificationConfigRequest = zod.object({
-  daily_xp_limit: zod.int().nullish(),
-  rewards: zod.looseObject({}).optional(),
+  daily_xp_limit: zod
+    .int()
+    .min(updateGamificationConfigRequestDailyXpLimitMin)
+    .max(updateGamificationConfigRequestDailyXpLimitMax)
+    .optional(),
+  rewards: zod.record(zod.string(), zod.int()).optional(),
 })
 
 export type UpdateGamificationConfigRequest = zod.input<typeof UpdateGamificationConfigRequest>

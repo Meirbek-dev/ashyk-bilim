@@ -8,15 +8,15 @@
 import * as zod from 'zod'
 
 export const AssessmentItemAnalyticsRow = zod.object({
-  accuracy_pct: zod.number().nullish(),
-  impact_rate: zod.number().nullish(),
+  accuracy_pct: zod.number().nullable(),
+  impact_rate: zod.number().nullable(),
   impacted_count: zod.int(),
   item_key: zod.string(),
   item_label: zod.string(),
-  item_type: zod.string().describe('`workflow` | `question` | `test`.'),
+  item_type: zod.enum(['workflow', 'question', 'test']),
   note: zod
     .string()
-    .nullish()
+    .nullable()
     .describe(
       'Stable code for workflow rows (`manual_review_pending`, …); questions\nand tests carry `accuracy_pct` instead.',
     ),

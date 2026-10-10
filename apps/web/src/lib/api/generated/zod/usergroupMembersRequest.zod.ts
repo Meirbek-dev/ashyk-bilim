@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const usergroupMembersRequestUserIdsMax = 500
+
 export const UsergroupMembersRequest = zod.object({
-  user_ids: zod.array(zod.uuid()),
+  user_ids: zod.array(zod.uuid()).min(1).max(usergroupMembersRequestUserIdsMax),
 })
 
 export type UsergroupMembersRequest = zod.input<typeof UsergroupMembersRequest>

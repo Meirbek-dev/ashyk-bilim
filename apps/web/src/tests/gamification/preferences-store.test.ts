@@ -31,6 +31,11 @@ const profile = {
   last_learning_at_unix: null,
   last_xp_award_at_unix: null,
   preferences: { privacy: { showOnLeaderboard: false } },
+  settings: {
+    display: { animated_effects: null, compact_mode: null },
+    notifications: { xp_gain: null },
+    privacy: { show_on_leaderboard: false },
+  },
 }
 
 beforeEach(() => vi.resetAllMocks())
@@ -62,6 +67,7 @@ describe('gamification preferences (v2)', () => {
         },
       ],
       total_participants: 1,
+      next_cursor: null,
     }
     vi.mocked(apiJson).mockImplementation(async (_path, _init, parse) => (parse ? parse(wire) : wire))
     const options = trailLeaderboardQueryOptions(10)

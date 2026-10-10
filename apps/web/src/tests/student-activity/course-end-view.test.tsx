@@ -35,6 +35,10 @@ function state(): LearnerCourseState {
     is_late: false,
     state: 'complete' as const,
     allowed_actions: [],
+    blocked_reason: null,
+    due_at_unix: null,
+    passed: null,
+    score: null,
   })
   return {
     course_id: courseId,
@@ -42,9 +46,17 @@ function state(): LearnerCourseState {
     public: true,
     enrolled: true,
     enrollment_state: 'completed',
-    certificate: { configured: false, eligible: true, issued: false },
-    next_action: { id: 'review_completion', enabled: true, label: '', reason: '' },
-    permissions: { can_access: true, can_discover: true, can_enroll: false },
+    certificate: { configured: false, eligible: true, issued: false, href: null, verify_code: null },
+    next_action: {
+      id: 'review_completion',
+      enabled: true,
+      label: '',
+      reason: 'course_complete',
+      activity_id: null,
+      course_id: courseId,
+      href: null,
+    },
+    permissions: { can_access: true, can_discover: true, can_enroll: false, denial_reason: null },
     progress: {
       completed_at_unix: 1_700_000_000,
       completed_required_count: 5,
@@ -52,6 +64,7 @@ function state(): LearnerCourseState {
       needs_grading_count: 0,
       progress_pct: 100,
       total_required_count: 5,
+      grade_average: null,
     },
     outline: [
       {
@@ -132,6 +145,7 @@ describe('CourseEndView (BUG-165)', () => {
       completed_required_count: 0,
       progress_pct: 0,
       total_required_count: 0,
+      grade_average: null,
     }
     s.outline = []
     renderView(s)

@@ -11,7 +11,7 @@ export const Dashboard = zod.object({
   leaderboard: zod.object({
     entries: zod.array(
       zod.object({
-        avatar_key: zod.string().nullish(),
+        avatar_key: zod.string().nullable(),
         display_name: zod.string(),
         level: zod.int(),
         rank: zod.int(),
@@ -20,25 +20,81 @@ export const Dashboard = zod.object({
         username: zod.string(),
       }),
     ),
+    next_cursor: zod
+      .string()
+      .nullable()
+      .describe('Keyset paging (`cursor` in, this out; `null` on the last page and\nfor `limit`/`offset` reads).'),
     total_participants: zod.int(),
   }),
   profile: zod.object({
-    created_at_unix: zod.int(),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     daily_xp_earned: zod.int(),
-    last_learning_at_unix: zod.int().nullish(),
-    last_login_at_unix: zod.int().nullish(),
-    last_xp_award_at_unix: zod.int().nullish(),
+    last_learning_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
+    last_login_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
+    last_xp_award_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
     learning_streak: zod.int(),
     level: zod.int(),
     level_progress_percent: zod.number(),
     login_streak: zod.int(),
     longest_learning_streak: zod.int(),
     longest_login_streak: zod.int(),
-    preferences: zod.looseObject({}),
+    preferences: zod
+      .object({
+        display: zod
+          .object({
+            animatedEffects: zod.boolean().optional(),
+            compactMode: zod.boolean().optional(),
+            showGamification: zod
+              .boolean()
+              .optional()
+              .describe('GAMIF: `false` hides the gamification UI (XP, levels, badges) for this\nuser. Unset = shown.'),
+            showStreaks: zod.boolean().optional().describe('GAMIF: `false` hides the streak row. Unset = shown.'),
+          })
+          .optional(),
+        notifications: zod
+          .object({
+            xpGain: zod.boolean().optional(),
+          })
+          .optional(),
+        privacy: zod
+          .object({
+            showOnLeaderboard: zod
+              .boolean()
+              .optional()
+              .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
+          })
+          .optional(),
+      })
+      .describe('Stored camelCase document (old web); removed in phase 9.'),
+    settings: zod
+      .object({
+        display: zod.object({
+          animated_effects: zod.boolean().nullable(),
+          compact_mode: zod.boolean().nullable(),
+          show_gamification: zod.boolean().optional().describe('GAMIF switch; absent when never set (shown).'),
+          show_streaks: zod.boolean().optional().describe('GAMIF switch; absent when never set (shown).'),
+        }),
+        notifications: zod.object({
+          xp_gain: zod.boolean().nullable(),
+        }),
+        privacy: zod.object({
+          show_on_leaderboard: zod.boolean().nullable().describe('`false` hides the profile from the leaderboard.'),
+        }),
+      })
+      .describe('S-10: the same preferences with snake_case keys.'),
     total_activities_completed: zod.int(),
     total_courses_completed: zod.int(),
     total_xp: zod.int(),
-    updated_at_unix: zod.int(),
+    updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     user_id: zod.uuid(),
     xp_in_current_level: zod.int(),
     xp_to_next_level: zod.int(),
@@ -46,10 +102,10 @@ export const Dashboard = zod.object({
   recent_transactions: zod.array(
     zod.object({
       amount: zod.int(),
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       id: zod.uuid(),
       previous_level: zod.int(),
-      reason: zod.string().nullish(),
+      reason: zod.string().nullable(),
       source: zod
         .enum([
           'activity_completion',
@@ -64,12 +120,12 @@ export const Dashboard = zod.object({
           'code_challenge_first_solve',
         ])
         .describe('Why XP was granted (legacy `XPSource`).'),
-      source_id: zod.string().nullish(),
+      source_id: zod.string().nullable(),
       triggered_level_up: zod.boolean(),
       user_id: zod.uuid(),
     }),
   ),
-  user_rank: zod.int().nullish().describe('`null` when the viewer opted out of the leaderboard.'),
+  user_rank: zod.int().nullable().describe('`null` when the viewer opted out of the leaderboard.'),
 })
 
 export type Dashboard = zod.input<typeof Dashboard>

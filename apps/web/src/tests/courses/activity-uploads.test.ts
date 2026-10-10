@@ -38,7 +38,15 @@ function wireActivity(activity_type: string, activity_sub_type: string, version:
     position: 1,
     published: false,
     version,
+    allowed_actions: [],
   }
+}
+
+const blockContent = {
+  file_key: 'block-video/deadbeef',
+  file_name: 'lecture.mp4',
+  file_size: 10,
+  file_type: 'video/mp4',
 }
 
 /** The create call (body version only, no ETag) and the PATCH it must lock. */
@@ -68,7 +76,7 @@ describe('createFileActivity (v2)', () => {
         id: '01a09100-0000-7000-8000-0000000000b1',
         activity_id: ACTIVITY_ID,
         block_type: 'video',
-        content: {},
+        content: blockContent,
         created_at_unix: 1,
       }),
     )
@@ -142,7 +150,13 @@ describe('createFileActivity (v2)', () => {
 describe('replaceActivityFile', () => {
   const NEW_BLOCK = '01a09100-0000-7000-8000-0000000000b2'
   const OLD_BLOCK = '01a09100-0000-7000-8000-0000000000b1'
-  const block = (id: string) => ({ id, activity_id: ACTIVITY_ID, block_type: 'video', content: {}, created_at_unix: 1 })
+  const block = (id: string) => ({
+    id,
+    activity_id: ACTIVITY_ID,
+    block_type: 'video',
+    content: blockContent,
+    created_at_unix: 1,
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()

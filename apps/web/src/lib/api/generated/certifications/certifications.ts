@@ -24,17 +24,21 @@ import type {
 } from '@tanstack/react-query'
 
 import {
+  CertificatePdfParams,
   Certification,
   CertificationId,
+  CertificationPreviewPdfParams,
   CourseId,
   CreateCertificationRequest,
   IssuedCertificate,
+  IssuedCertificatePage,
+  MyCertificatesPageParams,
   Problem,
   UpdateCertificationRequest,
   VerifiedCertificate,
 } from '../zod'
 
-import { orvalMutator, arrayParser, stringParser, voidParser } from '../../orval-mutator'
+import { orvalMutator, arrayParser, stringParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -265,8 +269,20 @@ export function useVerifyCertificateSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getCertificatePdfUrl = (code: string) => {
-  return `/api/v2/certificates/${code}/pdf`
+export const getCertificatePdfUrl = (code: string, params?: CertificatePdfParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/certificates/${code}/pdf?${stringifiedParams}`
+    : `/api/v2/certificates/${code}/pdf`
 }
 
 /**
@@ -276,9 +292,13 @@ export const getCertificatePdfUrl = (code: string) => {
  * `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
  * @summary The certificate as an A4-landscape PDF - public by code, like verification.
  */
-export const certificatePdf = async (code: string, options?: Parameters<typeof orvalMutator>[1]): Promise<string> => {
+export const certificatePdf = async (
+  code: string,
+  params?: CertificatePdfParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<string> => {
   return orvalMutator<string>(
-    getCertificatePdfUrl(code),
+    getCertificatePdfUrl(code, params),
     {
       ...options,
       method: 'GET',
@@ -287,8 +307,8 @@ export const certificatePdf = async (code: string, options?: Parameters<typeof o
   )
 }
 
-export const getCertificatePdfQueryKey = (code: string) => {
-  return [`/api/v2/certificates/${code}/pdf`] as const
+export const getCertificatePdfQueryKey = (code: string, params?: CertificatePdfParams) => {
+  return [`/api/v2/certificates/${code}/pdf`, ...(params ? [params] : [])] as const
 }
 
 export const getCertificatePdfQueryOptions = <
@@ -296,6 +316,7 @@ export const getCertificatePdfQueryOptions = <
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -303,10 +324,10 @@ export const getCertificatePdfQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code)
+  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof certificatePdf>>> = ({ signal }) =>
-    certificatePdf(code, { signal, ...requestOptions })
+    certificatePdf(code, params, { signal, ...requestOptions })
 
   return { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof certificatePdf>>,
@@ -320,6 +341,7 @@ export type CertificatePdfQueryError = ErrorType<Problem>
 
 export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
   code: string,
+  params: undefined | CertificatePdfParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>> &
       Pick<
@@ -336,6 +358,7 @@ export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificateP
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>> &
       Pick<
@@ -352,6 +375,7 @@ export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificateP
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -364,13 +388,14 @@ export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificateP
 
 export function useCertificatePdf<TData = Awaited<ReturnType<typeof certificatePdf>>, TError = ErrorType<Problem>>(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCertificatePdfQueryOptions(code, options)
+  const queryOptions = getCertificatePdfQueryOptions(code, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -384,6 +409,7 @@ export const getCertificatePdfSuspenseQueryOptions = <
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -391,10 +417,10 @@ export const getCertificatePdfSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code)
+  const queryKey = queryOptions?.queryKey ?? getCertificatePdfQueryKey(code, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof certificatePdf>>> = ({ signal }) =>
-    certificatePdf(code, { signal, ...requestOptions })
+    certificatePdf(code, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -413,6 +439,7 @@ export function useCertificatePdfSuspense<
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params: undefined | CertificatePdfParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -424,6 +451,7 @@ export function useCertificatePdfSuspense<
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -435,6 +463,7 @@ export function useCertificatePdfSuspense<
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -450,13 +479,14 @@ export function useCertificatePdfSuspense<
   TError = ErrorType<Problem>,
 >(
   code: string,
+  params?: CertificatePdfParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificatePdf>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCertificatePdfSuspenseQueryOptions(code, options)
+  const queryOptions = getCertificatePdfSuspenseQueryOptions(code, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -471,6 +501,7 @@ export const getCreateCertificationUrl = () => {
 
 /**
  * @summary Add a certification template to a course (`certificate:create`).
+Honours `Idempotency-Key`.
  */
 export const createCertification = async (
   createCertificationRequest: CreateCertificationRequest,
@@ -544,6 +575,7 @@ export type CreateCertificationMutationVariables = { data: BodyType<CreateCertif
 
 /**
  * @summary Add a certification template to a course (`certificate:create`).
+Honours `Idempotency-Key`.
  */
 export const useCreateCertification = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -564,218 +596,19 @@ export const useCreateCertification = <TError = ErrorType<Problem>, TContext = u
 > => {
   return useMutation(getCreateCertificationMutationOptions(options), queryClient)
 }
-export const getGetCertificationUrl = (id: CertificationId) => {
-  return `/api/v2/certifications/${id}`
-}
-
-/**
- * @summary One template (course-scoped `certificate:read`).
- */
-export const getCertification = async (
-  id: CertificationId,
-  options?: Parameters<typeof orvalMutator>[1],
-): Promise<Certification> => {
-  return orvalMutator<Certification>(
-    getGetCertificationUrl(id),
-    {
-      ...options,
-      method: 'GET',
-    },
-    Certification,
-  )
-}
-
-export const getGetCertificationQueryKey = (id: CertificationId) => {
-  return [`/api/v2/certifications/${id}`] as const
-}
-
-export const getGetCertificationQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetCertificationQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCertification>>> = ({ signal }) =>
-    getCertification(id, { signal, ...requestOptions })
-
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCertification>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetCertificationQueryResult = NonNullable<Awaited<ReturnType<typeof getCertification>>>
-export type GetCertificationQueryError = ErrorType<unknown>
-
-export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
-  id: CertificationId,
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>> &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCertification>>,
-          TError,
-          Awaited<ReturnType<typeof getCertification>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>> &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCertification>>,
-          TError,
-          Awaited<ReturnType<typeof getCertification>>
-        >,
-        'initialData'
-      >
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One template (course-scoped `certificate:read`).
- */
-
-export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetCertificationQueryOptions(id, options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getGetCertificationSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {}
-
-  const queryKey = queryOptions?.queryKey ?? getGetCertificationQueryKey(id)
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCertification>>> = ({ signal }) =>
-    getCertification(id, { signal, ...requestOptions })
-
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type GetCertificationSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCertification>>>
-export type GetCertificationSuspenseQueryError = ErrorType<unknown>
-
-export function useGetCertificationSuspense<
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCertificationSuspense<
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCertificationSuspense<
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary One template (course-scoped `certificate:read`).
- */
-
-export function useGetCertificationSuspense<
-  TData = Awaited<ReturnType<typeof getCertification>>,
-  TError = ErrorType<unknown>,
->(
-  id: CertificationId,
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetCertificationSuspenseQueryOptions(id, options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>
-  }
-
-  return withQueryKey(query, queryOptions.queryKey)
-}
-
-export const getDeleteCertificationUrl = (id: CertificationId) => {
-  return `/api/v2/certifications/${id}`
+export const getDeleteCertificationUrl = (certificationId: CertificationId) => {
+  return `/api/v2/certifications/${certificationId}`
 }
 
 /**
  * @summary Remove the template and every certificate issued from it.
  */
 export const deleteCertification = async (
-  id: CertificationId,
+  certificationId: CertificationId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<void> => {
   return orvalMutator<void>(
-    getDeleteCertificationUrl(id),
+    getDeleteCertificationUrl(certificationId),
     {
       ...options,
       method: 'DELETE',
@@ -786,7 +619,7 @@ export const deleteCertification = async (
 
 export const getDeleteCertificationMutationKey = () => ['deleteCertification'] as const
 
-export const getDeleteCertificationMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getDeleteCertificationMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof deleteCertification>>,
     TError,
@@ -811,9 +644,9 @@ export const getDeleteCertificationMutationOptions = <TError = ErrorType<unknown
     Awaited<ReturnType<typeof deleteCertification>>,
     DeleteCertificationMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { certificationId } = props ?? {}
 
-    return deleteCertification(id, requestOptions)
+    return deleteCertification(certificationId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -821,13 +654,13 @@ export const getDeleteCertificationMutationOptions = <TError = ErrorType<unknown
 
 export type DeleteCertificationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCertification>>>
 
-export type DeleteCertificationMutationError = ErrorType<unknown>
-export type DeleteCertificationMutationVariables = { id: CertificationId }
+export type DeleteCertificationMutationError = ErrorType<Problem>
+export type DeleteCertificationMutationVariables = { certificationId: CertificationId }
 
 /**
  * @summary Remove the template and every certificate issued from it.
  */
-export const useDeleteCertification = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useDeleteCertification = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deleteCertification>>,
@@ -846,15 +679,217 @@ export const useDeleteCertification = <TError = ErrorType<unknown>, TContext = u
 > => {
   return useMutation(getDeleteCertificationMutationOptions(options), queryClient)
 }
-export const getUpdateCertificationUrl = (id: CertificationId) => {
-  return `/api/v2/certifications/${id}`
+export const getGetCertificationUrl = (certificationId: CertificationId) => {
+  return `/api/v2/certifications/${certificationId}`
+}
+
+/**
+ * @summary One template (course-scoped `certificate:read`).
+ */
+export const getCertification = async (
+  certificationId: CertificationId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Certification> => {
+  return orvalMutator<Certification>(
+    getGetCertificationUrl(certificationId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Certification,
+  )
+}
+
+export const getGetCertificationQueryKey = (certificationId: CertificationId) => {
+  return [`/api/v2/certifications/${certificationId}`] as const
+}
+
+export const getGetCertificationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetCertificationQueryKey(certificationId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCertification>>> = ({ signal }) =>
+    getCertification(certificationId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: certificationId !== null && certificationId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetCertificationQueryResult = NonNullable<Awaited<ReturnType<typeof getCertification>>>
+export type GetCertificationQueryError = ErrorType<unknown>
+
+export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
+  certificationId: CertificationId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCertification>>,
+          TError,
+          Awaited<ReturnType<typeof getCertification>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCertification>>,
+          TError,
+          Awaited<ReturnType<typeof getCertification>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One template (course-scoped `certificate:read`).
+ */
+
+export function useGetCertification<TData = Awaited<ReturnType<typeof getCertification>>, TError = ErrorType<unknown>>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCertificationQueryOptions(certificationId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetCertificationSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetCertificationQueryKey(certificationId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCertification>>> = ({ signal }) =>
+    getCertification(certificationId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetCertificationSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getCertification>>>
+export type GetCertificationSuspenseQueryError = ErrorType<unknown>
+
+export function useGetCertificationSuspense<
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCertificationSuspense<
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCertificationSuspense<
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One template (course-scoped `certificate:read`).
+ */
+
+export function useGetCertificationSuspense<
+  TData = Awaited<ReturnType<typeof getCertification>>,
+  TError = ErrorType<unknown>,
+>(
+  certificationId: CertificationId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getCertification>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCertificationSuspenseQueryOptions(certificationId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUpdateCertificationUrl = (certificationId: CertificationId) => {
+  return `/api/v2/certifications/${certificationId}`
 }
 
 /**
  * @summary Replace the template document.
  */
 export const updateCertification = async (
-  id: CertificationId,
+  certificationId: CertificationId,
   updateCertificationRequest: UpdateCertificationRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Certification> => {
@@ -873,7 +908,7 @@ export const updateCertification = async (
     return headers
   }
   return orvalMutator<Certification>(
-    getUpdateCertificationUrl(id),
+    getUpdateCertificationUrl(certificationId),
     {
       ...options,
       method: 'PATCH',
@@ -886,7 +921,7 @@ export const updateCertification = async (
 
 export const getUpdateCertificationMutationKey = () => ['updateCertification'] as const
 
-export const getUpdateCertificationMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getUpdateCertificationMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateCertification>>,
     TError,
@@ -911,9 +946,9 @@ export const getUpdateCertificationMutationOptions = <TError = ErrorType<unknown
     Awaited<ReturnType<typeof updateCertification>>,
     UpdateCertificationMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { certificationId, data } = props ?? {}
 
-    return updateCertification(id, data, requestOptions)
+    return updateCertification(certificationId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -921,13 +956,16 @@ export const getUpdateCertificationMutationOptions = <TError = ErrorType<unknown
 
 export type UpdateCertificationMutationResult = NonNullable<Awaited<ReturnType<typeof updateCertification>>>
 export type UpdateCertificationMutationBody = BodyType<UpdateCertificationRequest>
-export type UpdateCertificationMutationError = ErrorType<unknown>
-export type UpdateCertificationMutationVariables = { id: CertificationId; data: BodyType<UpdateCertificationRequest> }
+export type UpdateCertificationMutationError = ErrorType<Problem>
+export type UpdateCertificationMutationVariables = {
+  certificationId: CertificationId
+  data: BodyType<UpdateCertificationRequest>
+}
 
 /**
  * @summary Replace the template document.
  */
-export const useUpdateCertification = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useUpdateCertification = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateCertification>>,
@@ -946,8 +984,255 @@ export const useUpdateCertification = <TError = ErrorType<unknown>, TContext = u
 > => {
   return useMutation(getUpdateCertificationMutationOptions(options), queryClient)
 }
-export const getMyCourseCertificatesUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/certificates/me`
+export const getCertificationPreviewPdfUrl = (
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/certifications/${certificationId}/preview.pdf?${stringifiedParams}`
+    : `/api/v2/certifications/${certificationId}/preview.pdf`
+}
+
+/**
+ * Before anything is issued: the caller as holder, today's date, code `PREVIEW`.
+ * Language: `?lang=`, else `Accept-Language`, else the caller's locale.
+ * @summary A sample PDF of the template (course certificate readers).
+ */
+export const certificationPreviewPdf = async (
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<string> => {
+  return orvalMutator<string>(
+    getCertificationPreviewPdfUrl(certificationId, params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    stringParser,
+  )
+}
+
+export const getCertificationPreviewPdfQueryKey = (
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+) => {
+  return [`/api/v2/certifications/${certificationId}/preview.pdf`, ...(params ? [params] : [])] as const
+}
+
+export const getCertificationPreviewPdfQueryOptions = <
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCertificationPreviewPdfQueryKey(certificationId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof certificationPreviewPdf>>> = ({ signal }) =>
+    certificationPreviewPdf(certificationId, params, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: certificationId !== null && certificationId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type CertificationPreviewPdfQueryResult = NonNullable<Awaited<ReturnType<typeof certificationPreviewPdf>>>
+export type CertificationPreviewPdfQueryError = ErrorType<Problem>
+
+export function useCertificationPreviewPdf<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params: undefined | CertificationPreviewPdfParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof certificationPreviewPdf>>,
+          TError,
+          Awaited<ReturnType<typeof certificationPreviewPdf>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificationPreviewPdf<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof certificationPreviewPdf>>,
+          TError,
+          Awaited<ReturnType<typeof certificationPreviewPdf>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificationPreviewPdf<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A sample PDF of the template (course certificate readers).
+ */
+
+export function useCertificationPreviewPdf<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCertificationPreviewPdfQueryOptions(certificationId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCertificationPreviewPdfSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCertificationPreviewPdfQueryKey(certificationId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof certificationPreviewPdf>>> = ({ signal }) =>
+    certificationPreviewPdf(certificationId, params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type CertificationPreviewPdfSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof certificationPreviewPdf>>
+>
+export type CertificationPreviewPdfSuspenseQueryError = ErrorType<Problem>
+
+export function useCertificationPreviewPdfSuspense<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params: undefined | CertificationPreviewPdfParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificationPreviewPdfSuspense<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCertificationPreviewPdfSuspense<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary A sample PDF of the template (course certificate readers).
+ */
+
+export function useCertificationPreviewPdfSuspense<
+  TData = Awaited<ReturnType<typeof certificationPreviewPdf>>,
+  TError = ErrorType<Problem>,
+>(
+  certificationId: CertificationId,
+  params?: CertificationPreviewPdfParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof certificationPreviewPdf>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCertificationPreviewPdfSuspenseQueryOptions(certificationId, params, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getMyCourseCertificatesUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/certificates/me`
 }
 
 /**
@@ -955,11 +1240,11 @@ export const getMyCourseCertificatesUrl = (id: CourseId) => {
 the spot.
  */
 export const myCourseCertificates = async (
-  id: CourseId,
+  courseId: CourseId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<IssuedCertificate[]> => {
   return orvalMutator<IssuedCertificate[]>(
-    getMyCourseCertificatesUrl(id),
+    getMyCourseCertificatesUrl(courseId),
     {
       ...options,
       method: 'GET',
@@ -968,15 +1253,15 @@ export const myCourseCertificates = async (
   )
 }
 
-export const getMyCourseCertificatesQueryKey = (id: CourseId) => {
-  return [`/api/v2/courses/${id}/certificates/me`] as const
+export const getMyCourseCertificatesQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/certificates/me`] as const
 }
 
 export const getMyCourseCertificatesQueryOptions = <
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -984,16 +1269,19 @@ export const getMyCourseCertificatesQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMyCourseCertificatesQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getMyCourseCertificatesQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myCourseCertificates>>> = ({ signal }) =>
-    myCourseCertificates(id, { signal, ...requestOptions })
+    myCourseCertificates(courseId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof myCourseCertificates>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type MyCourseCertificatesQueryResult = NonNullable<Awaited<ReturnType<typeof myCourseCertificates>>>
@@ -1003,7 +1291,7 @@ export function useMyCourseCertificates<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>> &
       Pick<
@@ -1022,7 +1310,7 @@ export function useMyCourseCertificates<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>> &
       Pick<
@@ -1041,7 +1329,7 @@ export function useMyCourseCertificates<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1057,14 +1345,14 @@ export function useMyCourseCertificates<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMyCourseCertificatesQueryOptions(id, options)
+  const queryOptions = getMyCourseCertificatesQueryOptions(courseId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1077,7 +1365,7 @@ export const getMyCourseCertificatesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1085,10 +1373,10 @@ export const getMyCourseCertificatesSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getMyCourseCertificatesQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getMyCourseCertificatesQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof myCourseCertificates>>> = ({ signal }) =>
-    myCourseCertificates(id, { signal, ...requestOptions })
+    myCourseCertificates(courseId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1106,7 +1394,7 @@ export function useMyCourseCertificatesSuspense<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1117,7 +1405,7 @@ export function useMyCourseCertificatesSuspense<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1128,7 +1416,7 @@ export function useMyCourseCertificatesSuspense<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1144,14 +1432,14 @@ export function useMyCourseCertificatesSuspense<
   TData = Awaited<ReturnType<typeof myCourseCertificates>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCourseCertificates>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getMyCourseCertificatesSuspenseQueryOptions(id, options)
+  const queryOptions = getMyCourseCertificatesSuspenseQueryOptions(courseId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1160,19 +1448,19 @@ export function useMyCourseCertificatesSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getListCourseCertificationsUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/certifications`
+export const getListCourseCertificationsUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/certifications`
 }
 
 /**
  * @summary The course's templates (course-scoped `certificate:read`).
  */
 export const listCourseCertifications = async (
-  id: CourseId,
+  courseId: CourseId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Certification[]> => {
   return orvalMutator<Certification[]>(
-    getListCourseCertificationsUrl(id),
+    getListCourseCertificationsUrl(courseId),
     {
       ...options,
       method: 'GET',
@@ -1181,15 +1469,15 @@ export const listCourseCertifications = async (
   )
 }
 
-export const getListCourseCertificationsQueryKey = (id: CourseId) => {
-  return [`/api/v2/courses/${id}/certifications`] as const
+export const getListCourseCertificationsQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/certifications`] as const
 }
 
 export const getListCourseCertificationsQueryOptions = <
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1197,16 +1485,19 @@ export const getListCourseCertificationsQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListCourseCertificationsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getListCourseCertificationsQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseCertifications>>> = ({ signal }) =>
-    listCourseCertifications(id, { signal, ...requestOptions })
+    listCourseCertifications(courseId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listCourseCertifications>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ListCourseCertificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listCourseCertifications>>>
@@ -1216,7 +1507,7 @@ export function useListCourseCertifications<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>> &
       Pick<
@@ -1235,7 +1526,7 @@ export function useListCourseCertifications<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>> &
       Pick<
@@ -1254,7 +1545,7 @@ export function useListCourseCertifications<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1269,14 +1560,14 @@ export function useListCourseCertifications<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListCourseCertificationsQueryOptions(id, options)
+  const queryOptions = getListCourseCertificationsQueryOptions(courseId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1289,7 +1580,7 @@ export const getListCourseCertificationsSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1297,10 +1588,10 @@ export const getListCourseCertificationsSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListCourseCertificationsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getListCourseCertificationsQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listCourseCertifications>>> = ({ signal }) =>
-    listCourseCertifications(id, { signal, ...requestOptions })
+    listCourseCertifications(courseId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1320,7 +1611,7 @@ export function useListCourseCertificationsSuspense<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1331,7 +1622,7 @@ export function useListCourseCertificationsSuspense<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1342,7 +1633,7 @@ export function useListCourseCertificationsSuspense<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1357,14 +1648,14 @@ export function useListCourseCertificationsSuspense<
   TData = Awaited<ReturnType<typeof listCourseCertifications>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listCourseCertifications>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListCourseCertificationsSuspenseQueryOptions(id, options)
+  const queryOptions = getListCourseCertificationsSuspenseQueryOptions(courseId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1547,6 +1838,232 @@ export function useMyCertificatesSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getMyCertificatesSuspenseQueryOptions(options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getMyCertificatesPageUrl = (params?: MyCertificatesPageParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/me/certificates/page?${stringifiedParams}`
+    : `/api/v2/me/certificates/page`
+}
+
+/**
+ * @summary The caller's certificates as keyset pages (S-05; `GET /me/certificates`
+stays the full list).
+ */
+export const myCertificatesPage = async (
+  params?: MyCertificatesPageParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<IssuedCertificatePage> => {
+  return orvalMutator<IssuedCertificatePage>(
+    getMyCertificatesPageUrl(params),
+    {
+      ...options,
+      method: 'GET',
+    },
+    IssuedCertificatePage,
+  )
+}
+
+export const getMyCertificatesPageQueryKey = (params?: MyCertificatesPageParams) => {
+  return [`/api/v2/me/certificates/page`, ...(params ? [params] : [])] as const
+}
+
+export const getMyCertificatesPageQueryOptions = <
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getMyCertificatesPageQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof myCertificatesPage>>> = ({ signal }) =>
+    myCertificatesPage(params, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof myCertificatesPage>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MyCertificatesPageQueryResult = NonNullable<Awaited<ReturnType<typeof myCertificatesPage>>>
+export type MyCertificatesPageQueryError = ErrorType<unknown>
+
+export function useMyCertificatesPage<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params: undefined | MyCertificatesPageParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof myCertificatesPage>>,
+          TError,
+          Awaited<ReturnType<typeof myCertificatesPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMyCertificatesPage<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof myCertificatesPage>>,
+          TError,
+          Awaited<ReturnType<typeof myCertificatesPage>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMyCertificatesPage<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's certificates as keyset pages (S-05; `GET /me/certificates`
+stays the full list).
+ */
+
+export function useMyCertificatesPage<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getMyCertificatesPageQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getMyCertificatesPageSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getMyCertificatesPageQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof myCertificatesPage>>> = ({ signal }) =>
+    myCertificatesPage(params, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type MyCertificatesPageSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof myCertificatesPage>>>
+export type MyCertificatesPageSuspenseQueryError = ErrorType<unknown>
+
+export function useMyCertificatesPageSuspense<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params: undefined | MyCertificatesPageParams,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMyCertificatesPageSuspense<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMyCertificatesPageSuspense<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The caller's certificates as keyset pages (S-05; `GET /me/certificates`
+stays the full list).
+ */
+
+export function useMyCertificatesPageSuspense<
+  TData = Awaited<ReturnType<typeof myCertificatesPage>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: MyCertificatesPageParams,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof myCertificatesPage>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getMyCertificatesPageSuspenseQueryOptions(params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

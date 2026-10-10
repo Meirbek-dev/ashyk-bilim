@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const GradingBacklogItem = zod.object({
-  age_hours: zod.number().nullish(),
+  age_hours: zod.number().nullable(),
   assessment_id: zod.uuid(),
   assessment_type: zod
     .enum(['quiz', 'exam', 'code_challenge'])
@@ -16,7 +16,10 @@ export const GradingBacklogItem = zod.object({
   awaiting_review: zod.int(),
   course_id: zod.uuid(),
   course_name: zod.string(),
-  oldest_submitted_at_unix: zod.int().nullish(),
+  oldest_submitted_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   sla_breaches: zod.int(),
   title: zod.string(),
 })

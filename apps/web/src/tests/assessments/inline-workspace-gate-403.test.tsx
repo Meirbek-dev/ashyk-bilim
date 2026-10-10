@@ -98,7 +98,6 @@ const gate403 = () =>
       status: 403,
       code: 'forbidden',
       detail: 'cannot start: REMEDIATION_REQUIRED',
-      details: null,
       field_errors: [],
       request_id: 'r1',
     },

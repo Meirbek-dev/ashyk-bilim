@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const AdminTeacherRow = zod.object({
   at_risk_learners: zod.int(),
   managed_course_count: zod.int(),
-  median_feedback_latency_hours: zod.number().nullish(),
+  median_feedback_latency_hours: zod.number().nullable(),
   sla_breaches: zod.int(),
   teacher_display_name: zod.string(),
   teacher_user_id: zod.uuid(),

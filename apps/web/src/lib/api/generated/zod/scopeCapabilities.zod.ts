@@ -11,27 +11,37 @@ export const scopeCapabilitiesContextOneSourceCountMin = 0
 
 export const ScopeCapabilities = zod.object({
   available: zod.boolean(),
-  context: zod
-    .union([
-      zod.object({
-        activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        activity_label: zod.string().nullish(),
-        course_label: zod.string(),
-        source_count: zod.int().min(scopeCapabilitiesContextOneSourceCountMin),
-      }),
-      zod.null(),
-    ])
-    .optional(),
-  context_visibility: zod.string().describe('`student` or `teacher`.'),
+  context: zod.union([
+    zod.object({
+      activity_id: zod.union([zod.uuid(), zod.null()]),
+      activity_label: zod.string().nullable(),
+      course_label: zod.string(),
+      source_count: zod.int().min(scopeCapabilitiesContextOneSourceCountMin),
+    }),
+    zod.null(),
+  ]),
+  context_visibility: zod.enum(['student', 'teacher']).describe('`student` or `teacher`.'),
   features: zod.array(
     zod.object({
       enabled: zod.boolean(),
       key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-      reason: zod.string().nullish(),
+      reason: zod.union([
+        zod.enum(['disabled']).describe('Why a feature is off (`FeatureCapability.reason`; ENUMS).'),
+        zod.null(),
+      ]),
     }),
   ),
-  modes: zod.array(zod.string()),
-  reason: zod.string().nullish(),
+  modes: zod.array(
+    zod
+      .enum(['ask', 'explain', 'practice', 'analyze'])
+      .describe('An AI entry point the scope offers (`ScopeCapabilities.modes`).'),
+  ),
+  reason: zod.union([
+    zod
+      .enum(['course_not_found', 'ai_disabled', 'restricted_activity', 'no_enabled_modes'])
+      .describe('Why the scope offers no AI (`ScopeCapabilities.reason`).'),
+    zod.null(),
+  ]),
   restricted: zod.boolean(),
   role: zod
     .enum(['student', 'teacher', 'author', 'admin'])

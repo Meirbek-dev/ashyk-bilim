@@ -41,6 +41,12 @@ function examCell(status: Cell['status'], final_score: number | null = 80): Cell
     attempts: 1,
     is_late: false,
     final_score,
+    due_at_override_unix: null,
+    graded_at_unix: null,
+    pending_attempt: null,
+    pending_attempt_id: null,
+    pending_attempt_status: null,
+    submitted_at_unix: null,
   }
 }
 
@@ -57,6 +63,12 @@ function fileCell(status: Cell['status'], final_score: number | null): Cell {
     attempts: 2,
     is_late: false,
     final_score,
+    due_at_override_unix: null,
+    graded_at_unix: null,
+    pending_attempt: null,
+    pending_attempt_id: null,
+    pending_attempt_status: null,
+    submitted_at_unix: null,
   }
 }
 

@@ -56,7 +56,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result
 }
 
-export const getListDiscussionsUrl = (id: CourseId, params?: ListDiscussionsParams) => {
+export const getListDiscussionsUrl = (courseId: CourseId, params?: ListDiscussionsParams) => {
   const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -68,20 +68,21 @@ export const getListDiscussionsUrl = (id: CourseId, params?: ListDiscussionsPara
   const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0
-    ? `/api/v2/courses/${id}/discussions?${stringifiedParams}`
-    : `/api/v2/courses/${id}/discussions`
+    ? `/api/v2/courses/${courseId}/discussions?${stringifiedParams}`
+    : `/api/v2/courses/${courseId}/discussions`
 }
 
 /**
- * @summary Newest posts first (keyset), optionally with replies embedded.
+ * @summary Newest posts first (keyset), optionally with replies embedded. A guest
+gets an empty page for a public course (sign in to read).
  */
 export const listDiscussions = async (
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<DiscussionPage> => {
   return orvalMutator<DiscussionPage>(
-    getListDiscussionsUrl(id, params),
+    getListDiscussionsUrl(courseId, params),
     {
       ...options,
       method: 'GET',
@@ -90,15 +91,15 @@ export const listDiscussions = async (
   )
 }
 
-export const getListDiscussionsQueryKey = (id: CourseId, params?: ListDiscussionsParams) => {
-  return [`/api/v2/courses/${id}/discussions`, ...(params ? [params] : [])] as const
+export const getListDiscussionsQueryKey = (courseId: CourseId, params?: ListDiscussionsParams) => {
+  return [`/api/v2/courses/${courseId}/discussions`, ...(params ? [params] : [])] as const
 }
 
 export const getListDiscussionsQueryOptions = <
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -107,23 +108,26 @@ export const getListDiscussionsQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListDiscussionsQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getListDiscussionsQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listDiscussions>>> = ({ signal }) =>
-    listDiscussions(id, params, { signal, ...requestOptions })
+    listDiscussions(courseId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listDiscussions>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ListDiscussionsQueryResult = NonNullable<Awaited<ReturnType<typeof listDiscussions>>>
 export type ListDiscussionsQueryError = ErrorType<Problem>
 
 export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscussions>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | ListDiscussionsParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>> &
@@ -140,7 +144,7 @@ export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscuss
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscussions>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>> &
@@ -157,7 +161,7 @@ export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscuss
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscussions>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -166,11 +170,12 @@ export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscuss
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest posts first (keyset), optionally with replies embedded.
+ * @summary Newest posts first (keyset), optionally with replies embedded. A guest
+gets an empty page for a public course (sign in to read).
  */
 
 export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscussions>>, TError = ErrorType<Problem>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -178,7 +183,7 @@ export function useListDiscussions<TData = Awaited<ReturnType<typeof listDiscuss
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListDiscussionsQueryOptions(id, params, options)
+  const queryOptions = getListDiscussionsQueryOptions(courseId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -191,7 +196,7 @@ export const getListDiscussionsSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -200,10 +205,10 @@ export const getListDiscussionsSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListDiscussionsQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getListDiscussionsQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listDiscussions>>> = ({ signal }) =>
-    listDiscussions(id, params, { signal, ...requestOptions })
+    listDiscussions(courseId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -221,7 +226,7 @@ export function useListDiscussionsSuspense<
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | ListDiscussionsParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -233,7 +238,7 @@ export function useListDiscussionsSuspense<
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -245,7 +250,7 @@ export function useListDiscussionsSuspense<
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -254,14 +259,15 @@ export function useListDiscussionsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Newest posts first (keyset), optionally with replies embedded.
+ * @summary Newest posts first (keyset), optionally with replies embedded. A guest
+gets an empty page for a public course (sign in to read).
  */
 
 export function useListDiscussionsSuspense<
   TData = Awaited<ReturnType<typeof listDiscussions>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: ListDiscussionsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listDiscussions>>, TError, TData>>
@@ -269,7 +275,7 @@ export function useListDiscussionsSuspense<
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListDiscussionsSuspenseQueryOptions(id, params, options)
+  const queryOptions = getListDiscussionsSuspenseQueryOptions(courseId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -278,8 +284,8 @@ export function useListDiscussionsSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getCreateDiscussionUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/discussions`
+export const getCreateDiscussionUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/discussions`
 }
 
 /**
@@ -288,7 +294,7 @@ retry with the same body replays the created post instead of posting
 twice; the same key with a different body is 422.
  */
 export const createDiscussion = async (
-  id: CourseId,
+  courseId: CourseId,
   createDiscussionRequest: CreateDiscussionRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Discussion> => {
@@ -307,7 +313,7 @@ export const createDiscussion = async (
     return headers
   }
   return orvalMutator<Discussion>(
-    getCreateDiscussionUrl(id),
+    getCreateDiscussionUrl(courseId),
     {
       ...options,
       method: 'POST',
@@ -345,9 +351,9 @@ export const getCreateDiscussionMutationOptions = <TError = ErrorType<Problem>, 
     Awaited<ReturnType<typeof createDiscussion>>,
     CreateDiscussionMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { courseId, data } = props ?? {}
 
-    return createDiscussion(id, data, requestOptions)
+    return createDiscussion(courseId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -356,7 +362,7 @@ export const getCreateDiscussionMutationOptions = <TError = ErrorType<Problem>, 
 export type CreateDiscussionMutationResult = NonNullable<Awaited<ReturnType<typeof createDiscussion>>>
 export type CreateDiscussionMutationBody = BodyType<CreateDiscussionRequest>
 export type CreateDiscussionMutationError = ErrorType<Problem>
-export type CreateDiscussionMutationVariables = { id: CourseId; data: BodyType<CreateDiscussionRequest> }
+export type CreateDiscussionMutationVariables = { courseId: CourseId; data: BodyType<CreateDiscussionRequest> }
 
 /**
  * @summary Post, or reply to a post (`parent_id`). With an `Idempotency-Key`, a
@@ -382,19 +388,19 @@ export const useCreateDiscussion = <TError = ErrorType<Problem>, TContext = unkn
 > => {
   return useMutation(getCreateDiscussionMutationOptions(options), queryClient)
 }
-export const getDeleteDiscussionUrl = (id: DiscussionId) => {
-  return `/api/v2/discussions/${id}`
+export const getDeleteDiscussionUrl = (discussionId: DiscussionId) => {
+  return `/api/v2/discussions/${discussionId}`
 }
 
 /**
  * @summary Remove a post with its replies and reactions (owner, or a moderator).
  */
 export const deleteDiscussion = async (
-  id: DiscussionId,
+  discussionId: DiscussionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<void> => {
   return orvalMutator<void>(
-    getDeleteDiscussionUrl(id),
+    getDeleteDiscussionUrl(discussionId),
     {
       ...options,
       method: 'DELETE',
@@ -430,9 +436,9 @@ export const getDeleteDiscussionMutationOptions = <TError = ErrorType<Problem>, 
     Awaited<ReturnType<typeof deleteDiscussion>>,
     DeleteDiscussionMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { discussionId } = props ?? {}
 
-    return deleteDiscussion(id, requestOptions)
+    return deleteDiscussion(discussionId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -441,7 +447,7 @@ export const getDeleteDiscussionMutationOptions = <TError = ErrorType<Problem>, 
 export type DeleteDiscussionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDiscussion>>>
 
 export type DeleteDiscussionMutationError = ErrorType<Problem>
-export type DeleteDiscussionMutationVariables = { id: DiscussionId }
+export type DeleteDiscussionMutationVariables = { discussionId: DiscussionId }
 
 /**
  * @summary Remove a post with its replies and reactions (owner, or a moderator).
@@ -465,8 +471,210 @@ export const useDeleteDiscussion = <TError = ErrorType<Problem>, TContext = unkn
 > => {
   return useMutation(getDeleteDiscussionMutationOptions(options), queryClient)
 }
-export const getUpdateDiscussionUrl = (id: DiscussionId) => {
-  return `/api/v2/discussions/${id}`
+export const getGetDiscussionUrl = (discussionId: DiscussionId) => {
+  return `/api/v2/discussions/${discussionId}`
+}
+
+/**
+ * @summary One post with its active replies, or one reply (deep links).
+ */
+export const getDiscussion = async (
+  discussionId: DiscussionId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Discussion> => {
+  return orvalMutator<Discussion>(
+    getGetDiscussionUrl(discussionId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Discussion,
+  )
+}
+
+export const getGetDiscussionQueryKey = (discussionId: DiscussionId) => {
+  return [`/api/v2/discussions/${discussionId}`] as const
+}
+
+export const getGetDiscussionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetDiscussionQueryKey(discussionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiscussion>>> = ({ signal }) =>
+    getDiscussion(discussionId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: discussionId !== null && discussionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetDiscussionQueryResult = NonNullable<Awaited<ReturnType<typeof getDiscussion>>>
+export type GetDiscussionQueryError = ErrorType<Problem>
+
+export function useGetDiscussion<TData = Awaited<ReturnType<typeof getDiscussion>>, TError = ErrorType<Problem>>(
+  discussionId: DiscussionId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDiscussion>>,
+          TError,
+          Awaited<ReturnType<typeof getDiscussion>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDiscussion<TData = Awaited<ReturnType<typeof getDiscussion>>, TError = ErrorType<Problem>>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDiscussion>>,
+          TError,
+          Awaited<ReturnType<typeof getDiscussion>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDiscussion<TData = Awaited<ReturnType<typeof getDiscussion>>, TError = ErrorType<Problem>>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One post with its active replies, or one reply (deep links).
+ */
+
+export function useGetDiscussion<TData = Awaited<ReturnType<typeof getDiscussion>>, TError = ErrorType<Problem>>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetDiscussionQueryOptions(discussionId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetDiscussionSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetDiscussionQueryKey(discussionId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiscussion>>> = ({ signal }) =>
+    getDiscussion(discussionId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetDiscussionSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getDiscussion>>>
+export type GetDiscussionSuspenseQueryError = ErrorType<Problem>
+
+export function useGetDiscussionSuspense<
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDiscussionSuspense<
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDiscussionSuspense<
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One post with its active replies, or one reply (deep links).
+ */
+
+export function useGetDiscussionSuspense<
+  TData = Awaited<ReturnType<typeof getDiscussion>>,
+  TError = ErrorType<Problem>,
+>(
+  discussionId: DiscussionId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDiscussion>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetDiscussionSuspenseQueryOptions(discussionId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUpdateDiscussionUrl = (discussionId: DiscussionId) => {
+  return `/api/v2/discussions/${discussionId}`
 }
 
 /**
@@ -474,7 +682,7 @@ export const getUpdateDiscussionUrl = (id: DiscussionId) => {
 `status`.
  */
 export const updateDiscussion = async (
-  id: DiscussionId,
+  discussionId: DiscussionId,
   updateDiscussionRequest: UpdateDiscussionRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<Discussion> => {
@@ -493,7 +701,7 @@ export const updateDiscussion = async (
     return headers
   }
   return orvalMutator<Discussion>(
-    getUpdateDiscussionUrl(id),
+    getUpdateDiscussionUrl(discussionId),
     {
       ...options,
       method: 'PATCH',
@@ -531,9 +739,9 @@ export const getUpdateDiscussionMutationOptions = <TError = ErrorType<Problem>, 
     Awaited<ReturnType<typeof updateDiscussion>>,
     UpdateDiscussionMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { discussionId, data } = props ?? {}
 
-    return updateDiscussion(id, data, requestOptions)
+    return updateDiscussion(discussionId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -542,7 +750,7 @@ export const getUpdateDiscussionMutationOptions = <TError = ErrorType<Problem>, 
 export type UpdateDiscussionMutationResult = NonNullable<Awaited<ReturnType<typeof updateDiscussion>>>
 export type UpdateDiscussionMutationBody = BodyType<UpdateDiscussionRequest>
 export type UpdateDiscussionMutationError = ErrorType<Problem>
-export type UpdateDiscussionMutationVariables = { id: DiscussionId; data: BodyType<UpdateDiscussionRequest> }
+export type UpdateDiscussionMutationVariables = { discussionId: DiscussionId; data: BodyType<UpdateDiscussionRequest> }
 
 /**
  * @summary Edit content (owner, or a moderator); only a moderator may change
@@ -567,19 +775,19 @@ export const useUpdateDiscussion = <TError = ErrorType<Problem>, TContext = unkn
 > => {
   return useMutation(getUpdateDiscussionMutationOptions(options), queryClient)
 }
-export const getToggleDislikeUrl = (id: DiscussionId) => {
-  return `/api/v2/discussions/${id}/dislike`
+export const getToggleDislikeUrl = (discussionId: DiscussionId) => {
+  return `/api/v2/discussions/${discussionId}/dislike`
 }
 
 /**
  * @summary Toggle a dislike (a standing like is replaced).
  */
 export const toggleDislike = async (
-  id: DiscussionId,
+  discussionId: DiscussionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<ReactionState> => {
   return orvalMutator<ReactionState>(
-    getToggleDislikeUrl(id),
+    getToggleDislikeUrl(discussionId),
     {
       ...options,
       method: 'PUT',
@@ -610,9 +818,9 @@ export const getToggleDislikeMutationOptions = <TError = ErrorType<unknown>, TCo
     Awaited<ReturnType<typeof toggleDislike>>,
     ToggleDislikeMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { discussionId } = props ?? {}
 
-    return toggleDislike(id, requestOptions)
+    return toggleDislike(discussionId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -621,7 +829,7 @@ export const getToggleDislikeMutationOptions = <TError = ErrorType<unknown>, TCo
 export type ToggleDislikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleDislike>>>
 
 export type ToggleDislikeMutationError = ErrorType<unknown>
-export type ToggleDislikeMutationVariables = { id: DiscussionId }
+export type ToggleDislikeMutationVariables = { discussionId: DiscussionId }
 
 /**
  * @summary Toggle a dislike (a standing like is replaced).
@@ -640,19 +848,19 @@ export const useToggleDislike = <TError = ErrorType<unknown>, TContext = unknown
 ): UseMutationResult<Awaited<ReturnType<typeof toggleDislike>>, TError, ToggleDislikeMutationVariables, TContext> => {
   return useMutation(getToggleDislikeMutationOptions(options), queryClient)
 }
-export const getToggleLikeUrl = (id: DiscussionId) => {
-  return `/api/v2/discussions/${id}/like`
+export const getToggleLikeUrl = (discussionId: DiscussionId) => {
+  return `/api/v2/discussions/${discussionId}/like`
 }
 
 /**
  * @summary Toggle a like (a standing dislike is replaced).
  */
 export const toggleLike = async (
-  id: DiscussionId,
+  discussionId: DiscussionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<ReactionState> => {
   return orvalMutator<ReactionState>(
-    getToggleLikeUrl(id),
+    getToggleLikeUrl(discussionId),
     {
       ...options,
       method: 'PUT',
@@ -675,9 +883,9 @@ export const getToggleLikeMutationOptions = <TError = ErrorType<unknown>, TConte
     : { mutation: { mutationKey }, request: undefined }
 
   const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleLike>>, ToggleLikeMutationVariables> = props => {
-    const { id } = props ?? {}
+    const { discussionId } = props ?? {}
 
-    return toggleLike(id, requestOptions)
+    return toggleLike(discussionId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -686,7 +894,7 @@ export const getToggleLikeMutationOptions = <TError = ErrorType<unknown>, TConte
 export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
 
 export type ToggleLikeMutationError = ErrorType<unknown>
-export type ToggleLikeMutationVariables = { id: DiscussionId }
+export type ToggleLikeMutationVariables = { discussionId: DiscussionId }
 
 /**
  * @summary Toggle a like (a standing dislike is replaced).
@@ -700,7 +908,7 @@ export const useToggleLike = <TError = ErrorType<unknown>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof toggleLike>>, TError, ToggleLikeMutationVariables, TContext> => {
   return useMutation(getToggleLikeMutationOptions(options), queryClient)
 }
-export const getListRepliesUrl = (id: DiscussionId, params?: ListRepliesParams) => {
+export const getListRepliesUrl = (discussionId: DiscussionId, params?: ListRepliesParams) => {
   const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -712,20 +920,20 @@ export const getListRepliesUrl = (id: DiscussionId, params?: ListRepliesParams) 
   const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0
-    ? `/api/v2/discussions/${id}/replies?${stringifiedParams}`
-    : `/api/v2/discussions/${id}/replies`
+    ? `/api/v2/discussions/${discussionId}/replies?${stringifiedParams}`
+    : `/api/v2/discussions/${discussionId}/replies`
 }
 
 /**
  * @summary Replies under a post, oldest first (keyset).
  */
 export const listReplies = async (
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<DiscussionPage> => {
   return orvalMutator<DiscussionPage>(
-    getListRepliesUrl(id, params),
+    getListRepliesUrl(discussionId, params),
     {
       ...options,
       method: 'GET',
@@ -734,15 +942,15 @@ export const listReplies = async (
   )
 }
 
-export const getListRepliesQueryKey = (id: DiscussionId, params?: ListRepliesParams) => {
-  return [`/api/v2/discussions/${id}/replies`, ...(params ? [params] : [])] as const
+export const getListRepliesQueryKey = (discussionId: DiscussionId, params?: ListRepliesParams) => {
+  return [`/api/v2/discussions/${discussionId}/replies`, ...(params ? [params] : [])] as const
 }
 
 export const getListRepliesQueryOptions = <
   TData = Awaited<ReturnType<typeof listReplies>>,
   TError = ErrorType<unknown>,
 >(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -751,23 +959,26 @@ export const getListRepliesQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListRepliesQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getListRepliesQueryKey(discussionId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listReplies>>> = ({ signal }) =>
-    listReplies(id, params, { signal, ...requestOptions })
+    listReplies(discussionId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listReplies>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: discussionId !== null && discussionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ListRepliesQueryResult = NonNullable<Awaited<ReturnType<typeof listReplies>>>
 export type ListRepliesQueryError = ErrorType<unknown>
 
 export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params: undefined | ListRepliesParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>> &
@@ -784,7 +995,7 @@ export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, 
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>> &
@@ -801,7 +1012,7 @@ export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, 
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -814,7 +1025,7 @@ export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, 
  */
 
 export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -822,7 +1033,7 @@ export function useListReplies<TData = Awaited<ReturnType<typeof listReplies>>, 
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListRepliesQueryOptions(id, params, options)
+  const queryOptions = getListRepliesQueryOptions(discussionId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -835,7 +1046,7 @@ export const getListRepliesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof listReplies>>,
   TError = ErrorType<unknown>,
 >(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -844,10 +1055,10 @@ export const getListRepliesSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getListRepliesQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getListRepliesQueryKey(discussionId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listReplies>>> = ({ signal }) =>
-    listReplies(id, params, { signal, ...requestOptions })
+    listReplies(discussionId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -862,7 +1073,7 @@ export type ListRepliesSuspenseQueryResult = NonNullable<Awaited<ReturnType<type
 export type ListRepliesSuspenseQueryError = ErrorType<unknown>
 
 export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params: undefined | ListRepliesParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -871,7 +1082,7 @@ export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listRep
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -880,7 +1091,7 @@ export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listRep
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -893,7 +1104,7 @@ export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listRep
  */
 
 export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listReplies>>, TError = ErrorType<unknown>>(
-  id: DiscussionId,
+  discussionId: DiscussionId,
   params?: ListRepliesParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listReplies>>, TError, TData>>
@@ -901,7 +1112,7 @@ export function useListRepliesSuspense<TData = Awaited<ReturnType<typeof listRep
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getListRepliesSuspenseQueryOptions(id, params, options)
+  const queryOptions = getListRepliesSuspenseQueryOptions(discussionId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

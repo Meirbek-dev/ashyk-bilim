@@ -8,8 +8,64 @@
 import * as zod from 'zod'
 
 export const DrillThroughResponse = zod.object({
-  generated_at_unix: zod.int(),
-  items: zod.array(zod.looseObject({})),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  items: zod.array(
+    zod
+      .union([
+        zod.object({
+          active_in_window: zod.boolean().optional().describe('`true`, on `active_learners` rows only.'),
+          cohorts: zod.array(zod.string()),
+          completed_steps: zod.int(),
+          course_id: zod.uuid(),
+          course_name: zod.string(),
+          is_completed: zod.boolean(),
+          last_activity_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
+          progress_pct: zod.number(),
+          total_steps: zod.int(),
+          user_display_name: zod.string(),
+          user_id: zod.uuid(),
+        }),
+        zod.object({
+          age_hours: zod.number(),
+          assessment_id: zod.uuid(),
+          assessment_title: zod.string(),
+          assessment_type: zod
+            .enum(['quiz', 'exam', 'code_challenge'])
+            .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+          course_id: zod.uuid(),
+          course_name: zod.string(),
+          sla_breached: zod.boolean(),
+          status: zod.string(),
+          submission_id: zod.uuid(),
+          submitted_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          user_display_name: zod.string(),
+          user_id: zod.uuid(),
+        }),
+        zod.object({
+          attempts: zod.int(),
+          best_score: zod.number().nullable(),
+          graded_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
+          last_score: zod.number().nullable(),
+          passed: zod.boolean(),
+          status: zod.string().nullable(),
+          submitted_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
+          user_display_name: zod.string(),
+          user_id: zod.uuid(),
+        }),
+      ])
+      .describe(
+        "One drill-through row.\n\nThe shape depends on the response's `metric`: learner progress (`active_learners`, `completion_rate`), a submission\nawaiting review (`backlog`), a learner's assessment result (`pass_rate`).",
+      ),
+  ),
   metric: zod.enum(['active_learners', 'completion_rate', 'pass_rate', 'backlog']),
   total: zod.int(),
 })

@@ -25,20 +25,26 @@ import type {
 
 import {
   AssessmentId,
+  AssessmentReviewQueueParams,
   BulkAction,
   BulkActionId,
+  BulkGradeSummary,
+  CourseGradingStreamEvent,
   CourseId,
   DeadlineExtensionRequest,
+  ExportAssessmentSubmissionsCsvParams,
+  ExportGradebookCsvParams,
   GradeRequest,
   GradebookPage,
   GradebookParams,
   GradingEntry,
-  GradingReviewQueueParams,
   ItemAnalytics,
   Problem,
   PublishSummary,
+  ReturnGradesRequest,
   ReviewPage,
   Stats,
+  StatsParams,
   SubmissionId,
   TeacherSubmission,
 } from '../zod'
@@ -63,8 +69,8 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result
 }
 
-export const getExtendDeadlineUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/deadline-extensions`
+export const getExtendDeadlineUrl = (assessmentId: AssessmentId) => {
+  return `/api/v2/assessments/${assessmentId}/deadline-extensions`
 }
 
 /**
@@ -74,7 +80,7 @@ export const getExtendDeadlineUrl = (id: AssessmentId) => {
  * @summary Extend the due date for selected learners.
  */
 export const extendDeadline = async (
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   deadlineExtensionRequest: DeadlineExtensionRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<BulkAction> => {
@@ -93,7 +99,7 @@ export const extendDeadline = async (
     return headers
   }
   return orvalMutator<BulkAction>(
-    getExtendDeadlineUrl(id),
+    getExtendDeadlineUrl(assessmentId),
     {
       ...options,
       method: 'POST',
@@ -131,9 +137,9 @@ export const getExtendDeadlineMutationOptions = <TError = ErrorType<Problem>, TC
     Awaited<ReturnType<typeof extendDeadline>>,
     ExtendDeadlineMutationVariables
   > = props => {
-    const { id, data } = props ?? {}
+    const { assessmentId, data } = props ?? {}
 
-    return extendDeadline(id, data, requestOptions)
+    return extendDeadline(assessmentId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -142,7 +148,7 @@ export const getExtendDeadlineMutationOptions = <TError = ErrorType<Problem>, TC
 export type ExtendDeadlineMutationResult = NonNullable<Awaited<ReturnType<typeof extendDeadline>>>
 export type ExtendDeadlineMutationBody = BodyType<DeadlineExtensionRequest>
 export type ExtendDeadlineMutationError = ErrorType<Problem>
-export type ExtendDeadlineMutationVariables = { id: AssessmentId; data: BodyType<DeadlineExtensionRequest> }
+export type ExtendDeadlineMutationVariables = { assessmentId: AssessmentId; data: BodyType<DeadlineExtensionRequest> }
 
 /**
  * @summary Extend the due date for selected learners.
@@ -161,19 +167,19 @@ export const useExtendDeadline = <TError = ErrorType<Problem>, TContext = unknow
 ): UseMutationResult<Awaited<ReturnType<typeof extendDeadline>>, TError, ExtendDeadlineMutationVariables, TContext> => {
   return useMutation(getExtendDeadlineMutationOptions(options), queryClient)
 }
-export const getItemAnalyticsUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/item-analytics`
+export const getItemAnalyticsUrl = (assessmentId: AssessmentId) => {
+  return `/api/v2/assessments/${assessmentId}/item-analytics`
 }
 
 /**
  * @summary Per-item response counts, average score, correctness and discrimination.
  */
 export const itemAnalytics = async (
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<ItemAnalytics[]> => {
   return orvalMutator<ItemAnalytics[]>(
-    getItemAnalyticsUrl(id),
+    getItemAnalyticsUrl(assessmentId),
     {
       ...options,
       method: 'GET',
@@ -182,15 +188,15 @@ export const itemAnalytics = async (
   )
 }
 
-export const getItemAnalyticsQueryKey = (id: AssessmentId) => {
-  return [`/api/v2/assessments/${id}/item-analytics`] as const
+export const getItemAnalyticsQueryKey = (assessmentId: AssessmentId) => {
+  return [`/api/v2/assessments/${assessmentId}/item-analytics`] as const
 }
 
 export const getItemAnalyticsQueryOptions = <
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -198,23 +204,26 @@ export const getItemAnalyticsQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getItemAnalyticsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getItemAnalyticsQueryKey(assessmentId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof itemAnalytics>>> = ({ signal }) =>
-    itemAnalytics(id, { signal, ...requestOptions })
+    itemAnalytics(assessmentId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof itemAnalytics>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: assessmentId !== null && assessmentId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ItemAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof itemAnalytics>>>
 export type ItemAnalyticsQueryError = ErrorType<unknown>
 
 export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>> &
       Pick<
@@ -230,7 +239,7 @@ export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>> &
       Pick<
@@ -246,7 +255,7 @@ export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -258,14 +267,14 @@ export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics
  */
 
 export function useItemAnalytics<TData = Awaited<ReturnType<typeof itemAnalytics>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getItemAnalyticsQueryOptions(id, options)
+  const queryOptions = getItemAnalyticsQueryOptions(assessmentId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -278,7 +287,7 @@ export const getItemAnalyticsSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -286,10 +295,10 @@ export const getItemAnalyticsSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getItemAnalyticsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getItemAnalyticsQueryKey(assessmentId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof itemAnalytics>>> = ({ signal }) =>
-    itemAnalytics(id, { signal, ...requestOptions })
+    itemAnalytics(assessmentId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -307,7 +316,7 @@ export function useItemAnalyticsSuspense<
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -318,7 +327,7 @@ export function useItemAnalyticsSuspense<
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -329,7 +338,7 @@ export function useItemAnalyticsSuspense<
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -344,14 +353,14 @@ export function useItemAnalyticsSuspense<
   TData = Awaited<ReturnType<typeof itemAnalytics>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof itemAnalytics>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getItemAnalyticsSuspenseQueryOptions(id, options)
+  const queryOptions = getItemAnalyticsSuspenseQueryOptions(assessmentId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -360,8 +369,8 @@ export function useItemAnalyticsSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getPublishGradesUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/publish-grades`
+export const getPublishGradesUrl = (assessmentId: AssessmentId) => {
+  return `/api/v2/assessments/${assessmentId}/publish-grades`
 }
 
 /**
@@ -370,11 +379,11 @@ export const getPublishGradesUrl = (id: AssessmentId) => {
  * @summary Release every held grade of a batch-mode assessment.
  */
 export const publishGrades = async (
-  id: AssessmentId,
+  assessmentId: AssessmentId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<PublishSummary> => {
   return orvalMutator<PublishSummary>(
-    getPublishGradesUrl(id),
+    getPublishGradesUrl(assessmentId),
     {
       ...options,
       method: 'POST',
@@ -405,9 +414,9 @@ export const getPublishGradesMutationOptions = <TError = ErrorType<unknown>, TCo
     Awaited<ReturnType<typeof publishGrades>>,
     PublishGradesMutationVariables
   > = props => {
-    const { id } = props ?? {}
+    const { assessmentId } = props ?? {}
 
-    return publishGrades(id, requestOptions)
+    return publishGrades(assessmentId, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -416,7 +425,7 @@ export const getPublishGradesMutationOptions = <TError = ErrorType<unknown>, TCo
 export type PublishGradesMutationResult = NonNullable<Awaited<ReturnType<typeof publishGrades>>>
 
 export type PublishGradesMutationError = ErrorType<unknown>
-export type PublishGradesMutationVariables = { id: AssessmentId }
+export type PublishGradesMutationVariables = { assessmentId: AssessmentId }
 
 /**
  * @summary Release every held grade of a batch-mode assessment.
@@ -435,7 +444,101 @@ export const usePublishGrades = <TError = ErrorType<unknown>, TContext = unknown
 ): UseMutationResult<Awaited<ReturnType<typeof publishGrades>>, TError, PublishGradesMutationVariables, TContext> => {
   return useMutation(getPublishGradesMutationOptions(options), queryClient)
 }
-export const getGradingReviewQueueUrl = (id: AssessmentId, params?: GradingReviewQueueParams) => {
+export const getReturnGradesUrl = (assessmentId: AssessmentId) => {
+  return `/api/v2/assessments/${assessmentId}/return-grades`
+}
+
+/**
+ * One `return` grade save per row at its current version (events,
+ * notifications, history as for `PATCH .../grade`); a row that is
+ * refused - released, changed meanwhile, the caller's own, of another
+ * assessment - counts as skipped.
+ * @summary Return the selected submissions for revision in one call.
+ */
+export const returnGrades = async (
+  assessmentId: AssessmentId,
+  returnGradesRequest: ReturnGradesRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<BulkGradeSummary> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<BulkGradeSummary>(
+    getReturnGradesUrl(assessmentId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(returnGradesRequest),
+    },
+    BulkGradeSummary,
+  )
+}
+
+export const getReturnGradesMutationKey = () => ['returnGrades'] as const
+
+export const getReturnGradesMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof returnGrades>>,
+    TError,
+    ReturnGradesMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof returnGrades>>, TError, ReturnGradesMutationVariables, TContext> => {
+  const mutationKey = getReturnGradesMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof returnGrades>>,
+    ReturnGradesMutationVariables
+  > = props => {
+    const { assessmentId, data } = props ?? {}
+
+    return returnGrades(assessmentId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ReturnGradesMutationResult = NonNullable<Awaited<ReturnType<typeof returnGrades>>>
+export type ReturnGradesMutationBody = BodyType<ReturnGradesRequest>
+export type ReturnGradesMutationError = ErrorType<Problem>
+export type ReturnGradesMutationVariables = { assessmentId: AssessmentId; data: BodyType<ReturnGradesRequest> }
+
+/**
+ * @summary Return the selected submissions for revision in one call.
+ */
+export const useReturnGrades = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof returnGrades>>,
+      TError,
+      ReturnGradesMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof returnGrades>>, TError, ReturnGradesMutationVariables, TContext> => {
+  return useMutation(getReturnGradesMutationOptions(options), queryClient)
+}
+export const getAssessmentReviewQueueUrl = (assessmentId: AssessmentId, params?: AssessmentReviewQueueParams) => {
   const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -447,8 +550,8 @@ export const getGradingReviewQueueUrl = (id: AssessmentId, params?: GradingRevie
   const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0
-    ? `/api/v2/assessments/${id}/submissions?${stringifiedParams}`
-    : `/api/v2/assessments/${id}/submissions`
+    ? `/api/v2/assessments/${assessmentId}/submissions?${stringifiedParams}`
+    : `/api/v2/assessments/${assessmentId}/submissions`
 }
 
 /**
@@ -457,13 +560,13 @@ export const getGradingReviewQueueUrl = (id: AssessmentId, params?: GradingRevie
  * @summary Submitted work awaiting or holding a grade, newest first unless `sort` /
 `order` say otherwise (cursors are valid only within one sort/order).
  */
-export const gradingReviewQueue = async (
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+export const assessmentReviewQueue = async (
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<ReviewPage> => {
   return orvalMutator<ReviewPage>(
-    getGradingReviewQueueUrl(id, params),
+    getAssessmentReviewQueueUrl(assessmentId, params),
     {
       ...options,
       method: 'GET',
@@ -472,51 +575,54 @@ export const gradingReviewQueue = async (
   )
 }
 
-export const getGradingReviewQueueQueryKey = (id: AssessmentId, params?: GradingReviewQueueParams) => {
-  return [`/api/v2/assessments/${id}/submissions`, ...(params ? [params] : [])] as const
+export const getAssessmentReviewQueueQueryKey = (assessmentId: AssessmentId, params?: AssessmentReviewQueueParams) => {
+  return [`/api/v2/assessments/${assessmentId}/submissions`, ...(params ? [params] : [])] as const
 }
 
-export const getGradingReviewQueueQueryOptions = <
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export const getAssessmentReviewQueueQueryOptions = <
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingReviewQueueQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getAssessmentReviewQueueQueryKey(assessmentId, params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingReviewQueue>>> = ({ signal }) =>
-    gradingReviewQueue(id, params, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof assessmentReviewQueue>>> = ({ signal }) =>
+    assessmentReviewQueue(assessmentId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof gradingReviewQueue>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: assessmentId !== null && assessmentId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
-export type GradingReviewQueueQueryResult = NonNullable<Awaited<ReturnType<typeof gradingReviewQueue>>>
-export type GradingReviewQueueQueryError = ErrorType<Problem>
+export type AssessmentReviewQueueQueryResult = NonNullable<Awaited<ReturnType<typeof assessmentReviewQueue>>>
+export type AssessmentReviewQueueQueryError = ErrorType<Problem>
 
-export function useGradingReviewQueue<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueue<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params: undefined | GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params: undefined | AssessmentReviewQueueParams,
   options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>> &
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>> &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof gradingReviewQueue>>,
+          Awaited<ReturnType<typeof assessmentReviewQueue>>,
           TError,
-          Awaited<ReturnType<typeof gradingReviewQueue>>
+          Awaited<ReturnType<typeof assessmentReviewQueue>>
         >,
         'initialData'
       >
@@ -524,19 +630,19 @@ export function useGradingReviewQueue<
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingReviewQueue<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueue<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>> &
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>> &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof gradingReviewQueue>>,
+          Awaited<ReturnType<typeof assessmentReviewQueue>>,
           TError,
-          Awaited<ReturnType<typeof gradingReviewQueue>>
+          Awaited<ReturnType<typeof assessmentReviewQueue>>
         >,
         'initialData'
       >
@@ -544,14 +650,14 @@ export function useGradingReviewQueue<
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingReviewQueue<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueue<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -561,19 +667,19 @@ export function useGradingReviewQueue<
 `order` say otherwise (cursors are valid only within one sort/order).
  */
 
-export function useGradingReviewQueue<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueue<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingReviewQueueQueryOptions(id, params, options)
+  const queryOptions = getAssessmentReviewQueueQueryOptions(assessmentId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -582,68 +688,68 @@ export function useGradingReviewQueue<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGradingReviewQueueSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export const getAssessmentReviewQueueSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingReviewQueueQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getAssessmentReviewQueueQueryKey(assessmentId, params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingReviewQueue>>> = ({ signal }) =>
-    gradingReviewQueue(id, params, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof assessmentReviewQueue>>> = ({ signal }) =>
+    assessmentReviewQueue(assessmentId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
     ...queryOptions,
     queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData> & {
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData> & {
     queryKey: DataTag<QueryKey, TData, TError>
   } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
-export type GradingReviewQueueSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof gradingReviewQueue>>>
-export type GradingReviewQueueSuspenseQueryError = ErrorType<Problem>
+export type AssessmentReviewQueueSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof assessmentReviewQueue>>>
+export type AssessmentReviewQueueSuspenseQueryError = ErrorType<Problem>
 
-export function useGradingReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueueSuspense<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params: undefined | GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params: undefined | AssessmentReviewQueueParams,
   options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueueSuspense<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueueSuspense<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -653,19 +759,19 @@ export function useGradingReviewQueueSuspense<
 `order` say otherwise (cursors are valid only within one sort/order).
  */
 
-export function useGradingReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof gradingReviewQueue>>,
+export function useAssessmentReviewQueueSuspense<
+  TData = Awaited<ReturnType<typeof assessmentReviewQueue>>,
   TError = ErrorType<Problem>,
 >(
-  id: AssessmentId,
-  params?: GradingReviewQueueParams,
+  assessmentId: AssessmentId,
+  params?: AssessmentReviewQueueParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingReviewQueue>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof assessmentReviewQueue>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingReviewQueueSuspenseQueryOptions(id, params, options)
+  const queryOptions = getAssessmentReviewQueueSuspenseQueryOptions(assessmentId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -674,8 +780,23 @@ export function useGradingReviewQueueSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGradingExportCsvUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/submissions/export`
+export const getExportAssessmentSubmissionsCsvUrl = (
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
+) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/assessments/${assessmentId}/submissions/export?${stringifiedParams}`
+    : `/api/v2/assessments/${assessmentId}/submissions/export`
 }
 
 /**
@@ -683,12 +804,13 @@ export const getGradingExportCsvUrl = (id: AssessmentId) => {
  * `kk`, `en`), like the gradebook CSV.
  * @summary Every submitted attempt as CSV (one column per item).
  */
-export const gradingExportCsv = async (
-  id: AssessmentId,
+export const exportAssessmentSubmissionsCsv = async (
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<string> => {
   return orvalMutator<string>(
-    getGradingExportCsvUrl(id),
+    getExportAssessmentSubmissionsCsvUrl(assessmentId, params),
     {
       ...options,
       method: 'GET',
@@ -697,46 +819,59 @@ export const gradingExportCsv = async (
   )
 }
 
-export const getGradingExportCsvQueryKey = (id: AssessmentId) => {
-  return [`/api/v2/assessments/${id}/submissions/export`] as const
+export const getExportAssessmentSubmissionsCsvQueryKey = (
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
+) => {
+  return [`/api/v2/assessments/${assessmentId}/submissions/export`, ...(params ? [params] : [])] as const
 }
 
-export const getGradingExportCsvQueryOptions = <
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export const getExportAssessmentSubmissionsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingExportCsvQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getExportAssessmentSubmissionsCsvQueryKey(assessmentId, params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingExportCsv>>> = ({ signal }) =>
-    gradingExportCsv(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>> = ({ signal }) =>
+    exportAssessmentSubmissionsCsv(assessmentId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof gradingExportCsv>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: assessmentId !== null && assessmentId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
-export type GradingExportCsvQueryResult = NonNullable<Awaited<ReturnType<typeof gradingExportCsv>>>
-export type GradingExportCsvQueryError = ErrorType<unknown>
+export type ExportAssessmentSubmissionsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>
+>
+export type ExportAssessmentSubmissionsCsvQueryError = ErrorType<unknown>
 
-export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExportCsv>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+export function useExportAssessmentSubmissionsCsv<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  assessmentId: AssessmentId,
+  params: undefined | ExportAssessmentSubmissionsCsvParams,
   options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>> &
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>> &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof gradingExportCsv>>,
+          Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
           TError,
-          Awaited<ReturnType<typeof gradingExportCsv>>
+          Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>
         >,
         'initialData'
       >
@@ -744,15 +879,19 @@ export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExp
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExportCsv>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+export function useExportAssessmentSubmissionsCsv<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>> &
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>> &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof gradingExportCsv>>,
+          Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
           TError,
-          Awaited<ReturnType<typeof gradingExportCsv>>
+          Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>
         >,
         'initialData'
       >
@@ -760,10 +899,14 @@ export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExp
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExportCsv>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+export function useExportAssessmentSubmissionsCsv<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -772,15 +915,19 @@ export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExp
  * @summary Every submitted attempt as CSV (one column per item).
  */
 
-export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExportCsv>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+export function useExportAssessmentSubmissionsCsv<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingExportCsvQueryOptions(id, options)
+  const queryOptions = getExportAssessmentSubmissionsCsvQueryOptions(assessmentId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -789,64 +936,70 @@ export function useGradingExportCsv<TData = Awaited<ReturnType<typeof gradingExp
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGradingExportCsvSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export const getExportAssessmentSubmissionsCsvSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingExportCsvQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getExportAssessmentSubmissionsCsvQueryKey(assessmentId, params)
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingExportCsv>>> = ({ signal }) =>
-    gradingExportCsv(id, { signal, ...requestOptions })
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>> = ({ signal }) =>
+    exportAssessmentSubmissionsCsv(assessmentId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
     ...queryOptions,
     queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData> & {
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData> & {
     queryKey: DataTag<QueryKey, TData, TError>
   } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
 }
 
-export type GradingExportCsvSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof gradingExportCsv>>>
-export type GradingExportCsvSuspenseQueryError = ErrorType<unknown>
+export type ExportAssessmentSubmissionsCsvSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>
+>
+export type ExportAssessmentSubmissionsCsvSuspenseQueryError = ErrorType<unknown>
 
-export function useGradingExportCsvSuspense<
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export function useExportAssessmentSubmissionsCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params: undefined | ExportAssessmentSubmissionsCsvParams,
   options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingExportCsvSuspense<
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export function useExportAssessmentSubmissionsCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGradingExportCsvSuspense<
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export function useExportAssessmentSubmissionsCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
@@ -855,18 +1008,19 @@ export function useGradingExportCsvSuspense<
  * @summary Every submitted attempt as CSV (one column per item).
  */
 
-export function useGradingExportCsvSuspense<
-  TData = Awaited<ReturnType<typeof gradingExportCsv>>,
+export function useExportAssessmentSubmissionsCsvSuspense<
+  TData = Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>,
   TError = ErrorType<unknown>,
 >(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: ExportAssessmentSubmissionsCsvParams,
   options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingExportCsv>>, TError, TData>>
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportAssessmentSubmissionsCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingExportCsvSuspenseQueryOptions(id, options)
+  const queryOptions = getExportAssessmentSubmissionsCsvSuspenseQueryOptions(assessmentId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -875,16 +1029,32 @@ export function useGradingExportCsvSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getStatsUrl = (id: AssessmentId) => {
-  return `/api/v2/assessments/${id}/submissions/stats`
+export const getStatsUrl = (assessmentId: AssessmentId, params?: StatsParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/assessments/${assessmentId}/submissions/stats?${stringifiedParams}`
+    : `/api/v2/assessments/${assessmentId}/submissions/stats`
 }
 
 /**
  * @summary Counts, average, pass rate and a ten-bucket score distribution.
  */
-export const stats = async (id: AssessmentId, options?: Parameters<typeof orvalMutator>[1]): Promise<Stats> => {
+export const stats = async (
+  assessmentId: AssessmentId,
+  params?: StatsParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<Stats> => {
   return orvalMutator<Stats>(
-    getStatsUrl(id),
+    getStatsUrl(assessmentId, params),
     {
       ...options,
       method: 'GET',
@@ -893,12 +1063,13 @@ export const stats = async (id: AssessmentId, options?: Parameters<typeof orvalM
   )
 }
 
-export const getStatsQueryKey = (id: AssessmentId) => {
-  return [`/api/v2/assessments/${id}/submissions/stats`] as const
+export const getStatsQueryKey = (assessmentId: AssessmentId, params?: StatsParams) => {
+  return [`/api/v2/assessments/${assessmentId}/submissions/stats`, ...(params ? [params] : [])] as const
 }
 
 export const getStatsQueryOptions = <TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -906,23 +1077,27 @@ export const getStatsQueryOptions = <TData = Awaited<ReturnType<typeof stats>>, 
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getStatsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getStatsQueryKey(assessmentId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof stats>>> = ({ signal }) =>
-    stats(id, { signal, ...requestOptions })
+    stats(assessmentId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof stats>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: assessmentId !== null && assessmentId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type StatsQueryResult = NonNullable<Awaited<ReturnType<typeof stats>>>
 export type StatsQueryError = ErrorType<unknown>
 
 export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params: undefined | StatsParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>> &
       Pick<
@@ -934,7 +1109,8 @@ export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = Err
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>> &
       Pick<
@@ -946,7 +1122,8 @@ export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = Err
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -958,14 +1135,15 @@ export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = Err
  */
 
 export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getStatsQueryOptions(id, options)
+  const queryOptions = getStatsQueryOptions(assessmentId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -975,7 +1153,8 @@ export function useStats<TData = Awaited<ReturnType<typeof stats>>, TError = Err
 }
 
 export const getStatsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -983,10 +1162,10 @@ export const getStatsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof s
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getStatsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getStatsQueryKey(assessmentId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof stats>>> = ({ signal }) =>
-    stats(id, { signal, ...requestOptions })
+    stats(assessmentId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1001,7 +1180,8 @@ export type StatsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof sta
 export type StatsSuspenseQueryError = ErrorType<unknown>
 
 export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params: undefined | StatsParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1009,7 +1189,8 @@ export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TErr
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1017,7 +1198,8 @@ export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TErr
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1029,14 +1211,15 @@ export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TErr
  */
 
 export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TError = ErrorType<unknown>>(
-  id: AssessmentId,
+  assessmentId: AssessmentId,
+  params?: StatsParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof stats>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getStatsSuspenseQueryOptions(id, options)
+  const queryOptions = getStatsSuspenseQueryOptions(assessmentId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1045,19 +1228,19 @@ export function useStatsSuspense<TData = Awaited<ReturnType<typeof stats>>, TErr
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGetBulkActionUrl = (id: BulkActionId) => {
-  return `/api/v2/bulk-actions/${id}`
+export const getGetBulkActionUrl = (bulkActionId: BulkActionId) => {
+  return `/api/v2/bulk-actions/${bulkActionId}`
 }
 
 /**
  * @summary A bulk action's status.
  */
 export const getBulkAction = async (
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<BulkAction> => {
   return orvalMutator<BulkAction>(
-    getGetBulkActionUrl(id),
+    getGetBulkActionUrl(bulkActionId),
     {
       ...options,
       method: 'GET',
@@ -1066,15 +1249,15 @@ export const getBulkAction = async (
   )
 }
 
-export const getGetBulkActionQueryKey = (id: BulkActionId) => {
-  return [`/api/v2/bulk-actions/${id}`] as const
+export const getGetBulkActionQueryKey = (bulkActionId: BulkActionId) => {
+  return [`/api/v2/bulk-actions/${bulkActionId}`] as const
 }
 
 export const getGetBulkActionQueryOptions = <
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1082,23 +1265,26 @@ export const getGetBulkActionQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGetBulkActionQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGetBulkActionQueryKey(bulkActionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getBulkAction>>> = ({ signal }) =>
-    getBulkAction(id, { signal, ...requestOptions })
+    getBulkAction(bulkActionId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getBulkAction>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: bulkActionId !== null && bulkActionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type GetBulkActionQueryResult = NonNullable<Awaited<ReturnType<typeof getBulkAction>>>
 export type GetBulkActionQueryError = ErrorType<unknown>
 
 export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction>>, TError = ErrorType<unknown>>(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>> &
       Pick<
@@ -1114,7 +1300,7 @@ export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction>>, TError = ErrorType<unknown>>(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>> &
       Pick<
@@ -1130,7 +1316,7 @@ export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction>>, TError = ErrorType<unknown>>(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1142,14 +1328,14 @@ export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction
  */
 
 export function useGetBulkAction<TData = Awaited<ReturnType<typeof getBulkAction>>, TError = ErrorType<unknown>>(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetBulkActionQueryOptions(id, options)
+  const queryOptions = getGetBulkActionQueryOptions(bulkActionId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1162,7 +1348,7 @@ export const getGetBulkActionSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1170,10 +1356,10 @@ export const getGetBulkActionSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGetBulkActionQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGetBulkActionQueryKey(bulkActionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getBulkAction>>> = ({ signal }) =>
-    getBulkAction(id, { signal, ...requestOptions })
+    getBulkAction(bulkActionId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1191,7 +1377,7 @@ export function useGetBulkActionSuspense<
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1202,7 +1388,7 @@ export function useGetBulkActionSuspense<
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1213,7 +1399,7 @@ export function useGetBulkActionSuspense<
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1228,14 +1414,14 @@ export function useGetBulkActionSuspense<
   TData = Awaited<ReturnType<typeof getBulkAction>>,
   TError = ErrorType<unknown>,
 >(
-  id: BulkActionId,
+  bulkActionId: BulkActionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBulkAction>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetBulkActionSuspenseQueryOptions(id, options)
+  const queryOptions = getGetBulkActionSuspenseQueryOptions(bulkActionId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1244,7 +1430,7 @@ export function useGetBulkActionSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
+export const getGradebookUrl = (courseId: CourseId, params?: GradebookParams) => {
   const normalizedParams = new URLSearchParams()
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -1256,8 +1442,8 @@ export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
   const stringifiedParams = normalizedParams.toString()
 
   return stringifiedParams.length > 0
-    ? `/api/v2/courses/${id}/gradebook?${stringifiedParams}`
-    : `/api/v2/courses/${id}/gradebook`
+    ? `/api/v2/courses/${courseId}/gradebook?${stringifiedParams}`
+    : `/api/v2/courses/${courseId}/gradebook`
 }
 
 /**
@@ -1267,12 +1453,12 @@ export const getGradebookUrl = (id: CourseId, params?: GradebookParams) => {
  * @summary Course gradebook: the grade-of-record attempt per (learner, activity).
  */
 export const gradebook = async (
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<GradebookPage> => {
   return orvalMutator<GradebookPage>(
-    getGradebookUrl(id, params),
+    getGradebookUrl(courseId, params),
     {
       ...options,
       method: 'GET',
@@ -1281,12 +1467,12 @@ export const gradebook = async (
   )
 }
 
-export const getGradebookQueryKey = (id: CourseId, params?: GradebookParams) => {
-  return [`/api/v2/courses/${id}/gradebook`, ...(params ? [params] : [])] as const
+export const getGradebookQueryKey = (courseId: CourseId, params?: GradebookParams) => {
+  return [`/api/v2/courses/${courseId}/gradebook`, ...(params ? [params] : [])] as const
 }
 
 export const getGradebookQueryOptions = <TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1295,23 +1481,26 @@ export const getGradebookQueryOptions = <TData = Awaited<ReturnType<typeof grade
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradebookQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getGradebookQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof gradebook>>> = ({ signal }) =>
-    gradebook(id, params, { signal, ...requestOptions })
+    gradebook(courseId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof gradebook>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type GradebookQueryResult = NonNullable<Awaited<ReturnType<typeof gradebook>>>
 export type GradebookQueryError = ErrorType<unknown>
 
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | GradebookParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>> &
@@ -1324,7 +1513,7 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>> &
@@ -1341,7 +1530,7 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1354,7 +1543,7 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
  */
 
 export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1362,7 +1551,7 @@ export function useGradebook<TData = Awaited<ReturnType<typeof gradebook>>, TErr
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradebookQueryOptions(id, params, options)
+  const queryOptions = getGradebookQueryOptions(courseId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1375,7 +1564,7 @@ export const getGradebookSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof gradebook>>,
   TError = ErrorType<unknown>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1384,10 +1573,10 @@ export const getGradebookSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradebookQueryKey(id, params)
+  const queryKey = queryOptions?.queryKey ?? getGradebookQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof gradebook>>> = ({ signal }) =>
-    gradebook(id, params, { signal, ...requestOptions })
+    gradebook(courseId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1402,7 +1591,7 @@ export type GradebookSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type GradebookSuspenseQueryError = ErrorType<unknown>
 
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params: undefined | GradebookParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1411,7 +1600,7 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1420,7 +1609,7 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1433,7 +1622,7 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
  */
 
 export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook>>, TError = ErrorType<unknown>>(
-  id: CourseId,
+  courseId: CourseId,
   params?: GradebookParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradebook>>, TError, TData>>
@@ -1441,7 +1630,7 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradebookSuspenseQueryOptions(id, params, options)
+  const queryOptions = getGradebookSuspenseQueryOptions(courseId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1450,8 +1639,20 @@ export function useGradebookSuspense<TData = Awaited<ReturnType<typeof gradebook
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getExportGradebookCsvUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/gradebook/export`
+export const getExportGradebookCsvUrl = (courseId: CourseId, params?: ExportGradebookCsvParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/courses/${courseId}/gradebook/export?${stringifiedParams}`
+    : `/api/v2/courses/${courseId}/gradebook/export`
 }
 
 /**
@@ -1461,11 +1662,12 @@ export const getExportGradebookCsvUrl = (id: CourseId) => {
  * @summary The gradebook matrix as CSV (graders).
  */
 export const exportGradebookCsv = async (
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<string> => {
   return orvalMutator<string>(
-    getExportGradebookCsvUrl(id),
+    getExportGradebookCsvUrl(courseId, params),
     {
       ...options,
       method: 'GET',
@@ -1474,15 +1676,16 @@ export const exportGradebookCsv = async (
   )
 }
 
-export const getExportGradebookCsvQueryKey = (id: CourseId) => {
-  return [`/api/v2/courses/${id}/gradebook/export`] as const
+export const getExportGradebookCsvQueryKey = (courseId: CourseId, params?: ExportGradebookCsvParams) => {
+  return [`/api/v2/courses/${courseId}/gradebook/export`, ...(params ? [params] : [])] as const
 }
 
 export const getExportGradebookCsvQueryOptions = <
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1490,16 +1693,19 @@ export const getExportGradebookCsvQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportGradebookCsv>>> = ({ signal }) =>
-    exportGradebookCsv(id, { signal, ...requestOptions })
+    exportGradebookCsv(courseId, params, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof exportGradebookCsv>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ExportGradebookCsvQueryResult = NonNullable<Awaited<ReturnType<typeof exportGradebookCsv>>>
@@ -1509,7 +1715,8 @@ export function useExportGradebookCsv<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params: undefined | ExportGradebookCsvParams,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>> &
       Pick<
@@ -1528,7 +1735,8 @@ export function useExportGradebookCsv<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>> &
       Pick<
@@ -1547,7 +1755,8 @@ export function useExportGradebookCsv<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1562,14 +1771,15 @@ export function useExportGradebookCsv<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getExportGradebookCsvQueryOptions(id, options)
+  const queryOptions = getExportGradebookCsvQueryOptions(courseId, params, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1582,7 +1792,8 @@ export const getExportGradebookCsvSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1590,10 +1801,10 @@ export const getExportGradebookCsvSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getExportGradebookCsvQueryKey(courseId, params)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof exportGradebookCsv>>> = ({ signal }) =>
-    exportGradebookCsv(id, { signal, ...requestOptions })
+    exportGradebookCsv(courseId, params, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1611,7 +1822,8 @@ export function useExportGradebookCsvSuspense<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params: undefined | ExportGradebookCsvParams,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1622,7 +1834,8 @@ export function useExportGradebookCsvSuspense<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1633,7 +1846,8 @@ export function useExportGradebookCsvSuspense<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1648,14 +1862,15 @@ export function useExportGradebookCsvSuspense<
   TData = Awaited<ReturnType<typeof exportGradebookCsv>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
+  params?: ExportGradebookCsvParams,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof exportGradebookCsv>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getExportGradebookCsvSuspenseQueryOptions(id, options)
+  const queryOptions = getExportGradebookCsvSuspenseQueryOptions(courseId, params, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1664,8 +1879,8 @@ export function useExportGradebookCsvSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getCourseGradingEventsUrl = (id: CourseId) => {
-  return `/api/v2/courses/${id}/grading/events`
+export const getCourseGradingEventsUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/grading/events`
 }
 
 /**
@@ -1680,28 +1895,28 @@ export const getCourseGradingEventsUrl = (id: CourseId) => {
 (graders).
  */
 export const courseGradingEvents = async (
-  id: CourseId,
+  courseId: CourseId,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<string> => {
-  return orvalMutator<string>(
-    getCourseGradingEventsUrl(id),
+): Promise<CourseGradingStreamEvent> => {
+  return orvalMutator<CourseGradingStreamEvent>(
+    getCourseGradingEventsUrl(courseId),
     {
       ...options,
       method: 'GET',
     },
-    stringParser,
+    CourseGradingStreamEvent,
   )
 }
 
-export const getCourseGradingEventsQueryKey = (id: CourseId) => {
-  return [`/api/v2/courses/${id}/grading/events`] as const
+export const getCourseGradingEventsQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/grading/events`] as const
 }
 
 export const getCourseGradingEventsQueryOptions = <
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1709,16 +1924,19 @@ export const getCourseGradingEventsQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseGradingEvents>>> = ({ signal }) =>
-    courseGradingEvents(id, { signal, ...requestOptions })
+    courseGradingEvents(courseId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof courseGradingEvents>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type CourseGradingEventsQueryResult = NonNullable<Awaited<ReturnType<typeof courseGradingEvents>>>
@@ -1728,7 +1946,7 @@ export function useCourseGradingEvents<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>> &
       Pick<
@@ -1747,7 +1965,7 @@ export function useCourseGradingEvents<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>> &
       Pick<
@@ -1766,7 +1984,7 @@ export function useCourseGradingEvents<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1782,14 +2000,14 @@ export function useCourseGradingEvents<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCourseGradingEventsQueryOptions(id, options)
+  const queryOptions = getCourseGradingEventsQueryOptions(courseId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1802,7 +2020,7 @@ export const getCourseGradingEventsSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1810,10 +2028,10 @@ export const getCourseGradingEventsSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getCourseGradingEventsQueryKey(courseId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof courseGradingEvents>>> = ({ signal }) =>
-    courseGradingEvents(id, { signal, ...requestOptions })
+    courseGradingEvents(courseId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -1831,7 +2049,7 @@ export function useCourseGradingEventsSuspense<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1842,7 +2060,7 @@ export function useCourseGradingEventsSuspense<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1853,7 +2071,7 @@ export function useCourseGradingEventsSuspense<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -1869,14 +2087,14 @@ export function useCourseGradingEventsSuspense<
   TData = Awaited<ReturnType<typeof courseGradingEvents>>,
   TError = ErrorType<Problem>,
 >(
-  id: CourseId,
+  courseId: CourseId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseGradingEvents>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getCourseGradingEventsSuspenseQueryOptions(id, options)
+  const queryOptions = getCourseGradingEventsSuspenseQueryOptions(courseId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -1885,8 +2103,8 @@ export function useCourseGradingEventsSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getSaveGradeUrl = (id: SubmissionId) => {
-  return `/api/v2/submissions/${id}/grade`
+export const getSaveGradeUrl = (submissionId: SubmissionId) => {
+  return `/api/v2/submissions/${submissionId}/grade`
 }
 
 /**
@@ -1901,7 +2119,7 @@ export const getSaveGradeUrl = (id: SubmissionId) => {
  * @summary Save, publish or return a grade.
  */
 export const saveGrade = async (
-  id: SubmissionId,
+  submissionId: SubmissionId,
   gradeRequest: GradeRequest,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<TeacherSubmission> => {
@@ -1920,7 +2138,7 @@ export const saveGrade = async (
     return headers
   }
   return orvalMutator<TeacherSubmission>(
-    getSaveGradeUrl(id),
+    getSaveGradeUrl(submissionId),
     {
       ...options,
       method: 'PATCH',
@@ -1945,9 +2163,9 @@ export const getSaveGradeMutationOptions = <TError = ErrorType<Problem>, TContex
     : { mutation: { mutationKey }, request: undefined }
 
   const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveGrade>>, SaveGradeMutationVariables> = props => {
-    const { id, data } = props ?? {}
+    const { submissionId, data } = props ?? {}
 
-    return saveGrade(id, data, requestOptions)
+    return saveGrade(submissionId, data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -1956,7 +2174,7 @@ export const getSaveGradeMutationOptions = <TError = ErrorType<Problem>, TContex
 export type SaveGradeMutationResult = NonNullable<Awaited<ReturnType<typeof saveGrade>>>
 export type SaveGradeMutationBody = BodyType<GradeRequest>
 export type SaveGradeMutationError = ErrorType<Problem>
-export type SaveGradeMutationVariables = { id: SubmissionId; data: BodyType<GradeRequest> }
+export type SaveGradeMutationVariables = { submissionId: SubmissionId; data: BodyType<GradeRequest> }
 
 /**
  * @summary Save, publish or return a grade.
@@ -1970,19 +2188,19 @@ export const useSaveGrade = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof saveGrade>>, TError, SaveGradeMutationVariables, TContext> => {
   return useMutation(getSaveGradeMutationOptions(options), queryClient)
 }
-export const getGradingHistoryUrl = (id: SubmissionId) => {
-  return `/api/v2/submissions/${id}/grading-history`
+export const getGradingHistoryUrl = (submissionId: SubmissionId) => {
+  return `/api/v2/submissions/${submissionId}/grading-history`
 }
 
 /**
  * @summary The append-only grading ledger of a submission, newest first.
  */
 export const gradingHistory = async (
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<GradingEntry[]> => {
   return orvalMutator<GradingEntry[]>(
-    getGradingHistoryUrl(id),
+    getGradingHistoryUrl(submissionId),
     {
       ...options,
       method: 'GET',
@@ -1991,15 +2209,15 @@ export const gradingHistory = async (
   )
 }
 
-export const getGradingHistoryQueryKey = (id: SubmissionId) => {
-  return [`/api/v2/submissions/${id}/grading-history`] as const
+export const getGradingHistoryQueryKey = (submissionId: SubmissionId) => {
+  return [`/api/v2/submissions/${submissionId}/grading-history`] as const
 }
 
 export const getGradingHistoryQueryOptions = <
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2007,23 +2225,26 @@ export const getGradingHistoryQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingHistoryQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGradingHistoryQueryKey(submissionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingHistory>>> = ({ signal }) =>
-    gradingHistory(id, { signal, ...requestOptions })
+    gradingHistory(submissionId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof gradingHistory>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: submissionId !== null && submissionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type GradingHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof gradingHistory>>>
 export type GradingHistoryQueryError = ErrorType<unknown>
 
 export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHistory>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>> &
       Pick<
@@ -2039,7 +2260,7 @@ export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHisto
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHistory>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>> &
       Pick<
@@ -2055,7 +2276,7 @@ export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHisto
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHistory>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2067,14 +2288,14 @@ export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHisto
  */
 
 export function useGradingHistory<TData = Awaited<ReturnType<typeof gradingHistory>>, TError = ErrorType<unknown>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingHistoryQueryOptions(id, options)
+  const queryOptions = getGradingHistoryQueryOptions(submissionId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2087,7 +2308,7 @@ export const getGradingHistorySuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2095,10 +2316,10 @@ export const getGradingHistorySuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getGradingHistoryQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getGradingHistoryQueryKey(submissionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof gradingHistory>>> = ({ signal }) =>
-    gradingHistory(id, { signal, ...requestOptions })
+    gradingHistory(submissionId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -2116,7 +2337,7 @@ export function useGradingHistorySuspense<
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2127,7 +2348,7 @@ export function useGradingHistorySuspense<
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2138,7 +2359,7 @@ export function useGradingHistorySuspense<
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2153,14 +2374,14 @@ export function useGradingHistorySuspense<
   TData = Awaited<ReturnType<typeof gradingHistory>>,
   TError = ErrorType<unknown>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof gradingHistory>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGradingHistorySuspenseQueryOptions(id, options)
+  const queryOptions = getGradingHistorySuspenseQueryOptions(submissionId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2169,19 +2390,19 @@ export function useGradingHistorySuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
-export const getReviewSubmissionUrl = (id: SubmissionId) => {
-  return `/api/v2/submissions/${id}/review`
+export const getReviewSubmissionUrl = (submissionId: SubmissionId) => {
+  return `/api/v2/submissions/${submissionId}/review`
 }
 
 /**
  * @summary A submission with answers, breakdown, versions and feedback (graders).
  */
 export const reviewSubmission = async (
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: Parameters<typeof orvalMutator>[1],
 ): Promise<TeacherSubmission> => {
   return orvalMutator<TeacherSubmission>(
-    getReviewSubmissionUrl(id),
+    getReviewSubmissionUrl(submissionId),
     {
       ...options,
       method: 'GET',
@@ -2190,15 +2411,15 @@ export const reviewSubmission = async (
   )
 }
 
-export const getReviewSubmissionQueryKey = (id: SubmissionId) => {
-  return [`/api/v2/submissions/${id}/review`] as const
+export const getReviewSubmissionQueryKey = (submissionId: SubmissionId) => {
+  return [`/api/v2/submissions/${submissionId}/review`] as const
 }
 
 export const getReviewSubmissionQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2206,23 +2427,26 @@ export const getReviewSubmissionQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getReviewSubmissionQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getReviewSubmissionQueryKey(submissionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof reviewSubmission>>> = ({ signal }) =>
-    reviewSubmission(id, { signal, ...requestOptions })
+    reviewSubmission(submissionId, { signal, ...requestOptions })
 
-  return { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof reviewSubmission>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> }
+  return {
+    queryKey,
+    queryFn,
+    enabled: submissionId !== null && submissionId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
 }
 
 export type ReviewSubmissionQueryResult = NonNullable<Awaited<ReturnType<typeof reviewSubmission>>>
 export type ReviewSubmissionQueryError = ErrorType<Problem>
 
 export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>> &
       Pick<
@@ -2238,7 +2462,7 @@ export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubm
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>> &
       Pick<
@@ -2254,7 +2478,7 @@ export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubm
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2266,14 +2490,14 @@ export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubm
  */
 
 export function useReviewSubmission<TData = Awaited<ReturnType<typeof reviewSubmission>>, TError = ErrorType<Problem>>(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getReviewSubmissionQueryOptions(id, options)
+  const queryOptions = getReviewSubmissionQueryOptions(submissionId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
@@ -2286,7 +2510,7 @@ export const getReviewSubmissionSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2294,10 +2518,10 @@ export const getReviewSubmissionSuspenseQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {}
 
-  const queryKey = queryOptions?.queryKey ?? getReviewSubmissionQueryKey(id)
+  const queryKey = queryOptions?.queryKey ?? getReviewSubmissionQueryKey(submissionId)
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof reviewSubmission>>> = ({ signal }) =>
-    reviewSubmission(id, { signal, ...requestOptions })
+    reviewSubmission(submissionId, { signal, ...requestOptions })
 
   return queryOptionsBuilder({
     queryKey,
@@ -2315,7 +2539,7 @@ export function useReviewSubmissionSuspense<
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options: {
     query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2326,7 +2550,7 @@ export function useReviewSubmissionSuspense<
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2337,7 +2561,7 @@ export function useReviewSubmissionSuspense<
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
@@ -2352,14 +2576,14 @@ export function useReviewSubmissionSuspense<
   TData = Awaited<ReturnType<typeof reviewSubmission>>,
   TError = ErrorType<Problem>,
 >(
-  id: SubmissionId,
+  submissionId: SubmissionId,
   options?: {
     query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof reviewSubmission>>, TError, TData>>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getReviewSubmissionSuspenseQueryOptions(id, options)
+  const queryOptions = getReviewSubmissionSuspenseQueryOptions(submissionId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

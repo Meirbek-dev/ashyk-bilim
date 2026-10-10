@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const UsergroupMember = zod.object({
-  avatar_key: zod.string().nullish(),
+  avatar_key: zod.string().nullable(),
   display_name: zod.string(),
   id: zod.uuid(),
   username: zod.string(),

@@ -11,8 +11,8 @@ export const ContentHealthRow = zod.object({
   course_id: zod.uuid(),
   note: zod.string(),
   severity: zod.enum(['info', 'warning', 'critical']),
-  signal: zod.string().describe('`content_freshness` | `average_progress` | `grading_backlog`.'),
-  value: zod.number().nullish(),
+  signal: zod.enum(['content_freshness', 'average_progress', 'grading_backlog']),
+  value: zod.number().nullable(),
 })
 
 export type ContentHealthRow = zod.input<typeof ContentHealthRow>

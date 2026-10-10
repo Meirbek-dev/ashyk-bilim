@@ -10,8 +10,8 @@ import * as zod from 'zod'
 export const ProfileEducation = zod.object({
   current: zod.boolean(),
   degree: zod.string(),
-  description: zod.string().nullish(),
-  endDate: zod.string().nullish(),
+  description: zod.string().optional(),
+  endDate: zod.string().optional(),
   field: zod.string(),
   institution: zod.string(),
   startDate: zod.string(),

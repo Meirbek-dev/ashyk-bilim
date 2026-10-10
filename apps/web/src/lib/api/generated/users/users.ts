@@ -38,7 +38,7 @@ import {
   UserProfile,
 } from '../zod'
 
-import { orvalMutator, stringifyQueryParam, voidParser } from '../../orval-mutator'
+import { orvalMutator, optionalParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -541,6 +541,193 @@ export function usePublicProfileByIdSuspense<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export const getGetAdminUserUrl = (userId: UserId) => {
+  return `/api/v2/users/by-id/${userId}/admin`
+}
+
+/**
+ * @summary One account in the admin directory (requires `platform:read:platform`).
+ */
+export const getAdminUser = async (
+  userId: UserId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<AdminUser> => {
+  return orvalMutator<AdminUser>(
+    getGetAdminUserUrl(userId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    AdminUser,
+  )
+}
+
+export const getGetAdminUserQueryKey = (userId: UserId) => {
+  return [`/api/v2/users/by-id/${userId}/admin`] as const
+}
+
+export const getGetAdminUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminUser>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminUserQueryKey(userId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminUser>>> = ({ signal }) =>
+    getAdminUser(userId, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAdminUserQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUser>>>
+export type GetAdminUserQueryError = ErrorType<Problem>
+
+export function useGetAdminUser<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminUser>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminUser>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUser<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminUser>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminUser>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUser<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One account in the admin directory (requires `platform:read:platform`).
+ */
+
+export function useGetAdminUser<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAdminUserQueryOptions(userId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetAdminUserSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminUser>>,
+  TError = ErrorType<Problem>,
+>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminUserQueryKey(userId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminUser>>> = ({ signal }) =>
+    getAdminUser(userId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetAdminUserSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUser>>>
+export type GetAdminUserSuspenseQueryError = ErrorType<Problem>
+
+export function useGetAdminUserSuspense<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUserSuspense<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUserSuspense<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One account in the admin directory (requires `platform:read:platform`).
+ */
+
+export function useGetAdminUserSuspense<TData = Awaited<ReturnType<typeof getAdminUser>>, TError = ErrorType<Problem>>(
+  userId: UserId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getAdminUser>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetAdminUserSuspenseQueryOptions(userId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getMyProfileUrl = () => {
   return `/api/v2/users/me`
 }
@@ -826,7 +1013,7 @@ export const setUserStatus = async (
   userId: UserId,
   setUserStatusRequest: SetUserStatusRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<AdminUser | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -841,7 +1028,7 @@ export const setUserStatus = async (
     }
     return headers
   }
-  return orvalMutator<void>(
+  return orvalMutator<AdminUser | void>(
     getSetUserStatusUrl(userId),
     {
       ...options,
@@ -849,7 +1036,7 @@ export const setUserStatus = async (
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(setUserStatusRequest),
     },
-    voidParser,
+    optionalParser(AdminUser),
   )
 }
 

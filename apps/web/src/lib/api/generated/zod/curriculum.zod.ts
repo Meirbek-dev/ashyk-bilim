@@ -11,18 +11,53 @@ export const Curriculum = zod.object({
   chapters: zod.array(
     zod
       .object({
+        allowed_actions: zod
+          .array(
+            zod
+              .enum(['update', 'delete', 'move', 'add_activity'])
+              .describe('What the caller may do to a chapter (`Chapter.allowed_actions`).'),
+          )
+          .describe('What the caller may do to this chapter now.'),
         course_id: zod.uuid(),
         description: zod.string(),
         id: zod.uuid(),
         name: zod.string(),
         position: zod.int().describe('1-based, contiguous within the course.'),
+        version: zod
+          .int()
+          .describe(
+            "Optimistic lock: `If-Match` on `PATCH` (stale → 412). Moves (this\nchapter's or a sibling's) renumber positions and bump it too.",
+          ),
       })
       .and(
         zod.object({
           activities: zod.array(
             zod.object({
-              activity_sub_type: zod.string(),
-              activity_type: zod.string(),
+              activity_sub_type: zod
+                .enum([
+                  'dynamic_page',
+                  'video_youtube',
+                  'video_hosted',
+                  'document_pdf',
+                  'document_doc',
+                  'quiz_standard',
+                  'exam_standard',
+                  'code_general',
+                  'code_competitive',
+                  'file_submission_standard',
+                  'custom',
+                ])
+                .describe('Activity sub-kind; must pair with its [`ActivityType`].'),
+              activity_type: zod
+                .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+                .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
+              allowed_actions: zod
+                .array(
+                  zod
+                    .enum(['update', 'delete', 'move'])
+                    .describe('What the caller may do to an activity (`Activity.allowed_actions`).'),
+                )
+                .describe('What the caller may do to this activity now.'),
               chapter_id: zod.uuid(),
               course_id: zod.uuid(),
               id: zod.uuid(),

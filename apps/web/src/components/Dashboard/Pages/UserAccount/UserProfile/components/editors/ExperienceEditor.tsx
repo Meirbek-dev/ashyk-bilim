@@ -76,7 +76,7 @@ export const ExperienceEditor: FC<ExperienceEditorProps> = ({ t, section, onChan
                       id={`current-${index}`}
                       checked={experience.current}
                       onCheckedChange={checked =>
-                        patch(index, checked ? { current: true, endDate: null } : { current: false })
+                        patch(index, checked ? { current: true, endDate: '' } : { current: false })
                       }
                     />
                     <Label htmlFor={`current-${index}`}>{t('ExperienceEditor.currentLabel')}</Label>

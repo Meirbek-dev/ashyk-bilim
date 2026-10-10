@@ -7,10 +7,21 @@
  */
 import * as zod from 'zod'
 
+export const deadlineExtensionRequestNewDueAtUnixMin = 0
+export const deadlineExtensionRequestNewDueAtUnixMax = 253402300799
+
+export const deadlineExtensionRequestReasonMax = 500
+
+export const deadlineExtensionRequestUserIdsMax = 500
+
 export const DeadlineExtensionRequest = zod.object({
-  new_due_at_unix: zod.int().describe('Unix seconds, at most 9999-12-31 (the timestamp range).'),
-  reason: zod.string().optional(),
-  user_ids: zod.array(zod.uuid()),
+  new_due_at_unix: zod
+    .int()
+    .min(deadlineExtensionRequestNewDueAtUnixMin)
+    .max(deadlineExtensionRequestNewDueAtUnixMax)
+    .describe('Unix seconds, at most 9999-12-31 (the timestamp range).'),
+  reason: zod.string().max(deadlineExtensionRequestReasonMax).optional(),
+  user_ids: zod.array(zod.uuid()).min(1).max(deadlineExtensionRequestUserIdsMax),
 })
 
 export type DeadlineExtensionRequest = zod.input<typeof DeadlineExtensionRequest>

@@ -8,8 +8,13 @@
 import * as zod from 'zod'
 
 export const DisplayPreferences = zod.object({
-  animatedEffects: zod.boolean().nullish(),
-  compactMode: zod.boolean().nullish(),
+  animatedEffects: zod.boolean().optional(),
+  compactMode: zod.boolean().optional(),
+  showGamification: zod
+    .boolean()
+    .optional()
+    .describe('GAMIF: `false` hides the gamification UI (XP, levels, badges) for this\nuser. Unset = shown.'),
+  showStreaks: zod.boolean().optional().describe('GAMIF: `false` hides the streak row. Unset = shown.'),
 })
 
 export type DisplayPreferences = zod.input<typeof DisplayPreferences>

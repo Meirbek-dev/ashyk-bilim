@@ -8,17 +8,22 @@
 import * as zod from 'zod'
 
 export const ActivityState = zod.object({
-  activity_type: zod.string(),
+  activity_type: zod
+    .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+    .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
   allowed_actions: zod.array(zod.string()),
   available: zod.boolean(),
-  blocked_reason: zod.string().nullish(),
+  blocked_reason: zod.union([
+    zod.enum(['restricted']).describe('Why an activity is not open to the learner (`ActivityState.blocked_reason`).'),
+    zod.null(),
+  ]),
   complete: zod.boolean(),
-  due_at_unix: zod.int().nullish(),
+  due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
   id: zod.uuid(),
   is_late: zod.boolean(),
-  passed: zod.boolean().nullish(),
+  passed: zod.boolean().nullable(),
   required: zod.boolean(),
-  score: zod.number().nullish(),
+  score: zod.number().nullable(),
   state: zod
     .enum([
       'not_started',

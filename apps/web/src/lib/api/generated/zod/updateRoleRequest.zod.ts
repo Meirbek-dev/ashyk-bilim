@@ -7,10 +7,17 @@
  */
 import * as zod from 'zod'
 
+export const updateRoleRequestDescriptionMax = 1000
+
+export const updateRoleRequestDisplayNameMax = 200
+
+export const updateRoleRequestPriorityMin = 0
+export const updateRoleRequestPriorityMax = 99
+
 export const UpdateRoleRequest = zod.object({
-  description: zod.string().nullish(),
-  display_name: zod.string().nullish(),
-  priority: zod.int().nullish(),
+  description: zod.string().max(updateRoleRequestDescriptionMax).optional(),
+  display_name: zod.string().max(updateRoleRequestDisplayNameMax).optional(),
+  priority: zod.int().min(updateRoleRequestPriorityMin).max(updateRoleRequestPriorityMax).optional(),
 })
 
 export type UpdateRoleRequest = zod.input<typeof UpdateRoleRequest>

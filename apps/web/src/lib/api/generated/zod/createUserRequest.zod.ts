@@ -7,14 +7,38 @@
  */
 import * as zod from 'zod'
 
+export const createUserRequestEmailMax = 320
+
+export const createUserRequestFirstNameMax = 100
+
+export const createUserRequestLastNameMax = 100
+
+export const createUserRequestPasswordMin = 8
+export const createUserRequestPasswordMax = 72
+
+export const createUserRequestRolesMax = 10
+
+export const createUserRequestUsernameMin = 3
+export const createUserRequestUsernameMax = 48
+
+export const createUserRequestUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$')
+
 export const CreateUserRequest = zod
   .object({
-    email: zod.string(),
-    first_name: zod.string(),
-    last_name: zod.string(),
-    password: zod.string().nullish(),
-    roles: zod.array(zod.string()).nullish().describe('Extra role slugs on top of the default `user`.'),
-    username: zod.string(),
+    email: zod.string().max(createUserRequestEmailMax),
+    first_name: zod.string().min(1).max(createUserRequestFirstNameMax),
+    last_name: zod.string().min(1).max(createUserRequestLastNameMax),
+    password: zod.string().min(createUserRequestPasswordMin).max(createUserRequestPasswordMax).optional(),
+    roles: zod
+      .array(zod.string())
+      .max(createUserRequestRolesMax)
+      .optional()
+      .describe('Extra role slugs on top of the default `user`.'),
+    username: zod
+      .string()
+      .min(createUserRequestUsernameMin)
+      .max(createUserRequestUsernameMax)
+      .regex(createUserRequestUsernameRegExp),
   })
   .describe(
     'Admin account creation (`POST /users`). No `Debug` - may carry a\npassword. Without one the account is IdP-only (Google sign-in).',

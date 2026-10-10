@@ -8,16 +8,24 @@
 import * as zod from 'zod'
 
 export const FileReviewItem = zod.object({
+  allowed_actions: zod
+    .array(zod.enum(['save', 'publish', 'return']))
+    .describe('The grade saves the caller may make now.'),
   attempt_number: zod.int(),
+  enrolled: zod.boolean().describe('The learner is a course member (not a leaver).'),
   file_count: zod.int(),
-  final_score: zod.number().nullish(),
-  graded_at_unix: zod.int().nullish(),
+  final_score: zod.number().nullable(),
+  graded_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
   id: zod.uuid(),
   is_late: zod.boolean(),
+  staff: zod.boolean().describe('The learner is on the course staff.'),
   status: zod
     .enum(['draft', 'submitted', 'graded', 'published', 'returned'])
     .describe('File-submission attempt status (legacy `FileSubmissionAttemptStatus`).'),
-  submitted_at_unix: zod.int().nullish(),
+  submitted_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   user: zod.object({
     display_name: zod.string(),
     email: zod.string(),

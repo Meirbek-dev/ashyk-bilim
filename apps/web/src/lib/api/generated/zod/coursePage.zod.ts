@@ -10,67 +10,116 @@ import * as zod from 'zod'
 export const CoursePage = zod
   .object({
     items: zod.array(
-      zod.object({
-        about: zod.string(),
-        archived_at_unix: zod
-          .int()
-          .nullish()
-          .describe(
-            'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
-          ),
-        archived_by: zod.union([zod.uuid(), zod.null()]).optional(),
-        contributor_ids: zod
-          .array(zod.uuid())
-          .describe(
-            'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
-          ),
-        created_at_unix: zod.int(),
-        creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        description: zod.string(),
-        id: zod.uuid(),
-        learnings: zod
-          .array(
-            zod
-              .object({
-                emoji: zod.string().nullish(),
-                id: zod.string(),
-                text: zod.string(),
-              })
-              .describe('One "What you\'ll learn" entry.'),
-          )
-          .describe('"What you\'ll learn", in display order.'),
-        name: zod.string(),
-        open_to_contributors: zod.boolean(),
-        public: zod.boolean(),
-        tags: zod.array(zod.string()),
-        thumbnail_key: zod
-          .string()
-          .nullish()
-          .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
-        thumbnail_video_key: zod
-          .string()
-          .nullish()
-          .describe(
-            'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
-          ),
-        updated_at_unix: zod.int(),
-      }),
+      zod
+        .object({
+          about: zod.string(),
+          allowed_actions: zod
+            .array(
+              zod
+                .enum([
+                  'update',
+                  'publish',
+                  'unpublish',
+                  'archive',
+                  'restore',
+                  'delete',
+                  'manage_contributors',
+                  'apply_contributor',
+                ])
+                .describe(
+                  'What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].',
+                ),
+            )
+            .describe('What the caller may do to this course now - draw only these actions.'),
+          archived_at_unix: zod
+            .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
+            .describe(
+              'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
+            ),
+          archived_by: zod.union([zod.uuid(), zod.null()]),
+          contributor_ids: zod
+            .array(zod.uuid())
+            .describe(
+              'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
+            ),
+          created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          creator_id: zod.union([zod.uuid(), zod.null()]),
+          description: zod.string(),
+          id: zod.uuid(),
+          learnings: zod
+            .array(
+              zod
+                .object({
+                  emoji: zod.string().nullable(),
+                  id: zod.string(),
+                  text: zod.string(),
+                })
+                .describe('One "What you\'ll learn" entry.'),
+            )
+            .describe('"What you\'ll learn", in display order.'),
+          name: zod.string(),
+          open_to_contributors: zod.boolean(),
+          public: zod.boolean(),
+          tags: zod.array(zod.string()),
+          thumbnail_key: zod
+            .string()
+            .nullable()
+            .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+          thumbnail_video_key: zod
+            .string()
+            .nullable()
+            .describe(
+              'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
+            ),
+          updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          version: zod
+            .int()
+            .describe(
+              'Optimistic lock: send it back as `If-Match` on `PATCH` and\nlifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.',
+            ),
+        })
+        .and(
+          zod.object({
+            authors: zod
+              .array(
+                zod.object({
+                  display_name: zod.string(),
+                  user_id: zod.uuid(),
+                  username: zod.string(),
+                }),
+              )
+              .describe(
+                'The creator first, then the active contributors (`contributor_ids`\norder); deleted accounts are left out.',
+              ),
+            progress: zod.union([
+              zod
+                .object({
+                  completed_at_unix: zod.union([
+                    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+                    zod.null(),
+                  ]),
+                  progress_pct: zod.number().describe('0..=100.'),
+                })
+                .describe(
+                  "The signed-in caller's progress; `null` when not enrolled (or\nanonymous, or staff of the course).",
+                ),
+              zod.null(),
+            ]),
+          }),
+        )
+        .describe('A `GET /courses` item: the course plus who wrote it and how far the\ncaller got.'),
     ),
-    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+    next_cursor: zod.union([zod.uuid(), zod.null()]),
     summary: zod
-      .union([
-        zod
-          .object({
-            archived: zod.int().describe('Archived courses (the `archived` preset).'),
-            attention: zod.int().describe('Courses matching the `attention` preset.'),
-            private: zod.int().describe('Drafts.'),
-            ready: zod.int().describe('Published courses.'),
-            total: zod.int(),
-          })
-          .describe('Present only when the request had `mine=true`.'),
-        zod.null(),
-      ])
-      .optional(),
+      .object({
+        archived: zod.int().describe('Archived courses (the `archived` preset).'),
+        attention: zod.int().describe('Courses matching the `attention` preset.'),
+        private: zod.int().describe('Drafts.'),
+        ready: zod.int().describe('Published courses.'),
+        total: zod.int(),
+      })
+      .optional()
+      .describe('Present only when the request had `mine=true`.'),
   })
   .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 

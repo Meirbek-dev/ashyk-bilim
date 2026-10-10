@@ -86,7 +86,7 @@ export const EducationEditor: FC<EducationEditorProps> = ({ t, section, onChange
                       id={`current-edu-${index}`}
                       checked={edu.current}
                       onCheckedChange={checked =>
-                        patch(index, checked ? { current: true, endDate: null } : { current: false })
+                        patch(index, checked ? { current: true, endDate: '' } : { current: false })
                       }
                     />
                     <Label htmlFor={`current-edu-${index}`}>{t('EducationEditor.currentLabel')}</Label>

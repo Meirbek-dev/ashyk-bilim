@@ -30,6 +30,14 @@ const detail: AssessmentDetail = {
   access_mode: 'all_course_learners',
   content_version: 2,
   policy_version: 3,
+  version: 5,
+  allowed_actions: [],
+  allowed_transitions: [],
+  archived_at_unix: null,
+  creator_id: null,
+  edit_lock: null,
+  published_at_unix: 1777982400,
+  scheduled_at_unix: null,
   created_at_unix: 1777982400,
   updated_at_unix: 1777982400,
   description: 'Assessment',
@@ -41,6 +49,7 @@ const detail: AssessmentDetail = {
   policy: {
     allow_late: false,
     attempt_penalty_percent: 0,
+    due_at_unix: null,
     completion_rule: 'passed',
     copy_paste_protection: false,
     devtools_detection: false,
@@ -66,9 +75,10 @@ const detail: AssessmentDetail = {
     {
       id: itemId,
       kind: 'open_text',
-      body: { kind: 'open_text', prompt: 'Explain' },
+      assessment_version: 1,
+      body: { kind: 'open_text', prompt: 'Explain', min_words: null, rubric: null },
       max_score: 10,
-      metadata: {},
+      metadata: { difficulty: null, estimated_minutes: null, section_label: null },
       position: 1,
       title: 'Question',
     },
@@ -83,6 +93,7 @@ const attemptState: AttemptState = {
   draft_id: submissionId,
   is_teacher_preview: false,
   lifecycle: 'published',
+  opens_at_unix: null,
   revision_requested: false,
   effective: {
     allow_late: false,
@@ -108,6 +119,14 @@ const fixture: StudentSubmission = {
   is_late: false,
   violation_count: 0,
   started_at_unix: 1777982400,
+  auto_score: null,
+  auto_submit_reason: null,
+  final_score: null,
+  graded_at_unix: null,
+  grading: null,
+  late_penalty_pct: null,
+  submitted_at_unix: null,
+  time_remaining_seconds: null,
 }
 beforeEach(() => vi.resetAllMocks())
 

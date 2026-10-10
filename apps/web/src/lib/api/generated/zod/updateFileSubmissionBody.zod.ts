@@ -7,43 +7,83 @@
  */
 import * as zod from 'zod'
 
+export const updateFileSubmissionBodyInstructionsMax = 50000
+
+export const updateFileSubmissionBodyLatePolicyTwoPercentPerDayMin = 0
+export const updateFileSubmissionBodyLatePolicyTwoPercentPerDayMax = 100
+
+export const updateFileSubmissionBodyTitleMax = 500
+
 export const UpdateFileSubmissionBody = zod
   .object({
-    allow_late: zod.boolean().nullish(),
-    allowed_mime_types: zod.array(zod.string()).nullish(),
-    due_at_unix: zod.int().nullish(),
-    grade_release_mode: zod.union([zod.enum(['immediate', 'batch']), zod.null()]).optional(),
-    instructions: zod.string().nullish(),
+    allow_late: zod.boolean().optional(),
+    allowed_mime_types: zod.array(zod.string()).optional(),
+    due_at_unix: zod
+      .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
+      .optional(),
+    grade_release_mode: zod.enum(['immediate', 'batch']).optional(),
+    instructions: zod.string().max(updateFileSubmissionBodyInstructionsMax).optional(),
     late_policy: zod
       .union([
-        zod
-          .union([
-            zod.object({
-              kind: zod.enum(['none']),
-            }),
-            zod.object({
-              kind: zod.enum(['penalty']),
-              max_days: zod.int(),
-              percent_per_day: zod.number(),
-            }),
-            zod.object({
-              cutoff_at_unix: zod.int(),
-              kind: zod.enum(['cutoff']),
-            }),
-          ])
-          .describe('Late-submission handling.'),
-        zod.null(),
+        zod.object({
+          kind: zod.enum(['none']),
+        }),
+        zod.object({
+          kind: zod.enum(['penalty']),
+          max_days: zod.int().min(1),
+          percent_per_day: zod
+            .number()
+            .min(updateFileSubmissionBodyLatePolicyTwoPercentPerDayMin)
+            .max(updateFileSubmissionBodyLatePolicyTwoPercentPerDayMax),
+        }),
+        zod.object({
+          cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          kind: zod.enum(['cutoff']),
+        }),
       ])
-      .optional(),
+      .optional()
+      .describe('Late-submission handling.'),
     max_attempts: zod.int().nullish(),
     max_file_size_mb: zod.int().nullish().describe('`null` clears the limit.'),
-    max_files: zod.int().nullish(),
+    max_files: zod.int().optional(),
     rubric: zod
-      .looseObject({})
-      .nullish()
+      .object({
+        criteria: zod
+          .array(
+            zod.object({
+              criterion_id: zod.string(),
+              label: zod.string(),
+              levels: zod
+                .array(
+                  zod.object({
+                    description: zod.string().optional(),
+                    label: zod.string(),
+                    score: zod.number(),
+                  }),
+                )
+                .optional(),
+              max_score: zod.number(),
+            }),
+          )
+          .optional()
+          .describe('Absent on an activity without a rubric (`{}`).'),
+      })
+      .optional()
       .describe("A JSON object of at most 4 KiB serialized (UX-154; same rule as the\ngrade route's `rubric_scores`)."),
-    settings: zod.looseObject({}).nullish(),
-    title: zod.string().nullish(),
+    settings: zod
+      .record(
+        zod.string(),
+        zod
+          .unknown()
+          .describe(
+            'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+          ),
+      )
+      .optional()
+      .describe(
+        '`file_submissions.settings`: reserved, no keys are defined (`{}` on\nevery row); stored and returned as sent.',
+      ),
+    title: zod.string().max(updateFileSubmissionBodyTitleMax).optional(),
   })
   .describe('The configuration block; every field optional on create and patch.')
 

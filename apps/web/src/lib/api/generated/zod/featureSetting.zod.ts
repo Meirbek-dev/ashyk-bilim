@@ -8,10 +8,16 @@
 import * as zod from 'zod'
 
 export const FeatureSetting = zod.object({
-  editable: zod.boolean().describe('Flags come from the environment; there is no runtime toggle.'),
-  enabled: zod.boolean(),
+  editable: zod
+    .boolean()
+    .describe(
+      'The environment allows the feature, so the runtime switch\n(`PUT /ai/admin/settings/features/{key}`) turns it on and off.',
+    ),
+  enabled: zod
+    .boolean()
+    .describe('The environment flag lowered by the runtime switch (the master\nswitch not applied).'),
   key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-  source: zod.string(),
+  source: zod.string().describe('`runtime` when a runtime switch is stored, else `environment`.'),
 })
 
 export type FeatureSetting = zod.input<typeof FeatureSetting>

@@ -67,6 +67,7 @@ const lecture = {
 const sessionWire = {
   id: SESSION_ID,
   submission_id: SUBMISSION_ID,
+  file_submission_attempt_id: null,
   activity_id: '01a091a1-0461-7a3c-9433-3920a37d67e7',
   student_user_id: '01a0910c-796a-75f5-b21c-93955233d327',
   analysis_id: '01a09221-0892-7eb4-b204-7047c305b883',

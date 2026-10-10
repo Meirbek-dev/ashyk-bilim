@@ -8,8 +8,14 @@
 import * as zod from 'zod'
 
 export const UpdateContributorRequest = zod.object({
-  role: zod.string().nullish().describe('`maintainer | contributor | reporter`.'),
-  status: zod.string().nullish().describe('`pending | active | inactive` (`active` approves an application).'),
+  role: zod
+    .enum(['maintainer', 'contributor', 'reporter'])
+    .optional()
+    .describe('`maintainer | contributor | reporter`.'),
+  status: zod
+    .enum(['pending', 'active', 'inactive'])
+    .optional()
+    .describe('`pending | active | inactive` (`active` approves an application).'),
 })
 
 export type UpdateContributorRequest = zod.input<typeof UpdateContributorRequest>

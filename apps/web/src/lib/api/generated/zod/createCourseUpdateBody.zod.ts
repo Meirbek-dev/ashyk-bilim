@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const createCourseUpdateBodyContentMax = 50000
+
+export const createCourseUpdateBodyTitleMax = 500
+
 export const CreateCourseUpdateBody = zod.object({
-  content: zod.string(),
-  title: zod.string(),
+  content: zod.string().min(1).max(createCourseUpdateBodyContentMax),
+  title: zod.string().min(1).max(createCourseUpdateBodyTitleMax),
 })
 
 export type CreateCourseUpdateBody = zod.input<typeof CreateCourseUpdateBody>

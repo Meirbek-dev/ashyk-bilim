@@ -8,21 +8,92 @@
 import * as zod from 'zod'
 
 export const CourseAnalysis = zod.object({
-  content_hash: zod.string().nullish(),
+  content_hash: zod.string().nullable(),
   course_id: zod.uuid(),
-  created_at_unix: zod.int(),
-  evidence: zod.looseObject({}),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  evidence: zod
+    .object({
+      citations: zod
+        .array(
+          zod.object({
+            citation_id: zod.string(),
+            confidence: zod.number().optional(),
+            excerpt: zod.string().optional(),
+            label: zod.string(),
+            source_type: zod.string(),
+            source_uuid: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .describe('What an AI result was grounded on: `{citations: [...]}`, or `{}` (the\ncolumn default; Q&A questions).'),
   id: zod.uuid(),
   language: zod.string(),
-  model_name: zod.string().nullish(),
-  previous_public_score: zod.int().nullish(),
+  model_name: zod.string().nullable(),
+  previous_public_score: zod.int().nullable(),
   public_score: zod.int(),
-  published_at_unix: zod.int().nullish(),
-  report: zod.looseObject({}),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  published_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
+  report: zod.object({
+    citations: zod
+      .array(
+        zod.object({
+          citation_id: zod.string(),
+          confidence: zod.number().optional(),
+          excerpt: zod.string().optional(),
+          label: zod.string(),
+          source_type: zod.string(),
+          source_uuid: zod.string().optional(),
+        }),
+      )
+      .optional(),
+    confidence: zod
+      .enum(['low', 'medium', 'high'])
+      .optional()
+      .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+    finding_reviews: zod
+      .record(
+        zod.string(),
+        zod
+          .object({
+            action: zod
+              .enum(['accepted', 'dismissed', 'task_created'])
+              .describe('Teacher review verdict on one course-analysis finding.'),
+            note: zod.string().nullable(),
+            reviewed_at: zod.int().describe('Unix seconds.'),
+            reviewed_by_user_id: zod.uuid(),
+          })
+          .describe('One stored verdict on a course-analysis finding.'),
+      )
+      .optional()
+      .describe(
+        "The teacher's verdict per recommendation, keyed by finding id:\n`finding-{index}` into `recommendations` (what\n`POST .../findings/review` takes). Absent until the first verdict.",
+      ),
+    language: zod.string().optional(),
+    public_score: zod.int(),
+    recommendations: zod
+      .array(
+        zod.object({
+          action: zod.string().optional(),
+          priority: zod
+            .enum(['low', 'medium', 'high'])
+            .optional()
+            .describe('`low` / `medium` / `high`, tolerant of anything else (→ `medium`).'),
+          rationale: zod.string().optional(),
+          title: zod.string(),
+        }),
+      )
+      .optional(),
+    risks: zod.array(zod.string()).optional(),
+    strengths: zod.array(zod.string()).optional(),
+    summary: zod.string(),
+  }),
+  run_id: zod.union([zod.uuid(), zod.null()]),
   stale: zod.boolean().describe('The course content changed since this analysis (latest view only).'),
   status: zod.enum(['draft', 'needs_human_review', 'published']).describe('Course analysis publication state.'),
-  triggered_by: zod.union([zod.uuid(), zod.null()]).optional(),
+  triggered_by: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type CourseAnalysis = zod.input<typeof CourseAnalysis>

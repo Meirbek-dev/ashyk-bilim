@@ -7,10 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const verifyEmailRequestCodeMax = 32
+
+export const verifyEmailRequestEmailMax = 320
+
 export const VerifyEmailRequest = zod
   .object({
-    code: zod.string(),
-    email: zod.string(),
+    code: zod.string().min(1).max(verifyEmailRequestCodeMax),
+    email: zod.string().max(verifyEmailRequestEmailMax),
   })
   .describe('Confirm the emailed verification code.')
 

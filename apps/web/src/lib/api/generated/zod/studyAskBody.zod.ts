@@ -7,13 +7,15 @@
  */
 import * as zod from 'zod'
 
+export const studyAskBodyQuestionMax = 4000
+
 export const StudyAskBody = zod.object({
   language: zod.string().optional(),
   mode: zod
     .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
     .optional()
     .describe('Study companion modes (legacy `StudyMode`).'),
-  question: zod.string(),
+  question: zod.string().min(1).max(studyAskBodyQuestionMax),
 })
 
 export type StudyAskBody = zod.input<typeof StudyAskBody>

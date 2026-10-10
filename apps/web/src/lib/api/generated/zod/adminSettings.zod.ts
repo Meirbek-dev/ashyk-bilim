@@ -14,13 +14,45 @@ export const adminSettingsMaxTokensPerRequestMin = 0
 export const AdminSettings = zod.object({
   ai_enabled: zod.boolean(),
   draft_mode_enabled: zod.boolean(),
-  effective: zod.looseObject({}).describe('The whole `AB__AI__*` section with secrets redacted.'),
+  effective: zod
+    .object({
+      ai_draft_mode_enabled: zod.boolean(),
+      ai_enabled: zod.boolean(),
+      analysis_requests_per_hour_per_user: zod.int(),
+      course_analysis_enabled: zod.boolean(),
+      course_qa_enabled: zod.boolean(),
+      lecture_authoring_enabled: zod.boolean(),
+      max_output_tokens: zod.int(),
+      max_tokens_per_request: zod.int(),
+      monthly_token_budget: zod.int(),
+      openai_api_key: zod.string().nullable().describe('`"[redacted]"` when set.'),
+      openai_base_url: zod.string(),
+      openai_model: zod.string(),
+      openai_timeout_secs: zod.number(),
+      openrouter_api_key: zod.string().nullable().describe('`"[redacted]"` when set.'),
+      openrouter_base_url: zod.string(),
+      openrouter_model: zod.string(),
+      openrouter_timeout_secs: zod.number(),
+      remediation_enabled: zod.boolean(),
+      remediation_requests_per_hour_per_user: zod.int(),
+      semantic_memory_enabled: zod.boolean(),
+      status: zod.string().describe('`enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.'),
+      study_companion_enabled: zod.boolean(),
+      submission_analysis_enabled: zod.boolean(),
+    })
+    .describe('The whole `AB__AI__*` section with secrets redacted.'),
   features: zod.array(
     zod.object({
-      editable: zod.boolean().describe('Flags come from the environment; there is no runtime toggle.'),
-      enabled: zod.boolean(),
+      editable: zod
+        .boolean()
+        .describe(
+          'The environment allows the feature, so the runtime switch\n(`PUT /ai/admin/settings/features/{key}`) turns it on and off.',
+        ),
+      enabled: zod
+        .boolean()
+        .describe('The environment flag lowered by the runtime switch (the master\nswitch not applied).'),
       key: zod.string().describe('The legacy flag key (`course_qa_enabled`, …).'),
-      source: zod.string(),
+      source: zod.string().describe('`runtime` when a runtime switch is stored, else `environment`.'),
     }),
   ),
   max_output_tokens: zod.int().min(adminSettingsMaxOutputTokensMin),

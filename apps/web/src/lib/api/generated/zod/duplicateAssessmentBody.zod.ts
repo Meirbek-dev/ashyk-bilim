@@ -7,11 +7,16 @@
  */
 import * as zod from 'zod'
 
+export const duplicateAssessmentBodyTitleMax = 500
+
 export const DuplicateAssessmentBody = zod.object({
-  chapter_id: zod
-    .union([zod.uuid().describe("Target chapter in the same course; defaults to the source's chapter."), zod.null()])
-    .optional(),
-  title: zod.string().nullish().describe('Defaults to `"<title> (copy)"`.'),
+  chapter_id: zod.uuid().optional().describe("Target chapter in the same course; defaults to the source's chapter."),
+  title: zod
+    .string()
+    .min(1)
+    .max(duplicateAssessmentBodyTitleMax)
+    .optional()
+    .describe('Defaults to `"<title> (copy)"`.'),
 })
 
 export type DuplicateAssessmentBody = zod.input<typeof DuplicateAssessmentBody>

@@ -7,15 +7,47 @@
  */
 import * as zod from 'zod'
 
+export const assessmentPolicyAttemptPenaltyPercentMin = 0
+export const assessmentPolicyAttemptPenaltyPercentMax = 100
+
+export const assessmentPolicyGracePeriodMinutesMin = 0
+
+export const assessmentPolicyLatePolicyTwoPercentPerDayMin = 0
+export const assessmentPolicyLatePolicyTwoPercentPerDayMax = 100
+
+export const assessmentPolicyMaxAttemptsMax = 10
+
+export const assessmentPolicyNegativeMarkingPercentMin = 0
+export const assessmentPolicyNegativeMarkingPercentMax = 100
+
+export const assessmentPolicyPassingScoreMin = 0
+export const assessmentPolicyPassingScoreMax = 100
+
 export const Assessment = zod.object({
   access_mode: zod.enum(['all_course_learners', 'restricted']),
   activity_id: zod.uuid(),
-  archived_at_unix: zod.int().nullish(),
+  allowed_actions: zod
+    .array(
+      zod
+        .enum(['update', 'transition', 'duplicate', 'grade', 'edit'])
+        .describe('What the caller may do to an assessment (`Assessment.allowed_actions`).'),
+    )
+    .describe('What the caller may do to this assessment now.'),
+  allowed_transitions: zod
+    .array(zod.enum(['draft', 'scheduled', 'published', 'archived']))
+    .describe('The lifecycle targets `POST .../lifecycle` accepts from here (empty\nwithout `transition`).'),
+  archived_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
   content_version: zod.int(),
   course_id: zod.uuid(),
-  created_at_unix: zod.int(),
-  creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  creator_id: zod.union([zod.uuid(), zod.null()]),
   description: zod.string(),
+  edit_lock: zod.union([
+    zod
+      .enum(['archived', 'scheduled', 'has_submissions'])
+      .describe('Why details, policy and items are read-only now (`null`: editable).'),
+    zod.null(),
+  ]),
   grading_type: zod.enum(['numeric', 'percentage']),
   id: zod.uuid(),
   kind: zod
@@ -25,13 +57,17 @@ export const Assessment = zod.object({
   policy: zod
     .object({
       allow_late: zod.boolean(),
-      attempt_penalty_percent: zod.number().describe('Max-score cap per extra attempt (0 = off).'),
+      attempt_penalty_percent: zod
+        .number()
+        .min(assessmentPolicyAttemptPenaltyPercentMin)
+        .max(assessmentPolicyAttemptPenaltyPercentMax)
+        .describe('Max-score cap per extra attempt (0 = off).'),
       completion_rule: zod.enum(['viewed', 'submitted', 'graded', 'passed', 'teacher_verified']),
       copy_paste_protection: zod.boolean(),
       devtools_detection: zod.boolean(),
-      due_at_unix: zod.int().nullish(),
+      due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
       fullscreen_required: zod.boolean(),
-      grace_period_minutes: zod.int(),
+      grace_period_minutes: zod.int().min(assessmentPolicyGracePeriodMinutesMin),
       grade_release_mode: zod.enum(['immediate', 'batch']),
       grading_mode: zod.enum(['auto', 'manual', 'auto_then_manual']),
       late_policy: zod
@@ -41,36 +77,53 @@ export const Assessment = zod.object({
           }),
           zod.object({
             kind: zod.enum(['penalty']),
-            max_days: zod.int(),
-            percent_per_day: zod.number(),
+            max_days: zod.int().min(1),
+            percent_per_day: zod
+              .number()
+              .min(assessmentPolicyLatePolicyTwoPercentPerDayMin)
+              .max(assessmentPolicyLatePolicyTwoPercentPerDayMax),
           }),
           zod.object({
-            cutoff_at_unix: zod.int(),
+            cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
             kind: zod.enum(['cutoff']),
           }),
         ])
         .describe('Late-submission handling.'),
-      max_attempts: zod.int().nullish().describe('`null` = unlimited.'),
-      negative_marking_percent: zod.number(),
+      max_attempts: zod.int().min(1).max(assessmentPolicyMaxAttemptsMax).nullable().describe('`null` = unlimited.'),
+      negative_marking_percent: zod
+        .number()
+        .min(assessmentPolicyNegativeMarkingPercentMin)
+        .max(assessmentPolicyNegativeMarkingPercentMax),
       partial_credit: zod.boolean(),
-      passing_score: zod.number(),
+      passing_score: zod.number().min(assessmentPolicyPassingScoreMin).max(assessmentPolicyPassingScoreMax),
       randomize_options: zod.boolean(),
       randomize_questions: zod.boolean(),
       required: zod.boolean(),
       review_visibility: zod.enum(['none', 'score_only', 'full']),
       right_click_disabled: zod.boolean(),
       tab_switch_detection: zod.boolean(),
-      time_limit_seconds: zod.int().nullish().describe('`null` = no limit.'),
-      violation_threshold: zod.int(),
+      time_limit_seconds: zod.int().min(1).nullable().describe('`null` = no limit.'),
+      violation_threshold: zod.int().min(1),
     })
     .describe(
       'The complete policy block. Replaced wholesale via `PUT`; the same shape\nis returned on every assessment read. Ranges are validated server-side\n(422 with field errors).',
     ),
   policy_version: zod.int(),
-  published_at_unix: zod.int().nullish(),
-  scheduled_at_unix: zod.int().nullish(),
+  published_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
+  scheduled_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   title: zod.string(),
-  updated_at_unix: zod.int(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  version: zod
+    .int()
+    .describe(
+      'Optimistic lock over the whole assessment (any change bumps it):\n`If-Match` on `PATCH`, the policy `PUT` and lifecycle; the `ETag` of `GET`.',
+    ),
   weight: zod.number(),
 })
 

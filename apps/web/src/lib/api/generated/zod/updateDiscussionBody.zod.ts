@@ -7,16 +7,21 @@
  */
 import * as zod from 'zod'
 
+export const updateDiscussionBodyContentMax = 20000
+
+export const updateDiscussionBodyUploadIdsMax = 10
+
 export const UpdateDiscussionBody = zod.object({
-  content: zod.string().nullish(),
+  content: zod.string().min(1).max(updateDiscussionBodyContentMax).optional(),
   status: zod
-    .union([
-      zod
-        .enum(['active', 'hidden', 'deleted'])
-        .describe('Course discussion visibility (legacy `DiscussionStatusEnum`).'),
-      zod.null(),
-    ])
-    .optional(),
+    .enum(['active', 'hidden', 'deleted'])
+    .optional()
+    .describe('Course discussion visibility (legacy `DiscussionStatusEnum`).'),
+  upload_ids: zod
+    .array(zod.uuid())
+    .max(updateDiscussionBodyUploadIdsMax)
+    .optional()
+    .describe('Images added by this edit (see `CreateDiscussionRequest.upload_ids`).'),
 })
 
 export type UpdateDiscussionBody = zod.input<typeof UpdateDiscussionBody>

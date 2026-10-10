@@ -81,6 +81,9 @@ function attempt(): FileSubmissionAttempt {
     submitted_at_unix: 1_783_933_200,
     created_at_unix: 1_783_929_600,
     updated_at_unix: 1_783_933_200,
+    started_at_unix: 1_783_929_600,
+    graded_at_unix: null,
+    allowed_actions: ['save', 'publish', 'return'],
     user: {
       id: 'user_aruzhan',
       username: 'aruzhan',
@@ -92,7 +95,7 @@ function attempt(): FileSubmissionAttempt {
 
 function queueItem(full: FileSubmissionAttempt): FileSubmissionReviewItem {
   const { files, feedback: _feedback, rubric_scores: _rubric, ...rest } = full
-  return { ...rest, user: full.user!, file_count: files.length }
+  return { ...rest, user: full.user!, file_count: files.length, enrolled: true, staff: false }
 }
 
 describe('file-submission review: AI analysis on the attempt', () => {

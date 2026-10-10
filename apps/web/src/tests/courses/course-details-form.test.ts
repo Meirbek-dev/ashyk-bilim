@@ -32,6 +32,10 @@ function wireCourse(extra: Record<string, unknown> = {}) {
     contributor_ids: [],
     created_at_unix: 1,
     updated_at_unix: 1,
+    allowed_actions: [],
+    archived_at_unix: null,
+    archived_by: null,
+    version: 1,
     ...extra,
   }
 }

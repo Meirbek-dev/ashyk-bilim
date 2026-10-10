@@ -824,7 +824,8 @@ function GradeEditor({
         : {}
     onSubmit({
       action: GRADE_ACTIONS[status],
-      final_score: parsedScore,
+      // «Return» may go without a score: absent, never `null` (the contract has no null here).
+      ...(parsedScore === null ? {} : { final_score: parsedScore }),
       feedback,
       rubric_scores: rubric,
     })

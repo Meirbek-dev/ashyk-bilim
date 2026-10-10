@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const CourseLearning = zod
   .object({
-    emoji: zod.string().nullish(),
+    emoji: zod.string().nullable(),
     id: zod.string(),
     text: zod.string(),
   })

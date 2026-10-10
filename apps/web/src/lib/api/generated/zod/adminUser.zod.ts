@@ -9,13 +9,20 @@ import * as zod from 'zod'
 
 export const AdminUser = zod
   .object({
-    created_at_unix: zod.int(),
+    allowed_actions: zod
+      .array(
+        zod
+          .enum(['manage_roles', 'disable', 'enable'])
+          .describe('What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).'),
+      )
+      .describe('What the caller may do to this account now.'),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     display_name: zod.string(),
     email: zod.string(),
     id: zod.uuid(),
     organization: zod.string().describe('`""` = not given yet.'),
     roles: zod.array(zod.string()),
-    status: zod.string().describe('`active` or `disabled`.'),
+    status: zod.enum(['active', 'disabled']).describe('`active` or `disabled`.'),
     username: zod.string(),
   })
   .describe('Admin listing row (includes email + status - platform:read gated).')

@@ -7,11 +7,34 @@
  */
 import * as zod from 'zod'
 
+export const createRoleBodyDescriptionMax = 1000
+
+export const createRoleBodyDisplayNameMax = 200
+
+export const createRoleBodyPriorityMin = 0
+export const createRoleBodyPriorityMax = 99
+
+export const createRoleBodySlugMax = 64
+
+export const createRoleBodySlugRegExp = new RegExp('^[a-z0-9]([a-z0-9-]*[a-z0-9])?$')
+
 export const CreateRoleBody = zod.object({
-  description: zod.string().nullish(),
-  display_name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
-  priority: zod.int().describe('Ordering weight (system roles: guest 0 … admin 100).'),
-  slug: zod.string().describe('Kebab-case slug, e.g. `teaching-assistant`.'),
+  description: zod.string().max(createRoleBodyDescriptionMax).optional(),
+  display_name: zod
+    .string()
+    .max(createRoleBodyDisplayNameMax)
+    .describe('Blank → 422 `required` (trimmed in the service).'),
+  priority: zod
+    .int()
+    .min(createRoleBodyPriorityMin)
+    .max(createRoleBodyPriorityMax)
+    .describe('Ordering weight (system roles: guest 0 … admin 100).'),
+  slug: zod
+    .string()
+    .min(1)
+    .max(createRoleBodySlugMax)
+    .regex(createRoleBodySlugRegExp)
+    .describe('Kebab-case slug, e.g. `teaching-assistant`.'),
 })
 
 export type CreateRoleBody = zod.input<typeof CreateRoleBody>

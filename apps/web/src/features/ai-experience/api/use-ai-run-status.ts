@@ -2,7 +2,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 
-import { aiGetRun } from '@/lib/api/generated/ai/ai'
+import { getAiRun } from '@/lib/api/generated/ai/ai'
 import type { RunStatus } from '@/lib/api/generated/zod'
 
 /** `GET /ai/runs/{id}` (v2 `RunStatus`); the queue endpoints answer the same shape. */
@@ -15,7 +15,7 @@ export function isTerminalRunStatus(status: RunStatus['status'] | undefined) {
 export function aiRunStatusQueryOptions(runId: string, enabled = true) {
   return queryOptions({
     queryKey: ['ai-run-status', runId],
-    queryFn: () => aiGetRun(runId),
+    queryFn: () => getAiRun(runId),
     enabled: enabled && Boolean(runId),
     refetchInterval: query => (isTerminalRunStatus(query.state.data?.status) ? false : 2000),
   })

@@ -24,6 +24,7 @@ import type {
 } from '@tanstack/react-query'
 
 import {
+  AdminUser,
   AssignRoleRequest,
   CreateRoleRequest,
   Problem,
@@ -33,7 +34,7 @@ import {
   UserId,
 } from '../zod'
 
-import { orvalMutator, arrayParser, voidParser } from '../../orval-mutator'
+import { orvalMutator, arrayParser, optionalParser, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -229,7 +230,7 @@ export const getCreateRoleUrl = () => {
 export const createRole = async (
   createRoleRequest: CreateRoleRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<Role | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -244,7 +245,7 @@ export const createRole = async (
     }
     return headers
   }
-  return orvalMutator<void>(
+  return orvalMutator<Role | void>(
     getCreateRoleUrl(),
     {
       ...options,
@@ -252,7 +253,7 @@ export const createRole = async (
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(createRoleRequest),
     },
-    voidParser,
+    optionalParser(Role),
   )
 }
 
@@ -352,6 +353,179 @@ export const useDeleteRole = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof deleteRole>>, TError, DeleteRoleMutationVariables, TContext> => {
   return useMutation(getDeleteRoleMutationOptions(options), queryClient)
 }
+export const getGetRoleUrl = (slug: string) => {
+  return `/api/v2/rbac/roles/${slug}`
+}
+
+/**
+ * @summary One role with its grants (requires `role:read:platform`).
+ */
+export const getRole = async (slug: string, options?: Parameters<typeof orvalMutator>[1]): Promise<Role> => {
+  return orvalMutator<Role>(
+    getGetRoleUrl(slug),
+    {
+      ...options,
+      method: 'GET',
+    },
+    Role,
+  )
+}
+
+export const getGetRoleQueryKey = (slug: string) => {
+  return [`/api/v2/rbac/roles/${slug}`] as const
+}
+
+export const getGetRoleQueryOptions = <TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetRoleQueryKey(slug)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRole>>> = ({ signal }) =>
+    getRole(slug, { signal, ...requestOptions })
+
+  return { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRole>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRoleQueryResult = NonNullable<Awaited<ReturnType<typeof getRole>>>
+export type GetRoleQueryError = ErrorType<Problem>
+
+export function useGetRole<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<Awaited<ReturnType<typeof getRole>>, TError, Awaited<ReturnType<typeof getRole>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRole<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<Awaited<ReturnType<typeof getRole>>, TError, Awaited<ReturnType<typeof getRole>>>,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRole<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One role with its grants (requires `role:read:platform`).
+ */
+
+export function useGetRole<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetRoleQueryOptions(slug, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getGetRoleSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRole>>,
+  TError = ErrorType<Problem>,
+>(
+  slug: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetRoleQueryKey(slug)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRole>>> = ({ signal }) =>
+    getRole(slug, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetRoleSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getRole>>>
+export type GetRoleSuspenseQueryError = ErrorType<Problem>
+
+export function useGetRoleSuspense<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRoleSuspense<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRoleSuspense<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One role with its grants (requires `role:read:platform`).
+ */
+
+export function useGetRoleSuspense<TData = Awaited<ReturnType<typeof getRole>>, TError = ErrorType<Problem>>(
+  slug: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getRole>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetRoleSuspenseQueryOptions(slug, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export const getUpdateRoleUrl = (slug: string) => {
   return `/api/v2/rbac/roles/${slug}`
 }
@@ -363,7 +537,7 @@ export const updateRole = async (
   slug: string,
   updateRoleRequest: UpdateRoleRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<Role | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -378,7 +552,7 @@ export const updateRole = async (
     }
     return headers
   }
-  return orvalMutator<void>(
+  return orvalMutator<Role | void>(
     getUpdateRoleUrl(slug),
     {
       ...options,
@@ -386,7 +560,7 @@ export const updateRole = async (
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(updateRoleRequest),
     },
-    voidParser,
+    optionalParser(Role),
   )
 }
 
@@ -440,7 +614,7 @@ export const setRolePermissions = async (
   slug: string,
   setRolePermissionsRequest: SetRolePermissionsRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<Role | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -455,7 +629,7 @@ export const setRolePermissions = async (
     }
     return headers
   }
-  return orvalMutator<void>(
+  return orvalMutator<Role | void>(
     getSetRolePermissionsUrl(slug),
     {
       ...options,
@@ -463,7 +637,7 @@ export const setRolePermissions = async (
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(setRolePermissionsRequest),
     },
-    voidParser,
+    optionalParser(Role),
   )
 }
 
@@ -541,7 +715,7 @@ export const assignRole = async (
   userId: UserId,
   assignRoleRequest: AssignRoleRequest,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
+): Promise<AdminUser | void> => {
   const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {}
     if (h instanceof Headers) return Object.fromEntries(h.entries())
@@ -556,7 +730,7 @@ export const assignRole = async (
     }
     return headers
   }
-  return orvalMutator<void>(
+  return orvalMutator<AdminUser | void>(
     getAssignRoleUrl(userId),
     {
       ...options,
@@ -564,7 +738,7 @@ export const assignRole = async (
       headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
       body: JSON.stringify(assignRoleRequest),
     },
-    voidParser,
+    optionalParser(AdminUser),
   )
 }
 
@@ -619,14 +793,14 @@ export const unassignRole = async (
   userId: UserId,
   slug: string,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<void> => {
-  return orvalMutator<void>(
+): Promise<AdminUser | void> => {
+  return orvalMutator<AdminUser | void>(
     getUnassignRoleUrl(userId, slug),
     {
       ...options,
       method: 'DELETE',
     },
-    voidParser,
+    optionalParser(AdminUser),
   )
 }
 

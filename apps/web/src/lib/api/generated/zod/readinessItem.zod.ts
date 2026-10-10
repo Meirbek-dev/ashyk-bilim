@@ -9,9 +9,20 @@ import * as zod from 'zod'
 
 export const ReadinessItem = zod
   .object({
-    activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
-    code: zod.string(),
-    title: zod.string().nullish(),
+    activity_id: zod.union([zod.uuid(), zod.null()]),
+    code: zod
+      .enum([
+        'no-live-activity',
+        'assessment-not-ready',
+        'code-challenge-unconfigured',
+        'file-submission-unpublished',
+        'file-submission-not-ready',
+        'activity-unpublished',
+        'thumbnail-missing',
+        'certificate-not-configured',
+      ])
+      .describe('Stable readiness code the web localizes.'),
+    title: zod.string().nullable(),
   })
   .describe(
     'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',

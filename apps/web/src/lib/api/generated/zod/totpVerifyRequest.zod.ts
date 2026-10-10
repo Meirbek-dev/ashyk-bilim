@@ -7,8 +7,11 @@
  */
 import * as zod from 'zod'
 
+export const totpVerifyRequestCodeMin = 6
+export const totpVerifyRequestCodeMax = 8
+
 export const TotpVerifyRequest = zod.object({
-  code: zod.string(),
+  code: zod.string().min(totpVerifyRequestCodeMin).max(totpVerifyRequestCodeMax),
 })
 
 export type TotpVerifyRequest = zod.input<typeof TotpVerifyRequest>

@@ -8,14 +8,14 @@
 import * as zod from 'zod'
 
 export const RunEvidence = zod.object({
-  artifact_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  artifact_id: zod.union([zod.uuid(), zod.null()]),
   citation_id: zod.string(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   excerpt: zod.string(),
   id: zod.uuid(),
   label: zod.string(),
-  score: zod.number().nullish(),
-  source_ref: zod.string().nullish(),
+  score: zod.number().nullable(),
+  source_ref: zod.string().nullable(),
   source_type: zod.string(),
 })
 

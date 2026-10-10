@@ -7,14 +7,28 @@
  */
 import * as zod from 'zod'
 
+export const codeBodyInputSpecMax = 20000
+
+export const codeBodyOutputSpecMax = 20000
+
+export const codeBodyPromptMax = 20000
+
+export const codeBodyTestsItemDescriptionMax = 20000
+
+export const codeBodyTestsItemExpectedOutputMax = 20000
+
+export const codeBodyTestsItemInputMax = 20000
+
+export const codeBodyTestsMax = 200
+
 export const CodeBody = zod.object({
   constraints: zod.array(zod.string()).optional(),
-  input_spec: zod.string().optional(),
+  input_spec: zod.string().max(codeBodyInputSpecMax).optional(),
   languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
-  max_output_kb: zod.int().nullish(),
-  memory_limit_mb: zod.int().nullish(),
-  output_spec: zod.string().optional(),
-  prompt: zod.string().optional(),
+  max_output_kb: zod.int().nullable(),
+  memory_limit_mb: zod.int().nullable(),
+  output_spec: zod.string().max(codeBodyOutputSpecMax).optional(),
+  prompt: zod.string().max(codeBodyPromptMax).optional(),
   reference_solutions: zod.record(zod.string(), zod.string()).optional(),
   scoring_strategy: zod.enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission']).optional(),
   starter_code: zod
@@ -24,10 +38,10 @@ export const CodeBody = zod.object({
   tests: zod
     .array(
       zod.object({
-        description: zod.string().nullish(),
-        expected_output: zod.string().optional(),
+        description: zod.string().max(codeBodyTestsItemDescriptionMax).nullable(),
+        expected_output: zod.string().max(codeBodyTestsItemExpectedOutputMax).optional(),
         id: zod.string(),
-        input: zod.string().optional(),
+        input: zod.string().max(codeBodyTestsItemInputMax).optional(),
         is_visible: zod.boolean().optional(),
         match_mode: zod
           .enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
@@ -35,8 +49,9 @@ export const CodeBody = zod.object({
         weight: zod.int().optional(),
       }),
     )
+    .max(codeBodyTestsMax)
     .optional(),
-  time_limit_seconds: zod.int().nullish(),
+  time_limit_seconds: zod.int().nullable(),
 })
 
 export type CodeBody = zod.input<typeof CodeBody>

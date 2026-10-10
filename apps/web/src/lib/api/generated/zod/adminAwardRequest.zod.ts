@@ -7,11 +7,17 @@
  */
 import * as zod from 'zod'
 
+export const adminAwardRequestAmountMax = 100000
+
+export const adminAwardRequestIdempotencyKeyMax = 200
+
+export const adminAwardRequestReasonMax = 500
+
 export const AdminAwardRequest = zod
   .object({
-    amount: zod.int(),
-    idempotency_key: zod.string().nullish(),
-    reason: zod.string().nullish(),
+    amount: zod.int().min(1).max(adminAwardRequestAmountMax),
+    idempotency_key: zod.string().max(adminAwardRequestIdempotencyKeyMax).optional(),
+    reason: zod.string().max(adminAwardRequestReasonMax).optional(),
     user_id: zod.uuid(),
   })
   .describe('Platform managers grant XP to a user.')

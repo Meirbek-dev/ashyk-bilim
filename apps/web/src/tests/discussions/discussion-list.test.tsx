@@ -44,6 +44,9 @@ const base = {
   can_update: false,
   can_delete: false,
   can_moderate: false,
+  allowed_actions: ['reply', 'react'] as Discussion['allowed_actions'],
+  author: null,
+  parent_replies_count: null,
   created_at_unix: 1,
   updated_at_unix: 1,
   creation_date: '1970-01-01T00:00:01.000Z',
@@ -57,7 +60,7 @@ const post: Discussion = { ...base, id: 'p1', discussion_uuid: 'p1', parent_id: 
 beforeEach(() => vi.clearAllMocks())
 
 describe('DiscussionList (v2)', () => {
-  it('derives reply actions from the wire can_update/can_delete instead of the viewer username', () => {
+  it('derives reply actions from the wire allowed_actions instead of the viewer username', () => {
     const trashButtons = () => document.querySelectorAll('button:has(svg.lucide-trash)')
     // Same username as the author, but the server says the viewer may not touch it.
     const first = render(
@@ -66,9 +69,23 @@ describe('DiscussionList (v2)', () => {
     expect(trashButtons()).toHaveLength(0)
     first.unmount()
 
-    const editable: Discussion = { ...post, replies: [{ ...reply, can_delete: true, can_update: true }] }
-    render(<DiscussionList initialPosts={[editable]} currentUser={{ username: 'nobody' }} courseUuid={courseId} />)
+    const editable: Discussion = {
+      ...post,
+      replies: [{ ...reply, can_delete: true, can_update: true, allowed_actions: ['update', 'delete'] }],
+    }
+    const second = render(
+      <DiscussionList initialPosts={[editable]} currentUser={{ username: 'nobody' }} courseUuid={courseId} />,
+    )
     expect(trashButtons()).toHaveLength(1)
+    second.unmount()
+
+    // Archived course: the server keeps `can_*` but `allowed_actions` is empty (every write is 409).
+    const frozen: Discussion = {
+      ...post,
+      replies: [{ ...reply, can_delete: true, can_update: true, allowed_actions: [] }],
+    }
+    render(<DiscussionList initialPosts={[frozen]} currentUser={{ username: 'nobody' }} courseUuid={courseId} />)
+    expect(trashButtons()).toHaveLength(0)
   })
 
   // UX-109: posting needs a session — anonymous visitors get a sign-in link,

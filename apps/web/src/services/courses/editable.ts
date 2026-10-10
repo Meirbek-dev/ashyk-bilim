@@ -1,6 +1,7 @@
 'use server'
 
 import { listCourses } from '@/lib/api/generated/courses/courses'
+import { CourseListPreset } from '@/lib/api/generated/zod'
 import type { ListCoursesParams } from '@/lib/api/generated/zod'
 import { toAppCourse } from '@/hooks/courses/courseKeys'
 import { getSession } from '@/lib/auth/session'
@@ -24,11 +25,10 @@ export interface EditableCoursesSummary {
 
 const EMPTY_SUMMARY: EditableCoursesSummary = { total: 0, ready: 0, private: 0, attention: 0, archived: 0 }
 
-/** The web's `private` chip is the server's `drafts` preset. */
-const toServerPreset = (preset: string): ListCoursesParams['preset'] => {
+/** The web's `private` chip is the server's `drafts` preset; an unknown URL value lists everything (not a 422). */
+const toServerPreset = (preset: string): CourseListPreset => {
   const trimmed = preset.trim()
-  if (trimmed === 'private') return 'drafts'
-  return trimmed === '' ? 'all' : trimmed
+  return trimmed === 'private' ? 'drafts' : CourseListPreset.catch('all').parse(trimmed)
 }
 
 export async function getEditableCourses(

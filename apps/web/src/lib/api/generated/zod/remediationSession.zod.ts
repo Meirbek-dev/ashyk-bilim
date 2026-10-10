@@ -9,34 +9,72 @@ import * as zod from 'zod'
 
 export const RemediationSession = zod.object({
   activity_id: zod.uuid(),
-  analysis_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  created_at_unix: zod.int(),
-  file_submission_attempt_id: zod
-    .union([
-      zod
-        .uuid()
-        .describe(
-          'The remediated file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.',
-        ),
-      zod.null(),
-    ])
-    .optional(),
+  analysis_id: zod.union([zod.uuid(), zod.null()]),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  file_submission_attempt_id: zod.union([
+    zod
+      .uuid()
+      .describe(
+        'The remediated file-submission attempt - `null` for a submission.\nExactly one of the two ids is set.',
+      ),
+    zod.null(),
+  ]),
   gate_mode: zod.boolean(),
   id: zod.uuid(),
   language: zod.string(),
-  lecture: zod.looseObject({}),
-  passed_at_unix: zod.int().nullish(),
-  run_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  score: zod.int().nullish(),
+  lecture: zod.object({
+    citations: zod
+      .array(
+        zod.object({
+          citation_id: zod.string(),
+          confidence: zod.number().optional(),
+          excerpt: zod.string().optional(),
+          label: zod.string(),
+          source_type: zod.string(),
+          source_uuid: zod.string().optional(),
+        }),
+      )
+      .optional(),
+    language: zod.string().optional(),
+    learning_objectives: zod.array(zod.string()).optional(),
+    micro_lecture_markdown: zod.string(),
+    pass_threshold: zod.int().optional(),
+    practice_questions: zod
+      .array(
+        zod.object({
+          answer: zod.string().optional(),
+          choices: zod.array(zod.string()).optional(),
+          explanation: zod.string().optional(),
+          prompt: zod.string(),
+        }),
+      )
+      .optional(),
+    title: zod.string(),
+  }),
+  passed_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
+  run_id: zod.union([zod.uuid(), zod.null()]),
+  score: zod.int().nullable(),
   status: zod
     .enum(['assigned', 'in_progress', 'passed', 'failed'])
     .describe('Remediation session lifecycle (legacy string states).'),
   student_user_id: zod.uuid(),
-  submission_id: zod
-    .union([zod.uuid().describe('The remediated assessment submission - `null` for a file attempt.'), zod.null()])
-    .optional(),
-  test: zod.looseObject({}),
-  updated_at_unix: zod.int(),
+  submission_id: zod.union([
+    zod.uuid().describe('The remediated assessment submission - `null` for a file attempt.'),
+    zod.null(),
+  ]),
+  test: zod
+    .object({
+      questions: zod.array(
+        zod.object({
+          answer: zod.string().optional(),
+          choices: zod.array(zod.string()).optional(),
+          explanation: zod.string().optional(),
+          prompt: zod.string(),
+        }),
+      ),
+    })
+    .describe("A remediation session's practice test."),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
 })
 
 export type RemediationSession = zod.input<typeof RemediationSession>

@@ -7,9 +7,12 @@
  */
 import * as zod from 'zod'
 
+export const attemptStateEffectiveLatePolicyTwoPercentPerDayMin = 0
+export const attemptStateEffectiveLatePolicyTwoPercentPerDayMax = 100
+
 export const AttemptState = zod
   .object({
-    attempts_remaining: zod.int().nullish().describe('`null` = unlimited.'),
+    attempts_remaining: zod.int().nullable().describe('`null` = unlimited.'),
     attempts_used: zod.int(),
     can_continue: zod.boolean().describe('An open draft exists and may still be worked on.'),
     can_start: zod.boolean().describe('No open draft and nothing blocks a new attempt.'),
@@ -30,10 +33,10 @@ export const AttemptState = zod
           'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',
         ),
     ),
-    draft_id: zod.union([zod.uuid(), zod.null()]).optional(),
+    draft_id: zod.union([zod.uuid(), zod.null()]),
     effective: zod.object({
       allow_late: zod.boolean(),
-      due_at_unix: zod.int().nullish(),
+      due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
       late_policy: zod
         .union([
           zod.object({
@@ -41,24 +44,27 @@ export const AttemptState = zod
           }),
           zod.object({
             kind: zod.enum(['penalty']),
-            max_days: zod.int(),
-            percent_per_day: zod.number(),
+            max_days: zod.int().min(1),
+            percent_per_day: zod
+              .number()
+              .min(attemptStateEffectiveLatePolicyTwoPercentPerDayMin)
+              .max(attemptStateEffectiveLatePolicyTwoPercentPerDayMax),
           }),
           zod.object({
-            cutoff_at_unix: zod.int(),
+            cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
             kind: zod.enum(['cutoff']),
           }),
         ])
         .describe('Late-submission handling.'),
-      max_attempts: zod.int().nullish(),
+      max_attempts: zod.int().nullable(),
       override_applied: zod.boolean().describe('An unexpired per-student override shaped this.'),
       passing_score: zod.number(),
-      time_limit_seconds: zod.int().nullish(),
+      time_limit_seconds: zod.int().nullable(),
       waive_late_penalty: zod.boolean(),
     }),
     is_teacher_preview: zod.boolean(),
     lifecycle: zod.enum(['draft', 'scheduled', 'published', 'archived']),
-    opens_at_unix: zod.int().nullish(),
+    opens_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
     revision_requested: zod.boolean().describe('The latest attempt was returned for revision; the cap is lifted.'),
   })
   .describe('What the learner may do right now (flat flags for the client).')

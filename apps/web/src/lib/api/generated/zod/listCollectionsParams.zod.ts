@@ -10,6 +10,11 @@ import * as zod from 'zod'
 export const ListCollectionsParams = zod.object({
   cursor: zod.uuid().optional(),
   limit: zod.int().optional(),
+  q: zod.string().optional(),
+  sort: zod
+    .enum(['newest', 'name', 'updated'])
+    .optional()
+    .describe('`GET /collections?sort=`: `newest` (default), `name` (A-Z) or\n`updated` (newest update first).'),
 })
 
 export type ListCollectionsParams = zod.input<typeof ListCollectionsParams>

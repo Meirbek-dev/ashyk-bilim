@@ -8,9 +8,9 @@
 import * as zod from 'zod'
 
 export const ExportAssessmentOutcomesParams = zod.object({
-  window: zod.string().optional(),
-  compare: zod.string().optional(),
-  bucket: zod.string().optional(),
+  window: zod.enum(['7d', '28d', '90d']).optional(),
+  compare: zod.enum(['previous_period', 'none']).optional(),
+  bucket: zod.enum(['day', 'week']).optional(),
   bucket_start: zod.string().optional(),
   course_ids: zod.string().optional(),
   cohort_ids: zod.string().optional(),
@@ -19,7 +19,13 @@ export const ExportAssessmentOutcomesParams = zod.object({
   page: zod.int().optional(),
   page_size: zod.int().optional(),
   sort_by: zod.string().optional(),
-  sort_order: zod.string().optional(),
+  sort_order: zod.enum(['asc', 'desc']).optional(),
+  lang: zod
+    .enum(['ru', 'kk', 'en'])
+    .optional()
+    .describe(
+      '`?lang=` on CSV exports and certificate PDFs (a link cannot set\n`Accept-Language`); `middleware::lang_query` turns it into that header.',
+    ),
 })
 
 export type ExportAssessmentOutcomesParams = zod.input<typeof ExportAssessmentOutcomesParams>

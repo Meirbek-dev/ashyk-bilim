@@ -68,10 +68,12 @@ describe('course Q&A on the v2 wire', () => {
 
     expect(mocks.runAgent).toHaveBeenCalledWith(
       expect.objectContaining({
-        forwardedProps: expect.objectContaining({ activity_id: 'act-1', thread_id: null, language: 'kk' }),
+        forwardedProps: expect.objectContaining({ activity_id: 'act-1', language: 'kk' }),
       }),
       expect.anything(),
     )
+    // No thread yet: the field is absent (the contract has no `null` there).
+    expect(mocks.runAgent.mock.calls[0]![0].forwardedProps).not.toHaveProperty('thread_id')
     expect(onThread).toHaveBeenCalledWith(THREAD_ID)
   })
 

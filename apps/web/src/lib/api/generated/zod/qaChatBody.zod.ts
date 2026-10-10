@@ -7,22 +7,45 @@
  */
 import * as zod from 'zod'
 
+export const qaChatBodyForwardedPropsClientTurnIdMax = 200
+
+export const qaChatBodyMessagesItemContentMax = 20000
+
+export const qaChatBodyMessagesItemIdMax = 200
+
+export const qaChatBodyMessagesItemRoleMax = 32
+
+export const qaChatBodyParentRunIdMax = 200
+
+export const qaChatBodyProtocolVersionMax = 32
+
+export const qaChatBodyRunIdMax = 200
+
+export const qaChatBodyThreadIdMax = 200
+
 export const QaChatBody = zod
   .object({
-    context: zod.array(zod.looseObject({})).nullish(),
+    context: zod
+      .array(
+        zod
+          .object({
+            description: zod.string(),
+            value: zod.string(),
+          })
+          .describe('AG-UI `Context` entry (accepted and ignored).'),
+      )
+      .optional(),
     forwardedProps: zod
       .object({
-        activity_id: zod
-          .union([zod.uuid().describe('Narrow the context to one activity of the course.'), zod.null()])
-          .optional(),
+        activity_id: zod.uuid().optional().describe('Narrow the context to one activity of the course.'),
         client_turn_id: zod
           .string()
-          .nullish()
+          .min(1)
+          .max(qaChatBodyForwardedPropsClientTurnIdMax)
+          .optional()
           .describe('Client turn id: a retry with the same id replays the stored answer.'),
-        language: zod.string().nullish(),
-        thread_id: zod
-          .union([zod.uuid().describe('Continue an existing thread of the caller in this course.'), zod.null()])
-          .optional(),
+        language: zod.string().optional(),
+        thread_id: zod.uuid().optional().describe('Continue an existing thread of the caller in this course.'),
       })
       .optional()
       .describe('What this API reads from AG-UI `forwardedProps`.'),
@@ -30,33 +53,68 @@ export const QaChatBody = zod
       .array(
         zod
           .object({
-            content: zod.string().nullish(),
-            encryptedValue: zod.string().nullish(),
-            id: zod.string().nullish(),
-            metadata: zod.looseObject({}).nullish(),
-            name: zod.string().nullish().describe('AG-UI 1.0 message members; accepted and ignored.'),
+            content: zod.string().max(qaChatBodyMessagesItemContentMax).optional(),
+            encryptedValue: zod.string().optional(),
+            id: zod.string().max(qaChatBodyMessagesItemIdMax).optional(),
+            metadata: zod
+              .unknown()
+              .optional()
+              .describe(
+                'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+              ),
+            name: zod.string().optional().describe('AG-UI 1.0 message members; accepted and ignored.'),
             parts: zod
-              .array(zod.looseObject({}))
-              .nullish()
+              .array(
+                zod
+                  .object({
+                    content: zod.string().optional(),
+                    type: zod.string(),
+                  })
+                  .describe('One part of an AG-UI message: `{type: "text", content: "…"}`; only text\nparts are read.'),
+              )
+              .optional()
               .describe('`[{type: "text", content: "…"}, …]` - an alternative to `content`.'),
-            role: zod.string(),
-            subagentRunId: zod.string().nullish(),
+            role: zod.string().min(1).max(qaChatBodyMessagesItemRoleMax),
+            subagentRunId: zod.string().optional(),
           })
           .describe('One message of the AG-UI conversation the client sends back.'),
       )
       .optional(),
-    parentRunId: zod.string().nullish(),
-    protocolVersion: zod.string().nullish().describe('AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.'),
+    parentRunId: zod.string().max(qaChatBodyParentRunIdMax).optional(),
+    protocolVersion: zod
+      .string()
+      .max(qaChatBodyProtocolVersionMax)
+      .optional()
+      .describe('AG-UI 1.0 (`"1.0"`); absent from pre-1.0 clients.'),
     resume: zod
-      .array(zod.looseObject({}))
-      .nullish()
+      .array(
+        zod
+          .unknown()
+          .describe(
+            'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+          ),
+      )
+      .optional()
       .describe('AG-UI 1.0 interrupt answers; no agent here interrupts, so ignored.'),
-    runId: zod.string(),
-    state: zod.looseObject({}).nullish(),
-    threadId: zod.string(),
+    runId: zod.string().min(1).max(qaChatBodyRunIdMax),
+    state: zod
+      .unknown()
+      .optional()
+      .describe(
+        'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+      ),
+    threadId: zod.string().min(1).max(qaChatBodyThreadIdMax),
     tools: zod
-      .array(zod.looseObject({}))
-      .nullish()
+      .array(
+        zod
+          .object({
+            description: zod.string(),
+            name: zod.string(),
+            parameters: zod.unknown().describe("JSON Schema of the tool's arguments."),
+          })
+          .describe('AG-UI `Tool` the client offers (accepted and ignored).'),
+      )
+      .optional()
       .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
   .describe('AG-UI `RunAgentInput` for `POST /ai/qa/{course}/chat`.')

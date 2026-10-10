@@ -39,6 +39,7 @@ export const Problem = zod
         'invalid-totp-code',
         'username-taken',
         'email-taken',
+        'reset-code-invalid',
         'role-slug-taken',
         'last-admin',
         'self-disable',
@@ -47,6 +48,9 @@ export const Problem = zod
         'compile-error',
         'language-not-allowed',
         'assessment-read-only',
+        'attempt-time-expired',
+        'attempt-past-due',
+        'remediation-required',
         'grade-not-released',
         'grade-own-attempt',
         'ai-disabled',
@@ -56,10 +60,55 @@ export const Problem = zod
         'ai-provider-unavailable',
       ])
       .describe("Stable machine code - the frontend's i18n key."),
-    detail: zod.string().nullish(),
+    detail: zod.string().optional(),
     details: zod
-      .looseObject({})
-      .nullish()
+      .object({
+        actual: zod.int().optional(),
+        blockers: zod
+          .array(
+            zod
+              .object({
+                activity_id: zod.union([zod.uuid(), zod.null()]),
+                code: zod
+                  .enum([
+                    'no-live-activity',
+                    'assessment-not-ready',
+                    'code-challenge-unconfigured',
+                    'file-submission-unpublished',
+                    'file-submission-not-ready',
+                    'activity-unpublished',
+                    'thumbnail-missing',
+                    'certificate-not-configured',
+                  ])
+                  .describe('Stable readiness code the web localizes.'),
+                title: zod.string().nullable(),
+              })
+              .describe(
+                'One readiness blocker.\n\n`code` ∈ `no-live-activity | assessment-not-ready |\ncode-challenge-unconfigured | file-submission-unpublished |\nfile-submission-not-ready | activity-unpublished | thumbnail-missing | certificate-not-configured`.',
+              ),
+          )
+          .optional()
+          .describe('Course readiness blockers.'),
+        estimated_tokens: zod.int().optional(),
+        expected: zod
+          .int()
+          .optional()
+          .describe('Optimistic lock (412 / 409): the version the client sent / the current one.'),
+        feature: zod.string().optional().describe('AI feature that is disabled.'),
+        filter: zod.string().optional().describe('Analytics filter the caller may not use.'),
+        is_retryable: zod.boolean().optional(),
+        limit: zod.int().optional().describe('Concurrency or rate limit that was hit.'),
+        max_source_bytes: zod.int().optional(),
+        max_tokens_per_request: zod.int().optional(),
+        monthly_token_budget: zod.int().optional(),
+        readiness: zod.array(zod.string()).optional().describe('Assessment readiness blocker codes.'),
+        reason: zod.string().optional().describe('Why the resource is read-only / not ready.'),
+        run_id: zod.uuid().optional(),
+        session_id: zod.uuid().optional().describe('Existing remediation session.'),
+        used_tokens: zod.int().optional(),
+        window_seconds: zod.int().optional(),
+      })
+      .optional()
       .describe('Machine-readable context for some codes (e.g. `{expected, actual}`\non an optimistic-lock 409).'),
     field_errors: zod
       .array(
@@ -74,7 +123,7 @@ export const Problem = zod
           ),
       )
       .optional(),
-    request_id: zod.string().nullish().describe('Correlation id; also present as the `x-request-id` response header.'),
+    request_id: zod.string().optional().describe('Correlation id; also present as the `x-request-id` response header.'),
     status: zod.int().min(problemStatusMin),
     title: zod.string(),
     type: zod.string().describe('Stable documentation URI for this error class.'),

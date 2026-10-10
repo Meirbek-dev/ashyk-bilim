@@ -7,8 +7,15 @@
  */
 import * as zod from 'zod'
 
+export const teacherSubmissionGradingItemsItemCorrectAnswerOneTwoItemLeftMax = 20000
+
+export const teacherSubmissionGradingItemsItemCorrectAnswerOneTwoItemRightMax = 20000
+
 export const TeacherSubmission = zod
   .object({
+    allowed_actions: zod
+      .array(zod.enum(['save', 'publish', 'return']))
+      .describe('The grade saves the caller may make now (`POST .../grade` `action`).'),
     answers: zod.record(
       zod.string(),
       zod
@@ -48,41 +55,82 @@ export const TeacherSubmission = zod
     ),
     assessment_id: zod.uuid(),
     attempt_number: zod.int(),
-    auto_score: zod.number().nullish(),
-    auto_submit_reason: zod.union([zod.enum(['time_expired', 'integrity_violation', 'deadline_passed']), zod.null()]).optional(),
+    auto_score: zod.number().nullable(),
+    auto_submit_reason: zod.union([zod.enum(['time_expired', 'integrity_violation', 'deadline_passed']), zod.null()]),
     content_version: zod.int(),
-    duration_seconds: zod.int().nullish(),
+    duration_seconds: zod.int().nullable(),
     feedback: zod.array(
       zod.object({
         comment: zod.string(),
-        created_at_unix: zod.int(),
-        item_id: zod.union([zod.uuid(), zod.null()]).optional(),
-        max_score: zod.number().nullish(),
-        score: zod.number().nullish(),
+        created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        item_id: zod.union([zod.uuid(), zod.null()]),
+        max_score: zod.number().nullable(),
+        score: zod.number().nullable(),
       }),
     ),
-    final_score: zod.number().nullish(),
-    graded_at_unix: zod.int().nullish(),
+    final_score: zod.number().nullable(),
+    graded_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
     grading: zod.object({
       auto_graded: zod.boolean().optional(),
       feedback: zod.string().optional().describe("Teacher's overall comment."),
       items: zod
         .array(
           zod.object({
-            correct: zod.boolean().nullish().describe('`None` = not auto-gradeable.'),
-            correct_answer: zod.unknown().optional(),
+            correct: zod.boolean().nullable().describe('`None` = not auto-gradeable.'),
+            correct_answer: zod.union([
+              zod
+                .union([
+                  zod.array(zod.string()),
+                  zod.array(
+                    zod.object({
+                      left: zod.string().max(teacherSubmissionGradingItemsItemCorrectAnswerOneTwoItemLeftMax),
+                      right: zod.string().max(teacherSubmissionGradingItemsItemCorrectAnswerOneTwoItemRightMax),
+                    }),
+                  ),
+                ])
+                .describe(
+                  'The answer key shown after grading: correct option ids (choice) or the\nexpected pairs (matching); `null` for kinds without a key.',
+                ),
+              zod.null(),
+            ]),
             feedback: zod
               .string()
               .optional()
               .describe('English text (compatibility); the auto-grader also sets a code.'),
             feedback_code: zod
-              .string()
-              .nullish()
+              .enum([
+                'no-answer',
+                'no-correct-answer',
+                'correct',
+                'partially-correct-no-credit',
+                'partially-correct',
+                'incorrect',
+                'pairs-matched',
+                'tests-passed',
+              ])
+              .optional()
               .describe(
                 'Auto-grader verdict for the client to localize (`no-answer`,\n`correct`, `partially-correct`, …); `None` for teacher prose.',
               ),
             feedback_params: zod
-              .unknown()
+              .object({
+                correct: zod.int(),
+                tests: zod
+                  .array(
+                    zod
+                      .object({
+                        correct: zod.boolean(),
+                        feedback: zod.string(),
+                        max_score: zod.number(),
+                        score: zod.number(),
+                        test_id: zod.string(),
+                      })
+                      .describe('One test of a legacy code grade inside [`FeedbackParams`].'),
+                  )
+                  .optional()
+                  .describe('Per-test verdicts of a legacy code grade (imported data only).'),
+                total: zod.int(),
+              })
               .optional()
               .describe('Placeholders for `feedback_code` (`{correct, total}`, …).'),
             item_id: zod.uuid(),
@@ -90,14 +138,50 @@ export const TeacherSubmission = zod
             max_score: zod.number(),
             needs_manual_review: zod.boolean().optional(),
             score: zod.number(),
-            user_answer: zod.unknown().optional(),
+            user_answer: zod.union([
+              zod
+                .union([
+                  zod.object({
+                    kind: zod.enum(['choice']),
+                    selected: zod.array(zod.string()).optional(),
+                  }),
+                  zod.object({
+                    kind: zod.enum(['open_text']),
+                    text: zod.string().optional(),
+                  }),
+                  zod.object({
+                    kind: zod.enum(['form']),
+                    values: zod.record(zod.string(), zod.string()).optional(),
+                  }),
+                  zod.object({
+                    kind: zod.enum(['code']),
+                    language: zod.int().describe('Judge0 language id.'),
+                    source: zod.string().optional(),
+                  }),
+                  zod.object({
+                    kind: zod.enum(['matching']),
+                    matches: zod
+                      .array(
+                        zod.object({
+                          left: zod.string(),
+                          right: zod.string(),
+                        }),
+                      )
+                      .optional(),
+                  }),
+                ])
+                .describe(
+                  'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
+                ),
+              zod.null(),
+            ]),
           }),
         )
         .optional(),
       needs_manual_review: zod.boolean().optional(),
       score_override: zod
         .number()
-        .nullish()
+        .optional()
         .describe(
           "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
         ),
@@ -111,13 +195,19 @@ export const TeacherSubmission = zod
       .describe('What the learner may see of a grade (legacy `release_state`).'),
     score_override: zod
       .number()
-      .nullish()
+      .nullable()
       .describe(
         'The raw score of the latest grading entry when it is a manual\noverride (differs from the item-derived one); `null` otherwise.',
       ),
-    started_at_unix: zod.int().nullish(),
+    started_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
     status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-    submitted_at_unix: zod.int().nullish(),
+    submitted_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
     user: zod.object({
       display_name: zod.string(),
       email: zod.string(),
@@ -126,7 +216,15 @@ export const TeacherSubmission = zod
     }),
     version: zod.int().describe('Send back as `If-Match` on grade saves.'),
     violation_count: zod.int(),
-    violations: zod.array(zod.looseObject({})),
+    violations: zod.array(
+      zod
+        .object({
+          at: zod.int().describe('Unix seconds.'),
+          detail: zod.string().nullable(),
+          kind: zod.string().describe('Client-reported kind (`tab_switch`, `copy_paste`, …).'),
+        })
+        .describe('One anti-cheat event of a draft (newest kept).'),
+    ),
   })
   .describe('A submission as the grader sees it - nothing redacted.')
 

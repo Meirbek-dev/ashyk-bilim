@@ -7,10 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const learningInputEmojiMax = 16
+
+export const learningInputIdMax = 64
+
 export const LearningInput = zod
   .object({
-    emoji: zod.string().nullish(),
-    id: zod.string().nullish(),
+    emoji: zod.string().max(learningInputEmojiMax).optional(),
+    id: zod.string().max(learningInputIdMax).optional(),
     text: zod.string().describe('1..=300 characters after trimming.'),
   })
   .describe('One "What you\'ll learn" entry on write; omit `id` for a new one.')

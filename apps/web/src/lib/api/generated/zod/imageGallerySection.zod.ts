@@ -11,7 +11,7 @@ export const ImageGallerySection = zod.object({
   id: zod.string(),
   images: zod.array(
     zod.object({
-      caption: zod.string().nullish(),
+      caption: zod.string().optional(),
       url: zod.string(),
     }),
   ),

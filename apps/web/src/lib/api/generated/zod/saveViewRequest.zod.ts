@@ -7,14 +7,23 @@
  */
 import * as zod from 'zod'
 
+export const saveViewRequestNameMax = 200
+
+export const saveViewRequestViewTypeMax = 50
+
 export const SaveViewRequest = zod
   .object({
-    name: zod.string().describe('Blank → 422 `required` (trimmed in the service).'),
+    name: zod.string().max(saveViewRequestNameMax).describe('Blank → 422 `required` (trimmed in the service).'),
     query: zod
-      .looseObject({})
+      .record(
+        zod.string(),
+        zod
+          .union([zod.string(), zod.number()])
+          .describe('A string or a number: a message placeholder value, a saved query value.'),
+      )
       .optional()
       .describe('The saved filter state (an object of at most 16 KiB serialized, UX-148).'),
-    view_type: zod.string().optional().describe('Defaults to `overview`.'),
+    view_type: zod.string().max(saveViewRequestViewTypeMax).optional().describe('Defaults to `overview`.'),
   })
   .describe('Save (or overwrite by name + type) a dashboard view.')
 

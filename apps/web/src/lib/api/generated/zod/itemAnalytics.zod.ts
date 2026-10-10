@@ -8,9 +8,9 @@
 import * as zod from 'zod'
 
 export const ItemAnalytics = zod.object({
-  avg_score_pct: zod.number().nullish(),
-  correct_pct: zod.number().nullish(),
-  discrimination_index: zod.number().nullish().describe('Classic (top 27% − bottom 27%) / n, from six attempts up.'),
+  avg_score_pct: zod.number().nullable(),
+  correct_pct: zod.number().nullable(),
+  discrimination_index: zod.number().nullable().describe('Classic (top 27% − bottom 27%) / n, from six attempts up.'),
   item_id: zod.uuid(),
   kind: zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
   max_score: zod.number(),

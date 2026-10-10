@@ -7,14 +7,39 @@
  */
 import * as zod from 'zod'
 
+export const registerBodyEmailMax = 320
+
+export const registerBodyFirstNameMax = 100
+
+export const registerBodyLastNameMax = 100
+
+export const registerBodyOrganizationMax = 200
+
+export const registerBodyPasswordMin = 8
+export const registerBodyPasswordMax = 72
+
+export const registerBodyUsernameMin = 3
+export const registerBodyUsernameMax = 48
+
+export const registerBodyUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$')
+
 export const RegisterBody = zod
   .object({
-    email: zod.string(),
-    first_name: zod.string(),
-    last_name: zod.string(),
-    organization: zod.string().describe('School, university or company the user comes from.'),
-    password: zod.string(),
-    username: zod.string().describe('3–48 characters: letters, digits, `.`, `_`, `-`.'),
+    email: zod.string().max(registerBodyEmailMax),
+    first_name: zod.string().min(1).max(registerBodyFirstNameMax),
+    last_name: zod.string().min(1).max(registerBodyLastNameMax),
+    organization: zod
+      .string()
+      .min(1)
+      .max(registerBodyOrganizationMax)
+      .describe('School, university or company the user comes from.'),
+    password: zod.string().min(registerBodyPasswordMin).max(registerBodyPasswordMax),
+    username: zod
+      .string()
+      .min(registerBodyUsernameMin)
+      .max(registerBodyUsernameMax)
+      .regex(registerBodyUsernameRegExp)
+      .describe('3–48 characters: letters, digits, `.`, `_`, `-`.'),
   })
   .describe(
     'Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.\nRules mirror the legacy `UserCreate`: unique username/email; the password\nfollows [`super::new_password`].',

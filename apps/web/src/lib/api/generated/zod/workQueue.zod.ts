@@ -15,28 +15,73 @@ export const WorkQueue = zod
           activity_id: zod.uuid(),
           activity_title: zod.string(),
           allowed_actions: zod.array(zod.string()),
+          attempt_id: zod
+            .uuid()
+            .optional()
+            .describe('Teacher items: the file-submission attempt under review (absent otherwise).'),
           course_id: zod.uuid(),
           course_title: zod.string(),
-          created_at_unix: zod.int().nullish(),
+          created_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
           description: zod.string(),
-          due_at_unix: zod.int().nullish(),
+          due_at_unix: zod.union([
+            zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            zod.null(),
+          ]),
           href: zod.string().describe('Client route for the primary action.'),
           id: zod.string(),
-          kind: zod.string(),
+          kind: zod
+            .enum([
+              'in_progress',
+              'overdue',
+              'waiting_for_grade',
+              'returned_for_revision',
+              'feedback_released',
+              'needs_grading',
+              'sla_breach',
+              'awaiting_release',
+            ])
+            .describe('The situation an item names.'),
+          learner_name: zod
+            .string()
+            .optional()
+            .describe("Teacher items: the learner's display name, else username (absent otherwise)."),
+          message_key: zod
+            .enum(['revise', 'awaiting_feedback', 'review_feedback', 'continue', 'grade', 'release'])
+            .optional()
+            .describe(
+              "Always present on this server (optional in the schema so earlier\nclients' fixtures stay valid).",
+            ),
+          message_params: zod
+            .object({
+              activity: zod.string(),
+              course: zod.string(),
+              learner: zod.string().nullable().describe("The learner's display name (teacher items)."),
+            })
+            .optional()
+            .describe('Always present, like `message_key`.'),
           primary_action: zod.string(),
           priority: zod.enum(['critical', 'high', 'normal', 'low']),
           role: zod.enum(['learner', 'teacher']).describe('Which inbox to assemble.'),
-          status: zod.string(),
+          status: zod
+            .enum(['in_progress', 'needs_grading', 'returned', 'published', 'graded_hidden'])
+            .describe("The work's grading status."),
+          submission_id: zod
+            .uuid()
+            .optional()
+            .describe('Teacher items: the assessment submission under review (absent otherwise).'),
           title: zod.string(),
         })
         .describe(
-          'One thing to act on.\n\n`id` is stable across calls; `kind` names the situation (`in_progress`, `overdue`, `waiting_for_grade`,\n`returned_for_revision`, `feedback_released`, `needs_grading`,\n`sla_breach`, `awaiting_release`).',
+          'One thing to act on.\n\n`id` is stable across calls; `kind` names the situation. `title`,\n`description` and `primary_action` are English (the old web);\n`message_key` + `message_params` are the translatable form.',
         ),
     ),
-    next_cursor: zod.string().nullish(),
+    next_cursor: zod.string().nullable(),
     total: zod.int(),
   })
-  .describe('One page; `total` counts the whole queue before paging.')
+  .describe('One page; `total` counts the whole (filtered) queue before paging.')
 
 export type WorkQueue = zod.input<typeof WorkQueue>
 export type WorkQueueOutput = zod.output<typeof WorkQueue>

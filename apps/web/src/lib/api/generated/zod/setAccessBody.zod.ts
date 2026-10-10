@@ -7,14 +7,20 @@
  */
 import * as zod from 'zod'
 
+export const setAccessBodyUserIdsMax = 500
+
+export const setAccessBodyUsergroupIdsMax = 100
+
 export const SetAccessBody = zod.object({
   mode: zod.enum(['all_course_learners', 'restricted']),
   user_ids: zod
     .array(zod.uuid())
+    .max(setAccessBodyUserIdsMax)
     .optional()
     .describe('Direct allowlist (restricted mode); each must be a course member (enrolled learner).'),
   usergroup_ids: zod
     .array(zod.uuid())
+    .max(setAccessBodyUsergroupIdsMax)
     .optional()
     .describe('Group allowlist (restricted mode); each must be linked to the course.'),
 })

@@ -8,17 +8,41 @@
 import * as zod from 'zod'
 
 export const QaMessage = zod.object({
-  citations: zod.looseObject({}),
-  client_turn_id: zod.string().nullish(),
-  confidence: zod.string().nullish(),
+  citations: zod
+    .object({
+      citations: zod
+        .array(
+          zod.object({
+            citation_id: zod.string(),
+            confidence: zod.number().optional(),
+            excerpt: zod.string().optional(),
+            label: zod.string(),
+            source_type: zod.string(),
+            source_uuid: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .describe('What an AI result was grounded on: `{citations: [...]}`, or `{}` (the\ncolumn default; Q&A questions).'),
+  client_turn_id: zod.string().nullable(),
+  confidence: zod.string().nullable(),
   content: zod.string(),
   course_id: zod.uuid(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   id: zod.uuid(),
-  metadata: zod.looseObject({}),
+  metadata: zod
+    .object({
+      incomplete: zod.boolean().optional(),
+      model_name: zod.string().optional(),
+      out_of_scope: zod.boolean().optional(),
+      reply_to_message_id: zod.uuid().optional(),
+    })
+    .describe(
+      '`ai_qa_messages.metadata`: `{}` on questions; answers carry the model\nand the question they reply to; `incomplete` marks a partial answer\nsaved when the stream was cut.',
+    ),
   role: zod.enum(['user', 'assistant']).describe('Q&A message author.'),
   thread_id: zod.uuid(),
-  user_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  user_id: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type QaMessage = zod.input<typeof QaMessage>

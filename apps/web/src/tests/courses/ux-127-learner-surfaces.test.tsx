@@ -58,8 +58,16 @@ function state(overrides: Partial<LearnerCourseState>): LearnerCourseState {
     enrolled: true,
     enrollment_state: 'completed',
     certificate: { configured: true, eligible: true, issued: true, href: '/certificates/abc/verify' },
-    next_action: { id: 'view_certificate', enabled: true, label: '', reason: '' },
-    permissions: { can_access: true, can_discover: true, can_enroll: false },
+    next_action: {
+      id: 'view_certificate',
+      enabled: true,
+      label: '',
+      reason: 'certificate_issued',
+      activity_id: null,
+      course_id: courseId,
+      href: null,
+    },
+    permissions: { can_access: true, can_discover: true, can_enroll: false, denial_reason: null },
     progress: {
       completed_at_unix: 1_700_000_000,
       completed_required_count: 1,
@@ -67,6 +75,7 @@ function state(overrides: Partial<LearnerCourseState>): LearnerCourseState {
       needs_grading_count: 0,
       progress_pct: 100,
       total_required_count: 1,
+      grade_average: null,
     },
     outline: [
       {
@@ -122,8 +131,16 @@ describe('UX-127 learner surfaces', () => {
     withState(
       state({
         enrollment_state: 'in_progress',
-        certificate: { configured: false, eligible: false, issued: false },
-        next_action: { id: 'continue', enabled: true, label: '', reason: '' },
+        certificate: { configured: false, eligible: false, issued: false, href: null, verify_code: null },
+        next_action: {
+          id: 'continue',
+          enabled: true,
+          label: '',
+          reason: 'in_progress',
+          activity_id: null,
+          course_id: courseId,
+          href: null,
+        },
         progress: {
           completed_at_unix: null,
           completed_required_count: 0,
@@ -131,6 +148,7 @@ describe('UX-127 learner surfaces', () => {
           needs_grading_count: 0,
           progress_pct: 0,
           total_required_count: 1,
+          grade_average: null,
         },
       }),
       <CourseEndView courseName="Course" courseUuid={courseId} thumbnailImage="" />,
@@ -144,8 +162,16 @@ describe('UX-127 learner surfaces', () => {
     withState(
       state({
         enrollment_state: 'in_progress',
-        certificate: { configured: false, eligible: false, issued: false },
-        next_action: { id: 'none', enabled: false, label: '', reason: '' },
+        certificate: { configured: false, eligible: false, issued: false, href: null, verify_code: null },
+        next_action: {
+          id: 'none',
+          enabled: false,
+          label: '',
+          reason: 'no_available_action',
+          activity_id: null,
+          course_id: courseId,
+          href: null,
+        },
         progress: {
           completed_at_unix: null,
           completed_required_count: 0,
@@ -153,6 +179,7 @@ describe('UX-127 learner surfaces', () => {
           needs_grading_count: 0,
           progress_pct: 0,
           total_required_count: 0,
+          grade_average: null,
         },
         outline: [],
       }),

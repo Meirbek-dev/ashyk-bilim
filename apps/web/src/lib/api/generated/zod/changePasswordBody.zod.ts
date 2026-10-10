@@ -7,10 +7,15 @@
  */
 import * as zod from 'zod'
 
+export const changePasswordBodyCurrentPasswordMax = 200
+
+export const changePasswordBodyNewPasswordMin = 8
+export const changePasswordBodyNewPasswordMax = 72
+
 export const ChangePasswordBody = zod
   .object({
-    current_password: zod.string(),
-    new_password: zod.string(),
+    current_password: zod.string().min(1).max(changePasswordBodyCurrentPasswordMax),
+    new_password: zod.string().min(changePasswordBodyNewPasswordMin).max(changePasswordBodyNewPasswordMax),
   })
   .describe('Password change; the current password is checked by Zitadel.')
 

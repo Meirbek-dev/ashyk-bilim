@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 const mocks = vi.hoisted(() => ({
-  codeGetRun: vi.fn(),
+  getCodeRun: vi.fn(),
   languages: vi.fn(),
   mySubmissions: vi.fn(),
   runItem: vi.fn(),
@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/api/generated/code/code', () => ({
-  codeGetRun: mocks.codeGetRun,
+  getCodeRun: mocks.getCodeRun,
   languages: mocks.languages,
   runItem: mocks.runItem,
 }))
@@ -166,14 +166,14 @@ describe('runTests', () => {
     vi.useFakeTimers()
     mocks.getActivityAssessment.mockResolvedValue(wireAssessment())
     mocks.runItem.mockResolvedValue(wireRun('queued'))
-    mocks.codeGetRun.mockResolvedValueOnce(wireRun('running')).mockResolvedValueOnce(wireRun('accepted'))
+    mocks.getCodeRun.mockResolvedValueOnce(wireRun('running')).mockResolvedValueOnce(wireRun('accepted'))
 
     const pending = runTests('activity_two-sum', 'print(1)', 71)
     await vi.advanceTimersByTimeAsync(2500)
     const result = await pending
 
-    expect(mocks.codeGetRun).toHaveBeenCalledTimes(2)
-    expect(mocks.codeGetRun).toHaveBeenCalledWith(RUN_ID)
+    expect(mocks.getCodeRun).toHaveBeenCalledTimes(2)
+    expect(mocks.getCodeRun).toHaveBeenCalledWith(RUN_ID)
     expect(result.results[0]?.passed).toBe(true)
   })
 

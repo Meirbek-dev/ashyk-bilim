@@ -10,6 +10,7 @@ import * as zod from 'zod'
 export const SearchParams = zod.object({
   q: zod.string(),
   limit: zod.int().optional(),
+  cursor: zod.string().optional(),
 })
 
 export type SearchParams = zod.input<typeof SearchParams>

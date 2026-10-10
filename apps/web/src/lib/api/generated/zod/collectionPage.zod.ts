@@ -11,6 +11,13 @@ export const CollectionPage = zod
   .object({
     items: zod.array(
       zod.object({
+        allowed_actions: zod
+          .array(
+            zod
+              .enum(['update', 'delete'])
+              .describe('What the caller may do to a collection (`Collection.allowed_actions`).'),
+          )
+          .describe('What the caller may do to this collection now.'),
         can_delete: zod
           .boolean()
           .describe('The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).'),
@@ -18,27 +25,44 @@ export const CollectionPage = zod
           .array(
             zod.object({
               about: zod.string(),
+              allowed_actions: zod
+                .array(
+                  zod
+                    .enum([
+                      'update',
+                      'publish',
+                      'unpublish',
+                      'archive',
+                      'restore',
+                      'delete',
+                      'manage_contributors',
+                      'apply_contributor',
+                    ])
+                    .describe(
+                      'What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].',
+                    ),
+                )
+                .describe('What the caller may do to this course now - draw only these actions.'),
               archived_at_unix: zod
-                .int()
-                .nullish()
+                .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
                 .describe(
                   'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
                 ),
-              archived_by: zod.union([zod.uuid(), zod.null()]).optional(),
+              archived_by: zod.union([zod.uuid(), zod.null()]),
               contributor_ids: zod
                 .array(zod.uuid())
                 .describe(
                   'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
                 ),
-              created_at_unix: zod.int(),
-              creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+              created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+              creator_id: zod.union([zod.uuid(), zod.null()]),
               description: zod.string(),
               id: zod.uuid(),
               learnings: zod
                 .array(
                   zod
                     .object({
-                      emoji: zod.string().nullish(),
+                      emoji: zod.string().nullable(),
                       id: zod.string(),
                       text: zod.string(),
                     })
@@ -51,29 +75,35 @@ export const CollectionPage = zod
               tags: zod.array(zod.string()),
               thumbnail_key: zod
                 .string()
-                .nullish()
+                .nullable()
                 .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
               thumbnail_video_key: zod
                 .string()
-                .nullish()
+                .nullable()
                 .describe(
                   'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
                 ),
-              updated_at_unix: zod.int(),
+              updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+              version: zod
+                .int()
+                .describe(
+                  'Optimistic lock: send it back as `If-Match` on `PATCH` and\nlifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.',
+                ),
             }),
           )
           .describe('Member courses visible to the caller, in collection order.'),
-        created_at_unix: zod.int(),
-        creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+        cover_key: zod.string().nullable().describe('Storage key of the cover image, served at `/content/<key>`.'),
+        created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        creator_id: zod.union([zod.uuid(), zod.null()]),
         description: zod.string(),
         id: zod.uuid(),
         name: zod.string(),
         public: zod.boolean(),
-        updated_at_unix: zod.int(),
+        updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
         version: zod.int().describe('Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).'),
       }),
     ),
-    next_cursor: zod.union([zod.uuid(), zod.null()]).optional(),
+    next_cursor: zod.union([zod.uuid(), zod.null()]),
   })
   .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 

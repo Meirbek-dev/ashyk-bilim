@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useTranslations } from 'next-intl'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { Bucket, Compare, SortOrder, Window as AnalyticsWindow } from '@/lib/api/generated/zod'
 
 // Common IANA timezone identifiers for the select. These cover almost all deployed users.
 const COMMON_TIMEZONES = [
@@ -42,10 +43,9 @@ interface TeacherFilterBarProps {
   children?: React.ReactNode
 }
 
-const windows: NonNullable<AnalyticsQuery['window']>[] = ['7d', '28d', '90d']
-
-const compareOptions: NonNullable<AnalyticsQuery['compare']>[] = ['previous_period', 'none']
-const bucketOptions: NonNullable<AnalyticsQuery['bucket']>[] = ['day', 'week']
+const windows = AnalyticsWindow.options
+const compareOptions = Compare.options
+const bucketOptions = Bucket.options
 const EMPTY_FILTER_OPTIONS: AnalyticsFilterOption[] = []
 const EMPTY_SORT_KEYS: readonly string[] = []
 
@@ -166,7 +166,7 @@ export default function TeacherFilterBar({
                 onChange={event =>
                   setFormState(state => ({
                     ...state,
-                    window: event.target.value,
+                    window: AnalyticsWindow.parse(event.target.value),
                   }))
                 }
                 className="h-9 w-full text-sm"
@@ -192,7 +192,7 @@ export default function TeacherFilterBar({
                 onChange={event =>
                   setFormState(state => ({
                     ...state,
-                    compare: event.target.value,
+                    compare: Compare.parse(event.target.value),
                   }))
                 }
                 className="h-9 w-full text-sm"
@@ -220,7 +220,7 @@ export default function TeacherFilterBar({
                 onChange={event =>
                   setFormState(state => ({
                     ...state,
-                    bucket: event.target.value,
+                    bucket: Bucket.parse(event.target.value),
                   }))
                 }
                 className="h-9 w-full text-sm"
@@ -351,7 +351,7 @@ export default function TeacherFilterBar({
                     onChange={event =>
                       setFormState(state => ({
                         ...state,
-                        sort_order: event.target.value,
+                        sort_order: SortOrder.parse(event.target.value),
                       }))
                     }
                     className="h-9 w-full text-sm"

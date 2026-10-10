@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const assignRoleRequestRoleMax = 64
+
 export const AssignRoleRequest = zod.object({
-  role: zod.string().describe('Role slug, e.g. `instructor`.'),
+  role: zod.string().min(1).max(assignRoleRequestRoleMax).describe('Role slug, e.g. `instructor`.'),
 })
 
 export type AssignRoleRequest = zod.input<typeof AssignRoleRequest>

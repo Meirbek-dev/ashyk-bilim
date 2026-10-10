@@ -7,11 +7,25 @@
  */
 import * as zod from 'zod'
 
+export const updateCollectionRequestCoursesMax = 100
+
+export const updateCollectionRequestDescriptionMax = 5000
+
+export const updateCollectionRequestNameMax = 500
+
 export const UpdateCollectionRequest = zod.object({
-  courses: zod.array(zod.uuid()).nullish().describe('Replaces the whole membership when present (legacy semantics).'),
-  description: zod.string().nullish(),
-  name: zod.string().nullish(),
-  public: zod.boolean().nullish(),
+  courses: zod
+    .array(zod.uuid())
+    .max(updateCollectionRequestCoursesMax)
+    .optional()
+    .describe('Replaces the whole membership when present (legacy semantics).'),
+  cover_upload_id: zod
+    .uuid()
+    .nullish()
+    .describe('A finalized `collection-cover` upload of the caller; `null` removes\nthe cover.'),
+  description: zod.string().max(updateCollectionRequestDescriptionMax).optional(),
+  name: zod.string().max(updateCollectionRequestNameMax).optional(),
+  public: zod.boolean().optional(),
 })
 
 export type UpdateCollectionRequest = zod.input<typeof UpdateCollectionRequest>

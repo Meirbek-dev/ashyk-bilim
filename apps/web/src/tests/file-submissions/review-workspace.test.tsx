@@ -84,6 +84,9 @@ function attempt(id: string, name: string, score: number, feedback: string): Fil
     submitted_at_unix: 1_783_933_200,
     created_at_unix: 1_783_929_600,
     updated_at_unix: 1_783_933_200,
+    started_at_unix: 1_783_929_600,
+    graded_at_unix: null,
+    allowed_actions: ['save', 'publish', 'return'],
     user: {
       id: `user_${name.toLowerCase()}`,
       username: name.toLowerCase(),
@@ -96,7 +99,7 @@ function attempt(id: string, name: string, score: number, feedback: string): Fil
 /** The review queue carries summaries; the full attempt comes from `GET file-submission-attempts/{id}`. */
 function queueItem(full: FileSubmissionAttempt): FileSubmissionReviewItem {
   const { files, feedback: _feedback, rubric_scores: _rubric, ...rest } = full
-  return { ...rest, user: full.user!, file_count: files.length }
+  return { ...rest, user: full.user!, file_count: files.length, enrolled: true, staff: false }
 }
 
 describe('file submission review workspace', () => {

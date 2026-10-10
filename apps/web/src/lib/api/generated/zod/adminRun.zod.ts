@@ -9,27 +9,69 @@ import * as zod from 'zod'
 
 export const AdminRun = zod
   .object({
-    completed_at_unix: zod.int().nullish(),
-    context: zod.looseObject({}).describe('The allow-listed part of the run metadata.'),
-    cost_estimate: zod.number().nullish(),
-    duration_ms: zod.int().nullish(),
-    error_code: zod.string().nullish(),
+    completed_at_unix: zod.union([
+      zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      zod.null(),
+    ]),
+    context: zod
+      .object({
+        activity_id: zod.uuid().nullish(),
+        citation_validation: zod
+          .object({
+            invalid_citation_ids: zod.array(zod.string()).optional(),
+            invalid_count: zod.int().optional(),
+            source_count: zod.int().optional(),
+            valid_count: zod.int().optional(),
+            validation: zod.enum(['not_applicable']).optional(),
+          })
+          .optional()
+          .describe(
+            'How many of the model\'s citations named a supplied source; just\n`{validation: "not_applicable"}` for runs without context sources.',
+          ),
+        context_source_count: zod.int().optional(),
+        course_id: zod.uuid().optional(),
+        file_submission_attempt_id: zod.uuid().optional(),
+        kind: zod
+          .enum([
+            'course_analysis',
+            'submission_analysis',
+            'remediation',
+            'study_companion',
+            'lecture_review',
+            'course_qa',
+          ])
+          .optional()
+          .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
+        language: zod.string().optional(),
+        mode: zod
+          .enum(['explain', 'practice', 'flashcards', 'summarize', 'deepen'])
+          .optional()
+          .describe('Study companion modes (legacy `StudyMode`).'),
+        retry_count: zod.int().optional(),
+        submission_id: zod.uuid().optional(),
+        thread_id: zod.uuid().optional(),
+        time_to_first_text_ms: zod.int().optional(),
+      })
+      .describe('The allow-listed part of the run metadata.'),
+    cost_estimate: zod.number().nullable(),
+    duration_ms: zod.int().nullable(),
+    error_code: zod.string().nullable(),
     feature: zod
       .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
       .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
     id: zod.uuid(),
-    input_tokens: zod.int().nullish(),
-    model_name: zod.string().nullish(),
-    output_tokens: zod.int().nullish(),
+    input_tokens: zod.int().nullable(),
+    model_name: zod.string().nullable(),
+    output_tokens: zod.int().nullable(),
     retry_count: zod.int(),
-    started_at_unix: zod.int(),
+    started_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     status: zod
       .enum(['queued', 'running', 'succeeded', 'failed', 'aborted'])
       .describe(
         'Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,\nfailed, aborted}`. The legacy names were finished/error.',
       ),
     stuck: zod.boolean().describe('Queued or running for over ten minutes.'),
-    time_to_first_text_ms: zod.int().nullish(),
+    time_to_first_text_ms: zod.int().nullable(),
   })
   .describe('One run in the operations view (legacy `AIOperationRunRead`).')
 

@@ -11,8 +11,8 @@ export const QaThreadSummary = zod.object({
   id: zod.uuid(),
   last_message_preview: zod.string(),
   message_count: zod.int(),
-  title: zod.string().nullish(),
-  updated_at_unix: zod.int(),
+  title: zod.string().nullable(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
 })
 
 export type QaThreadSummary = zod.input<typeof QaThreadSummary>

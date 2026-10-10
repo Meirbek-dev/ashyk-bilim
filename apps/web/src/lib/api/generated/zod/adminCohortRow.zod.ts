@@ -8,12 +8,12 @@
 import * as zod from 'zod'
 
 export const AdminCohortRow = zod.object({
-  avg_progress_pct: zod.number().nullish(),
+  avg_progress_pct: zod.number().nullable(),
   cohort_id: zod.uuid(),
   cohort_name: zod.string(),
   learners: zod.int(),
   retained_learners: zod.int(),
-  retention_rate: zod.number().nullish(),
+  retention_rate: zod.number().nullable(),
 })
 
 export type AdminCohortRow = zod.input<typeof AdminCohortRow>

@@ -86,10 +86,10 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
       const agent = createAGUIAgent(`ai/qa/${courseUuid}/chat`)
       agent.threadId = threadUuid ?? clientTurnId
       const forwardedProps: QaForwardedProps = {
-        activity_id: activityUuid || null,
         client_turn_id: clientTurnId,
         language: aiLanguageFor(locale),
-        thread_id: threadUuid || null,
+        ...(activityUuid ? { activity_id: activityUuid } : {}),
+        ...(threadUuid ? { thread_id: threadUuid } : {}),
       }
       agent.setMessages([{ id: clientTurnId, role: 'user', content: question }])
       agentRef.current = agent

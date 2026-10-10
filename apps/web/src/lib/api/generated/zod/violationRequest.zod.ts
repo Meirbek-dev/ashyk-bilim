@@ -7,9 +7,17 @@
  */
 import * as zod from 'zod'
 
+export const violationRequestDetailMax = 500
+
+export const violationRequestKindMax = 64
+
 export const ViolationRequest = zod.object({
-  detail: zod.string().nullish(),
-  kind: zod.string().describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.'),
+  detail: zod.string().max(violationRequestDetailMax).optional(),
+  kind: zod
+    .string()
+    .min(1)
+    .max(violationRequestKindMax)
+    .describe('e.g. `tab_switch`, `copy_paste`, `devtools`, `fullscreen_exit`.'),
 })
 
 export type ViolationRequest = zod.input<typeof ViolationRequest>

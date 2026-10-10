@@ -7,11 +7,17 @@
  */
 import * as zod from 'zod'
 
+export const codeTestCaseDescriptionMax = 20000
+
+export const codeTestCaseExpectedOutputMax = 20000
+
+export const codeTestCaseInputMax = 20000
+
 export const CodeTestCase = zod.object({
-  description: zod.string().nullish(),
-  expected_output: zod.string().optional(),
+  description: zod.string().max(codeTestCaseDescriptionMax).nullable(),
+  expected_output: zod.string().max(codeTestCaseExpectedOutputMax).optional(),
   id: zod.string(),
-  input: zod.string().optional(),
+  input: zod.string().max(codeTestCaseInputMax).optional(),
   is_visible: zod.boolean().optional(),
   match_mode: zod.enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker']).optional(),
   weight: zod.int().optional(),

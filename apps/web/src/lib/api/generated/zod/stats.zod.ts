@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const Stats = zod.object({
-  avg_score: zod.number().nullish(),
+  avg_score: zod.number().nullable(),
   distribution: zod.array(
     zod.object({
       count: zod.int(),
@@ -16,9 +16,10 @@ export const Stats = zod.object({
     }),
   ),
   graded: zod.int(),
+  group_id: zod.uuid().optional().describe('The `group_id` filter these numbers are for; absent without one.'),
   late: zod.int(),
   needs_grading: zod.int(),
-  pass_rate: zod.number().nullish().describe('Percent of graded work at or above the passing score.'),
+  pass_rate: zod.number().nullable().describe('Percent of graded work at or above the passing score.'),
   published: zod.int(),
   returned: zod.int(),
   total: zod.int(),

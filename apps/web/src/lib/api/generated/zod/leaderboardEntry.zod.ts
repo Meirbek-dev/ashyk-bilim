@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const LeaderboardEntry = zod.object({
-  avatar_key: zod.string().nullish(),
+  avatar_key: zod.string().nullable(),
   display_name: zod.string(),
   level: zod.int(),
   rank: zod.int(),

@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const GradebookFileSubmission = zod
   .object({
     activity_id: zod.uuid(),
-    due_at_unix: zod.int().nullish(),
+    due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
     id: zod.uuid(),
     title: zod.string(),
   })

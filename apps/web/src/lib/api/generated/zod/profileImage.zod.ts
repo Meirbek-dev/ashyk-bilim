@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const ProfileImage = zod.object({
-  caption: zod.string().nullish(),
+  caption: zod.string().optional(),
   url: zod.string(),
 })
 

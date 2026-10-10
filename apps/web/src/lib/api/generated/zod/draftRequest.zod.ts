@@ -7,12 +7,14 @@
  */
 import * as zod from 'zod'
 
+export const draftRequestFilesItemDisplayNameMax = 255
+
 export const DraftRequest = zod
   .object({
     files: zod
       .array(
         zod.object({
-          display_name: zod.string().nullish(),
+          display_name: zod.string().max(draftRequestFilesItemDisplayNameMax).optional(),
           upload_id: zod.uuid(),
         }),
       )

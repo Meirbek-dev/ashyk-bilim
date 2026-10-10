@@ -8,18 +8,30 @@
 import * as zod from 'zod'
 
 export const Usergroup = zod.object({
+  allowed_actions: zod
+    .array(
+      zod
+        .enum(['update', 'delete', 'manage_members', 'manage_courses'])
+        .describe('What the caller may do to a usergroup (`Usergroup.allowed_actions`).'),
+    )
+    .describe('What the caller may do to this group now.'),
   can_write: zod
     .boolean()
     .describe(
       'Whether the caller may edit/delete the group and change its members\nor courses (`usergroup:manage:platform`, or creator with\n`usergroup:create:platform`).',
     ),
-  created_at_unix: zod.int(),
-  creator_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  creator_id: zod.union([zod.uuid(), zod.null()]),
   description: zod.string(),
   id: zod.uuid(),
   member_count: zod.int(),
   name: zod.string(),
-  updated_at_unix: zod.int(),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  version: zod
+    .int()
+    .describe(
+      'Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of\n`GET`. Membership and course links do not move it.',
+    ),
 })
 
 export type Usergroup = zod.input<typeof Usergroup>

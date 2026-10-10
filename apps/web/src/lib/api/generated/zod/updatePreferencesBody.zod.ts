@@ -12,8 +12,13 @@ export const UpdatePreferencesBody = zod
     display: zod
       .union([
         zod.object({
-          animatedEffects: zod.boolean().nullish(),
-          compactMode: zod.boolean().nullish(),
+          animatedEffects: zod.boolean().optional(),
+          compactMode: zod.boolean().optional(),
+          showGamification: zod
+            .boolean()
+            .optional()
+            .describe('GAMIF: `false` hides the gamification UI (XP, levels, badges) for this\nuser. Unset = shown.'),
+          showStreaks: zod.boolean().optional().describe('GAMIF: `false` hides the streak row. Unset = shown.'),
         }),
         zod.null(),
       ])
@@ -21,7 +26,7 @@ export const UpdatePreferencesBody = zod
     notifications: zod
       .union([
         zod.object({
-          xpGain: zod.boolean().nullish(),
+          xpGain: zod.boolean().optional(),
         }),
         zod.null(),
       ])
@@ -31,7 +36,7 @@ export const UpdatePreferencesBody = zod
         zod.object({
           showOnLeaderboard: zod
             .boolean()
-            .nullish()
+            .optional()
             .describe('`false` hides the profile from the leaderboard (and its rank is `null`).'),
         }),
         zod.null(),
@@ -39,7 +44,7 @@ export const UpdatePreferencesBody = zod
       .optional(),
   })
   .describe(
-    '`PATCH /gamification/preferences`: the sections the settings form owns.\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase; anything else is 422.',
+    '`PATCH /gamification/preferences`: the sections the settings form owns.\n\nA section absent from the patch is kept, `null` removes it, an object\nreplaces it. Keys are camelCase or (S-10) snake_case; anything else is\n422.',
   )
 
 export type UpdatePreferencesBody = zod.input<typeof UpdatePreferencesBody>

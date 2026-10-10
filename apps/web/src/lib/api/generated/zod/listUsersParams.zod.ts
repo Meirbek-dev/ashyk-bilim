@@ -9,6 +9,9 @@ import * as zod from 'zod'
 
 export const ListUsersParams = zod.object({
   q: zod.string().optional(),
+  sort: zod.enum(['newest', 'name']).optional().describe('`GET /users` order.'),
+  status: zod.enum(['active', 'disabled']).optional(),
+  role: zod.string().optional(),
   cursor: zod.uuid().optional(),
   limit: zod.int().optional(),
 })

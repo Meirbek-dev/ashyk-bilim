@@ -8,14 +8,26 @@
 import * as zod from 'zod'
 
 export const Role = zod.object({
-  description: zod.string().nullish(),
+  allowed_actions: zod
+    .array(
+      zod
+        .enum(['assign', 'update', 'delete', 'set_permissions'])
+        .describe('What the caller may do to a role (`Role.allowed_actions`).'),
+    )
+    .describe('What the caller may do to this role now.'),
+  description: zod.string().nullable(),
   description_key: zod.string(),
-  display_name: zod.string().nullish().describe('Raw display text - custom roles only; `null` on seeded roles.'),
+  display_name: zod.string().nullable().describe('Raw display text - custom roles only; `null` on seeded roles.'),
   display_name_key: zod.string().describe('i18n key (frontend catalogs own the display strings of seeded roles).'),
   is_system: zod.boolean(),
-  permissions: zod.array(zod.string()),
+  permissions: zod
+    .array(zod.string())
+    .describe(
+      'Grants `resource:action[:scope]`. Assessment rights are the\n`assessment` resource; `quiz` / `exam` are legacy names kept as\nstored on migrated roles and grant nothing (S-10).',
+    ),
   priority: zod.int(),
   slug: zod.string(),
+  version: zod.int().describe('Optimistic lock: `If-Match` on `PATCH` and the permissions `PUT`.'),
 })
 
 export type Role = zod.input<typeof Role>

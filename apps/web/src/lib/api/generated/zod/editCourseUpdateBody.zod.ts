@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const editCourseUpdateBodyContentMax = 50000
+
+export const editCourseUpdateBodyTitleMax = 500
+
 export const EditCourseUpdateBody = zod.object({
-  content: zod.string().nullish(),
-  title: zod.string().nullish(),
+  content: zod.string().min(1).max(editCourseUpdateBodyContentMax).optional(),
+  title: zod.string().min(1).max(editCourseUpdateBodyTitleMax).optional(),
 })
 
 export type EditCourseUpdateBody = zod.input<typeof EditCourseUpdateBody>

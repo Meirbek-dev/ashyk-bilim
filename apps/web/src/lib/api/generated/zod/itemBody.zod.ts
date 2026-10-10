@@ -7,23 +7,66 @@
  */
 import * as zod from 'zod'
 
+export const itemBodyOneOneExplanationMax = 20000
+
+export const itemBodyOneOneOptionsItemTextMax = 20000
+
+export const itemBodyOneOneOptionsMax = 200
+
+export const itemBodyOneOnePromptMax = 20000
+
+export const itemBodyTwoOnePromptMax = 20000
+
+export const itemBodyTwoOneRubricMax = 20000
+
+export const itemBodyThreeOneFieldsItemLabelMax = 20000
+
+export const itemBodyThreeOneFieldsMax = 200
+
+export const itemBodyThreeOnePromptMax = 20000
+
+export const itemBodyFourOneInputSpecMax = 20000
+
+export const itemBodyFourOneOutputSpecMax = 20000
+
+export const itemBodyFourOnePromptMax = 20000
+
+export const itemBodyFourOneTestsItemDescriptionMax = 20000
+
+export const itemBodyFourOneTestsItemExpectedOutputMax = 20000
+
+export const itemBodyFourOneTestsItemInputMax = 20000
+
+export const itemBodyFourOneTestsMax = 200
+
+export const itemBodyFiveOneExplanationMax = 20000
+
+export const itemBodyFiveOnePairsItemLeftMax = 20000
+
+export const itemBodyFiveOnePairsItemRightMax = 20000
+
+export const itemBodyFiveOnePairsMax = 200
+
+export const itemBodyFiveOnePromptMax = 20000
+
 export const ItemBody = zod
   .union([
     zod
       .object({
-        explanation: zod.string().nullish(),
+        explanation: zod.string().max(itemBodyOneOneExplanationMax).nullable(),
         multiple: zod.boolean().optional(),
         options: zod
           .array(
             zod.object({
               id: zod.string(),
               is_correct: zod.boolean().optional(),
-              text: zod.string().optional(),
+              text: zod.string().max(itemBodyOneOneOptionsItemTextMax).optional(),
             }),
           )
+          .max(itemBodyOneOneOptionsMax)
           .optional(),
-        prompt: zod.string().optional(),
-        variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
+        prompt: zod.string().max(itemBodyOneOnePromptMax).optional(),
+        variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]),
       })
       .and(
         zod.object({
@@ -32,9 +75,9 @@ export const ItemBody = zod
       ),
     zod
       .object({
-        min_words: zod.int().nullish(),
-        prompt: zod.string().optional(),
-        rubric: zod.string().nullish(),
+        min_words: zod.int().nullable(),
+        prompt: zod.string().max(itemBodyTwoOnePromptMax).optional(),
+        rubric: zod.string().max(itemBodyTwoOneRubricMax).nullable(),
       })
       .and(
         zod.object({
@@ -48,12 +91,13 @@ export const ItemBody = zod
             zod.object({
               field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
               id: zod.string(),
-              label: zod.string().optional(),
+              label: zod.string().max(itemBodyThreeOneFieldsItemLabelMax).optional(),
               required: zod.boolean().optional(),
             }),
           )
+          .max(itemBodyThreeOneFieldsMax)
           .optional(),
-        prompt: zod.string().optional(),
+        prompt: zod.string().max(itemBodyThreeOnePromptMax).optional(),
       })
       .and(
         zod.object({
@@ -63,12 +107,12 @@ export const ItemBody = zod
     zod
       .object({
         constraints: zod.array(zod.string()).optional(),
-        input_spec: zod.string().optional(),
+        input_spec: zod.string().max(itemBodyFourOneInputSpecMax).optional(),
         languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
-        max_output_kb: zod.int().nullish(),
-        memory_limit_mb: zod.int().nullish(),
-        output_spec: zod.string().optional(),
-        prompt: zod.string().optional(),
+        max_output_kb: zod.int().nullable(),
+        memory_limit_mb: zod.int().nullable(),
+        output_spec: zod.string().max(itemBodyFourOneOutputSpecMax).optional(),
+        prompt: zod.string().max(itemBodyFourOnePromptMax).optional(),
         reference_solutions: zod.record(zod.string(), zod.string()).optional(),
         scoring_strategy: zod
           .enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission'])
@@ -80,10 +124,10 @@ export const ItemBody = zod
         tests: zod
           .array(
             zod.object({
-              description: zod.string().nullish(),
-              expected_output: zod.string().optional(),
+              description: zod.string().max(itemBodyFourOneTestsItemDescriptionMax).nullable(),
+              expected_output: zod.string().max(itemBodyFourOneTestsItemExpectedOutputMax).optional(),
               id: zod.string(),
-              input: zod.string().optional(),
+              input: zod.string().max(itemBodyFourOneTestsItemInputMax).optional(),
               is_visible: zod.boolean().optional(),
               match_mode: zod
                 .enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
@@ -91,8 +135,9 @@ export const ItemBody = zod
               weight: zod.int().optional(),
             }),
           )
+          .max(itemBodyFourOneTestsMax)
           .optional(),
-        time_limit_seconds: zod.int().nullish(),
+        time_limit_seconds: zod.int().nullable(),
       })
       .and(
         zod.object({
@@ -101,18 +146,19 @@ export const ItemBody = zod
       ),
     zod
       .object({
-        explanation: zod.string().nullish(),
+        explanation: zod.string().max(itemBodyFiveOneExplanationMax).nullable(),
         pairs: zod
           .array(
             zod.object({
-              left: zod.string(),
-              right: zod.string(),
+              left: zod.string().max(itemBodyFiveOnePairsItemLeftMax),
+              right: zod.string().max(itemBodyFiveOnePairsItemRightMax),
             }),
           )
+          .max(itemBodyFiveOnePairsMax)
           .describe(
             "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
           ),
-        prompt: zod.string().optional(),
+        prompt: zod.string().max(itemBodyFiveOnePromptMax).optional(),
       })
       .and(
         zod.object({

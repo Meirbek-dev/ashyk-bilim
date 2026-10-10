@@ -12,8 +12,14 @@ export const ListCoursesParams = zod.object({
   limit: zod.int().optional(),
   mine: zod.boolean().optional(),
   q: zod.string().optional(),
-  sort: zod.string().optional(),
-  preset: zod.string().optional(),
+  sort: zod
+    .enum(['updated', 'name', 'progress'])
+    .optional()
+    .describe('`GET /courses?sort=`: `updated` (default), `name`, `progress`.'),
+  preset: zod
+    .enum(['all', 'drafts', 'published', 'recent', 'attention', 'archived'])
+    .optional()
+    .describe('`GET /courses?preset=`; `archived` needs `mine=true`.'),
 })
 
 export type ListCoursesParams = zod.input<typeof ListCoursesParams>

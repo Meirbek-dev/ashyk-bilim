@@ -9,8 +9,8 @@ import * as zod from 'zod'
 
 export const RunItemBody = zod
   .object({
-    custom_input: zod.string().nullish().describe('When present the run is unscored: one case named `custom`.'),
-    language_id: zod.int().describe('Judge0 language id.'),
+    custom_input: zod.string().optional().describe('When present the run is unscored: one case named `custom`.'),
+    language_id: zod.int().min(1).describe('Judge0 language id.'),
     source: zod.string(),
   })
   .describe("Run source against an item's visible tests, or against one custom input.")

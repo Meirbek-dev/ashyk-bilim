@@ -704,8 +704,26 @@ describe('teacher review controls', () => {
   // goes alone; switching the override off sends an explicit null.
   describe('item grading sends only what the teacher edited', () => {
     const gradedItems = [
-      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '' },
-      { item_id: 'item_2', item_text: 'Q2', score: 10, max_score: 50, feedback: '' },
+      {
+        item_id: 'item_1',
+        item_text: 'Q1',
+        score: 50,
+        max_score: 50,
+        feedback: '',
+        correct: null,
+        correct_answer: null,
+        user_answer: null,
+      },
+      {
+        item_id: 'item_2',
+        item_text: 'Q2',
+        score: 10,
+        max_score: 50,
+        feedback: '',
+        correct: null,
+        correct_answer: null,
+        user_answer: null,
+      },
     ]
     const renderItemForm = () => {
       mocks.saveGradingDraftMock.mockResolvedValue(undefined)
@@ -864,8 +882,28 @@ describe('teacher review controls', () => {
   // to its own toast; the bulk release names the rows it held back.
   describe('unscored manual items', () => {
     const essayItems = [
-      { item_id: 'item_1', item_text: 'Q1', score: 50, max_score: 50, feedback: '', needs_manual_review: false },
-      { item_id: 'item_2', item_text: 'Essay', score: 0, max_score: 50, feedback: '', needs_manual_review: true },
+      {
+        item_id: 'item_1',
+        item_text: 'Q1',
+        score: 50,
+        max_score: 50,
+        feedback: '',
+        correct: null,
+        correct_answer: null,
+        user_answer: null,
+        needs_manual_review: false,
+      },
+      {
+        item_id: 'item_2',
+        item_text: 'Essay',
+        score: 0,
+        max_score: 50,
+        feedback: '',
+        correct: null,
+        correct_answer: null,
+        user_answer: null,
+        needs_manual_review: true,
+      },
     ]
     const renderPendingEssay = () => {
       const queryClient = new QueryClient()

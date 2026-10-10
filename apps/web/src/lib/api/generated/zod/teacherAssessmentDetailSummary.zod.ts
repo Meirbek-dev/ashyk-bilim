@@ -8,13 +8,13 @@
 import * as zod from 'zod'
 
 export const TeacherAssessmentDetailSummary = zod.object({
-  avg_attempts: zod.number().nullish(),
+  avg_attempts: zod.number().nullable(),
   eligible_learners: zod.int(),
-  grading_latency_hours_p50: zod.number().nullish(),
-  grading_latency_hours_p90: zod.number().nullish(),
-  median_score: zod.number().nullish(),
-  pass_rate: zod.number().nullish(),
-  submission_rate: zod.number().nullish(),
+  grading_latency_hours_p50: zod.number().nullable(),
+  grading_latency_hours_p90: zod.number().nullable(),
+  median_score: zod.number().nullable(),
+  pass_rate: zod.number().nullable(),
+  submission_rate: zod.number().nullable(),
   submitted_learners: zod.int(),
 })
 

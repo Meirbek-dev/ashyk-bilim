@@ -7,24 +7,72 @@
  */
 import * as zod from 'zod'
 
+export const assessmentItemBodyOneOneExplanationMax = 20000
+
+export const assessmentItemBodyOneOneOptionsItemTextMax = 20000
+
+export const assessmentItemBodyOneOneOptionsMax = 200
+
+export const assessmentItemBodyOneOnePromptMax = 20000
+
+export const assessmentItemBodyTwoOnePromptMax = 20000
+
+export const assessmentItemBodyTwoOneRubricMax = 20000
+
+export const assessmentItemBodyThreeOneFieldsItemLabelMax = 20000
+
+export const assessmentItemBodyThreeOneFieldsMax = 200
+
+export const assessmentItemBodyThreeOnePromptMax = 20000
+
+export const assessmentItemBodyFourOneInputSpecMax = 20000
+
+export const assessmentItemBodyFourOneOutputSpecMax = 20000
+
+export const assessmentItemBodyFourOnePromptMax = 20000
+
+export const assessmentItemBodyFourOneTestsItemDescriptionMax = 20000
+
+export const assessmentItemBodyFourOneTestsItemExpectedOutputMax = 20000
+
+export const assessmentItemBodyFourOneTestsItemInputMax = 20000
+
+export const assessmentItemBodyFourOneTestsMax = 200
+
+export const assessmentItemBodyFiveOneExplanationMax = 20000
+
+export const assessmentItemBodyFiveOnePairsItemLeftMax = 20000
+
+export const assessmentItemBodyFiveOnePairsItemRightMax = 20000
+
+export const assessmentItemBodyFiveOnePairsMax = 200
+
+export const assessmentItemBodyFiveOnePromptMax = 20000
+
 export const AssessmentItem = zod.object({
+  assessment_version: zod
+    .int()
+    .describe(
+      "The assessment's `version` after this read or write - the next\n`If-Match` of an item or assessment write.",
+    ),
   body: zod
     .union([
       zod
         .object({
-          explanation: zod.string().nullish(),
+          explanation: zod.string().max(assessmentItemBodyOneOneExplanationMax).nullable(),
           multiple: zod.boolean().optional(),
           options: zod
             .array(
               zod.object({
                 id: zod.string(),
                 is_correct: zod.boolean().optional(),
-                text: zod.string().optional(),
+                text: zod.string().max(assessmentItemBodyOneOneOptionsItemTextMax).optional(),
               }),
             )
+            .max(assessmentItemBodyOneOneOptionsMax)
             .optional(),
-          prompt: zod.string().optional(),
-          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]).optional(),
+          prompt: zod.string().max(assessmentItemBodyOneOnePromptMax).optional(),
+          variant: zod.union([zod.enum(['single_choice', 'multiple_choice', 'true_false']), zod.null()]),
         })
         .and(
           zod.object({
@@ -33,9 +81,9 @@ export const AssessmentItem = zod.object({
         ),
       zod
         .object({
-          min_words: zod.int().nullish(),
-          prompt: zod.string().optional(),
-          rubric: zod.string().nullish(),
+          min_words: zod.int().nullable(),
+          prompt: zod.string().max(assessmentItemBodyTwoOnePromptMax).optional(),
+          rubric: zod.string().max(assessmentItemBodyTwoOneRubricMax).nullable(),
         })
         .and(
           zod.object({
@@ -49,12 +97,13 @@ export const AssessmentItem = zod.object({
               zod.object({
                 field_type: zod.enum(['text', 'textarea', 'number', 'date']).optional(),
                 id: zod.string(),
-                label: zod.string().optional(),
+                label: zod.string().max(assessmentItemBodyThreeOneFieldsItemLabelMax).optional(),
                 required: zod.boolean().optional(),
               }),
             )
+            .max(assessmentItemBodyThreeOneFieldsMax)
             .optional(),
-          prompt: zod.string().optional(),
+          prompt: zod.string().max(assessmentItemBodyThreeOnePromptMax).optional(),
         })
         .and(
           zod.object({
@@ -64,12 +113,12 @@ export const AssessmentItem = zod.object({
       zod
         .object({
           constraints: zod.array(zod.string()).optional(),
-          input_spec: zod.string().optional(),
+          input_spec: zod.string().max(assessmentItemBodyFourOneInputSpecMax).optional(),
           languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
-          max_output_kb: zod.int().nullish(),
-          memory_limit_mb: zod.int().nullish(),
-          output_spec: zod.string().optional(),
-          prompt: zod.string().optional(),
+          max_output_kb: zod.int().nullable(),
+          memory_limit_mb: zod.int().nullable(),
+          output_spec: zod.string().max(assessmentItemBodyFourOneOutputSpecMax).optional(),
+          prompt: zod.string().max(assessmentItemBodyFourOnePromptMax).optional(),
           reference_solutions: zod.record(zod.string(), zod.string()).optional(),
           scoring_strategy: zod
             .enum(['partial_credit', 'all_or_nothing', 'best_submission', 'latest_submission'])
@@ -81,10 +130,10 @@ export const AssessmentItem = zod.object({
           tests: zod
             .array(
               zod.object({
-                description: zod.string().nullish(),
-                expected_output: zod.string().optional(),
+                description: zod.string().max(assessmentItemBodyFourOneTestsItemDescriptionMax).nullable(),
+                expected_output: zod.string().max(assessmentItemBodyFourOneTestsItemExpectedOutputMax).optional(),
                 id: zod.string(),
-                input: zod.string().optional(),
+                input: zod.string().max(assessmentItemBodyFourOneTestsItemInputMax).optional(),
                 is_visible: zod.boolean().optional(),
                 match_mode: zod
                   .enum(['exact', 'trimmed', 'ignore_whitespace', 'numeric_tolerance', 'custom_checker'])
@@ -92,8 +141,9 @@ export const AssessmentItem = zod.object({
                 weight: zod.int().optional(),
               }),
             )
+            .max(assessmentItemBodyFourOneTestsMax)
             .optional(),
-          time_limit_seconds: zod.int().nullish(),
+          time_limit_seconds: zod.int().nullable(),
         })
         .and(
           zod.object({
@@ -102,18 +152,19 @@ export const AssessmentItem = zod.object({
         ),
       zod
         .object({
-          explanation: zod.string().nullish(),
+          explanation: zod.string().max(assessmentItemBodyFiveOneExplanationMax).nullable(),
           pairs: zod
             .array(
               zod.object({
-                left: zod.string(),
-                right: zod.string(),
+                left: zod.string().max(assessmentItemBodyFiveOnePairsItemLeftMax),
+                right: zod.string().max(assessmentItemBodyFiveOnePairsItemRightMax),
               }),
             )
+            .max(assessmentItemBodyFiveOnePairsMax)
             .describe(
               "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
             ),
-          prompt: zod.string().optional(),
+          prompt: zod.string().max(assessmentItemBodyFiveOnePromptMax).optional(),
         })
         .and(
           zod.object({
@@ -160,10 +211,10 @@ export const AssessmentItem = zod.object({
   kind: zod.enum(['choice', 'open_text', 'form', 'code', 'matching']),
   max_score: zod.number(),
   metadata: zod.object({
-    difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]).optional(),
-    estimated_minutes: zod.int().nullish(),
+    difficulty: zod.union([zod.enum(['easy', 'medium', 'hard']), zod.null()]),
+    estimated_minutes: zod.int().nullable(),
     outcome_ids: zod.array(zod.string()).optional(),
-    section_label: zod.string().nullish(),
+    section_label: zod.string().nullable(),
     tags: zod.array(zod.string()).optional(),
   }),
   position: zod.int().describe('1-based, contiguous.'),

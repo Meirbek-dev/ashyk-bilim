@@ -8,15 +8,18 @@
 import * as zod from 'zod'
 
 export const ReviewItem = zod.object({
+  allowed_actions: zod
+    .array(zod.enum(['save', 'publish', 'return']))
+    .describe('The grade saves the caller may make now (`POST .../grade` `action`).'),
   attempt_number: zod.int(),
-  auto_score: zod.number().nullish(),
+  auto_score: zod.number().nullable(),
   enrolled: zod
     .boolean()
     .describe(
       "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).",
     ),
-  final_score: zod.number().nullish(),
-  graded_at_unix: zod.int().nullish(),
+  final_score: zod.number().nullable(),
+  graded_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
   id: zod.uuid(),
   is_late: zod.boolean(),
   staff: zod
@@ -25,7 +28,10 @@ export const ReviewItem = zod.object({
       'The learner is on the course staff - never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).',
     ),
   status: zod.enum(['draft', 'pending', 'graded', 'published', 'returned']),
-  submitted_at_unix: zod.int().nullish(),
+  submitted_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   user: zod.object({
     display_name: zod.string(),
     email: zod.string(),

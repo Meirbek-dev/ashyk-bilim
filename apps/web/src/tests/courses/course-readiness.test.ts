@@ -30,7 +30,7 @@ describe('getCourseReadiness', () => {
           { code: 'no-live-activity', activity_id: null, title: null },
           { code: 'file-submission-unpublished', activity_id: activityId, title: 'Essay' },
         ],
-        warnings: [{ code: 'thumbnail-missing' }],
+        warnings: [{ code: 'thumbnail-missing', activity_id: null, title: null }],
       }
       return parse ? parse(wire) : wire
     })

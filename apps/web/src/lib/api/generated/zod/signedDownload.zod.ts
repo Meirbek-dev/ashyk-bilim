@@ -9,10 +9,19 @@ import * as zod from 'zod'
 
 export const SignedDownload = zod.object({
   content_type: zod.string(),
-  expires_at_unix: zod.int(),
+  expires_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   file_id: zod.uuid(),
   filename: zod.string(),
-  url: zod.string(),
+  path: zod
+    .string()
+    .describe(
+      'The same URL origin-relative (`/ab-private/...?X-Amz-...`): load it\nfrom the web origin (nginx proxies `/ab-private` to storage with the\nsigned `Host`), e.g. in a same-origin `<iframe>` preview.',
+    ),
+  url: zod
+    .string()
+    .describe(
+      'Absolute presigned URL against the storage endpoint\n(`AB__STORAGE__ENDPOINT`: the public origin in production).',
+    ),
 })
 
 export type SignedDownload = zod.input<typeof SignedDownload>

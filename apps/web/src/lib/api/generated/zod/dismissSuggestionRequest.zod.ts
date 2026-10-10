@@ -7,8 +7,10 @@
  */
 import * as zod from 'zod'
 
+export const dismissSuggestionRequestSuggestionIdMax = 200
+
 export const DismissSuggestionRequest = zod.object({
-  suggestion_id: zod.string(),
+  suggestion_id: zod.string().min(1).max(dismissSuggestionRequestSuggestionIdMax),
 })
 
 export type DismissSuggestionRequest = zod.input<typeof DismissSuggestionRequest>

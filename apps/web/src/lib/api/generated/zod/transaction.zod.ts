@@ -9,10 +9,10 @@ import * as zod from 'zod'
 
 export const Transaction = zod.object({
   amount: zod.int(),
-  created_at_unix: zod.int(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   id: zod.uuid(),
   previous_level: zod.int(),
-  reason: zod.string().nullish(),
+  reason: zod.string().nullable(),
   source: zod
     .enum([
       'activity_completion',
@@ -27,7 +27,7 @@ export const Transaction = zod.object({
       'code_challenge_first_solve',
     ])
     .describe('Why XP was granted (legacy `XPSource`).'),
-  source_id: zod.string().nullish(),
+  source_id: zod.string().nullable(),
   triggered_level_up: zod.boolean(),
   user_id: zod.uuid(),
 })

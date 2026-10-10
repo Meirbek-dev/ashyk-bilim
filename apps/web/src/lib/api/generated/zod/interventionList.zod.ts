@@ -8,23 +8,52 @@
 import * as zod from 'zod'
 
 export const InterventionList = zod.object({
-  generated_at_unix: zod.int(),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   items: zod.array(
     zod.object({
+      allowed_actions: zod
+        .array(
+          zod
+            .enum(['update', 'resolve'])
+            .describe('What the caller may do to an intervention (`Intervention.allowed_actions`).'),
+        )
+        .describe("`update`, and `resolve` until resolved (every listed row is the\ncaller's, in scope)."),
       course_id: zod.uuid(),
-      created_at_unix: zod.int(),
+      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       id: zod.uuid(),
-      intervention_type: zod.string(),
-      notes: zod.string().nullish(),
-      outcome: zod.string().nullish(),
-      payload: zod.looseObject({}),
-      resolved_at_unix: zod.int().nullish(),
-      risk_score_after: zod.number().nullish(),
-      risk_score_before: zod.number().nullish(),
-      status: zod.string(),
+      intervention_type: zod
+        .enum(['message_sent', 'submission_graded', 'extension_granted', 'meeting_scheduled', 'learner_recovered'])
+        .describe('[`INTERVENTION_TYPES`] as a contract enum (schema only; the wire stays a\nvalidated string).'),
+      notes: zod.string().nullable(),
+      outcome: zod.string().nullable(),
+      outcome_code: zod.union([
+        zod
+          .enum(['improved', 'no_change', 'worsened', 'no_response'])
+          .describe("The closed outcome (S-GAPS-2); `outcome` stays the teacher's prose."),
+        zod.null(),
+      ]),
+      payload: zod
+        .object({
+          reason_codes: zod.array(zod.string()).optional(),
+          remediation_draft: zod.string().optional(),
+          risk_score: zod.number().optional(),
+        })
+        .describe(
+          '`teacher_interventions.payload`: what the at-risk table attaches to an\nextension / remediation draft.',
+        ),
+      resolved_at_unix: zod.union([
+        zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        zod.null(),
+      ]),
+      risk_score_after: zod.number().nullable(),
+      risk_score_before: zod.number().nullable(),
+      status: zod
+        .enum(['planned', 'completed', 'resolved'])
+        .describe('[`INTERVENTION_STATUSES`] as a contract enum (schema only).'),
       teacher_user_id: zod.uuid(),
-      updated_at_unix: zod.int(),
+      updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       user_id: zod.uuid(),
+      version: zod.int().describe('Send back as `If-Match` on the PATCH (stale -> 412).'),
     }),
   ),
   page: zod.int(),

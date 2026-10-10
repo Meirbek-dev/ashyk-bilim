@@ -29,12 +29,22 @@ const session: Session = {
     organization: '',
     profile: { sections: [] },
     theme: null,
+    language: 'ru',
+    version: 1,
   },
   userId,
   roles: ['instructor'],
   permissions: ['analytics:read:own'],
 }
-const wire = (permissions: string[], roles: string[]) => ({ user_id: userId, roles, permissions, mfa_enabled: false })
+const { avatar_key, display_name, email, id, language, locale, theme, username } = session.user!
+const wire = (permissions: string[], roles: string[]) => ({
+  user_id: userId,
+  roles,
+  permissions,
+  mfa_enabled: false,
+  capabilities: [],
+  user: { avatar_key, display_name, email, id, language, locale, theme, username },
+})
 
 describe('UX-076 session grants follow the server', () => {
   it('drops a revoked permission after a window focus re-probe of auth/session', async () => {

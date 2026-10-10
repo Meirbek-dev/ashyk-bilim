@@ -68,16 +68,17 @@ const toReplyData = (reply: Discussion, anonymousLabel: string): DiscussionReply
   userVote: reply.is_liked ? 'up' : reply.is_disliked ? 'down' : null,
   is_liked: reply.is_liked,
   is_disliked: reply.is_disliked,
-  can_update: reply.can_update,
-  can_delete: reply.can_delete,
+  // `allowed_actions` supersedes the `can_*` flags: it also folds in the archived-course freeze (409).
+  can_update: reply.allowed_actions.includes('update'),
+  can_delete: reply.allowed_actions.includes('delete'),
   is_owner: reply.is_owner,
 })
 
 // Helper to transform API response to UI format
 const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: string): DiscussionPostData => ({
-  can_update: discussion.can_update,
-  can_delete: discussion.can_delete,
-  can_moderate: discussion.can_moderate,
+  can_update: discussion.allowed_actions.includes('update'),
+  can_delete: discussion.allowed_actions.includes('delete'),
+  can_moderate: discussion.allowed_actions.includes('moderate'),
   is_owner: discussion.is_owner,
   id: discussion.id,
   discussion_uuid: discussion.discussion_uuid,

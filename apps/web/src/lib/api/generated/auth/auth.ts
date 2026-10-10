@@ -28,8 +28,11 @@ import {
   GoogleCallbackParams,
   GoogleStartParams,
   LoginRequest,
+  PasswordResetConfirmRequest,
+  PasswordResetRequest,
   Problem,
   RegisterRequest,
+  ResendVerificationRequest,
   SessionInfo,
   SessionSummary,
   TotpEnrollment,
@@ -584,6 +587,60 @@ export const useLogout = <TError = ErrorType<Problem>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
   return useMutation(getLogoutMutationOptions(options), queryClient)
 }
+export const getTotpRemoveUrl = () => {
+  return `/api/v2/auth/mfa/totp`
+}
+
+/**
+ * @summary Remove the TOTP authenticator.
+ */
+export const totpRemove = async (options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+  return orvalMutator<void>(
+    getTotpRemoveUrl(),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
+
+export const getTotpRemoveMutationKey = () => ['totpRemove'] as const
+
+export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+  const mutationKey = getTotpRemoveMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, void> = () => {
+    return totpRemove(requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type TotpRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof totpRemove>>>
+
+export type TotpRemoveMutationError = ErrorType<unknown>
+
+/**
+ * @summary Remove the TOTP authenticator.
+ */
+export const useTotpRemove = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+  return useMutation(getTotpRemoveMutationOptions(options), queryClient)
+}
 export const getTotpEnrollUrl = () => {
   return `/api/v2/auth/mfa/totp`
 }
@@ -640,60 +697,6 @@ export const useTotpEnroll = <TError = ErrorType<Problem>, TContext = unknown>(
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof totpEnroll>>, TError, void, TContext> => {
   return useMutation(getTotpEnrollMutationOptions(options), queryClient)
-}
-export const getTotpRemoveUrl = () => {
-  return `/api/v2/auth/mfa/totp`
-}
-
-/**
- * @summary Remove the TOTP authenticator.
- */
-export const totpRemove = async (options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
-  return orvalMutator<void>(
-    getTotpRemoveUrl(),
-    {
-      ...options,
-      method: 'DELETE',
-    },
-    voidParser,
-  )
-}
-
-export const getTotpRemoveMutationKey = () => ['totpRemove'] as const
-
-export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
-  request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
-  const mutationKey = getTotpRemoveMutationKey()
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined }
-
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, void> = () => {
-    return totpRemove(requestOptions)
-  }
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type TotpRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof totpRemove>>>
-
-export type TotpRemoveMutationError = ErrorType<unknown>
-
-/**
- * @summary Remove the TOTP authenticator.
- */
-export const useTotpRemove = <TError = ErrorType<unknown>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
-    request?: SecondParameter<typeof orvalMutator>
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
-  return useMutation(getTotpRemoveMutationOptions(options), queryClient)
 }
 export const getTotpVerifyUrl = () => {
   return `/api/v2/auth/mfa/totp/verify`
@@ -866,6 +869,210 @@ export const useChangePassword = <TError = ErrorType<Problem>, TContext = unknow
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof changePassword>>, TError, ChangePasswordMutationVariables, TContext> => {
   return useMutation(getChangePasswordMutationOptions(options), queryClient)
+}
+export const getRequestPasswordResetUrl = () => {
+  return `/api/v2/auth/password-reset`
+}
+
+/**
+ * Always 202, whether or not the login names an account (no enumeration);
+ * a known active account gets the code by email (the link opens the web
+ * app under the `Accept-Language` locale). Throttled per IP (429) and per
+ * account (silently).
+ * @summary Ask for a password reset code by email (public, S-08).
+ */
+export const requestPasswordReset = async (
+  passwordResetRequest: PasswordResetRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getRequestPasswordResetUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(passwordResetRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getRequestPasswordResetMutationKey = () => ['requestPasswordReset'] as const
+
+export const getRequestPasswordResetMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestPasswordReset>>,
+    TError,
+    RequestPasswordResetMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestPasswordReset>>,
+  TError,
+  RequestPasswordResetMutationVariables,
+  TContext
+> => {
+  const mutationKey = getRequestPasswordResetMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestPasswordReset>>,
+    RequestPasswordResetMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return requestPasswordReset(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type RequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof requestPasswordReset>>>
+export type RequestPasswordResetMutationBody = BodyType<PasswordResetRequest>
+export type RequestPasswordResetMutationError = ErrorType<Problem>
+export type RequestPasswordResetMutationVariables = { data: BodyType<PasswordResetRequest> }
+
+/**
+ * @summary Ask for a password reset code by email (public, S-08).
+ */
+export const useRequestPasswordReset = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof requestPasswordReset>>,
+      TError,
+      RequestPasswordResetMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof requestPasswordReset>>,
+  TError,
+  RequestPasswordResetMutationVariables,
+  TContext
+> => {
+  return useMutation(getRequestPasswordResetMutationOptions(options), queryClient)
+}
+export const getConfirmPasswordResetUrl = () => {
+  return `/api/v2/auth/password-reset/confirm`
+}
+
+/**
+ * @summary Set a new password with the emailed reset code (public, S-08). Every
+session of the account is revoked; the client logs in next.
+ */
+export const confirmPasswordReset = async (
+  passwordResetConfirmRequest: PasswordResetConfirmRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getConfirmPasswordResetUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(passwordResetConfirmRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getConfirmPasswordResetMutationKey = () => ['confirmPasswordReset'] as const
+
+export const getConfirmPasswordResetMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmPasswordReset>>,
+    TError,
+    ConfirmPasswordResetMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmPasswordReset>>,
+  TError,
+  ConfirmPasswordResetMutationVariables,
+  TContext
+> => {
+  const mutationKey = getConfirmPasswordResetMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmPasswordReset>>,
+    ConfirmPasswordResetMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return confirmPasswordReset(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ConfirmPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPasswordReset>>>
+export type ConfirmPasswordResetMutationBody = BodyType<PasswordResetConfirmRequest>
+export type ConfirmPasswordResetMutationError = ErrorType<Problem>
+export type ConfirmPasswordResetMutationVariables = { data: BodyType<PasswordResetConfirmRequest> }
+
+/**
+ * @summary Set a new password with the emailed reset code (public, S-08). Every
+session of the account is revoked; the client logs in next.
+ */
+export const useConfirmPasswordReset = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof confirmPasswordReset>>,
+      TError,
+      ConfirmPasswordResetMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof confirmPasswordReset>>,
+  TError,
+  ConfirmPasswordResetMutationVariables,
+  TContext
+> => {
+  return useMutation(getConfirmPasswordResetMutationOptions(options), queryClient)
 }
 export const getRegisterUrl = () => {
   return `/api/v2/auth/register`
@@ -1451,4 +1658,105 @@ export const useVerifyEmail = <TError = ErrorType<Problem>, TContext = unknown>(
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof verifyEmail>>, TError, VerifyEmailMutationVariables, TContext> => {
   return useMutation(getVerifyEmailMutationOptions(options), queryClient)
+}
+export const getResendVerificationUrl = () => {
+  return `/api/v2/auth/verify-email/resend`
+}
+
+/**
+ * @summary Mail a fresh email verification code (public, S-08). Always 202 (no
+enumeration); throttled per IP (429) and per account (silently).
+ */
+export const resendVerification = async (
+  resendVerificationRequest: ResendVerificationRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getResendVerificationUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(resendVerificationRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getResendVerificationMutationKey = () => ['resendVerification'] as const
+
+export const getResendVerificationMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resendVerification>>,
+    TError,
+    ResendVerificationMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resendVerification>>,
+  TError,
+  ResendVerificationMutationVariables,
+  TContext
+> => {
+  const mutationKey = getResendVerificationMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resendVerification>>,
+    ResendVerificationMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return resendVerification(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ResendVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof resendVerification>>>
+export type ResendVerificationMutationBody = BodyType<ResendVerificationRequest>
+export type ResendVerificationMutationError = ErrorType<Problem>
+export type ResendVerificationMutationVariables = { data: BodyType<ResendVerificationRequest> }
+
+/**
+ * @summary Mail a fresh email verification code (public, S-08). Always 202 (no
+enumeration); throttled per IP (429) and per account (silently).
+ */
+export const useResendVerification = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof resendVerification>>,
+      TError,
+      ResendVerificationMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof resendVerification>>,
+  TError,
+  ResendVerificationMutationVariables,
+  TContext
+> => {
+  return useMutation(getResendVerificationMutationOptions(options), queryClient)
 }

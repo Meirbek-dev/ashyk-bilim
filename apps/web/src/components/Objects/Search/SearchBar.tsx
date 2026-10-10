@@ -65,6 +65,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
     courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
     collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],
     users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users : [],
+    next_cursor: rawSearchResults?.next_cursor ?? null,
   }
   const isLoading = debouncedSearch.trim().length > 0 && searchQueryResult.isPending
 

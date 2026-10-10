@@ -7,13 +7,39 @@
  */
 import * as zod from 'zod'
 
+export const gradeAttemptBodyFeedbackMax = 10000
+
+export const gradeAttemptBodyFinalScoreMin = 0
+export const gradeAttemptBodyFinalScoreMax = 100
+
 export const GradeAttemptBody = zod.object({
   action: zod.enum(['save', 'publish', 'return']),
-  feedback: zod.string().nullish().describe('Omit to keep the stored feedback (UX-113; same rule as quiz grades).'),
-  final_score: zod.number().nullish().describe('Required for save/publish; 0..=100.'),
+  feedback: zod
+    .string()
+    .max(gradeAttemptBodyFeedbackMax)
+    .optional()
+    .describe('Omit to keep the stored feedback (UX-113; same rule as quiz grades).'),
+  final_score: zod
+    .number()
+    .min(gradeAttemptBodyFinalScoreMin)
+    .max(gradeAttemptBodyFinalScoreMax)
+    .optional()
+    .describe('Required for save/publish; 0..=100.'),
   rubric_scores: zod
-    .looseObject({})
-    .nullish()
+    .object({
+      criteria: zod
+        .array(
+          zod.object({
+            criterion_id: zod.string(),
+            label: zod.string(),
+            max_score: zod.number(),
+            score: zod.number(),
+          }),
+        )
+        .optional()
+        .describe('Absent when the activity has no rubric (`{}`).'),
+    })
+    .optional()
     .describe('Omit to keep the stored rubric scores. An object of at most 4 KiB\nserialized (UX-141).'),
 })
 

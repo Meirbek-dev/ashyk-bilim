@@ -9,13 +9,25 @@ import * as zod from 'zod'
 
 export const Contributor = zod
   .object({
-    avatar_key: zod.string().nullish(),
-    created_at_unix: zod.int(),
+    allowed_actions: zod
+      .array(
+        zod
+          .enum(['update', 'remove'])
+          .describe('`Contributor.allowed_actions`: what the caller may do to one roster row.'),
+      )
+      .describe('What the caller may do to this row now.'),
+    avatar_key: zod.string().nullable(),
+    created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     display_name: zod.string(),
-    role: zod.string(),
-    status: zod.string(),
+    role: zod
+      .enum(['creator', 'maintainer', 'contributor', 'reporter'])
+      .describe("A roster entry's role: the granted roles plus the course `creator`."),
+    status: zod.enum(['pending', 'active', 'inactive']),
     user_id: zod.uuid(),
     username: zod.string(),
+    version: zod
+      .int()
+      .describe('Optimistic lock: `If-Match` on `PATCH` (stale â†’ 412). Always 1 on\nthe synthesized creator row.'),
   })
   .describe(
     'One roster entry.\n\nThe creator is always listed first as `creator/active`; the other roles\nare `maintainer | contributor | reporter`, statuses `pending | active |\ninactive`. Any active entry authors on the course like the creator.',

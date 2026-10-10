@@ -8,11 +8,58 @@
 import * as zod from 'zod'
 
 export const AuditEvent = zod.object({
-  actor_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  created_at_unix: zod.int(),
-  event: zod.string(),
+  actor_id: zod.union([zod.uuid(), zod.null()]),
+  actor_name: zod.string().nullable().describe("The actor's display name (`null`: the scheduler, or a deleted user)."),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  event: zod
+    .enum([
+      'lifecycle-transition',
+      'auto-publish-skipped',
+      'duplicated-from',
+      'access-changed',
+      'override-created',
+      'override-updated',
+      'override-deleted',
+      'deadline-extended',
+      'deadline-extension-requested',
+      'grade-saved',
+      'grades-published',
+      'submission-submitted',
+    ])
+    .describe(
+      '`assessment_audit_events.event`: what an audit row records (the writers\ntake this type, so the wire set is closed).',
+    ),
   id: zod.uuid(),
-  payload: zod.unknown(),
+  payload: zod
+    .object({
+      action_id: zod.uuid().optional(),
+      already_published: zod.int().optional(),
+      attempt: zod.int().optional(),
+      audit_note: zod.string().nullish(),
+      auto_submit_reason: zod.string().nullish(),
+      by: zod.string().optional().describe('`scheduler` for automatic transitions.'),
+      final_score: zod.number().nullish(),
+      from: zod.string().optional(),
+      learner_id: zod.uuid().optional(),
+      learners: zod.int().optional(),
+      mode: zod.string().optional(),
+      new_due_at: zod.int().optional().describe('Unix seconds.'),
+      note: zod.string().nullish(),
+      published: zod.int().optional(),
+      raw_score: zod.number().nullish(),
+      readiness: zod.array(zod.string()).optional().describe('Readiness codes that blocked an automatic publish.'),
+      scheduled_at: zod.int().nullish().describe('Unix seconds.'),
+      source: zod.uuid().optional().describe('The assessment this one was duplicated from.'),
+      status: zod.string().optional(),
+      submission_id: zod.uuid().optional(),
+      to: zod.string().optional(),
+      user_id: zod.uuid().optional(),
+      usergroups: zod.int().optional(),
+      users: zod.int().optional(),
+    })
+    .describe(
+      '`assessment_audit_events.payload`.\n\nThe keys depend on `event`: `lifecycle-transition` (`from`, `to`, `scheduled_at`, `note`, `by`),\n`auto-publish-skipped` (`by`, `readiness`), `access-changed` (`mode`,\n`users`, `usergroups`), `override-created|updated|deleted` (`user_id`),\n`duplicated-from` (`source`), `deadline-extension-requested` /\n`deadline-extended` (`action_id`, `learners`, `new_due_at`),\n`submission-submitted` (`submission_id`, `attempt`, `status`,\n`auto_submit_reason`), `grade-saved` (`submission_id`, `learner_id`,\n`status`, `raw_score`, `final_score`, `audit_note`), `grades-published`\n(`published`, `already_published`).',
+    ),
 })
 
 export type AuditEvent = zod.input<typeof AuditEvent>

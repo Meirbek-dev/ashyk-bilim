@@ -11,8 +11,8 @@ export const SkillsSection = zod.object({
   id: zod.string(),
   skills: zod.array(
     zod.object({
-      category: zod.string().nullish(),
-      level: zod.union([zod.enum(['beginner', 'intermediate', 'advanced', 'expert']), zod.null()]).optional(),
+      category: zod.string().optional(),
+      level: zod.enum(['beginner', 'intermediate', 'advanced', 'expert']).optional(),
       name: zod.string(),
     }),
   ),

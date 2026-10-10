@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const TimeSeriesPoint = zod.object({
-  bucket_start_unix: zod.int(),
+  bucket_start_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   value: zod.number(),
 })
 

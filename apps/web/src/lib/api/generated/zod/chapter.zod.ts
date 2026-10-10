@@ -8,11 +8,23 @@
 import * as zod from 'zod'
 
 export const Chapter = zod.object({
+  allowed_actions: zod
+    .array(
+      zod
+        .enum(['update', 'delete', 'move', 'add_activity'])
+        .describe('What the caller may do to a chapter (`Chapter.allowed_actions`).'),
+    )
+    .describe('What the caller may do to this chapter now.'),
   course_id: zod.uuid(),
   description: zod.string(),
   id: zod.uuid(),
   name: zod.string(),
   position: zod.int().describe('1-based, contiguous within the course.'),
+  version: zod
+    .int()
+    .describe(
+      "Optimistic lock: `If-Match` on `PATCH` (stale → 412). Moves (this\nchapter's or a sibling's) renumber positions and bump it too.",
+    ),
 })
 
 export type Chapter = zod.input<typeof Chapter>

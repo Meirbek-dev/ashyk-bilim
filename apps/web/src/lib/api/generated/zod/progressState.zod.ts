@@ -8,9 +8,12 @@
 import * as zod from 'zod'
 
 export const ProgressState = zod.object({
-  completed_at_unix: zod.int().nullish(),
+  completed_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   completed_required_count: zod.int(),
-  grade_average: zod.number().nullish(),
+  grade_average: zod.number().nullable(),
   missing_required_count: zod.int(),
   needs_grading_count: zod.int(),
   progress_pct: zod.number(),

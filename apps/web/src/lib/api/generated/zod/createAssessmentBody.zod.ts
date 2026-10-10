@@ -7,62 +7,104 @@
  */
 import * as zod from 'zod'
 
+export const createAssessmentBodyDescriptionMax = 20000
+
+export const createAssessmentBodyPolicyAttemptPenaltyPercentMin = 0
+export const createAssessmentBodyPolicyAttemptPenaltyPercentMax = 100
+
+export const createAssessmentBodyPolicyGracePeriodMinutesMin = 0
+
+export const createAssessmentBodyPolicyLatePolicyTwoPercentPerDayMin = 0
+export const createAssessmentBodyPolicyLatePolicyTwoPercentPerDayMax = 100
+
+export const createAssessmentBodyPolicyMaxAttemptsMax = 10
+
+export const createAssessmentBodyPolicyNegativeMarkingPercentMin = 0
+export const createAssessmentBodyPolicyNegativeMarkingPercentMax = 100
+
+export const createAssessmentBodyPolicyPassingScoreMin = 0
+export const createAssessmentBodyPolicyPassingScoreMax = 100
+
+export const createAssessmentBodyTitleMax = 500
+
+export const createAssessmentBodyWeightMin = 0
+export const createAssessmentBodyWeightMax = 100
+
 export const CreateAssessmentBody = zod.object({
   chapter_id: zod.uuid().describe('The activity is appended to this chapter.'),
-  description: zod.string().nullish(),
-  grading_type: zod.union([zod.enum(['numeric', 'percentage']), zod.null()]).optional(),
+  description: zod.string().max(createAssessmentBodyDescriptionMax).optional(),
+  grading_type: zod.enum(['numeric', 'percentage']).optional(),
   kind: zod
     .enum(['quiz', 'exam', 'code_challenge'])
     .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
   policy: zod
-    .union([
-      zod
-        .object({
-          allow_late: zod.boolean(),
-          attempt_penalty_percent: zod.number().describe('Max-score cap per extra attempt (0 = off).'),
-          completion_rule: zod.enum(['viewed', 'submitted', 'graded', 'passed', 'teacher_verified']),
-          copy_paste_protection: zod.boolean(),
-          devtools_detection: zod.boolean(),
-          due_at_unix: zod.int().nullish(),
-          fullscreen_required: zod.boolean(),
-          grace_period_minutes: zod.int(),
-          grade_release_mode: zod.enum(['immediate', 'batch']),
-          grading_mode: zod.enum(['auto', 'manual', 'auto_then_manual']),
-          late_policy: zod
-            .union([
-              zod.object({
-                kind: zod.enum(['none']),
-              }),
-              zod.object({
-                kind: zod.enum(['penalty']),
-                max_days: zod.int(),
-                percent_per_day: zod.number(),
-              }),
-              zod.object({
-                cutoff_at_unix: zod.int(),
-                kind: zod.enum(['cutoff']),
-              }),
-            ])
-            .describe('Late-submission handling.'),
-          max_attempts: zod.int().nullish().describe('`null` = unlimited.'),
-          negative_marking_percent: zod.number(),
-          partial_credit: zod.boolean(),
-          passing_score: zod.number(),
-          randomize_options: zod.boolean(),
-          randomize_questions: zod.boolean(),
-          required: zod.boolean(),
-          review_visibility: zod.enum(['none', 'score_only', 'full']),
-          right_click_disabled: zod.boolean(),
-          tab_switch_detection: zod.boolean(),
-          time_limit_seconds: zod.int().nullish().describe('`null` = no limit.'),
-          violation_threshold: zod.int(),
-        })
-        .describe("Omit to start from the kind's preset."),
-      zod.null(),
-    ])
-    .optional(),
-  title: zod.string(),
-  weight: zod.number().nullish().describe('BUG-208: 0–100 - an unbounded weight overflows the course average.'),
+    .object({
+      allow_late: zod.boolean(),
+      attempt_penalty_percent: zod
+        .number()
+        .min(createAssessmentBodyPolicyAttemptPenaltyPercentMin)
+        .max(createAssessmentBodyPolicyAttemptPenaltyPercentMax)
+        .describe('Max-score cap per extra attempt (0 = off).'),
+      completion_rule: zod.enum(['viewed', 'submitted', 'graded', 'passed', 'teacher_verified']),
+      copy_paste_protection: zod.boolean(),
+      devtools_detection: zod.boolean(),
+      due_at_unix: zod.union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()]),
+      fullscreen_required: zod.boolean(),
+      grace_period_minutes: zod.int().min(createAssessmentBodyPolicyGracePeriodMinutesMin),
+      grade_release_mode: zod.enum(['immediate', 'batch']),
+      grading_mode: zod.enum(['auto', 'manual', 'auto_then_manual']),
+      late_policy: zod
+        .union([
+          zod.object({
+            kind: zod.enum(['none']),
+          }),
+          zod.object({
+            kind: zod.enum(['penalty']),
+            max_days: zod.int().min(1),
+            percent_per_day: zod
+              .number()
+              .min(createAssessmentBodyPolicyLatePolicyTwoPercentPerDayMin)
+              .max(createAssessmentBodyPolicyLatePolicyTwoPercentPerDayMax),
+          }),
+          zod.object({
+            cutoff_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+            kind: zod.enum(['cutoff']),
+          }),
+        ])
+        .describe('Late-submission handling.'),
+      max_attempts: zod
+        .int()
+        .min(1)
+        .max(createAssessmentBodyPolicyMaxAttemptsMax)
+        .nullable()
+        .describe('`null` = unlimited.'),
+      negative_marking_percent: zod
+        .number()
+        .min(createAssessmentBodyPolicyNegativeMarkingPercentMin)
+        .max(createAssessmentBodyPolicyNegativeMarkingPercentMax),
+      partial_credit: zod.boolean(),
+      passing_score: zod
+        .number()
+        .min(createAssessmentBodyPolicyPassingScoreMin)
+        .max(createAssessmentBodyPolicyPassingScoreMax),
+      randomize_options: zod.boolean(),
+      randomize_questions: zod.boolean(),
+      required: zod.boolean(),
+      review_visibility: zod.enum(['none', 'score_only', 'full']),
+      right_click_disabled: zod.boolean(),
+      tab_switch_detection: zod.boolean(),
+      time_limit_seconds: zod.int().min(1).nullable().describe('`null` = no limit.'),
+      violation_threshold: zod.int().min(1),
+    })
+    .optional()
+    .describe("Omit to start from the kind's preset."),
+  title: zod.string().min(1).max(createAssessmentBodyTitleMax),
+  weight: zod
+    .number()
+    .min(createAssessmentBodyWeightMin)
+    .max(createAssessmentBodyWeightMax)
+    .optional()
+    .describe('BUG-208: 0–100 - an unbounded weight overflows the course average.'),
 })
 
 export type CreateAssessmentBody = zod.input<typeof CreateAssessmentBody>

@@ -7,9 +7,13 @@
  */
 import * as zod from 'zod'
 
+export const matchingPairLeftMax = 20000
+
+export const matchingPairRightMax = 20000
+
 export const MatchingPair = zod.object({
-  left: zod.string(),
-  right: zod.string(),
+  left: zod.string().max(matchingPairLeftMax),
+  right: zod.string().max(matchingPairRightMax),
 })
 
 export type MatchingPair = zod.input<typeof MatchingPair>

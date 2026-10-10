@@ -8,13 +8,16 @@
 import * as zod from 'zod'
 
 export const GradingEntry = zod.object({
-  created_at_unix: zod.int(),
-  final_score: zod.number().nullish().describe('Absent for a draft save that left the attempt pending.'),
-  graded_by: zod.union([zod.uuid().describe('`null` = the auto-grader.'), zod.null()]).optional(),
+  created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  final_score: zod.number().nullable().describe('Absent for a draft save that left the attempt pending.'),
+  graded_by: zod.union([zod.uuid().describe('`null` = the auto-grader.'), zod.null()]),
   id: zod.uuid(),
   overall_feedback: zod.string(),
   penalty_pct: zod.number(),
-  published_at_unix: zod.int().nullish(),
+  published_at_unix: zod.union([
+    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    zod.null(),
+  ]),
   raw_score: zod.number(),
 })
 

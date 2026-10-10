@@ -21,59 +21,107 @@ export const TeacherCourseDetailResponse = zod.object({
   ),
   assessment_outliers: zod.array(
     zod.object({
-      activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      activity_id: zod.union([zod.uuid(), zod.null()]),
       assessment_id: zod.uuid(),
       assessment_type: zod
         .enum(['quiz', 'exam', 'code_challenge'])
         .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
-      avg_attempts: zod.number().nullish(),
-      completion_rate: zod.number().nullish(),
+      avg_attempts: zod.number().nullable(),
+      completion_rate: zod.number().nullable(),
       course_id: zod.uuid(),
       course_name: zod.string(),
-      difficulty_score: zod.number().nullish(),
-      discrimination_index: zod.number().nullish(),
-      grading_latency_hours_p50: zod.number().nullish(),
-      grading_latency_hours_p90: zod.number().nullish(),
-      median_score: zod.number().nullish(),
-      outlier_reason_codes: zod.array(zod.string()),
-      pass_rate: zod.number().nullish(),
-      reliability_score: zod.number().nullish(),
-      score_variance: zod.number().nullish(),
-      submission_rate: zod.number().nullish(),
-      suspicious_flag: zod
-        .string()
-        .nullish()
-        .describe('`too_easy` | `too_hard` | `low_discrimination` | `low_variance`.'),
+      difficulty_score: zod.number().nullable(),
+      discrimination_index: zod.number().nullable(),
+      grading_latency_hours_p50: zod.number().nullable(),
+      grading_latency_hours_p90: zod.number().nullable(),
+      median_score: zod.number().nullable(),
+      outlier_reason_codes: zod.array(
+        zod
+          .enum([
+            'low_completion_rate',
+            'below_threshold',
+            'low_accuracy',
+            'low_submission_rate',
+            'low_success_rate',
+            'grading_latency',
+          ])
+          .describe(
+            '`AssessmentOutlierRow.outlier_reason_codes`\n(`assessments::outlier_reason_codes`; a test pins the set).',
+          ),
+      ),
+      pass_rate: zod.number().nullable(),
+      reliability_score: zod.number().nullable(),
+      score_variance: zod.number().nullable(),
+      submission_rate: zod.number().nullable(),
+      suspicious_flag: zod.union([
+        zod.enum(['too_easy', 'too_hard', 'low_discrimination', 'low_variance']),
+        zod.null(),
+      ]),
       title: zod.string(),
     }),
   ),
   at_risk_learners: zod.array(
     zod.object({
-      cohort_name: zod.string().nullish(),
+      allowed_actions: zod
+        .array(zod.enum(['record_intervention']).describe('`AtRiskLearnerRow.allowed_actions`.'))
+        .describe(
+          'What the caller may do for this learner now (the gates of\n`POST /analytics/teacher/interventions`).',
+        ),
+      cohort_name: zod.string().nullable(),
       confidence_level: zod.enum(['low', 'medium', 'high']),
       course_id: zod.uuid(),
       course_name: zod.string(),
-      days_since_last_activity: zod.int().nullish(),
+      days_since_last_activity: zod.int().nullable(),
       failed_assessments: zod.int(),
       intervention_count: zod.int(),
-      last_intervention_at_unix: zod.int().nullish(),
-      last_intervention_outcome: zod.string().nullish(),
-      last_intervention_type: zod.string().nullish(),
+      last_intervention_at_unix: zod.union([
+        zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        zod.null(),
+      ]),
+      last_intervention_outcome: zod.string().nullable(),
+      last_intervention_type: zod.union([
+        zod
+          .enum(['message_sent', 'submission_graded', 'extension_granted', 'meeting_scheduled', 'learner_recovered'])
+          .describe('[`INTERVENTION_TYPES`] as a contract enum (schema only; the wire stays a\nvalidated string).'),
+        zod.null(),
+      ]),
       missing_required_assessments: zod.int(),
       open_grading_blocks: zod.int(),
-      previous_risk_score: zod.number().nullish(),
+      previous_risk_score: zod.number().nullable(),
       progress_pct: zod.number(),
-      reason_codes: zod.array(zod.string()),
-      recommended_action: zod.string().describe('Stable code (`review_submissions_first`, …).'),
+      reason_codes: zod.array(
+        zod
+          .enum(['inactive_7d', 'low_progress', 'repeated_failures', 'missing_required_assessments', 'grading_block'])
+          .describe('Why a learner is at risk (`risk::reason_codes`; a test pins the set).'),
+      ),
+      recommended_action: zod
+        .enum([
+          'review_submissions_first',
+          'contact_learner_this_week',
+          'offer_targeted_help',
+          'remind_missing_work',
+          'schedule_pace_meeting',
+          'send_personal_message',
+        ])
+        .describe('Stable code (`review_submissions_first`, …).'),
       risk_components: zod.record(zod.string(), zod.number()),
       risk_level: zod.enum(['low', 'medium', 'high']),
       risk_score: zod.number(),
-      risk_score_delta: zod.number().nullish(),
+      risk_score_delta: zod.number().nullable(),
       risk_trend: zod.enum(['newly_at_risk', 'worsening', 'improving', 'recovered', 'stable']),
-      top_contributing_factor: zod.string().nullish(),
+      top_contributing_factor: zod.string().nullable(),
       user_display_name: zod.string(),
       user_id: zod.uuid(),
-      why_now: zod.string().describe('Stable code explaining the strongest signal.'),
+      why_now: zod
+        .enum([
+          'grading_block_blocks_progress',
+          'inactivity_past_7_days',
+          'recent_assessment_failures',
+          'missing_required_work',
+          'progress_behind_course_baseline',
+          'multiple_risk_signals',
+        ])
+        .describe('Stable code explaining the strongest signal.'),
     }),
   ),
   content_bottlenecks: zod.array(
@@ -81,21 +129,22 @@ export const TeacherCourseDetailResponse = zod.object({
       activity_id: zod.uuid(),
       activity_name: zod.string(),
       activity_type: zod.string(),
-      avg_time_seconds: zod.number().nullish(),
+      avg_time_seconds: zod.number().nullable(),
       completed_learners: zod.int(),
-      completion_rate: zod.number().nullish(),
+      completion_rate: zod.number().nullable(),
       course_id: zod.uuid(),
       course_name: zod.string(),
       exit_count: zod.int(),
       failed_assessments: zod.int(),
       note: zod.string(),
       severity: zod.enum(['info', 'warning', 'critical']),
-      signal: zod
-        .string()
-        .describe(
-          '`high_time_low_completion` | `exit_after_open` |\n`repeated_assessment_failures` | `stale_low_performance`.',
-        ),
-      stale_days: zod.int().nullish(),
+      signal: zod.enum([
+        'high_time_low_completion',
+        'exit_after_open',
+        'repeated_assessment_failures',
+        'stale_low_performance',
+      ]),
+      stale_days: zod.int().nullable(),
       started_learners: zod.int(),
     }),
   ),
@@ -104,8 +153,8 @@ export const TeacherCourseDetailResponse = zod.object({
       course_id: zod.uuid(),
       note: zod.string(),
       severity: zod.enum(['info', 'warning', 'critical']),
-      signal: zod.string().describe('`content_freshness` | `average_progress` | `grading_backlog`.'),
-      value: zod.number().nullish(),
+      signal: zod.enum(['content_freshness', 'average_progress', 'grading_backlog']),
+      value: zod.number().nullable(),
     }),
   ),
   course: zod.object({
@@ -114,7 +163,7 @@ export const TeacherCourseDetailResponse = zod.object({
   }),
   engagement_trend: zod.array(
     zod.object({
-      bucket_start_unix: zod.int(),
+      bucket_start_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       value: zod.number(),
     }),
   ),
@@ -123,18 +172,18 @@ export const TeacherCourseDetailResponse = zod.object({
       zod.object({
         count: zod.int(),
         label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-        pct_of_previous: zod.number().nullish(),
+        pct_of_previous: zod.number().nullable(),
       }),
     ),
     course_completion: zod.array(
       zod.object({
         count: zod.int(),
         label: zod.string().describe('Stable code (`enrolled`, `active_7d`, `completed`) or a chapter name.'),
-        pct_of_previous: zod.number().nullish(),
+        pct_of_previous: zod.number().nullable(),
       }),
     ),
   }),
-  generated_at_unix: zod.int(),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   summary: zod.object({
     active_learners_7d: zod.int(),
     at_risk_learners: zod.int(),

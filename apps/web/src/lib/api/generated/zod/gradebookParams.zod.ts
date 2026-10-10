@@ -10,6 +10,18 @@ import * as zod from 'zod'
 export const GradebookParams = zod.object({
   cursor: zod.string().nullish(),
   limit: zod.int().nullish(),
+  q: zod.string().nullish(),
+  group_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  status: zod
+    .union([
+      zod
+        .enum(['needs_grading'])
+        .describe(
+          'Gradebook row filter: `needs_grading` keeps learners with work\nawaiting the grader (a `pending` / `graded` submission or a\n`submitted` / `graded` file attempt).',
+        ),
+      zod.null(),
+    ])
+    .optional(),
 })
 
 export type GradebookParams = zod.input<typeof GradebookParams>

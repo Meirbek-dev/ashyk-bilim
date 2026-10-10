@@ -9,20 +9,20 @@ import * as zod from 'zod'
 
 export const AssessmentAuditEventRow = zod.object({
   action: zod.string(),
-  actor_display_name: zod.string().nullish(),
-  actor_user_id: zod.union([zod.uuid(), zod.null()]).optional(),
-  affected_count: zod.int().nullish(),
-  bulk_action_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  actor_display_name: zod.string().nullable(),
+  actor_user_id: zod.union([zod.uuid(), zod.null()]),
+  affected_count: zod.int().nullable(),
+  bulk_action_id: zod.union([zod.uuid(), zod.null()]),
   final_score: zod
     .number()
-    .nullish()
+    .nullable()
     .describe('The saved/published score of a grading entry; `None` for bulk actions.'),
-  grading_entry_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  grading_entry_id: zod.union([zod.uuid(), zod.null()]),
   id: zod.string(),
-  occurred_at_unix: zod.int(),
-  source: zod.string().describe('`grading_entry` | `bulk_action`.'),
-  status: zod.string().nullish(),
-  submission_id: zod.union([zod.uuid(), zod.null()]).optional(),
+  occurred_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  source: zod.enum(['grading_entry', 'bulk_action']),
+  status: zod.string().nullable(),
+  submission_id: zod.union([zod.uuid(), zod.null()]),
 })
 
 export type AssessmentAuditEventRow = zod.input<typeof AssessmentAuditEventRow>

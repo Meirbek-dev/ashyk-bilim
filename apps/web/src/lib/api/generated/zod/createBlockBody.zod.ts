@@ -7,9 +7,15 @@
  */
 import * as zod from 'zod'
 
+export const createBlockBodyFileNameMax = 500
+
 export const CreateBlockBody = zod.object({
-  block_type: zod.string().describe('`image`, `pdf`, or `video`.'),
-  file_name: zod.string().nullish().describe('Original client-side file name, for display.'),
+  block_type: zod.enum(['image', 'pdf', 'video', 'custom']).describe('`image`, `pdf`, or `video`.'),
+  file_name: zod
+    .string()
+    .max(createBlockBodyFileNameMax)
+    .optional()
+    .describe('Original client-side file name, for display.'),
   upload_id: zod.uuid().describe('A finalized upload (purpose must match the block type).'),
 })
 

@@ -78,7 +78,7 @@ describe('v2 analytics requests', () => {
   })
 
   it('validates intervention input and propagates request failures', async () => {
-    const payload = { course_id: id, user_id: id, intervention_type: 'message_sent' }
+    const payload = { course_id: id, user_id: id, intervention_type: 'message_sent' as const }
     vi.mocked(apiJson).mockRejectedValue(new Error('service unavailable'))
     await expect(createTeacherIntervention(payload)).rejects.toThrow('service unavailable')
     expect(apiJson).toHaveBeenLastCalledWith(

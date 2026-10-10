@@ -9,10 +9,10 @@ import * as zod from 'zod'
 
 export const LinkPreview = zod
   .object({
-    description: zod.string().nullish(),
-    image_url: zod.string().nullish().describe('Absolute `http(s)` image URL, when the page declares one.'),
-    site_name: zod.string().nullish(),
-    title: zod.string().nullish(),
+    description: zod.string().nullable(),
+    image_url: zod.string().nullable().describe('Absolute `http(s)` image URL, when the page declares one.'),
+    site_name: zod.string().nullable(),
+    title: zod.string().nullable(),
     url: zod.string().describe('The URL the page was read from (after redirects).'),
   })
   .describe('OpenGraph / `<title>` summary of a public web page.')

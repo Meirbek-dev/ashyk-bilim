@@ -8,9 +8,15 @@
 import * as zod from 'zod'
 
 export const GamificationConfig = zod.object({
-  daily_xp_limit: zod.int().nullish().describe('`null` = platform default (500).'),
-  rewards: zod.looseObject({}).describe('Source → XP overrides; unknown sources are ignored.'),
-  updated_at_unix: zod.int(),
+  daily_xp_limit: zod.int().nullable().describe('`null` = platform default (500).'),
+  rewards: zod.record(zod.string(), zod.int()).describe('Source → XP overrides; unknown sources are ignored.'),
+  updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+  version: zod
+    .int()
+    .optional()
+    .describe(
+      'Send back as `If-Match` on the PUT (stale -> 412).\nAlways present (schema-optional while client fixtures catch up).',
+    ),
 })
 
 export type GamificationConfig = zod.input<typeof GamificationConfig>

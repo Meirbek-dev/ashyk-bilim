@@ -10,11 +10,11 @@ import * as zod from 'zod'
 export const AssessmentSloSnapshot = zod.object({
   backlog_count: zod.int(),
   note: zod.string(),
-  observed_p50_hours: zod.number().nullish(),
-  observed_p90_hours: zod.number().nullish(),
+  observed_p50_hours: zod.number().nullable(),
+  observed_p90_hours: zod.number().nullable(),
   overdue_backlog_count: zod.int(),
   status: zod.enum(['healthy', 'warning', 'breached', 'not_applicable']),
-  target_hours: zod.number().nullish(),
+  target_hours: zod.number().nullable(),
 })
 
 export type AssessmentSloSnapshot = zod.input<typeof AssessmentSloSnapshot>

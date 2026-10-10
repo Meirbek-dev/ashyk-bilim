@@ -9,8 +9,8 @@ import * as zod from 'zod'
 
 export const MoveActivityRequest = zod
   .object({
-    chapter_id: zod.union([zod.uuid(), zod.null()]).optional(),
-    position: zod.int().describe('1-based target position (in the destination chapter).'),
+    chapter_id: zod.uuid().optional(),
+    position: zod.int().min(1).describe('1-based target position (in the destination chapter).'),
   })
   .describe(
     'Target slot for an activity move; `chapter_id` reparents within the same\ncourse, omitted keeps the current chapter.',

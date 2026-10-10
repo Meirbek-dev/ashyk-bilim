@@ -10,9 +10,9 @@ import * as zod from 'zod'
 export const CertificateState = zod.object({
   configured: zod.boolean(),
   eligible: zod.boolean(),
-  href: zod.string().nullish(),
+  href: zod.string().nullable(),
   issued: zod.boolean(),
-  verify_code: zod.string().nullish().describe('Public verification code of the issued certificate.'),
+  verify_code: zod.string().nullable().describe('Public verification code of the issued certificate.'),
 })
 
 export type CertificateState = zod.input<typeof CertificateState>

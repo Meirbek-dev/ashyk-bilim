@@ -101,6 +101,13 @@ export function nullableParser<T>(parser: ResponseParser<T>): ResponseParser<T |
   }
 }
 
+/** `T | void` responses: a body or an empty 204. */
+export function optionalParser<T>(parser: ResponseParser<T>): ResponseParser<T | void> {
+  return function (data) {
+    return data === undefined || data === null || data === '' ? undefined : parseWith(parser, data)
+  }
+}
+
 export const stringParser: ResponseParser<string> = data => {
   if (typeof data !== 'string') {
     throw new Error('Response validation failed: expected string')

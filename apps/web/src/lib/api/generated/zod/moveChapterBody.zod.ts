@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const MoveChapterBody = zod
   .object({
-    position: zod.int().describe('1-based target position.'),
+    position: zod.int().min(1).describe('1-based target position.'),
   })
   .describe('Target slot for a chapter move; out-of-range positions clamp.')
 

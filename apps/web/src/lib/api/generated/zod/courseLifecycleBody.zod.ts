@@ -9,7 +9,7 @@ import * as zod from 'zod'
 
 export const CourseLifecycleBody = zod.object({
   action: zod
-    .string()
+    .enum(['publish', 'unpublish', 'archive', 'restore'])
     .describe(
       '`publish` | `unpublish` (course write access, readiness-gated) |\n`archive` | `restore` (creator, active maintainer or\n`course:manage:platform`).',
     ),

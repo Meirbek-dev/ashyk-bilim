@@ -7,9 +7,24 @@
  */
 import * as zod from 'zod'
 
+export const createDiscussionRequestContentMax = 20000
+
+export const createDiscussionRequestUploadIdsMax = 10
+
 export const CreateDiscussionRequest = zod.object({
-  content: zod.string().describe('HTML or text; must contain visible text.'),
-  parent_id: zod.union([zod.uuid().describe('Reply to this post (one level).'), zod.null()]).optional(),
+  content: zod
+    .string()
+    .min(1)
+    .max(createDiscussionRequestContentMax)
+    .describe('HTML or text; must contain visible text.'),
+  parent_id: zod.uuid().optional().describe('Reply to this post (one level).'),
+  upload_ids: zod
+    .array(zod.uuid())
+    .max(createDiscussionRequestUploadIdsMax)
+    .optional()
+    .describe(
+      'Finalized `discussion-image` uploads the content shows: claimed by\nthe post (unclaimed uploads are reaped after a day).',
+    ),
 })
 
 export type CreateDiscussionRequest = zod.input<typeof CreateDiscussionRequest>

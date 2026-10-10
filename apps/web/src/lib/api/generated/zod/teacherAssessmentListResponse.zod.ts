@@ -20,32 +20,45 @@ export const TeacherAssessmentListResponse = zod.object({
       value: zod.string(),
     }),
   ),
-  generated_at_unix: zod.int(),
+  generated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   items: zod.array(
     zod.object({
-      activity_id: zod.union([zod.uuid(), zod.null()]).optional(),
+      activity_id: zod.union([zod.uuid(), zod.null()]),
       assessment_id: zod.uuid(),
       assessment_type: zod
         .enum(['quiz', 'exam', 'code_challenge'])
         .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
-      avg_attempts: zod.number().nullish(),
-      completion_rate: zod.number().nullish(),
+      avg_attempts: zod.number().nullable(),
+      completion_rate: zod.number().nullable(),
       course_id: zod.uuid(),
       course_name: zod.string(),
-      difficulty_score: zod.number().nullish(),
-      discrimination_index: zod.number().nullish(),
-      grading_latency_hours_p50: zod.number().nullish(),
-      grading_latency_hours_p90: zod.number().nullish(),
-      median_score: zod.number().nullish(),
-      outlier_reason_codes: zod.array(zod.string()),
-      pass_rate: zod.number().nullish(),
-      reliability_score: zod.number().nullish(),
-      score_variance: zod.number().nullish(),
-      submission_rate: zod.number().nullish(),
-      suspicious_flag: zod
-        .string()
-        .nullish()
-        .describe('`too_easy` | `too_hard` | `low_discrimination` | `low_variance`.'),
+      difficulty_score: zod.number().nullable(),
+      discrimination_index: zod.number().nullable(),
+      grading_latency_hours_p50: zod.number().nullable(),
+      grading_latency_hours_p90: zod.number().nullable(),
+      median_score: zod.number().nullable(),
+      outlier_reason_codes: zod.array(
+        zod
+          .enum([
+            'low_completion_rate',
+            'below_threshold',
+            'low_accuracy',
+            'low_submission_rate',
+            'low_success_rate',
+            'grading_latency',
+          ])
+          .describe(
+            '`AssessmentOutlierRow.outlier_reason_codes`\n(`assessments::outlier_reason_codes`; a test pins the set).',
+          ),
+      ),
+      pass_rate: zod.number().nullable(),
+      reliability_score: zod.number().nullable(),
+      score_variance: zod.number().nullable(),
+      submission_rate: zod.number().nullable(),
+      suspicious_flag: zod.union([
+        zod.enum(['too_easy', 'too_hard', 'low_discrimination', 'low_variance']),
+        zod.null(),
+      ]),
       title: zod.string(),
     }),
   ),

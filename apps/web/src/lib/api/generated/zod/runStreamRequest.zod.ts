@@ -7,20 +7,99 @@
  */
 import * as zod from 'zod'
 
+export const runStreamRequestMessagesItemContentMax = 20000
+
+export const runStreamRequestMessagesItemIdMax = 200
+
+export const runStreamRequestMessagesItemRoleMax = 32
+
+export const runStreamRequestParentRunIdMax = 200
+
+export const runStreamRequestProtocolVersionMax = 32
+
+export const runStreamRequestRunIdMax = 200
+
+export const runStreamRequestThreadIdMax = 200
+
 export const RunStreamRequest = zod
   .object({
-    context: zod.array(zod.looseObject({})).nullish(),
-    forwardedProps: zod.looseObject({}).nullish(),
-    messages: zod.array(zod.looseObject({})).nullish(),
-    parentRunId: zod.string().nullish(),
-    protocolVersion: zod.string().nullish(),
-    resume: zod.array(zod.looseObject({})).nullish(),
-    runId: zod.string(),
-    state: zod.looseObject({}).nullish(),
-    threadId: zod.string(),
+    context: zod
+      .array(
+        zod
+          .object({
+            description: zod.string(),
+            value: zod.string(),
+          })
+          .describe('AG-UI `Context` entry (accepted and ignored).'),
+      )
+      .optional(),
+    forwardedProps: zod
+      .unknown()
+      .optional()
+      .describe(
+        'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+      ),
+    messages: zod
+      .array(
+        zod
+          .object({
+            content: zod.string().max(runStreamRequestMessagesItemContentMax).optional(),
+            encryptedValue: zod.string().optional(),
+            id: zod.string().max(runStreamRequestMessagesItemIdMax).optional(),
+            metadata: zod
+              .unknown()
+              .optional()
+              .describe(
+                'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+              ),
+            name: zod.string().optional().describe('AG-UI 1.0 message members; accepted and ignored.'),
+            parts: zod
+              .array(
+                zod
+                  .object({
+                    content: zod.string().optional(),
+                    type: zod.string(),
+                  })
+                  .describe('One part of an AG-UI message: `{type: "text", content: "…"}`; only text\nparts are read.'),
+              )
+              .optional()
+              .describe('`[{type: "text", content: "…"}, …]` - an alternative to `content`.'),
+            role: zod.string().min(1).max(runStreamRequestMessagesItemRoleMax),
+            subagentRunId: zod.string().optional(),
+          })
+          .describe('One message of the AG-UI conversation the client sends back.'),
+      )
+      .optional(),
+    parentRunId: zod.string().max(runStreamRequestParentRunIdMax).optional(),
+    protocolVersion: zod.string().max(runStreamRequestProtocolVersionMax).optional(),
+    resume: zod
+      .array(
+        zod
+          .unknown()
+          .describe(
+            'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+          ),
+      )
+      .optional(),
+    runId: zod.string().min(1).max(runStreamRequestRunIdMax),
+    state: zod
+      .unknown()
+      .optional()
+      .describe(
+        'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+      ),
+    threadId: zod.string().min(1).max(runStreamRequestThreadIdMax),
     tools: zod
-      .array(zod.looseObject({}))
-      .nullish()
+      .array(
+        zod
+          .object({
+            description: zod.string(),
+            name: zod.string(),
+            parameters: zod.unknown().describe("JSON Schema of the tool's arguments."),
+          })
+          .describe('AG-UI `Tool` the client offers (accepted and ignored).'),
+      )
+      .optional()
       .describe('AG-UI protocol fields the client always sends; accepted and ignored.'),
   })
   .describe('AG-UI `RunAgentInput` correlation ids echoed back in every `RUN_*` event.')
