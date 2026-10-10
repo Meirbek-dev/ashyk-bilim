@@ -14,26 +14,29 @@ const problemText = (problem: UploadProblem): string => {
   return m.ui_file_wrong_type()
 }
 
+type VideoCheck = 'ok' | 'no-picture' | 'unplayable'
+
 /**
  * Whether this browser can open the video at all (a renamed document, a broken file, a codec it lacks): learners
- * would get an empty black frame. A file that tells nothing in 10 s passes; the server still checks the rest.
+ * would get an empty black frame. 'no-picture': it opens without an image (sound only, or H.265 the browser cannot
+ * decode). A file that tells nothing in 10 s passes; the server still checks the rest.
  */
-function playable(file: File): Promise<boolean> {
+function checkVideo(file: File): Promise<VideoCheck> {
   return new Promise(resolve => {
     const video = document.createElement('video')
     const url = URL.createObjectURL(file)
     const timeout = AbortSignal.timeout(10_000)
-    const done = (answer: boolean) => {
+    const done = (answer: VideoCheck) => {
       video.removeAttribute('src')
       video.load()
       URL.revokeObjectURL(url)
       resolve(answer)
     }
-    timeout.addEventListener('abort', () => done(true), { once: true })
+    timeout.addEventListener('abort', () => done('ok'), { once: true })
     video.preload = 'metadata'
     video.muted = true
-    video.addEventListener('loadedmetadata', () => done(true), { once: true })
-    video.addEventListener('error', () => done(false), { once: true })
+    video.addEventListener('loadedmetadata', () => done(video.videoWidth > 0 ? 'ok' : 'no-picture'), { once: true })
+    video.addEventListener('error', () => done('unplayable'), { once: true })
     video.src = url
   })
 }
@@ -49,7 +52,7 @@ function useLeaveGuard(active: boolean) {
 
 /**
  * One file through `shared/api/upload.ts` with its state: `start(file)` checks the purpose's limits (and that a
- * video plays), uploads and resolves with the finalized upload (or null; `error` then says why). `progress` is
+ * video plays; `notice` warns about one without a picture), uploads and resolves with the finalized upload (or null; `error` then says why). `progress` is
  * 0..1 while uploading; `cancel()` stops it, `retry()` starts the last file again after a failure.
  * `limits`: the narrower rules of the resource the file is for (`UploadLimits`).
  * The file input uses it; the editor calls it for pasted images (`clipboardImage` from `#/shared/api/upload`).
@@ -59,6 +62,7 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   const [problem, setProblem] = useState<string | null>(null)
   const [failed, setFailed] = useState<File | null>(null)
   const [checking, setChecking] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const controller = useRef<AbortController | null>(null)
   const mutation = useMutation({
     mutationFn: ({ file, signal }: { file: File; signal: AbortSignal }) =>
@@ -69,12 +73,16 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
 
   async function start(file: File): Promise<FinalizedUpload | null> {
     let issue: string | null = null
+    setNotice(null)
     const limit = checkUpload(file, purpose, limits)
     if (limit) issue = problemText(limit)
     else if (purpose === 'block-video') {
       setChecking(true)
-      if (!(await playable(file))) issue = m.ui_file_unplayable()
+      const video = await checkVideo(file)
       setChecking(false)
+      if (video === 'unplayable') issue = m.ui_file_unplayable()
+      // Allowed (a sound-only lecture is fine), but the teacher should know learners may see a black frame.
+      if (video === 'no-picture') setNotice(m.ui_file_no_picture())
     }
     setProblem(issue)
     setFailed(null)
@@ -97,6 +105,8 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   return {
     start,
     cancel: () => controller.current?.abort(),
+    /** A warning about the file that does not stop the upload (a video without a picture). */
+    notice,
     /** The file whose upload failed (a dropped connection...), to start it again; null otherwise. */
     failed,
     progress,

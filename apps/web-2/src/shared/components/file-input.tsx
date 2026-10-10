@@ -44,13 +44,12 @@ function useHandedFile(file: File | undefined, take: (file: File) => Promise<voi
 export function FileInput(props: FileInputProps) {
   const { label, description, purpose, limits = {}, onUploaded, file, error, disabled = false } = props
   const id = useId()
-  const { start, cancel, failed, progress, error: uploadError, pending } = useUpload(purpose, limits)
+  const { start, cancel, failed, notice, progress, error: uploadError, pending } = useUpload(purpose, limits)
   const [dragging, setDragging] = useState(false)
   const [uploaded, setUploaded] = useState<string | null>(null)
   const [picked, setPicked] = useState<File | null>(null)
   const shownError = uploadError ?? error
   const inactive = disabled || pending
-
   async function take(next: File | undefined) {
     if (!next || inactive) return
     setPicked(next)
@@ -111,6 +110,7 @@ export function FileInput(props: FileInputProps) {
         {description ? <p className="text-muted-foreground">{description}</p> : null}
         {pending && progress === null ? <p className="text-muted-foreground">{m.ui_file_checking()}</p> : null}
         {uploaded && !shownError ? <p>{m.ui_file_uploaded({ name: uploaded })}</p> : null}
+        {notice && !shownError ? <p className="text-warning">{notice}</p> : null}
         {shownError ? <p className="text-destructive">{shownError}</p> : null}
       </div>
       {failed && !pending ? (
