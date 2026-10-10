@@ -633,10 +633,12 @@ pub async fn delete_blocks_releasing(
     Ok(u64::try_from(deleted).unwrap_or(0))
 }
 
-/// BUG-263: re-derive which blocks of a `dynamic` activity hold their upload.
+/// BUG-263: re-derive which blocks of an activity hold their upload.
 ///
-/// The content just saved decides (`block_uuid` anywhere in the tiptap
-/// JSON, v2 id or migrated legacy uuid). A block that left the
+/// The content just saved decides: a page's blocks by `block_uuid` anywhere
+/// in the tiptap JSON (v2 id or migrated legacy uuid), a video / document
+/// activity's block by its file being `content.filename` (BUG-B-3: a
+/// replaced lecture's block kept its file forever). A block that left the
 /// content releases its upload (grace clock starts), one that came back -
 /// an undo saved after the removal - re-claims it if it still exists.
 /// The caller holds the activity row (the content UPDATE), so the upload
@@ -659,6 +661,10 @@ pub async fn sync_block_claims(
                SELECT DISTINCT v #>> '{}' AS id
                FROM activities a, jsonb_path_query(a.content, 'lax $.**.block_uuid') v
                WHERE a.id = $1
+               UNION
+               SELECT b.id::text FROM blocks b JOIN activities a ON a.id = b.activity_id
+               WHERE a.id = $1 AND a.activity_type <> 'dynamic'
+                 AND b.content->>'file_key' = a.content->>'filename'
            ), flipped AS (
                UPDATE blocks b SET claimed = NOT b.claimed
                WHERE b.activity_id = $1

@@ -559,3 +559,102 @@ async fn block_uploads_follow_the_saved_content(pool: PgPool) {
     save(other, vec![]).await;
     assert_eq!(state().await, (0, true));
 }
+
+/// BUG-B-3: replacing a video lesson's file (claim the new upload, point
+/// `content` at it) released nothing, so every replaced lecture stayed
+/// referenced in storage forever. The saved `content.filename` decides which
+/// block of a video / document activity holds its file; switching to a
+/// YouTube link releases the last one.
+#[sqlx::test(migrations = "../../migrations")]
+async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    let (_, page) = scaffold_activity(&app, &teacher).await;
+    let chapter: uuid::Uuid = sqlx::query_scalar("SELECT chapter_id FROM activities WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&page).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    let created = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter}/activities"),
+            &serde_json::json!({ "name": "Lecture", "activity_type": "video",
+                                  "activity_sub_type": "video_hosted" }),
+        )
+        .await;
+    let video = created.json()["id"].as_str().unwrap().to_owned();
+    let path = format!("/api/v2/activities/{video}");
+    let state = |upload: String| {
+        let pool = app.pool.clone();
+        async move {
+            sqlx::query_as::<_, (i32, bool)>(
+                "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1::uuid",
+            )
+            .bind(upload)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    let point = |content: serde_json::Value| {
+        let (app, teacher, path) = (&app, &teacher, &path);
+        async move {
+            let version = app.get_as(teacher, path).await.json()["version"].clone();
+            let res = app
+                .send(
+                    axum::http::Request::builder()
+                        .method("PATCH")
+                        .uri(path)
+                        .header(axum::http::header::CONTENT_TYPE, "application/json")
+                        .header(axum::http::header::COOKIE, &teacher.cookie)
+                        .header(axum::http::header::IF_MATCH, format!("\"{version}\""))
+                        .body(axum::body::Body::from(
+                            serde_json::json!({ "content": content }).to_string(),
+                        ))
+                        .unwrap(),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+        }
+    };
+    let mut keys = Vec::new();
+    let mut uploads = Vec::new();
+    for _ in 0..2 {
+        let upload = finalized_upload(&app, &teacher, "block-video", "video/mp4").await;
+        let claimed = app
+            .post_as(
+                &teacher,
+                &format!("{path}/blocks"),
+                &serde_json::json!({ "block_type": "video", "upload_id": upload }),
+            )
+            .await;
+        assert_eq!(claimed.status, StatusCode::CREATED, "{}", claimed.text());
+        let key = claimed.json()["content"]["file_key"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        point(serde_json::json!({ "filename": key, "upload_id": upload })).await;
+        keys.push(key);
+        uploads.push(upload);
+    }
+    assert_eq!(
+        state(uploads[0].clone()).await,
+        (0, true),
+        "the replaced file"
+    );
+    assert_eq!(
+        state(uploads[1].clone()).await,
+        (1, false),
+        "the current file"
+    );
+
+    point(serde_json::json!({ "uri": "https://youtu.be/abc", "type": "youtube" })).await;
+    assert_eq!(state(uploads[1].clone()).await, (0, true));
+    point(serde_json::json!({ "filename": keys[1], "upload_id": uploads[1] })).await;
+    assert_eq!(
+        state(uploads[1].clone()).await,
+        (1, false),
+        "pointed back: re-claimed"
+    );
+}
