@@ -89,6 +89,18 @@ the `Coverage floor` step (CI run 37062388407) after passing in the plain test s
 the same run and in five other runs. Timing-dependent under llvm-cov instrumentation.
 A red server gate blocks `publish`; re-run the job until the test is made deterministic.
 
+### 32. University proxy rejects lecture videos above its upload limit
+Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT
+declaring 308 MiB or 2 GiB (100 MiB is accepted). The same 308 MiB PUT
+directly through the stack's nginx succeeds in 2.7 seconds. Both the app
+and the stack already permit 2 GiB; the outer university TLS proxy is the
+remaining blocker. University IT must raise its bucket-route body limit
+and disable request buffering as described in RUNBOOK.md "Other". SSH to
+that proxy was unreachable from the production host. The web fix preserves
+storage HTTP status and translates 413 as `payload-too-large` instead of
+claiming the user is offline. **Open until the outer proxy is changed and a
+large upload through the public hostname succeeds.**
+
 ## Low
 
 ### 18. The per-assessment `required` flag does not drive progress

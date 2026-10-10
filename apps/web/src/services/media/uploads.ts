@@ -10,7 +10,7 @@
  * avatar, course thumbnail, block, file-submission draft, …).
  */
 import { apiJson } from '@/lib/api-client'
-import { clientApiError } from '@/lib/api/assertSuccess'
+import { APIError, clientApiError } from '@/lib/api/assertSuccess'
 import { CreatedUpload, FinalizedUpload } from '@/lib/api/generated/zod'
 import type {
   CreatedUpload as CreatedUploadType,
@@ -138,12 +138,7 @@ async function putWithProgress(url: string, file: Blob, options: UploadFileOptio
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve()
         } else {
-          reject(
-            clientApiError('NETWORK_UNAVAILABLE', `Storage rejected the upload (${xhr.status})`, {
-              path: url,
-              status: xhr.status,
-            }),
-          )
+          reject(storageUploadError(xhr.status, url))
         }
       })
       xhr.addEventListener('error', () =>
@@ -164,12 +159,19 @@ async function putWithProgress(url: string, file: Blob, options: UploadFileOptio
     ...(options.signal ? { signal: options.signal } : {}),
   })
   if (!response.ok) {
-    throw clientApiError('NETWORK_UNAVAILABLE', `Storage rejected the upload (${response.status})`, {
-      path: url,
-      status: response.status,
-    })
+    throw storageUploadError(response.status, url)
   }
   options.onProgress?.({ uploadedBytes: file.size, totalBytes: file.size, percentage: 100 })
+}
+
+function storageUploadError(status: number, path: string): APIError {
+  // A proxy/storage HTTP rejection is not a lost connection (the outer proxy can reject large videos).
+  return new APIError({
+    code: status === 413 ? 'payload-too-large' : `HTTP_${status}`,
+    message: `Storage rejected the upload (${status})`,
+    status,
+    path,
+  })
 }
 
 /**

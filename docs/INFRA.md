@@ -225,7 +225,7 @@ under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchai
 | `/api/v2/auth` | server | `auth_limit` 10 r/s, burst 20 |
 | `/api/v2` | server | `api_limit` 30 r/s, burst 60; `proxy_buffering off`, 300 s timeouts (SSE) |
 | `/content/` | rustfs, rewritten to `/ab-public/` (query dropped) | anonymous read; `content_cache` 7 days; `Cache-Control: public, max-age=604800, immutable`; user-content headers |
-| `~ ^/(ab-public\|ab-private)/` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 500M bodies, no request buffering, 300 s; 403 for a query without a signature (no `X-Amz-Signature`, no `Authorization`); user-content headers |
+| `~ ^/(ab-public\|ab-private)/` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 2G bodies, no request buffering, 300 s; 403 for a query without a signature (no `X-Amz-Signature`, no `Authorization`); user-content headers |
 | `/` | web | `app_cache` only when the upstream says `immutable` |
 
 - **Server blocks.** `:80` serves ACME challenges from `ACME_WEBROOT`,

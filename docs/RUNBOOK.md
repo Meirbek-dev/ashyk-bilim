@@ -647,6 +647,30 @@ skipped).
 
 ### Other
 
+- **Large video upload says no network / HTTP 413 at the public origin**:
+  the university TLS proxy must allow the same 2 GiB as our `/ab-public/`
+  and `/ab-private/` routes. A deployment of this stack cannot change that
+  outer proxy. In its existing location forwarding these bucket paths to
+  this stack, university IT must apply:
+
+  ```nginx
+  client_max_body_size 2G;
+  proxy_request_buffering off;
+  client_body_timeout 300s;
+  proxy_send_timeout 300s;
+  proxy_read_timeout 300s;
+  ```
+
+  Keep the existing upstream and forwarded Host/path unchanged (they are
+  signed). Validate and reload the outer proxy using its operator's normal
+  procedure. Then upload a 308 MB video through the public hostname and
+  confirm PUT + finalize + activity creation succeed. A direct-host smoke
+  bypasses this proxy and cannot verify its upload limit. On 2026-10-11,
+  public requests declaring 100 MiB received `100 Continue`, while 308 MiB
+  and 2 GiB received 413 before any bytes were sent; a signed 308 MiB PUT
+  through our nginx on localhost completed with 200 in 2.7 seconds. Temporary
+  diagnostic objects were deleted. Storage HTTP rejections in the web app
+  now preserve their status; 413 uses the localized `payload-too-large` copy.
 - **Judge0 never gets healthy** (privileged, cgroups): `dc logs judge0-server
   judge0-workers`. To bring the site up without code execution, remove
   `COMPOSE_PROFILES=judge0` from `.env` and rerun the step; code runs fail

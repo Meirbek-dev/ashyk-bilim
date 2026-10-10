@@ -8,6 +8,7 @@ vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
 import { UPLOAD_MAX_BYTES, isPlayableVideoUpload, uploadFile, uploadMime } from '@services/media/uploads'
 import { getYouTubeVideoId } from '@/lib/utils'
 import { isUnplayableMediaError } from '@components/Objects/Activities/Video/Artplayer'
+import { presentApiError } from '@/lib/api/error-presenter'
 
 const file = (name: string, type: string) => new File(['0123456789'], name, { type })
 
@@ -55,6 +56,35 @@ describe('uploadFile', () => {
     await uploadFile(file('lecture.mkv', 'video/matroska'), 'block-video')
     expect(JSON.parse(mocks.apiJson.mock.calls[0]![1].body).mime).toBe('video/x-matroska')
     expect(fetchMock.mock.calls[0]![1].headers['Content-Type']).toBe('video/x-matroska')
+  })
+
+  it.each([413, 403, 503])('preserves a storage HTTP %s instead of reporting an offline connection', async status => {
+    fetchMock.mockResolvedValue(new Response(null, { status }))
+    await expect(uploadFile(file('a.mp4', 'video/mp4'), 'block-video')).rejects.toMatchObject({
+      status,
+      code: status === 413 ? 'payload-too-large' : `HTTP_${status}`,
+    })
+    expect(mocks.apiJson.mock.calls.map(([path]) => path)).toEqual(['uploads'])
+  })
+
+  it('shows the localized size error when a progress upload is rejected by the proxy', async () => {
+    class RejectedUpload extends EventTarget {
+      status = 413
+      upload = new EventTarget()
+      open = vi.fn()
+      setRequestHeader = vi.fn()
+      send() {
+        this.dispatchEvent(new Event('load'))
+      }
+    }
+    vi.stubGlobal('XMLHttpRequest', RejectedUpload)
+    const error = await uploadFile(file('a.mp4', 'video/mp4'), 'block-video', {
+      onProgress: vi.fn(),
+    }).catch(error => error)
+    expect(error).toMatchObject({ status: 413, code: 'payload-too-large' })
+    expect(presentApiError(error, { copy: { byCode: { 'payload-too-large': 'Upload size limit exceeded' } } }))
+      .toMatchObject({ description: 'Upload size limit exceeded', retryPolicy: 'none' })
+    expect(mocks.apiJson.mock.calls.map(([path]) => path)).toEqual(['uploads'])
   })
 
   it('asks before the page unloads while an upload runs, and stops asking after', async () => {
