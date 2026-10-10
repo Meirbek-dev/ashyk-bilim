@@ -11204,14 +11204,14 @@
           "showCorrectAnswersDesc": "Show which answers were correct during review.",
           "releasePolicy": {
             "NONE": {
-              "title": "Hide results",
-              "description": "Students see that the attempt was submitted, but no score or answers.",
-              "summary": "Hidden after submission"
+              "title": "Total score only",
+              "description": "Students see the total score, but not the points per question or the answers.",
+              "summary": "Total score only"
             },
             "SCORE_ONLY": {
-              "title": "Score only",
-              "description": "Students see the score, but not correct answers.",
-              "summary": "Score only"
+              "title": "Points per question",
+              "description": "Students see the points for each question, but not the correct answers.",
+              "summary": "Points per question, no answers"
             },
             "FULL": {
               "title": "Full review",
@@ -11882,10 +11882,10 @@
       "attempt": "Attempt",
       "attemptHistory": "Attempt history",
       "antiCheatNotice": "This assessment monitors browser activity. Do not switch tabs or windows during the attempt.",
-      "releaseHidden": "Results hidden after submission",
-      "releaseHiddenDescription": "Your submission is recorded, but scores and answers stay hidden until the teacher changes the policy.",
-      "releaseScoreOnly": "Score-only review",
-      "releaseScoreOnlyDescription": "You can see your score after release, but correct answers stay hidden.",
+      "releaseHidden": "Total score only",
+      "releaseHiddenDescription": "After review you will see your total score, but not the points per question or the answers.",
+      "releaseScoreOnly": "Points per question",
+      "releaseScoreOnlyDescription": "You can see the points for each question after release, but correct answers stay hidden.",
       "releaseFull": "Full result review",
       "releaseFullDescription": "You can see your score, answers, and feedback after results are released.",
       "passingScore": "Pass",
