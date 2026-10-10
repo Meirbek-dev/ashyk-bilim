@@ -1,13 +1,17 @@
 import { Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
+import { use, useId, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
 import { Slider } from '#/shared/ui/slider'
 
 import { clock } from '../../model/file-blocks'
+import { VideoEndedContext } from '../../model/video-ended'
 
-/** A hosted video file: the native `<video>` with kit controls (play, position, time, sound, full screen). */
+/**
+ * A hosted video file: the native `<video>` with kit controls (play, position, time, sound, full screen). A file
+ * the browser cannot decode (a renamed document, an unsupported codec) says so instead of an empty frame.
+ */
 export function VideoPlayer({ src }: { src: string }) {
   const frame = useRef<HTMLDivElement>(null)
   const positionLabel = useId()
@@ -16,8 +20,8 @@ export function VideoPlayer({ src }: { src: string }) {
   const [muted, setMuted] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  // A file the browser cannot decode (a renamed document, an unsupported codec): say so, not an empty frame.
   const [failed, setFailed] = useState(false)
+  const ended = use(VideoEndedContext)
   const toggle = () => {
     const element = video.current
     // play() rejects when the browser blocks it or the source fails; the button state follows the media events.
@@ -38,6 +42,7 @@ export function VideoPlayer({ src }: { src: string }) {
         onLoadedMetadata={event => setDuration(event.currentTarget.duration)}
         onVolumeChange={event => setMuted(event.currentTarget.muted)}
         onError={() => setFailed(true)}
+        onEnded={() => ended?.()}
         hidden={failed}
         className="w-full"
       >

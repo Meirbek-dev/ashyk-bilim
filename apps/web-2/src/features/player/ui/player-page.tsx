@@ -1,5 +1,5 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { useState, type ReactNode } from 'react'
 
@@ -8,9 +8,10 @@ import { CommandPalette } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { activityTypeMeta } from '#/shared/i18n/labels'
+import { toast } from '#/shared/ui/toast'
 
 import { activityKind, locate } from '../model/player'
-import { learnerStateOptions } from '../queries'
+import { learnerStateOptions, markOptions } from '../queries'
 import { BackToCourse } from './back-to-course'
 import { Contents } from './contents'
 import { EntryCard } from './entry-card'
@@ -28,6 +29,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   const { courseId, activityId } = useParams({ from: '/_authed/learn/$courseId/$activityId' })
   const { data: state } = useSuspenseQuery(learnerStateOptions(courseId))
   const [contentsOpen, setContentsOpen] = useState(false)
+  const mark = useMutation(markOptions(useQueryClient(), courseId))
   useHotkey(shortcuts.contents.hotkey, () => setContentsOpen(open => !open))
   const found = locate(state, activityId)
   // Unpublished while open: the re-read state no longer lists it.
@@ -37,6 +39,11 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   const Icon = meta.icon
   const lesson = activityKind(entry.activity_type) === 'lesson'
   const action = <PlayerAction key={entry.id} state={state} entry={entry} />
+  // A hosted video watched to the end marks its lesson done, as on the old web (B-PLY-06).
+  const videoEnded = () => {
+    if (entry.complete || mark.isPending) return
+    mark.mutate({ path: { activity_id: entry.id } }, { onSuccess: () => toast.add({ title: m.player_marked() }) })
+  }
   return (
     <FocusPage
       back={<BackToCourse courseId={courseId} />}
@@ -57,7 +64,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         {entry.blocked_reason ? (
           <p className="text-muted-foreground">{m.player_locked_text()}</p>
         ) : lesson ? (
-          <LessonContent key={entry.id} activityId={entry.id} />
+          <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (
           <EntryCard entry={entry} action={action} />
         )}
