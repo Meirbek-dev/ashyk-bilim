@@ -148,7 +148,7 @@ export default function ExamSubmitDialog({
           ) : null}
         </div>
 
-        <AlertDialogFooter className="mx-0 mb-0 grid grid-cols-1 rounded-none sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] [&_[data-slot=button]]:w-full [&_[data-slot=button]]:min-w-0 [&_[data-slot=button]]:whitespace-normal">
+        <AlertDialogFooter className="mx-0 mb-0 grid grid-cols-1 rounded-none sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] [&>*]:h-auto [&>*]:min-h-8 [&>*]:w-full [&>*]:min-w-0 [&>*]:py-1.5 [&>*]:whitespace-normal">
           <AlertDialogCancel disabled={isSubmitting} variant="ghost">
             {labels.reviewQuestions}
           </AlertDialogCancel>
