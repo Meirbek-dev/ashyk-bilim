@@ -119,6 +119,26 @@ describe('apiJson timeout', () => {
     expect((global.fetch as any).mock.calls).toHaveLength(2)
   })
 
+  it('retries on the server without reading random values during prerendering', async () => {
+    vi.stubGlobal('window', undefined)
+    const random = vi.spyOn(Math, 'random')
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce(problem({ code: 'service-unavailable', status: 503 }, { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+
+    try {
+      const promise = apiJson('flaky', { headers: { Cookie: '' } })
+      await vi.advanceTimersByTimeAsync(200)
+
+      await expect(promise).resolves.toEqual({ ok: true })
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(random).not.toHaveBeenCalled()
+    } finally {
+      random.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('sends the browser to the login page on a 401 (no refresh dance)', async () => {
     const assign = vi.fn()
     vi.stubGlobal('location', { pathname: '/dash/courses', search: '', assign })

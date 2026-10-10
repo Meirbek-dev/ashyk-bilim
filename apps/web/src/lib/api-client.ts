@@ -225,10 +225,6 @@ function isRetryableMethod(method: string | undefined): boolean {
   return RETRYABLE_METHODS.has((method ?? 'GET').toUpperCase())
 }
 
-function retryDelay(): number {
-  return 100 + Math.floor(Math.random() * 100)
-}
-
 const apiTransport = ofetch.create({
   retryStatusCodes: RETRY_STATUS_CODES,
   async onRequest({ options }) {
@@ -320,7 +316,7 @@ function buildApiTransportOptions<R extends ResponseType>(
     ignoreResponseError: false,
     responseType,
     retry: fetchInit.retry ?? (isRetryableMethod(method) ? 1 : 0),
-    retryDelay,
+    retryDelay: 150, // Keep retries deterministic during Next.js prerendering.
     retryStatusCodes: RETRY_STATUS_CODES,
     ...(combinedSignal ? { signal: combinedSignal.signal } : callerSignal ? { signal: callerSignal } : {}),
     ...(!callerSignal && effectiveTimeoutMs ? { timeout: effectiveTimeoutMs } : {}),
