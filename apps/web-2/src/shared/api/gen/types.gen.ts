@@ -1793,6 +1793,7 @@ export type CourseLearner = {
     avatar_key: string | null;
     completed_at_unix: UnixTime | null;
     display_name: string;
+    email: string;
     enrolled_at_unix: UnixTime;
     last_activity_at_unix: UnixTime | null;
     /**
@@ -2561,6 +2562,45 @@ export type EffectivePolicy = {
     time_limit_seconds: number | null;
     waive_late_penalty: boolean;
 };
+
+/**
+ * One identifier of an [`EnrollLearnersRequest`].
+ */
+export type EnrollLearnerResult = {
+    /**
+     * As sent, trimmed.
+     */
+    identifier: string;
+    outcome: EnrollOutcome;
+    user: UserSummary | null;
+};
+
+/**
+ * Enrol existing users by email or username (`POST /courses/{id}/learners`).
+ */
+export type EnrollLearnersRequest = {
+    /**
+     * Report the outcomes without enrolling anyone (CSV preview).
+     */
+    dry_run?: boolean;
+    /**
+     * Emails or usernames (case-insensitive), 1..=1000; one outcome each.
+     */
+    identifiers: Array<string>;
+};
+
+export type EnrollLearnersResponse = {
+    dry_run: boolean;
+    /**
+     * In request order.
+     */
+    results: Array<EnrollLearnerResult>;
+};
+
+/**
+ * What enrolling one identifier did (`TrailService::enrol_learners`).
+ */
+export type EnrollOutcome = 'enrolled' | 'already_enrolled' | 'duplicate' | 'not_found' | 'course_staff' | 'account_disabled';
 
 export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
 
@@ -12352,8 +12392,18 @@ export type ListCourseLearnersData = {
         course_id: CourseId;
     };
     query?: {
+        /**
+         * `next_cursor` of the previous page.
+         */
         cursor?: string;
+        /**
+         * 1..=100 (default 20).
+         */
         limit?: number;
+        /**
+         * Substring of the learner's username, display name or email.
+         */
+        q?: string;
     };
     url: '/api/v2/courses/{course_id}/learners';
 };
@@ -12379,6 +12429,48 @@ export type ListCourseLearnersResponses = {
 };
 
 export type ListCourseLearnersResponse = ListCourseLearnersResponses[keyof ListCourseLearnersResponses];
+
+export type EnrollCourseLearnersData = {
+    body: EnrollLearnersRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/learners';
+};
+
+export type EnrollCourseLearnersErrors = {
+    /**
+     * Not a roster manager
+     */
+    403: Problem;
+    /**
+     * Unknown or invisible course
+     */
+    404: Problem;
+    /**
+     * The course is archived, or a learner's trail lock is busy
+     */
+    409: Problem;
+    /**
+     * No identifiers, more than 1000, or one longer than 320 characters
+     */
+    422: Problem;
+};
+
+export type EnrollCourseLearnersError = EnrollCourseLearnersErrors[keyof EnrollCourseLearnersErrors];
+
+export type EnrollCourseLearnersResponses = {
+    /**
+     * Per-identifier outcomes
+     */
+    200: EnrollLearnersResponse;
+};
+
+export type EnrollCourseLearnersResponse = EnrollCourseLearnersResponses[keyof EnrollCourseLearnersResponses];
 
 export type RemoveCourseLearnerData = {
     body?: never;

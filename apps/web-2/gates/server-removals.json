@@ -104,6 +104,10 @@
     {
       "operation": "rank",
       "reason": "the viewer's rank comes with the dashboard (Dashboard.user_rank); no screen reads it alone"
+    },
+    {
+      "operation": "enrollCourseLearners",
+      "reason": "NOT for deletion: apps/web's roster enrols by email/CSV (QA cluster H, 2026-10-10); web-2's People tab has no enrol UI yet - build it there (this row then fails the gate and goes) before phase 9"
     }
   ]
 }

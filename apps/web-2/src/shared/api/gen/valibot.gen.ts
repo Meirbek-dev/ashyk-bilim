@@ -1228,6 +1228,26 @@ export const vEditorDocument = v.object({
     type: v.picklist(['doc'])
 });
 
+/**
+ * Enrol existing users by email or username (`POST /courses/{id}/learners`).
+ */
+export const vEnrollLearnersRequest = v.strictObject({
+    dry_run: v.optional(v.boolean()),
+    identifiers: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(1000))
+});
+
+/**
+ * What enrolling one identifier did (`TrailService::enrol_learners`).
+ */
+export const vEnrollOutcome = v.picklist([
+    'enrolled',
+    'already_enrolled',
+    'duplicate',
+    'not_found',
+    'course_staff',
+    'account_disabled'
+]);
+
 export const vEnrollmentState = v.picklist([
     'not_enrolled',
     'in_progress',
@@ -4611,6 +4631,7 @@ export const vCourseLearner = v.object({
     avatar_key: v.nullable(v.string()),
     completed_at_unix: v.nullable(vUnixTime),
     display_name: v.string(),
+    email: v.string(),
     enrolled_at_unix: vUnixTime,
     last_activity_at_unix: v.nullable(vUnixTime),
     progress_pct: v.nullable(v.number()),
@@ -5279,6 +5300,20 @@ export const vAttempt = v.object({
     updated_at_unix: vUnixTime,
     user: v.nullable(vUserSummary),
     version: v.pipe(v.number(), v.integer())
+});
+
+/**
+ * One identifier of an [`EnrollLearnersRequest`].
+ */
+export const vEnrollLearnerResult = v.object({
+    identifier: v.string(),
+    outcome: vEnrollOutcome,
+    user: v.nullable(vUserSummary)
+});
+
+export const vEnrollLearnersResponse = v.object({
+    dry_run: v.boolean(),
+    results: v.array(vEnrollLearnerResult)
 });
 
 export const vFileReviewItem = v.object({
@@ -8040,13 +8075,25 @@ export const vListCourseLearnersPath = v.object({
 
 export const vListCourseLearnersQuery = v.object({
     cursor: v.optional(v.string()),
-    limit: v.optional(v.pipe(v.number(), v.integer()))
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    q: v.optional(v.string())
 });
 
 /**
  * Page of members
  */
 export const vListCourseLearnersResponse = vCourseLearnerPage;
+
+export const vEnrollCourseLearnersBody = vEnrollLearnersRequest;
+
+export const vEnrollCourseLearnersPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Per-identifier outcomes
+ */
+export const vEnrollCourseLearnersResponse = vEnrollLearnersResponse;
 
 export const vRemoveCourseLearnerPath = v.object({
     course_id: vCourseId,
