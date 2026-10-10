@@ -392,7 +392,8 @@ function buildTeacherSection({
 }
 
 function formatFeedbackLatencyDescription(hours: number | null, t: WorkQueueTranslate): string {
-  if (hours === null) return t('builderItems.gradingSlaBreaches.latencyMissing')
+  // «Медианное время ответа — 0 ч.» next to «7 нарушений» read as a contradiction: under an hour, name the breach.
+  if (hours === null || hours < 1) return t('builderItems.gradingSlaBreaches.latencyMissing')
   if (hours < 24) return t('builderItems.gradingSlaBreaches.latencyHours', { hours: Math.round(hours) })
   return t('builderItems.gradingSlaBreaches.latencyDays', { days: Math.round(hours / 24) })
 }

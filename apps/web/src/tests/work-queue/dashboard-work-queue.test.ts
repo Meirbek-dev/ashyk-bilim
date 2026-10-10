@@ -110,6 +110,31 @@ describe('buildDashboardWorkQueue', () => {
     expect(backlog?.metric).toBe('t:metrics.submissions:1')
   })
 
+  // «Медианное время ответа с отзывом — 0 ч.» under «7 нарушений» read as a contradiction.
+  it('names an SLA breach instead of a sub-hour median latency', () => {
+    const description = (medianFeedbackLatencyHours: number | null) =>
+      buildDashboardWorkQueue({
+        access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: false },
+        courseSummary: null,
+        teacherSignal: {
+          atRiskTotal: 0,
+          gradingBacklogTotal: 0,
+          slaBreaches: 7,
+          forecastBacklog7d: 0,
+          medianFeedbackLatencyHours,
+          backlogItems: [],
+          signalAvailable: true,
+        },
+        adminSignal: null,
+        learnerSignal: null,
+        t: (key, values) => `t:${key}:${values?.hours ?? ''}`,
+      })
+        .sections.flatMap(section => section.items)
+        .find(item => item.id === 'grading-sla-breaches')?.description
+    expect(description(0.2)).toBe('t:builderItems.gradingSlaBreaches.latencyMissing:')
+    expect(description(5)).toBe('t:builderItems.gradingSlaBreaches.latencyHours:5')
+  })
+
   it('gives admins the admin section with the user directory item', () => {
     const queue = buildDashboardWorkQueue({
       access: { hasCoursesAccess: true, hasAnalyticsAccess: true, hasUsersAccess: true, hasAdminAccess: true },
