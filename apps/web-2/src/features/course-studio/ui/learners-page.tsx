@@ -8,6 +8,7 @@ import { ListState } from '#/shared/components/list-state'
 
 import { can, courseStatus, type CourseStatus } from '../model/course'
 import { courseGroupsOptions, courseOptions } from '../queries'
+import { EnrollLearners } from './enroll-learners'
 import { LearnersSection } from './learners-section'
 import { LinkGroups } from './link-groups'
 import { UnlinkGroup } from './unlink-group'
@@ -70,7 +71,8 @@ export function LearnersPage() {
           </DataList>
         </ListState>
       </section>
-      <LearnersSection courseId={courseId} />
+      {can(course, 'manage_contributors') && editable ? <EnrollLearners courseId={courseId} /> : null}
+      <LearnersSection courseId={courseId} courseName={course.name} />
     </div>
   )
 }

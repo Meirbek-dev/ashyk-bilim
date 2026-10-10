@@ -1,6 +1,6 @@
 # course-studio
 
-Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, removeCourseLearner, deleteCourse
+Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, enrollCourseLearners, removeCourseLearner, deleteCourse
 
 Рабочее место курса `/teach/courses/$courseId/{overview,content,learners,team,settings,publish}` и студия
 активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}` (5.3, 5.4). Вкладки `gradebook`,
@@ -91,6 +91,12 @@
 - B-CST-37 Секция «Сертификат»: «Предпросмотр PDF» показывает во фрейме того же источника образец, напечатанный
   сервером (`GET /certifications/{id}/preview.pdf?lang=` языка интерфейса); сохранённая правка перерисовывает его.
 - B-CST-38 Удаление курса, главы, сертификата и объявления уходит с `If-Match: version`; 412 - текст в окне подтверждения.
+- B-CST-39 `learners`, «Добавить учащихся» (при `manage_contributors`, курс не в архиве): почта или имена пользователей
+  с уже созданной учётной записью - вставкой (строки, запятые, точки с запятой, табуляция) или из CSV (UTF-8 или
+  Windows-1251, `;` или `,`, заголовок пропускается, берётся ячейка с почтой) в то же поле; до 1000 за раз (больше и
+  пустое - ошибка под полем, без запроса). Один `enrollCourseLearners`; итог - число по каждому исходу и кто не добавлен.
+- B-CST-40 «Скачать CSV» (если учащиеся есть): все страницы списка одним файлом для Excel - BOM, `;` и десятичная
+  запятая на ru/kk, `,` на en; ячейки-формулы обезврежены.
 
 ## Изменено
 

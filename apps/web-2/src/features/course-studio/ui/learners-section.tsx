@@ -8,10 +8,11 @@ import { ShowMore } from '#/shared/components/show-more'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { learnersOptions } from '../people-queries'
+import { ExportLearners } from './export-learners'
 import { RemoveLearner } from './remove-learner'
 
-/** The course's learners, newest first, "Show more" by cursor; "Remove from course" where the row allows it. */
-export function LearnersSection({ courseId }: { courseId: string }) {
+/** The course's learners (CSV export), newest first, "Show more" by cursor; "Remove from course" where the row allows it. */
+export function LearnersSection({ courseId, courseName }: { courseId: string; courseName: string }) {
   const query = useSuspenseInfiniteQuery(learnersOptions(courseId))
   return (
     <section aria-label={m.studio_learners_title()} className="flex flex-col gap-4">
@@ -19,6 +20,7 @@ export function LearnersSection({ courseId }: { courseId: string }) {
         <h2 className="text-xl font-semibold">{m.studio_learners_title()}</h2>
         <p className="text-sm text-muted-foreground">{m.studio_learners_hint()}</p>
       </div>
+      {query.data.length > 0 ? <ExportLearners courseId={courseId} courseName={courseName} /> : null}
       <ListState
         pending={false}
         error={query.error}

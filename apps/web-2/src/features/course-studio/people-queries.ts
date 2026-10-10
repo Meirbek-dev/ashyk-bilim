@@ -4,6 +4,7 @@ import { setRoster } from '#/features/course'
 import type { ApiError } from '#/shared/api/errors'
 import {
   courseArchivePreviewQueryKey,
+  enrollCourseLearnersMutation,
   listCourseLearnersInfiniteQueryKey,
   listCourseLearnersQueryKey,
   removeContributorMutation,
@@ -71,6 +72,25 @@ export const removeLearnerOptions = (queryClient: QueryClient, id: CourseId) => 
   },
   meta: { invalidates: [courseArchivePreviewQueryKey(byId(id))] },
 })
+
+/**
+ * Enrol by emails or usernames (paste or CSV): the learners lists (both shapes) and the archive counts are read again;
+ * a dry run changes nothing.
+ */
+export const enrollLearnersOptions = (id: CourseId) => ({
+  ...enrollCourseLearnersMutation(),
+  meta: { invalidates: [listCourseLearnersQueryKey(byId(id)), courseArchivePreviewQueryKey(byId(id))] },
+})
+
+/** Every learner of the course for the CSV export: keyset pages one after another. */
+export async function allLearners(id: CourseId, cursor?: string): Promise<CourseLearner[]> {
+  const { data } = await listCourseLearners({
+    ...byId(id),
+    query: { limit: 100, ...(cursor ? { cursor } : {}) },
+    throwOnError: true,
+  })
+  return data.next_cursor ? [...data.items, ...(await allLearners(id, data.next_cursor))] : data.items
+}
 
 // ---- Team: the cached roster takes each answer. ----
 
