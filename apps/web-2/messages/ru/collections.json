@@ -37,5 +37,8 @@
   "collections_back": "К коллекции",
   "collections_delete_title": "Удалить коллекцию «{name}»?",
   "collections_delete_consequence": "Курсы останутся на платформе, исчезнет только коллекция.",
-  "collections_deleted": "Коллекция удалена"
+  "collections_deleted": "Коллекция удалена",
+  "collections_field_courses": "Курсы",
+  "collections_field_courses_hint": "Найдите курс по названию и выберите его; в коллекции курсы идут в этом порядке.",
+  "collections_courses_placeholder": "Название курса"
 }

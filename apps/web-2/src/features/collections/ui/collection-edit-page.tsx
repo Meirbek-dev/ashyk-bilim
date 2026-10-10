@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { UpdateCollectionRequest } from '#/shared/api/gen/types.gen'
@@ -10,10 +10,12 @@ import { Link } from '#/shared/components/link'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { Skeleton } from '#/shared/ui/skeleton'
 import { toast } from '#/shared/ui/toast'
 
 import { isStale } from '../model/collections'
 import { collectionOptions, updateCollectionOptions } from '../queries'
+import { CoursePicker } from './course-picker'
 
 /** The one edit place of a collection. Saves with `If-Match: version`; a 412 opens the conflict dialog. */
 export function CollectionEditPage() {
@@ -30,6 +32,7 @@ export function CollectionEditPage() {
     name: query.data.name,
     description: query.data.description,
     public: query.data.public,
+    courses: query.data.courses.map(course => course.id),
   }))
   const request = (body: UpdateCollectionRequest, version: number) => ({
     path: { collection_id: collectionId },
@@ -77,6 +80,13 @@ export function CollectionEditPage() {
             <field.SwitchField label={m.collections_field_public()} description={m.collections_field_public_hint()} />
           )}
         </form.AppField>
+        <form.Field name="courses">
+          {field => (
+            <Suspense fallback={<Skeleton className="h-row w-full" />}>
+              <CoursePicker initial={query.data.courses} onChange={field.handleChange} />
+            </Suspense>
+          )}
+        </form.Field>
       </SettingsSection>
       <ConflictDialog
         open={conflict}

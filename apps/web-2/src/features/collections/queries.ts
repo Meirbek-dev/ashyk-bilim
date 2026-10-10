@@ -8,6 +8,7 @@ import {
   getCollectionOptions,
   getCollectionQueryKey,
   listCollectionsInfiniteQueryKey,
+  listCoursesOptions,
   searchOptions,
   updateCollectionMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -57,6 +58,10 @@ export const collectionsSearchOptions = (q: string) => ({
   ...searchOptions({ query: { q, limit: SEARCH_LIMIT } }),
   select: (results: SearchResults) => results.collections,
 })
+
+/** Courses a collection can hold, by name: the catalog the editor sees (first page of matches). */
+export const pickableCoursesOptions = (q: string) =>
+  listCoursesOptions({ query: { limit: SEARCH_LIMIT, ...(q ? { q } : {}) } })
 
 export const collectionOptions = (id: CollectionId) => getCollectionOptions({ path: { collection_id: id } })
 

@@ -35,5 +35,8 @@
   "collections_back": "Жинаққа оралу",
   "collections_delete_title": "«{name}» атты жинақты жою керек пе?",
   "collections_delete_consequence": "Курстар платформада қалады, тек жинақ жойылады.",
-  "collections_deleted": "Жинақ жойылды"
+  "collections_deleted": "Жинақ жойылды",
+  "collections_field_courses": "Курстар",
+  "collections_field_courses_hint": "Курсты атауы бойынша тауып, таңдаңыз; жинақта курстар осы ретпен тұрады.",
+  "collections_courses_placeholder": "Курс атауы"
 }
