@@ -54,8 +54,8 @@ export const InsightFeedItem = zod.object({
     .record(
       zod.string(),
       zod
-        .union([zod.string(), zod.number()])
-        .describe('A string or a number: a message placeholder value, a saved query value.'),
+        .union([zod.string(), zod.number(), zod.array(zod.string())])
+        .describe('A message placeholder, including lists of codes such as missing event sources.'),
     )
     .describe('Placeholders for a stable message `code`, by name.'),
   priority: zod.int(),

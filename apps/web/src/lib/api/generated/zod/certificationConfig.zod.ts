@@ -43,9 +43,15 @@ export const CertificationConfig = zod
         'specialization',
       ])
       .optional(),
+    course_end: zod.string().optional(),
+    course_start: zod.string().optional().describe('Optional training dates, YYYY-MM-DD; blank means omitted.'),
+    training_hours: zod
+      .string()
+      .optional()
+      .describe('Optional whole training hours (1–100000), stored as form text; blank means omitted.'),
   })
   .describe(
-    "`certifications.config`: what the certificate editor stores. The server\nreads `certification_name`, `certification_type` and\n`certificate_instructor`; the rest is the web's.",
+    '`certifications.config`: what the certificate editor stores. The server\nreads the title, type, lecturer and optional training details.',
   )
 
 export type CertificationConfig = zod.input<typeof CertificationConfig>

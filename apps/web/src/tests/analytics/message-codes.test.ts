@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { AnalyticsCode } from '@/lib/api/generated/zod'
+import { AnalyticsCode, MessageParams, SavedQuery } from '@/lib/api/generated/zod'
 import { inlangToIcu } from '@/i18n/inlang-to-icu'
 import en from '@/messages/en-US.json'
 import kk from '@/messages/kk-KZ.json'
@@ -10,6 +10,13 @@ import ru from '@/messages/ru-RU.json'
 // Every code the server can emit (the openapi enum, via the generated client)
 // needs a title and a body in each catalog, or ru/kk users see raw codes.
 describe('TeacherAnalytics.messages', () => {
+  it('accepts missing event source lists without accepting arbitrary JSON or changing saved filters', () => {
+    const params = { sources: ['exam_attempts', 'code_submissions'], count: 2, course_name: 'Course' }
+    expect(MessageParams.parse(params)).toEqual(params)
+    expect(MessageParams.safeParse({ sources: { exam_attempts: true } }).success).toBe(false)
+    expect(SavedQuery.safeParse({ course_ids: ['course'] }).success).toBe(false)
+  })
+
   const catalogs = { 'ru-RU': ru, 'kk-KZ': kk, 'en-US': en } as const
 
   it.each(Object.entries(catalogs))('%s has a title and body for every AnalyticsCode', (_locale, catalog) => {

@@ -49,7 +49,7 @@
 ## Ждёт сервера
 
 - `SavedView.query` и `SaveViewRequest.query` - словарь скаляров без схемы фильтров, `view_type` - строка: разбираем схемой фильтров (`/analytics/teacher/saved-views`).
-- `params` (`MessageParams`) - словарь `string | number` без схемы по `code`: имена параметров читаются по описанию `AnalyticsCode`, нужен tagged union. `missing_event_sources` шлёт `sources` массивом вопреки схеме, поэтому блок качества данных не показывается.
+- `params` (`MessageParams`) - словарь `string | number | string[]` без схемы по `code`: имена параметров читаются по описанию `AnalyticsCode`, нужен tagged union. Список `missing_event_sources.sources` поддерживается контрактом.
 - Правка и закрытие вмешательства: операции нет.
 
 ## Не перенесено (контракт есть)

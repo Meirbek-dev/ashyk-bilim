@@ -2033,6 +2033,20 @@ export const vActivityDetail = v.intersect([vActivity, v.object({
         settings: vActivitySettings
     })]);
 
+/**
+ * A message placeholder, including lists of codes such as missing event sources.
+ */
+export const vMessageParam = v.union([
+    v.string(),
+    v.number(),
+    v.array(v.string())
+]);
+
+/**
+ * Placeholders for a stable message `code`, by name.
+ */
+export const vMessageParams = v.object({});
+
 export const vMetricCard = v.object({
     benchmark: v.nullable(v.number()),
     benchmark_label: v.nullable(v.string()),
@@ -2989,11 +3003,6 @@ export const vSavedViewId = v.pipe(v.string(), v.uuid());
  * A string or a number: a message placeholder value, a saved query value.
  */
 export const vScalar = v.union([v.string(), v.number()]);
-
-/**
- * Placeholders for a stable message `code`, by name.
- */
-export const vMessageParams = v.object({});
 
 /**
  * A saved analytics filter state: query-string parameters by name.

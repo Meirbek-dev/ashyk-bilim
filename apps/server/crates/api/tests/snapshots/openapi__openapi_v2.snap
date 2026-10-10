@@ -11057,9 +11057,27 @@ expression: json
         },
         "type": "object"
       },
+      "MessageParam": {
+        "description": "A message placeholder, including lists of codes such as missing event sources.",
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "format": "double",
+            "type": "number"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ]
+      },
       "MessageParams": {
         "additionalProperties": {
-          "$ref": "#/components/schemas/Scalar"
+          "$ref": "#/components/schemas/MessageParam"
         },
         "description": "Placeholders for a stable message `code`, by name.",
         "propertyNames": {

@@ -53,7 +53,16 @@ pub enum Scalar {
 
 /// Placeholders for a stable message `code`, by name.
 #[derive(Serialize, ToSchema)]
-pub struct MessageParams(pub BTreeMap<String, Scalar>);
+pub struct MessageParams(pub BTreeMap<String, MessageParam>);
+
+/// A message placeholder, including lists of codes such as missing event sources.
+#[derive(Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum MessageParam {
+    Text(String),
+    Number(f64),
+    Strings(Vec<String>),
+}
 
 /// A saved analytics filter state: query-string parameters by name.
 #[derive(Serialize, ToSchema)]

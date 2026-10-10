@@ -3754,10 +3754,15 @@ export type MediaContent = {
 };
 
 /**
+ * A message placeholder, including lists of codes such as missing event sources.
+ */
+export type MessageParam = string | number | Array<string>;
+
+/**
  * Placeholders for a stable message `code`, by name.
  */
 export type MessageParams = {
-    [key: string]: Scalar;
+    [key: string]: MessageParam;
 };
 
 export type MetricCard = {

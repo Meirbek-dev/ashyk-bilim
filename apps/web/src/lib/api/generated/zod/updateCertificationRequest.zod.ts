@@ -44,6 +44,12 @@ export const UpdateCertificationRequest = zod.object({
           'specialization',
         ])
         .optional(),
+      course_end: zod.string().optional(),
+      course_start: zod.string().optional().describe('Optional training dates, YYYY-MM-DD; blank means omitted.'),
+      training_hours: zod
+        .string()
+        .optional()
+        .describe('Optional whole training hours (1–100000), stored as form text; blank means omitted.'),
     })
     .describe('An object of at most 16 KiB serialized.'),
 })
