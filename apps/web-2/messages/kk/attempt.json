@@ -83,6 +83,7 @@
   "attempt_breakdown_heading": "Сұрақтар бойынша талдау",
   "attempt_correct": "Дұрыс",
   "attempt_incorrect": "Қате",
+  "attempt_partly": "Ішінара дұрыс",
   "attempt_item_points": "{max} ішінен {score}",
   "attempt_correct_answer": "Дұрыс жауап",
   "attempt_no_answer": "Жауап жоқ",

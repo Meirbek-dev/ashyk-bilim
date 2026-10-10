@@ -5,6 +5,9 @@ import { formatNumber } from '#/shared/i18n/format'
 
 import { answerText, correctText } from '../model/answer-text'
 
+/** Points to hundredths, as the grader rounds them («1,126 из 3» read as noise). */
+const round2 = (value: number) => Math.round(value * 100) / 100
+
 type BreakdownProps = { items: AssessmentItem[]; graded: GradedItem[] }
 
 /**
@@ -20,6 +23,8 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
           const index = items.findIndex(item => item.id === entry.item_id)
           const item = items[index]
           const given = item ? answerText(item.body, entry.user_answer) : ''
+          // The breakdown keeps points as a share of 100; the learner saw the item's own points («1 балл»).
+          const scale = item && entry.max_score > 0 ? item.max_score / entry.max_score : 1
           return (
             <li key={entry.item_id} className="flex flex-col gap-1 py-4 text-sm">
               <div className="flex flex-wrap items-center gap-2">
@@ -28,12 +33,15 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
                   {item ? `: ${item.title}` : ''}
                 </p>
                 {entry.correct === null ? null : (
-                  <StatusBadge tone={entry.correct ? 'success' : 'destructive'}>
-                    {entry.correct ? m.attempt_correct() : m.attempt_incorrect()}
+                  <StatusBadge tone={entry.correct ? 'success' : entry.score > 0 ? 'warning' : 'destructive'}>
+                    {entry.correct ? m.attempt_correct() : entry.score > 0 ? m.attempt_partly() : m.attempt_incorrect()}
                   </StatusBadge>
                 )}
                 <span className="text-muted-foreground tabular-nums">
-                  {m.attempt_item_points({ score: formatNumber(entry.score), max: formatNumber(entry.max_score) })}
+                  {m.attempt_item_points({
+                    score: formatNumber(round2(entry.score * scale)),
+                    max: formatNumber(round2(entry.max_score * scale)),
+                  })}
                 </span>
               </div>
               <p className="wrap-anywhere">

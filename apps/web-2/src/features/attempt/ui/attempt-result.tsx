@@ -66,7 +66,14 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
           </section>
         ) : null}
         {grading?.items?.length ? <ResultBreakdown items={assessment.items} graded={grading.items} /> : null}
-        {released ? <ItemComments submissionId={attempt.id} /> : null}
+        {released ? (
+          <ItemComments
+            submissionId={attempt.id}
+            items={assessment.items}
+            // A comment the breakdown already shows under its question is not repeated.
+            shown={(grading?.items ?? []).filter(entry => entry.feedback && !entry.feedback_code).map(e => e.item_id)}
+          />
+        ) : null}
         <Link from={ATTEMPT_PATH} to="." search={{}}>
           {m.attempt_all_attempts()}
         </Link>

@@ -83,6 +83,7 @@
   "attempt_breakdown_heading": "Разбор по вопросам",
   "attempt_correct": "Верно",
   "attempt_incorrect": "Неверно",
+  "attempt_partly": "Частично верно",
   "attempt_item_points": "{score} из {max}",
   "attempt_correct_answer": "Правильный ответ",
   "attempt_no_answer": "Нет ответа",

@@ -83,6 +83,7 @@
   "attempt_breakdown_heading": "Question breakdown",
   "attempt_correct": "Correct",
   "attempt_incorrect": "Incorrect",
+  "attempt_partly": "Partly correct",
   "attempt_item_points": "{score} of {max}",
   "attempt_correct_answer": "Correct answer",
   "attempt_no_answer": "No answer",

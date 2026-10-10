@@ -15,10 +15,13 @@ export function answerText(body: ItemBody, answer: ItemAnswer | null | undefined
   if (answer.kind === 'open_text') return answer.text ?? ''
   if (answer.kind === 'code') return answer.source ?? ''
   if (answer.kind === 'matching') return pairs(answer.matches ?? [])
-  const labels = body.kind === 'form' ? (body.fields ?? []) : []
-  return Object.entries(answer.values ?? {})
-    .filter(([, value]) => value.trim())
-    .map(([id, value]) => `${labels.find(field => field.id === id)?.label ?? id}: ${value}`)
+  // In the form's own field order (the stored map is sorted by field id).
+  const fields = body.kind === 'form' ? (body.fields ?? []) : []
+  const values = answer.values ?? {}
+  const order = [...fields.map(field => field.id), ...Object.keys(values).filter(id => !fields.some(f => f.id === id))]
+  return order
+    .filter(id => values[id]?.trim())
+    .map(id => `${fields.find(field => field.id === id)?.label ?? id}: ${values[id]}`)
     .join('; ')
 }
 
