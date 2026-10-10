@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from '#/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '#/shared/ui/avatar'
 
 const initials = (name: string) =>
   name
@@ -9,10 +9,14 @@ const initials = (name: string) =>
     .join('')
     .toUpperCase()
 
-/** A person's initials on the stock Avatar: the profile menu trigger, people in lists. Decorative next to the name. */
-export function UserAvatar({ name }: { name: string }) {
+/**
+ * A person's photo (public `avatar_key`, served at /content/<key>), else the initials, on the stock Avatar: the
+ * profile menu trigger, people in lists. Decorative next to the name.
+ */
+export function UserAvatar({ name, avatarKey }: { name: string; avatarKey?: string | null | undefined }) {
   return (
     <Avatar aria-hidden>
+      {avatarKey ? <AvatarImage src={`/content/${avatarKey}`} alt="" /> : null}
       <AvatarFallback>{initials(name)}</AvatarFallback>
     </Avatar>
   )

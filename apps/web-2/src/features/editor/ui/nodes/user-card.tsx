@@ -8,7 +8,7 @@ export function UserCard({ userId }: { userId: string }) {
   const { data } = useSuspenseQuery(publicProfileByIdOptions({ path: { user_id: userId } }))
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
-      <UserAvatar name={data.display_name || data.username} />
+      <UserAvatar name={data.display_name || data.username} avatarKey={data.avatar_key} />
       <div className="flex min-w-0 flex-col gap-1">
         <p className="font-medium">{data.display_name || data.username}</p>
         <p className="text-sm text-muted-foreground">@{data.username}</p>

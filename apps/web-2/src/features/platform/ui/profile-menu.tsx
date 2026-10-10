@@ -20,7 +20,12 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
   const workspace = useWorkspaceChoice(session, current)
   return (
     <AccountMenu
-      trigger={<IconButton label={m.platform_profile_menu()} icon={<UserAvatar name={session.user.display_name} />} />}
+      trigger={
+        <IconButton
+          label={m.platform_profile_menu()}
+          icon={<UserAvatar name={session.user.display_name} avatarKey={session.user.avatar_key} />}
+        />
+      }
       title={session.user.display_name}
       detail={session.user.username}
       choice={workspace}

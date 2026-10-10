@@ -10,7 +10,7 @@ export function LeaderboardRow({ entry, mine }: { entry: LeaderboardEntry; mine:
   return (
     <li className="flex min-h-row items-center gap-3 py-2" aria-current={mine ? 'true' : undefined}>
       <span className="w-10 shrink-0 text-sm text-muted-foreground tabular-nums">#{formatNumber(entry.rank)}</span>
-      <UserAvatar name={entry.display_name} />
+      <UserAvatar name={entry.display_name} avatarKey={entry.avatar_key} />
       <div className="flex min-w-0 flex-1 flex-col">
         <p className="flex flex-wrap items-center gap-2">
           <Link to="/users/$username" params={{ username: entry.username }}>

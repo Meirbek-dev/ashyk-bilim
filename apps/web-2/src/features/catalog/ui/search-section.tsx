@@ -35,7 +35,7 @@ export function SearchSection({ kind, results }: { kind: SearchKind; results: Se
         <DataList items={results.users} getKey={user => user.id}>
           {user => (
             <div className="flex items-center gap-3">
-              <UserAvatar name={user.display_name} />
+              <UserAvatar name={user.display_name} avatarKey={user.avatar_key} />
               <div className="flex min-w-0 flex-col">
                 <h3 className="font-medium wrap-anywhere">
                   <Link to="/users/$username" params={{ username: user.username }}>

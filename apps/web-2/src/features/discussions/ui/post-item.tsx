@@ -47,7 +47,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
   return (
     <article className="flex flex-col gap-3">
       <header className="flex flex-wrap items-center gap-2 text-sm">
-        <UserAvatar name={author} />
+        <UserAvatar name={author} avatarKey={item.author?.avatar_key} />
         <span className="font-medium wrap-anywhere">{author}</span>
         <span className="text-muted-foreground">{formatDate(item.created_at_unix)}</span>
         {hidden ? <StatusBadge tone="warning">{m.discussions_hidden()}</StatusBadge> : null}
