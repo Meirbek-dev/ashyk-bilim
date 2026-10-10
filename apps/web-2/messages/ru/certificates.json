@@ -8,5 +8,5 @@
   "certificates_code": "Код сертификата",
   "certificates_download_pdf": "Скачать PDF",
   "certificates_og_title": "Сертификат: {holder}, {course}",
-  "certificates_summary": "Подлинный сертификат, выдан {date}."
+  "certificates_summary": "Подлинный сертификат, выдан {date}"
 }
