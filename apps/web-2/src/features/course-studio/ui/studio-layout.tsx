@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
+import { Outlet, useBlocker, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
@@ -34,6 +34,10 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const [save, setSave] = useState<{ activityId: string; state: SaveState } | null>(null)
   const state = save?.activityId === activityId ? save.state : null
+  // A reload or a closed tab inside the autosave pause (or with a refused save) would drop the edit: the browser asks
+  // first. In-app links need no prompt: leaving the tab sends what waits (the autosave hooks flush on unmount).
+  const unsaved = state === 'dirty' || state === 'saving' || state === 'failed'
+  useBlocker({ shouldBlockFn: () => false, enableBeforeUnload: unsaved, disabled: !unsaved })
   const back = (
     <RouterLink
       to="/teach/courses/$courseId/content"
