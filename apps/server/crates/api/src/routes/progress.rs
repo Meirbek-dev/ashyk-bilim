@@ -234,9 +234,12 @@ pub async fn learner_course_state(
 
 /// The course's members, newest first, with their progress (course write
 /// access). Keyset pages.
+///
+/// `q` searches username, display name and email. Members of a linked
+/// usergroup appear once they hold a run (opened the course or were enrolled).
 #[utoipa::path(
     get, path = "/courses/{course_id}/learners", tag = "progress",
-    params(("course_id" = CourseId, Path, description = "Course id"), crate::dto::KeysetQuery),
+    params(("course_id" = CourseId, Path, description = "Course id"), crate::dto::progress::CourseLearnersQuery),
     responses(
         (status = 200, description = "Page of members", body = crate::dto::progress::CourseLearnerPage),
         (status = 403, description = "No course write access", body = Problem,
@@ -249,7 +252,7 @@ pub async fn list_course_learners(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-    Query(query): Query<crate::dto::KeysetQuery>,
+    Query(query): Query<crate::dto::progress::CourseLearnersQuery>,
 ) -> ApiResult<Json<crate::dto::progress::CourseLearnerPage>> {
     use crate::dto::progress::{CourseLearner, CourseLearnerAction, CourseLearnerPage};
     let cursor = query
@@ -267,7 +270,13 @@ pub async fn list_course_learners(
         .transpose()?;
     let (rows, next) = state
         .trail
-        .course_learners(&actor, id, cursor, query.limit.unwrap_or(20))
+        .course_learners(
+            &actor,
+            id,
+            query.q.as_deref(),
+            cursor,
+            query.limit.unwrap_or(20),
+        )
         .await?;
     let removable = state
         .courses
@@ -281,6 +290,7 @@ pub async fn list_course_learners(
                 user_id: r.user_id,
                 username: r.username,
                 display_name: r.display_name,
+                email: r.email,
                 avatar_key: r.avatar_key,
                 progress_pct: r.progress_pct,
                 completed_at_unix: r.completed_at,
@@ -295,6 +305,56 @@ pub async fn list_course_learners(
             .collect(),
         next_cursor: next.map(|c| c.to_string()),
     }))
+}
+
+/// Enrol existing users by email or username.
+///
+/// Roster managers: the creator, an active maintainer,
+/// `course:manage:platform`; open course. One outcome per identifier, in order: `enrolled`, `already_enrolled`,
+/// `duplicate` (same user earlier in the list), `not_found`, `course_staff`,
+/// `account_disabled`. No account is created. `dry_run` previews the
+/// outcomes and writes nothing. Re-sending is safe (members answer
+/// `already_enrolled`).
+#[utoipa::path(
+    post, path = "/courses/{course_id}/learners", tag = "progress",
+    params(("course_id" = CourseId, Path, description = "Course id")),
+    request_body = crate::dto::progress::EnrollLearnersRequest,
+    responses(
+        (status = 200, description = "Per-identifier outcomes", body = crate::dto::progress::EnrollLearnersResponse),
+        (status = 403, description = "Not a roster manager", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or invisible course", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "The course is archived, or a learner's trail lock is busy", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "No identifiers, more than 1000, or one longer than 320 characters",
+         body = Problem, content_type = "application/problem+json"),
+    )
+)]
+pub async fn enroll_course_learners(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+    body: axum::body::Bytes,
+) -> ApiResult<Json<crate::dto::progress::EnrollLearnersResponse>> {
+    use crate::dto::progress::{
+        EnrollLearnerResult, EnrollLearnersRequest, EnrollLearnersResponse,
+    };
+    // UX-311: permission before the body.
+    state.courses.require_roster_manager(&actor, id).await?;
+    let request = crate::extract::ValidJson::<EnrollLearnersRequest>::parse(&body)?;
+    // Each enrolment commits on its own; finish the list on a hang-up (BUG-221).
+    detached(async move {
+        let results = state
+            .trail
+            .enrol_learners(&actor, id, &request.identifiers, request.dry_run)
+            .await?;
+        Ok(Json(EnrollLearnersResponse {
+            dry_run: request.dry_run,
+            results: results.into_iter().map(EnrollLearnerResult::new).collect(),
+        }))
+    })
+    .await
 }
 
 /// Remove a learner from the course (roster managers): their membership

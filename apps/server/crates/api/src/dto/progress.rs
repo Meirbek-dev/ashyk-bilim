@@ -146,6 +146,7 @@ pub struct CourseLearner {
     pub user_id: UserId,
     pub username: String,
     pub display_name: String,
+    pub email: String,
     pub avatar_key: Option<String>,
     /// `null` until the progress projection has a row.
     pub progress_pct: Option<f64>,
@@ -169,4 +170,64 @@ pub enum CourseLearnerAction {
 pub struct CourseLearnerPage {
     pub items: Vec<CourseLearner>,
     pub next_cursor: Option<String>,
+}
+
+/// `GET /courses/{id}/learners`: keyset paging plus a search.
+#[derive(Debug, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+#[serde(deny_unknown_fields)]
+pub struct CourseLearnersQuery {
+    /// `next_cursor` of the previous page.
+    pub cursor: Option<String>,
+    /// 1..=100 (default 20).
+    pub limit: Option<i64>,
+    /// Substring of the learner's username, display name or email.
+    pub q: Option<String>,
+}
+
+/// Enrol existing users by email or username (`POST /courses/{id}/learners`).
+#[derive(Debug, serde::Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EnrollLearnersRequest {
+    /// Emails or usernames (case-insensitive), 1..=1000; one outcome each.
+    #[garde(length(min = 1, max = 1000), inner(length(chars, min = 1, max = 320)))]
+    #[schema(min_items = 1, max_items = 1000)]
+    pub identifiers: Vec<String>,
+    /// Report the outcomes without enrolling anyone (CSV preview).
+    #[garde(skip)]
+    #[serde(default)]
+    pub dry_run: bool,
+}
+
+/// One identifier of an [`EnrollLearnersRequest`].
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EnrollLearnerResult {
+    /// As sent, trimmed.
+    pub identifier: String,
+    pub outcome: domain::EnrollOutcome,
+    /// The matched account; `null` for `not_found`.
+    pub user: Option<crate::dto::file_submissions::UserSummary>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EnrollLearnersResponse {
+    pub dry_run: bool,
+    /// In request order.
+    pub results: Vec<EnrollLearnerResult>,
+}
+
+impl EnrollLearnerResult {
+    #[must_use]
+    pub fn new(r: domain::EnrolResult) -> Self {
+        Self {
+            identifier: r.identifier,
+            outcome: r.outcome,
+            user: r.user.map(|u| crate::dto::file_submissions::UserSummary {
+                id: u.user_id,
+                username: u.username,
+                display_name: u.display_name,
+                email: u.email,
+            }),
+        }
+    }
 }

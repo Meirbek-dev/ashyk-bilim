@@ -823,6 +823,7 @@ pub struct CourseLearnerRow {
     pub user_id: UserId,
     pub username: String,
     pub display_name: String,
+    pub email: String,
     pub avatar_key: Option<String>,
     pub progress_pct: Option<f64>,
     pub completed_at: Option<i64>,
@@ -830,17 +831,21 @@ pub struct CourseLearnerRow {
     pub enrolled_at: i64,
 }
 
-/// Newest members first (keyset on the run id, UUIDv7 = join time).
+/// Newest members first (keyset on the run id, UUIDv7 = join time). `q`
+/// filters on a substring of the username, display name or email. Staff
+/// with a leftover run are no members (BUG-288).
 pub async fn list_course_learners(
     pool: &PgPool,
     course_id: CourseId,
+    q: Option<&str>,
     cursor: Option<TrailRunId>,
     limit: i64,
 ) -> Result<Vec<CourseLearnerRow>> {
+    let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         CourseLearnerRow,
         r#"SELECT tr.id AS "run_id: TrailRunId", u.id AS "user_id: UserId", u.username,
-                  u.display_name, u.avatar_key,
+                  u.display_name, u.email, u.avatar_key,
                   cp.progress_pct AS "progress_pct?",
                   (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?",
                   (extract(epoch FROM cp.last_activity_at))::bigint AS "last_activity_at?",
@@ -849,11 +854,54 @@ pub async fn list_course_learners(
            JOIN users u ON u.id = tr.user_id
            LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
            WHERE tr.course_id = $1 AND ($2::uuid IS NULL OR tr.id < $2)
+             AND NOT is_course_staff(tr.course_id, tr.user_id)
+             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\'
+                  OR u.email ILIKE $4 ESCAPE '\')
            ORDER BY tr.id DESC
            LIMIT $3"#,
         course_id.0,
         cursor.map(|c| c.0),
-        limit
+        limit,
+        pattern.as_deref(),
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// A user named by an enrolment identifier, with where they stand on the
+/// course (`resolve_enrol_targets`).
+#[derive(Debug, Clone)]
+pub struct EnrolTargetRow {
+    pub user_id: UserId,
+    pub username: String,
+    pub display_name: String,
+    pub email: String,
+    pub active: bool,
+    /// Holds a run on the course.
+    pub member: bool,
+    /// `is_course_staff`: never enrolled (BUG-287).
+    pub staff: bool,
+}
+
+/// The users whose lower-cased email or username is in `logins` (already
+/// lower-cased by the caller).
+pub async fn resolve_enrol_targets(
+    pool: &PgPool,
+    course_id: CourseId,
+    logins: &[String],
+) -> Result<Vec<EnrolTargetRow>> {
+    let rows = sqlx::query_as!(
+        EnrolTargetRow,
+        r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.email,
+                  u.status = 'active' AS "active!",
+                  EXISTS (SELECT 1 FROM trail_runs tr
+                          WHERE tr.course_id = $1 AND tr.user_id = u.id) AS "member!",
+                  is_course_staff($1, u.id) AS "staff!"
+           FROM users u
+           WHERE lower(u.email) = ANY($2) OR lower(u.username) = ANY($2)"#,
+        course_id.0,
+        logins,
     )
     .fetch_all(pool)
     .await?;

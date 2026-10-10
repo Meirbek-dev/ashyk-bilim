@@ -565,3 +565,162 @@ async fn applicant_withdraws_pending_application(pool: PgPool) {
         StatusCode::FORBIDDEN
     );
 }
+
+/// The learner roster (QA cluster H): roster managers enrol existing users
+/// by email or username with one outcome per identifier; `dry_run` writes
+/// nothing; re-sending is idempotent; the list searches and shows emails;
+/// learners, other teachers and anonymous callers are refused; archived
+/// courses take no enrolments.
+#[sqlx::test(migrations = "../../migrations")]
+async fn roster_enrols_by_email_or_username(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let stranger = instructor(&app, "stranger").await;
+    let course = open_public_course(&app, &teacher).await;
+    let alice = app
+        .create_user("alice", "Alice@Example.com", &["user"])
+        .await;
+    app.create_user("bob", "bob@example.com", &["user"]).await;
+    let carol = app
+        .create_user("carol", "carol@example.com", &["user"])
+        .await;
+    sqlx::query("UPDATE users SET status = 'disabled' WHERE id = $1")
+        .bind(carol.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let alice_session = app
+        .mint_session_for(alice, &["course:read:all", "trail:submit:assigned"])
+        .await;
+    let enrol = format!("/api/v2/courses/{course}/learners");
+    let body = |dry_run: bool| {
+        serde_json::json!({
+            "identifiers": [" ALICE@example.com ", "bob", "nobody@example.com", "alice",
+                            "teacher", "carol@example.com"],
+            "dry_run": dry_run,
+        })
+    };
+    let outcomes = |res: &ab_testkit::TestResponse| -> Vec<String> {
+        res.json()["results"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["outcome"].as_str().unwrap().to_owned())
+            .collect()
+    };
+
+    // Dry run: the outcomes an import would have, nothing written.
+    let preview = app.post_as(&teacher, &enrol, &body(true)).await;
+    assert_eq!(preview.status, StatusCode::OK, "{}", preview.text());
+    assert_eq!(preview.json()["dry_run"], true);
+    assert_eq!(
+        outcomes(&preview),
+        [
+            "enrolled",
+            "enrolled",
+            "not_found",
+            "duplicate",
+            "course_staff",
+            "account_disabled"
+        ]
+    );
+    assert_eq!(
+        preview.json()["results"][0]["identifier"],
+        "ALICE@example.com"
+    );
+    assert_eq!(preview.json()["results"][0]["user"]["username"], "alice");
+    assert!(preview.json()["results"][2]["user"].is_null());
+    let empty = app.get_as(&teacher, &enrol).await;
+    assert_eq!(empty.json()["items"], serde_json::json!([]));
+
+    // The real thing, then a retry: members answer already_enrolled.
+    let done = app.post_as(&teacher, &enrol, &body(false)).await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    assert_eq!(outcomes(&done)[..2], ["enrolled", "enrolled"]);
+    let again = app.post_as(&teacher, &enrol, &body(false)).await;
+    assert_eq!(
+        outcomes(&again)[..2],
+        ["already_enrolled", "already_enrolled"]
+    );
+    let listed = app.get_as(&teacher, &enrol).await;
+    let items = listed.json()["items"].as_array().unwrap().clone();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[1]["email"], "Alice@Example.com");
+    let found = app
+        .get_as(&teacher, &format!("{enrol}?q=EXAMPLE.COM&limit=1"))
+        .await;
+    assert_eq!(found.json()["items"].as_array().unwrap().len(), 1);
+    assert!(found.json()["next_cursor"].is_string());
+    let bob = app.get_as(&teacher, &format!("{enrol}?q=bo")).await;
+    assert_eq!(bob.json()["items"][0]["username"], "bob");
+    assert_eq!(bob.json()["items"].as_array().unwrap().len(), 1);
+    let literal = app.get_as(&teacher, &format!("{enrol}?q=%25")).await;
+    assert_eq!(literal.json()["items"], serde_json::json!([]));
+    let state = app
+        .get_as(
+            &alice_session,
+            &format!("/api/v2/courses/{course}/learner-state"),
+        )
+        .await;
+    assert_eq!(state.json()["enrolled"], true, "{}", state.text());
+
+    // Who may not: a learner, another course's teacher, a guest.
+    let one = serde_json::json!({ "identifiers": ["bob"] });
+    assert_eq!(
+        app.post_as(&alice_session, &enrol, &one).await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.post_as(&stranger, &enrol, &one).await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.post_json(&enrol, &one).await.status,
+        StatusCode::UNAUTHORIZED
+    );
+    // An active maintainer may.
+    let maint = instructor(&app, "maint").await;
+    let added = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course}/contributors"),
+            &serde_json::json!({ "username": "maint", "role": "maintainer" }),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{}", added.text());
+    let by_maint = app.post_as(&maint, &enrol, &one).await;
+    assert_eq!(by_maint.status, StatusCode::OK, "{}", by_maint.text());
+
+    // Malformed lists are 422.
+    for bad in [
+        serde_json::json!({ "identifiers": [] }),
+        serde_json::json!({ "identifiers": vec!["x"; 1001] }),
+        serde_json::json!({ "identifiers": ["x".repeat(321)] }),
+        serde_json::json!({ "identifiers": ["bob"], "extra": 1 }),
+    ] {
+        let res = app.post_as(&teacher, &enrol, &bad).await;
+        assert_eq!(
+            res.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            res.text()
+        );
+    }
+
+    // Archived: frozen.
+    let archived = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course}/lifecycle"),
+            &serde_json::json!({ "action": "archive" }),
+        )
+        .await;
+    assert_eq!(archived.status, StatusCode::OK, "{}", archived.text());
+    let frozen = app.post_as(&teacher, &enrol, &one).await;
+    assert_eq!(frozen.status, StatusCode::CONFLICT, "{}", frozen.text());
+    assert_eq!(
+        app.get_as(&teacher, &enrol).await.status,
+        StatusCode::OK,
+        "an archived course still lists its members"
+    );
+}

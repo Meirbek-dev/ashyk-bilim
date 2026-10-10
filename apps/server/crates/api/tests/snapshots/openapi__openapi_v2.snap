@@ -5462,6 +5462,9 @@ expression: json
           "display_name": {
             "type": "string"
           },
+          "email": {
+            "type": "string"
+          },
           "enrolled_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
           },
@@ -5494,6 +5497,7 @@ expression: json
           "user_id",
           "username",
           "display_name",
+          "email",
           "enrolled_at_unix",
           "allowed_actions",
           "avatar_key",
@@ -7481,6 +7485,89 @@ expression: json
           "time_limit_seconds"
         ],
         "type": "object"
+      },
+      "EnrollLearnerResult": {
+        "description": "One identifier of an [`EnrollLearnersRequest`].",
+        "properties": {
+          "identifier": {
+            "description": "As sent, trimmed.",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/EnrollOutcome"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserSummary",
+                "description": "The matched account; `null` for `not_found`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "identifier",
+          "outcome",
+          "user"
+        ],
+        "type": "object"
+      },
+      "EnrollLearnersRequest": {
+        "additionalProperties": false,
+        "description": "Enrol existing users by email or username (`POST /courses/{id}/learners`).",
+        "properties": {
+          "dry_run": {
+            "description": "Report the outcomes without enrolling anyone (CSV preview).",
+            "type": "boolean"
+          },
+          "identifiers": {
+            "description": "Emails or usernames (case-insensitive), 1..=1000; one outcome each.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "identifiers"
+        ],
+        "type": "object"
+      },
+      "EnrollLearnersResponse": {
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "results": {
+            "description": "In request order.",
+            "items": {
+              "$ref": "#/components/schemas/EnrollLearnerResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "dry_run",
+          "results"
+        ],
+        "type": "object"
+      },
+      "EnrollOutcome": {
+        "description": "What enrolling one identifier did (`TrailService::enrol_learners`).",
+        "enum": [
+          "enrolled",
+          "already_enrolled",
+          "duplicate",
+          "not_found",
+          "course_staff",
+          "account_disabled"
+        ],
+        "type": "string"
       },
       "EnrollmentState": {
         "enum": [
@@ -29884,6 +29971,7 @@ expression: json
     },
     "/api/v2/courses/{course_id}/learners": {
       "get": {
+        "description": "`q` searches username, display name and email. Members of a linked\nusergroup appear once they hold a run (opened the course or were enrolled).",
         "operationId": "list_course_learners",
         "parameters": [
           {
@@ -29896,6 +29984,7 @@ expression: json
             }
           },
           {
+            "description": "`next_cursor` of the previous page.",
             "in": "query",
             "name": "cursor",
             "required": false,
@@ -29904,11 +29993,21 @@ expression: json
             }
           },
           {
+            "description": "1..=100 (default 20).",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "type": "integer"
+            }
+          },
+          {
+            "description": "Substring of the learner's username, display name or email.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -29945,6 +30044,87 @@ expression: json
           }
         },
         "summary": "The course's members, newest first, with their progress (course write\naccess). Keyset pages.",
+        "tags": [
+          "progress"
+        ]
+      },
+      "post": {
+        "description": "Roster managers: the creator, an active maintainer,\n`course:manage:platform`; open course. One outcome per identifier, in order: `enrolled`, `already_enrolled`,\n`duplicate` (same user earlier in the list), `not_found`, `course_staff`,\n`account_disabled`. No account is created. `dry_run` previews the\noutcomes and writes nothing. Re-sending is safe (members answer\n`already_enrolled`).",
+        "operationId": "enroll_course_learners",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollLearnersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollLearnersResponse"
+                }
+              }
+            },
+            "description": "Per-identifier outcomes"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a roster manager"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or invisible course"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The course is archived, or a learner's trail lock is busy"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No identifiers, more than 1000, or one longer than 320 characters"
+          }
+        },
+        "summary": "Enrol existing users by email or username.",
         "tags": [
           "progress"
         ]

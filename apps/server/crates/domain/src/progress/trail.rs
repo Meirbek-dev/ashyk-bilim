@@ -50,6 +50,30 @@ pub struct TrailStep {
     pub activity: ActivityRow,
 }
 
+/// What enrolling one identifier did (`TrailService::enrol_learners`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum EnrollOutcome {
+    /// Enrolled now (in a dry run: would be).
+    Enrolled,
+    AlreadyEnrolled,
+    /// The same user came earlier in the list.
+    Duplicate,
+    /// No account with that email or username.
+    NotFound,
+    /// The course's staff never enrol (BUG-287).
+    CourseStaff,
+    AccountDisabled,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnrolResult {
+    /// The identifier as sent, trimmed.
+    pub identifier: String,
+    pub outcome: EnrollOutcome,
+    pub user: Option<ab_db::progress::EnrolTargetRow>,
+}
+
 #[derive(Clone)]
 pub struct TrailService {
     pool: PgPool,
@@ -431,6 +455,7 @@ impl TrailService {
         &self,
         actor: &Actor,
         course_id: CourseId,
+        q: Option<&str>,
         cursor: Option<ab_core::id::TrailRunId>,
         limit: i64,
     ) -> Result<(
@@ -441,8 +466,10 @@ impl TrailService {
         let course = self.courses.get(actor, course_id).await?;
         CoursesService::require_write(actor, &course)?;
         let limit = ab_core::page_limit(limit, 100)?;
+        let q = q.map(str::trim).filter(|q| !q.is_empty());
         let mut rows =
-            ab_db::progress::list_course_learners(&self.pool, course_id, cursor, limit + 1).await?;
+            ab_db::progress::list_course_learners(&self.pool, course_id, q, cursor, limit + 1)
+                .await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|r| r.run_id)
@@ -471,6 +498,83 @@ impl TrailService {
             return Err(Error::not_found("learner"));
         }
         Ok(())
+    }
+
+    /// Enrol existing users by email or username (roster managers, open
+    /// course): one outcome per identifier, in order. Nobody is created.
+    /// `dry_run` reports what an enrolment would do and writes nothing.
+    /// Re-enrolling a member is a no-op (`AlreadyEnrolled`), so a retried
+    /// request is safe. A learner of an unpublished course sees it once it
+    /// is published (`course_visible` is unchanged).
+    pub async fn enrol_learners(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        identifiers: &[String],
+        dry_run: bool,
+    ) -> Result<Vec<EnrolResult>> {
+        self.courses
+            .require_roster_manager(actor, course_id)
+            .await?;
+        let logins: Vec<String> = identifiers
+            .iter()
+            .map(|i| i.trim().to_lowercase())
+            .collect();
+        let users = ab_db::progress::resolve_enrol_targets(&self.pool, course_id, &logins).await?;
+        let mut seen = std::collections::HashSet::new();
+        let mut results = Vec::with_capacity(identifiers.len());
+        for (identifier, login) in identifiers.iter().zip(&logins) {
+            // An email match wins over a username that looks the same.
+            let user = users
+                .iter()
+                .find(|u| u.email.to_lowercase() == *login)
+                .or_else(|| users.iter().find(|u| u.username.to_lowercase() == *login));
+            let outcome = match user {
+                None => EnrollOutcome::NotFound,
+                Some(u) if !seen.insert(u.user_id) => EnrollOutcome::Duplicate,
+                Some(u) if !u.active => EnrollOutcome::AccountDisabled,
+                Some(u) if u.staff => EnrollOutcome::CourseStaff,
+                Some(u) if u.member => EnrollOutcome::AlreadyEnrolled,
+                Some(_) if dry_run => EnrollOutcome::Enrolled,
+                Some(u) => {
+                    if self.enrol_member(course_id, u.user_id).await? {
+                        EnrollOutcome::Enrolled
+                    } else {
+                        // A concurrent self-enrolment (or promotion) won.
+                        EnrollOutcome::AlreadyEnrolled
+                    }
+                }
+            };
+            results.push(EnrolResult {
+                identifier: identifier.trim().to_owned(),
+                outcome,
+                user: user.cloned(),
+            });
+        }
+        Ok(results)
+    }
+
+    /// Create `user_id`'s run (never for staff) and project it; `true` when
+    /// this call created it.
+    // ponytail: one lock + projection per learner; a 1000-row import of a
+    // big course takes a while - batch the projection if it bites.
+    async fn enrol_member(&self, course_id: CourseId, user_id: UserId) -> Result<bool> {
+        let Some((mut tx, joined)) =
+            lock_member_joined(&self.pool, user_id, course_id, true).await?
+        else {
+            return Ok(false);
+        };
+        let hooks = if joined {
+            self.projector
+                .reproject_member_on(&mut tx, course_id, user_id)
+                .await?
+                .1
+        } else {
+            AfterCommit::default()
+        };
+        tx.commit().await?;
+        hooks.fire(&self.pool).await;
+        Ok(joined)
     }
 
     /// Mark an activity done: run + step, and an explicit completion for

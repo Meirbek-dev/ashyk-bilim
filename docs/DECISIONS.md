@@ -2452,3 +2452,34 @@ the loading skeletons removed (every navigation then waits for its data on the
 university network) and would replace the "sign in to see this course" state a
 signed-out visitor gets for a private course with a bare 404. Kept as is; the
 search-engine outcome is the same.
+
+## Teachers enrol learners: roster, paste and CSV (2026-10-10, QA cluster H)
+
+The new assessment gate made enrolment matter, but a teacher could only list
+and remove learners. Added `POST /courses/{id}/learners` `{identifiers, dry_run}`
+(1..=1000 emails or usernames, case-insensitive, email match first) answering
+one outcome per identifier in request order: `enrolled`, `already_enrolled`,
+`duplicate` (same user earlier in the list), `not_found`, `course_staff`
+(staff never enrol, BUG-287), `account_disabled`. Same gate as removal: roster
+managers (creator, active maintainer, `course:manage:platform`; the web reads
+`Course.allowed_actions` `manage_contributors`) on an open course (archived →
+409). No account is ever created - there is no invite-by-email flow - so
+unknown identifiers are reported. `dry_run` is the CSV preview and writes
+nothing; re-sending is idempotent. Each enrolment is the self-enrol path
+(member lock, run, re-projection) on the learner's behalf; no notification
+(no fitting kind). `GET /courses/{id}/learners` gained `q` (username, display
+name, email) and `email` (graders already see learner emails), and no longer
+lists staff with a leftover run (BUG-288).
+
+Private (unpublished) courses: `course_visible` is unchanged - unpublished
+courses hide from their learners (BUG-183) - so a learner enrolled in one sees
+it once it is published; the roster says so. Linked usergroups keep their own
+access and appear in the roster once a member opens the course.
+
+apps/web: a «Слушатели» tab in the course workspace (course writers read it;
+reporters/contributors see it read-only), paste box, CSV import (UTF-8 with or
+without BOM, else Windows-1251; `;` or `,`; optional header; the cell with an
+`@`, else the first) with a per-row preview, search, «Показать ещё» paging,
+remove with confirmation, Excel CSV export (BOM, `;`, formula-safe cells). web-2
+only regenerated its client; `enrollCourseLearners` is parked in its
+`gates/server-removals.json` with a "not for deletion - build the UI" reason.

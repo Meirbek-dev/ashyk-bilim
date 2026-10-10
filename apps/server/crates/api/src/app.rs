@@ -254,7 +254,10 @@ fn progress_routes() -> OpenApiRouter<AppState> {
             routes::progress::remove_activity
         ))
         .routes(routes!(routes::progress::learner_course_state))
-        .routes(routes!(routes::progress::list_course_learners))
+        .routes(routes!(
+            routes::progress::list_course_learners,
+            routes::progress::enroll_course_learners
+        ))
         .routes(routes!(routes::progress::remove_course_learner))
         // S-10 names (expand; the `/trail` paths above go in phase 9).
         .routes(routes!(routes::progress::list_enrollments))
