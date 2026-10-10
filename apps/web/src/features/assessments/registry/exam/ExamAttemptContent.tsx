@@ -258,15 +258,15 @@ function ExamTakingContent({
   }, [viewMode, orderedQuestions])
   const currentQuestion = orderedQuestions[currentIndex]
   const isAnswered = useCallback(
-    (questionId: string) => isItemAnswered(submissionState.answers[questionId]),
+    (question: AssessmentItem) => isItemAnswered(submissionState.answers[question.id], question.body),
     [submissionState.answers],
   )
 
-  const answeredCount = orderedQuestions.filter(question => isAnswered(question.id)).length
+  const answeredCount = orderedQuestions.filter(question => isAnswered(question)).length
   const answeredIndexes = useMemo(
     () =>
       orderedQuestions.reduce<Set<number>>((set, question, index) => {
-        if (isAnswered(question.id)) set.add(index)
+        if (isAnswered(question)) set.add(index)
         return set
       }, new Set()),
     [isAnswered, orderedQuestions],
@@ -614,8 +614,9 @@ function ExamTakingContent({
         answeredCount={answeredCount}
         flaggedCount={flaggedIndexes.size}
         unansweredQuestions={orderedQuestions
-          .map((q, i) => ({ index: i, id: q.id, question_text: extractMarkdownSummary(q.body.prompt, 120) }))
-          .filter(q => !isAnswered(q.id))}
+          .map((q, i) => ({ q, index: i, id: q.id, question_text: extractMarkdownSummary(q.body.prompt, 120) }))
+          .filter(entry => !isAnswered(entry.q))
+          .map(({ index, id, question_text }) => ({ index, id, question_text }))}
         isSubmitting={submissionState.isSubmitting}
         onNavigateTo={index => {
           setIsConfirmingSubmit(false)

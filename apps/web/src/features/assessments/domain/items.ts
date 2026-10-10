@@ -146,7 +146,11 @@ export interface AssessmentItem {
   updated_at?: string
 }
 
-export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
+/**
+ * Whether a question has a complete answer. With its body, a matching question needs a pair for every left element and
+ * a form every required field (two of three pairs used to count as answered).
+ */
+export function isAnswered(answer: ItemAnswer | null | undefined, body?: ItemBody): boolean {
   if (!answer) return false
   switch (answer.kind) {
     case 'CHOICE': {
@@ -156,13 +160,16 @@ export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
       return answer.text.trim().length > 0
     }
     case 'FORM': {
+      const required = body?.kind === 'FORM' ? body.fields.filter(field => field.required) : []
+      if (required.some(field => !answer.values[field.id]?.trim())) return false
       return Object.values(answer.values).some(value => value.trim().length > 0)
     }
     case 'CODE': {
       return answer.source.trim().length > 0
     }
     case 'MATCHING': {
-      return answer.matches.length > 0
+      const lefts = body?.kind === 'MATCHING' ? matchingColumns(body).left.length : 1
+      return answer.matches.length >= Math.max(lefts, 1)
     }
   }
 }

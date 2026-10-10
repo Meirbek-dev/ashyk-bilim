@@ -724,8 +724,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           ? {
               latestVersion: conflictState.latest.draft_version,
               latestSavedAt: conflictState.latest.updated_at,
-              localAnswerCount: Object.values(conflictState.localAnswers).filter(isAnswered).length,
-              serverAnswerCount: Object.values(answersFromSubmission(conflictState.latest)).filter(isAnswered).length,
+              localAnswerCount: Object.values(conflictState.localAnswers).filter(answer => isAnswered(answer)).length,
+              serverAnswerCount: Object.values(answersFromSubmission(conflictState.latest)).filter(answer =>
+                isAnswered(answer),
+              ).length,
               onKeepLocalVersion: keepLocalVersion,
               onUseServerVersion: useServerVersion,
             }
