@@ -5838,7 +5838,7 @@
         },
         "supportedFormats": "Қолдау көрсетілетін форматтар: MP4, MKV, WEBM",
         "title": "Бейне блогы",
-        "uploadHint": "MP4, MOV, WebM немесе MKV, 500 МБ-қа дейін",
+        "uploadHint": "MP4, MOV, WebM немесе MKV, 2 ГБ-қа дейін",
         "uploadPlaceholder": "Бейнеңізді осы жерге сүйреп апарыңыз немесе таңдау үшін басыңыз",
         "uploading": "Бейне жүктелуде... {progress}%",
         "videoPlayer": "Бейне ойнатқыш"

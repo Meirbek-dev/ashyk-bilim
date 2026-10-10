@@ -37,7 +37,7 @@ export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
   'platform-thumbnail': 10 * MB,
   'block-image': 10 * MB,
   'block-pdf': 50 * MB,
-  'block-video': 500 * MB,
+  'block-video': 2048 * MB,
   'file-submission': 100 * MB,
 }
 

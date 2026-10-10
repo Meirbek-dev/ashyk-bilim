@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 const mocks = vi.hoisted(() => ({ apiJson: vi.fn() }))
 vi.mock('@/lib/api-client', () => ({ apiJson: mocks.apiJson }))
 
-import { isPlayableVideoUpload, uploadFile, uploadMime } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, isPlayableVideoUpload, uploadFile, uploadMime } from '@services/media/uploads'
 import { getYouTubeVideoId } from '@/lib/utils'
 import { isUnplayableMediaError } from '@components/Objects/Activities/Video/Artplayer'
 
@@ -28,6 +28,11 @@ describe('uploadMime (BUG-B1)', () => {
     expect(isPlayableVideoUpload(file('a.avi', 'video/avi'))).toBe(false)
     expect(isPlayableVideoUpload(file('a.flv', 'video/x-flv'))).toBe(false)
   })
+})
+
+// The server takes block videos up to 2 GB since aed00c9; the old web still refused anything over 500 MB.
+it('lets a video up to 2 GB through, like the server', () => {
+  expect(UPLOAD_MAX_BYTES['block-video']).toBe(2048 * 1024 * 1024)
 })
 
 describe('uploadFile', () => {

@@ -6287,7 +6287,7 @@
         },
         "supportedFormats": "Поддерживаемые форматы: MP4, MKV, WebM",
         "title": "Блок видео",
-        "uploadHint": "MP4, MOV, WebM или MKV, до 500 МБ",
+        "uploadHint": "MP4, MOV, WebM или MKV, до 2 ГБ",
         "uploadPlaceholder": "Перетащите видео сюда или нажмите, чтобы выбрать",
         "uploading": "Загрузка видео... {progress}%",
         "videoPlayer": "Видеоплеер"

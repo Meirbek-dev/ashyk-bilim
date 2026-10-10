@@ -6160,7 +6160,7 @@
         },
         "supportedFormats": "Supported formats: MP4, MKV, WebM",
         "title": "Video Block",
-        "uploadHint": "MP4, MOV, WebM or MKV, up to 500 MB",
+        "uploadHint": "MP4, MOV, WebM or MKV, up to 2 GB",
         "uploadPlaceholder": "Drop your video here or click to browse",
         "uploading": "Uploading video... {progress}%",
         "videoPlayer": "Video Player"
