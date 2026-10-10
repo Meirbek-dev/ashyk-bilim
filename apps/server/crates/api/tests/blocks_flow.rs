@@ -626,7 +626,9 @@ async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
             .post_as(
                 &teacher,
                 &format!("{path}/blocks"),
-                &serde_json::json!({ "block_type": "video", "upload_id": upload }),
+                // A long Cyrillic name (284 chars, 563 bytes): the cap counts characters.
+                &serde_json::json!({ "block_type": "video", "upload_id": upload,
+                                      "file_name": format!("{}.mp4", "Лекция ".repeat(40)) }),
             )
             .await;
         assert_eq!(claimed.status, StatusCode::CREATED, "{}", claimed.text());

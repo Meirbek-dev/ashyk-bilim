@@ -254,7 +254,7 @@ pub struct CreateBlockRequest {
     #[garde(skip)]
     pub upload_id: uuid::Uuid,
     /// Original client-side file name, for display.
-    #[garde(inner(length(max = 500)))]
+    #[garde(inner(length(chars, max = 500)))]
     #[schema(max_length = 500)]
     pub file_name: Option<String>,
 }
