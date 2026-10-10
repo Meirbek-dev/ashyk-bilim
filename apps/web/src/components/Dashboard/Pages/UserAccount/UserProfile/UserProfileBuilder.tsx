@@ -4,6 +4,8 @@ import { Loader2, Plus } from 'lucide-react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@components/ui/select'
 import { saveProfileDocument } from '@/lib/users/client'
 import { useMemo, useState } from 'react'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog'
 import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
@@ -55,6 +57,11 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
   )
 
   const [profileData, setProfileData] = useState<ProfileData>(initialProfile)
+  // What the server holds: added or edited sections not saved yet ask before a link drops them.
+  const [savedProfile, setSavedProfile] = useState<ProfileData>(initialProfile)
+  const leaveGuard = useUnsavedChangesGuard(JSON.stringify(profileData) !== JSON.stringify(savedProfile), {
+    interceptInAppNavigation: true,
+  })
   const [version, setVersion] = useState(initialVersion)
   const [selectedSection, setSelectedSection] = useState<number | null>(null)
 
@@ -80,8 +87,9 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
 
   const save = useMutation({
     mutationFn: (profile: ProfileData) => saveProfileDocument(profile, version),
-    onSuccess: newVersion => {
+    onSuccess: (newVersion, saved) => {
       setVersion(newVersion)
+      setSavedProfile(saved)
       router.refresh()
       toast.success(tNotify('profileUpdateSuccess'), { id: SAVE_TOAST_ID })
     },
@@ -153,6 +161,7 @@ function UserProfileBuilder({ initialProfile, initialVersion }: UserProfileBuild
 
   return (
     <Card>
+      <UnsavedChangesDialog guard={leaveGuard} />
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between border-b pb-4">
           <div>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useForm } from 'react-hook-form'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -59,6 +61,8 @@ function UserEditGeneral() {
     },
     mode: 'onChange',
   })
+  // A typed name or bio was dropped silently by a tab click or the sidebar.
+  const leaveGuard = useUnsavedChangesGuard(form.formState.isDirty, { interceptInAppNavigation: true })
 
   useEffect(() => {
     const fetchData = async () => {
@@ -182,6 +186,7 @@ function UserEditGeneral() {
         bio: values.bio ?? '',
       })
       setUserData(current => (current ? { ...current, ...values } : null))
+      form.reset(form.getValues())
 
       toast.dismiss(loadingToast)
       router.refresh()
@@ -208,6 +213,7 @@ function UserEditGeneral() {
 
   return (
     <Card className="mx-0 sm:mx-10">
+      <UnsavedChangesDialog guard={leaveGuard} />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <UserEditForm
           form={form}

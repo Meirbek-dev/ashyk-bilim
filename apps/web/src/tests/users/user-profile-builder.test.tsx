@@ -58,6 +58,23 @@ beforeEach(() => {
 })
 
 describe('UserProfileBuilder (BUG-361)', () => {
+  // An edited section was dropped silently by a click on another settings tab; saved edits leave freely.
+  it('asks before a link drops unsaved edits, not after they are saved', async () => {
+    saveProfileDocument.mockResolvedValueOnce(5)
+    renderBuilder()
+    const link = document.body.appendChild(Object.assign(document.createElement('a'), { href: '/ru/elsewhere' }))
+    fireEvent.click(screen.getByText('Опыт'))
+    fireEvent.change(await screen.findByLabelText('Common.sectionTitle'), { target: { value: 'Опыт работы' } })
+    fireEvent.click(link)
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'saveButton' }))
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalled())
+    fireEvent.click(link)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    link.remove()
+  })
+
   it('seeds the sections from the loaded profile, edits a title and saves the whole document at its version', async () => {
     saveProfileDocument.mockResolvedValueOnce(5).mockResolvedValueOnce(6)
     renderBuilder()
