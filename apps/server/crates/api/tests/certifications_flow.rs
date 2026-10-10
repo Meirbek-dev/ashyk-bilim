@@ -102,6 +102,9 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         serde_json::json!([1, 2]),
         serde_json::json!({ "a\u{0}b": 1 }),
         serde_json::json!({ "name": "x".repeat(20_000) }),
+        serde_json::json!({ "course_start": "2026-02-30" }),
+        serde_json::json!({ "course_start": "2026-09-30", "course_end": "2026-09-01" }),
+        serde_json::json!({ "training_hours": "1.5" }),
     ] {
         let res = app
             .post_as(
@@ -122,7 +125,8 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
             &teacher,
             "/api/v2/certifications",
             &serde_json::json!({ "course_id": course_id,
-                                  "config": { "template": "classic", "title": "Certified" } }),
+                                  "config": { "template": "classic", "title": "Certified",
+                                    "course_start": "2026-09-01", "course_end": "2026-09-30", "training_hours": "72" } }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -188,6 +192,7 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         .to_owned();
     assert_eq!(code.len(), 19);
     assert_eq!(items[0]["certification"]["id"], certification_id.as_str());
+    assert_eq!(items[0]["certification"]["config"]["training_hours"], "72");
     assert_eq!(items[0]["course"]["name"], "Certified 101");
     // UX-131: no `certificate_instructor` in the config -> the creator's
     // display name, as the PDF prints it.

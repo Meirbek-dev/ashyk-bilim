@@ -130,7 +130,7 @@
   "studio_thumbnail_remove": "Мұқабаны алып тастау",
   "studio_thumbnail_removed": "Мұқаба алынды",
   "studio_certificate_title": "Курс сертификаты",
-  "studio_certificate_hint": "Курсты өткен білім алушыға беріледі; PDF-ті сервер басып шығарады.",
+  "studio_certificate_hint": "Курс аяқталған соң қазақ және орыс тілдеріндегі сертификат автоматты түрде жасалады. Білім алушының аты, берілген күні және бірегей нөмірі автоматты түрде толтырылады.",
   "studio_certificate_enable": "Сертификат беру",
   "studio_certificate_enabled": "Сертификат қосылды",
   "studio_certificate_disable": "Сертификат бермеу",
@@ -217,5 +217,9 @@
   "studio_course_delete_name": "Растау үшін курс атауын енгізіңіз",
   "studio_course_deleted": "Курс жойылды",
   "studio_certificate_preview": "PDF алдын ала қарау",
-  "studio_certificate_preview_title": "Сертификатты алдын ала қарау"
+  "studio_certificate_preview_title": "Сертификатты алдын ала қарау",
+  "studio_certificate_start": "Оқудың басталуы (міндетті емес)",
+  "studio_certificate_end": "Оқудың аяқталуы (міндетті емес)",
+  "studio_certificate_hours": "Сағат саны (міндетті емес)",
+  "studio_certificate_optional_hint": "Сертификатта көрсетпеу үшін бос қалдырыңыз."
 }

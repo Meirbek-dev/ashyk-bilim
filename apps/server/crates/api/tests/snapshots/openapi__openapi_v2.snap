@@ -3773,7 +3773,7 @@ expression: json
         "type": "string"
       },
       "CertificationConfig": {
-        "description": "`certifications.config`: what the certificate editor stores. The server\nreads `certification_name`, `certification_type` and\n`certificate_instructor`; the rest is the web's.",
+        "description": "`certifications.config`: what the certificate editor stores. The server\nreads the title, type, lecturer and optional training details.",
         "properties": {
           "certificate_instructor": {
             "description": "The name signed on the certificate; blank = the course's teachers.",
@@ -3790,6 +3790,17 @@ expression: json
           },
           "certification_type": {
             "$ref": "#/components/schemas/CertificationType"
+          },
+          "course_end": {
+            "type": "string"
+          },
+          "course_start": {
+            "description": "Optional training dates, YYYY-MM-DD; blank means omitted.",
+            "type": "string"
+          },
+          "training_hours": {
+            "description": "Optional whole training hours (1–100000), stored as form text; blank means omitted.",
+            "type": "string"
           }
         },
         "type": "object"

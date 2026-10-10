@@ -37,7 +37,7 @@ const typeOptions = CERTIFICATE_TYPES.map(value => ({ value, label: typeLabels[v
 
 type CertificateFormProps = { course: Course; certification: Certification }
 
-/** The certificate's name, type and teacher name, written into `config` over the keys this page does not edit. */
+/** Settings for the automatic certificate; unrelated legacy config keys survive a save. */
 export function CertificateForm({ course, certification }: CertificateFormProps) {
   const queryClient = useQueryClient()
   const update = useMutation(updateCertificationOptions(queryClient, course.id))
@@ -70,6 +70,21 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
         <form.AppField name="certification_name">
           {field => (
             <field.TextField label={m.studio_certificate_name()} description={m.studio_certificate_name_hint()} />
+          )}
+        </form.AppField>
+        <form.AppField name="course_start">
+          {field => <field.TextField type="date" label={m.studio_certificate_start()} />}
+        </form.AppField>
+        <form.AppField name="course_end">
+          {field => <field.TextField type="date" label={m.studio_certificate_end()} />}
+        </form.AppField>
+        <form.AppField name="training_hours">
+          {field => (
+            <field.TextField
+              inputMode="numeric"
+              label={m.studio_certificate_hours()}
+              description={m.studio_certificate_optional_hint()}
+            />
           )}
         </form.AppField>
         <form.AppField name="certification_type">

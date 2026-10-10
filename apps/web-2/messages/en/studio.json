@@ -130,7 +130,7 @@
   "studio_thumbnail_remove": "Remove cover",
   "studio_thumbnail_removed": "Cover removed",
   "studio_certificate_title": "Certificate",
-  "studio_certificate_hint": "Given to a learner who completes the course; the server prints the PDF.",
+  "studio_certificate_hint": "A bilingual Kazakh/Russian certificate is generated automatically after course completion. The learner’s name, issue date and unique number are filled in automatically.",
   "studio_certificate_enable": "Give a certificate",
   "studio_certificate_enabled": "Certificate on",
   "studio_certificate_disable": "Stop giving a certificate",
@@ -217,5 +217,9 @@
   "studio_course_delete_name": "Type the course name to confirm",
   "studio_course_deleted": "Course deleted",
   "studio_certificate_preview": "Preview PDF",
-  "studio_certificate_preview_title": "Certificate preview"
+  "studio_certificate_preview_title": "Certificate preview",
+  "studio_certificate_start": "Training start (optional)",
+  "studio_certificate_end": "Training end (optional)",
+  "studio_certificate_hours": "Training hours (optional)",
+  "studio_certificate_optional_hint": "Leave blank to omit this from the certificate."
 }

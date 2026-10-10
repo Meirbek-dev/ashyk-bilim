@@ -134,7 +134,7 @@
   "studio_thumbnail_remove": "Убрать обложку",
   "studio_thumbnail_removed": "Обложка убрана",
   "studio_certificate_title": "Сертификат",
-  "studio_certificate_hint": "Выдаётся учащемуся, который прошёл курс; PDF печатает сервер.",
+  "studio_certificate_hint": "Сертификат на казахском и русском языках создаётся автоматически после завершения курса. Имя учащегося, дата выдачи и уникальный номер заполняются автоматически.",
   "studio_certificate_enable": "Выдавать сертификат",
   "studio_certificate_enabled": "Сертификат включён",
   "studio_certificate_disable": "Не выдавать сертификат",
@@ -221,5 +221,9 @@
   "studio_course_delete_name": "Введите название курса, чтобы подтвердить",
   "studio_course_deleted": "Курс удалён",
   "studio_certificate_preview": "Предпросмотр PDF",
-  "studio_certificate_preview_title": "Предпросмотр сертификата"
+  "studio_certificate_preview_title": "Предпросмотр сертификата",
+  "studio_certificate_start": "Начало обучения (необязательно)",
+  "studio_certificate_end": "Окончание обучения (необязательно)",
+  "studio_certificate_hours": "Количество часов (необязательно)",
+  "studio_certificate_optional_hint": "Оставьте пустым, чтобы не печатать на сертификате."
 }

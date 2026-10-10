@@ -437,8 +437,7 @@ pub struct AiEffectiveConfig {
 }
 
 /// `certifications.config`: what the certificate editor stores. The server
-/// reads `certification_name`, `certification_type` and
-/// `certificate_instructor`; the rest is the web's.
+/// reads the title, type, lecturer and optional training details.
 #[derive(Serialize, ToSchema)]
 pub struct CertificationConfig {
     #[schema(nullable = false)]
@@ -452,6 +451,14 @@ pub struct CertificationConfig {
     /// The name signed on the certificate; blank = the course's teachers.
     #[schema(nullable = false)]
     pub certificate_instructor: Option<String>,
+    /// Optional training dates, YYYY-MM-DD; blank means omitted.
+    #[schema(nullable = false)]
+    pub course_start: Option<String>,
+    #[schema(nullable = false)]
+    pub course_end: Option<String>,
+    /// Optional whole training hours (1–100000), stored as form text; blank means omitted.
+    #[schema(nullable = false)]
+    pub training_hours: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]

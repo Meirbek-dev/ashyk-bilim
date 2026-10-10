@@ -599,15 +599,17 @@ export const vCertificationType = v.picklist([
 
 /**
  * `certifications.config`: what the certificate editor stores. The server
- * reads `certification_name`, `certification_type` and
- * `certificate_instructor`; the rest is the web's.
+ * reads the title, type, lecturer and optional training details.
  */
 export const vCertificationConfig = v.object({
     certificate_instructor: v.optional(v.string()),
     certificate_pattern: v.optional(vCertificatePattern),
     certification_description: v.optional(v.string()),
     certification_name: v.optional(v.string()),
-    certification_type: v.optional(vCertificationType)
+    certification_type: v.optional(vCertificationType),
+    course_end: v.optional(v.string()),
+    course_start: v.optional(v.string()),
+    training_hours: v.optional(v.string())
 });
 
 /**

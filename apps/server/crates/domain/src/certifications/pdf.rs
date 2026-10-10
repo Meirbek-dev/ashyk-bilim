@@ -1,6 +1,6 @@
 //! The certificate as an A4-landscape PDF (`GET /certificates/{code}/pdf`).
 //!
-//! Text only, laid out by hand on one page with two embedded Noto Sans
+//! The supplied bilingual university artwork with generated text and two Noto Sans
 //! subsets (`assets/fonts`, SIL OFL) so Cyrillic - including the Kazakh
 //! letters - renders everywhere. No headless browser, no layout engine.
 
@@ -9,22 +9,20 @@ use ab_core::{Error, Result};
 use pdf_writer::types::{
     ActionType, AnnotationType, CidFontType, FontFlags, SystemInfo, UnicodeCmap,
 };
-use pdf_writer::{Content, Finish, Name, Pdf, Rect, Ref, Str, TextStr};
+use pdf_writer::{Content, Filter, Finish, Name, Pdf, Rect, Ref, Str, TextStr};
 use skrifa::instance::{LocationRef, Size};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
 use subsetter::GlyphRemapper;
 
 const REGULAR: &[u8] = include_bytes!("../../assets/fonts/NotoSans-Regular.ttf");
 const BOLD: &[u8] = include_bytes!("../../assets/fonts/NotoSans-Bold.ttf");
+const ARTWORK: &[u8] = include_bytes!("../../assets/certificates/reference.jpg");
 
 /// A4 landscape, in points.
 const PAGE_W: f32 = 841.89;
 const PAGE_H: f32 = 595.28;
-const MARGIN: f32 = 36.0;
-/// Widest a centred line may be before its font shrinks to fit.
-const MAX_LINE_W: f32 = PAGE_W - 2.0 * (MARGIN + 40.0);
 /// Where the verification code and link start.
-const FOOTER_X: f32 = MARGIN + 24.0;
+const FOOTER_X: f32 = 180.0;
 
 /// What the page says.
 #[derive(Debug, Clone)]
@@ -40,45 +38,28 @@ pub struct CertificatePdf {
     pub verify_code: String,
     pub verify_url: String,
     pub teacher_name: Option<String>,
+    pub course_start: Option<String>,
+    pub course_end: Option<String>,
+    pub training_hours: Option<u32>,
 }
 
 struct Strings {
-    title: &'static str,
-    certifies: &'static str,
-    completed: &'static str,
     issued_on: &'static str,
-    teacher: &'static str,
-    verify_code: &'static str,
     verify_at: &'static str,
 }
 
 const fn strings(language: Language) -> Strings {
     match language {
         Language::Ru => Strings {
-            title: "СЕРТИФИКАТ",
-            certifies: "подтверждает, что",
-            completed: "успешно завершил(а) курс",
             issued_on: "Дата выдачи",
-            teacher: "Преподаватель",
-            verify_code: "Код проверки",
             verify_at: "Проверить подлинность",
         },
         Language::Kk => Strings {
-            title: "СЕРТИФИКАТ",
-            certifies: "растайды:",
-            completed: "курсын сәтті аяқтады",
             issued_on: "Берілген күні",
-            teacher: "Оқытушы",
-            verify_code: "Тексеру коды",
             verify_at: "Түпнұсқалығын тексеру",
         },
         Language::En => Strings {
-            title: "CERTIFICATE",
-            certifies: "This certifies that",
-            completed: "has successfully completed the course",
             issued_on: "Issued on",
-            teacher: "Instructor",
-            verify_code: "Verification code",
             verify_at: "Verify at",
         },
     }
@@ -213,106 +194,181 @@ impl Font {
 struct Line {
     bold: bool,
     size: f32,
+    x: f32,
     y: f32,
+    max_width: f32,
     text: String,
-    gray: f32,
 }
 
-/// The centred lines of the page, top to bottom.
-fn lines(input: &CertificatePdf) -> Vec<Line> {
-    let s = strings(input.language);
-    let mut lines = vec![Line {
-        bold: true,
-        size: 34.0,
-        y: 470.0,
-        text: s.title.to_owned(),
-        gray: 0.12,
-    }];
-    if let Some(label) = type_label(input.language, &input.certificate_type) {
-        lines.push(Line {
-            bold: false,
-            size: 14.0,
-            y: 442.0,
-            text: label.to_owned(),
-            gray: 0.4,
-        });
+fn line(text: impl Into<String>, size: f32, x: f32, y: f32, max_width: f32, bold: bool) -> Line {
+    Line {
+        text: text.into(),
+        size,
+        x,
+        y,
+        max_width,
+        bold,
     }
-    lines.extend([
-        Line {
-            bold: false,
-            size: 13.0,
-            y: 392.0,
-            text: s.certifies.to_owned(),
-            gray: 0.35,
-        },
-        Line {
-            bold: true,
-            size: 30.0,
-            y: 352.0,
-            text: input.holder_name.clone(),
-            gray: 0.12,
-        },
-        Line {
-            bold: false,
-            size: 13.0,
-            y: 312.0,
-            text: s.completed.to_owned(),
-            gray: 0.35,
-        },
-        Line {
-            bold: true,
-            size: 22.0,
-            y: 278.0,
-            text: input.course_name.clone(),
-            gray: 0.12,
-        },
-    ]);
-    if !input.certificate_name.trim().is_empty() && input.certificate_name != input.course_name {
-        lines.push(Line {
-            bold: false,
-            size: 14.0,
-            y: 248.0,
-            text: input.certificate_name.clone(),
-            gray: 0.3,
-        });
+}
+
+fn training_text(input: &CertificatePdf, language: Language) -> String {
+    let name = if input.certificate_name.trim().is_empty() {
+        &input.course_name
+    } else {
+        &input.certificate_name
+    };
+    let mut period = String::new();
+    for (date, ru, kk) in [
+        (&input.course_start, "с", "күнінен бастап"),
+        (&input.course_end, "по", "күніне дейін"),
+    ] {
+        if let Some(date) = date
+            .as_ref()
+            .and_then(|d| d.parse::<jiff::civil::Date>().ok())
+        {
+            let date = format!("{:02}.{:02}.{:04}", date.day(), date.month(), date.year());
+            if language == Language::Kk {
+                period.push_str(&date);
+                period.push(' ');
+                period.push_str(kk);
+            } else {
+                period.push_str(ru);
+                period.push(' ');
+                period.push_str(&date);
+            }
+            period.push(' ');
+        }
     }
-    lines.push(Line {
-        bold: false,
-        size: 12.0,
-        y: 188.0,
-        text: format!(
-            "{}: {}",
-            s.issued_on,
-            issued_date(input.language, input.issued_at_unix)
-        ),
-        gray: 0.3,
-    });
-    if let Some(teacher) = input
-        .teacher_name
-        .as_deref()
-        .filter(|t| !t.trim().is_empty())
-    {
-        lines.push(Line {
-            bold: false,
-            size: 12.0,
-            y: 168.0,
-            text: format!("{}: {teacher}", s.teacher),
-            gray: 0.3,
-        });
+    let hours = input
+        .training_hours
+        .map(|h| {
+            if language == Language::Kk {
+                format!(" көлемі {h} сағат болатын")
+            } else {
+                format!(" в объеме {h} часов")
+            }
+        })
+        .unwrap_or_default();
+    if language == Language::Kk {
+        format!("{period}«{name}» тақырыбы бойынша{hours} курсты сәтті аяқтағанын растайды")
+    } else {
+        format!("{period}успешно прошёл (-ла) курс по теме «{name}»{hours}")
+    }
+}
+
+fn wrap(text: &str, font: &Font, size: f32, width: f32) -> Vec<String> {
+    let mut lines = vec![String::new()];
+    for word in text.split_whitespace() {
+        if let Some(last) = lines.last_mut() {
+            let candidate = if last.is_empty() {
+                word.to_owned()
+            } else {
+                format!("{last} {word}")
+            };
+            if !last.is_empty() && font.width(&candidate, size) > width {
+                lines.push(word.to_owned());
+            } else {
+                *last = candidate;
+            }
+        }
     }
     lines
 }
 
-/// A frame inset by `inset` points on every side.
-fn frame(content: &mut Content, inset: f32, width: f32) {
+/// The reference is bilingual regardless of the verification page's language.
+fn lines(input: &CertificatePdf, regular: &Font) -> Vec<Line> {
+    let mut lines = vec![
+        line("СЕРТИФИКАТ", 44.0, PAGE_W / 2.0, 382.0, 610.0, true),
+        line("Осымен", 17.0, PAGE_W / 2.0, 343.0, 590.0, false),
+        line(
+            "Настоящим подтверждается, что",
+            17.0,
+            PAGE_W / 2.0,
+            321.0,
+            590.0,
+            false,
+        ),
+        line(&input.holder_name, 26.0, PAGE_W / 2.0, 287.0, 590.0, true),
+    ];
+    if let Some(label) = type_label(input.language, &input.certificate_type) {
+        lines.push(line(label, 9.0, PAGE_W / 2.0, 362.0, 590.0, false));
+    }
+    for (language, x) in [(Language::Kk, 244.0), (Language::Ru, 588.0)] {
+        let text = training_text(input, language);
+        let mut size = 13.0;
+        let mut wrapped = wrap(&text, regular, size, 284.0);
+        loop {
+            let height = wrapped
+                .iter()
+                .fold(0.0, |height, _| size.mul_add(1.4, height));
+            if height <= 80.0 {
+                break;
+            }
+            size *= 0.9;
+            wrapped = wrap(&text, regular, size, 284.0);
+        }
+        let mut y = 254.0;
+        for text in wrapped {
+            lines.push(line(text, size, x, y, 284.0, false));
+            y = size.mul_add(-1.4, y);
+        }
+    }
+    lines.push(line("Лектор", 13.0, 169.0, 99.0, 80.0, true));
+    if let Some(teacher) = &input.teacher_name {
+        lines.push(line(teacher, 13.0, 635.0, 99.0, 240.0, true));
+    }
+    lines.push(line(
+        format!("№ {}-ЦТМ", input.verify_code),
+        9.0,
+        285.0,
+        64.0,
+        280.0,
+        false,
+    ));
+    lines.push(line(
+        format!(
+            "{}: {}",
+            strings(input.language).issued_on,
+            issued_date(input.language, input.issued_at_unix)
+        ),
+        9.0,
+        651.0,
+        64.0,
+        220.0,
+        false,
+    ));
+    let year = issued_date(Language::En, input.issued_at_unix);
+    lines.push(line(
+        year.chars().take(4).collect::<String>(),
+        9.0,
+        PAGE_W / 2.0,
+        44.0,
+        80.0,
+        false,
+    ));
+    lines
+}
+
+fn background(content: &mut Content) {
     content
-        .set_line_width(width)
-        .rect(
-            inset,
-            inset,
-            (-2.0f32).mul_add(inset, PAGE_W),
-            (-2.0f32).mul_add(inset, PAGE_H),
-        )
+        .save_state()
+        .transform([PAGE_W, 0.0, 0.0, PAGE_H, 0.0, 0.0])
+        .x_object(Name(b"Artwork"))
+        .restore_state();
+    // Keep the supplied logos and ornament; cover every sample-specific field.
+    content.set_fill_rgb(1.0, 1.0, 1.0);
+    for (x, y, w, h) in [
+        (95.0, 175.0, 640.0, 255.0),
+        (140.0, 58.0, 575.0, 65.0),
+        (370.0, 37.0, 100.0, 20.0),
+    ] {
+        content.rect(x, y, w, h).fill_nonzero();
+    }
+    content
+        .set_stroke_rgb(0.25, 0.25, 0.25)
+        .set_line_width(0.6)
+        .move_to(124.0, 275.0)
+        .line_to(718.0, 275.0)
         .stroke();
 }
 
@@ -321,43 +377,41 @@ pub fn render(input: &CertificatePdf) -> Result<Vec<u8>> {
     let s = strings(input.language);
     let mut regular = Font::load(REGULAR)?;
     let mut bold = Font::load(BOLD)?;
-    let code_line = format!("{}: {}", s.verify_code, input.verify_code);
     let url_line = format!("{}: {}", s.verify_at, input.verify_url);
-
-    // Content stream: a double frame, then every line centred (shrunk to fit).
     let mut content = Content::new();
-    content.set_stroke_rgb(0.72, 0.6, 0.35);
-    frame(&mut content, MARGIN, 2.0);
-    frame(&mut content, MARGIN + 8.0, 0.75);
-    for line in &lines(input) {
+    background(&mut content);
+    for (index, line) in lines(input, &regular).iter().enumerate() {
         let font = if line.bold { &mut bold } else { &mut regular };
         let natural = font.width(&line.text, line.size);
-        let size = if natural > MAX_LINE_W {
-            line.size * MAX_LINE_W / natural
+        let size = if natural > line.max_width {
+            line.size * line.max_width / natural
         } else {
             line.size
         };
         let width = font.width(&line.text, size);
         let bytes = font.encode(&line.text);
+        content.begin_text();
+        if index == 0 {
+            content.set_fill_rgb(0.94, 0.49, 0.18);
+        } else {
+            content.set_fill_rgb(0.07, 0.07, 0.07);
+        }
         content
-            .begin_text()
-            .set_fill_rgb(line.gray, line.gray, line.gray)
             .set_font(Name(if line.bold { b"FB" } else { b"FR" }), size)
-            .next_line((PAGE_W - width) / 2.0, line.y)
+            .next_line(line.x - width / 2.0, line.y)
             .show(Str(&bytes))
             .end_text();
     }
-    let url_width = regular.width(&url_line, 9.0);
-    for (text, size, y) in [(&code_line, 10.0, 96.0), (&url_line, 9.0, 82.0)] {
-        let bytes = regular.encode(text);
-        content
-            .begin_text()
-            .set_fill_rgb(0.4, 0.4, 0.4)
-            .set_font(Name(b"FR"), size)
-            .next_line(FOOTER_X, y)
-            .show(Str(&bytes))
-            .end_text();
-    }
+    let url_size = 7.0_f32.min(7.0 * 520.0 / regular.width(&url_line, 7.0));
+    let url_width = regular.width(&url_line, url_size);
+    let bytes = regular.encode(&url_line);
+    content
+        .begin_text()
+        .set_fill_rgb(0.4, 0.4, 0.4)
+        .set_font(Name(b"FR"), url_size)
+        .next_line(FOOTER_X, 32.0)
+        .show(Str(&bytes))
+        .end_text();
     let content = content.finish();
 
     // Objects.
@@ -367,7 +421,8 @@ pub fn render(input: &CertificatePdf) -> Result<Vec<u8>> {
     let content_id = Ref::new(4);
     let link_id = Ref::new(5);
     let info_id = Ref::new(6);
-    let mut next = 7;
+    let artwork_id = Ref::new(7);
+    let mut next = 8;
     let mut pdf = Pdf::new();
     pdf.catalog(catalog_id).pages(tree_id);
     pdf.pages(tree_id).kids([page_id]).count(1);
@@ -379,16 +434,24 @@ pub fn render(input: &CertificatePdf) -> Result<Vec<u8>> {
         page.parent(tree_id);
         page.contents(content_id);
         page.annotations([link_id]);
-        page.resources()
+        let mut resources = page.resources();
+        resources.x_objects().pair(Name(b"Artwork"), artwork_id);
+        resources
             .fonts()
             .pair(Name(b"FR"), regular_id)
             .pair(Name(b"FB"), bold_id);
     }
     pdf.stream(content_id, &content);
     {
+        let mut image = pdf.image_xobject(artwork_id, ARTWORK);
+        image.filter(Filter::DctDecode);
+        image.width(1600).height(1131).bits_per_component(8);
+        image.color_space().device_rgb();
+    }
+    {
         let mut link = pdf.annotation(link_id);
         link.subtype(AnnotationType::Link);
-        link.rect(Rect::new(FOOTER_X, 78.0, FOOTER_X + url_width, 92.0));
+        link.rect(Rect::new(FOOTER_X, 29.0, FOOTER_X + url_width, 39.0));
         link.border(0.0, 0.0, 0.0, None);
         link.action()
             .action_type(ActionType::Uri)
@@ -489,6 +552,9 @@ mod tests {
             verify_code: "ABCD-EFGH-JKLM-NPQR".into(),
             verify_url: "http://localhost:3000/certificates/ABCD-EFGH-JKLM-NPQR/verify".into(),
             teacher_name: Some("Мейірбек".into()),
+            course_start: None,
+            course_end: None,
+            training_hours: None,
         }
     }
 
@@ -498,7 +564,7 @@ mod tests {
             let bytes = render(&sample(language)).unwrap();
             assert!(bytes.starts_with(b"%PDF-"));
             assert!(
-                bytes.len() > 4_000 && bytes.len() < 200_000,
+                bytes.len() > ARTWORK.len() && bytes.len() < ARTWORK.len() + 200_000,
                 "{}",
                 bytes.len()
             );
@@ -521,5 +587,48 @@ mod tests {
         input.course_name = "Очень ".repeat(40);
         let bytes = render(&input).unwrap();
         assert!(bytes.starts_with(b"%PDF-"));
+    }
+
+    #[test]
+    fn bilingual_training_details_are_omitted_when_blank_and_printed_when_set() {
+        let mut input = sample(Language::En);
+        for language in [Language::Kk, Language::Ru] {
+            let text = training_text(&input, language);
+            assert!(text.contains(&input.certificate_name));
+            assert!(!text.contains("сағат") && !text.contains("часов"));
+            assert!(!text.contains("2026"));
+        }
+        input.course_start = Some("2026-09-01".into());
+        input.course_end = Some("2026-09-30".into());
+        input.training_hours = Some(72);
+        assert!(training_text(&input, Language::Ru).contains("с 01.09.2026 по 30.09.2026"));
+        assert!(training_text(&input, Language::Ru).contains("72 часов"));
+        assert!(training_text(&input, Language::Kk).contains("72 сағат"));
+    }
+
+    #[test]
+    fn wrapped_course_text_stays_above_the_footer() {
+        let mut input = sample(Language::Ru);
+        input.certificate_name = "Дополненная реальность ".repeat(22);
+        let regular = Font::load(REGULAR).unwrap();
+        for line in lines(&input, &regular)
+            .iter()
+            .filter(|l| (l.x - 244.0).abs() < f32::EPSILON || (l.x - 588.0).abs() < f32::EPSILON)
+        {
+            assert!(line.y >= 175.0, "{}", line.y);
+        }
+    }
+
+    #[test]
+    fn writes_reference_sample_for_visual_review() {
+        let Some(path) = std::env::var_os("CERTIFICATE_SAMPLE_PATH") else {
+            return;
+        };
+        let mut input = sample(Language::Ru);
+        input.certificate_name = "Технологии дополненной и виртуальной реальности".into();
+        input.course_start = Some("2026-09-01".into());
+        input.course_end = Some("2026-09-30".into());
+        input.training_hours = Some(72);
+        std::fs::write(path, render(&input).unwrap()).unwrap();
     }
 }

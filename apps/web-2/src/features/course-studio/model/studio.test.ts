@@ -8,6 +8,7 @@ import { courseStatus, presetCount } from './course'
 import {
   certificateConfig,
   certificateFields,
+  certificateFieldsSchema,
   createPlan,
   fileContent,
   mediaSource,
@@ -107,11 +108,14 @@ describe('team', () => {
 })
 
 describe('certificate', () => {
-  test('B-CST-21 the three printed fields are read from the designer document with defaults', () => {
+  test('B-CST-21 printed fields default to automatic values and omit optional training details', () => {
     expect(certificateFields({})).toEqual({
       certification_name: '',
       certification_type: 'completion',
       certificate_instructor: '',
+      course_start: '',
+      course_end: '',
+      training_hours: '',
     })
     expect(certificateFields({ certification_type: 'workshop', certification_name: 'X' })).toMatchObject({
       certification_name: 'X',
@@ -120,11 +124,37 @@ describe('certificate', () => {
   })
 
   test('B-CST-21 saving keeps the keys this page does not edit', () => {
-    const fields = { certification_name: 'N', certification_type: 'mastery' as const, certificate_instructor: 'T' }
+    const fields = {
+      ...certificateFields({}),
+      certification_name: 'N',
+      certification_type: 'mastery' as const,
+      certificate_instructor: 'T',
+    }
     expect(certificateConfig({ certificate_pattern: 'royal', certification_name: 'old' }, fields)).toEqual({
       certificate_pattern: 'royal',
       ...fields,
     })
+  })
+
+  test('B-CST-21 dates and hours are optional, with calendar, ordering and whole-hour validation', () => {
+    const fields = certificateFields({})
+    expect(v.safeParse(certificateFieldsSchema, fields).success).toBe(true)
+    expect(
+      v.safeParse(certificateFieldsSchema, {
+        ...fields,
+        course_start: '2026-09-01',
+        course_end: '2026-09-30',
+        training_hours: '72',
+      }).success,
+    ).toBe(true)
+    for (const patch of [
+      { course_start: '2026-02-30' },
+      { course_start: '2026-09-30', course_end: '2026-09-01' },
+      { training_hours: '0' },
+      { training_hours: '1.5' },
+    ]) {
+      expect(v.safeParse(certificateFieldsSchema, { ...fields, ...patch }).success).toBe(false)
+    }
   })
 })
 

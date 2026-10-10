@@ -2483,3 +2483,15 @@ without BOM, else Windows-1251; `;` or `,`; optional header; the cell with an
 remove with confirmation, Excel CSV export (BOM, `;`, formula-safe cells). web-2
 only regenerated its client; `enrollCourseLearners` is parked in its
 `gates/server-removals.json` with a "not for deletion - build the UI" reason.
+
+## Automatic bilingual certificates (2026-10-10)
+
+Certificate previews and downloads now use the owner's Toraighyrov University / Ashyq Bilim example.
+The original JPEG supplies the logos and decoration; its sample fields are covered and replaced by
+embedded-font text. The shared server renderer fills the learner, course, lecturer, issue date and
+verification number. The certificate body is always Kazakh/Russian; the interface locale still selects
+the certificate type label and verification footer. Existing issuance and verification codes stay intact.
+
+The course studio adds optional `course_start`, `course_end` (YYYY-MM-DD) and `training_hours` (whole
+hours 1–100000, stored as text) in certification config. Blank values are omitted from the PDF. Both
+the form and domain service validate dates, date order and hours. No schema migration or new route.

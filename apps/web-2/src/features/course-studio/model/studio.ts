@@ -112,7 +112,7 @@ export function splitRoster(rows: readonly Contributor[]): { team: Contributor[]
   }
 }
 
-// ---- Certificate: `Certification.config` is the designer document; the server PDF reads three keys. ----
+// ---- Certificate: settings printed by the shared server PDF template. ----
 
 export const CERTIFICATE_TYPES = [
   'completion',
@@ -126,11 +126,39 @@ export const CERTIFICATE_TYPES = [
 ] as const
 export type CertificateType = (typeof CERTIFICATE_TYPES)[number]
 
-export const certificateFieldsSchema = v.object({
-  certification_name: v.pipe(v.string(), v.trim(), v.maxLength(200)),
-  certification_type: v.picklist(CERTIFICATE_TYPES),
-  certificate_instructor: v.pipe(v.string(), v.trim(), v.maxLength(200)),
-})
+const optionalDate = v.pipe(
+  v.string(),
+  v.trim(),
+  v.check(
+    value =>
+      value === '' ||
+      (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        !Number.isNaN(Date.parse(value)) &&
+        new Date(value).toISOString().slice(0, 10) === value),
+  ),
+)
+
+export const certificateFieldsSchema = v.pipe(
+  v.object({
+    certification_name: v.pipe(v.string(), v.trim(), v.maxLength(200)),
+    certification_type: v.picklist(CERTIFICATE_TYPES),
+    certificate_instructor: v.pipe(v.string(), v.trim(), v.maxLength(200)),
+    course_start: optionalDate,
+    course_end: optionalDate,
+    training_hours: v.pipe(
+      v.string(),
+      v.trim(),
+      v.check(value => value === '' || (/^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 100_000)),
+    ),
+  }),
+  v.forward(
+    v.partialCheck(
+      [['course_start'], ['course_end']],
+      fields => !fields.course_start || !fields.course_end || fields.course_start <= fields.course_end,
+    ),
+    ['course_end'],
+  ),
+)
 export type CertificateFields = v.InferOutput<typeof certificateFieldsSchema>
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
@@ -143,6 +171,9 @@ export function certificateFields(config: Record<string, unknown>): CertificateF
     certification_name: text(config['certification_name']),
     certification_type: isCertificateType(type) ? type : 'completion',
     certificate_instructor: text(config['certificate_instructor']),
+    course_start: text(config['course_start']),
+    course_end: text(config['course_end']),
+    training_hours: text(config['training_hours']),
   }
 }
 

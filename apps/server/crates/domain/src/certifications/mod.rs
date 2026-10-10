@@ -1,7 +1,7 @@
 //! Certifications (legacy `services/courses/certifications.py`).
 //!
-//! A course may carry certification templates (opaque JSON for the
-//! client's PDF designer); a certificate is issued to a learner once the
+//! A course may carry certificate settings for the bilingual university
+//! template; a certificate is issued to a learner once the
 //! canonical course progress marks them eligible - automatically by the
 //! progress projector, and again on demand when the learner opens their
 //! certificates. Verification by code is public.
@@ -293,14 +293,56 @@ impl CertificationsService {
     }
 
     fn require_object(config: &serde_json::Value) -> Result<()> {
-        if config.is_object() {
-            Ok(())
-        } else {
-            Err(Error::validation(vec![FieldError {
+        if !config.is_object() {
+            return Err(Error::validation(vec![FieldError {
                 field: "config".into(),
                 code: "invalid".into(),
                 message: "config must be a JSON object".into(),
-            }]))
+            }]));
+        }
+        let mut errors = Vec::new();
+        for key in ["course_start", "course_end", "training_hours"] {
+            let Some(value) = config.get(key) else {
+                continue;
+            };
+            let valid = value.as_str().is_some_and(|text| {
+                let text = text.trim();
+                text.is_empty()
+                    || if key == "training_hours" {
+                        text.parse::<u32>()
+                            .is_ok_and(|hours| (1..=100_000).contains(&hours))
+                    } else {
+                        text.len() == 10 && text.parse::<jiff::civil::Date>().is_ok()
+                    }
+            });
+            if !valid {
+                errors.push(FieldError {
+                    field: format!("config.{key}"),
+                    code: "invalid".into(),
+                    message: if key == "training_hours" {
+                        "hours must be a whole number from 1 to 100000"
+                    } else {
+                        "date must be YYYY-MM-DD"
+                    }
+                    .into(),
+                });
+            }
+        }
+        if let (Some(start), Some(end)) = (
+            config_text(config, "course_start"),
+            config_text(config, "course_end"),
+        ) && start > end
+        {
+            errors.push(FieldError {
+                field: "config.course_end".into(),
+                code: "invalid".into(),
+                message: "end date must not precede start date".into(),
+            });
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(Error::validation(errors))
         }
     }
 
@@ -469,6 +511,9 @@ impl CertificationsService {
             verify_url: verify_url(language, &code),
             verify_code: code.clone(),
             teacher_name,
+            course_start: text("course_start"),
+            course_end: text("course_end"),
+            training_hours: text("training_hours").and_then(|h| h.parse().ok()),
         })?;
         Ok((code, bytes))
     }
@@ -508,6 +553,9 @@ impl CertificationsService {
             issued_at_unix: jiff::Timestamp::now().as_second(),
             verify_url: verify_url(language, code),
             verify_code: code.to_owned(),
+            course_start: text("course_start"),
+            course_end: text("course_end"),
+            training_hours: text("training_hours").and_then(|h| h.parse().ok()),
         })
     }
 }
@@ -515,6 +563,26 @@ impl CertificationsService {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn optional_training_details_are_validated() {
+        for config in [
+            serde_json::json!({}),
+            serde_json::json!({"course_start":"", "course_end":"", "training_hours":""}),
+            serde_json::json!({"course_start":"2026-09-01", "course_end":"2026-09-30", "training_hours":"72"}),
+        ] {
+            assert!(CertificationsService::require_object(&config).is_ok());
+        }
+        for config in [
+            serde_json::json!({"course_start":"2026-02-30"}),
+            serde_json::json!({"course_start":"2026-09-30", "course_end":"2026-09-01"}),
+            serde_json::json!({"training_hours":"0"}),
+            serde_json::json!({"training_hours":"1.5"}),
+            serde_json::json!({"training_hours":72}),
+        ] {
+            assert!(CertificationsService::require_object(&config).is_err());
+        }
+    }
 
     #[test]
     fn verify_codes_are_grouped_and_unambiguous() {

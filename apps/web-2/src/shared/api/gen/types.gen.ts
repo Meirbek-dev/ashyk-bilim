@@ -1208,8 +1208,7 @@ export type CertificationAction = 'update' | 'delete';
 
 /**
  * `certifications.config`: what the certificate editor stores. The server
- * reads `certification_name`, `certification_type` and
- * `certificate_instructor`; the rest is the web's.
+ * reads the title, type, lecturer and optional training details.
  */
 export type CertificationConfig = {
     /**
@@ -1220,6 +1219,15 @@ export type CertificationConfig = {
     certification_description?: string;
     certification_name?: string;
     certification_type?: CertificationType;
+    course_end?: string;
+    /**
+     * Optional training dates, YYYY-MM-DD; blank means omitted.
+     */
+    course_start?: string;
+    /**
+     * Optional whole training hours (1–100000), stored as form text; blank means omitted.
+     */
+    training_hours?: string;
 };
 
 export type CertificationId = string;
