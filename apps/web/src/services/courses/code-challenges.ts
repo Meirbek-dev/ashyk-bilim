@@ -38,6 +38,8 @@ export interface CodeChallengeSettings {
   scheduled_at?: string | null
   published_at?: string | null
   archived_at?: string | null
+  /** Why the content cannot be edited now (attempts exist, archived, scheduled); null while editable. */
+  edit_lock?: 'has_submissions' | 'archived' | 'scheduled' | null
 }
 
 export interface TestCase {
@@ -129,6 +131,7 @@ interface CodeAssessmentRead {
   scheduled_at?: string | null
   published_at?: string | null
   archived_at?: string | null
+  edit_lock?: 'has_submissions' | 'archived' | 'scheduled' | null
   assessment_policy?: {
     settings_json?: Record<string, unknown>
   } | null
@@ -198,6 +201,7 @@ async function loadCodeAssessment(activityUuid: string): Promise<CodeAssessmentR
       scheduled_at: unixToIso(assessment.scheduled_at_unix),
       published_at: unixToIso(assessment.published_at_unix),
       archived_at: unixToIso(assessment.archived_at_unix),
+      edit_lock: assessment.edit_lock ?? null,
       // v2 has no policy settings_json bucket; code-challenge-specific fields
       // (difficulty/execution_mode/hints/max_submissions/allow_custom_input)
       // have no wire home and fall back to `toCodeChallengeSettings`'s
@@ -345,6 +349,7 @@ function toCodeChallengeSettings(
     scheduled_at: assessment.scheduled_at ?? null,
     published_at: assessment.published_at ?? null,
     archived_at: assessment.archived_at ?? null,
+    edit_lock: assessment.edit_lock ?? null,
     ...(assessment.lifecycle === undefined ? {} : { lifecycle_status: assessment.lifecycle }),
     ...(assessment.title === undefined ? {} : { title: assessment.title }),
     ...(maxSubmissions !== undefined ? { max_submissions: maxSubmissions } : {}),

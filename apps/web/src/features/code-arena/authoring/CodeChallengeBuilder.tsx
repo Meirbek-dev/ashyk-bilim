@@ -156,6 +156,7 @@ export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallenge
   // BUG-385: the only way a code challenge goes live - the curriculum toggle
   // refuses a draft assessment (409 `activity-not-ready`).
   const isDraft = (settings?.lifecycle_status ?? 'draft') === 'draft'
+  const editLock = settings?.edit_lock ?? null
   const publish = async () => {
     if (!settings?.uuid) return
     setIsPublishing(true)
@@ -211,7 +212,7 @@ export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallenge
           <Button
             type="button"
             onClick={save}
-            disabled={saveSettings.isPending || Boolean(firstMarkdownIssue)}
+            disabled={saveSettings.isPending || Boolean(firstMarkdownIssue) || Boolean(editLock)}
             className="h-8 gap-1.5 text-xs font-semibold"
           >
             {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
@@ -232,6 +233,15 @@ export function CodeChallengeBuilder({ activityUuid, courseUuid }: CodeChallenge
         </div>
       </div>
 
+      {/* The server refuses content saves here (attempts exist, archived, scheduled): say why up front. */}
+      {editLock ? (
+        <p
+          role="status"
+          className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          {t(`editLocked_${editLock}`)}
+        </p>
+      ) : null}
       <Tabs value={tab} onValueChange={value => setTab(value as BuilderTab)} className="flex min-h-0 flex-1 flex-col">
         {/* Tab triggers */}
         <div className="bg-muted/5 border-b px-3">

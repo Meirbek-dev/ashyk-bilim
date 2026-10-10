@@ -125,6 +125,9 @@
       }
     },
     "CodeChallenges": {
+      "editLocked_has_submissions": "Learners have already solved this challenge: the statement, languages and tests are read only. Unpublish it to edit.",
+      "editLocked_archived": "The challenge is archived: the statement, languages and tests are read only. Return it to draft to edit.",
+      "editLocked_scheduled": "Publishing is scheduled: the statement, languages and tests are read only. Cancel the schedule to edit.",
       "untitledChallenge": "Untitled Challenge",
       "codeEditorFailedToLoad": "Code Editor failed to load",
       "noProblemStatement": "No problem description provided.",
