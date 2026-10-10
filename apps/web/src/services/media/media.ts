@@ -12,8 +12,6 @@ import { getPublicConfig } from '@services/config/env'
 
 const getMediaUrl = () => getPublicConfig().mediaUrl
 
-export const EMPTY_COURSE_THUMBNAIL_PATH = '/empty_thumbnail.avif'
-
 const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
 
 /** Absolute URL for a public storage key; `null`/empty keys yield `null`. */
@@ -27,7 +25,7 @@ export function getContentUrl(key: string | null | undefined): string | null {
 }
 
 export function getCourseThumbnailUrl(thumbnailKey?: string | null): string {
-  return getContentUrl(thumbnailKey) ?? EMPTY_COURSE_THUMBNAIL_PATH
+  return getContentUrl(thumbnailKey) ?? ''
 }
 
 /** @deprecated legacy signature kept for call sites not yet on keys — resolves the key only. */

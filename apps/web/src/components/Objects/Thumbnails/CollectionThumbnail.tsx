@@ -46,6 +46,7 @@ function CollectionMosaic({ courses }: { courses: AppCourse[] | number[] | undef
   const courseImages = courseList
     .filter((c): c is typeof c & { thumbnail_image: string } => typeof c.thumbnail_image === 'string')
     .map(c => getCourseThumbnailMediaDirectory(c.course_uuid, c.thumbnail_image))
+    .filter(Boolean)
 
   // No course images: the first course's generated cover, as on course cards.
   if (courseImages.length === 0) {

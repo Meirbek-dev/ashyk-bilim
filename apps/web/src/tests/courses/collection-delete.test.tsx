@@ -36,12 +36,14 @@ const wire = (can_delete: boolean): Collection => ({
   version: 1,
 })
 
-function renderCard(can_delete: boolean) {
+function renderCard(can_delete: boolean, courses?: AppCourse[]) {
   const queryClient = new QueryClient()
+  const collection = toAppCollection(wire(can_delete))
+  if (courses) collection.courses = courses
   render(
     <QueryClientProvider client={queryClient}>
       <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
-        <CollectionThumbnail collection={toAppCollection(wire(can_delete))} />
+        <CollectionThumbnail collection={collection} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
   )
@@ -49,6 +51,11 @@ function renderCard(can_delete: boolean) {
 }
 
 describe('CollectionThumbnail delete (UX-124)', () => {
+  it('uses a generated cover when a course thumbnail is empty', () => {
+    renderCard(false, [{ course_uuid: id, name: 'Основы Python', thumbnail_image: '' }])
+    expect(screen.getByText('ОP')).toBeInTheDocument()
+  })
+
   it('maps can_delete from the wire and hides the control without it', () => {
     expect(toAppCollection(wire(true)).can_delete).toBe(true)
     renderCard(false)

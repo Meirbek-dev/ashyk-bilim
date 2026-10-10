@@ -22,6 +22,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const course_meta = await fetchCourseMetadata(params.courseuuid)
   const courseName = course_meta?.name ?? ''
   const courseDescription = course_meta?.description ?? ''
+  const thumbnailUrl = getCourseThumbnailMediaDirectory(course_meta?.course_uuid, course_meta?.thumbnail_image)
   const courseKeywords = Array.isArray(course_meta?.learnings)
     ? course_meta.learnings.filter((value): value is string => typeof value === 'string')
     : typeof course_meta?.learnings === 'string'
@@ -46,14 +47,16 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     openGraph: {
       title: `${courseName} - ${APP_NAME}`,
       description: courseDescription,
-      images: [
-        {
-          url: getCourseThumbnailMediaDirectory(course_meta?.course_uuid, course_meta?.thumbnail_image),
-          width: 800,
-          height: 600,
-          alt: courseName,
-        },
-      ],
+      images: thumbnailUrl
+        ? [
+            {
+              url: thumbnailUrl,
+              width: 800,
+              height: 600,
+              alt: courseName,
+            },
+          ]
+        : [],
       type: 'article',
       publishedTime: course_meta?.creation_date || '',
       tags: courseKeywords,

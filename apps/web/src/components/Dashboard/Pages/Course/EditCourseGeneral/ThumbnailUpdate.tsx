@@ -19,6 +19,7 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { Button } from '@components/ui/button'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
 import { toast } from 'sonner'
 import type React from 'react'
 import { compressImage } from '@/lib/image-compression'
@@ -152,17 +153,19 @@ function ThumbnailUpdate({ disabled = false, disabledReason }: ThumbnailUpdatePr
 
   return (
     <div className="bg-card flex w-full flex-col gap-6 rounded-lg border p-6">
-      <div className="mx-auto max-w-[480px]">
-        <Image
-          src={previewUrl}
-          alt={localUrl ? t('thumbnailPreviewAlt') : t('currentThumbnailAlt')}
-          className={`border-border aspect-video w-full rounded-lg border object-cover shadow-sm ${
-            isSaving ? 'animate-pulse' : ''
-          }`}
-          width={480}
-          height={270}
-          unoptimized
-        />
+      <div className="border-border relative mx-auto aspect-video w-full max-w-[480px] overflow-hidden rounded-lg border shadow-sm">
+        {previewUrl ? (
+          <Image
+            src={previewUrl}
+            alt={localUrl ? t('thumbnailPreviewAlt') : t('currentThumbnailAlt')}
+            className={`aspect-video w-full object-cover ${isSaving ? 'animate-pulse' : ''}`}
+            width={480}
+            height={270}
+            unoptimized
+          />
+        ) : (
+          <CoursePlaceholder seed={course.courseStructure.course_uuid} title={course.courseStructure.name ?? ''} />
+        )}
       </div>
 
       {isSaving ? (

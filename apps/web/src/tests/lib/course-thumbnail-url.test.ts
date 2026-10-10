@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { getContentUrl, getCourseThumbnailUrl, getPlatformThumbnailImage } from '@/services/media/media'
+import {
+  getContentUrl,
+  getCourseThumbnailUrl,
+  getCourseThumbnailMediaDirectory,
+  getPlatformThumbnailImage,
+} from '@/services/media/media'
 
 process.env['NEXT_PUBLIC_SITE_URL'] = 'https://app.test'
 process.env['NEXT_PUBLIC_API_URL'] = 'https://api.test/api/v2/'
@@ -24,8 +29,12 @@ describe('public media URL resolution (v2 storage keys)', () => {
     expect(getContentUrl('   ')).toBeNull()
   })
 
-  it('falls back to the empty course thumbnail without a key', () => {
-    expect(getCourseThumbnailUrl(null)).toBe('/empty_thumbnail.avif')
+  it('leaves missing course thumbnails empty for generated covers', () => {
+    expect(getCourseThumbnailUrl(null)).toBe('')
+    expect(getCourseThumbnailUrl()).toBe('')
+    expect(getCourseThumbnailUrl('')).toBe('')
+    expect(getCourseThumbnailUrl('   ')).toBe('')
+    expect(getCourseThumbnailMediaDirectory('c1', '')).toBe('')
     expect(getCourseThumbnailUrl('courses/c1/thumb.webp')).toBe(
       'https://media.test/static/content/courses/c1/thumb.webp',
     )
