@@ -465,6 +465,11 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         .await;
     assert_eq!(returned.status, StatusCode::OK, "{}", returned.text());
     assert_eq!(returned.json()["status"], "returned");
+    assert!(
+        returned.json()["final_score"].is_null(),
+        "an unscored return is not a grade: {}",
+        returned.text()
+    );
     let state = app
         .get_as(&bob, &format!("/api/v2/assessments/{id}/attempt-state"))
         .await;
@@ -589,6 +594,21 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         lines[1]
     );
     assert!(lines[1].ends_with(";95;10;8"), "{}", lines[1]);
+    // The hand-in time is Kazakhstan time in the shape ru Excel reads as a
+    // date (`10.10.2026 21:04:48`), not UTC ISO text.
+    let submitted = lines[1].split(';').nth(5).unwrap();
+    assert_eq!(shape(submitted), "dd.dd.dddd dd:dd:dd", "{submitted}");
+    // Bob's work was returned before its essay was scored: no final score
+    // and no essay score (it exported as «0»).
+    let bob_row: Vec<&str> = lines
+        .iter()
+        .find(|l| l.starts_with("bob;"))
+        .unwrap()
+        .split(';')
+        .collect();
+    assert_eq!(bob_row[3], "Возвращено", "{bob_row:?}");
+    assert_eq!(bob_row[7], "", "final score {bob_row:?}");
+    assert_eq!(bob_row[9], "", "essay {bob_row:?}");
     let english = app
         .send(
             Request::builder()
@@ -606,6 +626,8 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         "{english}"
     );
     assert!(english.contains(",1,Published,No,"), "{english}");
+    let en_submitted = english.lines().nth(1).unwrap().split(',').nth(5).unwrap();
+    assert_eq!(shape(en_submitted), "dddd-dd-dd dd:dd:dd", "{en_submitted}");
     let gradebook = app
         .get_as(
             &teacher,
@@ -4617,4 +4639,11 @@ async fn dropped_override_writes_still_settle_and_audit(pool: PgPool) {
         async || lateness(&app, &teacher, &sub).await == (Some(70.0), Some(true)),
     )
     .await;
+}
+
+/// A CSV cell with its digits masked, to check a date's shape.
+fn shape(cell: &str) -> String {
+    cell.chars()
+        .map(|c| if c.is_ascii_digit() { 'd' } else { c })
+        .collect()
 }

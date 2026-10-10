@@ -722,6 +722,17 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         "{text}"
     );
     assert!(text.contains("alice@example.com;Опубликовано;1;"), "{text}");
+    // The hand-in time is Kazakhstan time ru Excel reads as a date, not UTC
+    // ISO text.
+    let alice_row = text.lines().find(|l| l.contains("alice@")).unwrap();
+    let submitted: String = alice_row
+        .split(';')
+        .nth(5)
+        .unwrap()
+        .chars()
+        .map(|c| if c.is_ascii_digit() { 'd' } else { c })
+        .collect();
+    assert_eq!(submitted, "dd.dd.dddd dd:dd:dd", "{alice_row}");
     let kk = app
         .send(
             Request::builder()

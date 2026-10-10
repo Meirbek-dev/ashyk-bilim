@@ -916,6 +916,15 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert!(lines[1].contains("bob"), "{text}");
     assert!(lines[1].contains(";Тест;"), "{text}");
     assert!(lines[1].contains(";На проверке;"), "{text}");
+    // Submitted at: Kazakhstan time that ru Excel reads as a date.
+    let submitted: String = lines[1]
+        .rsplit(';')
+        .next()
+        .unwrap()
+        .chars()
+        .map(|c| if c.is_ascii_digit() { 'd' } else { c })
+        .collect();
+    assert_eq!(submitted, "dd.dd.dddd dd:dd:dd", "{text}");
     for name in ["at-risk", "course-progress", "assessment-outcomes"] {
         let res = app
             .get_as(

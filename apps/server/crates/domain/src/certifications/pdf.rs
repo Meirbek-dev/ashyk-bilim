@@ -101,7 +101,7 @@ fn type_label(language: Language, key: &str) -> Option<&'static str> {
 fn issued_date(language: Language, unix: i64) -> String {
     let date = jiff::Timestamp::from_second(unix)
         .map(|ts| {
-            ts.to_zoned(jiff::tz::TimeZone::fixed(jiff::tz::Offset::constant(5)))
+            ts.to_zoned(jiff::tz::TimeZone::fixed(crate::csv::KAZAKHSTAN))
                 .date()
         })
         .unwrap_or_default();

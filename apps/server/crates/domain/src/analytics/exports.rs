@@ -11,17 +11,13 @@ use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submit
 use super::filters::AnalyticsFilters;
 use super::risk::build_risk_rows;
 use super::types::RiskLevel;
-use crate::csv::csv_row;
+use crate::csv::{csv_datetime, csv_row};
 use crate::grading::teacher::CsvLanguage;
 
 pub const MAX_EXPORT_ROWS: usize = 50_000;
 
 fn opt<T: ToString>(v: Option<T>) -> String {
     v.map(|v| v.to_string()).unwrap_or_default()
-}
-
-fn iso8601(unix: i64) -> String {
-    jiff::Timestamp::from_second(unix).map_or_else(|_| unix.to_string(), |t| t.to_string())
 }
 
 fn document(
@@ -332,7 +328,7 @@ pub fn grading_backlog_csv(
                 language.assessment_kind(a.kind).to_owned(),
                 a.title.clone(),
                 language.submission_status(s.status).to_owned(),
-                iso8601(submitted_at(s)),
+                csv_datetime(submitted_at(s), language),
             ])
         });
     document(language, &grading_backlog_header(language), rows)
@@ -358,7 +354,9 @@ pub fn course_progress_csv(
                 s.progress_pct.to_string(),
                 s.completed_steps.to_string(),
                 s.total_steps.to_string(),
-                s.last_activity_at.map(iso8601).unwrap_or_default(),
+                s.last_activity_at
+                    .map(|t| csv_datetime(t, language))
+                    .unwrap_or_default(),
                 language.yes_no(s.has_certificate).to_owned(),
             ]
         }),

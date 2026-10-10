@@ -37,7 +37,7 @@ use crate::files::uploads::{FILE_SUBMISSION_MAX_MB, UNREFERENCED_GRACE};
 use crate::grading::breakdown::round2;
 use crate::grading::penalties::{apply_late, late_penalty_pct};
 use crate::grading::teacher::{
-    CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_row, iso8601,
+    CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_datetime, csv_row,
 };
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -1635,7 +1635,10 @@ impl FileSubmissionsService {
                 user.email,
                 language.file_status(a.row.status).to_owned(),
                 a.row.attempt_number.to_string(),
-                a.row.submitted_at.map(iso8601).unwrap_or_default(),
+                a.row
+                    .submitted_at
+                    .map(|t| csv_datetime(t, language))
+                    .unwrap_or_default(),
                 language.yes_no(a.row.is_late).to_owned(),
                 a.row.late_penalty_pct.to_string(),
                 a.row.final_score.map(|s| s.to_string()).unwrap_or_default(),

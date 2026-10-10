@@ -45,6 +45,27 @@ pub fn csv_row(fields: &[String], language: CsvLanguage) -> String {
     line
 }
 
+/// The platform's clock: Kazakhstan time (UTC+5 country-wide since 2024),
+/// as on the certificates and the web's default time zone (`Asia/Almaty`).
+pub const KAZAKHSTAN: jiff::tz::Offset = jiff::tz::Offset::constant(5);
+
+/// A timestamp cell in Kazakhstan time that `language`'s Excel reads as a date.
+///
+/// UTC `2026-10-10T16:04:48Z` was text there and 5 h off; now
+/// `10.10.2026 21:04:48` for ru/kk, ISO `2026-10-10 21:04:48` for en.
+pub fn csv_datetime(unix: i64, language: CsvLanguage) -> String {
+    let Ok(ts) = jiff::Timestamp::from_second(unix) else {
+        return unix.to_string();
+    };
+    let format = match language {
+        CsvLanguage::Ru | CsvLanguage::Kk => "%d.%m.%Y %H:%M:%S",
+        CsvLanguage::En => "%Y-%m-%d %H:%M:%S",
+    };
+    ts.to_zoned(jiff::tz::TimeZone::fixed(KAZAKHSTAN))
+        .strftime(format)
+        .to_string()
+}
+
 /// A plain decimal number (`93.33`, `0.5`) as the exports format scores
 /// and percentages; ids, dates and versions (`3.8.1`) are not.
 fn is_decimal(value: &str) -> bool {
@@ -84,6 +105,20 @@ mod tests {
         assert_eq!(csv_field("\rx", ','), "\"'\rx\"");
         assert_eq!(csv_field("30", ','), "30");
         assert_eq!(csv_field("Aigerim -Critic", ','), "Aigerim -Critic");
+    }
+
+    #[test]
+    fn dates_are_kazakhstan_time_in_the_shape_excel_reads() {
+        // 2026-10-10T16:04:48Z
+        let unix = 1_791_648_288;
+        assert_eq!(csv_datetime(unix, CsvLanguage::Ru), "10.10.2026 21:04:48");
+        assert_eq!(csv_datetime(unix, CsvLanguage::Kk), "10.10.2026 21:04:48");
+        assert_eq!(csv_datetime(unix, CsvLanguage::En), "2026-10-10 21:04:48");
+        // Neither shape is mangled into a decimal or a formula by the row writer.
+        assert_eq!(
+            csv_row(&[csv_datetime(unix, CsvLanguage::Ru)], CsvLanguage::Ru),
+            "10.10.2026 21:04:48\r\n"
+        );
     }
 
     #[test]

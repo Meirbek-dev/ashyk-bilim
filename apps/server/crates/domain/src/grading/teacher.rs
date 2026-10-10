@@ -635,13 +635,8 @@ fn user_or_placeholder(map: &HashMap<UserId, UserSummary>, id: UserId) -> UserSu
     })
 }
 
-/// RFC 3339 for the CSV export.
-pub(crate) fn iso8601(unix: i64) -> String {
-    jiff::Timestamp::from_second(unix).map_or_else(|_| unix.to_string(), |t| t.to_string())
-}
-
 // One CSV cell writer for every export (BUG-196): `crate::csv`.
-pub(crate) use crate::csv::csv_row;
+pub(crate) use crate::csv::{csv_datetime, csv_row};
 
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
@@ -1062,6 +1057,8 @@ impl GradingService {
             let by_item: BTreeMap<AssessmentItemId, f64> = breakdown
                 .items
                 .iter()
+                // An item still awaiting its manual score has no score yet.
+                .filter(|gi| !gi.needs_manual_review)
                 .map(|gi| {
                     let item_scale = items
                         .iter()
@@ -1085,9 +1082,20 @@ impl GradingService {
                 row.attempt_number.to_string(),
                 language.submission_status(row.status).to_owned(),
                 language.yes_no(row.is_late).to_owned(),
-                row.submitted_at.map(iso8601).unwrap_or_default(),
+                row.submitted_at
+                    .map(|t| csv_datetime(t, language))
+                    .unwrap_or_default(),
                 row.auto_score.map(|s| s.to_string()).unwrap_or_default(),
-                row.final_score.map(|s| s.to_string()).unwrap_or_default(),
+                // Rows returned unscored before the score-of-record fix
+                // stored the derived 0.
+                row.final_score
+                    .filter(|_| {
+                        !(row.status == SubmissionStatus::Returned
+                            && breakdown.needs_manual_review
+                            && breakdown.score_override.is_none())
+                    })
+                    .map(|s| s.to_string())
+                    .unwrap_or_default(),
             ];
             fields.extend(items.iter().map(|i| {
                 by_item
@@ -1393,7 +1401,10 @@ impl GradingService {
         );
         // BUG-202 / BUG-206: no score of record while the attempt stays
         // pending - neither the row nor its ledger entry carries a final.
-        let score_of_record = (target != SubmissionStatus::Pending).then_some(final_score);
+        // Nor does one returned before its manual items were scored: its
+        // derived total is not a grade (it exported as «0»).
+        let score_of_record =
+            (target != SubmissionStatus::Pending && !unscored).then_some(final_score);
         let effective = breakdown.to_value();
         // The row update and its ledger (entry, item feedback, audit) land
         // together or not at all.
