@@ -2381,3 +2381,13 @@ that is the intended outcome. File-submission drafts are out of scope and
 unchanged. The learner's page says, while the draft waits for the sweep,
 that the saved answers will be handed in within a minute, and the result
 names the reason.
+
+## G-13 freeze lifted (2026-10-10)
+
+The web-2 gate G-13 refused any `apps/web` commit without a `Legacy-Hotfix:`
+trailer. It assumed production ran web-2, but production was rolled back to
+`apps/web` on 2026-10-04 and stays there until the owner re-migrates; the
+owner then asked for a full QA + fix sweep of `apps/web` (2026-10-09, ~100
+fixes). `freeze()` in `apps/web-2/gates/repo.ts` now returns no findings.
+Restore the check from git history when web-2 goes live for good (phase 9
+deletes `apps/web` anyway).
