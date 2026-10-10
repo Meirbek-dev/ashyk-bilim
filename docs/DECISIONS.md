@@ -2375,9 +2375,10 @@ deadline_passed` (migration `20261009000001`, schema enum value). The
 earlier of timer and due date wins. Teacher previews are never handed in by
 the due date. A job rather than a lazy hand-in on read: the sweep already
 owns the timer case, its retries and the code-runner path, and a draft
-nobody looks at still lands in the gradebook. On the first deploy the sweep
-hands in every such draft left open in the past (graded as of its due date);
-that is the intended outcome. File-submission drafts are out of scope and
+nobody looks at still lands in the gradebook. Drafts whose due date passed
+before the sweep went live are not handed in (2026-10-10, cluster G below -
+this replaces "on the first deploy the sweep hands in every such draft left
+open in the past"). File-submission drafts are out of scope and
 unchanged. The learner's page says, while the draft waits for the sweep,
 that the saved answers will be handed in within a minute, and the result
 names the reason.
@@ -2391,3 +2392,50 @@ owner then asked for a full QA + fix sweep of `apps/web` (2026-10-09, ~100
 fixes). `freeze()` in `apps/web-2/gates/repo.ts` now returns no findings.
 Restore the check from git history when web-2 goes live for good (phase 9
 deletes `apps/web` anyway).
+
+## Assessment policy: enrolment gate, late cutoff hand-in, go-live line (2026-10-10, QA cluster G)
+
+The owner decided three open items of the 2026-10-09 QA sweep.
+
+**Assessments need an enrolment** (course setting). Any signed-in user could
+start a quiz, exam, code challenge or file task of a public course; the
+start enrolled them by the way and they showed up in the gradebook. New
+course column `assessments_require_enrollment` (migration `20261010000001`,
+default `true` for new and existing courses; `Course` field, `PATCH
+/courses/{id}` by course writers; the web shows it in the course's Access
+tab while the course is public). On, a learner takes the course's
+assessments only with a trail run (enrolled) or as a member of a linked
+usergroup (the teacher enrolled the group - so private courses behave as
+before). Anyone else gets `NOT_ENROLLED` in `attempt-state.disabled_reasons`
+/ the file task's `disabled_reasons` and 403 `enrollment-required` on
+start, draft save, submit and code runs; the web shows the reason with an
+«Enroll in the course» button (`POST /enrollments/{course}`). A refused
+start enrols nobody. Off is the old open rule. Drafts of a user who is not
+enrolled when the setting is on (they left, or it was switched on later -
+the old open start enrolled them, so most such users are enrolled): they
+still read their attempts and results, cannot save, submit or start until
+they enrol again; the timer / deadline sweep hands them in as usual. Staff
+previews are never gated. Test fixtures (`TestApp::publish_course`) switch
+the setting off - they model the open public course the suites were
+written for; the gate's own tests switch it on.
+
+**The late cutoff closes open drafts.** With late work allowed and a cutoff
+(`late_policy.kind = cutoff`), a draft open at the cutoff stayed open (the
+learner could still hand it in, for zero). The deadline sweep now also
+hands it in at the learner's effective cutoff - the later of the cutoff and
+their own due date (an extension past the cutoff wins) - graded by the late
+policy as of that moment (late, no cutoff penalty yet), reason
+`deadline_passed` (the learner text "the deadline passed, handed in with
+your saved answers" fits; no new enum value). A learner whose late penalty
+is waived has no cutoff and keeps the draft open. One rule:
+`EffectivePolicy::hand_in_at`, mirrored by `list_expired_drafts` in SQL. A
+late *penalty* (no cutoff) never closes a draft.
+
+**Go-live line.** Migration `20261010000002` records, per database, when
+the date hand-in went live (`feature_activations.deadline_auto_submit`,
+the migration's `now()`). The sweep hands in only drafts whose effective
+due date / cutoff passed after that instant; drafts whose date passed
+earlier stay as they are (learners cannot hand them in anyway, so old
+gradebooks do not change on deploy). The older time-limit sweep is not
+affected. Deleting the row turns date hand-ins off.
+

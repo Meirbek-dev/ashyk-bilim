@@ -149,6 +149,26 @@ impl EffectivePolicy {
         !self.waive_late_penalty && self.due_at.is_some_and(|due| submitted_at > due)
     }
 
+    /// When the deadline sweep hands an open draft in by date: a strict due
+    /// date (late work off), else the late cutoff - the later of the cutoff
+    /// and the learner's own due date - unless the penalty is waived (there
+    /// is nothing to cut off). `None` = never by date (no due date, a late
+    /// penalty, or no late policy: the draft may be finished any time).
+    /// `list_expired_drafts` mirrors it in SQL.
+    #[must_use]
+    pub fn hand_in_at(&self) -> Option<i64> {
+        let due = self.due_at?;
+        if !self.allow_late {
+            return Some(due);
+        }
+        match self.late_policy {
+            LatePolicy::Cutoff { cutoff_at } if !self.waive_late_penalty => {
+                Some(due.max(cutoff_at))
+            }
+            _ => None,
+        }
+    }
+
     /// When a timed attempt started at `started` runs out: the time limit
     /// plus the grace period (BUG-326). `None` = untimed.
     #[must_use]

@@ -1010,9 +1010,14 @@ pub async fn list_submitters(pool: &PgPool, assessment_id: AssessmentId) -> Resu
 
 // ── Timer sweep ─────────────────────────────────────────────────────────────
 
-/// Open drafts past their deadline and not backing off: the timer (time
-/// limit + grace period, BUG-326) or a strict due date - late work off, the
-/// learner's override applied (QA-D, `deadline_passed`).
+/// Open drafts past their deadline and not backing off.
+///
+/// The timer (time limit + grace period, BUG-326) or the date hand-in - a
+/// strict due date (late work off, QA-D) or the late cutoff (the later of
+/// the cutoff and the learner's due date, unless the penalty is waived;
+/// cluster G), the learner's override applied: `EffectivePolicy::hand_in_at`
+/// in SQL. A date hand-in only takes dates that passed after the feature
+/// went live ([`deadline_sweep_since`]).
 ///
 /// No retry cap: the last allowed failure hands the draft in for review
 /// (BUG-379); only a failing database keeps one here, retried hourly.
@@ -1022,15 +1027,24 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
            LEFT JOIN assessment_overrides o
              ON o.assessment_id = s.assessment_id AND o.user_id = s.user_id
+           -- `AssessmentsService::policy_at` at now(): the learner's due date and waiver.
+           CROSS JOIN LATERAL (
+             SELECT COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended
+                                  THEN o.due_at_override END,
+                             a.due_at) AS due,
+                    COALESCE((o.expires_at IS NULL OR o.expires_at > now()) AND o.waive_late_penalty,
+                             false) AS waived) p
+           CROSS JOIN LATERAL (
+             SELECT CASE WHEN NOT a.allow_late THEN p.due
+                         WHEN a.late_policy_kind = 'cutoff' AND NOT p.waived
+                           THEN GREATEST(p.due, a.late_cutoff_at) END AS hand_in_at) d
            WHERE s.status = 'draft'
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
              AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
                    AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())
-               -- `AssessmentsService::policy_at`'s due date at now() (late work off, no preview).
-               OR (NOT a.allow_late AND NOT s.preview
-                   AND COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended
-                                     THEN o.due_at_override END,
-                                a.due_at) <= now()))
+               OR (NOT s.preview AND p.due IS NOT NULL AND d.hand_in_at <= now()
+                   AND d.hand_in_at > (SELECT activated_at FROM feature_activations
+                                       WHERE feature = 'deadline_auto_submit')))
            ORDER BY s.started_at
            LIMIT $1"#,
         limit
@@ -1038,6 +1052,19 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
     .fetch_all(pool)
     .await?;
     Ok(ids)
+}
+
+/// When the date hand-in went live on this database (migration
+/// `20261010000002`): drafts whose date passed earlier are never handed in
+/// by it. `None` (row gone) = no date hand-ins at all.
+pub async fn deadline_sweep_since(pool: &PgPool) -> Result<Option<i64>> {
+    let at = sqlx::query_scalar!(
+        r#"SELECT floor(extract(epoch FROM activated_at))::bigint AS "at!"
+           FROM feature_activations WHERE feature = 'deadline_auto_submit'"#
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(at)
 }
 
 /// Exponential backoff bookkeeping when an auto-submit fails.

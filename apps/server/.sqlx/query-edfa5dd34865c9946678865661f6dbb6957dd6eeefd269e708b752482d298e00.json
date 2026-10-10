@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"id: SubmissionId\"\n           FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n           LEFT JOIN assessment_overrides o\n             ON o.assessment_id = s.assessment_id AND o.user_id = s.user_id\n           -- `AssessmentsService::policy_at` at now(): the learner's due date and waiver.\n           CROSS JOIN LATERAL (\n             SELECT COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended\n                                  THEN o.due_at_override END,\n                             a.due_at) AS due,\n                    COALESCE((o.expires_at IS NULL OR o.expires_at > now()) AND o.waive_late_penalty,\n                             false) AS waived) p\n           CROSS JOIN LATERAL (\n             SELECT CASE WHEN NOT a.allow_late THEN p.due\n                         WHEN a.late_policy_kind = 'cutoff' AND NOT p.waived\n                           THEN GREATEST(p.due, a.late_cutoff_at) END AS hand_in_at) d\n           WHERE s.status = 'draft'\n             AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())\n             AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL\n                   AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())\n               OR (NOT s.preview AND p.due IS NOT NULL AND d.hand_in_at <= now()\n                   AND d.hand_in_at > (SELECT activated_at FROM feature_activations\n                                       WHERE feature = 'deadline_auto_submit')))\n           ORDER BY s.started_at\n           LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "edfa5dd34865c9946678865661f6dbb6957dd6eeefd269e708b752482d298e00"
+}

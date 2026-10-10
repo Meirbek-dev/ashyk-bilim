@@ -1340,10 +1340,16 @@ impl SubmissionsService {
         };
         // QA-D: a strict due date (no late work) closes the draft too - it is
         // handed in as saved, like Moodle's "open attempts are submitted
-        // automatically". `list_expired_drafts` mirrors this rule in SQL.
-        let due_end = (!assessment.allow_late && !preview)
-            .then(|| AssessmentsService::policy_at(&assessment, row.as_ref(), preview, now).due_at)
-            .flatten();
+        // automatically"; cluster G: so does the late cutoff, graded as of
+        // it. Only dates that passed after the feature went live (its
+        // migration) count. `list_expired_drafts` mirrors this rule in SQL.
+        let since = ab_db::submissions::deadline_sweep_since(pool).await?;
+        let due_end = (!preview)
+            .then(|| {
+                AssessmentsService::policy_at(&assessment, row.as_ref(), preview, now).hand_in_at()
+            })
+            .flatten()
+            .filter(|at| since.is_some_and(|since| *at > since));
         let (submitted_at, reason) = match (timer_end, due_end) {
             (Some(timer), Some(due)) if due < timer => (due, AutoSubmitReason::DeadlinePassed),
             (None, Some(due)) => (due, AutoSubmitReason::DeadlinePassed),

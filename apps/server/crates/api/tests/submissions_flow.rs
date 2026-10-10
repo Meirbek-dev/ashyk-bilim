@@ -750,6 +750,7 @@ async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
     let runner = app.code_runner();
     let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
     assert_eq!(sweep().await.unwrap(), 0, "before the due date");
+    backdate_deadline_sweep(&app).await;
 
     // The due date passes (one minute ago).
     sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
@@ -794,6 +795,202 @@ async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
         .get_as(bob, &format!("/api/v2/submissions/{bob_sub}"))
         .await;
     assert_eq!(theirs.json()["auto_submit_reason"], "deadline_passed");
+}
+
+/// The date hand-in went live "a day ago" (its migration ran when the test
+/// database was made, after the dates these tests put in the past).
+async fn backdate_deadline_sweep(app: &TestApp) {
+    sqlx::query(
+        "UPDATE feature_activations SET activated_at = now() - interval '1 day'
+         WHERE feature = 'deadline_auto_submit'",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
+}
+
+fn unix_now() -> i64 {
+    i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+    .unwrap()
+}
+
+/// Cluster G: with late work allowed and a cutoff, a draft still open at the
+/// cutoff is handed in by the sweep (`deadline_passed`), graded by the late
+/// policy as of the cutoff (late, no penalty yet); a waived learner and one
+/// whose own due date runs past the cutoff keep working until theirs.
+#[sqlx::test(migrations = "../../migrations")]
+async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let now = unix_now();
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": true, "due_at_unix": now + 3600,
+                            "late_policy": { "kind": "cutoff", "cutoff_at_unix": now + 7200 } }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let mut drafts = Vec::new();
+    for name in ["alice", "bob", "carol"] {
+        let who = learner(&app, name).await;
+        let draft = app.post_as(&who, &start_path, &serde_json::json!({})).await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+        let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+        let saved = app
+            .send(patch_draft(&who, &sub_id, Some("1"), &answer))
+            .await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+        drafts.push((who, sub_id));
+    }
+    let (bob, bob_sub) = &drafts[1];
+    let (carol, carol_sub) = &drafts[2];
+    let waived = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", bob.user_id),
+            &serde_json::json!({ "waive_late_penalty": true }),
+        )
+        .await;
+    assert_eq!(waived.status, StatusCode::CREATED, "{}", waived.text());
+    let extended = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", carol.user_id),
+            &serde_json::json!({ "due_at_override_unix": now + 86_400 }),
+        )
+        .await;
+    assert_eq!(extended.status, StatusCode::CREATED, "{}", extended.text());
+    backdate_deadline_sweep(&app).await;
+    let runner = app.code_runner();
+    let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
+
+    // Past the due date, before the cutoff: late work is still open.
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 hours' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(sweep().await.unwrap(), 0, "the late window is open");
+
+    // The cutoff passes (one minute ago): alice only.
+    sqlx::query(
+        "UPDATE assessments SET late_cutoff_at = now() - interval '1 minute' WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&id).unwrap())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(sweep().await.unwrap(), 1, "alice only");
+    let (alice, alice_sub) = &drafts[0];
+    let mine = app
+        .get_as(alice, &format!("/api/v2/submissions/{alice_sub}"))
+        .await;
+    assert_eq!(mine.json()["status"], "published", "{}", mine.text());
+    assert_eq!(mine.json()["auto_submit_reason"], "deadline_passed");
+    assert_eq!(mine.json()["is_late"], true);
+    assert_eq!(mine.json()["late_penalty_pct"], 0.0);
+    assert_eq!(mine.json()["final_score"], 100.0);
+    let submitted = mine.json()["submitted_at_unix"].as_i64().unwrap();
+    assert!(
+        (now - 120..=now).contains(&submitted),
+        "submitted at the cutoff, not at the sweep: {submitted} vs {now}"
+    );
+    for (who, sub) in [(bob, bob_sub), (carol, carol_sub)] {
+        let theirs = app.get_as(who, &format!("/api/v2/submissions/{sub}")).await;
+        assert_eq!(theirs.json()["status"], "draft", "{}", theirs.text());
+    }
+
+    // Carol's own due date passes too: the later of it and the cutoff.
+    sqlx::query(
+        "UPDATE assessment_overrides SET due_at_override = now() - interval '1 second'
+         WHERE user_id = $1",
+    )
+    .bind(carol.user_id.0)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(sweep().await.unwrap(), 1, "carol");
+    let theirs = app
+        .get_as(carol, &format!("/api/v2/submissions/{carol_sub}"))
+        .await;
+    assert_eq!(theirs.json()["auto_submit_reason"], "deadline_passed");
+    assert_eq!(theirs.json()["is_late"], false, "{}", theirs.text());
+    assert_eq!(
+        sweep().await.unwrap(),
+        0,
+        "bob's penalty is waived: no cutoff"
+    );
+}
+
+/// Cluster G: on the first deploy the date hand-in leaves drafts whose date
+/// passed before it went live alone (old gradebooks do not change); a date
+/// that passes later is handed in.
+#[sqlx::test(migrations = "../../migrations")]
+async fn deadline_sweep_ignores_dates_before_it_went_live(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, _) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false, "due_at_unix": unix_now() + 3600 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let draft = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let sub = draft.json()["id"].as_str().unwrap().to_owned();
+    let runner = app.code_runner();
+    let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
+    let live_since = |hours: i32| {
+        sqlx::query(
+            "UPDATE feature_activations SET activated_at = now() - make_interval(hours => $1)",
+        )
+        .bind(hours)
+        .execute(&app.pool)
+    };
+
+    // Due two hours ago, live for one: an old draft - left as it is.
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 hours' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    live_since(1).await.unwrap();
+    assert_eq!(sweep().await.unwrap(), 0, "the date passed before go-live");
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub}"))
+        .await;
+    assert_eq!(mine.json()["status"], "draft", "{}", mine.text());
+
+    // Live for three hours: the date passed after go-live - handed in.
+    live_since(3).await.unwrap();
+    assert_eq!(sweep().await.unwrap(), 1);
+    let mine = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub}"))
+        .await;
+    assert_eq!(mine.json()["auto_submit_reason"], "deadline_passed");
 }
 
 /// BUG-326: the grace period extends the timer - the sweep waits for it
