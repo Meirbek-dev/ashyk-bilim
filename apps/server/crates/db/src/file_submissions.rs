@@ -257,7 +257,10 @@ pub struct GradebookFileSubmissionRow {
     pub due_at: Option<i64>,
 }
 
-/// Every file-submission activity of a course (any lifecycle), curriculum order.
+/// The gradebook's file-submission columns, in curriculum order.
+///
+/// Tasks learners can open (published activity and task) plus any other one
+/// a learner already handed work in to (see `assessments::gradebook_columns`).
 pub async fn list_for_course(
     pool: &PgPool,
     course_id: CourseId,
@@ -267,8 +270,13 @@ pub async fn list_for_course(
         r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
                   a.name AS title, (extract(epoch FROM f.due_at))::bigint AS "due_at?"
            FROM file_submissions f JOIN activities a ON a.id = f.activity_id
+           JOIN chapters c ON c.id = a.chapter_id
            WHERE f.course_id = $1
-           ORDER BY a.position, f.id"#,
+             AND ((a.published AND f.lifecycle = 'published')
+                  OR EXISTS (SELECT 1 FROM file_submission_attempts x
+                             WHERE x.file_submission_id = f.id
+                               AND x.status <> 'draft' AND NOT x.preview))
+           ORDER BY c.position, c.id, a.position, a.id"#,
         course_id.0
     )
     .fetch_all(pool)

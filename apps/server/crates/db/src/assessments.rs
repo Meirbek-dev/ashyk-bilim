@@ -365,6 +365,46 @@ pub async fn list_assessments_for_course(
     Ok(rows)
 }
 
+/// An assessment as a gradebook column.
+#[derive(Debug, Clone)]
+pub struct GradebookAssessmentRow {
+    pub id: AssessmentId,
+    pub activity_id: ActivityId,
+    pub title: String,
+    pub kind: AssessmentKind,
+    pub due_at: Option<i64>,
+    pub passing_score: f64,
+}
+
+/// The gradebook's assessment columns, in curriculum order.
+///
+/// Those learners can take (published activity, published assessment) plus
+/// any other one a learner already handed work in to: a draft test nobody
+/// can open is not a column of «not started» cells.
+pub async fn gradebook_columns(
+    pool: &PgPool,
+    course_id: CourseId,
+) -> Result<Vec<GradebookAssessmentRow>> {
+    let rows = sqlx::query_as!(
+        GradebookAssessmentRow,
+        r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
+                  s.title, s.kind AS "kind: AssessmentKind",
+                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score
+           FROM assessments s
+           JOIN activities a ON a.id = s.activity_id
+           JOIN chapters c ON c.id = a.chapter_id
+           WHERE s.course_id = $1
+             AND ((a.published AND s.lifecycle = 'published')
+                  OR EXISTS (SELECT 1 FROM submissions x WHERE x.assessment_id = s.id
+                             AND x.status <> 'draft' AND NOT x.preview))
+           ORDER BY c.position, c.id, a.position, a.id"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// Title/description/weight/grading type (the non-policy scalars).
 pub async fn update_assessment_details<'e>(
     db: impl sqlx::PgExecutor<'e>,

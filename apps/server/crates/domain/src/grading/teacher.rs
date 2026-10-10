@@ -1744,7 +1744,7 @@ impl GradingService {
             .into_iter()
             .map(summary)
             .collect();
-        let assessments = ab_db::assessments::list_assessments_for_course(&self.pool, course_id)
+        let assessments = ab_db::assessments::gradebook_columns(&self.pool, course_id)
             .await?
             .into_iter()
             .map(|a| GradebookAssessment {

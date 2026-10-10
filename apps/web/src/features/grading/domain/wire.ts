@@ -152,7 +152,9 @@ export function gradebookFromWire(
     assessment_type: 'file_submission',
     due_at: unixToIso(f.due_at_unix),
   }))
-  const activities = [...graded, ...files]
+  // Columns follow the curriculum (tests and file tasks interleaved as the learner meets them).
+  const order = new Map([...activityNames.keys()].map((id, i) => [id, i]))
+  const activities = [...graded, ...files].sort((a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity))
   const now = Date.now()
   return {
     course_id: course.id,

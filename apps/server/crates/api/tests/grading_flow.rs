@@ -2768,6 +2768,20 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
         )
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    // A draft test and a draft task nobody can open are not gradebook columns.
+    for (path, body) in [
+        (
+            "/api/v2/assessments",
+            serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Draft quiz" }),
+        ),
+        (
+            "/api/v2/file-submissions",
+            serde_json::json!({ "chapter_id": chapter_id, "title": "Draft task" }),
+        ),
+    ] {
+        let draft = app.post_as(&teacher, path, &body).await;
+        assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    }
     let upload = finalized_upload(&app, &alice, b"%PDF-1.4 project").await;
     let submitted = app
         .post_as(
@@ -2814,6 +2828,14 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
     assert_eq!(quiz_cell["submission_id"], sub_id.as_str());
     assert!(quiz_cell["attempt_id"].is_null());
     assert_eq!(gradebook.json()["assessments"][0]["id"], quiz_id.as_str());
+    assert_eq!(gradebook.json()["assessments"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        gradebook.json()["file_submissions"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
     assert_eq!(
         gradebook.json()["file_submissions"][0]["id"],
         file_submission_id.as_str()

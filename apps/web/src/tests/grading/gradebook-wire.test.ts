@@ -99,6 +99,17 @@ describe('gradebookFromWire (UX-013)', () => {
     expect(gradebookFromWire([page([examCell('published')])], course).activities[0]!.name).toBe('Exam')
   })
 
+  it('orders columns as the curriculum does, file tasks interleaved with tests', () => {
+    const curriculum = {
+      chapters: [
+        { activities: [{ id: 'activity_upload', name: 'Upload' }] },
+        { activities: [{ id: 'activity_exam', name: 'Exam' }] },
+      ],
+    } as unknown as Curriculum
+    const data = gradebookFromWire([page([], true)], course, curriculum)
+    expect(data.activities.map(a => a.id)).toEqual(['activity_upload', 'activity_exam'])
+  })
+
   // Q-2026-09-12-2 #1: file-submission attempts arrive on the wire in the
   // same cell shape, keyed by `file_submission_id` + `attempt_id`.
   it('reads file-submission columns and cells from the wire', () => {

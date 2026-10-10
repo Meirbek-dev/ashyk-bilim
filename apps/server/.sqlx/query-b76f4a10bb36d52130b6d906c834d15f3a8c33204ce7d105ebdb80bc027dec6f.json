@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS \"due_at?\"\n           FROM file_submissions f JOIN activities a ON a.id = f.activity_id\n           WHERE f.course_id = $1\n           ORDER BY a.position, f.id",
+  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS \"due_at?\"\n           FROM file_submissions f JOIN activities a ON a.id = f.activity_id\n           JOIN chapters c ON c.id = a.chapter_id\n           WHERE f.course_id = $1\n             AND ((a.published AND f.lifecycle = 'published')\n                  OR EXISTS (SELECT 1 FROM file_submission_attempts x\n                             WHERE x.file_submission_id = f.id\n                               AND x.status <> 'draft' AND NOT x.preview))\n           ORDER BY c.position, c.id, a.position, a.id",
   "describe": {
     "columns": [
       {
@@ -55,5 +55,5 @@
       null
     ]
   },
-  "hash": "34304ddf1174b331de2517018db6785a5c54941fae5a401ecec66b5566417d3a"
+  "hash": "b76f4a10bb36d52130b6d906c834d15f3a8c33204ce7d105ebdb80bc027dec6f"
 }
