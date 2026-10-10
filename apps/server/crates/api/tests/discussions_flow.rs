@@ -648,3 +648,68 @@ async fn document_posts_with_unsafe_urls_are_refused(pool: PgPool) {
         edited.text()
     );
 }
+
+/// BUG-B-9: a post's image goes through the upload pipeline as a
+/// `discussion-image` - the uploads table refused that purpose (500), so no
+/// image could be added to a post. Every purpose of the policy must be
+/// storable.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_post_claims_its_uploaded_image(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Forum images").await;
+    let user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let mut grants = LEARNER_GRANTS.to_vec();
+    grants.push("file:create:own");
+    let alice = app.mint_session_for(user, &grants).await;
+    let payload = b"\x89PNG fake".to_vec();
+    let slot = app
+        .post_as(
+            &alice,
+            "/api/v2/uploads",
+            &serde_json::json!({ "purpose": "discussion-image", "mime": "image/png",
+                                  "size_bytes": payload.len() }),
+        )
+        .await;
+    assert_eq!(slot.status, StatusCode::OK, "{}", slot.text());
+    let id = slot.json()["id"].as_str().unwrap().to_owned();
+    let key = slot.json()["key"].as_str().unwrap().to_owned();
+    let put = reqwest::Client::new()
+        .put(slot.json()["put_url"].as_str().unwrap())
+        .header("content-type", "image/png")
+        .header("if-none-match", "*")
+        .body(payload)
+        .send()
+        .await
+        .unwrap();
+    assert!(put.status().is_success(), "PUT {}", put.status());
+    let finalized = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+    let content = serde_json::json!({ "type": "doc", "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "see" }] },
+        { "type": "image", "attrs": { "src": format!("/content/{key}") } }] })
+    .to_string();
+    let post = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &serde_json::json!({ "content": content, "upload_ids": [id] }),
+        )
+        .await;
+    assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
+    let referenced: i32 =
+        sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1::uuid")
+            .bind(&id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(referenced, 1);
+}
