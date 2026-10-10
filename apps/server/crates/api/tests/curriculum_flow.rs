@@ -1374,3 +1374,40 @@ async fn create_against_a_vanishing_chapter_is_a_404_without_an_orphan(pool: PgP
         .unwrap();
     assert_eq!(orphans, 0, "no activity may outlive its create");
 }
+
+/// Migrated rows store `details` as JSON `null` (documents, file tasks) and
+/// the web writes `"endTime": null` on videos: the read answers the
+/// contract's object without null keys, or the web refuses the lesson.
+#[sqlx::test(migrations = "../../migrations")]
+async fn activity_details_never_carry_nulls(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course = create_course(&app, &teacher, "Legacy").await;
+    let chapter = create_chapter(&app, &teacher, &course, "One").await;
+    let video = create_activity(&app, &teacher, &chapter, "Video").await;
+    let path = format!("/api/v2/activities/{video}");
+
+    let res = app
+        .patch_as(
+            &teacher,
+            &path,
+            &serde_json::json!({ "details": { "startTime": 5, "endTime": null, "muted": false } }),
+        )
+        .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    let read = app.get_as(&teacher, &path).await;
+    assert_eq!(
+        read.json()["details"],
+        serde_json::json!({ "startTime": 5, "muted": false })
+    );
+
+    let id: uuid::Uuid = video.parse().unwrap();
+    sqlx::query("UPDATE activities SET details = 'null'::jsonb WHERE id = $1")
+        .bind(id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let read = app.get_as(&teacher, &path).await;
+    assert_eq!(read.status, StatusCode::OK);
+    assert_eq!(read.json()["details"], serde_json::json!({}));
+}

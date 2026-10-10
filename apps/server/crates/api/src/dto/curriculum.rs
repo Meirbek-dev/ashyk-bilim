@@ -165,9 +165,23 @@ impl From<ab_domain::catalog::curriculum::ActivityDetail> for ActivityDetail {
         Self {
             activity: Activity::new(d.activity, d.editable),
             content: d.content.content,
-            details: d.content.details,
+            details: wire_details(d.content.details),
             settings: d.content.settings,
         }
+    }
+}
+
+/// `details` as the contract states it: an object whose keys are absent
+/// rather than `null`. Migrated document / file-task rows store JSON `null`
+/// and video rows `"endTime": null` (the web writes it); sent as is, the
+/// web's schema check refused every such lesson page.
+fn wire_details(details: serde_json::Value) -> serde_json::Value {
+    match details {
+        serde_json::Value::Object(mut map) => {
+            map.retain(|_, v| !v.is_null());
+            serde_json::Value::Object(map)
+        }
+        _ => serde_json::Value::Object(serde_json::Map::new()),
     }
 }
 
