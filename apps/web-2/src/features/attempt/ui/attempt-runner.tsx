@@ -5,7 +5,6 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { Button } from '#/shared/ui/button'
-import { toast } from '#/shared/ui/toast'
 
 import { unanswered } from '../model/attempt'
 import { AttemptFrame, ATTEMPT_ROUTE } from './attempt-frame'
@@ -40,11 +39,8 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const current = Math.min(Math.max(item, 1), items.length)
   const shown = items[current - 1]
   const expired = left === 0
-  const handIn = () =>
-    submit.handIn(() => {
-      setConfirming(false)
-      toast.add({ title: m.attempt_submitted() })
-    })
+  // Handed in, or reopened on a changed test («Тест изменился»): the confirmation closes either way.
+  const handIn = () => submit.handIn(() => setConfirming(false))
   const timeUp = useEffectEvent(handIn)
   useEffect(() => {
     if (expired) timeUp()

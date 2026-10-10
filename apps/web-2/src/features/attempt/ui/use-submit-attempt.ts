@@ -1,12 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { m } from '#/paraglide/messages'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
 import type { CourseId, StudentSubmission } from '#/shared/api/gen/types.gen'
+import { toast } from '#/shared/ui/toast'
 
 import { submitOutcome } from '../model/attempt'
 import { patchOf } from '../model/queue'
-import { startOptions, submissionOptions, submitOptions } from '../queries'
+import { assessmentOptions, startOptions, submissionOptions, submitOptions } from '../queries'
+import { ATTEMPT_ROUTE } from './attempt-frame'
 import { clearQueue, queueOf } from './draft-store'
 
 /**
@@ -22,18 +26,24 @@ export function useSubmitAttempt(attempt: StudentSubmission, courseId: CourseId)
   const idempotency = useIdempotencyKey()
   const [changed, setChanged] = useState(false)
   const key = submissionOptions(attempt.id).queryKey
+  const { activityId } = useParams({ from: ATTEMPT_ROUTE })
 
   // A 409 or 403: was it handed in meanwhile (the timer sweep, another tab)? Then the page shows the result.
-  async function reread(reopenDraft: boolean) {
+  async function reread(reopenDraft: boolean, onClose?: () => void) {
     const fresh = await queryClient.fetchQuery({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
     if (fresh?.status !== 'draft' || !reopenDraft) return
     const reopened = await reopen.mutateAsync({ path: { assessment_id: attempt.assessment_id } }).catch(() => null)
     if (!reopened) return
+    // The questions as they are now: the learner checks the changed test, not the copy loaded with the page.
+    await queryClient.refetchQueries({ queryKey: assessmentOptions(activityId).queryKey })
     queryClient.setQueryData(key, reopened)
+    // The page says «Тест изменился»: the confirmation and its stale-data error step aside for it.
+    submit.reset()
     setChanged(true)
+    onClose?.()
   }
 
-  const handIn = (onDone?: () => void) => {
+  const handIn = (onClose?: () => void) => {
     const batch = queueOf(attempt.id)
     setChanged(false)
     submit.mutate(
@@ -47,12 +57,13 @@ export function useSubmitAttempt(attempt: StudentSubmission, courseId: CourseId)
           idempotency.settle()
           clearQueue(attempt.id)
           queryClient.setQueryData(key, fresh)
-          onDone?.()
+          toast.add({ title: m.attempt_submitted() })
+          onClose?.()
         },
         onError: error => {
           idempotency.settle(error)
           const outcome = submitOutcome(error)
-          if (outcome === 'reread' || outcome === 'closed') void reread(outcome === 'reread')
+          if (outcome === 'reread' || outcome === 'closed') void reread(outcome === 'reread', onClose)
         },
       },
     )

@@ -4,10 +4,12 @@ import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
   createAssessment,
   createItem,
+  getAssessment,
   getCurriculum,
   lifecycle,
   mySubmissions,
   setPolicy,
+  updateItem,
 } from '#/shared/api/gen/sdk.gen'
 import type {
   AssessmentId,
@@ -90,6 +92,8 @@ export type MadeQuiz = { course: MadeCourse; assessmentId: AssessmentId; url: st
 export const test = base.extend<{
   makeQuiz: (spec?: QuizSpec) => Promise<MadeQuiz>
   attempts: (quiz: MadeQuiz) => Promise<StudentSubmission[]>
+  /** The teacher unpublishes the quiz, renames the options of its first question (`text` -> `text!`), republishes. */
+  changeQuiz: (quiz: MadeQuiz) => Promise<void>
 }>({
   makeQuiz: async ({ baseURL, seed, makeCourse }, use) => {
     const api = createClient(createConfig({ baseUrl: String(baseURL) }))
@@ -118,6 +122,27 @@ export const test = base.extend<{
       await lifecycle({ client: api, path, body: { to: 'published' }, headers, throwOnError: true })
       course.activityIds.push(assessment.activity_id)
       return { course, assessmentId: assessment.id, url: `/learn/${course.id}/${assessment.activity_id}/attempt` }
+    })
+  },
+  changeQuiz: async ({ baseURL, seed }, use) => {
+    const api = createClient(createConfig({ baseUrl: String(baseURL) }))
+    const { name, value } = seed.accounts.teacher.cookie
+    const headers = { cookie: `${name}=${value}` }
+    await use(async quiz => {
+      const path = { assessment_id: quiz.assessmentId }
+      await lifecycle({ client: api, path, body: { to: 'draft' }, headers, throwOnError: true })
+      const { data } = await getAssessment({ client: api, path, headers, throwOnError: true })
+      const [item] = data.items
+      if (item?.body.kind !== 'choice') throw new Error('the first question is a choice')
+      const options = item.body.options?.map(option => ({ ...option, text: `${option.text}!` }))
+      await updateItem({
+        client: api,
+        path: { item_id: item.id },
+        body: { body: { ...item.body, options } },
+        headers: { ...headers, 'If-Match': data.version },
+        throwOnError: true,
+      })
+      await lifecycle({ client: api, path, body: { to: 'published' }, headers, throwOnError: true })
     })
   },
   // The learner's own view of their attempts, read with the cookie the browser carries.

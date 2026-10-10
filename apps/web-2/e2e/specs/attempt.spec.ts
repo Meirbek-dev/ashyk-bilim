@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 import { formatPercent } from '#/shared/i18n/format'
 
+import { expectReread } from '../fixtures/test'
 import { expect, items, type MadeQuiz, ru, test } from './attempt-fixture'
 
 test.describe.configure({ timeout: 90_000 })
@@ -217,6 +218,32 @@ test('B-ATT-04 B-ATT-21 B-ATT-18 an exam: rules accepted (stored), copying repor
   await handIn(page)
   await expect(page.getByText(m.attempt_awaiting_text({}, ru))).toBeVisible()
   await expect(page.getByText(m.attempt_status_graded({}, ru))).toBeVisible()
+})
+
+test('B-ATT-17 a test changed under the draft: the hand-in reopens it on the new questions', async ({
+  page,
+  learner,
+  makeQuiz,
+  changeQuiz,
+}) => {
+  const quiz = await makeQuiz()
+  await learner.enroll(quiz.course)
+  await learner.signIn()
+  await start(page, quiz)
+  await page.getByRole('radio', { name: 'Астана' }).check()
+  await expect(status(page)).toHaveText(m.attempt_saved({}, ru), { timeout: 20_000 })
+  await changeQuiz(quiz)
+  // The reopened draft reads the changed questions again on purpose.
+  expectReread(page, `/api/v2/activities/${quiz.course.activityIds.at(-1)}/assessment`)
+  await page.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
+  await dialog(page)
+    .getByRole('button', { name: m.attempt_submit({}, ru) })
+    .click()
+  // The confirmation steps aside for the notice, and the question is the changed one (not the page's old copy).
+  await expect(page.getByText(m.attempt_changed({}, ru))).toBeVisible()
+  await expect(dialog(page)).toBeHidden()
+  await expect(page.getByRole('radio', { name: 'Астана!' })).toBeChecked()
+  await handIn(page)
 })
 
 test('B-ATT-18 B-ATT-07 an open answer and a form wait for the teacher', async ({ page, learner, makeQuiz }) => {
