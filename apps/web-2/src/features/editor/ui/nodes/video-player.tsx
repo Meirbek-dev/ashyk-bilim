@@ -16,6 +16,8 @@ export function VideoPlayer({ src }: { src: string }) {
   const [muted, setMuted] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  // A file the browser cannot decode (a renamed document, an unsupported codec): say so, not an empty frame.
+  const [failed, setFailed] = useState(false)
   const toggle = () => {
     const element = video.current
     // play() rejects when the browser blocks it or the source fails; the button state follows the media events.
@@ -35,11 +37,18 @@ export function VideoPlayer({ src }: { src: string }) {
         onTimeUpdate={event => setTime(event.currentTarget.currentTime)}
         onLoadedMetadata={event => setDuration(event.currentTarget.duration)}
         onVolumeChange={event => setMuted(event.currentTarget.muted)}
+        onError={() => setFailed(true)}
+        hidden={failed}
         className="w-full"
       >
         <track kind="captions" />
       </video>
-      <div className="flex items-center gap-2 px-2 py-1">
+      {failed ? (
+        <p role="alert" className="p-4 text-sm text-muted-foreground">
+          {m.editor_video_failed()}
+        </p>
+      ) : null}
+      <div hidden={failed} className="flex items-center gap-2 px-2 py-1">
         <IconButton
           label={playing ? m.editor_video_pause() : m.editor_video_play()}
           icon={playing ? <Pause aria-hidden /> : <Play aria-hidden />}

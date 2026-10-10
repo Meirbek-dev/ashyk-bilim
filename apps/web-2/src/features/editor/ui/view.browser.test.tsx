@@ -149,6 +149,13 @@ describe('B-EDT-09 view preset', () => {
 })
 
 describe('B-EDT-19 media', () => {
+  test('B-EDT-19 a video file the browser cannot open says so instead of an empty frame', async () => {
+    // The test server has no /content/intro.mp4: the element fails like it does on a broken or unsupported file.
+    const screen = await render(<BlockViewer content={doc('video')} />)
+    await expect.element(screen.getByRole('alert')).toHaveTextContent(m.editor_video_failed())
+    expect(screen.getByRole('button', { name: m.editor_video_play() }).query()).toBeNull()
+  })
+
   test('B-EDT-19 a hosted video plays with kit controls; a PDF opens in an unsandboxed same-origin frame', async () => {
     const screen = await render(<BlockViewer content={doc('video', 'pdf')} />)
     await expect.element(screen.getByRole('button', { name: m.editor_video_play() })).toBeVisible()
