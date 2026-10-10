@@ -12134,7 +12134,7 @@
       "attemptAnnulled": "Попытка аннулирована",
       "attemptSwitcher": "Попытки",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
-      "retryAssessment": "Повторить учебную задачу",
+      "retryAssessment": "Пройти ещё раз",
       "attemptCapNote": "Следующая попытка: не более {percent}",
       "autoSubmittedTimeExpired": "Попытка завершена автоматически: время истекло.",
       "autoSubmittedDeadline": "Срок сдачи истёк: попытка сдана автоматически с сохранёнными ответами.",

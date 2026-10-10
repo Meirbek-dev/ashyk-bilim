@@ -11868,7 +11868,7 @@
       "attemptAnnulled": "Attempt annulled",
       "attemptSwitcher": "Attempts",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
-      "retryAssessment": "Retry assessment",
+      "retryAssessment": "Try again",
       "attemptCapNote": "Next attempt: capped at {percent}",
       "autoSubmittedTimeExpired": "The attempt was closed automatically: time ran out.",
       "autoSubmittedDeadline": "The due date passed: the attempt was handed in automatically with your saved answers.",

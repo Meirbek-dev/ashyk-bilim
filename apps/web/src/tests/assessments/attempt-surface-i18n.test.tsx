@@ -95,14 +95,14 @@ describe('attempt surface i18n (UX-010)', () => {
       return <span>{`${t('assessmentSubmitted')}|${t('retryAssessment')}`}</span>
     }
     renderRu(<Labels />)
-    expect(screen.getByText('Учебная задача отправлена|Повторить учебную задачу')).toBeInTheDocument()
+    expect(screen.getByText('Учебная задача отправлена|Пройти ещё раз')).toBeInTheDocument()
 
     render(
       <NextIntlClientProvider locale="kk" messages={kkMessages}>
         <Labels />
       </NextIntlClientProvider>,
     )
-    expect(screen.getByText('Оқу әрекеті жіберілді|Оқу әрекетін қайталау')).toBeInTheDocument()
+    expect(screen.getByText('Оқу әрекеті жіберілді|Қайта тапсыру')).toBeInTheDocument()
   })
 
   it('localizes the studio drag-and-drop screen-reader instructions', () => {
