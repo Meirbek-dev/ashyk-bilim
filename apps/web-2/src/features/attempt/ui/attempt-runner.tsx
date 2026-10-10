@@ -12,6 +12,7 @@ import { AttemptTimer } from './attempt-timer'
 import { ItemNavigator } from './item-navigator'
 import { ItemPager } from './item-pager'
 import { ItemView } from './item-view'
+import { ReturnNote } from './return-note'
 import { RunnerAlerts } from './runner-alerts'
 import { SaveIndicator } from './save-indicator'
 import { SubmitDialog } from './submit-dialog'
@@ -71,6 +72,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
           changed={submit.changed}
           attemptId={attempt.id}
         />
+        <ReturnNote attempt={attempt} />
         {shown ? (
           <ItemView
             key={shown.id}
