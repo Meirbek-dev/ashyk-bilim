@@ -31,6 +31,7 @@
   "code_reason_time_expired": "The attempt’s time is up.",
   "code_reason_remediation": "Complete the mistake review first.",
   "code_reason_restricted": "The challenge is open to selected people only, and you are not on the list.",
+  "code_reason_not_enrolled": "Enroll in the course to solve this challenge.",
   "code_solution": "Solution",
   "code_language": "Language",
   "code_language_unknown": "Language #{id}",

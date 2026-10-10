@@ -31,6 +31,7 @@
   "code_reason_time_expired": "Время попытки истекло.",
   "code_reason_remediation": "Сначала пройдите разбор ошибок.",
   "code_reason_restricted": "Задача открыта не всем, и вас нет в списке.",
+  "code_reason_not_enrolled": "Чтобы решать задачу, запишитесь на курс.",
   "code_solution": "Решение",
   "code_language": "Язык",
   "code_language_unknown": "Язык #{id}",

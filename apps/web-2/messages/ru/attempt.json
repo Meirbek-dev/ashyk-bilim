@@ -34,6 +34,7 @@
   "attempt_reason_time_expired": "Время вышло",
   "attempt_reason_remediation": "Сначала разберите ошибки прошлой попытки",
   "attempt_reason_access": "Тест вам не назначен",
+  "attempt_reason_not_enrolled": "Чтобы пройти тест, запишитесь на курс",
   "attempt_opens_at": "Откроется {date}",
   "attempt_remediation_heading": "Разбор ошибок",
   "attempt_history_heading": "Ваши попытки",

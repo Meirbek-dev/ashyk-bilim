@@ -34,6 +34,7 @@
   "attempt_reason_time_expired": "Time is up",
   "attempt_reason_remediation": "First go through the mistakes of your last attempt",
   "attempt_reason_access": "This quiz is not assigned to you",
+  "attempt_reason_not_enrolled": "Enroll in the course to take this quiz",
   "attempt_opens_at": "Opens on {date}",
   "attempt_remediation_heading": "Mistake review",
   "attempt_history_heading": "Your attempts",

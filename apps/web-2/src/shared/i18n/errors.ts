@@ -41,6 +41,7 @@ const messages: Record<ErrorCode, () => string> = {
   'attempt-time-expired': m.errors_attempt_time_expired,
   'attempt-past-due': m.errors_attempt_past_due,
   'remediation-required': m.errors_remediation_required,
+  'enrollment-required': m.errors_enrollment_required,
   'grade-not-released': m.errors_grade_not_released,
   'grade-own-attempt': m.errors_grade_own_attempt,
   'ai-disabled': m.errors_ai_disabled,

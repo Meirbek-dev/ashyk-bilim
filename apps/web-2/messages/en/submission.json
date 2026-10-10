@@ -60,6 +60,7 @@
   "submission_reason_remediation": "Complete the assigned mistake review first.",
   "submission_reason_course_archived": "The course is archived: submissions are closed.",
   "submission_reason_other": "You cannot submit your work right now.",
+  "submission_reason_not_enrolled": "Enroll in the course to submit your work.",
   "submission_history": "Attempts",
   "submission_not_submitted": "Not submitted",
   "submission_status_draft": "Draft",

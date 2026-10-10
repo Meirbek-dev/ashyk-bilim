@@ -423,7 +423,11 @@ export const vAuditPayload = v.object({
 
 export const vAuditSource = v.picklist(['grading_entry', 'bulk_action']);
 
-export const vAutoSubmitReason = v.picklist(['time_expired', 'integrity_violation']);
+export const vAutoSubmitReason = v.picklist([
+    'time_expired',
+    'integrity_violation',
+    'deadline_passed'
+]);
 
 /**
  * `blocks.content`: the uploaded file a content block shows. Legacy rows
@@ -1115,7 +1119,8 @@ export const vDisabledReason = v.picklist([
     'MAX_ATTEMPTS_REACHED',
     'TIME_LIMIT_EXPIRED',
     'REMEDIATION_REQUIRED',
-    'ACCESS_RESTRICTED'
+    'ACCESS_RESTRICTED',
+    'NOT_ENROLLED'
 ]);
 
 /**
@@ -1271,6 +1276,7 @@ export const vErrorCode = v.picklist([
     'attempt-time-expired',
     'attempt-past-due',
     'remediation-required',
+    'enrollment-required',
     'grade-not-released',
     'grade-own-attempt',
     'ai-disabled',
@@ -4245,6 +4251,7 @@ export const vUpdateContributorRequest = v.strictObject({
 
 export const vUpdateCourseRequest = v.strictObject({
     about: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    assessments_require_enrollment: v.optional(v.boolean()),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     learnings: v.optional(v.pipe(v.array(vLearningInput), v.maxLength(30))),
     name: v.optional(v.pipe(v.string(), v.maxLength(500))),
@@ -4505,6 +4512,7 @@ export const vCourse = v.object({
     allowed_actions: v.array(vCourseAction),
     archived_at_unix: v.nullable(vUnixTime),
     archived_by: v.nullable(vUserId),
+    assessments_require_enrollment: v.boolean(),
     contributor_ids: v.array(vUserId),
     created_at_unix: vUnixTime,
     creator_id: v.nullable(vUserId),

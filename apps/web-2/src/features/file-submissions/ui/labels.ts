@@ -43,6 +43,7 @@ export const reasonLabels = {
   MAX_ATTEMPTS_REACHED: m.submission_reason_other,
   TIME_LIMIT_EXPIRED: m.submission_reason_other,
   ACCESS_RESTRICTED: m.submission_reason_other,
+  NOT_ENROLLED: m.submission_reason_not_enrolled,
 } satisfies Record<DisabledReason, () => string>
 
 export const typeGroupLabels = {

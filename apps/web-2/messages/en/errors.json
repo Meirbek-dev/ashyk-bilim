@@ -11,6 +11,7 @@
   "errors_attempt_time_expired": "The attempt time has run out. Answers are no longer accepted.",
   "errors_attempt_past_due": "The deadline has passed. New answers are no longer accepted.",
   "errors_remediation_required": "Complete the mistake review first; then the attempt opens.",
+  "errors_enrollment_required": "Enroll in the course to take its quizzes and assignments.",
   "errors_code_runner_degraded": "The code runner is temporarily unavailable. Try again later.",
   "errors_compile_error": "The code does not compile. Fix the errors and try again.",
   "errors_conflict": "The data changed. Reload the page and try again.",

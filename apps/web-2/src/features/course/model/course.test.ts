@@ -19,6 +19,7 @@ const course = (patch: Partial<Course> = {}): Course => ({
   updated_at_unix: 0,
   learnings: [],
   open_to_contributors: false,
+  assessments_require_enrollment: true,
   public: true,
   tags: [],
   thumbnail_key: null,

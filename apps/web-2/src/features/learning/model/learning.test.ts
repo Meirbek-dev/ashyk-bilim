@@ -33,6 +33,7 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
       updated_at_unix: 0,
       learnings: [],
       open_to_contributors: false,
+      assessments_require_enrollment: true,
       public: true,
       tags: [],
       thumbnail_key: null,

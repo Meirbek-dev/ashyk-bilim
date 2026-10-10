@@ -1019,7 +1019,7 @@ export type AuditPayload = {
 
 export type AuditSource = 'grading_entry' | 'bulk_action';
 
-export type AutoSubmitReason = 'time_expired' | 'integrity_violation';
+export type AutoSubmitReason = 'time_expired' | 'integrity_violation' | 'deadline_passed';
 
 export type AwardResponse = {
     is_new_transaction: boolean;
@@ -1622,6 +1622,13 @@ export type Course = {
      */
     archived_at_unix: UnixTime | null;
     archived_by: UserId | null;
+    /**
+     * Only enrolled learners (a run on the course, or a linked usergroup)
+     * take its quizzes, exams, code challenges and file tasks; anyone else
+     * gets `NOT_ENROLLED` in the attempt state and 403
+     * `enrollment-required` on start / save / submit. Default `true`.
+     */
+    assessments_require_enrollment: boolean;
     /**
      * Active maintainers / contributors (`GET /courses/{id}/contributors`,
      * status `active`, role not `reporter`); they edit the course like the
@@ -2308,7 +2315,7 @@ export type Direction = 'up' | 'down' | 'flat';
  * Why a learner cannot act right now (legacy `disabled_action_reasons`;
  * the attempt/timer-based ones arrive with submissions in P4).
  */
-export type DisabledReason = 'NOT_PUBLISHED' | 'SCHEDULED_NOT_OPEN' | 'ARCHIVED' | 'COURSE_ARCHIVED' | 'PAST_DUE' | 'MAX_ATTEMPTS_REACHED' | 'TIME_LIMIT_EXPIRED' | 'REMEDIATION_REQUIRED' | 'ACCESS_RESTRICTED';
+export type DisabledReason = 'NOT_PUBLISHED' | 'SCHEDULED_NOT_OPEN' | 'ARCHIVED' | 'COURSE_ARCHIVED' | 'PAST_DUE' | 'MAX_ATTEMPTS_REACHED' | 'TIME_LIMIT_EXPIRED' | 'REMEDIATION_REQUIRED' | 'ACCESS_RESTRICTED' | 'NOT_ENROLLED';
 
 export type Discussion = {
     /**
@@ -2560,7 +2567,7 @@ export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -5948,6 +5955,10 @@ export type UpdateContributorRequest = {
 
 export type UpdateCourseRequest = {
     about?: string;
+    /**
+     * See `Course.assessments_require_enrollment`.
+     */
+    assessments_require_enrollment?: boolean;
     description?: string;
     /**
      * Replaces the whole "What you'll learn" list (≤ 30 entries).

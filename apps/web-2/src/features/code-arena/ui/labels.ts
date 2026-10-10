@@ -57,6 +57,7 @@ export const reasonLabels = {
   TIME_LIMIT_EXPIRED: m.code_reason_time_expired,
   REMEDIATION_REQUIRED: m.code_reason_remediation,
   ACCESS_RESTRICTED: m.code_reason_restricted,
+  NOT_ENROLLED: m.code_reason_not_enrolled,
 } satisfies Record<DisabledReason, () => string>
 
 export const difficultyLabels = {

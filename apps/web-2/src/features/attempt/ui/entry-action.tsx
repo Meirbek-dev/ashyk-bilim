@@ -27,6 +27,7 @@ const reasons = {
   TIME_LIMIT_EXPIRED: m.attempt_reason_time_expired,
   REMEDIATION_REQUIRED: m.attempt_reason_remediation,
   ACCESS_RESTRICTED: m.attempt_reason_access,
+  NOT_ENROLLED: m.attempt_reason_not_enrolled,
 } satisfies Record<DisabledReason, () => string>
 
 type EntryActionProps = { assessment: AssessmentDetail; state: AttemptState }

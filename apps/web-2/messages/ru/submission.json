@@ -62,6 +62,7 @@
   "submission_reason_remediation": "Сначала пройдите назначенный разбор ошибок.",
   "submission_reason_course_archived": "Курс в архиве: сдавать работы нельзя.",
   "submission_reason_other": "Сейчас сдать работу нельзя.",
+  "submission_reason_not_enrolled": "Чтобы сдать работу, запишитесь на курс.",
   "submission_history": "Попытки",
   "submission_not_submitted": "Не сдана",
   "submission_status_draft": "Черновик",
