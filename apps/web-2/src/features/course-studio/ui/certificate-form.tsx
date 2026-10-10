@@ -55,6 +55,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
     () => certificationVersion(queryClient, course.id, certification),
   )
   const form = useAppForm(certificateFieldsSchema, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: fields => write.save(fields, certification.version),
   })

@@ -31,6 +31,7 @@
   "ui_file_empty": "The file is empty. Choose another file.",
   "ui_file_unplayable": "The browser cannot play this video: the file is damaged or in an unsupported format. Save it as MP4 (H.264) and upload it again.",
   "ui_file_leave": "The file is still uploading. Leave the page and stop the upload?",
+  "ui_unsaved_leave": "You have unsaved changes. Leave the page without saving?",
   "ui_file_cancel": "Cancel upload",
   "ui_file_retry": "Retry",
   "ui_file_progress": "{done} of {total}",

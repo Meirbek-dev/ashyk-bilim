@@ -1,7 +1,9 @@
-import { createFormHook, type DeepKeys } from '@tanstack/react-form'
-import { useRef } from 'react'
+import { createFormHook, useStore, type DeepKeys } from '@tanstack/react-form'
+import { useBlocker } from '@tanstack/react-router'
+import { useRef, useState } from 'react'
 import { setGlobalMessage, type GenericSchema } from 'valibot'
 
+import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import { validationMessage } from '#/shared/i18n/validation'
 
@@ -25,13 +27,18 @@ type AppFormOptions<T> = {
   defaultValues: T
   /** Usually `body => mutation.mutateAsync({ body })`: a 422's field errors land under their fields. */
   onSubmit: (value: T) => unknown
+  /**
+   * Ask before a link, a reload or a closed tab drops what was typed and not saved (settings-like forms; not search
+   * boxes). A navigation the submit itself starts is never asked about.
+   */
+  leaveGuard?: boolean
 }
 
 /**
  * A form validated on submit by the generated body schema (`vXxxRequest`), with the kit fields bound
  * (`form.AppField` -> `field.TextField`...). Server `field_errors` are shown under the matching fields.
  */
-export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmit }: AppFormOptions<T>) {
+export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmit, leaveGuard = false }: AppFormOptions<T>) {
   // Every Valibot issue text comes from the Paraglide map (spec 7.8). Set here, not at import time, so the
   // module has no side effect and stays out of bundles that only import a feature's index. A named import: the
   // build treats `v.<fn>()` calls as pure (vite.config.ts), which would drop this one.
@@ -39,6 +46,8 @@ export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmi
   // The mutation starts only after the async validation, so `pending` cannot disable the button before a double
   // click (or Enter pressed twice) submits again: a submit while one is in flight is dropped.
   const submitting = useRef(false)
+  // What the server has: the defaults, then the values after each successful submit (which may have reset them).
+  const [saved, setSaved] = useState(() => JSON.stringify(defaultValues))
   const form = useKitForm({
     defaultValues,
     validators: { onSubmit: schema },
@@ -47,6 +56,7 @@ export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmi
       submitting.current = true
       try {
         await onSubmit(value)
+        setSaved(JSON.stringify(form.state.values))
       } catch (error) {
         // The mutation keeps the error for the region alert; only the field errors are placed here.
         if (!(error instanceof ApiError)) return
@@ -61,5 +71,12 @@ export function useAppForm<T>(schema: GenericSchema<T>, { defaultValues, onSubmi
     },
   })
   const isField = (name: string): name is DeepKeys<T> => name in form.fieldInfo
+  const changed = useStore(form.store, state => !state.isSubmitting && JSON.stringify(state.values) !== saved)
+  const unsaved = leaveGuard && changed
+  useBlocker({
+    disabled: !unsaved,
+    enableBeforeUnload: unsaved,
+    shouldBlockFn: () => !window.confirm(m.ui_unsaved_leave()),
+  })
   return form
 }

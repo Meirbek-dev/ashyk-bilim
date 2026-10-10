@@ -21,6 +21,7 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
     bio: profile.bio,
   }))
   const form = useAppForm(vUpdateProfileRequest, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.settings_saved() }) }),
   })

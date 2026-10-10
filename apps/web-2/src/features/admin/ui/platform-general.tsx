@@ -38,6 +38,7 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
     email: platform.email,
   }))
   const form = useAppForm(vUpdatePlatformRequest, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: body => write.save(body),
   })

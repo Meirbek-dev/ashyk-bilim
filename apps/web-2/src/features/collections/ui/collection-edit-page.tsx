@@ -48,6 +48,7 @@ export function CollectionEditPage() {
     onError: (error: unknown) => setConflict(isStale(error)),
   }
   const form = useAppForm(vUpdateCollectionRequest, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: body => update.mutateAsync(request(body, base), callbacks),
   })

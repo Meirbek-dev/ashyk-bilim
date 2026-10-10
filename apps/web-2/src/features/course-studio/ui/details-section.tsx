@@ -38,6 +38,7 @@ export function DetailsSection({ course }: { course: Course }) {
     open_to_contributors: course.open_to_contributors,
   }))
   const form = useAppForm(vUpdateCourseRequest, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: body => write.save(body, course.version),
   })

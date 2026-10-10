@@ -32,6 +32,7 @@ export function GroupEditSection({ group }: { group: Usergroup }) {
   // Captured once: the cache write after saving must not reset what the user typed.
   const [defaultValues] = useState(() => ({ name: group.name, description: group.description }))
   const form = useAppForm(vUpdateUsergroupRequest, {
+    leaveGuard: true,
     defaultValues,
     onSubmit: body => write.save(body),
   })
