@@ -28,13 +28,19 @@ export function AttemptFiles({ files, onRemove, disabled = false }: AttemptFiles
   const queryClient = useQueryClient()
   const [error, setError] = useState<unknown>(null)
   async function open(file: AttachedFile) {
+    const inline = showsInline(file.content_type)
+    // Opened in the click itself: Safari blocks a window.open that comes after an await as a pop-up.
+    const tab = inline ? window.open('', '_blank') : null
     try {
-      const inline = showsInline(file.content_type)
       const signed = await queryClient.fetchQuery(downloadOptions(file.id, inline ? 'inline' : 'attachment'))
       setError(null)
-      if (inline) window.open(signed.path, '_blank', 'noopener')
+      if (tab) {
+        tab.opener = null
+        tab.location.href = signed.path
+      } else if (inline) window.open(signed.path, '_blank', 'noopener')
       else Object.assign(document.createElement('a'), { href: signed.path, download: '' }).click()
     } catch (failed) {
+      tab?.close()
       setError(failed)
     }
   }
