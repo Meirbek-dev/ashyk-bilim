@@ -21,6 +21,7 @@
   "assessments_item_delete": "Удалить вопрос",
   "assessments_item_delete_title": "Удалить вопрос «{title}»?",
   "assessments_item_delete_consequence": "Вопрос исчезнет из задания, номера остальных сдвинутся.",
+  "assessments_item_delete_last": "Это единственный вопрос опубликованного задания: снимите задание с публикации, чтобы удалить его",
   "assessments_item_deleted": "Вопрос удалён",
   "assessments_delete": "Удалить",
   "assessments_readonly": "Только просмотр: менять это задание вам нельзя.",

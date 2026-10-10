@@ -50,7 +50,14 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
         <h2 id={`item-${item.id}`} className="min-w-0 flex-1 text-lg font-semibold wrap-anywhere">
           {item.position}. {item.title || m.assessments_item_untitled()}
         </h2>
-        {editable ? <ItemActions activityId={activityId} assessmentId={assessment.id} item={item} /> : null}
+        {editable ? (
+          <ItemActions
+            activityId={activityId}
+            assessmentId={assessment.id}
+            item={item}
+            lastOfLive={assessment.items.length === 1 && ['published', 'scheduled'].includes(assessment.lifecycle)}
+          />
+        ) : null}
       </div>
       {autosave.error ? <ErrorAlert>{presentError(autosave.error)}</ErrorAlert> : null}
       <form

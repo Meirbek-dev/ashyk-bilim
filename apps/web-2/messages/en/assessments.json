@@ -21,6 +21,7 @@
   "assessments_item_delete": "Delete question",
   "assessments_item_delete_title": "Delete question “{title}”?",
   "assessments_item_delete_consequence": "The question is removed from the assessment; the others are renumbered.",
+  "assessments_item_delete_last": "This is the only question of a published assessment: unpublish the assessment to delete it",
   "assessments_item_deleted": "Question deleted",
   "assessments_delete": "Delete",
   "assessments_readonly": "View only: you cannot change this assessment.",

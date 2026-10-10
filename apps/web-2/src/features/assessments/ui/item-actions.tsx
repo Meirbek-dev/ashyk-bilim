@@ -13,10 +13,16 @@ import { copyItem } from '../model/items'
 import { createItemOptions, deleteItemOptions } from '../queries'
 import { useVersion } from './use-version'
 
-type ItemActionsProps = { activityId: string; assessmentId: string; item: AssessmentItem }
+type ItemActionsProps = {
+  activityId: string
+  assessmentId: string
+  item: AssessmentItem
+  /** The only question of a published (or scheduled) test: the server keeps it, so delete is off and says why. */
+  lastOfLive: boolean
+}
 
 /** Duplicate (the copy is appended and opened) and delete (asks first) of the open question. */
-export function ItemActions({ activityId, assessmentId, item }: ItemActionsProps) {
+export function ItemActions({ activityId, assessmentId, item, lastOfLive }: ItemActionsProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const duplicate = useMutation(createItemOptions(queryClient, activityId, assessmentId))
@@ -60,20 +66,24 @@ export function ItemActions({ activityId, assessmentId, item }: ItemActionsProps
         disabled={duplicate.isPending}
         onClick={copy}
       />
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={next => {
-          setConfirming(next)
-          if (!next) remove.reset()
-        }}
-        trigger={<IconButton label={m.assessments_item_delete()} icon={<Trash2 aria-hidden />} />}
-        title={m.assessments_item_delete_title({ title })}
-        consequence={m.assessments_item_delete_consequence()}
-        confirmLabel={m.assessments_delete()}
-        onConfirm={confirm}
-        pending={remove.isPending}
-        error={remove.error}
-      />
+      {lastOfLive ? (
+        <IconButton label={m.assessments_item_delete_last()} icon={<Trash2 aria-hidden />} disabled />
+      ) : (
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={next => {
+            setConfirming(next)
+            if (!next) remove.reset()
+          }}
+          trigger={<IconButton label={m.assessments_item_delete()} icon={<Trash2 aria-hidden />} />}
+          title={m.assessments_item_delete_title({ title })}
+          consequence={m.assessments_item_delete_consequence()}
+          confirmLabel={m.assessments_delete()}
+          onConfirm={confirm}
+          pending={remove.isPending}
+          error={remove.error}
+        />
+      )}
     </div>
   )
 }

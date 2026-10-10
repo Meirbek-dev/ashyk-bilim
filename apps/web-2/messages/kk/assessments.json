@@ -21,6 +21,7 @@
   "assessments_item_delete": "Сұрақты жою",
   "assessments_item_delete_title": "«{title}» сұрағы жойылсын ба?",
   "assessments_item_delete_consequence": "Сұрақ тапсырмадан алынады, қалғандарының нөмірі ауысады.",
+  "assessments_item_delete_last": "Бұл жарияланған тапсырманың жалғыз сұрағы: оны жою үшін тапсырманы жариялаудан алыңыз",
   "assessments_item_deleted": "Сұрақ жойылды",
   "assessments_delete": "Жою",
   "assessments_readonly": "Тек қарау: бұл тапсырманы өзгертуге болмайды.",
