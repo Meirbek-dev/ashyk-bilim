@@ -16,7 +16,7 @@ export function ContinueItem({ item, primary }: { item: ContinueLearning; primar
       </p>
       {percent === null ? null : (
         <div className="flex max-w-md items-center gap-3">
-          <Progress aria-hidden value={percent} />
+          <Progress aria-hidden value={percent} className="flex-1" />
           <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{m.home_progress({ percent })}</span>
         </div>
       )}

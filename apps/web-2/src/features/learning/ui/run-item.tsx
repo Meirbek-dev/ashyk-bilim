@@ -34,7 +34,7 @@ export function RunItem({ run }: { run: TrailRun }) {
         <p className="text-sm text-muted-foreground">{m.learning_no_activities()}</p>
       ) : (
         <div className="flex max-w-md items-center gap-3">
-          <Progress aria-hidden value={percent} />
+          <Progress aria-hidden value={percent} className="flex-1" />
           <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
             {m.learning_progress({ percent })}
           </span>
