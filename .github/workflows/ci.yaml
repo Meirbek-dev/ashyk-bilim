@@ -31,8 +31,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       server: ${{ steps.filter.outputs.server == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
-      # Not forced on release/**: the old web no longer builds from main; publish carries it.
-      web: ${{ steps.filter.outputs.web == 'true' }}
+      # Forced on release/** (production runs the old web): otherwise publish re-tags the
+      # last built ashyq-web and the release ships stale web code.
+      web: ${{ steps.filter.outputs.web == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       web2: ${{ steps.filter.outputs.web2 == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       infra: ${{ steps.filter.outputs.infra == 'true' || startsWith(github.ref, 'refs/heads/release/') }}
       sha: ${{ steps.sha.outputs.sha }}
@@ -241,7 +242,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        # web (frozen) only when it changed; web-2 (no build args) when it changed or on release branches.
+        # web and web-2 when they changed or on release branches.
         image: >-
           ${{ fromJSON(format('["server"{0}{1}]',
           needs.changes.outputs.web == 'true' && ',"web"' || '',
