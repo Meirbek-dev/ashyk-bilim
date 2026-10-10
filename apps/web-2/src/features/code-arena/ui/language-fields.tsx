@@ -14,6 +14,9 @@ type LanguageFieldsProps = { form: CodeFormApi; runner: Runner; readOnly: boolea
 
 const toggle = (ids: number[], id: number, on: boolean) => (on ? [...ids, id] : ids.filter(other => other !== id))
 
+const unavailable = (runner: Runner) =>
+  runner.state === 'down' ? m.code_languages_down() : m.code_languages_unavailable()
+
 /**
  * Languages (B-COD-15): checkboxes from the platform's list (plus any stored one it no longer offers); the starter code
  * and the reference solution of one chosen language at a time. Without the list (runner off or down, B-COD-23) the
@@ -21,7 +24,6 @@ const toggle = (ids: number[], id: number, on: boolean) => (on ? [...ids, id] : 
  */
 export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) {
   const languages = languagesIn(runner)
-  const unavailable = runner.state === 'down' ? m.code_languages_down() : m.code_languages_unavailable()
   const [picked, setPicked] = useState<number | null>(null)
   return (
     <fieldset className="flex min-w-0 flex-col gap-4">
@@ -35,7 +37,7 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
           return (
             <>
               {languages === null ? (
-                <p className="text-sm text-muted-foreground">{unavailable}</p>
+                <p className="text-sm text-muted-foreground">{unavailable(runner)}</p>
               ) : (
                 <form.Field name="languages">
                   {field => (
@@ -47,6 +49,7 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
                             <Checkbox
                               id={`code-language-${id}`}
                               checked={chosen.includes(id)}
+                              disabled={readOnly}
                               onCheckedChange={on => field.handleChange(toggle(chosen, id, on))}
                             />
                             <Label htmlFor={`code-language-${id}`}>

@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
+import type { AssessmentDetail, EditLock } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
@@ -15,6 +15,18 @@ import { ReferenceResults } from './reference-results'
 import { RunnerDown } from './runner-down'
 import { StatementFields } from './statement-fields'
 import { useCodeItemForm } from './use-code-item-form'
+
+const lockLabels: Record<EditLock, () => string> = {
+  has_submissions: m.code_lock_has_submissions,
+  archived: m.code_lock_archived,
+  scheduled: m.code_lock_scheduled,
+}
+
+/** Why the studio is read only: the lock the author can lift (attempts, archive, schedule), else no right to edit. */
+const readOnlyReason = (challenge: AssessmentDetail) =>
+  challenge.edit_lock && challenge.allowed_actions.includes('update')
+    ? lockLabels[challenge.edit_lock]()
+    : m.code_read_only()
 
 type CodeItemFormProps = { activityId: string; challenge: AssessmentDetail; code: CodeItem }
 
@@ -41,7 +53,7 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
         <h2 id="code-studio" className="text-xl font-semibold">
           {m.code_studio_title()}
         </h2>
-        <p className="text-sm text-muted-foreground">{editable ? m.code_studio_hint() : m.code_read_only()}</p>
+        <p className="text-sm text-muted-foreground">{editable ? m.code_studio_hint() : readOnlyReason(challenge)}</p>
       </div>
       <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
         <StatementFields form={form} />
