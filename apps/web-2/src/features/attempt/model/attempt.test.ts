@@ -166,6 +166,40 @@ describe('attempt answers and outcomes', () => {
     expect(correctText(matching, [{ left: 'A', right: '2' }])).toBe('A → 2')
     const form: ItemBody = { kind: 'form', fields: [{ id: 'f', label: 'Name' }] }
     expect(answerText(form, { kind: 'form', values: { f: 'Ann' } })).toBe('Name: Ann')
+    // The form's field order, not the stored (id-sorted) one.
+    const two: ItemBody = { kind: 'form', fields: [{ id: 'z', label: 'City' }, { id: 'a', label: 'Age' }] }
+    expect(answerText(two, { kind: 'form', values: { a: '20', z: 'Astana' } })).toBe('City: Astana; Age: 20')
     expect(answerText(choice, null)).toBe('')
+  })
+})
+
+const option = (text: string) => ({ id: text, text })
+
+describe('complete answers', () => {
+  test('B-ATT-16 a matching question needs every pair, a form every required field', () => {
+    const matching: ItemBody = {
+      kind: 'matching',
+      left: ['a', 'b', 'c'].map(option),
+      right: ['1', '2', '3'].map(option),
+    }
+    const two = {
+      kind: 'matching' as const,
+      matches: [
+        { left: 'a', right: '1' },
+        { left: 'b', right: '2' },
+      ],
+    }
+    expect(isBlank(two, matching)).toBe(true)
+    expect(isBlank({ ...two, matches: [...two.matches, { left: 'c', right: '3' }] }, matching)).toBe(false)
+    const form: ItemBody = {
+      kind: 'form',
+      prompt: '',
+      fields: [
+        { id: 'city', label: 'City', field_type: 'text', required: true },
+        { id: 'age', label: 'Age', field_type: 'number', required: false },
+      ],
+    }
+    expect(isBlank({ kind: 'form', values: { age: '20' } }, form)).toBe(true)
+    expect(isBlank({ kind: 'form', values: { city: 'Astana' } }, form)).toBe(false)
   })
 })

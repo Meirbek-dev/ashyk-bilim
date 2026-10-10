@@ -5,6 +5,7 @@ import type {
   DisabledReason,
   ErrorCode,
   ItemAnswer,
+  ItemBody,
   Policy,
 } from '#/shared/api/gen/types.gen'
 
@@ -38,19 +39,29 @@ export function protections(policy: Guards): Protection[] {
   return on.filter(([enabled]) => enabled).map(([, protection]) => protection)
 }
 
-/** An answer that says nothing yet: the question counts as unanswered. */
-export function isBlank(answer: ItemAnswer | undefined): boolean {
+/**
+ * An answer that is not complete yet: the question counts as unanswered. With the question's body, a matching
+ * question needs a pair for every left element and a form every required field (two of three pairs used to count as
+ * answered, and the hand-in said «every question has an answer»).
+ */
+export function isBlank(answer: ItemAnswer | undefined, body?: ItemBody): boolean {
   if (!answer) return true
   if (answer.kind === 'choice') return !answer.selected?.length
   if (answer.kind === 'open_text') return !answer.text?.trim()
-  if (answer.kind === 'form') return !Object.values(answer.values ?? {}).some(value => value.trim())
+  if (answer.kind === 'form') {
+    const values = answer.values ?? {}
+    const required = body?.kind === 'form' ? (body.fields ?? []).filter(field => field.required) : []
+    if (required.some(field => !values[field.id]?.trim())) return true
+    return !Object.values(values).some(value => value.trim())
+  }
   if (answer.kind === 'code') return !answer.source?.trim()
-  return !answer.matches?.length
+  const lefts = body?.kind === 'matching' && 'left' in body ? body.left.length : 1
+  return (answer.matches?.length ?? 0) < Math.max(lefts, 1)
 }
 
-/** Questions without an answer, with their 1-based number in the order shown. */
+/** Questions without a complete answer, with their 1-based number in the order shown. */
 export const unanswered = (items: AssessmentItem[], answers: Record<string, ItemAnswer>) =>
-  items.map((item, index) => ({ item, number: index + 1 })).filter(({ item }) => isBlank(answers[item.id]))
+  items.map((item, index) => ({ item, number: index + 1 })).filter(({ item }) => isBlank(answers[item.id], item.body))
 
 /** Seconds left on the server's clock: `time_remaining_seconds` was true when the answer arrived. */
 export const secondsLeft = (remaining: number, receivedAtMs: number, nowMs: number) =>

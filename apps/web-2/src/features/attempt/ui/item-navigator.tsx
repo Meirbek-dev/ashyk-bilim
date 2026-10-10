@@ -32,7 +32,7 @@ export function ItemNavigator({ items, answers, current, onPick }: NavigatorProp
             >
               <span className="w-6 shrink-0 tabular-nums">{index + 1}</span>
               <span className="min-w-0 flex-1 wrap-anywhere">{item.title}</span>
-              {isBlank(answers[item.id]) ? null : (
+              {isBlank(answers[item.id], item.body) ? null : (
                 <>
                   <Check aria-hidden className="size-4 shrink-0 text-success" />
                   <span className="sr-only">{m.attempt_answered()}</span>
