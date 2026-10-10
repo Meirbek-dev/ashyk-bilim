@@ -154,7 +154,9 @@ export function gradebookFromWire(
   }))
   // Columns follow the curriculum (tests and file tasks interleaved as the learner meets them).
   const order = new Map([...activityNames.keys()].map((id, i) => [id, i]))
-  const activities = [...graded, ...files].sort((a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity))
+  const activities = [...graded, ...files].toSorted(
+    (a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity),
+  )
   const now = Date.now()
   return {
     course_id: course.id,
