@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { test } from 'node:test'
@@ -9,20 +9,46 @@ const root = resolve(import.meta.dirname, '../..')
 const just = process.env.JUST_EXECUTABLE ?? 'just'
 const run = (command, args, options = {}) => spawnSync(command, args, { encoding: 'utf8', ...options })
 
-test('root server proxy preserves a filter as one argument and bounds build jobs', () => {
+test('failed OpenAPI export preserves the contract and successful export replaces it', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-openapi-'))
+  try {
+    writeFileSync(join(dir, 'justfile'), readFileSync(join(root, 'apps/server/justfile')))
+    writeFileSync(join(dir, 'openapi.v2.json'), 'committed\n')
+    for (const status of [1, 0]) {
+      writeFileSync(join(dir, 'cargo'), `#!/bin/sh\nprintf 'generated\\n'\nexit ${status}\n`, { mode: 0o755 })
+      const result = run(just, ['openapi'], {
+        cwd: dir,
+        env: { ...process.env, PATH: `${dir}${delimiter}${process.env.PATH}` },
+      })
+      assert.equal(result.status === 0, status === 0, result.stderr)
+      assert.equal(readFileSync(join(dir, 'openapi.v2.json'), 'utf8'), status === 0 ? 'generated\n' : 'committed\n')
+      assert.deepEqual(readdirSync(dir).filter(name => name.startsWith('openapi.')), ['openapi.v2.json'])
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('root server proxy preserves filters, bounds build jobs and defaults to cached SQL', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ashyq-dev-'))
   try {
-    writeFileSync(join(dir, 'cargo'), '#!/bin/sh\nprintf "%s\\n" "$@"\nprintf "jobs=%s\\n" "$CARGO_BUILD_JOBS"\n', { mode: 0o755 })
+    writeFileSync(join(dir, 'cargo'), '#!/bin/sh\nprintf "%s\\n" "$@"\nprintf "jobs=%s\\noffline=%s\\n" "$CARGO_BUILD_JOBS" "$SQLX_OFFLINE"\n', { mode: 0o755 })
     const filter = 'test(example with spaces)'
     const env = { ...process.env, PATH: `${dir}${delimiter}${process.env.PATH}` }
     delete env.CARGO_BUILD_JOBS
+    delete env.SQLX_OFFLINE
     const result = run(just, ['server', 'test-unit', '-E', filter], {
       cwd: root,
       env,
     })
     assert.equal(result.status, 0, result.stderr)
     assert.deepEqual(result.stdout.trim().split(/\r?\n/), [
-      'nextest', 'run', '--locked', '--workspace', '--lib', '--bins', '-E', filter, 'jobs=4',
+      'nextest', 'run', '--locked', '--workspace', '--lib', '--bins', '-E', filter, 'jobs=4', 'offline=true',
+    ])
+    const online = run(just, ['server', 'sqlx-check'], { cwd: root, env: { ...env, SQLX_OFFLINE: 'true' } })
+    assert.equal(online.status, 0, online.stderr)
+    assert.deepEqual(online.stdout.trim().split(/\r?\n/), [
+      'sqlx', 'prepare', '--check', '--workspace', '--', '--locked', 'jobs=4', 'offline=false',
     ])
   } finally {
     rmSync(dir, { recursive: true, force: true })

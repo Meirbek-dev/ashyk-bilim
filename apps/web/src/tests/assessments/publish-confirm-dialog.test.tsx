@@ -11,14 +11,17 @@ import type { AssessmentEditorState } from '@/features/assessments/studio/studio
 import type { AssessmentItem } from '@/features/assessments/domain/items'
 import ruMessages from '@/messages/ru-RU.json'
 import { APIError } from '@/lib/api/assertSuccess'
+import type { AccessView } from '@/lib/api/generated/zod'
 
 vi.mock('@/lib/api-client', () => ({
-  apiJson: vi.fn(() => Promise.resolve({ effective_user_count: 12 })),
-  apiResult: vi.fn(() =>
+  apiJson: vi.fn(() =>
     Promise.resolve({
-      data: { mode: 'all_course_learners', effective_user_count: 12, users: [], usergroups: [] },
-      headers: { etag: '"1"' },
-    }),
+      mode: 'all_course_learners',
+      effective_user_count: 12,
+      users: [],
+      usergroups: [],
+      version: 1,
+    } satisfies AccessView),
   ),
 }))
 vi.mock('@/i18n/navigation', () => ({

@@ -15,6 +15,7 @@ set script-interpreter := ["sh", "-eu"]
 
 # Bounds Windows linker memory; override on larger machines.
 export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", "4")
+export SQLX_OFFLINE := env("SQLX_OFFLINE", "true")
 export CARGO_TARGET_DIR := env("CARGO_TARGET_DIR", if os() == "windows" { env("LOCALAPPDATA") / "ashyq-bilim/cargo-target" } else { justfile_directory() / "target" })
 just_bin := quote(replace(just_executable(), '\\', '/'))
 
@@ -52,11 +53,11 @@ test-unit *args:
 # Verify the committed .sqlx offline cache matches the schema + queries.
 # Missing or stale cache is an error.
 sqlx-check:
-    cargo sqlx prepare --check --workspace -- --locked
+    SQLX_OFFLINE=false cargo sqlx prepare --check --workspace -- --locked
 
 # Refresh .sqlx after changing any SQL. Commit the result.
 prepare:
-    cargo sqlx prepare --workspace -- --locked
+    SQLX_OFFLINE=false cargo sqlx prepare --workspace -- --locked
 
 migrate:
     sqlx migrate run --source migrations
@@ -66,8 +67,13 @@ migration NAME:
     sqlx migrate add --source migrations "$@"
 
 # Export the OpenAPI contract artifact.
+[script]
 openapi:
-    cargo run --locked -p ashyq-server -- openapi > openapi.v2.json
+    set -euo pipefail
+    tmp=$(mktemp openapi.v2.XXXXXX.json)
+    trap 'rm -f "$tmp"' EXIT
+    cargo run --locked -p ashyq-server -- openapi > "$tmp"
+    mv "$tmp" openapi.v2.json
 
 # Fail if the committed openapi.v2.json differs from a fresh export.
 [script]

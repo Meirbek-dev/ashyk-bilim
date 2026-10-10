@@ -149,7 +149,8 @@ ci-infra:
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
     {{ smoke_cert }}
     use_smoke
-    export COMPOSE_PROJECT_NAME=ashyq-ci IMAGE_TAG=ci
+    export COMPOSE_PROJECT_NAME=ashyq-ci-$$ IMAGE_TAG=ci
+    export COMPOSE_FILE=$COMPOSE_FILE:infra/compose.nginx-check.yaml
     trap 'compose down -v >/dev/null 2>&1' EXIT
     # Detached: Podman's Compose provider cannot attach this one-off on Windows.
     check_id=$(compose run -d --no-deps nginx nginx -t)

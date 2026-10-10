@@ -6,6 +6,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 import Users from '@/components/Dashboard/Pages/Users/Users/Users'
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: () => (key: string) => key,
 }))
 

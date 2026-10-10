@@ -14,6 +14,7 @@ interface PersonRow {
 }
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: () => (key: string, values?: Record<string, number>) => {
     const translations: Record<string, string> = {
       searchPlaceholder: 'Search',

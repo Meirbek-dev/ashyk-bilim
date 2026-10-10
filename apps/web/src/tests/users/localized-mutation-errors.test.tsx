@@ -11,6 +11,8 @@ import { expect, it, vi } from 'vite-plus/test'
 
 import { APIError } from '@/lib/api/assertSuccess'
 import ruMessages from '@/messages/ru-RU.json'
+import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate'
+import ChapterElement from '@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ChapterElement'
 
 const mocks = vi.hoisted(() => ({
   assign: vi.fn(),
@@ -53,7 +55,6 @@ function wrap(node: ReactNode) {
 }
 
 it('shows a role replacement network failure in the page language', async () => {
-  const { default: RolesUpdate } = await import('@/components/Objects/Modals/Dash/Users/RolesUpdate')
   mocks.remove.mockResolvedValue(undefined)
   mocks.assign.mockRejectedValue(
     new APIError({ code: 'NETWORK_UNAVAILABLE', message: 'Network request failed', status: 0 }),
@@ -67,8 +68,6 @@ it('shows a role replacement network failure in the page language', async () => 
 })
 
 it('toasts a rejected chapter rename from the error-code catalog', async () => {
-  const { default: ChapterElement } =
-    await import('@/components/Dashboard/Pages/Course/EditCourseStructure/DraggableElements/ChapterElement')
   mocks.toastError.mockClear()
   mocks.updateChapter.mockRejectedValue(
     new APIError({

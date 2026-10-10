@@ -24,6 +24,8 @@ Use nextest filters instead. Build jobs default to 4 (`CARGO_BUILD_JOBS` overrid
 Dev debuginfo is disabled. `CARGO_TARGET_DIR` overrides the cache; Windows otherwise uses
 `LOCALAPPDATA/ashyq-bilim/cargo-target`, off the checkout drive. Do not delete the cache routinely.
 Rust is pinned in `rust-toolchain.toml` and Docker; tools in `tools.env`. Upgrade together.
+Run coverage sequentially per cache: llvm-cov cleans the instrumented workspace artifacts.
+Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check` always use the database.
 
 ## Invariants
 

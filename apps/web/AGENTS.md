@@ -47,6 +47,7 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`
   in this directory, vitest uses `vitest.config.ts`.
 - `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
+- Vitest runs at most four workers; use its `--maxWorkers` flag to override deliberately.
 - `bunx knip` reports dead files/exports (generated code is ignored).
 
 ## The contract and the generated client

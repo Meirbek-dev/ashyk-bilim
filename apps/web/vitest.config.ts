@@ -32,6 +32,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/tests/**/*.test.{ts,tsx}'],
     testTimeout: 10_000,
+    maxWorkers: 4,
     server: {
       deps: {
         inline: ['next-intl'],

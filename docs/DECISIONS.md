@@ -2518,3 +2518,26 @@ at pre-commit. The short server guide links task-specific detail instead of requ
 whole architecture each session. .agents/skills is canonical; Claude copies are generated.
 CI checks tracked and new generated artifacts immediately after regeneration. Drift checks
 use unique scratch paths so simultaneous checks cannot delete each other's output.
+
+## Development verification fixes (2026-10-11)
+
+OpenAPI export writes a temporary file and replaces the contract only on success, so a
+failed export or a concurrent reader cannot see a truncated contract. Production web tests
+run with four workers; component imports happen before test deadlines, and table mocks
+provide the locale used by CSV exports. The nginx syntax check uses a separate resource-free
+override because WSL Podman may lack delegated controllers; production limits remain in the
+normal stack configs and are validated before the override. Each check uses its own project.
+Rust compilation defaults to the committed SQLx cache; preparation and cache verification
+explicitly query the database, keeping unit builds independent of running containers.
+
+## One progress number: certificates no longer read as 100 % (2026-10-11)
+
+Course analytics counted a learner with a certificate as 100 % progress, while
+the «Слушатели» roster shows the real share of required activities done. When a
+course grew after certificates were issued, the two disagreed (one real course:
+96.6 % average in analytics vs 79.4 % in the roster). Owner: "do what's best".
+`progress_snapshots` now reports the real percentage for everyone; a certificate
+still makes the learner count as completed (completion rates, certificates
+issued), and a course with no required activities still reads 100 % for a
+certificate holder. Teachers see the same number everywhere and what is left
+to do after the course changed.

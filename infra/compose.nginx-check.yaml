@@ -1,0 +1,6 @@
+# Syntax-only check: production resource limits are validated by compose config.
+# WSL Podman hosts without delegated controllers cannot apply those limits.
+services:
+  nginx:
+    deploy:
+      resources: !reset {}
