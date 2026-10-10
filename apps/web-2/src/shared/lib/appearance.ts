@@ -10,11 +10,17 @@ export type Mode = (typeof MODES)[number]
 const DEFAULT_THEME = 'modern-minimal'
 
 // The slug becomes a URL path: only the shape of public/themes/<slug>.css names is accepted.
-const themeCookie = cookieItem('ab_theme', v.pipe(v.string(), v.regex(/^[a-z0-9-]{1,64}$/)))
+const vThemeSlug = v.pipe(v.string(), v.regex(/^[a-z0-9-]{1,64}$/))
+const themeCookie = cookieItem('ab_theme', vThemeSlug)
 const modeCookie = cookieItem('ab_mode', v.picklist(MODES))
 
-export function readAppearance(): { theme: string; mode: Mode } {
-  return { theme: themeCookie.get() ?? DEFAULT_THEME, mode: modeCookie.get() ?? 'system' }
+/**
+ * `profileTheme`: the signed-in user's `theme` (null = the default), absent for a guest. The account's theme wins over
+ * this browser's cookie, so it follows the user to any device and never comes from a previous account (BUG-362/380).
+ */
+export function readAppearance(profileTheme?: string | null): { theme: string; mode: Mode } {
+  const theme = profileTheme === undefined ? themeCookie.get() : v.is(vThemeSlug, profileTheme) ? profileTheme : null
+  return { theme: theme ?? DEFAULT_THEME, mode: modeCookie.get() ?? 'system' }
 }
 
 export const themeHref = (theme: string) => `/themes/${theme}.css`
