@@ -723,6 +723,9 @@ pub fn progress_snapshots(
                 )
             };
         let has_certificate = certificate_pairs.contains(&key);
+        // A certificate keeps the learner "completed", but the percentage stays
+        // the real one: a course that grew after the certificate shows what is
+        // left, the same number as the roster (DECISIONS 2026-10-11).
         is_completed = has_certificate || is_completed;
         if total_steps == 0 && has_certificate {
             progress_pct = 100.0;
@@ -734,7 +737,7 @@ pub fn progress_snapshots(
                 user_id,
                 completed_steps,
                 total_steps,
-                progress_pct: if is_completed { 100.0 } else { progress_pct },
+                progress_pct,
                 is_completed,
                 has_certificate,
                 last_activity_at: progress_last.or_else(|| last_activity.get(&key).copied()),
@@ -790,6 +793,37 @@ pub fn build_series(
 #[allow(clippy::unwrap_used, clippy::float_cmp)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_certificate_keeps_completed_but_not_a_fake_100_percent() {
+        let (course, user) = (CourseId::new(), UserId::new());
+        let ctx = AnalyticsContext {
+            course_progress: vec![CourseProgressInfoRow {
+                course_id: course,
+                user_id: user,
+                completed_required_count: 4,
+                total_required_count: 5,
+                progress_pct: 80.0,
+                certificate_eligible: false,
+                last_activity_at: None,
+            }],
+            trail_runs: vec![TrailRunInfoRow {
+                id: TrailRunId::new(),
+                course_id: course,
+                user_id: user,
+            }],
+            certificates: vec![CertificateInfoRow {
+                course_id: course,
+                user_id: user,
+                created_at: 0,
+            }],
+            ..AnalyticsContext::default()
+        };
+        let snapshot = &progress_snapshots(&ctx, None)[&(course, user)];
+        assert!(snapshot.is_completed);
+        assert!(snapshot.has_certificate);
+        assert_eq!(snapshot.progress_pct, 80.0);
+    }
 
     #[test]
     fn rounding_is_half_even_like_python() {
