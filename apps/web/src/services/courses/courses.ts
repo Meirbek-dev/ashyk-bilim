@@ -4,6 +4,7 @@ import { apiJson } from '@/lib/api-client'
 import { Course, CoursePage, Curriculum } from '@/lib/api/generated/zod'
 import { emptyPage } from '@/lib/api/contract'
 import type { Page } from '@/lib/api/contract'
+import type { CourseListItem } from '@/lib/api/generated/zod'
 import { stripEntityPrefix, toAppChapter, toAppCourse } from '@/hooks/courses/courseKeys'
 import { getAPIUrl } from '@services/config/config'
 import { courseTag, tags } from '@/lib/cacheTags'
@@ -36,7 +37,7 @@ export async function revalidateCourse(course_uuid?: string) {
  */
 export async function getCourses(_next?: unknown, page = 1, limit = 20, sort?: 'progress') {
   let cursor: string | null | undefined
-  let result: Page<Course> = emptyPage()
+  let result: Page<CourseListItem> = emptyPage()
   for (let hop = 1; hop <= page; hop += 1) {
     const params = new URLSearchParams({ limit: String(limit) })
     if (sort) params.set('sort', sort)

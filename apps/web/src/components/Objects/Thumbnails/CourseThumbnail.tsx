@@ -23,6 +23,7 @@ import { formatDate } from '@/lib/date'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import type { FC } from 'react'
+import type { CourseListItem } from '@/lib/api/generated/zod'
 import { toast } from 'sonner'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 
@@ -69,6 +70,7 @@ export interface Course {
   update_date?: string | null
   creator_id?: string | null | undefined
   contributor_ids?: string[] | undefined
+  authors?: CourseListItem['authors'] | undefined
   archived_at_unix?: number | null | undefined
 }
 
@@ -523,6 +525,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
 
   const isEnrolled = Boolean(courseRun)
   const titleId = `course-title-${cleanCourseUuid}`
+  const authorNames = course.authors?.map(author => author.display_name.trim() || author.username).join(', ')
 
   // The owner badge marks the creator only; co-authors get the menu, not the crown.
   const isOwner = isCourseCreator(course, currentUser?.id)
@@ -584,6 +587,11 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
               {course.name}
             </h3>
           </Link>
+          {authorNames && (
+            <p className="text-muted-foreground line-clamp-2 text-sm wrap-anywhere" title={authorNames}>
+              {t('authorLabel', { count: course.authors?.length ?? 0 })}: {authorNames}
+            </p>
+          )}
           <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
             {extractMarkdownSummary(course.description || '', 140)}
           </p>

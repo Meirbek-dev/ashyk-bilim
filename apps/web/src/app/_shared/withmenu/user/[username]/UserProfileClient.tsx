@@ -243,6 +243,7 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                         thumbnail_image: course.thumbnail_image ?? '',
                         creator_id: course.creator_id,
                         contributor_ids: course.contributor_ids,
+                        authors: course.authors,
                       }
 
                       return (

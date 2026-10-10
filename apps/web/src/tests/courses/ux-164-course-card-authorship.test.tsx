@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail'
+import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail'
 import ruMessages from '@/messages/ru-RU.json'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }))
@@ -26,8 +27,8 @@ vi.mock('@services/media/media', () => ({ getCourseThumbnailMediaDirectory: () =
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p, getSiteUrl: () => '' }))
 vi.mock('@services/courses/course-delete', () => ({ deleteCourseFromBackend: vi.fn() }))
 
-function card(course: { creator_id?: string | null; contributor_ids?: string[] }) {
-  render(
+function card(course: Course) {
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
         <CourseThumbnail course={{ course_uuid: 'c1', name: 'Курс', ...course }} />
@@ -37,6 +38,26 @@ function card(course: { creator_id?: string | null; contributor_ids?: string[] }
 }
 
 describe('UX-164 course card authorship', () => {
+  it('shows course authors from the listing, with a username fallback', () => {
+    card({
+      name: 'Интеллектуальный анализ данных',
+      authors: [
+        { user_id: 'teacher', display_name: 'Иван Иванов', username: 'ivan' },
+        { user_id: 'helper', display_name: ' ', username: 'helper' },
+      ],
+    })
+    expect(screen.getByText('ИАД')).toBeInTheDocument()
+    expect(screen.getByText('Авторы: Иван Иванов, helper')).toBeInTheDocument()
+  })
+
+  it('labels a single author and omits the author row when none are supplied', () => {
+    const view = card({ authors: [{ user_id: 'teacher', display_name: 'Иван Иванов', username: 'ivan' }] })
+    expect(screen.getByText('Автор: Иван Иванов')).toBeInTheDocument()
+    view.unmount()
+    card({ authors: [] })
+    expect(screen.queryByText(/^Авторы?:/)).toBeNull()
+  })
+
   it('creator: owner badge and course menu', () => {
     card({ creator_id: 'me', contributor_ids: [] })
     expect(screen.getByText('Создатель')).toBeInTheDocument()

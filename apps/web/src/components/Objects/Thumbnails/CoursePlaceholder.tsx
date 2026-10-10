@@ -7,11 +7,7 @@ export function coverHue(seed: string) {
   return hash % 360
 }
 
-/**
- * Generated cover for a course without a thumbnail: a gradient picked from the id and the
- * title's first letter — a grid of identical logo placeholders told courses apart by nothing.
- * (The title itself sits right under the cover, so it is not repeated here.)
- */
+/** Generated cover: a stable colour and the initials of the course title's words. */
 export default function CoursePlaceholder({
   seed,
   title,
@@ -24,16 +20,23 @@ export default function CoursePlaceholder({
   className?: string
 }) {
   const hue = coverHue(seed)
+  const abbreviation = (title.match(/[\p{L}\p{N}]+/gu) ?? [])
+    .map(word => Array.from(word)[0])
+    .join('')
+    .toUpperCase()
   return (
     <div
       aria-hidden
-      className={cn('absolute inset-0 flex items-center justify-center', className)}
+      className={cn('@container absolute inset-0 flex items-center justify-center', className)}
       style={{
         background: `linear-gradient(135deg, oklch(0.58 0.13 ${hue}), oklch(0.38 0.11 ${(hue + 50) % 360}))`,
       }}
     >
-      <span className={cn('font-bold text-white/90 drop-shadow-sm', compact ? 'text-xl' : 'text-6xl')}>
-        {title.trim().charAt(0).toUpperCase()}
+      <span
+        className="font-bold text-white/90 drop-shadow-sm"
+        style={{ fontSize: `min(${compact ? '1.25rem' : '3.75rem'}, ${100 / Math.max(abbreviation.length, 1)}cqw)` }}
+      >
+        {abbreviation}
       </span>
     </div>
   )
