@@ -118,7 +118,9 @@ fn grade_choice(
     if misses == 0 && hits == correct_ids.len() {
         return Verdict::new(round2(points), true, FeedbackCode::Correct, "Correct");
     }
-    if hits > 0 {
+    // A single-answer question takes one pick: several (only the API can
+    // send them) are a wrong answer, not partial credit for "pick them all".
+    if hits > 0 && (body.multiple || chosen.len() == 1) {
         if !policy.partial_credit {
             return Verdict::new(
                 0.0,
@@ -530,6 +532,24 @@ mod tests {
         );
         assert!(grade.auto_score <= 100.0);
         assert!(grade.breakdown.items.iter().all(|g| g.score <= g.max_score));
+    }
+
+    /// Every option picked on a single-answer question earns nothing (it used
+    /// to earn partial credit: 75% on a true/false item).
+    #[test]
+    fn several_picks_on_a_single_answer_question_are_wrong() {
+        let q = item(choice(&["a"], &["b", "c", "d"], false), 1.0);
+        let mut answers = Answers::new();
+        answers.insert(
+            q.id,
+            ItemAnswer::Choice {
+                selected: vec!["a".into(), "b".into(), "c".into(), "d".into()],
+            },
+        );
+        let grade = grade_quiz(&[q], &answers, POLICY);
+        assert_eq!(grade.breakdown.items[0].score, 0.0);
+        assert_eq!(grade.breakdown.items[0].correct, Some(false));
+        assert_eq!(grade.auto_score, 0.0);
     }
 
     #[test]
