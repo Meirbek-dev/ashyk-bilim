@@ -49,6 +49,11 @@ export const CollectionPage = zod
                   'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
                 ),
               archived_by: zod.union([zod.uuid(), zod.null()]),
+              assessments_require_enrollment: zod
+                .boolean()
+                .describe(
+                  'Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.',
+                ),
               contributor_ids: zod
                 .array(zod.uuid())
                 .describe(

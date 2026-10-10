@@ -63,6 +63,7 @@ import { getMimeCategories } from '@/features/file-submissions/mime-categories'
 import { useApiError } from '@/hooks/useApiError'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate, useRemediationGate } from '@/features/remediation'
+import { EnrollGate, NOT_ENROLLED } from '@/features/learner-course/EnrollGate'
 import { disabledReasonOf } from '@/features/assessments/domain/disabled-reason'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -495,7 +496,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
           <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
         {blockedReasons.length > 0 ? (
-          <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
+          <Blocked reasons={blockedReasons} activityUuid={activityUuid} courseId={data.course_id} />
         ) : attemptsLeft ? (
           <div className="mx-auto max-w-2xl">
             <Button variant="outline" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
@@ -551,7 +552,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         maxFileSizeMb={data.max_file_size_mb ?? null}
       />
       {blockedReasons.length > 0 ? (
-        <Blocked reasons={blockedReasons} activityUuid={activityUuid} />
+        <Blocked reasons={blockedReasons} activityUuid={activityUuid} courseId={data.course_id} />
       ) : (
         <DraftEditor
           data={data}
@@ -591,7 +592,7 @@ function TaskInstructions({ instructions }: { instructions: string }) {
 // ── Blocked ────────────────────────────────────────────────────────────────────
 
 /** The quiz's blocked card (AttemptEntryCard): the gate with «Пройти исправление», or the localized reason. */
-function Blocked({ reasons, activityUuid }: { reasons: string[]; activityUuid: string }) {
+function Blocked({ reasons, activityUuid, courseId }: { reasons: string[]; activityUuid: string; courseId: string }) {
   const t = useTranslations('FileSubmission')
   const tReasons = useTranslations('AttemptActions.blockedReasons')
   const known = reasons.find(reason => tReasons.has(reason))
@@ -603,7 +604,9 @@ function Blocked({ reasons, activityUuid }: { reasons: string[]; activityUuid: s
       <div className="bg-destructive/10 flex size-14 items-center justify-center rounded-lg">
         <Lock className="text-destructive size-7" />
       </div>
-      {reasons.includes(REMEDIATION_REQUIRED) ? (
+      {reasons.includes(NOT_ENROLLED) ? (
+        <EnrollGate courseId={courseId} />
+      ) : reasons.includes(REMEDIATION_REQUIRED) ? (
         <RemediationGate activityId={activityUuid} />
       ) : (
         <p className="text-muted-foreground max-w-md text-sm">{known ? tReasons(known as never) : t('blocked')}</p>

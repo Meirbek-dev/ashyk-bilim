@@ -247,6 +247,7 @@ function useAssessment(
     surface: 'ATTEMPT',
     kind,
     accessClosed,
+    courseUuid: assessment.course_id,
     assessmentUuid: assessment.id,
     activityUuid: assessment.activity_id,
     title: assessment.title,

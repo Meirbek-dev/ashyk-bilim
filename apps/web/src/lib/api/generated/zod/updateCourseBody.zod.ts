@@ -23,6 +23,7 @@ export const updateCourseBodyTagsMax = 20
 
 export const UpdateCourseBody = zod.object({
   about: zod.string().max(updateCourseBodyAboutMax).optional(),
+  assessments_require_enrollment: zod.boolean().optional().describe('See `Course.assessments_require_enrollment`.'),
   description: zod.string().max(updateCourseBodyDescriptionMax).optional(),
   learnings: zod
     .array(

@@ -28,7 +28,7 @@ import {
   CourseEditorStagedSection,
 } from '@/features/courses/editor/components/CourseEditorSection'
 import LinkToUserGroup from '@components/Objects/Modals/Dash/EditCourseAccess/LinkToUserGroup'
-import { AlertTriangle, Globe, Loader2, SquareUserRound, Users, X } from 'lucide-react'
+import { AlertTriangle, Globe, Loader2, SquareUserRound, UserCheck, Users, X } from 'lucide-react'
 import {
   CourseChoiceCard,
   courseReadinessQueryOptions,
@@ -144,6 +144,8 @@ function EditCourseAccess() {
         </RadioGroup>
       </CourseEditorStagedSection>
 
+      {draftPublic === true ? <AssessmentAccessSection /> : null}
+
       {draftPublic === false ? (
         <UserGroupsSection
           courseUuid={courseStructure.course_uuid}
@@ -153,6 +155,70 @@ function EditCourseAccess() {
         />
       ) : null}
     </div>
+  )
+}
+
+/** Cluster G: who takes the public course's assessments - enrolled learners (default) or anyone signed in. */
+function AssessmentAccessSection() {
+  const { courseStructure } = useCourse()
+  const t = useTranslations('DashPage.Courses.Access')
+  const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
+  const serverValue =
+    typeof courseStructure?.assessments_require_enrollment === 'boolean'
+      ? courseStructure.assessments_require_enrollment
+      : undefined
+  const { draft, setDraft, isDirty, discard, markClean } = useCourseSectionDraft({
+    section: 'assessmentAccess',
+    serverValue,
+  })
+  const { isSaving, save } = useSaveSection({ section: 'assessmentAccess' })
+
+  const handleSave = async () => {
+    if (draft === undefined || !courseStructure || !isDirty) return
+    await save(
+      async () =>
+        updateAccess({ assessments_require_enrollment: draft }, { lastKnownUpdateDate: courseStructure.update_date }),
+      { onSuccess: () => markClean(draft) },
+    )
+  }
+
+  return (
+    <CourseEditorStagedSection
+      title={t('assessmentAccessTitle')}
+      description={t('assessmentAccessDescription')}
+      isDirty={isDirty}
+      isSaving={isSaving}
+      onSave={handleSave}
+      onDiscard={discard}
+    >
+      <RadioGroup
+        value={draft === true ? 'enrolled' : draft === false ? 'anyone' : undefined}
+        onValueChange={value => setDraft(value === 'enrolled')}
+        disabled={isSaving}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      >
+        <CourseChoiceCard
+          id="assessments-enrolled"
+          value="enrolled"
+          checked={draft === true}
+          title={t('assessmentAccessEnrolledLabel')}
+          description={t('assessmentAccessEnrolledDescription')}
+          icon={UserCheck}
+          disabled={isSaving}
+          onSelect={value => setDraft(value === 'enrolled')}
+        />
+        <CourseChoiceCard
+          id="assessments-anyone"
+          value="anyone"
+          checked={draft === false}
+          title={t('assessmentAccessAnyoneLabel')}
+          description={t('assessmentAccessAnyoneDescription')}
+          icon={Globe}
+          disabled={isSaving}
+          onSelect={value => setDraft(value === 'enrolled')}
+        />
+      </RadioGroup>
+    </CourseEditorStagedSection>
   )
 }
 

@@ -79,7 +79,9 @@ export function updateCourseAccessMutationOptions(
       payload,
     }: {
       options: MutationOptions
-      payload: Partial<CourseAccessValues & { open_to_contributors?: boolean }>
+      payload: Partial<
+        CourseAccessValues & { open_to_contributors?: boolean; assessments_require_enrollment?: boolean }
+      >
     }) =>
       typeof payload.public === 'boolean'
         ? updateCourseLifecycle(courseUuid, payload.public, buildMutationOptions(options.lastKnownUpdateDate))

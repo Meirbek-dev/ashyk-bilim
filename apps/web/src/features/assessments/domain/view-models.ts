@@ -87,6 +87,8 @@ export interface AttemptViewModel {
   kind: AssessmentKind
   /** UX-213: off the access list - own attempts read-only, no new attempts. */
   accessClosed?: boolean
+  /** The course - its enrolment is what `NOT_ENROLLED` asks for (cluster G). */
+  courseUuid?: string
   assessmentUuid: string
   activityUuid: string
   title: string

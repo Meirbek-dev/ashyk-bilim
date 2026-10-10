@@ -14,6 +14,7 @@ import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import { useTimeLimitLabel } from '@/features/assessments/shared/useTimeLimitLabel'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
+import { EnrollGate, NOT_ENROLLED } from '@/features/learner-course/EnrollGate'
 import { MarkdownContent } from '@/features/content-markdown'
 
 interface AttemptEntryCardProps {
@@ -56,7 +57,9 @@ export default function AttemptEntryCard({
           <Lock className="text-destructive size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
-        {vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
+        {vm.disabledActionReasons.includes(NOT_ENROLLED) && vm.courseUuid ? (
+          <EnrollGate courseId={vm.courseUuid} />
+        ) : vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
           <RemediationGate activityId={vm.activityUuid} />
         ) : (
           <p className="text-muted-foreground max-w-md text-sm">

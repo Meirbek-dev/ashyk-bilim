@@ -39,7 +39,9 @@ export function useCoursesMutations(courseUuid: string, withUnpublishedActivitie
   return {
     refreshCourse,
     updateAccess: async (
-      payload: Partial<CourseAccessValues & { open_to_contributors?: boolean }>,
+      payload: Partial<
+        CourseAccessValues & { open_to_contributors?: boolean; assessments_require_enrollment?: boolean }
+      >,
       options: MutationOptions,
     ) => updateAccessMutation.mutateAsync({ options, payload }),
     updateMetadata: async (payload: Partial<CourseGeneralValues>, options: MutationOptions) =>

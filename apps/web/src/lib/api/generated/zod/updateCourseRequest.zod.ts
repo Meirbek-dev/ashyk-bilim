@@ -23,6 +23,7 @@ export const updateCourseRequestTagsMax = 20
 
 export const UpdateCourseRequest = zod.object({
   about: zod.string().max(updateCourseRequestAboutMax).optional(),
+  assessments_require_enrollment: zod.boolean().optional().describe('See `Course.assessments_require_enrollment`.'),
   description: zod.string().max(updateCourseRequestDescriptionMax).optional(),
   learnings: zod
     .array(

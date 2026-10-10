@@ -28,6 +28,7 @@ export const AttemptState = zod
           'TIME_LIMIT_EXPIRED',
           'REMEDIATION_REQUIRED',
           'ACCESS_RESTRICTED',
+          'NOT_ENROLLED',
         ])
         .describe(
           'Why a learner cannot act right now (legacy `disabled_action_reasons`;\nthe attempt/timer-based ones arrive with submissions in P4).',

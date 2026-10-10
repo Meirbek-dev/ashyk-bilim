@@ -25,6 +25,7 @@ function wireCourse(extra: Record<string, unknown> = {}) {
     tags: [],
     public: false,
     open_to_contributors: false,
+    assessments_require_enrollment: true,
     thumbnail_key: null,
     thumbnail_video_key: null,
     learnings: [],

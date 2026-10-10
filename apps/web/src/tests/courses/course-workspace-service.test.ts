@@ -86,6 +86,7 @@ describe('getCourseMetadata learner shape', () => {
                 contributor_ids: [],
                 learnings: [],
                 open_to_contributors: false,
+                assessments_require_enrollment: true,
                 created_at_unix: 1,
                 updated_at_unix: 1,
                 allowed_actions: [],

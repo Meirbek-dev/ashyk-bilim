@@ -15,6 +15,7 @@ import type { ActivityProgress } from '@/features/assessments/domain/grade-of-re
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import { REMEDIATION_REQUIRED, RemediationGate } from '@/features/remediation'
+import { EnrollGate, NOT_ENROLLED } from '@/features/learner-course/EnrollGate'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -319,6 +320,12 @@ export default function AttemptResultCard({
       {/* BUG-152: a gate-mode remediation blocks the retake — say so and open it here. */}
       {!canSubmit && vm.disabledActionReasons.includes(REMEDIATION_REQUIRED) ? (
         <RemediationGate activityId={vm.activityUuid} />
+      ) : null}
+      {/* Cluster G: the retake waits for an enrolment - offer it here. */}
+      {!canSubmit && vm.disabledActionReasons.includes(NOT_ENROLLED) && vm.courseUuid ? (
+        <div className="mt-4">
+          <EnrollGate courseId={vm.courseUuid} />
+        </div>
       ) : null}
       {/* UX-034: a capped retake says so before the learner spends the attempt. */}
       {canSubmit && onRetry && typeof vm.nextAttemptCapPercent === 'number' ? (

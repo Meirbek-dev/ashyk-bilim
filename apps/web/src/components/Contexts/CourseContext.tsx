@@ -19,7 +19,7 @@ export interface Chapter extends AppChapter {
   activities?: Activity[]
 }
 
-export type CourseSectionKey = 'general' | 'access' | 'contributors' | 'certification' | 'content'
+export type CourseSectionKey = 'general' | 'access' | 'assessmentAccess' | 'contributors' | 'certification' | 'content'
 
 // Course structure interface with improved typing
 export interface CourseStructure extends AppCourse {

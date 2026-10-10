@@ -35,6 +35,9 @@ const toUpdateCourseRequest = (data: AppPayload) => ({
   ...(data.about === undefined ? {} : { about: data.about }),
   ...(data.tags === undefined ? {} : { tags: toTagArray(data.tags) }),
   ...(typeof data.open_to_contributors === 'boolean' ? { open_to_contributors: data.open_to_contributors } : {}),
+  ...(typeof data.assessments_require_enrollment === 'boolean'
+    ? { assessments_require_enrollment: data.assessments_require_enrollment }
+    : {}),
   ...(typeof data.thumbnail_upload_id === 'string' || data.thumbnail_upload_id === null
     ? { thumbnail_upload_id: data.thumbnail_upload_id }
     : {}),

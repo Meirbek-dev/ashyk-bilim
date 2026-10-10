@@ -4912,6 +4912,12 @@
       "Access": {
         "accessDescription": "Choose if you want your course to be publicly available on the internet or only accessible to signed in users",
         "accessToTheCourse": "Access to the course",
+        "assessmentAccessTitle": "Who can take tests and assignments",
+        "assessmentAccessDescription": "Quizzes, exams, code challenges and file assignments of this public course.",
+        "assessmentAccessEnrolledLabel": "Enrolled learners only",
+        "assessmentAccessEnrolledDescription": "A visitor enrolls in the course first, then takes its tests. Recommended.",
+        "assessmentAccessAnyoneLabel": "Any signed-in user",
+        "assessmentAccessAnyoneDescription": "Anyone signed in can take a test without enrolling; their first attempt enrolls them and adds them to the gradebook.",
         "activeBadge": "Active",
         "changeToPublicButton": "Change to Public",
         "changeToPublicConfirmMsg": "Are you sure you want this course to be publicly available on the internet?",
@@ -8029,6 +8035,7 @@
       "attempt-time-expired": "The time for this attempt is up. Answers can no longer be changed.",
       "attempt-past-due": "The due date has passed. New attempts and answers are no longer accepted.",
       "remediation-required": "Complete the remediation session first, then start a new attempt.",
+      "enrollment-required": "Enroll in the course to take its tests and assignments.",
       "internal": "Internal server error. Please try again later.",
       "not-found": "The requested resource was not found.",
       "method-not-allowed": "This request method is not supported.",
@@ -12429,6 +12436,9 @@
     "startRevision": "Start revision",
     "noAction": "No action available",
     "blocked": "Access blocked",
+    "enrollToTake": "Enroll in the course",
+    "enrolledToast": "You are enrolled. You can start now.",
+    "enrollFailed": "Could not enroll you in the course. Try again.",
     "blockedReasons": {
       "NOT_PUBLISHED": "This assessment is not yet published.",
       "SCHEDULED_NOT_OPEN": "This assessment has not opened yet.",
@@ -12438,7 +12448,8 @@
       "TIME_LIMIT_EXPIRED": "The time limit for this attempt has expired.",
       "REMEDIATION_REQUIRED": "Finish the assigned remediation first.",
       "UNKNOWN": "Action unavailable.",
-      "COURSE_ARCHIVED": "The course is archived."
+      "COURSE_ARCHIVED": "The course is archived.",
+      "NOT_ENROLLED": "Enroll in the course to take this assessment."
     }
   },
   "Overrides": {

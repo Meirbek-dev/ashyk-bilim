@@ -137,6 +137,7 @@ export const CourseGradingStreamEvent = zod
             'attempt-time-expired',
             'attempt-past-due',
             'remediation-required',
+            'enrollment-required',
             'grade-not-released',
             'grade-own-attempt',
             'ai-disabled',
