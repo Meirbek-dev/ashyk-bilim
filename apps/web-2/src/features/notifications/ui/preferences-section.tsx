@@ -18,6 +18,7 @@ export function NotificationPreferences() {
   const [defaultValues] = useState(data)
   const form = useAppForm(vNotificationSettings, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: body =>
       save.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.notifications_prefs_saved() }) }),
   })

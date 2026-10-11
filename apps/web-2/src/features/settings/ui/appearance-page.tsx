@@ -31,6 +31,7 @@ export function AppearancePage() {
   })
   const form = useAppForm(vAppearance, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: async ({ theme, mode, locale }) => {
       await update.mutateAsync({ body: { theme, locale } })
       saveTheme(theme)

@@ -16,7 +16,7 @@ import { profileOptions, updateProfileOptions } from '../queries'
 import { SectionEditor, sectionTypeLabels } from './section-editor'
 
 const useBuilderForm = (defaultValues: ProfileSections, onSubmit: (value: ProfileSections) => unknown) =>
-  useAppForm(vBuilderDocument, { defaultValues, onSubmit })
+  useAppForm(vBuilderDocument, { defaultValues, onSubmit, leaveGuard: true })
 
 export type BuilderForm = ReturnType<typeof useBuilderForm>
 

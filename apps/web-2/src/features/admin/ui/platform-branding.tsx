@@ -42,6 +42,7 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
   )
   const form = useAppForm(vUpdatePlatformRequest, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: body => write.save({ body, reset: () => form.reset() }),
   })
   const images = [

@@ -24,6 +24,7 @@ export function NotificationsPage() {
   const [defaultValues] = useState<GamificationSwitches>(() => readSwitches(data.profile.settings))
   const form = useAppForm(vSwitches, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: ({ xpGain, showOnLeaderboard, showGamification, showStreaks }) =>
       update.mutateAsync(
         {

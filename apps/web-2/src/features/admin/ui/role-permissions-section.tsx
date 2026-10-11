@@ -32,6 +32,7 @@ export function RolePermissionsSection({ role, base }: { role: Role; base: BaseV
   const [defaultValues] = useState(() => ({ permissions: role.permissions.join('\n') }))
   const form = useAppForm(permissionsFormSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: ({ permissions }) => write.save(permissionLines(permissions)),
   })
   return (
