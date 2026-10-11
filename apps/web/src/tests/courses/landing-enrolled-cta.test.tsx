@@ -110,14 +110,25 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
     Actions = Component
   })
 
-  it('offers «Продолжить» when the wire says enrolled, even without a trail run', async () => {
+  // An enrolled learner with nothing done (roster enrolment, or left and came back) reads «Начать курс», but the
+  // button continues: no enrolment call, the run is restored and the first unfinished activity opens.
+  it('continues (no enrolment) when the wire says enrolled, even without a trail run', async () => {
     renderActions(enrolledWithoutRun)
-    expect(screen.queryByRole('button', { name: /Начать курс/ })).toBeNull()
-    const continueButton = screen.getByRole('button', { name: /Продолжить/ })
+    expect(screen.queryByRole('button', { name: /Продолжить/ })).toBeNull()
+    const continueButton = screen.getByRole('button', { name: /Начать курс/ })
     fireEvent.click(continueButton)
     // The run is restored silently, then the learner lands on the first unfinished activity.
     await waitFor(() => expect(mocks.apiJson).toHaveBeenCalledWith(START_URL, { method: 'POST' }))
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(expect.stringContaining('/course/c1/activity/a1')))
+  })
+
+  it('says «Продолжить» once something is done', () => {
+    renderActions({
+      ...enrolledWithoutRun,
+      outline: [{ id: 'ch', activities: [{ id: 'a0', complete: true }, { id: 'a1', complete: false }] }],
+      progress: { completed_required_count: 1, total_required_count: 2, progress_pct: 50 },
+    } as unknown as LearnerCourseState)
+    expect(screen.getByRole('button', { name: /Продолжить/ })).toBeInTheDocument()
   })
 
   it('still offers «Начать курс» when the wire says not enrolled', () => {

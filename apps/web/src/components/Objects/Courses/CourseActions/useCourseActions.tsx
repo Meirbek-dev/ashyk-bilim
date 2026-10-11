@@ -73,7 +73,7 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState, auto
   // but keeps submissions (leaving only resets lesson completions), so the
   // landing must not offer «Начать курс» to someone the server calls enrolled.
   const isStarted = learnerState?.enrolled ?? hasTrailRun
-  const { activityCount, nextActivityId } = learnerCourseProgress(learnerState)
+  const { activityCount, nextActivityId, completedIds } = learnerCourseProgress(learnerState)
   const activities = course.chapters?.flatMap(chapter => chapter.activities ?? []) ?? []
   // BUG-318: the server's next action, not a client recount (which offered a
   // quiz the learner is off the allowlist of).
@@ -104,6 +104,8 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState, auto
             ? 'open'
             : 'continue'
   const hideCta = isArchived && action === 'start'
+  // Enrolled by the teacher (roster) but nothing done yet: «Начать», not «Продолжить обучение» at 0 %.
+  const label: CourseCta = action === 'continue' && completedIds.size === 0 ? 'start' : action
 
   // UX-119: Back within the learner-state staleTime must show the enrolled landing.
   const refreshEnrolment = () =>
@@ -196,6 +198,8 @@ export function useCourseCta({ courseuuid, course, trailData, learnerState, auto
 
   return {
     action,
+    /** What the button says: `action`, except «Начать» for an enrolled learner who has done nothing yet. */
+    label,
     isStarted,
     hasNoLiveActivities,
     /** Archived and not enrolled: nothing to offer (the landing banner says why). */

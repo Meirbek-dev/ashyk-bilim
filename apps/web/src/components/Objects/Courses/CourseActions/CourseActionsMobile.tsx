@@ -81,6 +81,7 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
   // Same CTA branches and toasts as the desktop sidebar (UX-174/175).
   const {
     action,
+    label,
     hasNoLiveActivities,
     hideCta,
     isActionLoading,
@@ -118,14 +119,14 @@ function CourseActionsMobile({ courseuuid, course, trailData, learnerState }: Co
               </>
             ) : (
               <>
-                {action === 'start' ? (
+                {label === 'start' ? (
                   <LogIn className="h-4 w-4" />
                 ) : action === 'continue' || action === 'preview' || action === 'open' ? (
                   <BookOpen className="h-4 w-4" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />
                 )}
-                {tActions(CTA_LABEL[action])}
+                {tActions(CTA_LABEL[label])}
               </>
             )}
           </Button>

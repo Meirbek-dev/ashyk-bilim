@@ -22,6 +22,7 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
   const t = useTranslations('Courses.CoursesActions')
   const {
     action,
+    label: ctaLabel,
     isStarted,
     hasNoLiveActivities,
     hideCta,
@@ -33,14 +34,14 @@ function CoursesActions({ courseuuid, course, trailData, learnerState }: CourseA
 
   const renderActionButton = (action: CourseCta) => {
     const icon =
-      action === 'start' ? (
+      ctaLabel === 'start' ? (
         <PlayCircle className="size-5" />
       ) : action === 'certificate' || action === 'review' ? (
         <CheckCircle2 className="size-5" />
       ) : (
         <ArrowRight className="size-5" />
       )
-    const label = t(CTA_LABEL[action])
+    const label = t(CTA_LABEL[ctaLabel])
 
     return (
       <>
