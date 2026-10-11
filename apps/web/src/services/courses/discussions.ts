@@ -47,16 +47,29 @@ function normalize(value: WireDiscussionType): Discussion {
   }
 }
 
-export async function getCourseDiscussions(courseId: string, includeReplies = true, limit = 50): Promise<Discussion[]> {
-  const items = await collectPages(cursor =>
-    apiJson(
+/** The course's posts, and whether the caller may start one (enrolled or course staff - DECISIONS 2026-10-11). */
+export interface CourseDiscussionsData {
+  posts: Discussion[]
+  canPost: boolean
+}
+
+export async function getCourseDiscussions(
+  courseId: string,
+  includeReplies = true,
+  limit = 50,
+): Promise<CourseDiscussionsData> {
+  let canPost = false
+  const items = await collectPages(async cursor => {
+    const page = await apiJson(
       `courses/${courseId}/discussions?include_replies=${includeReplies}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
       {},
       data => DiscussionPage.parse(data),
-    ),
-  )
+    )
+    canPost = page.can_post
+    return page
+  })
   // The generated recursive schema types nested `replies` as `unknown[]`; zod has already validated the shape.
-  return items.map(item => normalize(item as WireDiscussionType))
+  return { posts: items.map(item => normalize(item as WireDiscussionType)), canPost }
 }
 
 export interface DiscussionCreate {

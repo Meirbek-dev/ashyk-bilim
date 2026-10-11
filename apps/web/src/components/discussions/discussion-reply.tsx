@@ -33,6 +33,8 @@ interface DiscussionReplyProps {
   onEditReply: (postId: string, replyId: string, newMessage: string) => Promise<boolean>
   onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
+  /** Votes: course members only (enrolled or staff). */
+  canTakePart?: boolean
 }
 
 export default function DiscussionReply({
@@ -43,6 +45,7 @@ export default function DiscussionReply({
   onEditReply,
   onToggleHidden,
   readOnly = false,
+  canTakePart = true,
 }: DiscussionReplyProps) {
   const t = useTranslations('CoursePage')
   const [editing, setEditing] = useState(false)
@@ -188,7 +191,7 @@ export default function DiscussionReply({
               </div>
 
               {/* Voting section */}
-              {readOnly ? null : (
+              {readOnly || !canTakePart ? null : (
                 <div className="flex items-center gap-3">
                   <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
                     <Button

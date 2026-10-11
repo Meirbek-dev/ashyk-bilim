@@ -41,6 +41,8 @@ interface DiscussionPostProps {
   onSubmitReply: (postId: string, replyText: string) => Promise<boolean>
   onToggleHidden: (postId: string, replyId?: string) => void
   readOnly?: boolean
+  /** Votes and replies: course members only (enrolled or staff); the rest read. */
+  canTakePart?: boolean
 }
 
 export default function DiscussionPost({
@@ -55,6 +57,7 @@ export default function DiscussionPost({
   onSubmitReply,
   onToggleHidden,
   readOnly = false,
+  canTakePart = true,
 }: DiscussionPostProps) {
   const t = useTranslations('CoursePage')
   const [replyingTo, setReplyingTo] = useState(false)
@@ -201,7 +204,7 @@ export default function DiscussionPost({
                 </div>
               )}
 
-              {readOnly ? null : (
+              {readOnly || !canTakePart ? null : (
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-3">
                     <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
@@ -336,6 +339,7 @@ export default function DiscussionPost({
                   onEditReply={onEditReply}
                   onToggleHidden={onToggleHidden}
                   readOnly={readOnly}
+                  canTakePart={canTakePart}
                 />
               ))}
             </div>

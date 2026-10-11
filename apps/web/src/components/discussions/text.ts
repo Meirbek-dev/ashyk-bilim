@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+
 const HTML_TAG_PATTERN = /<[^>]*>/g
 const HTML_ENTITY_PATTERNS: [RegExp, string][] = [
   [/&nbsp;/gi, ' '],
@@ -36,4 +38,12 @@ export function useSubmitOnce() {
     return ok
   }
   return { pending, run }
+}
+
+/**
+ * «Уйти без сохранения?» while a composer holds real text (ROUND3-19). An editor emptied back to `<p></p>` is
+ * clean, and so is an edit back at the text it opened with. Render `UnsavedChangesDialog` with the result.
+ */
+export function useComposerGuard(content: string, initial = '') {
+  return useUnsavedChangesGuard(hasMeaningfulText(content) && content !== initial, { interceptInAppNavigation: true })
 }

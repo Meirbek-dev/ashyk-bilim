@@ -10,6 +10,8 @@ interface CourseDiscussionsProps {
   onMutate?: () => void
   /** Archived course: the thread is readable, nothing can be posted or voted. */
   readOnly?: boolean
+  /** Enrolled or course staff (`can_post`); others read and are offered the enrolment. */
+  canPost?: boolean
 }
 
 export default function CourseDiscussions({
@@ -18,6 +20,7 @@ export default function CourseDiscussions({
   courseUuid,
   onMutate,
   readOnly = false,
+  canPost = true,
 }: CourseDiscussionsProps) {
   return (
     <div className="my-8">
@@ -26,6 +29,7 @@ export default function CourseDiscussions({
         currentUser={currentUser}
         courseUuid={courseUuid}
         readOnly={readOnly}
+        canPost={canPost}
         {...(onMutate === undefined ? {} : { onMutate })}
       />
     </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import type { Discussion } from '@services/courses/discussions'
+import type { CourseDiscussionsData } from '@services/courses/discussions'
 
 // Import Lucide icons
 import {
@@ -58,7 +58,7 @@ interface CourseClientProps {
   course: AppCourse
   courseuuid: string
   current_activity?: string
-  initialDiscussions?: Discussion[]
+  initialDiscussions?: CourseDiscussionsData
   trailData?: AppTrailData | null | undefined
 }
 
@@ -138,7 +138,7 @@ function CourseClient(props: CourseClientProps) {
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image')
 
-  const { courseuuid, initialDiscussions = [], trailData } = props
+  const { courseuuid, initialDiscussions = { posts: [], canPost: false }, trailData } = props
   const { user: currentUser } = useSession()
   // The server-rendered outline seeds the query; a lesson published meanwhile
   // shows up on focus / every 30 s (UX-080, UX-104).
@@ -548,7 +548,8 @@ function CourseClient(props: CourseClientProps) {
 
                 {/* Discussions */}
                 <CourseDiscussions
-                  initialPosts={discussionsQuery.data}
+                  initialPosts={discussionsQuery.data.posts}
+                  canPost={discussionsQuery.data.canPost}
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}

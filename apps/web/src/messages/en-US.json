@@ -615,6 +615,7 @@
       "autoSubmittingReason": {
         "timeExpired": "time expired",
         "deadlinePassed": "the deadline has come",
+        "lateCutoffPassed": "late submissions have closed",
         "violationThresholdExceeded": "violation threshold exceeded"
       },
       "additionalFlagged": "+{count} more",
@@ -1078,7 +1079,10 @@
       "backToLogin": "Go to sign in",
       "resend": "Send the code again",
       "resent": "If the address is registered and not yet verified, we sent a new code to it.",
-      "resendFailed": "Could not send the code. Please try again."
+      "resendFailed": "Could not send the code. Please try again.",
+      "bannerTitle": "Confirm your email",
+      "bannerText": "We sent a code to {email}. Enter it to confirm the address.",
+      "bannerHide": "Hide"
     },
     "ResetPassword": {
       "title": "Reset password - Ashyq Bilim",
@@ -2960,7 +2964,7 @@
       "deleteButton": "Delete Activity",
       "deleteConfirmation": "Are you sure you want to delete this activity?",
       "deleteAssessmentConfirmation": "Are you sure you want to delete this activity? Every learner hand-in for this assessment will be deleted for good.",
-      "lockedAssessment": "This assessment cannot be renamed: it is scheduled, archived or already has hand-ins. Unpublish it in the studio first.",
+      "lockedAssessment": "This assessment cannot be renamed: it is scheduled or archived. Unschedule or restore it in the studio first.",
       "deleteFailed": "Failed to delete activity",
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
@@ -2978,6 +2982,9 @@
       "unpublish": "Unpublish",
       "unpublishButton": "Unpublish",
       "updateFailed": "Failed to update activity",
+      "publishNeedsVideo": "Upload the video to publish the lesson.",
+      "publishNeedsLink": "Add the video link to publish the lesson.",
+      "publishNeedsDocument": "Upload the document to publish the lesson.",
       "notReadyToPublish": "Not ready to publish yet: open the editor and fix the listed issues.",
       "updating": "Updating activity...",
       "editButton": "Edit",
@@ -3346,7 +3353,10 @@
     "quiz": "Quiz",
     "editCourse": "Edit course",
     "courseArchived": "This course is archived. Enrolment is closed.",
-    "discussionsArchived": "The course is archived; the discussion is closed."
+    "discussionsArchived": "The course is archived; the discussion is closed.",
+    "membersOnly": "Course members can post, reply and vote here. Enroll in the course to join the discussion.",
+    "enrollToTakePart": "Enroll in the course",
+    "enrolledToTakePart": "You are enrolled"
   },
   "Courses": {
     "CourseActionsMobile": {
@@ -8151,6 +8161,8 @@
       "role-slug-taken": "A role with this slug already exists.",
       "last-admin": "The platform must keep at least one active administrator.",
       "self-disable": "You cannot disable your own account.",
+      "activity-media-missing": "Add the lesson's file or link, then publish it.",
+      "discussion-enrollment-required": "Enroll in the course to post in its discussion.",
       "activity-not-ready": "Publish the assessment or file-submission settings first, then the activity.",
       "course-not-ready": "Resolve every readiness blocker before publishing the course.",
       "unsupported-media-type": "This file type is not allowed here.",
@@ -10462,6 +10474,7 @@
           "autoSubmittingReason": {
             "timeExpired": "time expired",
             "deadlinePassed": "the deadline has come",
+            "lateCutoffPassed": "late submissions have closed",
             "violationThresholdExceeded": "violation threshold exceeded"
           },
           "additionalFlagged": "+{count} more",
@@ -11893,6 +11906,7 @@
       "attemptCapNote": "Next attempt: capped at {percent}",
       "autoSubmittedTimeExpired": "The attempt was closed automatically: time ran out.",
       "autoSubmittedDeadline": "The due date passed: the attempt was handed in automatically with your saved answers.",
+      "autoSubmittedLateCutoff": "Late submissions closed: the attempt was handed in automatically with your saved answers.",
       "autoSubmittedViolation": "The attempt was closed automatically because of integrity violations; the score is zero.",
       "latePenaltyApplied": "Late penalty: −{percent}.",
       "attemptCapApplied": "Cap applied to this attempt: {percent}.",
@@ -12693,6 +12707,7 @@
     "passed": "Passed",
     "failed": "Failed",
     "teacherFeedback": "Teacher feedback",
+    "reviewHistory": "Review history",
     "startRevision": "Start revision",
     "removeFile": "Remove {name}",
     "allowedTypes": "Accepted formats",

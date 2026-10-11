@@ -20,6 +20,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useEffect, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
+import { learnerCourseStateQueryOptions } from '@/features/learner-course/api'
 import { toast } from 'sonner'
 import DiscussionPost from './discussion-post'
 import DiscussionForm from './discussion-form'
@@ -28,7 +32,7 @@ import { Lock, MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useApiError } from '@/hooks/useApiError'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import Link from '@components/ui/AppLink'
 import type { DiscussionPostData, DiscussionReplyData } from './types'
 
@@ -38,6 +42,8 @@ interface DiscussionListProps {
   courseUuid: string
   onMutate?: () => void
   readOnly?: boolean
+  /** The caller may post, reply and vote (`can_post`: enrolled or course staff). */
+  canPost?: boolean
 }
 
 /** Fallback author when the server omits `author` (never in v2, kept for the optimistic path). */
@@ -99,12 +105,48 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
   replies: (discussion.replies ?? []).map(reply => toReplyData(reply, anonymousLabel)),
 })
 
+/**
+ * «Записаться на курс» under the members-only note: enrols without leaving the page (the CTA opens the first
+ * lesson), then the thread, learner state and trail are read again. Hidden when the learner state offers no
+ * enrolment (enrolled already, staff, closed course).
+ */
+function EnrollToTakePart({ courseUuid, onEnrolled }: { courseUuid: string; onEnrolled?: (() => void) | undefined }) {
+  const t = useTranslations('CoursePage')
+  const { toastApiError } = useApiError()
+  const queryClient = useQueryClient()
+  const { data: state } = useQuery(learnerCourseStateQueryOptions(courseUuid))
+  const [pending, setPending] = useState(false)
+  if (!state || state.enrolled || !state.permissions.can_enroll) return null
+  const enrol = async () => {
+    setPending(true)
+    try {
+      await apiJson(`trail/courses/${courseUuid}`, { method: 'POST' })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: learnerCourseStateQueryOptions(courseUuid).queryKey }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
+      ])
+      onEnrolled?.()
+      toast.success(t('enrolledToTakePart'))
+    } catch (error) {
+      toastApiError(error)
+    } finally {
+      setPending(false)
+    }
+  }
+  return (
+    <Button onClick={() => void enrol()} disabled={pending}>
+      {t('enrollToTakePart')}
+    </Button>
+  )
+}
+
 export default function DiscussionList({
   initialPosts,
   currentUser,
   courseUuid,
   onMutate,
   readOnly = false,
+  canPost = true,
 }: DiscussionListProps) {
   const t = useTranslations('CoursePage')
   const { toastApiError } = useApiError()
@@ -495,8 +537,16 @@ export default function DiscussionList({
           <Lock size={16} className="shrink-0" />
           {t('discussionsArchived')}
         </p>
-      ) : currentUser ? (
+      ) : currentUser && canPost ? (
         <DiscussionForm currentUser={discussionUser} onSubmit={handleSubmitDiscussion} />
+      ) : currentUser ? (
+        // DECISIONS 2026-10-11: posting, replying and voting are for course members; the thread stays readable.
+        <Card>
+          <CardContent className="flex flex-col items-start gap-3 p-6">
+            <p className="text-muted-foreground text-sm">{t('membersOnly')}</p>
+            <EnrollToTakePart courseUuid={courseUuid} onEnrolled={onMutate} />
+          </CardContent>
+        </Card>
       ) : (
         // UX-109: posting needs a session — a sign-in prompt instead of a
         // form whose «Опубликовать» ends in a 401 and loses the text.
@@ -524,6 +574,7 @@ export default function DiscussionList({
             onToggleHidden={handleToggleHidden}
             onSubmitReply={handleSubmitReply}
             readOnly={readOnly}
+            canTakePart={canPost}
           />
         ))}
 

@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl'
 import { Send } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
-import { hasMeaningfulText, useSubmitOnce } from './text'
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog'
+import { hasMeaningfulText, useComposerGuard, useSubmitOnce } from './text'
 
 const RichTextEditor = dynamic(
   () =>
@@ -31,6 +32,8 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
   const [expanded, setExpanded] = useState(false)
 
   const { pending, run } = useSubmitOnce()
+  // A closed composer keeps its text for later but does not hold the reader on the page.
+  const leaveGuard = useComposerGuard(expanded ? content : '')
   const handleSubmit = async (formData: FormData) => {
     const nextContent = String(formData.get('content') ?? '')
 
@@ -87,6 +90,7 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog guard={leaveGuard} />
     </div>
   )
 }
