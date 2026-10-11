@@ -234,8 +234,10 @@ test('B-ATT-17 a test changed under the draft: the hand-in reopens it on the new
   await page.getByRole('radio', { name: 'Астана' }).check()
   await expect(status(page)).toHaveText(m.attempt_saved({}, ru), { timeout: 20_000 })
   await changeQuiz(quiz)
-  // The reopened draft reads the changed questions again on purpose.
+  // The reopened draft reads the changed questions again on purpose, and the reopen changed the attempt list the
+  // return note reads.
   expectReread(page, `/api/v2/activities/${quiz.course.activityIds.at(-1)}/assessment`)
+  expectReread(page, `/api/v2/assessments/${quiz.assessmentId}/submissions/me`)
   await page.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
   await dialog(page)
     .getByRole('button', { name: m.attempt_submit({}, ru) })
