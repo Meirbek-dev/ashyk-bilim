@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
-import type { Collection, CollectionAction } from '#/shared/api/gen/types.gen'
+import type { Collection, CollectionAction, Course } from '#/shared/api/gen/types.gen'
 
 /** The search box's own form value (the box is a form so Enter submits; the URL is the source of truth). */
 export const searchBoxSchema = v.object({ q: v.string() })
@@ -11,6 +11,18 @@ export const SEARCH_LIMIT = 50
 
 export const can = (collection: Pick<Collection, 'allowed_actions'>, action: CollectionAction): boolean =>
   collection.allowed_actions.includes(action)
+
+/**
+ * A public collection whose courses are all closed (private or archived): the server lists it to nobody but its author
+ * (UX-119), so saving it public deserves a warning.
+ */
+export const hiddenFromOthers = (collection: {
+  public: boolean
+  courses: readonly Pick<Course, 'public' | 'archived_at_unix'>[]
+}): boolean =>
+  collection.public &&
+  collection.courses.length > 0 &&
+  collection.courses.every(course => !course.public || course.archived_at_unix !== null)
 
 /** A 412: someone saved the collection after this page loaded it (its `version` is stale). */
 export const isStale = (error: unknown): boolean => error instanceof ApiError && error.status === 412

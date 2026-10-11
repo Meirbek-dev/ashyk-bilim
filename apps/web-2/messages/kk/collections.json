@@ -32,6 +32,7 @@
   "collections_edit_section": "Негізгі",
   "collections_edit_section_hint": "Атауы, сипаттамасы және көрінуі.",
   "collections_saved": "Сақталды",
+  "collections_hidden_warning": "Бұл жинақтың курстары жабық — басқа пайдаланушылар оны көрмейді.",
   "collections_back": "Жинаққа оралу",
   "collections_delete_title": "«{name}» атты жинақты жою керек пе?",
   "collections_delete_consequence": "Курстар платформада қалады, тек жинақ жойылады.",

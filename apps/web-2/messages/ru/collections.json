@@ -34,6 +34,7 @@
   "collections_edit_section": "Основное",
   "collections_edit_section_hint": "Название, описание и видимость.",
   "collections_saved": "Сохранено",
+  "collections_hidden_warning": "Курсы этой коллекции закрыты — другие пользователи её не увидят.",
   "collections_back": "К коллекции",
   "collections_delete_title": "Удалить коллекцию «{name}»?",
   "collections_delete_consequence": "Курсы останутся на платформе, исчезнет только коллекция.",

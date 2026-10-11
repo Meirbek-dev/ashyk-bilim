@@ -3,7 +3,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { Suspense, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { UpdateCollectionRequest } from '#/shared/api/gen/types.gen'
+import type { Collection, UpdateCollectionRequest } from '#/shared/api/gen/types.gen'
 import { vUpdateCollectionRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
@@ -13,9 +13,15 @@ import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { Skeleton } from '#/shared/ui/skeleton'
 import { toast } from '#/shared/ui/toast'
 
-import { isStale } from '../model/collections'
+import { hiddenFromOthers, isStale } from '../model/collections'
 import { collectionOptions, updateCollectionOptions } from '../queries'
 import { CoursePicker } from './course-picker'
+
+/** «Сохранено», with a warning when nobody else will see the collection (B-COL-16). */
+const savedToast = (saved: Collection) =>
+  hiddenFromOthers(saved)
+    ? { title: m.collections_saved(), description: m.collections_hidden_warning(), type: 'warning' }
+    : { title: m.collections_saved() }
 
 /** The one edit place of a collection. Saves with `If-Match: version`; a 412 opens the conflict dialog. */
 export function CollectionEditPage() {
@@ -40,9 +46,9 @@ export function CollectionEditPage() {
     headers: { 'If-Match': version },
   })
   const callbacks = {
-    onSuccess: async () => {
+    onSuccess: async (saved: Collection) => {
       setConflict(false)
-      toast.add({ title: m.collections_saved() })
+      toast.add(savedToast(saved))
       await navigate({ to: '/collections/$collectionId', params: { collectionId } })
     },
     onError: (error: unknown) => setConflict(isStale(error)),

@@ -32,6 +32,7 @@
   "collections_edit_section": "Details",
   "collections_edit_section_hint": "Name, description and visibility.",
   "collections_saved": "Saved",
+  "collections_hidden_warning": "The courses in this collection are closed, so other people will not see it.",
   "collections_back": "Back to the collection",
   "collections_delete_title": "Delete the collection “{name}”?",
   "collections_delete_consequence": "The courses stay on the platform; only the collection goes.",

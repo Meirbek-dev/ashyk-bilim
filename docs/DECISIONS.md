@@ -2565,6 +2565,13 @@ why the counts differ. The overview, the course and assessment drill-downs and t
 analytics page now show «Данные на <дата, время>» from the response's `generated_at_unix`,
 in both webs.
 
+## A public collection of closed courses warns its author (2026-10-11)
+
+The server lists a collection only when the viewer can see at least one of its courses, so a
+«public» collection whose courses are all private or archived is invisible to everyone but
+its author, silently. Saving such a collection now says «Курсы этой коллекции закрыты —
+другие пользователи её не увидят» (a warning, the save still goes through); both webs.
+
 ## Analytics detail pages name their snapshot time (2026-10-11)
 
 Analytics are computed snapshots, not live counts. The course and test detail pages
