@@ -8,5 +8,7 @@ export { AssessmentSettingsPage } from './ui/settings-page'
 // initial bundle) must not.
 export const ensureAssessment = async (queryClient: QueryClient, activityId: string) =>
   (await import('./loaders')).ensureAssessment(queryClient, activityId)
+export const assessmentHome = async (queryClient: QueryClient, id: string) =>
+  (await import('./loaders')).assessmentHome(queryClient, id)
 export const ensureAssessmentSettings = async (queryClient: QueryClient, activityId: string) =>
   (await import('./loaders')).ensureAssessmentSettings(queryClient, activityId)

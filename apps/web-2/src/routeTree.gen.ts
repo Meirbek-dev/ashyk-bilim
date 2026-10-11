@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as PublicRouteImport } from './routes/_public'
@@ -82,6 +83,11 @@ import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRouteImp
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
 
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -481,6 +487,7 @@ const AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
   )
 
 export interface FileRoutesByFullPath {
+  '/$': typeof SplatRoute
   '/': typeof GuestIndexRoute
   '/achievements': typeof AuthedAchievementsRoute
   '/admin': typeof AuthedAdminRouteWithChildren
@@ -552,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesByTo {
+  '/$': typeof SplatRoute
   '/': typeof GuestIndexRoute
   '/achievements': typeof AuthedAchievementsRoute
   '/home': typeof AuthedHomeRoute
@@ -617,6 +625,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/$': typeof SplatRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
@@ -693,6 +702,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/$'
     | '/'
     | '/achievements'
     | '/admin'
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/$'
     | '/'
     | '/achievements'
     | '/home'
@@ -828,6 +839,7 @@ export interface FileRouteTypes {
     | '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId'
   id:
     | '__root__'
+    | '/$'
     | '/_authed'
     | '/_guest'
     | '/_public'
@@ -903,6 +915,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  SplatRoute: typeof SplatRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   GuestRoute: typeof GuestRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
@@ -910,6 +923,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -1675,6 +1695,7 @@ const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  SplatRoute: SplatRoute,
   AuthedRoute: AuthedRouteWithChildren,
   GuestRoute: GuestRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,

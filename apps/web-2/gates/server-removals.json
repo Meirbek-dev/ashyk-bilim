@@ -70,10 +70,6 @@
       "reason": "downloads use SignedDownload.path (same-origin, L-6)"
     },
     {
-      "operation": "getAssessment",
-      "reason": "the web reads getActivityAssessment (by activity)"
-    },
-    {
       "operation": "currentDraft",
       "reason": "the learner's draft comes from attemptState + mySubmissions"
     },

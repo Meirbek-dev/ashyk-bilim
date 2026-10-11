@@ -2608,6 +2608,14 @@ one light API read per detail-page navigation (prefetches skip it). Fail-open: a
 renders the page as before. A scheduled test is not "missing" (learner-state says
 `blocked_reason: scheduled`). Dashboard pages keep in-page not-found states (staff only, no SEO).
 
+
+## Old-web URLs redirect to web-2 (2026-10-11)
+
+Bookmarks, e-mails and notifications carry the legacy URL shapes (`/ru/course/<id>`,
+`/kz/dash/courses/<id>/curriculum`, `/assessments/<id>`). Web-2 answers each legacy route of
+apps/web with a 301 to its equivalent (locale prefix and `course_`/`activity_` id prefixes
+dropped, `returnTo` carried as `redirect`); `/assessments/<id>` is resolved through the API.
+Paths with no equivalent stay 404. The printed certificate URL stays an alias, not a redirect.
 ## Discussion drafts: leave guard only for real text (2026-10-11)
 
 Both webs ask «Выйти без сохранения?» before navigating away from an open discussion

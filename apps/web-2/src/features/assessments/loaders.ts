@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { getActivityOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { getActivityOptions, getAssessmentOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 
 import { isAssessmentType } from './model/route'
 import {
@@ -17,6 +18,14 @@ import {
 
 const activityOf = (queryClient: QueryClient, activityId: string) =>
   queryClient.ensureQueryData(getActivityOptions({ path: { activity_id: activityId } }))
+
+/** An old `/assessments/<id>` link (shared/lib/legacy-urls.ts): the course and activity it belongs to. */
+export async function assessmentHome(
+  queryClient: QueryClient,
+  id: string,
+): Promise<Pick<AssessmentDetail, 'course_id' | 'activity_id'>> {
+  return queryClient.ensureQueryData(getAssessmentOptions({ path: { assessment_id: id } }))
+}
 
 /** Studio layout and `edit`: the assessment behind a quiz, exam or code challenge; false for other activities. */
 export async function ensureAssessment(queryClient: QueryClient, activityId: string): Promise<boolean> {
