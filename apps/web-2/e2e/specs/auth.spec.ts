@@ -91,7 +91,8 @@ test('B-AUTH-05 the Google button links to the API with the checked return path'
   await page.goto(`/login?redirect=${encodeURIComponent('/collections')}`)
   await expect(page.getByRole('link', { name: m.auth_login_google({}, ru) })).toHaveAttribute(
     'href',
-    '/api/v2/auth/google?callback=%2Fcollections',
+    // Back through /login, which applies the profile's language before the redirect.
+    '/api/v2/auth/google?callback=%2Flogin%3Fredirect%3D%252Fcollections',
   )
   await page.goto('/login?error=google-cancelled')
   await expect(page.getByRole('alert')).toHaveText(m.auth_login_error_google_cancelled({}, ru))
@@ -145,6 +146,23 @@ test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the inp
   await page.getByRole('button', { name: m.auth_verify_submit({}, ru) }).click()
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByText(m.auth_verify_done({}, ru))).toBeVisible()
+})
+
+test('B-AUTH-15 a signed-in account with an unconfirmed address confirms it from the banner', async ({
+  page,
+  baseURL,
+}) => {
+  const account = await registerAccount(String(baseURL), newAccount())
+  const code = await verificationCode(account.email)
+  await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
+  await page.goto('/login')
+  await signIn(page, account.username, account.password)
+  const banner = page.getByRole('alert').filter({ hasText: m.auth_banner_title({}, ru) })
+  await expect(banner).toBeVisible()
+  await banner.getByLabel(m.auth_verify_field_code({}, ru)).fill(code)
+  await banner.getByRole('button', { name: m.auth_verify_submit({}, ru) }).click()
+  await expect(page.getByText(m.auth_verify_done({}, ru))).toBeVisible()
+  await expect(banner).toHaveCount(0)
 })
 
 /** The emailed reset code: without a mailer the API logs it like the verification code (accounts.ts). The latest. */

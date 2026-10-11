@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useMatches } from '@tanstack/react-router'
 
+import { EmailBannerSlot } from '#/features/auth/route'
 import { useLiveEvents } from '#/features/notifications/route'
 import { shellWorkspace } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
@@ -31,6 +32,7 @@ export function AppShell() {
           data-density={workspace.id === 'learn' ? undefined : 'compact'}
           className={`mx-auto w-full max-w-6xl min-w-0 px-4 pt-gutter md:px-6 ${session ? 'pb-24 lg:pb-gutter' : 'pb-gutter'}`}
         >
+          {session && !session.user.email_verified ? <EmailBannerSlot /> : null}
           <Outlet />
         </main>
       </div>

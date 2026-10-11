@@ -1,5 +1,7 @@
 // Route-level code (validateSearch, search, beforeLoad, loaderDeps, head): the route tree keeps it in the entry
 // chunk, so this file imports nothing of the feature (AGENTS.md "Entry chunk").
+import { useHydrated } from '@tanstack/react-router'
+import { createElement, lazy, Suspense } from 'react'
 import * as v from 'valibot'
 
 import { safeRedirect } from '#/shared/auth/redirect'
@@ -23,3 +25,11 @@ export const loginSearchSchema = v.object({
  * /reset-password it opens the code step).
  */
 export const verifyEmailSearchSchema = v.object({ email: v.optional(v.string()), code: v.optional(v.string()) })
+
+const Banner = lazy(() => import('./ui/email-banner').then(module => ({ default: module.EmailBanner })))
+
+/** The shell's «Подтвердите email» banner: browser only (it reads session storage), its module loaded on demand. */
+export function EmailBannerSlot() {
+  const hydrated = useHydrated()
+  return hydrated ? createElement(Suspense, { fallback: null }, createElement(Banner)) : null
+}
