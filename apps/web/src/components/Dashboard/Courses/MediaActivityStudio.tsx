@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Eye, Loader2, Upload } from 'lucide-react'
+import { Eye, Loader2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { FieldError } from '@/components/ui/field'
 import AppLink from '@/components/ui/AppLink'
 import { VideoSettingsForm } from '@/components/Objects/Modals/Activities/Create/NewActivityModal/components/VideoSettingsForm'
 import { useApiError } from '@/hooks/useApiError'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import { updateActivity } from '@services/courses/activities'
 import { replaceActivityFile } from '@services/courses/activity-uploads'
 import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload } from '@services/media/uploads'
@@ -40,6 +41,7 @@ export default function MediaActivityStudio({
 }) {
   const t = useTranslations('Features.MediaStudio')
   const tVideo = useTranslations('Components.VideoModal')
+  const tNotify = useTranslations('DashPage.Notifications')
   const formatBytes = useFormatBytes()
   const { toastApiError } = useApiError()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -58,6 +60,8 @@ export default function MediaActivityStudio({
   const [saved, setSaved] = useState(() => JSON.stringify({ url, details }))
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<number | null>(null)
+  // A lecture video takes minutes on a slow network: «Отменить» stops the upload (ROUND3-16).
+  const upload = useRef<AbortController | null>(null)
 
   const urlInvalid = isYouTube && !getYouTubeVideoId(url.trim())
   const dirty = JSON.stringify({ url, details }) !== saved
@@ -97,15 +101,22 @@ export default function MediaActivityStudio({
     }
     setBusy(true)
     setProgress(0)
+    upload.current = new AbortController()
     try {
-      const updated = await replaceActivityFile(activity, file, isVideo ? 'video' : 'documentpdf', p =>
-        setProgress(p.percentage),
+      const updated = await replaceActivityFile(
+        activity,
+        file,
+        isVideo ? 'video' : 'documentpdf',
+        p => setProgress(p.percentage),
+        upload.current.signal,
       )
       setActivity(prev => ({ ...prev, version: updated.version, content: updated.content }))
       toast.success(t('saved'))
     } catch (error) {
-      toastApiError(error)
+      if (hasErrorCode(error, 'REQUEST_ABORTED')) toast.info(tNotify('uploadCancelled'))
+      else toastApiError(error)
     } finally {
+      upload.current = null
       setBusy(false)
       setProgress(null)
     }
@@ -149,6 +160,12 @@ export default function MediaActivityStudio({
               {progress === null ? <Upload /> : <Loader2 className="animate-spin" />}
               {progress === null ? t('replaceFile') : t('uploading', { percent: Math.round(progress) })}
             </Button>
+            {progress !== null && progress < 100 ? (
+              <Button type="button" variant="ghost" onClick={() => upload.current?.abort()}>
+                <X />
+                {tNotify('cancelUpload')}
+              </Button>
+            ) : null}
           </div>
         )}
       </section>

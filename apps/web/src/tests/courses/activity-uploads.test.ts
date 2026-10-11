@@ -194,4 +194,20 @@ describe('replaceActivityFile', () => {
     await expect(replaceActivityFile({ activity_uuid: ACTIVITY_ID, version: 3 }, file, 'video')).rejects.toThrow('412')
     expect(mocks.apiJson.mock.calls.at(-1)!.slice(0, 2)).toEqual([`blocks/${NEW_BLOCK}`, { method: 'DELETE' }])
   })
+
+  // ROUND3-16: «Отменить» in the studio aborts the upload; nothing is claimed or repointed.
+  it('passes the cancel signal to the upload and stops when it aborts', async () => {
+    const controller = new AbortController()
+    mocks.uploadFile.mockImplementation(async (_file, _purpose, options: { signal?: AbortSignal }) => {
+      controller.abort()
+      if (options.signal?.aborted) throw new Error('aborted')
+      return { id: UPLOAD_ID, key: 'block-video/new', size_bytes: 10 }
+    })
+    const file = new File(['x'], 'a.mp4', { type: 'video/mp4' })
+    await expect(
+      replaceActivityFile({ activity_uuid: ACTIVITY_ID, version: 3 }, file, 'video', undefined, controller.signal),
+    ).rejects.toThrow('aborted')
+    expect(mocks.apiJson).not.toHaveBeenCalled()
+    expect(mocks.apiResult).not.toHaveBeenCalled()
+  })
 })

@@ -96,11 +96,14 @@ export async function replaceActivityFile(
   file: File,
   type: 'video' | 'documentpdf',
   onProgress?: (progress: UploadProgress) => void,
+  /** Stops the upload (a `REQUEST_ABORTED` error); once the file is stored the swap runs to the end. */
+  signal?: AbortSignal,
 ) {
   const kind = FILE_ACTIVITY_KINDS[type]!
   const id = activity.activity_uuid
   const upload = await uploadFile(file, kind.purpose, {
     onProgress: progress => onProgress?.({ percentage: progress.percentage }),
+    ...(signal ? { signal } : {}),
   })
   const block = await apiJson(
     `activities/${id}/blocks`,
