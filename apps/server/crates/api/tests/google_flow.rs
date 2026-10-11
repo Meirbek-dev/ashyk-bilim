@@ -294,6 +294,27 @@ async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
     assert!(res.session_cookie().is_none());
 }
 
+/// An empty methods listing that answers only once the test releases it: the
+/// callback is parked between its epoch read and the fenced `create` however
+/// slow the machine is (a fixed delay raced the disabling PATCH under load).
+/// The mock server runs on its own thread, so blocking it parks nothing else.
+struct Parked {
+    reached: tokio::sync::mpsc::UnboundedSender<()>,
+    release: std::sync::Mutex<std::sync::mpsc::Receiver<()>>,
+}
+
+impl wiremock::Respond for Parked {
+    fn respond(&self, _: &wiremock::Request) -> ResponseTemplate {
+        let _ = self.reached.send(());
+        let _ = self
+            .release
+            .lock()
+            .unwrap()
+            .recv_timeout(std::time::Duration::from_secs(30));
+        ResponseTemplate::new(200).set_body_json(serde_json::json!({ "authMethodTypes": [] }))
+    }
+}
+
 /// BUG-203: the Google callback is fenced like the password login - a
 /// disable landing while the account is being read (methods listing parked
 /// by a slow Zitadel) yields `account-disabled`, never a session.
@@ -310,20 +331,22 @@ async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
     mock_zitadel_user_create(&app, 0).await;
     mock_zitadel_email_verified(&app, "graced", true).await;
     mock_google_token(&app, "g-sub-graced", "graced@example.com").await;
+    // The listing answers only once the disable has landed (`Parked`).
+    let (reached, mut parked) = tokio::sync::mpsc::unbounded_channel();
+    let (release, released) = std::sync::mpsc::channel();
     Mock::given(method("GET"))
         .and(path("/v2/users/z-graced/authentication_methods"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_delay(std::time::Duration::from_millis(400))
-                .set_body_json(serde_json::json!({ "authMethodTypes": [] })),
-        )
+        .respond_with(Parked {
+            reached,
+            release: std::sync::Mutex::new(released),
+        })
         .mount(&app.zitadel)
         .await;
     let state = start_and_get_state(&app, "/").await;
 
     let url = format!("/api/v2/auth/google/callback?code=c&state={state}");
     let (res, ()) = tokio::join!(app.get(&url), async {
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        parked.recv().await.unwrap();
         let res = app
             .patch_as(
                 &admin,
@@ -332,6 +355,7 @@ async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
             )
             .await;
         assert_eq!(res.status, StatusCode::NO_CONTENT, "{}", res.text());
+        release.send(()).unwrap();
     });
     assert_eq!(res.status, StatusCode::SEE_OTHER);
     assert_eq!(
