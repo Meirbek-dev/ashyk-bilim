@@ -38,8 +38,11 @@ export type Seed = {
   accounts: Record<SignedIn, Account>
   /** `allowed_actions` of the seed collection per role: routes guarded by an object's actions (spec 7.5). */
   collectionActions: Record<SignedIn, CollectionAction[]>
-  /** Whether the role is enrolled in the seed course: the player routes (/learn/...) open only to the enrolled. */
-  enrolled: Record<SignedIn, boolean>
+  /**
+   * Whether the player routes (/learn/...) of the seed course open for the role: to its enrolled learners and to its
+   * staff previewing it as a learner (`denial_reason: staff_preview`).
+   */
+  opensPlayer: Record<SignedIn, boolean>
   /** Values for the route params of spec 5.3. */
   params: Record<
     'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId' | 'roleSlug' | 'groupId',
@@ -120,15 +123,15 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
         throwOnError: true,
       })
     ).data.allowed_actions
-  const enrolledOf = async (account: Account) =>
-    (
-      await learnerCourseState({
-        client,
-        path: { course_id: course.id },
-        headers: cookieOf(account),
-        throwOnError: true,
-      })
-    ).data.enrolled
+  const opensPlayerFor = async (account: Account) => {
+    const { data } = await learnerCourseState({
+      client,
+      path: { course_id: course.id },
+      headers: cookieOf(account),
+      throwOnError: true,
+    })
+    return data.enrolled || data.permissions.denial_reason === 'staff_preview'
+  }
   // No seeded certificate or submission yet: the routes are stubs, any well-formed id renders them.
   const placeholder = '00000000-0000-4000-8000-000000000000'
   return {
@@ -138,10 +141,10 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
       teacher: await actionsOf(teacher),
       admin: await actionsOf(admin),
     },
-    enrolled: {
-      student: await enrolledOf(student),
-      teacher: await enrolledOf(teacher),
-      admin: await enrolledOf(admin),
+    opensPlayer: {
+      student: await opensPlayerFor(student),
+      teacher: await opensPlayerFor(teacher),
+      admin: await opensPlayerFor(admin),
     },
     params: {
       courseId: course.id,
