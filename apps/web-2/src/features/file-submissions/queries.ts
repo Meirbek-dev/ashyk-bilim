@@ -5,6 +5,7 @@ import { ensureLearner } from '#/features/player'
 import { ApiError } from '#/shared/api/errors'
 import {
   courseReadinessQueryKey,
+  fileGradingHistoryOptions,
   fileUrlOptions,
   getActivityFileSubmissionQueryKey,
   getActivityOptions,
@@ -27,6 +28,7 @@ import type {
   CourseId,
   Disposition,
   FileAttemptFileId,
+  FileAttemptId,
   FileSubmission,
   FileSubmissionId,
 } from '#/shared/api/gen/types.gen'
@@ -59,6 +61,9 @@ export const taskOptions = (activityId: ActivityId) =>
 /** Every attempt of the caller, newest first (`/me`). */
 export const historyOptions = (id: FileSubmissionId) => myAttemptsOptions({ path: { file_submission_id: id } })
 
+/** The released grading entries of the learner's own attempt (return comments, published grades), newest first. */
+export const reviewNotesOptions = (id: FileAttemptId) => fileGradingHistoryOptions({ path: { attempt_id: id } })
+
 /** A short-lived signed URL of an own file (1 h): asked for on click, not prefetched per file. */
 /** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
 export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
@@ -71,7 +76,11 @@ export async function ensureSubmission(queryClient: QueryClient, courseId: Cours
   if (entry?.activity_type !== 'file_submission') throw notFound()
   if (!entry.blocked_reason) {
     const task = await queryClient.ensureQueryData(taskOptions(activityId))
-    if (task) await queryClient.ensureQueryData(historyOptions(task.id))
+    if (task)
+      await Promise.all([
+        queryClient.ensureQueryData(historyOptions(task.id)),
+        task.current_attempt ? queryClient.ensureQueryData(reviewNotesOptions(task.current_attempt.id)) : null,
+      ])
   }
   // Names for the page, not the learner state itself: the page does not observe it, so a hand-in that invalidates it
   // (for the player's outline) does not refetch it here.

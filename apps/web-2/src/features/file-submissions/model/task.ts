@@ -1,4 +1,4 @@
-import type { Attempt, FileRefRequest, FileSubmission } from '#/shared/api/gen/types.gen'
+import type { Attempt, FileGradingEntry, FileRefRequest, FileSubmission } from '#/shared/api/gen/types.gen'
 import type { UploadLimits } from '#/shared/api/upload'
 
 const MB = 1024 * 1024
@@ -91,4 +91,14 @@ export function lateRule(task: FileSubmission): LateRule | null {
   if (policy.kind === 'penalty') return { kind: 'penalty', percent: policy.percent_per_day, days: policy.max_days }
   if (policy.kind === 'cutoff') return { kind: 'cutoff', at: policy.cutoff_at_unix }
   return { kind: 'free' }
+}
+
+/**
+ * The reviews to list under the work (B-FSB-21): released entries with a comment or a score, newest first, without the
+ * newest one while the attempt itself still shows it (returned or published: `GradeDetails`).
+ */
+export function earlierNotes(attempt: Pick<Attempt, 'status'>, entries: FileGradingEntry[]): FileGradingEntry[] {
+  const shown = attempt.status === 'returned' || attempt.status === 'published'
+  const notes = shown && entries[0]?.status === attempt.status ? entries.slice(1) : entries
+  return notes.filter(entry => Boolean(entry.feedback) || entry.final_score !== null)
 }

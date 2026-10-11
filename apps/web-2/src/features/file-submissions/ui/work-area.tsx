@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
@@ -13,6 +15,7 @@ import { DraftEditor } from './draft-editor'
 import { GradeDetails } from './grade-details'
 import { reasonLabels } from './labels'
 import { Receipt } from './receipt'
+import { ReviewNotes } from './review-notes'
 import { useWork } from './use-work'
 
 /**
@@ -60,6 +63,11 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
             {m.submission_new_attempt()}
           </Button>
         </div>
+      ) : null}
+      {state.attempt ? (
+        <Suspense fallback={null}>
+          <ReviewNotes attempt={state.attempt} />
+        </Suspense>
       ) : null}
       {work.error ? <ErrorAlert>{presentError(work.error)}</ErrorAlert> : null}
       <ConflictDialog

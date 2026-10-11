@@ -1,6 +1,6 @@
 # file-submissions
 
-Операции: getActivityFileSubmission, myAttempts, startDraft, saveFileSubmissionDraft, submit, fileUrl, updateFileSubmission, publishFileSubmission, unpublishFileSubmission
+Операции: getActivityFileSubmission, myAttempts, fileGradingHistory, startDraft, saveFileSubmissionDraft, submit, fileUrl, updateFileSubmission, publishFileSubmission, unpublishFileSubmission
 
 Сдача файла учащимся `/learn/$courseId/$activityId/submission` (фокус-режим, вход из карточки плеера) и настройка
 задания в студии активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}` (5.3, 5.4). Проверка
@@ -56,6 +56,9 @@
   (HTML, SVG, XML...) берётся с `attachment` и скачивается ссылкой `download` своего origin, в браузере не открывается.
 - B-FSB-20 Каждое «Сохранить» студии задания (условие, рубрика, файлы, сроки) уходит с `If-Match: version`; 412 -
   диалог конфликта, «Обновить и повторить» перечитывает задание и отправляет то же.
+- B-FSB-21 Под работой - «История проверки»: опубликованные оценки и комментарии возврата этой попытки (новые сверху,
+  дата, статус, балл, комментарий); после повторной сдачи комментарий возврата остаётся виден. Последний, уже
+  показанный в результате, не повторяется.
 
 ## Изменено
 
