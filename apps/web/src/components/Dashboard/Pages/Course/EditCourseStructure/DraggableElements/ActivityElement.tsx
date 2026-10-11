@@ -50,7 +50,7 @@ import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
-import { hasErrorCode } from '@/lib/api/assertSuccess'
+import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
 import AppLink from '@/components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -223,10 +223,11 @@ function ActivityElement({
       refocusPencil.current = true
       setIsEditing(false)
     } catch (error: unknown) {
-      // UX-128: the assessment lock (scheduled / archived / published with
-      // hand-ins) is a 409 — name the fix in the page language, not the
-      // server's English `detail`.
-      if (isAssessment && hasErrorCode(error, 'conflict')) toast.error(t('lockedAssessment'))
+      // UX-128: the assessment lock (scheduled / archived; a published test
+      // with hand-ins renames since 2026-10-11) is a 409 — name the fix in the
+      // page language, not the server's English `detail`.
+      if (isAssessment && (hasErrorCode(error, 'assessment-read-only') || hasErrorCode(error, 'conflict')))
+        toast.error(t('lockedAssessment'))
       else toastApiError(error, undefined, t('failedToUpdateActivityName'))
       setEditedName(activity.name)
     } finally {
@@ -275,6 +276,15 @@ function ActivityElement({
     } catch (error: unknown) {
       // A draft that fails its readiness checks (422) is fixed in the editor, not here.
       if (!unpublishing && hasErrorCode(error, 'validation-failed')) toast.error(t('notReadyToPublish'))
+      // A lesson without its file or link (DECISIONS 2026-10-11): say which one.
+      else if (isApiError(error) && error.code === 'activity-media-missing')
+        toast.error(
+          error.details?.['reason'] === 'video-link-missing'
+            ? t('publishNeedsLink')
+            : error.details?.['reason'] === 'video-file-missing'
+              ? t('publishNeedsVideo')
+              : t('publishNeedsDocument'),
+        )
       else toastApiError(error, undefined, t('updateFailed'))
     } finally {
       toast.dismiss(toastId)
