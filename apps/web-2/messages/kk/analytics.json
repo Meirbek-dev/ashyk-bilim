@@ -129,6 +129,7 @@
   "analytics_score_distribution": "Ұпайлардың таралуы",
   "analytics_pass_rows": "Білім алушылар мен нәтижелер",
   "analytics_pass_threshold": "Өту шегі: {value}",
+  "analytics_as_of": "Деректер {time} бойынша",
   "analytics_not_found_title": "Табылмады",
   "analytics_not_found_text": "Курс немесе тапсырма табылған жоқ немесе сізге қолжетімді емес.",
   "analytics_sla_breaches": "Тексеру мерзімі бұзылды",

@@ -9,6 +9,7 @@ const ru = { locale: 'ru' } as const
 const NO_SUCH = '00000000-0000-4000-8000-000000000000'
 // Every analytics test acts as the seeded teacher; risk-dependent tests own a fresh course.
 test.use({ as: 'teacher' })
+const asOf = (page: import('@playwright/test').Page) => page.getByText(m.analytics_as_of({ time: '' }, ru).trim())
 const kpis = (page: import('@playwright/test').Page) => page.getByRole('region', { name: m.analytics_kpis({}, ru) })
 test('B-ANL-01 B-ANL-03 the tabs are routes; a tab keeps the filters and drops the drill-down', async ({ page }) => {
   await page.goto('/teach/analytics')
@@ -119,6 +120,7 @@ test('B-ANL-12 B-ANL-13 performance: courses and assessments; a course opens its
   await courses.getByRole('link', { name: 'E2E seed course', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`courseId=${seed.params.courseId}`))
   await expect(page.getByRole('heading', { level: 2, name: 'E2E seed course' })).toBeVisible()
+  await expect(asOf(page)).toBeVisible()
   await expect(kpis(page).getByRole('region', { name: m.analytics_course_enrolled({}, ru) })).toBeVisible()
   await expect(page.getByRole('heading', { name: m.analytics_dropoff_table({}, ru) })).toBeVisible()
   await page.getByRole('link', { name: m.analytics_back({}, ru) }).click()
@@ -133,6 +135,7 @@ test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', a
   await row.getByRole('link', { name: 'Quiz', exact: true }).click()
   await expect(page).toHaveURL(/assessmentType=quiz&assessmentId=/)
   await expect(page.getByRole('heading', { level: 2, name: 'Quiz' })).toBeVisible()
+  await expect(asOf(page)).toBeVisible()
   await expect(page.getByRole('figure', { name: m.analytics_score_distribution({}, ru) })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: m.analytics_pass_rows({}, ru) })).toBeVisible()
   await page.goto(`/teach/analytics/performance?assessmentType=quiz&assessmentId=${NO_SUCH}`)

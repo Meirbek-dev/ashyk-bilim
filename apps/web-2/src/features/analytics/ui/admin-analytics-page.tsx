@@ -8,6 +8,7 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { adminAnalyticsOptions } from '../queries'
 import { AdminTable } from './admin-table'
+import { AsOf } from './as-of'
 import { hours, percent, score } from './kpi'
 
 const name = (text: string) => <span className="wrap-anywhere">{text}</span>
@@ -62,6 +63,7 @@ export function AdminAnalyticsPage() {
   return (
     <ListPage title={m.analytics_admin_title()}>
       <div className="flex flex-col gap-12">
+        <AsOf at={data.generated_at_unix} />
         <AdminTable
           title={m.analytics_admin_courses()}
           rows={data.course_health_ranking}

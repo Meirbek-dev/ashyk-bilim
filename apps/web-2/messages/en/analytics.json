@@ -129,6 +129,7 @@
   "analytics_score_distribution": "Score distribution",
   "analytics_pass_rows": "Learners and results",
   "analytics_pass_threshold": "Pass threshold: {value}",
+  "analytics_as_of": "Data as of {time}",
   "analytics_not_found_title": "Not found",
   "analytics_not_found_text": "The course or assessment was not found or is not available to you.",
   "analytics_sla_breaches": "Review deadline missed",

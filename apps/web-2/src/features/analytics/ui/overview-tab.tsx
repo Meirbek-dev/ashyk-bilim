@@ -8,6 +8,7 @@ import { formatDayMonth, formatNumber } from '#/shared/i18n/format'
 
 import { pickFilters, type TileMetric } from '../model/filters'
 import { overviewOptions } from '../queries'
+import { AsOf } from './as-of'
 import { DrillSection } from './drill-section'
 import { drillTitles, kpiLabels } from './labels'
 import { MetricTile } from './metric-tile'
@@ -37,6 +38,7 @@ export function OverviewTab() {
   const { data } = useSuspenseQuery(overviewOptions(filters))
   return (
     <div className="flex flex-col gap-8">
+      <AsOf at={data.generated_at_unix} />
       <section aria-label={m.analytics_kpis()} className="grid grid-cols-1 gap-4 @md:grid-cols-2 @4xl:grid-cols-3">
         {tiles.map(({ name, drill }) => (
           <MetricTile key={name} label={kpiLabels[name]()} card={data.summary[name]} drill={drill} />

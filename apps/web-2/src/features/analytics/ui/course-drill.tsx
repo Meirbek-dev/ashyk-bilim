@@ -12,6 +12,7 @@ import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
 import type { Filters } from '../model/filters'
 import { courseOptions } from '../queries'
+import { AsOf } from './as-of'
 import { BackLink } from './back-link'
 
 const columns = (): DataColumn<ActivityDropoffRow>[] => [
@@ -61,6 +62,7 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
       <div className="flex flex-col items-start gap-2">
         <BackLink />
         <h2 className="text-xl font-semibold wrap-anywhere">{data.course.name}</h2>
+        <AsOf at={data.generated_at_unix} />
       </div>
       <section aria-label={m.analytics_kpis()} className="grid grid-cols-2 gap-4 @3xl:grid-cols-4">
         {tiles.map(tile => (

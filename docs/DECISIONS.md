@@ -2557,3 +2557,10 @@ clock throughout). The legacy web follows the same rule.
 The legacy teacher review's «Оценка по элементам» summary reads in the test's own
 points (sum of the item fields, «14 / 15 (93 %)»), like web-2 and the learner's result
 card, instead of summed per-item shares of 100 that rounded to «93,38 / 100,05».
+
+## Analytics pages say when their numbers were computed (2026-10-11)
+
+Analytics are snapshots, so a teacher comparing a page with the live roster could not tell
+why the counts differ. The overview, the course and assessment drill-downs and the admin
+analytics page now show «Данные на <дата, время>» from the response's `generated_at_unix`,
+in both webs.

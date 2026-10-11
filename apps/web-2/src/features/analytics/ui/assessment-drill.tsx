@@ -9,6 +9,7 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 
 import type { Filters } from '../model/filters'
 import { assessmentOptions } from '../queries'
+import { AsOf } from './as-of'
 import { BackLink } from './back-link'
 import { DrillSection } from './drill-section'
 import { hours, percent, score } from './kpi'
@@ -36,6 +37,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
           {activityTypeMeta[data.assessment_type].label()} ·{' '}
           {m.analytics_pass_threshold({ value: formatNumber(data.pass_threshold) })}
         </p>
+        <AsOf at={data.generated_at_unix} />
       </div>
       <section aria-label={m.analytics_kpis()} className="grid grid-cols-2 gap-4 @3xl:grid-cols-3">
         {tiles.map(tile => (

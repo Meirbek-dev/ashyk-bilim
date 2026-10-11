@@ -129,6 +129,7 @@
   "analytics_score_distribution": "Распределение баллов",
   "analytics_pass_rows": "Учащиеся и результаты",
   "analytics_pass_threshold": "Порог прохождения: {value}",
+  "analytics_as_of": "Данные на {time}",
   "analytics_not_found_title": "Не найдено",
   "analytics_not_found_text": "Курс или задание не найдено или недоступно вам.",
   "analytics_sla_breaches": "Срок проверки нарушен",
