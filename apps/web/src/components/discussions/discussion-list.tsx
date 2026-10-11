@@ -121,6 +121,13 @@ export default function DiscussionList({
   // Delete confirmation: one dialog for posts and replies.
   const [pendingDelete, setPendingDelete] = useState<{ postId: string; replyId?: string } | null>(null)
 
+  // A reply notification links to `#discussions`; the section mounts after the navigation, so the browser
+  // never scrolled to it.
+  const sectionRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (globalThis.location.hash === '#discussions') sectionRef.current?.scrollIntoView({ block: 'start' })
+  }, [])
+
   // Update posts when initialPosts changes
   useEffect(() => {
     if (Array.isArray(initialPosts)) {
@@ -471,12 +478,15 @@ export default function DiscussionList({
   }
 
   return (
-    <div className="space-y-6">
+    <div id="discussions" ref={sectionRef} className="scroll-mt-24 space-y-6">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-semibold">{t('courseDiscussions')}</h2>
-        <Badge variant="secondary" className="rounded-full px-2.5">
-          {posts.length}
-        </Badge>
+        {/* A guest is not sent the thread: no «0» and no «Пока нет обсуждений» on a busy course. */}
+        {currentUser ? (
+          <Badge variant="secondary" className="rounded-full px-2.5">
+            {posts.length}
+          </Badge>
+        ) : null}
       </div>
 
       {readOnly ? (
@@ -517,7 +527,7 @@ export default function DiscussionList({
           />
         ))}
 
-        {posts.length === 0 && (
+        {posts.length === 0 && currentUser && (
           // One quiet line: the composer above is the call to action, not a second empty card.
           <p className="text-muted-foreground flex items-center gap-2 px-1 text-sm">
             <MessageCircle size={16} className="shrink-0" />

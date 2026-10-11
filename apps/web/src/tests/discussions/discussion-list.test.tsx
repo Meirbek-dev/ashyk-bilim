@@ -96,6 +96,13 @@ describe('DiscussionList (v2)', () => {
     expect(screen.getByRole('link', { name: 'signInToParticipate' }).getAttribute('href')).toContain('/login')
   })
 
+  // The API sends a guest no posts: «0» and «Пока нет обсуждений» were false on a busy course.
+  it('does not tell a guest the course has no discussions', () => {
+    render(<DiscussionList initialPosts={[]} currentUser={null} courseUuid={courseId} />)
+    expect(screen.queryByText('noDiscussions')).toBeNull()
+    expect(screen.queryByText('0')).toBeNull()
+  })
+
   it('surfaces a failed post through the localized API error toast', async () => {
     createDiscussion.mockRejectedValueOnce(new Error('boom'))
     render(<DiscussionList initialPosts={[]} currentUser={{ username: 'me' }} courseUuid={courseId} />)
@@ -107,5 +114,7 @@ describe('DiscussionList (v2)', () => {
       expect(toastApiError).toHaveBeenCalledWith(expect.any(Error), { fallback: 'errors.createFailed' }),
     )
     expect(createDiscussion).toHaveBeenCalledWith(courseId, { content: '<p>new post</p>', type: 'post' })
+    // The failed post keeps its text in the open composer.
+    expect((screen.getAllByTestId('editor')[0] as HTMLTextAreaElement).value).toBe('<p>new post</p>')
   })
 })

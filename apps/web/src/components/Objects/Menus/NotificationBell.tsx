@@ -49,9 +49,11 @@ const KNOWN_TYPES = new Set([
   'contributor_application',
 ])
 
-function hrefFor({ payload }: Notification): string {
+export function hrefFor({ payload }: Notification): string {
   if (payload.type === 'contributor_application') return `/dash/courses/${payload.course_id}/collaboration`
   if (payload.activity_id) return `/course/${payload.course_id}/activity/${payload.activity_id}`
+  // A reply lives in the course discussions, far below the course outline.
+  if (payload.type === 'discussion_reply') return `/course/${payload.course_id}#discussions`
   return `/course/${payload.course_id}`
 }
 
