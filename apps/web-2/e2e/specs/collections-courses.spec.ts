@@ -67,3 +67,40 @@ test('B-COL-16 saving a public collection whose courses are all closed warns tha
   await deleteCollection({ client: api, path: { collection_id: own.id }, headers })
   await deleteCourse({ client: api, path: { course_id: course.id }, headers })
 })
+
+const PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+test('B-COL-17 a picked cover becomes the collection cover at once and shows on its page', async ({
+  page,
+  signInAs,
+  seed,
+  baseURL,
+}) => {
+  const api = createClient(createConfig({ baseUrl: String(baseURL) }))
+  const { name, value } = seed.accounts.teacher.cookie
+  const headers = { cookie: `${name}=${value}` }
+  const { data: own } = await createCollection({
+    client: api,
+    body: { name: `E2E ${randomUUID().slice(0, 8)}`, public: true, courses: [] },
+    headers,
+    throwOnError: true,
+  })
+  await signInAs('teacher')
+  await page.goto(`/collections/${own.id}/edit`)
+  const saved = page.waitForRequest(sent => sent.method() === 'PATCH')
+  await page.getByLabel(m.collections_cover_field({}, ru)).setInputFiles({
+    name: 'cover.png',
+    mimeType: 'image/png',
+    buffer: PIXEL,
+  })
+  expect((await saved).postDataJSON()).toMatchObject({ cover_upload_id: expect.stringMatching(/^[0-9a-f-]{36}$/) })
+  await expect(page.getByRole('img', { name: m.collections_cover_title({}, ru) })).toBeVisible()
+  // The name form below still saves: the cover moved its base version.
+  await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  await expect(page).toHaveURL(new RegExp(`/collections/${own.id}$`))
+  await expect(page.locator('main img[src^="/content/"]')).toBeVisible()
+  await deleteCollection({ client: api, path: { collection_id: own.id }, headers })
+})

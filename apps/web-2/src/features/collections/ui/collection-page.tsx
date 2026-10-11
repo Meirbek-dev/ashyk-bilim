@@ -9,6 +9,7 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 import { collectionActionLabels, collectionVisibility, collectionVisibilityLabels } from '#/shared/i18n/labels'
+import { contentUrl } from '#/shared/lib/content-url'
 import { buttonVariants } from '#/shared/ui/button'
 
 import { can } from '../model/collections'
@@ -39,6 +40,13 @@ export function CollectionPage() {
       }
       primaryAction={collection.allowed_actions.length > 0 ? actions : null}
     >
+      {collection.cover_key ? (
+        <img
+          src={contentUrl(collection.cover_key)}
+          alt=""
+          className="aspect-video w-full max-w-md rounded-lg border object-cover"
+        />
+      ) : null}
       {collection.description ? <p className="max-w-prose wrap-anywhere">{collection.description}</p> : null}
       <h2 className="text-xl font-semibold">{m.collections_courses_title()}</h2>
       <ListState

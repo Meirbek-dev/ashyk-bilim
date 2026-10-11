@@ -16,6 +16,7 @@ import { toast } from '#/shared/ui/toast'
 import { hiddenFromOthers, isStale } from '../model/collections'
 import { collectionOptions, updateCollectionOptions } from '../queries'
 import { CoursePicker } from './course-picker'
+import { CoverSection } from './cover-section'
 
 /** «Сохранено», with a warning when nobody else will see the collection (B-COL-16). */
 const savedToast = (saved: Collection) =>
@@ -40,11 +41,6 @@ export function CollectionEditPage() {
     public: query.data.public,
     courses: query.data.courses.map(course => course.id),
   }))
-  const request = (body: UpdateCollectionRequest, version: number) => ({
-    path: { collection_id: collectionId },
-    body,
-    headers: { 'If-Match': version },
-  })
   const callbacks = {
     onSuccess: async (saved: Collection) => {
       setConflict(false)
@@ -56,7 +52,11 @@ export function CollectionEditPage() {
   const form = useAppForm(vUpdateCollectionRequest, {
     leaveGuard: true,
     defaultValues,
-    onSubmit: body => update.mutateAsync(request(body, base.current), callbacks),
+    onSubmit: body =>
+      update.mutateAsync(
+        { path: { collection_id: collectionId }, body, headers: { 'If-Match': base.current } },
+        callbacks,
+      ),
   })
   const reloadAndRetry = async () => {
     base.current = (await query.refetch()).data?.version ?? base.current
@@ -95,6 +95,7 @@ export function CollectionEditPage() {
           )}
         </form.Field>
       </SettingsSection>
+      <CoverSection collection={query.data} base={base} />
       <ConflictDialog
         open={conflict}
         onOpenChange={setConflict}

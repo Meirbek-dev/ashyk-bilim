@@ -2721,3 +2721,11 @@ A lecture upload can run for an hour; when the session ended meanwhile, the fina
 Now a 401 from the upload keeps the page and the file: the picker says the session ended, offers
 «Войти снова» in a new tab, and «Повторить» only finalizes the stored upload (the server keeps a
 pending upload finalizable for 12 hours). Nothing is uploaded twice.
+
+## Every cover applies on upload (2026-10-11)
+
+A course cover already became the cover the moment its upload finished; the platform logo and
+cover waited for «Сохранить» (an admin who missed it left an unclaimed upload) and web-2 had no
+collection cover at all. Now all of them apply on upload: the platform's two images, and a new
+«Обложка» section on the collection edit page (with «Убрать обложку»); the collection page shows
+the cover.

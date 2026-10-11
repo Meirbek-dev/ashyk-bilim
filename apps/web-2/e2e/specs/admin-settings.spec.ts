@@ -124,6 +124,8 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
   try {
     await page.goto('/admin/gamification')
     const course = page.getByLabel(m.admin_xp_course_completion({}, ru))
+    // Each field names the platform default it falls back to when left blank.
+    await expect(course).toHaveAccessibleDescription(m.admin_gamification_default({ value: '200' }, ru))
     await course.fill('250')
     // Someone saves the rules after this page read them: the page's version is stale (412). The retry sends the
     // input over the newer version, with the overrides the form does not show as that save left them.
