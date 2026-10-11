@@ -74,7 +74,9 @@ test('B-CST-08 one dialog creates any type and opens its studio', async ({ page,
     await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill(kind.name)
     await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
     await expect(page).toHaveURL(/\/activities\/[\w-]+\/edit$/)
-    await expect(page.getByText(kind.name).first()).toBeVisible()
+    // The studio's own header, not the outline row the dialog left behind: the studio has loaded before the
+    // next round (or the teardown deleting the course) starts.
+    await expect(page.getByRole('banner').getByText(kind.name, { exact: true })).toBeVisible()
   }
   const headers = cookieOf(seed, 'teacher')
   const { data } = await getCurriculum({
