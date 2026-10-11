@@ -1,11 +1,18 @@
 import { randomUUID } from 'node:crypto'
-import { readFileSync } from 'node:fs'
 
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 
-import { accountWithTotp, newAccount, randomIp, registerAccount, totp, verificationCode } from '../fixtures/accounts'
+import {
+  accountWithTotp,
+  apiLog,
+  newAccount,
+  randomIp,
+  registerAccount,
+  totp,
+  verificationCode,
+} from '../fixtures/accounts'
 import { e2ePassword, expect, test } from '../fixtures/seed'
 import { gotoLive } from '../fixtures/test'
 
@@ -142,13 +149,11 @@ test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the inp
 
 /** The emailed reset code: without a mailer the API logs it like the verification code (accounts.ts). The latest. */
 async function resetCode(email: string): Promise<string> {
-  const path = process.env['E2E_API_LOG']
-  if (!path) throw new Error('Set E2E_API_LOG to the API log file: without a mailer the API logs reset codes')
   const address = email.replaceAll(/[.@+-]/g, '\\$&')
   const pattern = new RegExp(`password reset code not delivered.*?${address}\\W+code\\W+([A-Za-z0-9]{4,})`, 'g')
   let code = ''
   await expect
-    .poll(() => (code = [...readFileSync(path, 'utf8').matchAll(pattern)].at(-1)?.[1] ?? ''), { timeout: 15_000 })
+    .poll(() => (code = [...apiLog('reset codes').matchAll(pattern)].at(-1)?.[1] ?? ''), { timeout: 15_000 })
     .not.toBe('')
   return code
 }

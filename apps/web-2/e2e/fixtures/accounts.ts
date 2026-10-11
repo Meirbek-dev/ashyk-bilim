@@ -61,15 +61,26 @@ export async function registerAccount(baseUrl: string, account?: NewAccount): Pr
 }
 
 /**
- * The emailed verification code. Without a mailer (`AB__RESEND__*` unset) the API logs it as
- * `... email: <address>, code: "<CODE>"`; E2E_API_LOG is the path of that log (the stand: `docker compose logs api`).
+ * The API log (E2E_API_LOG): without a mailer (`AB__RESEND__*` unset) the API logs the emailed codes there. A local
+ * `ashyq serve` colours its log: the ANSI escapes between the fields are dropped.
+ */
+export function apiLog(purpose: string): string {
+  const path = process.env['E2E_API_LOG']
+  if (!path) throw new Error(`Set E2E_API_LOG to the API log file: without a mailer the API logs ${purpose}`)
+  return readFileSync(path, 'utf8')
+    .split(String.fromCodePoint(27))
+    .map(part => part.replace(/^\[[\d;]*m/, ''))
+    .join('')
+}
+
+/**
+ * The emailed verification code: the API logs it as `... email: <address>, code: "<CODE>"` (the stand:
+ * `docker compose logs api`).
  */
 export async function verificationCode(email: string): Promise<string> {
-  const path = process.env['E2E_API_LOG']
-  if (!path) throw new Error('Set E2E_API_LOG to the API log file: without a mailer the API logs verification codes')
   const pattern = new RegExp(`${email.replaceAll(/[.@+-]/g, '\\$&')}\\W+code\\W+([A-Z0-9]{4,})`)
   let code = ''
-  await expect.poll(() => (code = pattern.exec(readFileSync(path, 'utf8'))?.[1] ?? '')).not.toBe('')
+  await expect.poll(() => (code = pattern.exec(apiLog('verification codes'))?.[1] ?? '')).not.toBe('')
   return code
 }
 
