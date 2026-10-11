@@ -28,11 +28,8 @@ test('B-DSC-01 B-DSC-14 a guest is invited to sign in; a learner not enrolled re
   await expect(page.getByText(m.discussions_members_only({}, ru))).toBeVisible()
   const publish = page.getByRole('button', { name: m.discussions_publish({}, ru) })
   await expect(publish).toHaveCount(0)
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: m.course_enroll({}, ru) })
-    .last()
-    .click()
+  // One enrol action on the page: the course header's, not a second one in the composer.
+  await page.getByRole('button', { name: m.course_enroll({}, ru) }).click()
   await expect(publish).toBeVisible()
 })
 
