@@ -395,14 +395,17 @@ function ExamTakingContent({
         ? {
             startedAt: attempt.started_at ?? attempt.created_at,
             expiresAt: timerExpiresAt,
-            dueDate: attempt.time_remaining_reason !== 'time_expired',
+            // «Сдать до» until the last day is for a strict due date; past the due date the late cutoff counts down.
+            dueDate: attempt.time_remaining_reason === 'deadline_passed',
             onExpire: () => {
               toast.error(
                 t('autoSubmitting', {
                   reason:
                     attempt.time_remaining_reason === 'deadline_passed'
                       ? t('autoSubmittingReason.deadlinePassed')
-                      : t('autoSubmittingReason.timeExpired'),
+                      : attempt.time_remaining_reason === 'late_cutoff_passed'
+                        ? t('autoSubmittingReason.lateCutoffPassed')
+                        : t('autoSubmittingReason.timeExpired'),
                 }),
               )
               void handleSubmit(true)

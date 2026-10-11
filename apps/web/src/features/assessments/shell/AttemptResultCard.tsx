@@ -161,7 +161,9 @@ export default function AttemptResultCard({
                   ? 'autoSubmittedTimeExpired'
                   : vm.autoSubmitReason === 'deadline_passed'
                     ? 'autoSubmittedDeadline'
-                    : 'autoSubmittedViolation',
+                    : vm.autoSubmitReason === 'late_cutoff_passed'
+                      ? 'autoSubmittedLateCutoff'
+                      : 'autoSubmittedViolation',
               )}
             </li>
           ) : null}
