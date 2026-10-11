@@ -2639,3 +2639,76 @@ On a 390 px screen the bottom-anchored toasts («Отмечено», «+N XP») 
 in the player, the «Продолжить» row a learner taps next. Below 640 px web-2 now shows toasts at
 the top of the screen (they briefly cover the top bar instead, which is never the next action);
 wider screens keep the bottom-right stack.
+
+## Unconfirmed email: a banner, sign-in stays open (2026-10-11)
+
+Owner decision (round 3). `GET /users/me` and the session (`SessionInfo.user`) carry
+`email_verified`. The state lives in Zitadel; `users.email_verified` (migration
+`20261011000050`) mirrors it: registration writes `false`, admin creation and a Google
+sign-up what they vouch for, `POST /auth/verify-email` `true`. Accounts older than the column
+(`NULL`) ask Zitadel once on the first read and keep the answer; with Zitadel unreachable they
+read as verified (no banner) and are asked again next time. Both webs show «Подтвердите email»
+above the content with the code field, «Отправить код ещё раз» and «Скрыть» (hidden for the
+browser session); a confirmed code removes the banner. Sign-in never depends on it.
+
+## XP rules show the platform defaults (2026-10-11)
+
+`GET /gamification/config` also answers `default_daily_xp_limit` and `default_rewards` (every
+XP source with its built-in reward), so the admin form shows what an empty field stands for.
+
+## Notification bell follows the user stream; ten streams per user (2026-10-11)
+
+The old web's bell polled the unread count every 60 s. It now follows `GET /me/events` (the
+stream web-2 uses): `notification.created` / `notification.read` refresh it at once, and the
+minute poll runs only while the stream is refused or down. The per-user cap on open event
+streams (all kinds share it) rises from 5 to 10, so several tabs plus grading and AI streams fit.
+
+## Discussions: members post, everyone with access reads (2026-10-11)
+
+Posting, replying and liking need an enrolment (a trail run or a linked usergroup), a place on
+the course staff, authorship or `discussion:moderate`; reading is unchanged (a public course
+stays readable). Others get 403 `discussion-enrollment-required`; `DiscussionPage.can_post` and
+the posts' `allowed_actions` (no `reply` / `react`) tell the webs to hide the composer and the
+votes and offer «Записаться на курс». Editing and deleting one's own posts stay as they were
+for a learner who left.
+
+## Media lessons publish only with their media (2026-10-11)
+
+An uploaded-video or document lesson needs its file (`content.filename`), a YouTube lesson its
+link (`content.uri`), before it is published - and a published one cannot have them emptied.
+409 `activity-media-missing`, `details.reason` `video-file-missing` / `video-link-missing` /
+`document-file-missing`; the webs name what to add next to the publish control. Lessons already
+published empty stay as they are until they are published again. The e2e seed stores a
+one-page PDF for its document lesson.
+
+## Role grants name the offending line (2026-10-11)
+
+`PUT /rbac/roles/{slug}/permissions` reports an unparseable grant as `permissions[<index>]`
+(the line of the form), not `permissions`; web-2 marks that line.
+
+## File task: the learner reads their released grading history (2026-10-11)
+
+`GET /file-submission-attempts/{id}/grading-history` answers the attempt's own learner too,
+with the released entries only (`published`, `returned`; held `graded` ones stay hidden;
+another learner gets 404). A resubmitted revision clears the attempt's live feedback, so both
+webs list the earlier return comments and grades under the work («История проверки»), without
+repeating the one the result already shows.
+
+## Renaming a published test with submissions (2026-10-11)
+
+A title is no content change: `PATCH /assessments/{id}` with only the title (other fields
+absent or unchanged) and the outline rename (`PATCH /activities/{id}` `name`) pass on a
+published assessment with hand-ins; both names change together as before. Any other details
+change, the policy and the items stay locked (`edit_lock = has_submissions`); archived and
+scheduled ones stay read-only. Old title/name mismatches are not migrated.
+
+## Late cutoff hand-in has its own reason (2026-10-11)
+
+Supersedes the "no new enum value" note of the 2026-10-10 late-cutoff entry: a draft handed in
+at the late cutoff (by the sweep or the page at zero) records `late_cutoff_passed` (migration
+`20261011000060` widens the CHECK); a strict due date - or an own due date at or past the
+cutoff, which leaves no late window - stays `deadline_passed`. `time_remaining_reason` says
+`late_cutoff_passed` while the clock runs to the cutoff; both webs count down to it as soon as
+the due date has passed (not only in the last 24 h) and name the reason on the result.
+Past the cutoff no new attempt opens (`PAST_DUE`, 403 `attempt-past-due`, as past a strict due
+date): before, a learner could start one and the next sweep handed it in empty.
