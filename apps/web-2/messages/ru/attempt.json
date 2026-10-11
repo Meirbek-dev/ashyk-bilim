@@ -55,6 +55,7 @@
   "attempt_submit": "Сдать",
   "attempt_time_left": "Осталось времени",
   "attempt_due_left": "До окончания срока сдачи",
+  "attempt_due_by": "Сдать до {date}",
   "attempt_due_up": "Срок сдачи наступил: попытка сдаётся автоматически",
   "attempt_days_clock": "{days} д {clock}",
   "attempt_time_up": "Время вышло: попытка сдаётся автоматически",

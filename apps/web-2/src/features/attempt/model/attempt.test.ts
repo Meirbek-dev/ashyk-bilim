@@ -8,6 +8,7 @@ import { attemptSearchSchema } from '../route'
 import { answerText, correctText } from './answer-text'
 import {
   clock,
+  clockEndsAt,
   entryAction,
   extraPrompt,
   gateCode,
@@ -16,6 +17,7 @@ import {
   protections,
   retryDelayMs,
   saveOutcome,
+  runsToDueDate,
   saveStatus,
   secondsLeft,
   submitOutcome,
@@ -96,6 +98,16 @@ describe('attempt model', () => {
       'tab_switch',
       'fullscreen',
     ])
+  })
+})
+
+describe('attempt clock', () => {
+  test('B-ATT-14 a due-date clock knows its end to the minute; a time limit is not a due date', () => {
+    // 2026-03-01 12:00:00 UTC, answered 3 s before with 2 days and 2.6 s left.
+    expect(clockEndsAt(172_802.6, 1_772_193_597_000)).toBe(1_772_366_400)
+    expect(runsToDueDate('deadline_passed')).toBe(true)
+    expect(runsToDueDate('time_expired')).toBe(false)
+    expect(runsToDueDate(null)).toBe(false)
   })
 })
 

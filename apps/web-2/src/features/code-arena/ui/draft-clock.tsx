@@ -15,5 +15,5 @@ export function DraftClock({ draft, receivedAt, onExpire }: DraftClockProps) {
   useEffect(() => {
     if (left === 0) expire()
   }, [left])
-  return left === null ? null : <AttemptTimer seconds={left} due={draft.time_remaining_reason === 'deadline_passed'} />
+  return left === null ? null : <AttemptTimer seconds={left} attempt={draft} receivedAt={receivedAt} />
 }

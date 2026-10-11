@@ -55,6 +55,7 @@
   "attempt_submit": "Submit",
   "attempt_time_left": "Time left",
   "attempt_due_left": "Until the deadline",
+  "attempt_due_by": "Due {date}",
   "attempt_due_up": "The deadline has come: the attempt is being submitted",
   "attempt_days_clock": "{days}d {clock}",
   "attempt_time_up": "Time is up: the attempt is being submitted",

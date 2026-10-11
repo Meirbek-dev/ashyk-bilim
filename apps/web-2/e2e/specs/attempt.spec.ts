@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
-import { formatPercent } from '#/shared/i18n/format'
+import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 import { expectReread } from '../fixtures/test'
 import { expect, items, type MadeQuiz, ru, test } from './attempt-fixture'
@@ -167,6 +167,25 @@ test('B-ATT-14 at zero the attempt is handed in by itself with the answers given
     timeout: 30_000,
   })
   await expect(page.getByText(m.attempt_score({ score: formatPercent(100, 'ru') }, ru))).toBeVisible()
+})
+
+test('B-ATT-14 a strict due date reads «Сдать до» until its last day, then counts down', async ({
+  page,
+  learner,
+  makeQuiz,
+}) => {
+  const now = Math.floor(Date.now() / 1000)
+  const due = Math.ceil((now + 3 * 86_400) / 60) * 60
+  const far = await makeQuiz({ policy: { due_at_unix: due, allow_late: false } })
+  const near = await makeQuiz({ policy: { due_at_unix: now + 7_200, allow_late: false } })
+  await learner.enroll(far.course)
+  await learner.enroll(near.course)
+  await learner.signIn()
+  await start(page, far)
+  await expect(page.getByText(m.attempt_due_by({ date: formatDateTime(due, 'ru') }, ru))).toBeVisible()
+  await expect(page.getByRole('banner').locator('time')).toHaveCount(0)
+  await start(page, near)
+  await expect(page.getByRole('banner').locator('time')).toHaveText(/^1:5\d:\d\d$/)
 })
 
 test('B-ATT-19 B-ATT-21 past the violation limit the hand-in scores zero and says why', async ({

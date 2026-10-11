@@ -6,7 +6,7 @@ import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { Button } from '#/shared/ui/button'
 
-import { unanswered } from '../model/attempt'
+import { runsToDueDate, unanswered } from '../model/attempt'
 import { AttemptFrame, ATTEMPT_ROUTE } from './attempt-frame'
 import { AttemptTimer } from './attempt-timer'
 import { ItemNavigator } from './item-navigator'
@@ -42,7 +42,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const shown = items[current - 1]
   const expired = left === 0
   // The clock runs to the time limit or a strict due date, whichever comes first (the server says which).
-  const due = attempt.time_remaining_reason === 'deadline_passed'
+  const due = runsToDueDate(attempt.time_remaining_reason)
   // Handed in, or reopened on a changed test («Тест изменился»): the confirmation closes either way.
   const handIn = () => submit.handIn(() => setConfirming(false))
   const timeUp = useEffectEvent(handIn)
@@ -51,7 +51,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   }, [expired])
   const actions = (
     <>
-      {left === null ? null : <AttemptTimer seconds={left} due={due} />}
+      {left === null ? null : <AttemptTimer seconds={left} attempt={attempt} receivedAt={receivedAt} />}
       <Button onClick={() => setConfirming(true)} disabled={submit.pending}>
         {m.attempt_submit()}
       </Button>

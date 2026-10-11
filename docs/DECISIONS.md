@@ -2545,6 +2545,13 @@ issued), and a course with no required activities still reads 100 % for a
 certificate holder. Teachers see the same number everywhere and what is left
 to do after the course changed.
 
+## A due-date countdown runs only in its last day (2026-10-11)
+
+An attempt on a test with a strict due date used to show a ticking «3 д 0:58:55» from the
+first minute, which reads as pressure, not information. Web-2 now shows «Сдать до <дата,
+время>» until the last 24 hours and the countdown only within them (a time limit keeps its
+clock throughout). The legacy web follows the same rule.
+
 ## Legacy item review totals in item points (2026-10-11)
 
 The legacy teacher review's «Оценка по элементам» summary reads in the test's own

@@ -2,6 +2,7 @@ import { ApiError } from '#/shared/api/errors'
 import type {
   AssessmentItem,
   AttemptState,
+  AutoSubmitReason,
   DisabledReason,
   ErrorCode,
   ItemAnswer,
@@ -75,6 +76,13 @@ export const unanswered = (items: AssessmentItem[], answers: Record<string, Item
 /** Seconds left on the server's clock: `time_remaining_seconds` was true when the answer arrived. */
 export const secondsLeft = (remaining: number, receivedAtMs: number, nowMs: number) =>
   Math.max(0, Math.ceil(remaining - (nowMs - receivedAtMs) / 1000))
+
+/** When the server's clock reaches zero (unix seconds, to the minute: due dates are set to the minute). */
+export const clockEndsAt = (remaining: number, receivedAtMs: number) =>
+  Math.round((receivedAtMs / 1000 + remaining) / 60) * 60
+
+/** The clock runs to a due date or late cutoff (the server says which), not the time limit. */
+export const runsToDueDate = (reason: AutoSubmitReason | null) => reason !== null && reason !== 'time_expired'
 
 /** A countdown face: "mm:ss", or "h:mm:ss" from an hour up (or when `hours` asks: the part after whole days). */
 const two = (value: number) => String(value).padStart(2, '0')
