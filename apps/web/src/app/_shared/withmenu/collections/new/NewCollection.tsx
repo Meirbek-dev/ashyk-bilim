@@ -4,15 +4,16 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
+import { stripEntityPrefix, toAppCourse } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
-import { Collection } from '@/lib/api/generated/zod'
+import { Collection, CoursePage } from '@/lib/api/generated/zod'
+import { useDebouncedValue } from '@/hooks/useDebounce'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useApiError } from '@/hooks/useApiError'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getAbsoluteUrl } from '@services/config/config'
-import { useMemo, useState, useTransition } from 'react'
-import { useCourseList } from '@/hooks/useCourseList'
+import { useState, useTransition } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { extractMarkdownSummary } from '@/features/content-markdown'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -28,7 +29,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { toast } from 'sonner'
 
 interface CourseListItem {
-  id: number
+  id: string
   name: string
   description?: string | null
   course_uuid: string
@@ -45,29 +46,42 @@ export function hiddenFromOthers(isPublic: boolean, courses: Pick<CourseListItem
   return isPublic && courses.length > 0 && courses.every(course => !course.public || course.archived_at_unix != null)
 }
 
+const PICKER_PAGE_SIZE = 50
+
 function NewCollection() {
   const t = useTranslations('NewCollectionPage')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  // The picked courses themselves: one picked under an earlier search is still known at save time.
+  const [selectedCourses, setSelectedCourses] = useState<CourseListItem[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
   const { toastApiError } = useApiError()
-  const { data: courses, error, isLoading } = useCourseList<CourseListItem>()
+  // The picker searches the server (`q`) and pages with the cursor: every course the user can see is reachable,
+  // not only the first page of 20 filtered in the browser.
+  const query = useDebouncedValue(searchQuery.trim(), 250)
+  const coursesQuery = useInfiniteQuery({
+    queryKey: ['courses', 'collection-picker', query],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ limit: String(PICKER_PAGE_SIZE) })
+      if (query) params.set('q', query)
+      if (pageParam) params.set('cursor', pageParam)
+      return apiJson(`courses?${params}`, {}, value => CoursePage.parse(value))
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: page => page.next_cursor ?? undefined,
+    placeholderData: previous => previous,
+  })
+  // `isPending`, not `isLoading`: the server render has no fetch running, and must match the first client render.
+  const { error, isPending: isLoading } = coursesQuery
+  const courses = (coursesQuery.data?.pages.flatMap(page => page.items.map(toAppCourse)) ?? []) as CourseListItem[]
   const [isPublic, setIsPublic] = useState(true)
   // Inline field error on submit, cleared as the field changes (UX-051 / BUG-013).
   const [fieldError, setFieldError] = useState<'name' | 'description' | 'courses' | null>(null)
 
-  const filteredCourses = useMemo(() => {
-    if (!courses || !searchQuery.trim()) return courses || []
-    const query = searchQuery.toLowerCase()
-    return courses.filter(
-      (course: CourseListItem) =>
-        course.name.toLowerCase().includes(query) || course.description?.toLowerCase().includes(query),
-    )
-  }, [courses, searchQuery])
+  const filteredCourses = courses
 
   const handleVisibilityChange = (value: string) => {
     setIsPublic(value === 'true')
@@ -119,14 +133,13 @@ function NewCollection() {
             name: name.trim(),
             description: description.trim(),
             public: isPublic,
-            courses: selectedCourses.map(id => stripEntityPrefix(String(id))),
+            courses: selectedCourses.map(course => stripEntityPrefix(course.id)),
           }),
         },
         value => Collection.parse(value),
       )
       await revalidateTags(['collections'])
-      const chosen = (courses ?? []).filter(course => selectedCourses.includes(course.id))
-      if (hiddenFromOthers(isPublic, chosen))
+      if (hiddenFromOthers(isPublic, selectedCourses))
         toast.warning(t('toast.success'), { description: t('toast.hiddenFromOthers') })
       else toast.success(t('toast.success'))
       startTransition(() => router.push(getAbsoluteUrl('/collections')))
@@ -137,15 +150,20 @@ function NewCollection() {
     }
   }
 
-  const toggleCourse = (courseId: number) => {
-    setSelectedCourses(prev => (prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]))
+  const toggleCourse = (course: CourseListItem) => {
+    setSelectedCourses(prev =>
+      prev.some(picked => picked.id === course.id) ? prev.filter(picked => picked.id !== course.id) : [...prev, course],
+    )
     setFieldError(null)
   }
 
   const selectAll = () => {
     if (filteredCourses.length === 0) return
-    const allIds = filteredCourses.map((c: CourseListItem) => c.id)
-    setSelectedCourses(allIds)
+    // «Выбрать все» adds what the search shows to what was picked before.
+    setSelectedCourses(prev => [
+      ...prev,
+      ...filteredCourses.filter(course => !prev.some(picked => picked.id === course.id)),
+    ])
     setFieldError(null)
   }
 
@@ -302,7 +320,7 @@ function NewCollection() {
                   <p className="text-muted-foreground mt-2 text-sm">{t('loadingCourses')}</p>
                 </div>
               </div>
-            ) : courses?.length === 0 ? (
+            ) : courses.length === 0 && !query && !searchQuery ? (
               <div className="rounded-lg border border-dashed py-12 text-center">
                 <ImageIcon className="text-muted-foreground mx-auto h-12 w-12" />
                 <p className="text-muted-foreground mt-2 text-sm">{t('noCoursesAvailable')}</p>
@@ -351,7 +369,7 @@ function NewCollection() {
                       </div>
                     ) : (
                       filteredCourses.map((course: CourseListItem) => {
-                        const isSelected = selectedCourses.includes(course.id)
+                        const isSelected = selectedCourses.some(picked => picked.id === course.id)
                         // A <label> wires the row text to the checkbox; the old div onClick
                         // toggled a second time on a checkbox click and cancelled it (BUG-014).
                         return (
@@ -361,7 +379,7 @@ function NewCollection() {
                               isSelected ? 'border-primary bg-accent' : ''
                             }`}
                           >
-                            <Checkbox checked={isSelected} onCheckedChange={() => toggleCourse(course.id)} />
+                            <Checkbox checked={isSelected} onCheckedChange={() => toggleCourse(course)} />
                             <div className="bg-muted relative aspect-video w-20 shrink-0 overflow-hidden rounded-md border">
                               {course.thumbnail_image ? (
                                 <div className="relative h-full w-full">
@@ -395,6 +413,19 @@ function NewCollection() {
                     )}
                   </div>
                 </ScrollArea>
+                {coursesQuery.hasNextPage ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={coursesQuery.isFetchingNextPage}
+                    onClick={() => void coursesQuery.fetchNextPage()}
+                  >
+                    {coursesQuery.isFetchingNextPage ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {t('loadMoreCourses')}
+                  </Button>
+                ) : null}
               </div>
             )}
           </CardContent>
