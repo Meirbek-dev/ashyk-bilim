@@ -13,12 +13,10 @@ import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
-import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload } from '@services/media/uploads'
 import { probeVideoFile } from '@services/media/video-probe'
 import { VideoSettingsForm } from './components/VideoSettingsForm'
 import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
-
-const MAX_VIDEO_MB = uploadMaxMb('block-video')
 
 interface VideoDetails {
   startTime: number
@@ -40,6 +38,7 @@ interface ExternalVideoObject {
 function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course }: AppActivityModalProps) {
   const t = useTranslations('Components.VideoModal')
   const formatBytes = useFormatBytes()
+  const maxSize = formatBytes(UPLOAD_MAX_BYTES['block-video'])
   const [video, setVideo] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const submitting = useRef(false)
@@ -106,8 +105,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
       toast.error(message)
     }
     // The server's `block-video` policy (UX-084).
-    if (selectedFile.size > UPLOAD_MAX_BYTES['block-video'])
-      return reject(t('errorFileSizeLimit', { size: MAX_VIDEO_MB }))
+    if (selectedFile.size > UPLOAD_MAX_BYTES['block-video']) return reject(t('errorFileSizeLimit', { size: maxSize }))
     if (selectedFile.size === 0) return reject(t('errorEmptyFile'))
     // By extension too: Chromium on Windows types .mkv as `video/matroska` (BUG-B1).
     if (!isPlayableVideoUpload(selectedFile)) return reject(t('errorInvalidVideoFileType'))
@@ -316,9 +314,7 @@ function VideoModal({ submitFileActivity, submitExternalVideo, chapterId, course
                     <Upload size={22} className="text-gray-300" />
                     <div>
                       <p className="text-muted-foreground text-sm font-medium">{t('chooseVideoFile')}</p>
-                      <p className="mt-0.5 text-xs text-gray-400">
-                        {t('supportedFormatsAndSize', { size: MAX_VIDEO_MB })}
-                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">{t('supportedFormatsAndSize', { size: maxSize })}</p>
                     </div>
                   </Label>
                 )}

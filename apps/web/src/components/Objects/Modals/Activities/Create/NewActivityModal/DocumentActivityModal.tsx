@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import * as v from 'valibot'
-import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES } from '@services/media/uploads'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
 const SUPPORTED_FILES = constructAcceptValue(['pdf'])
 // The server's `block-pdf` policy (UX-084).
 const MAX_PDF_FILE_SIZE = UPLOAD_MAX_BYTES['block-pdf']
-const MAX_PDF_MB = uploadMaxMb('block-pdf')
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
@@ -32,6 +32,7 @@ type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 function DocumentPdfModal({ submitFileActivity, chapterId }: AppActivityModalProps) {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.DocumentPdfModal')
+  const maxSize = useFormatBytes()(UPLOAD_MAX_BYTES['block-pdf'])
   const validationSchema = createValidationSchema(validationT)
 
   const form = useForm<FormValues, unknown, SubmitValues>({
@@ -92,7 +93,7 @@ function DocumentPdfModal({ submitFileActivity, chapterId }: AppActivityModalPro
                     if (nextFile.size > MAX_PDF_FILE_SIZE) {
                       form.setError('file', {
                         type: 'manual',
-                        message: t('fileTooLarge', { size: MAX_PDF_MB }),
+                        message: t('fileTooLarge', { size: maxSize }),
                       })
                       e.target.value = ''
                       onChange(undefined)
@@ -119,7 +120,7 @@ function DocumentPdfModal({ submitFileActivity, chapterId }: AppActivityModalPro
                     {value ? value.name : t('noFileSelected')}
                   </span>
                 </div>
-                <p className="text-muted-foreground mt-2 text-xs">{t('supportedFormats', { size: MAX_PDF_MB })}</p>
+                <p className="text-muted-foreground mt-2 text-xs">{t('supportedFormats', { size: maxSize })}</p>
               </div>
             </FieldContent>
             <FieldError errors={[fieldState.error]} />

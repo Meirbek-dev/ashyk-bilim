@@ -14,7 +14,8 @@ import { VideoSettingsForm } from '@/components/Objects/Modals/Activities/Create
 import { useApiError } from '@/hooks/useApiError'
 import { updateActivity } from '@services/courses/activities'
 import { replaceActivityFile } from '@services/courses/activity-uploads'
-import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload } from '@services/media/uploads'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 import { probeVideoFile } from '@services/media/video-probe'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 import { getYouTubeVideoId } from '@/lib/utils'
@@ -39,6 +40,7 @@ export default function MediaActivityStudio({
 }) {
   const t = useTranslations('Features.MediaStudio')
   const tVideo = useTranslations('Components.VideoModal')
+  const formatBytes = useFormatBytes()
   const { toastApiError } = useApiError()
   const fileInput = useRef<HTMLInputElement>(null)
   const [activity, setActivity] = useState(initial)
@@ -82,7 +84,7 @@ export default function MediaActivityStudio({
 
   const replace = async (file: File) => {
     if (file.size > UPLOAD_MAX_BYTES[purpose]) {
-      toast.error(t('fileTooLarge', { size: uploadMaxMb(purpose) }))
+      toast.error(t('fileTooLarge', { size: formatBytes(UPLOAD_MAX_BYTES[purpose]) }))
       return
     }
     // The checks the create dialog runs (BUG-B1/B4): a wrong pick fails here, not after the upload.

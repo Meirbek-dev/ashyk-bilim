@@ -7,7 +7,9 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 const mocks = vi.hoisted(() => ({ submitExternalVideo: vi.fn() }))
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  // Values print as `key(v1,v2)` so a formatted size is visible («supportedFormatsAndSize(GB(2))»).
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    values ? `${key}(${Object.values(values).join(',')})` : key,
   useFormatter: () => ({ number: (n: number) => String(n) }),
 }))
 vi.mock('@services/media/video-probe', () => ({ probeVideoFile: async () => 'ok' }))
@@ -33,6 +35,12 @@ describe('VideoModal validation', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('errorActivityNameRequired'))
     expect(screen.getByPlaceholderText('activityNamePlaceholder')).toHaveAttribute('aria-invalid', 'true')
     expect(mocks.submitExternalVideo).not.toHaveBeenCalled()
+  })
+
+  // ROUND3-15: the 2 GiB limit reads «2 ГБ» through the shared size formatter, not «2048 МБ».
+  it('names the upload limit with the shared size formatter', () => {
+    render(<VideoModal chapterId="chapter-1" closeModal={vi.fn()} course={{ course_uuid: 'c1' }} />)
+    expect(screen.getByText('supportedFormatsAndSize(GB(2))')).toBeInTheDocument()
   })
 
   // BUG-B1/B3: an iPhone .mov is a valid pick; a rejected pick (AVI) leaves the input empty,

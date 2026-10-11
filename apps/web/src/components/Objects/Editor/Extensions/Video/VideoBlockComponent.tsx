@@ -6,7 +6,8 @@ import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import { uploadNewVideoFile } from '@services/blocks/Video/video'
 import { getBlockFileUrl } from '@services/blocks/upload'
-import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES, VIDEO_UPLOAD_ACCEPT, isPlayableVideoUpload } from '@services/media/uploads'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 import { probeVideoFile } from '@services/media/video-probe'
 import { useApiError } from '@/hooks/useApiError'
 import type { BlockFileContent } from '@services/blocks/upload'
@@ -62,6 +63,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
   usePlatform()
 
   const tVideo = useTranslations('Components.VideoModal')
+  const formatBytes = useFormatBytes()
   const { handleApiError } = useApiError()
   const editorState = useEditorProvider()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,7 +94,7 @@ function VideoBlockComponent(props: ExtendedNodeViewProps) {
     if (!file) return
     let problem: string | null = null
     if (file.size > UPLOAD_MAX_BYTES['block-video'])
-      problem = tVideo('errorFileSizeLimit', { size: uploadMaxMb('block-video') })
+      problem = tVideo('errorFileSizeLimit', { size: formatBytes(UPLOAD_MAX_BYTES['block-video']) })
     else if (file.size === 0) problem = tVideo('errorEmptyFile')
     else if (!isPlayableVideoUpload(file)) problem = tVideo('errorInvalidVideoFileType')
     else if ((await probeVideoFile(file)) === 'unplayable') problem = tVideo('errorUnplayableVideo')

@@ -41,8 +41,6 @@ export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
   'file-submission': 100 * MB,
 }
 
-export const uploadMaxMb = (purpose: UploadPurpose) => UPLOAD_MAX_BYTES[purpose] / MB
-
 /**
  * The type the server's policy matches exactly. Browsers disagree per OS:
  * Chromium on Windows says `video/matroska` for .mkv, `video/avi` for .avi,
@@ -92,7 +90,11 @@ export interface UploadFileOptions {
   signal?: AbortSignal
 }
 
-export async function createUpload(file: Blob, purpose: UploadPurpose, signal?: AbortSignal): Promise<CreatedUploadType> {
+export async function createUpload(
+  file: Blob,
+  purpose: UploadPurpose,
+  signal?: AbortSignal,
+): Promise<CreatedUploadType> {
   return apiJson(
     'uploads',
     {
@@ -110,12 +112,14 @@ export async function createUpload(file: Blob, purpose: UploadPurpose, signal?: 
 }
 
 export async function finalizeUpload(uploadId: string, signal?: AbortSignal): Promise<FinalizedUploadType> {
-  return apiJson(`uploads/${encodeURIComponent(uploadId)}/finalize`, {
-    method: 'POST',
-    headers: { 'Idempotency-Key': uploadId },
-    ...(signal ? { signal } : {}),
-  }, data =>
-    FinalizedUpload.parse(data),
+  return apiJson(
+    `uploads/${encodeURIComponent(uploadId)}/finalize`,
+    {
+      method: 'POST',
+      headers: { 'Idempotency-Key': uploadId },
+      ...(signal ? { signal } : {}),
+    },
+    data => FinalizedUpload.parse(data),
   )
 }
 

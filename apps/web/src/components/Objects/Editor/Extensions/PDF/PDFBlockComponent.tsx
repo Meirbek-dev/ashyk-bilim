@@ -5,7 +5,8 @@ import { AlertTriangle, Download, Expand, FileText, Trash2 } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { uploadNewPDFFile } from '@services/blocks/Pdf/pdf'
 import { getBlockFileUrl } from '@services/blocks/upload'
-import { UPLOAD_MAX_BYTES, uploadMaxMb } from '@services/media/uploads'
+import { UPLOAD_MAX_BYTES } from '@services/media/uploads'
+import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 import { useApiError } from '@/hooks/useApiError'
 import { toast } from 'sonner'
 import { CheckedMedia } from '@components/Objects/Activities/Media/MediaUnavailable'
@@ -52,6 +53,7 @@ function normalizeSize(size?: Partial<PdfBlockSize> | null): PdfBlockSize {
 
 function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionOptions>) {
   const t = useTranslations('DashPage.Editor.PDFBlock')
+  const formatBytes = useFormatBytes()
   const { toastApiError } = useApiError()
   const [pdf, setPDF] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -118,7 +120,7 @@ function PDFBlockComponent(props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
     if (!pdf) return // Guard: only proceed if pdf is not null
     // BUG-B8: a failed upload left the spinner on forever with no message.
     if (pdf.size > UPLOAD_MAX_BYTES['block-pdf']) {
-      toast.error(t('fileTooLarge', { size: uploadMaxMb('block-pdf') }))
+      toast.error(t('fileTooLarge', { size: formatBytes(UPLOAD_MAX_BYTES['block-pdf']) }))
       return
     }
     setIsLoading(true)

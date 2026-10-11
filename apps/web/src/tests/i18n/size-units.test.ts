@@ -17,6 +17,16 @@ describe('size units (UX-321)', () => {
   ])('%s spaces every size from its unit', (_locale, messages) => {
     expect(strings(messages).filter(s => /[0-9}](МБ|MB|КБ|KB)(?![A-Za-zА-Яа-я])/.test(s))).toEqual([])
     expect(messages.CourseEdit.General.Thumbnail.errors.fileTooLarge).toContain('({fileSize})')
+    // ROUND3-15: upload limits arrive formatted («2 ГБ», «50 МБ») - the message carries no unit of its own.
+    const limits = [
+      messages.Components.VideoModal.supportedFormatsAndSize,
+      messages.Components.VideoModal.errorFileSizeLimit,
+      messages.Components.DocumentPdfModal.supportedFormats,
+      messages.Components.DocumentPdfModal.fileTooLarge,
+      messages.Features.MediaStudio.fileTooLarge,
+      messages.DashPage.Editor.PDFBlock.fileTooLarge,
+    ]
+    for (const limit of limits) expect(limit).toMatch(/\{size\}(?!\s*(МБ|MB))/)
     // UX-323: a duration placeholder is spaced from its unit too («2 с», «18 мс»).
     expect(strings(messages).filter(s => /\{value\}(мс|с|ms|s)(?![A-Za-zА-Яа-я])/.test(s))).toEqual([])
   })
