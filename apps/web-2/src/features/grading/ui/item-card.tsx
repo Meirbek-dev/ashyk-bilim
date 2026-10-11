@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 
+import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, GradedItem, ItemAnswer } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
@@ -27,7 +28,12 @@ export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
           {m.grading_item_title({ number: item.position, title: item.title })}
         </h3>
         <p className="text-sm text-muted-foreground">{kindLabels[item.kind]()}</p>
-        {prompt ? <p className="wrap-anywhere whitespace-pre-wrap">{prompt}</p> : null}
+        {prompt ? (
+          // The author's markdown, as the learner saw it (migrated prompts carry `## **…**`).
+          <Suspense fallback={<p className="wrap-anywhere whitespace-pre-wrap">{prompt}</p>}>
+            <MarkdownView content={prompt} />
+          </Suspense>
+        ) : null}
       </div>
       <AnswerView
         item={item}
