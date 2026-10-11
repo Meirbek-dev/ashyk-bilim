@@ -189,12 +189,20 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
                 .header(axum::http::header::CONTENT_TYPE, "application/json")
                 .header(axum::http::header::COOKIE, &admin.cookie)
                 .body(axum::body::Body::from(
-                    serde_json::json!({ "permissions": ["not-a-grant"] }).to_string(),
+                    serde_json::json!({ "permissions": ["course:read:all", "not-a-grant"] })
+                        .to_string(),
                 ))
                 .unwrap(),
         )
         .await;
     assert_eq!(garbage.status, StatusCode::UNPROCESSABLE_ENTITY);
+    // DECISIONS 2026-10-11: the error names the offending line.
+    assert_eq!(
+        garbage.json()["field_errors"][0]["field"],
+        "permissions[1]",
+        "{}",
+        garbage.text()
+    );
 
     let set = app
         .send(

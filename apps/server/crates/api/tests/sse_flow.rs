@@ -248,8 +248,9 @@ async fn concurrent_streams_are_capped_per_user(pool: PgPool) {
     let base = app.serve().await;
     let client = reqwest::Client::new();
 
+    // Ten open streams per user (several tabs + grading streams).
     let mut held = Vec::new();
-    for _ in 0..5 {
+    for _ in 0..10 {
         let mut stream = open(&client, &base, &alice, &sub_id, None)
             .send()
             .await
@@ -259,15 +260,15 @@ async fn concurrent_streams_are_capped_per_user(pool: PgPool) {
         read_until(&mut stream, &mut buffer, "event: connected").await;
         held.push(stream);
     }
-    let sixth = open(&client, &base, &alice, &sub_id, None)
+    let eleventh = open(&client, &base, &alice, &sub_id, None)
         .send()
         .await
         .unwrap();
-    assert_eq!(sixth.status(), StatusCode::TOO_MANY_REQUESTS);
-    assert_eq!(sixth.headers()["retry-after"], "60");
-    let problem: serde_json::Value = sixth.json().await.unwrap();
+    assert_eq!(eleventh.status(), StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(eleventh.headers()["retry-after"], "60");
+    let problem: serde_json::Value = eleventh.json().await.unwrap();
     assert_eq!(problem["code"], "rate-limited");
-    assert_eq!(problem["details"]["limit"], 5);
+    assert_eq!(problem["details"]["limit"], 10);
     drop(held);
 }
 

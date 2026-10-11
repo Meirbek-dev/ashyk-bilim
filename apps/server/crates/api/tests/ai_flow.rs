@@ -80,7 +80,7 @@ async fn published_course(app: &TestApp, teacher: &MintedSession, name: &str) ->
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
-                "name": "Lesson 1", "activity_type": "video", "activity_sub_type": "video_youtube",
+                "name": "Lesson 1", "activity_type": "dynamic", "activity_sub_type": "dynamic_page",
             }),
         )
         .await;

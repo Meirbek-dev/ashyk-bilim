@@ -1940,6 +1940,21 @@ async fn a_resubmitted_revision_clears_the_return_comment(pool: PgPool) {
         )
         .await;
     assert_eq!(history.json()[0]["feedback"], "Add references");
+    // DECISIONS 2026-10-11: the learner keeps reading the released entries
+    // of their own attempt (the return comment); another learner cannot.
+    let own_history = format!("/api/v2/file-submission-attempts/{attempt_id}/grading-history");
+    let theirs = app.get_as(&alice, &own_history).await;
+    assert_eq!(theirs.status, StatusCode::OK, "{}", theirs.text());
+    assert_eq!(theirs.json()[0]["feedback"], "Add references");
+    assert_eq!(theirs.json()[0]["status"], "returned");
+    let bob = learner(&app, "bob").await;
+    let stranger = app.get_as(&bob, &own_history).await;
+    assert_eq!(
+        stranger.status,
+        StatusCode::NOT_FOUND,
+        "{}",
+        stranger.text()
+    );
 }
 
 /// Cluster G: a course taking assessments from enrolled learners only

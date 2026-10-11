@@ -61,7 +61,9 @@ pub(crate) async fn attempt_gates(
     if preview {
         return Ok(reasons);
     }
-    if !effective.allow_late && effective.due_at.is_some_and(|due| now > due) {
+    // Past a strict due date, or past the late cutoff: no new attempt and no
+    // late save (the deadline sweep hands an open draft in at that moment).
+    if effective.hand_in_at().is_some_and(|at| now > at) {
         reasons.push(DisabledReason::PastDue);
     }
     if let Some(deadline) = started_at.and_then(|s| effective.timer_deadline(s))
@@ -157,13 +159,28 @@ impl EffectivePolicy {
     /// `list_expired_drafts` mirrors it in SQL.
     #[must_use]
     pub fn hand_in_at(&self) -> Option<i64> {
+        self.hand_in().map(|(at, _)| at)
+    }
+
+    /// [`Self::hand_in_at`] with the reason recorded on the hand-in:
+    /// `deadline_passed` for a strict due date, `late_cutoff_passed` for the
+    /// late cutoff after a late window (DECISIONS 2026-10-11).
+    #[must_use]
+    pub fn hand_in(&self) -> Option<(i64, ab_core::assessments::AutoSubmitReason)> {
+        use ab_core::assessments::AutoSubmitReason;
         let due = self.due_at?;
         if !self.allow_late {
-            return Some(due);
+            return Some((due, AutoSubmitReason::DeadlinePassed));
         }
         match self.late_policy {
+            // An own due date at or past the cutoff leaves no late window:
+            // it closes like a strict due date.
             LatePolicy::Cutoff { cutoff_at } if !self.waive_late_penalty => {
-                Some(due.max(cutoff_at))
+                Some(if cutoff_at > due {
+                    (cutoff_at, AutoSubmitReason::LateCutoffPassed)
+                } else {
+                    (due, AutoSubmitReason::DeadlinePassed)
+                })
             }
             _ => None,
         }

@@ -58,6 +58,19 @@ pub(crate) async fn ensure_editable<'e>(
     }
 }
 
+/// A rename only: allowed on a published assessment with submissions too -
+/// the title is no content change (DECISIONS 2026-10-11); archived and
+/// scheduled ones stay read-only.
+pub(crate) async fn ensure_renamable<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment: &Assessment,
+) -> Result<()> {
+    match assessment.lifecycle {
+        Lifecycle::Published => Ok(()),
+        _ => ensure_editable(db, assessment).await,
+    }
+}
+
 /// Why details, policy and items are read-only right now (the
 /// [`ensure_editable`] rules; `Assessment.edit_lock`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
@@ -952,7 +965,22 @@ impl AssessmentsService {
         let assessment = ab_db::assessments::lock_assessment(&mut tx, id)
             .await?
             .ok_or_else(|| Error::not_found("assessment"))?;
-        ensure_editable(&mut *tx, &assessment).await?;
+        // Only the title moves (the other fields absent or unchanged): a
+        // rename, allowed while learners have submissions.
+        let rename_only = changes
+            .description
+            .is_none_or(|d| d == assessment.description)
+            && changes
+                .weight
+                .is_none_or(|w| (w - assessment.weight).abs() < f64::EPSILON)
+            && changes
+                .grading_type
+                .is_none_or(|g| g == assessment.grading_type);
+        if rename_only {
+            ensure_renamable(&mut *tx, &assessment).await?;
+        } else {
+            ensure_editable(&mut *tx, &assessment).await?;
+        }
         ab_db::assessments::update_assessment_details(
             &mut *tx,
             id,

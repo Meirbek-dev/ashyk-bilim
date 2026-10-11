@@ -14,6 +14,7 @@ const session = (userId: string): SessionInfo => ({
     email: `${userId}@e2e.test`,
     locale: 'ru-RU',
     language: 'ru',
+    email_verified: true,
     avatar_key: null,
     theme: null,
   },

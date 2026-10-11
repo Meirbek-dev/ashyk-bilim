@@ -402,6 +402,7 @@ async fn session_info(
     let profile = ab_db::identity::get_profile(&state.pool, actor.user_id)
         .await?
         .ok_or_else(Error::unauthenticated)?;
+    let profile = crate::routes::users::with_email_state(state, profile).await?;
     let capabilities = ab_domain::identity::capabilities::capabilities(&state.pool, &actor).await?;
     Ok(SessionInfo {
         user_id: actor.user_id,

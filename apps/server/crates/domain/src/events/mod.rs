@@ -28,8 +28,10 @@ use redis::aio::ConnectionManager;
 use redis::streams::{StreamMaxlen, StreamRangeReply, StreamReadOptions, StreamReadReply};
 use serde::Serialize;
 
-/// Legacy `_MAX_CONNECTIONS_PER_USER`.
-pub const MAX_CONNECTIONS_PER_USER: i64 = 5;
+/// Open event streams per user (all kinds share it): several tabs, each with
+/// the notification stream, plus grading / AI streams fit (DECISIONS
+/// 2026-10-11; the legacy `_MAX_CONNECTIONS_PER_USER` was 5).
+pub const MAX_CONNECTIONS_PER_USER: i64 = 10;
 /// Events kept per submission stream (approximate trimming).
 const STREAM_MAXLEN: usize = 1024;
 /// A lease whose release was lost expires on its own (legacy 3600s).

@@ -4,6 +4,7 @@ use utoipa::ToSchema;
 
 pub use ab_domain::identity::profile::ProfileSections;
 
+#[allow(clippy::struct_excessive_bools)] // SAFETY: independent wire flags, not a state machine.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserProfile {
     pub id: UserId,
@@ -38,6 +39,10 @@ pub struct UserProfile {
     /// Optimistic-lock version of the profile (the `ETag` of
     /// `GET /users/me`): echo it as `If-Match` on `PATCH /users/me`.
     pub version: i32,
+    /// The email address is confirmed. `false`: the web asks the user to
+    /// confirm it (`POST /auth/verify-email`, resend with
+    /// `POST /auth/verify-email/resend`); sign-in is not gated on it.
+    pub email_verified: bool,
 }
 
 impl UserProfile {
@@ -70,6 +75,7 @@ impl From<ab_domain::identity::users::Profile> for UserProfile {
             profile: p.profile,
             theme: p.theme,
             version: p.profile_version,
+            email_verified: p.email_verified.unwrap_or(true),
             mfa_enabled: false,
             has_password: false,
             google_linked: false,

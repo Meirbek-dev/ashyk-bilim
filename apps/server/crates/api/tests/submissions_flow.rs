@@ -905,7 +905,9 @@ fn unix_now() -> i64 {
 }
 
 /// Cluster G: with late work allowed and a cutoff, a draft still open at the
-/// cutoff is handed in by the sweep (`deadline_passed`), graded by the late
+/// cutoff is handed in by the sweep (`late_cutoff_passed`, DECISIONS
+/// 2026-10-11; an own due date past the cutoff closes as `deadline_passed`),
+/// graded by the late
 /// policy as of the cutoff (late, no penalty yet); a waived learner and one
 /// whose own due date runs past the cutoff keep working until theirs.
 #[sqlx::test(migrations = "../../migrations")]
@@ -968,6 +970,18 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(sweep().await.unwrap(), 0, "the late window is open");
+    // The open draft counts down to the cutoff, named as such.
+    let resumed = app
+        .post_as(&drafts[0].0, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(
+        resumed.json()["time_remaining_reason"],
+        "late_cutoff_passed",
+        "{}",
+        resumed.text()
+    );
+    let left = resumed.json()["time_remaining_seconds"].as_i64().unwrap();
+    assert!((7000..=7205).contains(&left), "to the cutoff: {left}");
 
     // The cutoff passes (one minute ago): alice only.
     sqlx::query(
@@ -983,7 +997,7 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
         .get_as(alice, &format!("/api/v2/submissions/{alice_sub}"))
         .await;
     assert_eq!(mine.json()["status"], "published", "{}", mine.text());
-    assert_eq!(mine.json()["auto_submit_reason"], "deadline_passed");
+    assert_eq!(mine.json()["auto_submit_reason"], "late_cutoff_passed");
     assert_eq!(mine.json()["is_late"], true);
     assert_eq!(mine.json()["late_penalty_pct"], 0.0);
     assert_eq!(mine.json()["final_score"], 100.0);
@@ -996,6 +1010,22 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
         let theirs = app.get_as(who, &format!("/api/v2/submissions/{sub}")).await;
         assert_eq!(theirs.json()["status"], "draft", "{}", theirs.text());
     }
+    // Past the cutoff no new attempt opens (it would be handed in empty by
+    // the next sweep): PAST_DUE, as past a strict due date.
+    let again = app
+        .post_as(alice, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(again.status, StatusCode::FORBIDDEN, "{}", again.text());
+    assert_eq!(again.json()["code"], "attempt-past-due");
+    let state = app
+        .get_as(alice, &format!("/api/v2/assessments/{id}/attempt-state"))
+        .await;
+    assert_eq!(
+        state.json()["disabled_reasons"],
+        serde_json::json!(["PAST_DUE"]),
+        "{}",
+        state.text()
+    );
 
     // Carol's own due date passes too: the later of it and the cutoff.
     sqlx::query(

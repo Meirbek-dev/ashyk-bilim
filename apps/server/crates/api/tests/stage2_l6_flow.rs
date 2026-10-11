@@ -282,16 +282,18 @@ async fn file_review_has_assessment_parity(pool: PgPool) {
     assert_eq!(entries[0]["status"], "published");
     assert_eq!(entries[1]["status"], "graded");
     assert_eq!(entries[1]["raw_score"], 80.0);
-    // Not the learner's to read.
-    assert_eq!(
-        app.get_as(
+    // The learner reads the released entries only (DECISIONS 2026-10-11):
+    // the held grade stays theirs not to see.
+    let own = app
+        .get_as(
             &alice,
-            &format!("/api/v2/file-submission-attempts/{a_id}/grading-history")
+            &format!("/api/v2/file-submission-attempts/{a_id}/grading-history"),
         )
-        .await
-        .status,
-        StatusCode::FORBIDDEN
-    );
+        .await;
+    assert_eq!(own.status, StatusCode::OK, "{}", own.text());
+    let own = own.json();
+    assert_eq!(own.as_array().unwrap().len(), 1, "{own}");
+    assert_eq!(own[0]["status"], "published");
 
     // Bulk return: alice's published grade is final (skipped), bob's work
     // goes back.

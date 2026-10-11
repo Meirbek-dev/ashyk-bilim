@@ -12,6 +12,7 @@ export const SessionUser = zod
     avatar_key: zod.string().nullable(),
     display_name: zod.string(),
     email: zod.string(),
+    email_verified: zod.boolean().describe('The email address is confirmed (see `UserProfile.email_verified`).'),
     id: zod.uuid(),
     language: zod.enum(['ru', 'kk', 'en']).describe('D-03: the UI language (`ru`, `kk`, `en`).'),
     locale: zod.enum(['ru-RU', 'kk-KZ', 'en-US']).describe('Legacy region tag (`ru-RU`, …); removed in phase 9.'),

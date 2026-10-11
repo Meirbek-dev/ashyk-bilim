@@ -58,6 +58,7 @@ error_codes! {
     PayloadTooLarge => ("payload-too-large", 413, "Payload too large"),
     // Catalog
     ActivityNotReady => ("activity-not-ready", 409, "Activity is not ready to publish"),
+    ActivityMediaMissing => ("activity-media-missing", 409, "Add the lesson's file or link before publishing it"),
     CourseNotReady => ("course-not-ready", 422, "Course has publish blockers"),
     CourseArchived => ("course-archived", 409, "Course is archived"),
     // Files
@@ -92,6 +93,7 @@ error_codes! {
     AttemptPastDue => ("attempt-past-due", 403, "The due date or late cutoff has passed"),
     RemediationRequired => ("remediation-required", 403, "A remediation session must be passed first"),
     EnrollmentRequired => ("enrollment-required", 403, "Enroll in the course to take its assessments"),
+    DiscussionEnrollmentRequired => ("discussion-enrollment-required", 403, "Enroll in the course to post in its discussions"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
     GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),

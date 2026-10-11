@@ -678,7 +678,7 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
             &teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
-                "name": "Intro", "activity_type": "video", "activity_sub_type": "video_youtube"
+                "name": "Intro", "activity_type": "dynamic", "activity_sub_type": "dynamic_page"
             }),
         )
         .await;

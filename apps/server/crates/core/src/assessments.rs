@@ -197,6 +197,7 @@ text_enum!(
         TimeExpired => "time_expired",
         IntegrityViolation => "integrity_violation",
         DeadlinePassed => "deadline_passed",
+        LateCutoffPassed => "late_cutoff_passed",
     }
 );
 

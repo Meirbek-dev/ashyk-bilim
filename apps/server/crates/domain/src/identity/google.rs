@@ -285,6 +285,7 @@ impl GoogleAuthService {
                 &display_name,
                 None,
                 "",
+                identity.email_verified,
             )
             .await?
             {

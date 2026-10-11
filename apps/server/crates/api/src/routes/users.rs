@@ -21,6 +21,20 @@ use crate::routes::auth::user_agent;
 use crate::routes::curriculum::if_match;
 use crate::state::AppState;
 
+/// Fill in `email_verified` for accounts older than the column.
+pub(crate) async fn with_email_state(
+    state: &AppState,
+    mut profile: ab_domain::identity::users::Profile,
+) -> ab_core::Result<ab_domain::identity::users::Profile> {
+    profile.email_verified = Some(
+        state
+            .identity
+            .email_verified(profile.id, profile.email_verified)
+            .await?,
+    );
+    Ok(profile)
+}
+
 /// The own profile with an `ETag` carrying `profile_version`, echoed back as
 /// `If-Match` by the profile builder (BUG-367).
 fn me_with_etag(
@@ -51,6 +65,7 @@ pub async fn my_profile(
     CurrentActor(actor): CurrentActor,
 ) -> ApiResult<Response> {
     let profile = state.users.my_profile(&actor).await?;
+    let profile = with_email_state(&state, profile).await?;
     Ok(me_with_etag(profile, &actor))
 }
 
@@ -115,6 +130,7 @@ pub async fn update_my_profile(
                 },
             )
             .await?;
+        let profile = with_email_state(&state, profile).await?;
         Ok(me_with_etag(profile, &actor))
     })
     .await

@@ -798,7 +798,7 @@ export const toggleDislike = async (
 
 export const getToggleDislikeMutationKey = () => ['toggleDislike'] as const
 
-export const getToggleDislikeMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getToggleDislikeMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof toggleDislike>>,
     TError,
@@ -828,13 +828,13 @@ export const getToggleDislikeMutationOptions = <TError = ErrorType<unknown>, TCo
 
 export type ToggleDislikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleDislike>>>
 
-export type ToggleDislikeMutationError = ErrorType<unknown>
+export type ToggleDislikeMutationError = ErrorType<Problem>
 export type ToggleDislikeMutationVariables = { discussionId: DiscussionId }
 
 /**
  * @summary Toggle a dislike (a standing like is replaced).
  */
-export const useToggleDislike = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useToggleDislike = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof toggleDislike>>,
@@ -871,7 +871,7 @@ export const toggleLike = async (
 
 export const getToggleLikeMutationKey = () => ['toggleLike'] as const
 
-export const getToggleLikeMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const getToggleLikeMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError, ToggleLikeMutationVariables, TContext>
   request?: SecondParameter<typeof orvalMutator>
 }): UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError, ToggleLikeMutationVariables, TContext> => {
@@ -893,13 +893,13 @@ export const getToggleLikeMutationOptions = <TError = ErrorType<unknown>, TConte
 
 export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
 
-export type ToggleLikeMutationError = ErrorType<unknown>
+export type ToggleLikeMutationError = ErrorType<Problem>
 export type ToggleLikeMutationVariables = { discussionId: DiscussionId }
 
 /**
  * @summary Toggle a like (a standing dislike is replaced).
  */
-export const useToggleLike = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useToggleLike = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError, ToggleLikeMutationVariables, TContext>
     request?: SecondParameter<typeof orvalMutator>

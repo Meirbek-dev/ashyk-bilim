@@ -39,7 +39,11 @@ const post = (id: string, patch: Partial<Discussion> = {}): Discussion => ({
 
 const pages = (...items: Discussion[][]) => ({
   pageParams: items.map(() => undefined),
-  pages: items.map((page, index) => ({ items: page, next_cursor: index < items.length - 1 ? 'next' : null })),
+  pages: items.map((page, index) => ({
+    items: page,
+    next_cursor: index < items.length - 1 ? 'next' : null,
+    can_post: true,
+  })),
 })
 
 const ids = (data: ReturnType<typeof prependItem>) => data?.pages.map(page => page.items.map(item => item.id))
@@ -66,7 +70,7 @@ describe('cache updates from mutation answers', () => {
 
   test('B-DSC-05 a new reply goes last, but not while older pages are still unloaded', () => {
     expect(ids(appendItem(pages([post('r1')]), post('r2')))).toEqual([['r1', 'r2']])
-    const partial = { pageParams: [undefined], pages: [{ items: [post('r1')], next_cursor: 'more' }] }
+    const partial = { pageParams: [undefined], pages: [{ items: [post('r1')], next_cursor: 'more', can_post: true }] }
     expect(ids(appendItem(partial, post('r2')))).toEqual([['r1']])
   })
 

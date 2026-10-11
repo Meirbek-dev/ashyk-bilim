@@ -2773,3 +2773,70 @@ async fn login_rides_out_zitadel_projection_lag(pool: PgPool) {
     assert_eq!(res.status, StatusCode::OK, "{}", res.text());
     assert!(res.session_cookie().is_some());
 }
+
+/// DECISIONS 2026-10-11: `GET /users/me` and the session say whether the
+/// email is confirmed. An account older than the column asks Zitadel once
+/// and keeps the answer; confirming the code flips it; with Zitadel
+/// unreachable the account reads as verified (no banner) and nothing is
+/// stored.
+#[sqlx::test(migrations = "../../migrations")]
+async fn email_verified_is_exposed_and_follows_the_code(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let pending = app
+        .create_user("pending", "pending@example.com", &["user"])
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-pending"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "user": { "human": { "email": { "email": "pending@example.com" } } }
+        })))
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    let session = app.mint_session_for(pending, &["user:update:own"]).await;
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.status, StatusCode::OK, "{}", me.text());
+    assert_eq!(me.json()["email_verified"], false);
+    let current = app.get_as(&session, "/api/v2/auth/session").await;
+    assert_eq!(
+        current.json()["user"]["email_verified"],
+        false,
+        "stored, not asked again"
+    );
+
+    Mock::given(method("POST"))
+        .and(path("/v2/users/z-pending/email/verify"))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .mount(&app.zitadel)
+        .await;
+    let verified = app
+        .post_json(
+            "/api/v2/auth/verify-email",
+            &serde_json::json!({ "email": "pending@example.com", "code": "abc123" }),
+        )
+        .await;
+    assert_eq!(
+        verified.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        verified.text()
+    );
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.json()["email_verified"], true);
+    let current = app.get_as(&session, "/api/v2/auth/session").await;
+    assert_eq!(current.json()["user"]["email_verified"], true);
+
+    // Zitadel down (no mock): verified for now, asked again next time.
+    let dark = app.create_user("dark", "dark@example.com", &["user"]).await;
+    let session = app.mint_session_for(dark, &[]).await;
+    let me = app.get_as(&session, "/api/v2/users/me").await;
+    assert_eq!(me.json()["email_verified"], true);
+    let stored: Option<bool> = sqlx::query_scalar("SELECT email_verified FROM users WHERE id = $1")
+        .bind(dark.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, None);
+}

@@ -41,7 +41,8 @@ export const setRepliesCount = (data: Pages, id: DiscussionId, count: number): P
 
 /** One post (a deep-linked thread) through the list changes above: a removed post becomes `null`. */
 export const changePost = (post: Discussion, change: (data: Pages) => Pages): Discussion | null =>
-  change({ pages: [{ items: [post], next_cursor: null }], pageParams: [undefined] })?.pages[0]?.items[0] ?? null
+  change({ pages: [{ items: [post], next_cursor: null, can_post: false }], pageParams: [undefined] })?.pages[0]
+    ?.items[0] ?? null
 
 /** Like / dislike: counts and pressed state exactly as the toggle answered. */
 export const applyReaction = (data: Pages, id: DiscussionId, state: ReactionState): Pages =>

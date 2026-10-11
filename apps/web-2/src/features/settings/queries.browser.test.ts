@@ -21,6 +21,7 @@ const PROFILE = {
   mfa_enabled: false,
   has_password: true,
   google_linked: false,
+  email_verified: true,
   version: 3,
 }
 

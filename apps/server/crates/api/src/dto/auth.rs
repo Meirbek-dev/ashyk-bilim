@@ -160,6 +160,8 @@ pub struct SessionUser {
     pub language: String,
     /// UI theme slug; `null` = the web default.
     pub theme: Option<String>,
+    /// The email address is confirmed (see `UserProfile.email_verified`).
+    pub email_verified: bool,
 }
 
 impl From<ab_domain::identity::users::Profile> for SessionUser {
@@ -173,6 +175,7 @@ impl From<ab_domain::identity::users::Profile> for SessionUser {
             locale: super::legacy_locale(&p.locale),
             language: super::short_locale(&p.locale),
             theme: p.theme,
+            email_verified: p.email_verified.unwrap_or(true),
         }
     }
 }

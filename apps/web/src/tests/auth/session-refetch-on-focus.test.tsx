@@ -26,6 +26,7 @@ const session: Session = {
     mfa_enabled: false,
     has_password: true,
     google_linked: false,
+    email_verified: true,
     organization: '',
     profile: { sections: [] },
     theme: null,
@@ -36,14 +37,14 @@ const session: Session = {
   roles: ['instructor'],
   permissions: ['analytics:read:own'],
 }
-const { avatar_key, display_name, email, id, language, locale, theme, username } = session.user!
+const { avatar_key, display_name, email, email_verified, id, language, locale, theme, username } = session.user!
 const wire = (permissions: string[], roles: string[]) => ({
   user_id: userId,
   roles,
   permissions,
   mfa_enabled: false,
   capabilities: [],
-  user: { avatar_key, display_name, email, id, language, locale, theme, username },
+  user: { avatar_key, display_name, email, email_verified, id, language, locale, theme, username },
 })
 
 describe('UX-076 session grants follow the server', () => {

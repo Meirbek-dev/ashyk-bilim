@@ -62,6 +62,8 @@ pub async fn list_discussions(
     request_body = CreateDiscussionRequest,
     responses(
         (status = 201, description = "Created", body = Discussion),
+        (status = 403, description = "No `discussion:create`, or `discussion-enrollment-required`: not enrolled (nor course staff)",
+         body = Problem, content_type = "application/problem+json"),
         (status = 422, description = "Empty content, nested reply, or Idempotency-Key reused with a different body",
          body = Problem, content_type = "application/problem+json"),
     )
@@ -183,7 +185,11 @@ pub async fn delete_discussion(
 #[utoipa::path(
     put, path = "/discussions/{discussion_id}/like", tag = "discussions",
     params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
-    responses((status = 200, description = "Reaction state", body = ReactionState)),
+    responses(
+        (status = 200, description = "Reaction state", body = ReactionState),
+        (status = 403, description = "`discussion-enrollment-required`: not enrolled (nor course staff)",
+         body = Problem, content_type = "application/problem+json"),
+    ),
 )]
 pub async fn toggle_like(
     State(state): State<AppState>,
@@ -203,7 +209,11 @@ pub async fn toggle_like(
 #[utoipa::path(
     put, path = "/discussions/{discussion_id}/dislike", tag = "discussions",
     params(("discussion_id" = DiscussionId, Path, description = "Discussion id")),
-    responses((status = 200, description = "Reaction state", body = ReactionState)),
+    responses(
+        (status = 200, description = "Reaction state", body = ReactionState),
+        (status = 403, description = "`discussion-enrollment-required`: not enrolled (nor course staff)",
+         body = Problem, content_type = "application/problem+json"),
+    ),
 )]
 pub async fn toggle_dislike(
     State(state): State<AppState>,

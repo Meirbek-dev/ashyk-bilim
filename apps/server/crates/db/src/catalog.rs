@@ -1042,8 +1042,8 @@ pub struct ActivityContentRow {
     pub settings: serde_json::Value,
 }
 
-pub async fn get_activity_content(
-    pool: &PgPool,
+pub async fn get_activity_content<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: ActivityId,
 ) -> Result<Option<ActivityContentRow>> {
     let row = sqlx::query_as!(
@@ -1051,7 +1051,7 @@ pub async fn get_activity_content(
         "SELECT content, details, settings FROM activities WHERE id = $1",
         id.0
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(row)
 }

@@ -62,7 +62,7 @@ export const StudentSubmission = zod
     auto_score: zod.number().nullable(),
     auto_submit_reason: zod.union([
       zod
-        .enum(['time_expired', 'integrity_violation', 'deadline_passed'])
+        .enum(['time_expired', 'integrity_violation', 'deadline_passed', 'late_cutoff_passed'])
         .describe(
           'Set when the server closed the attempt (time ran out, integrity\nviolation); `null` when the learner submitted.',
         ),
@@ -211,9 +211,9 @@ export const StudentSubmission = zod
     ]),
     time_remaining_reason: zod.union([
       zod
-        .enum(['time_expired', 'integrity_violation', 'deadline_passed'])
+        .enum(['time_expired', 'integrity_violation', 'deadline_passed', 'late_cutoff_passed'])
         .describe(
-          "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit) or\n`deadline_passed` (due date); `null` with `time_remaining_seconds`.",
+          "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit),\n`deadline_passed` (strict due date) or `late_cutoff_passed` (the late\ncutoff - the due date has passed, late work closes then); `null` with\n`time_remaining_seconds`.",
         ),
       zod.null(),
     ]),

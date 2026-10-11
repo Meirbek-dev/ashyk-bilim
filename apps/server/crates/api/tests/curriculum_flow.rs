@@ -72,6 +72,34 @@ async fn create_activity(
     res.json()["id"].as_str().unwrap().to_owned()
 }
 
+/// Publish a `create_activity` lesson (YouTube): it goes live with its link
+/// (DECISIONS 2026-10-11), sent under the row's version.
+async fn publish_lesson(
+    app: &TestApp,
+    session: &MintedSession,
+    activity_id: &str,
+) -> ab_testkit::TestResponse {
+    let path = format!("/api/v2/activities/{activity_id}");
+    let version = app.get_as(session, &path).await.json()["version"].to_string();
+    app.send(
+        axum::http::Request::builder()
+            .method("PATCH")
+            .uri(path)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .header(axum::http::header::COOKIE, &session.cookie)
+            .header(axum::http::header::IF_MATCH, version)
+            .body(axum::body::Body::from(
+                serde_json::json!({
+                    "published": true,
+                    "content": { "uri": "https://youtu.be/dQw4w9WgXcQ" },
+                })
+                .to_string(),
+            ))
+            .unwrap(),
+    )
+    .await
+}
+
 /// Chapter names in curriculum order.
 async fn chapter_names(app: &TestApp, session: &MintedSession, course_id: &str) -> Vec<String> {
     let res = app
@@ -180,13 +208,7 @@ async fn activities_order_within_and_across_chapters(pool: PgPool) {
     assert_eq!(invalid.status, StatusCode::UNPROCESSABLE_ENTITY);
 
     // Publish flag flips via PATCH.
-    let published = app
-        .patch_as(
-            &teacher,
-            &format!("/api/v2/activities/{v1}"),
-            &serde_json::json!({ "published": true }),
-        )
-        .await;
+    let published = publish_lesson(&app, &teacher, &v1).await;
     assert_eq!(published.status, StatusCode::OK);
     assert_eq!(published.json()["published"], true);
 
@@ -612,13 +634,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
     // BUG-135: a type change on an already-published activity runs the same
     // gate - a live page cannot silently become a quiz with no assessment.
     let live = create_activity(&app, &teacher, &chapter_id, "Live").await;
-    let toggled = app
-        .patch_as(
-            &teacher,
-            &format!("/api/v2/activities/{live}"),
-            &serde_json::json!({ "published": true }),
-        )
-        .await;
+    let toggled = publish_lesson(&app, &teacher, &live).await;
     assert_eq!(toggled.status, StatusCode::OK, "{}", toggled.text());
     let retyped = app
         .patch_as(
@@ -647,13 +663,7 @@ async fn drafts_are_visible_to_editors_only(pool: PgPool) {
     let chapter = create_chapter(&app, &teacher, &course, "One").await;
     let live = create_activity(&app, &teacher, &chapter, "Live").await;
     let draft = create_activity(&app, &teacher, &chapter, "Draft").await;
-    let published = app
-        .patch_as(
-            &teacher,
-            &format!("/api/v2/activities/{live}"),
-            &serde_json::json!({ "published": true }),
-        )
-        .await;
+    let published = publish_lesson(&app, &teacher, &live).await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
     app.publish_course(&course).await;
 
@@ -1410,4 +1420,81 @@ async fn activity_details_never_carry_nulls(pool: PgPool) {
     let read = app.get_as(&teacher, &path).await;
     assert_eq!(read.status, StatusCode::OK);
     assert_eq!(read.json()["details"], serde_json::json!({}));
+}
+
+/// DECISIONS 2026-10-11: a media lesson goes live only with its media - an
+/// uploaded video or a document needs its file, a YouTube lesson its link
+/// (409 `activity-media-missing`, `details.reason` names what is missing). A
+/// published lesson cannot have its media emptied either.
+#[sqlx::test(migrations = "../../migrations")]
+async fn media_lessons_publish_only_with_their_media(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = create_course(&app, &teacher, "Media").await;
+    let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
+    let lesson = |sub: &'static str| {
+        let (app, teacher, chapter_id) = (&app, &teacher, &chapter_id);
+        async move {
+            let kind = if sub.starts_with("video") {
+                "video"
+            } else {
+                "document"
+            };
+            let res = app
+                .post_as(
+                    teacher,
+                    &format!("/api/v2/chapters/{chapter_id}/activities"),
+                    &serde_json::json!({ "name": sub, "activity_type": kind, "activity_sub_type": sub }),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
+            res.json()["id"].as_str().unwrap().to_owned()
+        }
+    };
+    // Content writes carry the row's version (`If-Match`).
+    let publish = |id: String, body: serde_json::Value| {
+        let (app, teacher) = (&app, &teacher);
+        async move {
+            let path = format!("/api/v2/activities/{id}");
+            let version = app.get_as(teacher, &path).await.json()["version"].to_string();
+            app.send(
+                axum::http::Request::builder()
+                    .method("PATCH")
+                    .uri(path)
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .header(axum::http::header::COOKIE, &teacher.cookie)
+                    .header(axum::http::header::IF_MATCH, version)
+                    .body(axum::body::Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await
+        }
+    };
+    for (sub, reason) in [
+        ("video_hosted", "video-file-missing"),
+        ("video_youtube", "video-link-missing"),
+        ("document_pdf", "document-file-missing"),
+    ] {
+        let id = lesson(sub).await;
+        let refused = publish(id.clone(), serde_json::json!({ "published": true })).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::CONFLICT,
+            "{sub}: {}",
+            refused.text()
+        );
+        assert_eq!(refused.json()["code"], "activity-media-missing");
+        assert_eq!(refused.json()["details"]["reason"], reason, "{sub}");
+    }
+    // With the link in the same PATCH it goes live; emptying it is refused.
+    let id = lesson("video_youtube").await;
+    let live = publish(
+        id.clone(),
+        serde_json::json!({ "published": true, "content": { "uri": "https://youtu.be/dQw4w9WgXcQ" } }),
+    )
+    .await;
+    assert_eq!(live.status, StatusCode::OK, "{}", live.text());
+    let emptied = publish(id, serde_json::json!({ "content": { "uri": "" } })).await;
+    assert_eq!(emptied.status, StatusCode::CONFLICT, "{}", emptied.text());
+    assert_eq!(emptied.json()["details"]["reason"], "video-link-missing");
 }

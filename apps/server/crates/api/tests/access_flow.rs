@@ -294,6 +294,21 @@ async fn discussion_actions_match_enforcement(pool: PgPool) {
         .await;
     let course_id = id(&course);
     app.publish_course(&course_id).await;
+    // Posting takes an enrolment (DECISIONS 2026-10-11): the author is
+    // enrolled, the other student is not (reads, no reply / react).
+    let trail: uuid::Uuid =
+        sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
+            .bind(author.user_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+        .bind(trail)
+        .bind(&course_id)
+        .bind(author.user_id.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
     let probes = ["update", "moderate", "reply", "react", "delete"];
     for (who, session) in &actors {
         for action in probes {

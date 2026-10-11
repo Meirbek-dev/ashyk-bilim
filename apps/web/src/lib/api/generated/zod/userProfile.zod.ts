@@ -12,6 +12,11 @@ export const UserProfile = zod.object({
   bio: zod.string(),
   display_name: zod.string(),
   email: zod.string(),
+  email_verified: zod
+    .boolean()
+    .describe(
+      'The email address is confirmed. `false`: the web asks the user to\nconfirm it (`POST /auth/verify-email`, resend with\n`POST /auth/verify-email/resend`); sign-in is not gated on it.',
+    ),
   google_linked: zod.boolean().describe('A Google identity is linked; Google sign-in never asks for the TOTP\ncode.'),
   has_password: zod
     .boolean()

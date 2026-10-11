@@ -1,6 +1,5 @@
 ---
 source: crates/api/tests/openapi.rs
-assertion_line: 11
 expression: json
 ---
 {
@@ -3261,7 +3260,8 @@ expression: json
         "enum": [
           "time_expired",
           "integrity_violation",
-          "deadline_passed"
+          "deadline_passed",
+          "late_cutoff_passed"
         ],
         "type": "string"
       },
@@ -6964,6 +6964,10 @@ expression: json
       },
       "DiscussionPage": {
         "properties": {
+          "can_post": {
+            "description": "The caller may start a post: `discussion:create`, enrolled (or course\nstaff / moderator) and the course is not archived. `false` for a\nsigned-in non-member: the web offers «enrol» instead of the composer\n(posting answers 403 `discussion-enrollment-required`).",
+            "type": "boolean"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/Discussion"
@@ -6983,6 +6987,7 @@ expression: json
         },
         "required": [
           "items",
+          "can_post",
           "next_cursor"
         ],
         "type": "object"
@@ -7617,6 +7622,7 @@ expression: json
           "rate-limited",
           "payload-too-large",
           "activity-not-ready",
+          "activity-media-missing",
           "course-not-ready",
           "course-archived",
           "unsupported-media-type",
@@ -7644,6 +7650,7 @@ expression: json
           "attempt-past-due",
           "remediation-required",
           "enrollment-required",
+          "discussion-enrollment-required",
           "grade-not-released",
           "grade-own-attempt",
           "ai-disabled",
@@ -15654,6 +15661,10 @@ expression: json
           "email": {
             "type": "string"
           },
+          "email_verified": {
+            "description": "The email address is confirmed (see `UserProfile.email_verified`).",
+            "type": "boolean"
+          },
           "id": {
             "$ref": "#/components/schemas/UserId"
           },
@@ -15683,6 +15694,7 @@ expression: json
           "display_name",
           "locale",
           "language",
+          "email_verified",
           "avatar_key",
           "theme"
         ],
@@ -16152,7 +16164,7 @@ expression: json
             "oneOf": [
               {
                 "$ref": "#/components/schemas/AutoSubmitReason",
-                "description": "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit) or\n`deadline_passed` (due date); `null` with `time_remaining_seconds`."
+                "description": "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit),\n`deadline_passed` (strict due date) or `late_cutoff_passed` (the late\ncutoff - the due date has passed, late work closes then); `null` with\n`time_remaining_seconds`."
               },
               {
                 "type": "null"
@@ -18427,6 +18439,10 @@ expression: json
           "email": {
             "type": "string"
           },
+          "email_verified": {
+            "description": "The email address is confirmed. `false`: the web asks the user to\nconfirm it (`POST /auth/verify-email`, resend with\n`POST /auth/verify-email/resend`); sign-in is not gated on it.",
+            "type": "boolean"
+          },
           "google_linked": {
             "description": "A Google identity is linked; Google sign-in never asks for the TOTP\ncode.",
             "type": "boolean"
@@ -18488,6 +18504,7 @@ expression: json
           "has_password",
           "google_linked",
           "version",
+          "email_verified",
           "avatar_key",
           "theme"
         ],
@@ -29625,6 +29642,16 @@ expression: json
             },
             "description": "Created"
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No `discussion:create`, or `discussion-enrollment-required`: not enrolled (nor course staff)"
+          },
           "422": {
             "content": {
               "application/problem+json": {
@@ -30791,6 +30818,16 @@ expression: json
               }
             },
             "description": "Reaction state"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`discussion-enrollment-required`: not enrolled (nor course staff)"
           }
         },
         "summary": "Toggle a dislike (a standing like is replaced).",
@@ -30823,6 +30860,16 @@ expression: json
               }
             },
             "description": "Reaction state"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`discussion-enrollment-required`: not enrolled (nor course staff)"
           }
         },
         "summary": "Toggle a like (a standing dislike is replaced).",
@@ -31237,6 +31284,7 @@ expression: json
     },
     "/api/v2/file-submission-attempts/{attempt_id}/grading-history": {
       "get": {
+        "description": "Graders see every entry, the attempt's learner its released ones\n(`published` / `returned` - the return comments stay readable after a\nresubmission). Grades saved before the ledger existed (2026-10-04) have\nno entry.",
         "operationId": "file_grading_history",
         "parameters": [
           {
@@ -31274,7 +31322,7 @@ expression: json
             "description": "Unknown attempt or no grading access"
           }
         },
-        "summary": "The attempt's grading ledger, newest first (graders). Grades saved\nbefore the ledger existed (2026-10-04) have no entry.",
+        "summary": "The attempt's grading ledger, newest first.",
         "tags": [
           "file-submissions"
         ]

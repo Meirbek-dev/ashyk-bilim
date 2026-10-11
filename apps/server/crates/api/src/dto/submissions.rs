@@ -47,8 +47,10 @@ pub struct StudentSubmission {
     /// `null` when neither applies or the attempt is closed.
     pub time_remaining_seconds: Option<i64>,
     /// What hands the draft in when `time_remaining_seconds` reaches 0 (the
-    /// attempt's `auto_submit_reason` then): `time_expired` (time limit) or
-    /// `deadline_passed` (due date); `null` with `time_remaining_seconds`.
+    /// attempt's `auto_submit_reason` then): `time_expired` (time limit),
+    /// `deadline_passed` (strict due date) or `late_cutoff_passed` (the late
+    /// cutoff - the due date has passed, late work closes then); `null` with
+    /// `time_remaining_seconds`.
     pub time_remaining_reason: Option<AutoSubmitReason>,
 }
 

@@ -11,6 +11,10 @@ expression: registry
     409,
     "An account with this email already exists"
   ],
+  "activity-media-missing": [
+    409,
+    "Add the lesson's file or link before publishing it"
+  ],
   "activity-not-ready": [
     409,
     "Activity is not ready to publish"
@@ -70,6 +74,10 @@ expression: registry
   "csrf-rejected": [
     403,
     "Cross-site request rejected"
+  ],
+  "discussion-enrollment-required": [
+    403,
+    "Enroll in the course to post in its discussions"
   ],
   "email-taken": [
     409,

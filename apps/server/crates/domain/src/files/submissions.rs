@@ -1753,11 +1753,29 @@ impl FileSubmissionsService {
         actor: &Actor,
         id: FileAttemptId,
     ) -> Result<Vec<FileGradingEntry>> {
-        self.gradable(actor, id).await?;
+        // The learner reads the released entries of their own attempt -
+        // every published grade and return comment stays visible after a
+        // resubmission (DECISIONS 2026-10-11); held grades stay hidden.
+        let attempt = ab_db::file_submissions::get_attempt(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("attempt"))?;
+        let own = attempt.user_id == actor.user_id && !attempt.preview;
+        if own {
+            let row = self.load(attempt.file_submission_id).await?;
+            self.require_submit_access(actor, &row).await?;
+        } else {
+            self.gradable(actor, id).await?;
+        }
         Ok(
             ab_db::file_submissions::list_grading_entries(&self.pool, id)
                 .await?
                 .into_iter()
+                .filter(|e| {
+                    !own || matches!(
+                        e.status,
+                        FileAttemptStatus::Published | FileAttemptStatus::Returned
+                    )
+                })
                 .map(|e| FileGradingEntry {
                     id: e.id,
                     graded_by: e.graded_by,

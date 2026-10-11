@@ -570,8 +570,12 @@ pub async fn review_stats(
     ))
 }
 
-/// The attempt's grading ledger, newest first (graders). Grades saved
-/// before the ledger existed (2026-10-04) have no entry.
+/// The attempt's grading ledger, newest first.
+///
+/// Graders see every entry, the attempt's learner its released ones
+/// (`published` / `returned` - the return comments stay readable after a
+/// resubmission). Grades saved before the ledger existed (2026-10-04) have
+/// no entry.
 #[utoipa::path(
     operation_id = "file_grading_history",
     get, path = "/file-submission-attempts/{attempt_id}/grading-history", tag = "file-submissions",

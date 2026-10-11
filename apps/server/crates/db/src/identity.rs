@@ -95,6 +95,8 @@ pub struct ProfileRow {
     pub theme: Option<String>,
     /// Optimistic lock on `profile`, bumped on every document write (BUG-367).
     pub profile_version: i32,
+    /// Email confirmed; `None` = not known yet (resolve from Zitadel).
+    pub email_verified: Option<bool>,
 }
 
 /// The public profile page's subject (`GET /users/{username}`): the search
@@ -145,7 +147,7 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
     let row = sqlx::query_as!(
         ProfileRow,
         r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
-                  profile, theme, profile_version
+                  profile, theme, profile_version, email_verified
            FROM users WHERE id = $1"#,
         user_id.0
     )
@@ -184,7 +186,7 @@ pub async fn update_profile(
                organization = COALESCE($9, organization)
            WHERE id = $1 AND ($8::int4 IS NULL OR profile_version = $8)
            RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
-                     profile, theme, profile_version"#,
+                     profile, theme, profile_version, email_verified"#,
         user_id.0,
         display_name,
         bio,
@@ -198,6 +200,18 @@ pub async fn update_profile(
     .fetch_optional(pool)
     .await?;
     Ok(row)
+}
+
+/// Store whether the account's email is confirmed (Zitadel is the source).
+pub async fn set_email_verified(pool: &PgPool, user_id: UserId, verified: bool) -> Result<()> {
+    sqlx::query!(
+        "UPDATE users SET email_verified = $2 WHERE id = $1",
+        user_id.0,
+        verified
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 pub struct RoleRow {
@@ -355,6 +369,7 @@ pub async fn link_google_account(
 /// Returns `None` on username/email collision (caller retries with a
 /// different username). Emails are stored lower-cased (case-insensitive
 /// identity; unique on `lower(email)`).
+#[allow(clippy::too_many_arguments)] // SAFETY: one column per argument.
 pub async fn create_user_with_default_role(
     pool: &PgPool,
     zitadel_user_id: &str,
@@ -363,11 +378,13 @@ pub async fn create_user_with_default_role(
     display_name: &str,
     locale: Option<&str>,
     organization: &str,
+    email_verified: bool,
 ) -> Result<Option<UserId>> {
     let mut tx = pool.begin().await?;
     let inserted = sqlx::query_scalar!(
-        r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization)
-           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru'), $6)
+        r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization,
+                              email_verified)
+           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru'), $6, $7)
            ON CONFLICT DO NOTHING
            RETURNING id"#,
         zitadel_user_id,
@@ -375,7 +392,8 @@ pub async fn create_user_with_default_role(
         email.to_lowercase(),
         display_name,
         locale,
-        organization
+        organization,
+        email_verified
     )
     .fetch_optional(&mut *tx)
     .await?;

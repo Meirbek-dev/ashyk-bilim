@@ -430,6 +430,31 @@ impl CurriculumService {
         }
     }
 
+    /// A media lesson goes live only with its media (DECISIONS 2026-10-11):
+    /// an uploaded video or a document needs its file, a YouTube lesson its
+    /// link (409 `activity-media-missing`, `details.reason`; the web words it
+    /// by the sub type). `content` is the merged row's. Lessons published before the
+    /// rule keep their state until they are published again.
+    fn require_media(sub_type: &str, content: &serde_json::Value) -> Result<()> {
+        let has = |key: &str| {
+            content
+                .get(key)
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|v| !v.trim().is_empty())
+        };
+        let reason = match sub_type {
+            "video_hosted" if !has("filename") => "video-file-missing",
+            "video_youtube" if !has("uri") => "video-link-missing",
+            "document_pdf" | "document_doc" if !has("filename") => "document-file-missing",
+            _ => return Ok(()),
+        };
+        Err(Error::app_with_details(
+            ErrorCode::ActivityMediaMissing,
+            "add the lesson's file or link before publishing it",
+            serde_json::json!({ "reason": reason }),
+        ))
+    }
+
     /// An assessment or file-submission config attached to this activity,
     /// whatever its lifecycle (BUG-201): a draft or archived assessment can
     /// still be published later, and its transition flips the activity
@@ -501,6 +526,19 @@ impl CurriculumService {
         if merged_published && (type_changes || !activity.published) {
             Self::require_publishable(&mut tx, activity_id, merged_type).await?;
         }
+        if merged_published && (type_changes || !activity.published || changes.content.is_some()) {
+            let merged_sub = changes
+                .type_pair
+                .map_or(activity.activity_sub_type.as_str(), |(_, s)| s);
+            let content = match changes.content {
+                Some(content) => content.clone(),
+                None => ab_db::catalog::get_activity_content(&mut *tx, activity_id)
+                    .await?
+                    .map(|c| c.content)
+                    .unwrap_or_default(),
+            };
+            Self::require_media(merged_sub, &content)?;
+        }
         // UX-104/UX-112/BUG-201: an assessment or file-submission config
         // stays attached to its activity in every lifecycle; the type cannot
         // move away from it while the row exists.
@@ -512,8 +550,8 @@ impl CurriculumService {
             ));
         }
         // UX-112/UX-120: one name - the assessment title follows the activity
-        // name under the assessment lock (scheduled / archived /
-        // published-with-submissions → 409). BUG-186: every refusal above runs
+        // name under the assessment lock (scheduled / archived → 409; a
+        // published one renames even with submissions). BUG-186: every refusal above runs
         // before the first write, and the writes share one transaction.
         // BUG-262: the lifecycle is read under the assessment row lock
         // (assessment → activity, the order the assessments title PATCH
@@ -525,7 +563,7 @@ impl CurriculumService {
             None => None,
         };
         if let Some(assessment) = &assessment {
-            crate::assessments::service::ensure_editable(&mut *tx, assessment).await?;
+            crate::assessments::service::ensure_renamable(&mut *tx, assessment).await?;
         }
 
         if let (Some(assessment), Some(name)) = (&assessment, name) {

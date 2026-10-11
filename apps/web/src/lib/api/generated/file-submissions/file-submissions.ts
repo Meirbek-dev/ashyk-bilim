@@ -567,8 +567,11 @@ export const getFileGradingHistoryUrl = (attemptId: FileAttemptId) => {
 }
 
 /**
- * @summary The attempt's grading ledger, newest first (graders). Grades saved
-before the ledger existed (2026-10-04) have no entry.
+ * Graders see every entry, the attempt's learner its released ones
+ * (`published` / `returned` - the return comments stay readable after a
+ * resubmission). Grades saved before the ledger existed (2026-10-04) have
+ * no entry.
+ * @summary The attempt's grading ledger, newest first.
  */
 export const fileGradingHistory = async (
   attemptId: FileAttemptId,
@@ -668,8 +671,7 @@ export function useFileGradingHistory<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The attempt's grading ledger, newest first (graders). Grades saved
-before the ledger existed (2026-10-04) have no entry.
+ * @summary The attempt's grading ledger, newest first.
  */
 
 export function useFileGradingHistory<
@@ -755,8 +757,7 @@ export function useFileGradingHistorySuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The attempt's grading ledger, newest first (graders). Grades saved
-before the ledger existed (2026-10-04) have no entry.
+ * @summary The attempt's grading ledger, newest first.
  */
 
 export function useFileGradingHistorySuspense<

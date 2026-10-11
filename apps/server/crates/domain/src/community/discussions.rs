@@ -9,7 +9,7 @@
 use ab_core::assessments::{DiscussionStatus, ReactionKind};
 use ab_core::id::{CourseId, DiscussionId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
-use ab_core::{Error, FieldError, Result};
+use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::discussions::DiscussionRow;
 use sqlx::PgPool;
 
@@ -65,6 +65,9 @@ pub enum DiscussionAction {
 pub struct DiscussionPage {
     pub items: Vec<Discussion>,
     pub next_cursor: Option<DiscussionId>,
+    /// The caller may start a post here (grant, enrolment or staff, course
+    /// not archived) - the web shows the composer, else «enrol».
+    pub can_post: bool,
 }
 
 /// Counts after a toggle.
@@ -87,12 +90,15 @@ struct Abilities {
     delete_own: bool,
     /// `discussion:create` - the posting half of `postable_course`.
     post: bool,
+    /// Enrolled, or course staff / moderator: may post, reply and react
+    /// (DECISIONS 2026-10-11; reading stays open).
+    member: bool,
     /// The course is not archived (every write is 409 otherwise).
     open: bool,
 }
 
 impl Abilities {
-    fn of(actor: &Actor, course: &Course) -> Self {
+    fn of(actor: &Actor, course: &Course, member: bool) -> Self {
         let creator = course.is_author(actor.user_id);
         let moderate = actor.has(perm(Action::Moderate, Scope::Platform))
             || (creator && actor.has(perm(Action::Moderate, Scope::Own)));
@@ -103,6 +109,7 @@ impl Abilities {
             update_own: actor.has(perm(Action::Update, Scope::Own)),
             delete_own: actor.has(perm(Action::Delete, Scope::Own)),
             post: may_post(actor),
+            member: member || moderate,
             open: course.archived_at.is_none(),
         }
     }
@@ -118,9 +125,9 @@ impl Abilities {
             (DiscussionAction::Moderate, self.moderate),
             (
                 DiscussionAction::Reply,
-                self.post && active && row.parent_id.is_none(),
+                self.post && self.member && active && row.parent_id.is_none(),
             ),
-            (DiscussionAction::React, active),
+            (DiscussionAction::React, self.member && active),
         ]
         .into_iter()
         .filter_map(|(action, ok)| (ok && self.open).then_some(action))
@@ -239,10 +246,40 @@ impl DiscussionsService {
     pub async fn postable_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let course = self.readable_course(actor, course_id).await?;
         course.ensure_not_archived()?;
-        if may_post(actor) {
-            return Ok(course);
+        if !may_post(actor) {
+            return Err(Error::forbidden("missing permission discussion:create"));
         }
-        Err(Error::forbidden("missing permission discussion:create"))
+        self.require_member(actor, &course).await?;
+        Ok(course)
+    }
+
+    /// Enrolled (a trail run or a linked usergroup), on the course staff,
+    /// its author or a discussion moderator.
+    async fn is_member(&self, actor: &Actor, course: &Course) -> Result<bool> {
+        if actor.is_anonymous() {
+            return Ok(false);
+        }
+        Ok(course.is_author(actor.user_id)
+            || actor.has(perm(Action::Moderate, Scope::Platform))
+            || ab_db::progress::is_course_staff(&self.pool, course.id, actor.user_id).await?
+            || ab_db::progress::takes_assessments(&self.pool, course.id, actor.user_id).await?)
+    }
+
+    /// Posting, replying and reacting need [`Self::is_member`] (403
+    /// `discussion-enrollment-required`).
+    async fn require_member(&self, actor: &Actor, course: &Course) -> Result<()> {
+        if self.is_member(actor, course).await? {
+            return Ok(());
+        }
+        Err(Error::app(
+            ErrorCode::DiscussionEnrollmentRequired,
+            "enroll in the course to post in its discussions",
+        ))
+    }
+
+    async fn abilities(&self, actor: &Actor, course: &Course) -> Result<Abilities> {
+        let member = self.is_member(actor, course).await?;
+        Ok(Abilities::of(actor, course, member))
     }
 
     /// UX-311: [`Self::update`]'s edit gate on its own (the moderator-only
@@ -250,7 +287,7 @@ impl DiscussionsService {
     pub async fn require_editable(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
         let (row, course) = self.load(actor, id).await?;
         course.ensure_not_archived()?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = Abilities::of(actor, &course, false);
         if abilities.update_any || (row.user_id == Some(actor.user_id) && abilities.update_own) {
             return Ok(());
         }
@@ -272,7 +309,7 @@ impl DiscussionsService {
     /// ones are for their author and moderators only (404 otherwise).
     pub async fn get(&self, actor: &Actor, id: DiscussionId) -> Result<Discussion> {
         let (row, course) = self.load(actor, id).await?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = self.abilities(actor, &course).await?;
         if row.status != DiscussionStatus::Active
             && !abilities.moderate
             && row.user_id != Some(actor.user_id)
@@ -311,10 +348,11 @@ impl DiscussionsService {
             return Ok(DiscussionPage {
                 items: Vec::new(),
                 next_cursor: None,
+                can_post: false,
             });
         }
         let course = self.readable_course(actor, course_id).await?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = self.abilities(actor, &course).await?;
         let limit = ab_core::page_limit(limit, MAX_PAGE)?;
         let mut rows = ab_db::discussions::list_posts(
             &self.pool,
@@ -354,7 +392,11 @@ impl DiscussionsService {
                 abilities.resolve(actor, row, own)
             })
             .collect();
-        Ok(DiscussionPage { items, next_cursor })
+        Ok(DiscussionPage {
+            items,
+            next_cursor,
+            can_post: abilities.post && abilities.member && abilities.open,
+        })
     }
 
     /// Replies under one post, oldest first.
@@ -366,7 +408,7 @@ impl DiscussionsService {
         limit: i64,
     ) -> Result<DiscussionPage> {
         let (parent, course) = self.load(actor, id).await?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = self.abilities(actor, &course).await?;
         if parent.status != DiscussionStatus::Active && !abilities.moderate {
             return Err(Error::not_found("discussion"));
         }
@@ -393,6 +435,7 @@ impl DiscussionsService {
                 .map(|r| abilities.resolve(actor, r, Vec::new()))
                 .collect(),
             next_cursor,
+            can_post: abilities.post && abilities.member && abilities.open,
         })
     }
 
@@ -455,7 +498,7 @@ impl DiscussionsService {
             },
         )
         .await;
-        let mut created = Abilities::of(actor, &course).resolve(actor, row, Vec::new());
+        let mut created = Abilities::of(actor, &course, true).resolve(actor, row, Vec::new());
         if let Some(parent_id) = parent_id {
             created.parent_replies_count =
                 ab_db::discussions::get_discussion(&self.pool, parent_id, actor.user_id)
@@ -520,7 +563,7 @@ impl DiscussionsService {
     ) -> Result<Discussion> {
         let (row, course) = self.load(actor, id).await?;
         course.ensure_not_archived()?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = self.abilities(actor, &course).await?;
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.update_any || (is_owner && abilities.update_own)) {
             return Err(Error::forbidden("you cannot edit this discussion"));
@@ -560,7 +603,7 @@ impl DiscussionsService {
     pub async fn delete(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
         let (row, course) = self.load(actor, id).await?;
         course.ensure_not_archived()?;
-        let abilities = Abilities::of(actor, &course);
+        let abilities = Abilities::of(actor, &course, false);
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.delete_any || (is_owner && abilities.delete_own)) {
             return Err(Error::forbidden("you cannot delete this discussion"));
@@ -590,6 +633,7 @@ impl DiscussionsService {
         if row.status != DiscussionStatus::Active {
             return Err(Error::not_found("discussion"));
         }
+        self.require_member(actor, &course).await?;
         ab_db::discussions::toggle_reaction(&self.pool, id, actor.user_id, kind).await?;
         let fresh = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?

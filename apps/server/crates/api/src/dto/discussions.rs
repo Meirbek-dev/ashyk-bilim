@@ -92,6 +92,11 @@ impl From<domain::Discussion> for Discussion {
 pub struct DiscussionPage {
     pub items: Vec<Discussion>,
     pub next_cursor: Option<DiscussionId>,
+    /// The caller may start a post: `discussion:create`, enrolled (or course
+    /// staff / moderator) and the course is not archived. `false` for a
+    /// signed-in non-member: the web offers «enrol» instead of the composer
+    /// (posting answers 403 `discussion-enrollment-required`).
+    pub can_post: bool,
 }
 
 impl From<domain::DiscussionPage> for DiscussionPage {
@@ -99,6 +104,7 @@ impl From<domain::DiscussionPage> for DiscussionPage {
         Self {
             items: p.items.into_iter().map(Into::into).collect(),
             next_cursor: p.next_cursor,
+            can_post: p.can_post,
         }
     }
 }

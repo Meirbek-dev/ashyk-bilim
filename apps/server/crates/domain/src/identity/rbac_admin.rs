@@ -356,15 +356,17 @@ impl RbacAdminService {
         // Every grant string must parse against the closed registry; a bad
         // one is caller input here, not deploy drift - name it, without the
         // `internal:` prefix the parser's error code would render.
+        // The field names the line (`permissions[3]`) so the form can mark it.
         let errors: Vec<ab_core::FieldError> = permissions
             .iter()
-            .filter_map(|grant| {
+            .enumerate()
+            .filter_map(|(i, grant)| {
                 ab_core::permission::Grant::parse(grant)
                     .err()
-                    .map(|e| (grant, e))
+                    .map(|e| (i, grant, e))
             })
-            .map(|(grant, err)| ab_core::FieldError {
-                field: "permissions".into(),
+            .map(|(i, grant, err)| ab_core::FieldError {
+                field: format!("permissions[{i}]"),
                 code: "invalid".into(),
                 message: match err {
                     Error::App { message, .. } => format!("{grant}: {message}"),

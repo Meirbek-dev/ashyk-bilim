@@ -24,6 +24,7 @@ const sessionWith = (capabilities: Capability[]): SessionInfo => ({
     email: 'teacher@e2e.test',
     locale: 'ru-RU',
     language: 'ru',
+    email_verified: true,
     avatar_key: null,
     theme: null,
   },

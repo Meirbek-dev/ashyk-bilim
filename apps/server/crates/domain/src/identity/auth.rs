@@ -761,6 +761,7 @@ impl IdentityService {
             &format!("{first_name} {last_name}"),
             account.language.map(Language::code),
             &profile_name(&account.organization).unwrap_or_default(),
+            email_verified,
         )
         .await;
         let user_id = match inserted {
@@ -1148,6 +1149,7 @@ impl IdentityService {
         self.zitadel
             .verify_email(&user.zitadel_user_id, code)
             .await?;
+        ab_db::identity::set_email_verified(&self.pool, user.id, true).await?;
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(user.id),
@@ -1157,6 +1159,30 @@ impl IdentityService {
             serde_json::json!({}),
         )
         .await
+    }
+
+    /// Whether the account's email is confirmed, for the session and
+    /// `GET /users/me`. Accounts older than the `users.email_verified`
+    /// column ask Zitadel once and keep the answer; with Zitadel unreachable
+    /// the account counts as verified (no banner) and the next read asks
+    /// again.
+    pub async fn email_verified(&self, user_id: UserId, stored: Option<bool>) -> Result<bool> {
+        if let Some(verified) = stored {
+            return Ok(verified);
+        }
+        let Some(user) = ab_db::identity::find_auth_user(&self.pool, user_id).await? else {
+            return Ok(true);
+        };
+        match self.zitadel.email_verified(&user.zitadel_user_id).await {
+            Ok(verified) => {
+                ab_db::identity::set_email_verified(&self.pool, user_id, verified).await?;
+                Ok(verified)
+            }
+            Err(err) => {
+                tracing::warn!(%err, "email verification state unknown");
+                Ok(true)
+            }
+        }
     }
 
     /// Admin creation (`POST /users`): the email is taken as verified (the

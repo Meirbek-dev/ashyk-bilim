@@ -8,6 +8,11 @@
 import * as zod from 'zod'
 
 export const DiscussionPage = zod.object({
+  can_post: zod
+    .boolean()
+    .describe(
+      'The caller may start a post: `discussion:create`, enrolled (or course\nstaff / moderator) and the course is not archived. `false` for a\nsigned-in non-member: the web offers «enrol» instead of the composer\n(posting answers 403 `discussion-enrollment-required`).',
+    ),
   items: zod.array(
     zod.object({
       allowed_actions: zod

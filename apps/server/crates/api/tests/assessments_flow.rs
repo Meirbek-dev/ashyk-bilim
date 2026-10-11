@@ -1034,6 +1034,7 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
 
+    // A rename is no content change (DECISIONS 2026-10-11); a details change is.
     let renamed = app
         .patch_as(
             &teacher,
@@ -1041,7 +1042,20 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
             &serde_json::json!({ "title": "Q2" }),
         )
         .await;
-    assert_eq!(renamed.status, StatusCode::CONFLICT, "{}", renamed.text());
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    let reweighted = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "weight": 3 }),
+        )
+        .await;
+    assert_eq!(
+        reweighted.status,
+        StatusCode::CONFLICT,
+        "{}",
+        reweighted.text()
+    );
     let policy_locked = put_policy(policy).await;
     assert_eq!(policy_locked.status, StatusCode::CONFLICT);
     let added = app
@@ -2507,4 +2521,109 @@ async fn reorder_checks_the_list_under_the_lock(pool: PgPool) {
         reordered.text()
     );
     assert_eq!(reordered.json()["field_errors"][0]["code"], "unknown");
+}
+
+/// DECISIONS 2026-10-11: a published test with submissions can still be
+/// renamed (title only - no content change), from the test and from the
+/// outline, and both names stay one; any other details change stays locked.
+#[sqlx::test(migrations = "../../migrations")]
+async fn published_assessment_with_submissions_can_be_renamed(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Week 1" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let activity_id = created.json()["activity_id"].as_str().unwrap().to_owned();
+    app.post_as(
+        &teacher,
+        &format!("/api/v2/assessments/{id}/items"),
+        &choice_item("Q1"),
+    )
+    .await;
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let alice_id = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            alice_id,
+            &["assessment:submit:assigned", "assessment:read:assigned"],
+        )
+        .await;
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let locked = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(locked.json()["edit_lock"], "has_submissions");
+
+    // The test's own title PATCH (the form sends the unchanged description too).
+    let description = locked.json()["description"].clone();
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "title": "Week 1 (main)", "description": description }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    let outline = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert_eq!(
+        outline.json()["name"],
+        "Week 1 (main)",
+        "{}",
+        outline.text()
+    );
+
+    // The outline rename writes the test title.
+    let from_outline = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{activity_id}"),
+            &serde_json::json!({ "name": "Week 1 (final)" }),
+        )
+        .await;
+    assert_eq!(
+        from_outline.status,
+        StatusCode::OK,
+        "{}",
+        from_outline.text()
+    );
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(detail.json()["title"], "Week 1 (final)");
+
+    // A content change is still refused.
+    let content = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "title": "X", "description": "changed" }),
+        )
+        .await;
+    assert_eq!(content.status, StatusCode::CONFLICT, "{}", content.text());
+    assert_eq!(content.json()["details"]["reason"], "has_submissions");
 }

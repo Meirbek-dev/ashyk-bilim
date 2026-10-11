@@ -246,7 +246,26 @@ fn choice() -> Result<ItemBody> {
     }))
 }
 
+/// The document lesson's file: a lesson goes live only with its media
+/// (DECISIONS 2026-10-11), so the seed stores a one-page PDF first.
+const SEED_PDF_KEY: &str = "block-pdf/e2e-seed-document";
+const SEED_PDF: &[u8] = b"%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj
+trailer<</Root 1 0 R>>
+%%EOF
+";
+
 async fn build_content(state: &AppState, teacher: &Actor, course_id: CourseId) -> Result<()> {
+    state
+        .storage
+        .put(
+            ab_clients::storage::Bucket::Public,
+            SEED_PDF_KEY,
+            SEED_PDF.to_vec(),
+        )
+        .await?;
     let chapter = state
         .curriculum
         .add_chapter(teacher, course_id, "Chapter 1", "Every activity type.")
@@ -273,7 +292,7 @@ async fn build_content(state: &AppState, teacher: &Actor, course_id: CourseId) -
             "Document",
             "document",
             "document_pdf",
-            serde_json::json!({}),
+            serde_json::json!({ "filename": SEED_PDF_KEY, "file_name": "e2e-document.pdf" }),
         ),
     ] {
         let activity = state

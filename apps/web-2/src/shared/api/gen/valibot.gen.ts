@@ -426,7 +426,8 @@ export const vAuditSource = v.picklist(['grading_entry', 'bulk_action']);
 export const vAutoSubmitReason = v.picklist([
     'time_expired',
     'integrity_violation',
-    'deadline_passed'
+    'deadline_passed',
+    'late_cutoff_passed'
 ]);
 
 /**
@@ -1272,6 +1273,7 @@ export const vErrorCode = v.picklist([
     'rate-limited',
     'payload-too-large',
     'activity-not-ready',
+    'activity-media-missing',
     'course-not-ready',
     'course-archived',
     'unsupported-media-type',
@@ -1299,6 +1301,7 @@ export const vErrorCode = v.picklist([
     'attempt-past-due',
     'remediation-required',
     'enrollment-required',
+    'discussion-enrollment-required',
     'grade-not-released',
     'grade-own-attempt',
     'ai-disabled',
@@ -4765,6 +4768,7 @@ export const vDiscussion: v.GenericSchema = v.object({
 });
 
 export const vDiscussionPage = v.object({
+    can_post: v.boolean(),
     items: v.array(vDiscussion),
     next_cursor: v.nullable(vDiscussionId)
 });
@@ -5151,6 +5155,7 @@ export const vSessionUser = v.object({
     avatar_key: v.nullable(v.string()),
     display_name: v.string(),
     email: v.string(),
+    email_verified: v.boolean(),
     id: vUserId,
     language: vUiLanguage,
     locale: vLocale,
@@ -5238,6 +5243,7 @@ export const vUserProfile = v.object({
     bio: v.string(),
     display_name: v.string(),
     email: v.string(),
+    email_verified: v.boolean(),
     google_linked: v.boolean(),
     has_password: v.boolean(),
     id: vUserId,

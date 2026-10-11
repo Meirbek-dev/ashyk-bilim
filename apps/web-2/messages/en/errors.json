@@ -1,6 +1,8 @@
 {
   "errors_account_disabled": "This account is disabled. Contact an administrator.",
   "errors_account_exists": "An account with this email already exists. Sign in with your password: Google sign-in links only to a confirmed email.",
+  "errors_activity_media_missing": "Add the lesson's file or link, then publish it.",
+  "errors_discussion_enrollment_required": "Enroll in the course to post in its discussion.",
   "errors_activity_not_ready": "Publish the quiz or file-submission settings first, then the activity.",
   "errors_ai_budget_exhausted": "The AI token budget is used up. Try again later.",
   "errors_ai_disabled": "AI features are turned off.",

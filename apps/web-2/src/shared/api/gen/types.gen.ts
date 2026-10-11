@@ -1023,7 +1023,7 @@ export type AuditPayload = {
 
 export type AuditSource = 'grading_entry' | 'bulk_action';
 
-export type AutoSubmitReason = 'time_expired' | 'integrity_violation' | 'deadline_passed';
+export type AutoSubmitReason = 'time_expired' | 'integrity_violation' | 'deadline_passed' | 'late_cutoff_passed';
 
 export type AwardResponse = {
     is_new_transaction: boolean;
@@ -2390,6 +2390,13 @@ export type DiscussionAuthor = {
 export type DiscussionId = string;
 
 export type DiscussionPage = {
+    /**
+     * The caller may start a post: `discussion:create`, enrolled (or course
+     * staff / moderator) and the course is not archived. `false` for a
+     * signed-in non-member: the web offers «enrol» instead of the composer
+     * (posting answers 403 `discussion-enrollment-required`).
+     */
+    can_post: boolean;
     items: Array<Discussion>;
     next_cursor: DiscussionId | null;
 };
@@ -2619,7 +2626,7 @@ export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -5317,6 +5324,10 @@ export type SessionUser = {
     avatar_key: string | null;
     display_name: string;
     email: string;
+    /**
+     * The email address is confirmed (see `UserProfile.email_verified`).
+     */
+    email_verified: boolean;
     id: UserId;
     /**
      * D-03: the UI language (`ru`, `kk`, `en`).
@@ -6178,6 +6189,12 @@ export type UserProfile = {
     bio: string;
     display_name: string;
     email: string;
+    /**
+     * The email address is confirmed. `false`: the web asks the user to
+     * confirm it (`POST /auth/verify-email`, resend with
+     * `POST /auth/verify-email/resend`); sign-in is not gated on it.
+     */
+    email_verified: boolean;
     /**
      * A Google identity is linked; Google sign-in never asks for the TOTP
      * code.
@@ -12178,6 +12195,10 @@ export type CreateDiscussionData = {
 
 export type CreateDiscussionErrors = {
     /**
+     * No `discussion:create`, or `discussion-enrollment-required`: not enrolled (nor course staff)
+     */
+    403: Problem;
+    /**
      * Empty content, nested reply, or Idempotency-Key reused with a different body
      */
     422: Problem;
@@ -12854,6 +12875,15 @@ export type ToggleDislikeData = {
     url: '/api/v2/discussions/{discussion_id}/dislike';
 };
 
+export type ToggleDislikeErrors = {
+    /**
+     * `discussion-enrollment-required`: not enrolled (nor course staff)
+     */
+    403: Problem;
+};
+
+export type ToggleDislikeError = ToggleDislikeErrors[keyof ToggleDislikeErrors];
+
 export type ToggleDislikeResponses = {
     /**
      * Reaction state
@@ -12874,6 +12904,15 @@ export type ToggleLikeData = {
     query?: never;
     url: '/api/v2/discussions/{discussion_id}/like';
 };
+
+export type ToggleLikeErrors = {
+    /**
+     * `discussion-enrollment-required`: not enrolled (nor course staff)
+     */
+    403: Problem;
+};
+
+export type ToggleLikeError = ToggleLikeErrors[keyof ToggleLikeErrors];
 
 export type ToggleLikeResponses = {
     /**
