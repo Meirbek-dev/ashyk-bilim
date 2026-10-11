@@ -242,7 +242,8 @@ function useAssessment(
   } as const
   const recommendedAction = recommendedActionFor(state, latest, visible)
   const startedAt = latest?.status === 'DRAFT' ? latest.started_at_unix : null
-  const timeLimit = state.effective.time_limit_seconds
+  // The server's countdown: to the time limit or a strict due date, whichever comes first, as of the read.
+  const remaining = latest?.status === 'DRAFT' ? (latest.time_remaining_seconds ?? null) : null
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
@@ -316,11 +317,8 @@ function useAssessment(
     primaryButtonLabelKey: recommendedAction,
     startedAt: unixToIso(startedAt),
     timerStartedAt: unixToIso(startedAt),
-    // BUG-326: auto-submit fires after the grace period, as on the server.
-    timerExpiresAt:
-      typeof startedAt === 'number' && typeof timeLimit === 'number'
-        ? unixToIso(startedAt + timeLimit + assessment.policy.grace_period_minutes * 60)
-        : null,
+    // BUG-326: the server's remaining time includes the grace period; a strict due date can come first.
+    timerExpiresAt: remaining === null ? null : new Date(submissions.dataUpdatedAt + remaining * 1000).toISOString(),
   }
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null }
 }

@@ -209,10 +209,20 @@ export const StudentSubmission = zod
       zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
       zod.null(),
     ]),
+    time_remaining_reason: zod.union([
+      zod
+        .enum(['time_expired', 'integrity_violation', 'deadline_passed'])
+        .describe(
+          "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit) or\n`deadline_passed` (due date); `null` with `time_remaining_seconds`.",
+        ),
+      zod.null(),
+    ]),
     time_remaining_seconds: zod
       .int()
       .nullable()
-      .describe('Seconds left on an open timed draft; `null` when untimed or closed.'),
+      .describe(
+        'Seconds left on an open draft until the server hands it in: the time\nlimit or a strict due date / late cutoff, whichever comes first;\n`null` when neither applies or the attempt is closed.',
+      ),
     total_items: zod.int().min(studentSubmissionTotalItemsMin),
     violation_count: zod.int(),
   })

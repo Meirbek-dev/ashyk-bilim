@@ -601,7 +601,7 @@ export const getDeleteCertificationUrl = (certificationId: CertificationId) => {
 }
 
 /**
- * @summary Remove the template and every certificate issued from it.
+ * @summary Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
  */
 export const deleteCertification = async (
   certificationId: CertificationId,
@@ -658,7 +658,7 @@ export type DeleteCertificationMutationError = ErrorType<Problem>
 export type DeleteCertificationMutationVariables = { certificationId: CertificationId }
 
 /**
- * @summary Remove the template and every certificate issued from it.
+ * @summary Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
  */
 export const useDeleteCertification = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

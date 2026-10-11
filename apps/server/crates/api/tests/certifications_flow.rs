@@ -1,7 +1,7 @@
 //! Certifications end to end: template authoring gates, automatic issuance
 //! when the canonical progress completes, the learner's certificate lists,
-//! the learner-state certificate block, public verification, and cascade on
-//! template deletion.
+//! the learner-state certificate block, public verification, and turning a
+//! template off (retired while certificates exist, deleted otherwise).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_testkit::{MintedSession, TestApp};
@@ -80,7 +80,7 @@ async fn course_with_lesson(app: &TestApp, teacher: &MintedSession) -> (String, 
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn template_issuance_verification_and_cascade(pool: PgPool) {
+async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, activity_id) = course_with_lesson(&app, &teacher).await;
@@ -366,11 +366,31 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         .status,
         StatusCode::NO_CONTENT
     );
+    // Turning it off retires the template: the issued certificate stays valid and listed (QR codes on paper keep
+    // working), the course no longer certifies, and its authors no longer see the template.
+    let still = app.get(&format!("/api/v2/certificates/{code}")).await;
+    assert_eq!(still.status, StatusCode::OK, "{}", still.text());
     assert_eq!(
-        app.get(&format!("/api/v2/certificates/{code}"))
+        app.get(&format!("/api/v2/certificates/{code}/pdf"))
             .await
             .status,
-        StatusCode::NOT_FOUND
+        StatusCode::OK
+    );
+    let kept = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert_eq!(kept.json().as_array().unwrap().len(), 1, "{}", kept.text());
+    assert_eq!(
+        app.get_as(&alice, "/api/v2/me/certificates")
+            .await
+            .json()
+            .as_array()
+            .unwrap()
+            .len(),
+        1
     );
     let state = app
         .get_as(
@@ -379,4 +399,104 @@ async fn template_issuance_verification_and_cascade(pool: PgPool) {
         )
         .await;
     assert_eq!(state.json()["certificate"]["configured"], false);
+    assert_eq!(
+        app.get_as(
+            &teacher,
+            &format!("/api/v2/certifications/{certification_id}")
+        )
+        .await
+        .status,
+        StatusCode::NOT_FOUND
+    );
+    assert!(
+        app.get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/certifications"),
+        )
+        .await
+        .json()
+        .as_array()
+        .unwrap()
+        .is_empty()
+    );
+
+    // No new certificate while it is off.
+    let bob = learner(&app, "bob").await;
+    let done = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/trail/activities/{activity_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let nothing = app
+        .get_as(
+            &bob,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert!(
+        nothing.json().as_array().unwrap().is_empty(),
+        "{}",
+        nothing.text()
+    );
+
+    // Turning it on again revives the same template with the new config; it issues again.
+    let revived = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
+        )
+        .await;
+    assert_eq!(revived.status, StatusCode::CREATED, "{}", revived.text());
+    assert_eq!(revived.json()["id"], certification_id.as_str());
+    assert_eq!(revived.json()["config"]["template"], "classic");
+    let issued = app
+        .get_as(
+            &bob,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert_eq!(
+        issued.json().as_array().unwrap().len(),
+        1,
+        "{}",
+        issued.text()
+    );
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await;
+    assert_eq!(state.json()["certificate"]["configured"], true);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_template_nobody_holds_is_deleted(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = course_with_lesson(&app, &teacher).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": {} }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(
+        app.delete_as(&teacher, &format!("/api/v2/certifications/{id}"))
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM certifications WHERE id = $1::uuid")
+        .bind(&id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0);
 }

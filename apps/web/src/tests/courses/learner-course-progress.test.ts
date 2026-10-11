@@ -18,6 +18,7 @@ const activity = (id: string, complete: boolean, extra: Partial<Activity> = {}):
   state: complete ? 'passed' : 'not_started',
   allowed_actions: [],
   blocked_reason: null,
+  opens_at_unix: null,
   due_at_unix: null,
   passed: null,
   score: null,

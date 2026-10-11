@@ -47,6 +47,7 @@ const draft: StudentSubmission = {
   late_penalty_pct: null,
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 const published = { ...draft, status: 'published', release_state: 'visible', final_score: 100 }
 const offline = () => new APIError({ code: 'NETWORK_UNAVAILABLE', status: 0, message: 'offline' })

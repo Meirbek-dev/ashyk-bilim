@@ -127,6 +127,7 @@ const fixture: StudentSubmission = {
   late_penalty_pct: null,
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 beforeEach(() => vi.resetAllMocks())
 
@@ -145,13 +146,17 @@ describe('v2 learner submissions', () => {
           ? detail
           : String(path).endsWith('/attempt-state')
             ? attemptState
-            : [fixture],
+            : // The server's countdown (time limit or strict due date, whichever comes first).
+              [{ ...fixture, time_remaining_seconds: 1200, time_remaining_reason: 'time_expired' }],
       ),
     )
     const { result } = renderHook(() => useAssessmentAttempt(activityId), { wrapper })
     await waitFor(() => expect(result.current.vm?.surface).toBe('ATTEMPT'))
     const projection = result.current.vm
     if (projection?.surface !== 'ATTEMPT') throw new Error('Missing attempt projection')
+    const expiresIn = new Date(projection.vm.timerExpiresAt ?? 0).getTime() - Date.now()
+    expect(expiresIn).toBeGreaterThan(1_190_000)
+    expect(expiresIn).toBeLessThanOrEqual(1_200_000)
     expect(projection.vm).toMatchObject({
       assessmentUuid: assessmentId,
       activityUuid: activityId,
@@ -159,7 +164,6 @@ describe('v2 learner submissions', () => {
       canContinue: true,
       canSubmit: true,
       recommendedAction: 'continueDraft',
-      timerExpiresAt: '2026-05-05T12:20:00.000Z',
       dueAt: new Date(1777990000 * 1000).toISOString(),
       items: [{ id: itemId, kind: 'OPEN_TEXT' }],
     })

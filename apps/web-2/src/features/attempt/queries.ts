@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
-import { ensurePlayer } from '#/features/player'
+import { ensureEntry } from '#/features/player'
 import { ApiError } from '#/shared/api/errors'
 import {
   attemptStateOptions,
@@ -56,14 +56,15 @@ const released = (submission: StudentSubmission) =>
   submission.release_state === 'visible' || submission.release_state === 'returned_for_revision'
 
 /**
- * The attempt route's loader: the player's rules first (enrolled only, activity in this course), then the quiz or
- * exam behind the activity, what the learner may do with it, their attempts, and the attempt in `?attempt`.
+ * The attempt route's loader: the player's rules first (enrolled, or the course's staff previewing; activity in this
+ * course), then the quiz or exam behind the activity, what the learner may do with it, their attempts, and the attempt
+ * in `?attempt`.
  */
 export async function ensureAttempt(
   queryClient: QueryClient,
   { courseId, activityId, attemptId }: { courseId: CourseId; activityId: ActivityId; attemptId?: SubmissionId },
 ) {
-  await ensurePlayer(queryClient, courseId, activityId)
+  await ensureEntry(queryClient, courseId, activityId)
   const assessment = await queryClient.ensureQueryData(assessmentOptions(activityId)).catch(missing)
   if (assessment.kind === 'code_challenge') throw notFound()
   const [submission] = await Promise.all([

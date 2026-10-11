@@ -5,10 +5,27 @@ import { LearnerCourseState } from '@/lib/api/generated/zod'
 
 export type { LearnerCourseState }
 
+/**
+ * The learner state as this web shows it: the server also lists a scheduled test (`blocked_reason: 'scheduled'`,
+ * with its opening time) whose activity is not published yet - this web's course page, sidebar and activity page
+ * follow published activities only, so the entry (and a chapter left empty) is dropped here.
+ */
+export function parseLearnerCourseState(value: unknown): LearnerCourseState {
+  const state = LearnerCourseState.parse(value)
+  const outline = state.outline
+    .map(chapter => ({
+      ...chapter,
+      activities: chapter.activities.filter(activity => activity.blocked_reason !== 'scheduled'),
+    }))
+    .filter(chapter => chapter.activities.length > 0)
+    .map((chapter, index) => ({ ...chapter, index }))
+  return { ...state, outline }
+}
+
 export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = true) =>
   queryOptions({
     queryKey: ['learner-course', courseUuid, 'state'],
-    queryFn: () => apiJson(`courses/${courseUuid}/learner-state`, {}, value => LearnerCourseState.parse(value)),
+    queryFn: () => apiJson(`courses/${courseUuid}/learner-state`, {}, parseLearnerCourseState),
     enabled: enabled && Boolean(courseUuid),
     // Teachers publish/unpublish while the learner reads: refresh on focus and remount (UX-050).
     staleTime: 5_000,

@@ -12,8 +12,10 @@ describe('roster', () => {
   test('B-CST-39 a class list CSV: header skipped, the email cell wins, ; or , delimited', () => {
     expect(parseRosterCsv('﻿ФИО;Почта\r\nИванов И.;ivanov@x.kz\r\n;\r\nПетров;petrov\r\n')).toEqual([
       'ivanov@x.kz',
-      'Петров',
+      'petrov',
     ])
+    // The header names the column: «ФИО;Логин» reads the logins, not the names before them.
+    expect(parseRosterCsv('ФИО;Логин\r\nИванов Иван;ivanov\r\nПетрова;petrova\r\n')).toEqual(['ivanov', 'petrova'])
     expect(parseRosterCsv('email,name\na@x.kz,A\nb@x.kz,B')).toEqual(['a@x.kz', 'b@x.kz'])
     // A first row that already holds an email is data, not a header.
     expect(parseRosterCsv('user;a@x.kz\nuser;b@x.kz')).toEqual(['a@x.kz', 'b@x.kz'])

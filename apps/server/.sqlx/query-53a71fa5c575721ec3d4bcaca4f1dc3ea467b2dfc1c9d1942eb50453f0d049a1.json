@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO certifications (course_id, config) VALUES ($1, $2)\n                   RETURNING id AS \"id: CertificationId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CertificationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certifications",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "53a71fa5c575721ec3d4bcaca4f1dc3ea467b2dfc1c9d1942eb50453f0d049a1"
+}

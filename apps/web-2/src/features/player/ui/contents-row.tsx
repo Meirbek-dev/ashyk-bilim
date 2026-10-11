@@ -3,6 +3,7 @@ import { Check, Lock } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
+import { formatDateTime } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 
 type RowProps = { courseId: CourseId; activity: ActivityState; onPick: () => void }
@@ -23,7 +24,11 @@ export function ContentsRow({ courseId, activity, onPick }: RowProps) {
       <span className="flex min-h-control items-center gap-3 px-3 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
         {label}
         <Lock aria-hidden />
-        <span className="sr-only">{m.player_locked()}</span>
+        <span className="sr-only">
+          {activity.opens_at_unix
+            ? m.player_opens_at({ date: formatDateTime(activity.opens_at_unix) })
+            : m.player_locked()}
+        </span>
       </span>
     )
   return (

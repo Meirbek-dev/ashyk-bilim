@@ -71,6 +71,29 @@ fn stale_draft(expected: i64, actual: i64) -> Error {
     )
 }
 
+/// When the server hands in an open draft started at `started`, and why.
+///
+/// Its time limit (plus grace) or - outside a staff preview - a strict due
+/// date / late cutoff, whichever comes first (the deadline sweep's rule; a
+/// tie is the timer's).
+fn closing_time(
+    effective: &EffectivePolicy,
+    started: i64,
+    preview: bool,
+) -> Option<(i64, AutoSubmitReason)> {
+    let timer = effective
+        .timer_deadline(started)
+        .map(|at| (at, AutoSubmitReason::TimeExpired));
+    let due = (!preview)
+        .then(|| effective.hand_in_at())
+        .flatten()
+        .map(|at| (at, AutoSubmitReason::DeadlinePassed));
+    match (timer, due) {
+        (Some(timer), Some(due)) => Some(if due.0 < timer.0 { due } else { timer }),
+        (timer, due) => timer.or(due),
+    }
+}
+
 /// The outcome of `start`: the draft, and whether this call opened it.
 #[derive(Debug, Clone)]
 pub struct Started {
@@ -302,8 +325,12 @@ pub struct StudentSubmission {
     pub violation_count: i32,
     pub answered_count: usize,
     pub total_items: usize,
-    /// Seconds left on an open timed draft.
+    /// Seconds left on an open draft until it is handed in: the time limit
+    /// or a strict due date / late cutoff, whichever comes first.
     pub time_remaining_seconds: Option<i64>,
+    /// What hands the draft in when `time_remaining_seconds` runs out:
+    /// `TimeExpired` (time limit) or `DeadlinePassed` (due date).
+    pub time_remaining_reason: Option<AutoSubmitReason>,
 }
 
 /// Everything the pipeline needs about the attempt.
@@ -435,12 +462,13 @@ impl SubmissionsService {
         );
         let answers = parse_answers(&submission.answers)?;
         let answered_count = answers.values().filter(|a| !a.is_blank()).count();
-        let time_remaining_seconds = match (submission.status, submission.started_at) {
-            (SubmissionStatus::Draft, Some(started)) => effective
-                .timer_deadline(started)
-                .map(|deadline| (deadline - now_unix()).max(0)),
+        let closes = match (submission.status, submission.started_at) {
+            (SubmissionStatus::Draft, Some(started)) => {
+                closing_time(effective, started, submission.preview)
+            }
             _ => None,
         };
+        let time_remaining_seconds = closes.map(|(at, _)| (at - now_unix()).max(0));
         Ok(StudentSubmission {
             id: submission.id,
             assessment_id: submission.assessment_id,
@@ -465,6 +493,7 @@ impl SubmissionsService {
             answered_count,
             total_items,
             time_remaining_seconds,
+            time_remaining_reason: closes.map(|(_, reason)| reason),
         })
     }
 
@@ -884,6 +913,25 @@ impl SubmissionsService {
                 .started_at
                 .and_then(|started| ctx.effective.timer_deadline(started))
                 .is_some_and(|deadline| arrived_at >= deadline - CLIENT_TIMER_SLACK_SECONDS);
+            // Likewise the page hands the draft in at a strict due date (or
+            // the late cutoff): a submit then is recorded as the deadline
+            // sweep would - handed in at that moment, `deadline_passed` -
+            // not refused for arriving a moment past it.
+            let due_hand_in = ctx
+                .submission
+                .started_at
+                .and_then(|started| closing_time(&ctx.effective, started, preview))
+                .filter(|(at, reason)| {
+                    *reason == AutoSubmitReason::DeadlinePassed
+                        && (at - CLIENT_TIMER_SLACK_SECONDS..=at + SUBMIT_GRACE_SECONDS)
+                            .contains(&arrived_at)
+                })
+                .map(|(at, _)| at.min(arrived_at));
+            let auto_submit_reason = if due_hand_in.is_some() {
+                Some(AutoSubmitReason::DeadlinePassed)
+            } else {
+                timed_out.then_some(AutoSubmitReason::TimeExpired)
+            };
             let Some((fresh, effective, total)) = Self::finalize(
                 &self.runner,
                 self.events.as_ref(),
@@ -892,9 +940,9 @@ impl SubmissionsService {
                 FinalizeOptions {
                     skip_constraints: false,
                     violation_count,
-                    auto_submit_reason: timed_out.then_some(AutoSubmitReason::TimeExpired),
-                    submitted_at: None,
-                    arrived_at: Some(arrived_at),
+                    auto_submit_reason,
+                    submitted_at: due_hand_in,
+                    arrived_at: Some(due_hand_in.unwrap_or(arrived_at)),
                 },
             )
             .await?

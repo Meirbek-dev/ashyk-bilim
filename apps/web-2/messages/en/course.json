@@ -19,6 +19,7 @@
   "course_left": "You left the course",
   "course_progress_title": "Your progress",
   "course_progress_count": "{done} of {total} done",
+  "course_activity_opens": "Opens {date}",
   "course_activity_done": "Done",
   "course_learnings_title": "What you will learn",
   "course_syllabus_title": "Course outline",

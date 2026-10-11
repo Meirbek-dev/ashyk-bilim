@@ -66,6 +66,7 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
           allowed_actions: [],
           available: true,
           blocked_reason: null,
+          opens_at_unix: null,
           complete: true,
           due_at_unix: null,
           passed: null,
@@ -187,7 +188,7 @@ describe('syllabus and progress', () => {
       {
         id: 'ch1',
         title: 'One',
-        activities: [{ id: 'a1', title: 'a1', type: 'video', complete: false, available: false }],
+        activities: [{ id: 'a1', title: 'a1', type: 'video', complete: false, available: false, opensAt: null }],
       },
     ])
   })

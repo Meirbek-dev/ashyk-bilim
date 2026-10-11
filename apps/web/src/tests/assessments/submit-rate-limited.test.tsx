@@ -49,6 +49,7 @@ const fixture: StudentSubmission = {
   late_penalty_pct: null,
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 beforeEach(() => vi.resetAllMocks())
 

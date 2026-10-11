@@ -12,9 +12,9 @@ import {
   myCourseCertificatesQueryKey,
   uncompleteActivityMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import type { ActivityId, CourseId, Trail } from '#/shared/api/gen/types.gen'
+import type { ActivityId, ActivityState, CourseId, Trail } from '#/shared/api/gen/types.gen'
 
-import { activityKind, locate } from './model/player'
+import { activityKind, locate, staffPreview } from './model/player'
 
 // The same keys as the course page: one learner state per course in the cache.
 export const learnerStateOptions = (id: CourseId) => learnerCourseStateOptions({ path: { course_id: id } })
@@ -54,11 +54,32 @@ const missing = (error: unknown) => {
   throw error
 }
 
-/** The learner state of an enrolled learner; anyone else (staff, not enrolled, no access) gets a 403 in place. */
+/**
+ * The learner state of an enrolled learner, or of the course's staff previewing it as a learner (their attempts are
+ * previews: never counted, never graded); anyone else (not enrolled, no access) gets a 403 in place.
+ */
 export async function ensureLearner(queryClient: QueryClient, courseId: CourseId) {
   const state = await queryClient.ensureQueryData(learnerStateOptions(courseId)).catch(missing)
-  if (!state.enrolled) throw forbidden()
+  if (!state.enrolled && !staffPreview(state)) throw forbidden()
   return state
+}
+
+type Entry = Pick<ActivityState, 'title' | 'activity_type' | 'blocked_reason'>
+
+/**
+ * An activity of the course as its learner sees it: the outline entry (`blocked_reason` closes it). Staff previewing
+ * see every activity open, an unpublished one too (its own read: the outline lists only what learners see).
+ */
+export async function ensureEntry(queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) {
+  const state = await ensureLearner(queryClient, courseId)
+  const preview = staffPreview(state)
+  const listed = locate(state, activityId)?.entry
+  if (listed) return { state, preview, entry: preview ? { ...listed, blocked_reason: null } : (listed as Entry) }
+  if (!preview) throw notFound()
+  const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
+  if (activity.course_id !== courseId) throw notFound()
+  const entry: Entry = { title: activity.name, activity_type: activity.activity_type, blocked_reason: null }
+  return { state, preview, entry }
 }
 
 /** The summary's loader: the learner state, then the course's certificates (issued on the spot when due). */

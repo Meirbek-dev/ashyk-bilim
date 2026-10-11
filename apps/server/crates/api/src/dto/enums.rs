@@ -316,7 +316,10 @@ mod tests {
                 "no_available_action",
             ],
         );
-        pin(&[BlockedReason::Restricted], &["restricted"]);
+        pin(
+            &[BlockedReason::Restricted, BlockedReason::Scheduled],
+            &["restricted", "scheduled"],
+        );
         pin(
             &[DenialReason::CourseArchived, DenialReason::StaffPreview],
             &["course_archived", "staff_preview"],

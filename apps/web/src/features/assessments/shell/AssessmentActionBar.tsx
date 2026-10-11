@@ -2,7 +2,16 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal, Timer } from 'lucide-react'
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  LoaderCircle,
+  RotateCcw,
+  Save,
+  SendHorizonal,
+  Timer,
+} from 'lucide-react'
 import type { AttemptTimerConfig } from '@/features/assessments/shared/hooks/useAttemptGuard'
 import type { PolicyView } from '@/features/assessments/domain/policy'
 
@@ -186,6 +195,7 @@ export function AssessmentActionBar({
   const tAttemptActions = useTranslations('AttemptActions')
   const tActivity = useTranslations('ActivityPage')
   const { navigation } = controls
+  const wordDays = (days: number, time: string) => t('timeRemainingDays', { days, time })
 
   return (
     <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-40 border-t backdrop-blur">
@@ -203,10 +213,10 @@ export function AssessmentActionBar({
               variant={remainingSeconds <= 60 ? 'destructive' : remainingSeconds <= 300 ? 'warning' : 'outline'}
               className="gap-1 font-mono tabular-nums"
               role="timer"
-              aria-label={t('timeRemainingValue', { time: formatRemaining(remainingSeconds) })}
+              aria-label={t('timeRemainingValue', { time: formatRemaining(remainingSeconds, wordDays) })}
             >
               <Timer className="size-3" />
-              {formatRemaining(remainingSeconds)}
+              {formatRemaining(remainingSeconds, wordDays)}
             </Badge>
           ) : null}
           <SaveStateBadge
@@ -340,10 +350,17 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-export function formatRemaining(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
+/**
+ * "mm:ss", "h:mm:ss" from an hour up; a countdown to a strict due date can be weeks long, so from a day up
+ * `days(days, "h:mm:ss")` words the whole days («2 д 3:04:05»).
+ */
+export function formatRemaining(seconds: number, days?: (days: number, time: string) => string): string {
+  const d = days ? Math.floor(seconds / 86_400) : 0
+  const rest = seconds - d * 86_400
+  const h = Math.floor(rest / 3600)
+  const m = Math.floor((rest % 3600) / 60)
+  const s = rest % 60
   const mmss = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  return h > 0 ? `${h}:${mmss}` : mmss
+  const time = h > 0 || d > 0 ? `${h}:${mmss}` : mmss
+  return d > 0 && days ? days(d, time) : time
 }

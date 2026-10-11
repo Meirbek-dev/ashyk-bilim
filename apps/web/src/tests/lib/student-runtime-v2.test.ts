@@ -53,6 +53,7 @@ function learnerState(): LearnerCourseState {
             allowed_actions: ['start'],
             due_at_unix: 1700000000,
             blocked_reason: null,
+            opens_at_unix: null,
             passed: null,
             score: null,
           },

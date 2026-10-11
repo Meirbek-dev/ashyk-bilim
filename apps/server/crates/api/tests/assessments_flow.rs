@@ -1370,6 +1370,25 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
         )
         .await;
     assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
+    // The outline lists it with its opening time - not openable, not
+    // required, never the next step.
+    let state = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await;
+    assert_eq!(state.status, StatusCode::OK, "{}", state.text());
+    let entry = &state.json()["outline"][0]["activities"][0];
+    assert_eq!(entry["title"], "Timed", "{entry}");
+    assert_eq!(entry["blocked_reason"], "scheduled", "{entry}");
+    assert_eq!(entry["available"], false, "{entry}");
+    assert_eq!(entry["required"], false, "{entry}");
+    assert_eq!(
+        entry["opens_at_unix"],
+        scheduled.json()["scheduled_at_unix"]
+    );
+    assert_eq!(entry["allowed_actions"], serde_json::json!([]));
 
     // Every edit path is refused while scheduled.
     let policy = created.json()["policy"].clone();

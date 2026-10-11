@@ -69,13 +69,13 @@ const play = (course: MadeCourse, index = 0) => `/learn/${course.id}/${course.ac
 const contents = (page: Page) => page.getByRole('navigation', { name: m.ui_contents({}, ru) })
 const neighbours = (page: Page) => page.getByRole('navigation', { name: m.player_neighbours({}, ru) })
 
-test('B-PLY-01 a guest signs in first; the course staff get 403 in place', async ({ page, makeCourse, signInAs }) => {
+test('B-PLY-01 a guest signs in first; the course staff preview the player', async ({ page, makeCourse, signInAs }) => {
   const course = await makeCourse({ activities: 1 })
   await page.goto(play(course))
   await expect(page).toHaveURL(/\/login\?redirect=/)
   await signInAs('teacher')
   await page.goto(play(course))
-  await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
+  await expect(contents(page)).toBeVisible()
 })
 
 test('B-PLY-01 a learner who is not enrolled gets 403 in place with the way to the course', async ({

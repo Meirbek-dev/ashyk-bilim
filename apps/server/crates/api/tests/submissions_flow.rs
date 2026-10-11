@@ -797,6 +797,91 @@ async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
     assert_eq!(theirs.json()["auto_submit_reason"], "deadline_passed");
 }
 
+/// A strict due date counts down on the open draft like the timer
+/// (`time_remaining_seconds` to whichever comes first, with its reason);
+/// the page's own hand-in at that moment - a submit landing a few seconds
+/// past it - is recorded as the sweep would (`deadline_passed`, at the due
+/// date), while a submit long after it is still refused.
+#[sqlx::test(migrations = "../../migrations")]
+async fn strict_due_date_counts_down_and_the_page_hands_in_at_it(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let now = unix_now();
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({ "allow_late": false, "due_at_unix": now + 600,
+                            "time_limit_seconds": 3600 }),
+        &[choice_item("Q1")],
+    )
+    .await;
+    let start_path = format!("/api/v2/assessments/{id}/submissions");
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    let carol = learner(&app, "carol").await;
+    let draft = app
+        .post_as(&alice, &start_path, &serde_json::json!({}))
+        .await;
+    assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
+    let remaining = draft.json()["time_remaining_seconds"].as_i64().unwrap();
+    assert!(
+        (590..=605).contains(&remaining),
+        "the due date: {remaining}"
+    );
+    assert_eq!(draft.json()["time_remaining_reason"], "deadline_passed");
+    let alice_sub = draft.json()["id"].as_str().unwrap().to_owned();
+    // Bob's extension puts his due date past the time limit.
+    let started = app.post_as(&bob, &start_path, &serde_json::json!({})).await;
+    let bob_sub = started.json()["id"].as_str().unwrap().to_owned();
+    let extended = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/overrides/{}", bob.user_id),
+            &serde_json::json!({ "due_at_override_unix": now + 86_400 }),
+        )
+        .await;
+    assert_eq!(extended.status, StatusCode::CREATED, "{}", extended.text());
+    let theirs = app
+        .get_as(&bob, &format!("/api/v2/submissions/{bob_sub}"))
+        .await;
+    let remaining = theirs.json()["time_remaining_seconds"].as_i64().unwrap();
+    assert!((3590..=3605).contains(&remaining), "the timer: {remaining}");
+    assert_eq!(theirs.json()["time_remaining_reason"], "time_expired");
+    let carols = app
+        .post_as(&carol, &start_path, &serde_json::json!({}))
+        .await;
+    let carol_sub = carols.json()["id"].as_str().unwrap().to_owned();
+
+    // The due date passed 3 s ago: the page's hand-in at zero lands now.
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '3 seconds' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let answer =
+        serde_json::json!({ "answers": { &items[0]: { "kind": "choice", "selected": ["a"] } } });
+    let handed = app.send(submit(&alice, &alice_sub, None, &answer)).await;
+    assert_eq!(handed.status, StatusCode::OK, "{}", handed.text());
+    assert_eq!(handed.json()["auto_submit_reason"], "deadline_passed");
+    assert_eq!(handed.json()["is_late"], false);
+    assert!(handed.json()["time_remaining_seconds"].is_null());
+    let submitted = handed.json()["submitted_at_unix"].as_i64().unwrap();
+    assert!(submitted < unix_now(), "at the due date: {submitted}");
+
+    // Two minutes past it a submit is refused (the sweep hands it in).
+    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 minutes' WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let late = app.send(submit(&carol, &carol_sub, None, &answer)).await;
+    assert_eq!(late.status, StatusCode::FORBIDDEN, "{}", late.text());
+    assert_eq!(late.json()["code"], "attempt-past-due");
+}
+
 /// The date hand-in went live "a day ago" (its migration ran when the test
 /// database was made, after the dates these tests put in the past).
 async fn backdate_deadline_sweep(app: &TestApp) {

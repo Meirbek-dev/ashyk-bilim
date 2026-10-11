@@ -1,6 +1,7 @@
 import { Link as RouterLink, useLoaderData, useParams } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
+import { PreviewNote } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { activityTypeMeta } from '#/shared/i18n/labels'
@@ -17,8 +18,18 @@ const meta = activityTypeMeta.code_challenge
  */
 export function ArenaPage() {
   const { courseId, activityId } = useParams({ from: ARENA_ROUTE })
-  const { title, courseTitle, locked } = useLoaderData({ from: ARENA_ROUTE })
-  const back = (
+  const { title, courseTitle, locked, preview } = useLoaderData({ from: ARENA_ROUTE })
+  // Staff previewing leave to the studio: a draft challenge is in no player outline.
+  const back = preview ? (
+    <RouterLink
+      to="/teach/courses/$courseId/activities/$activityId/edit"
+      params={{ courseId, activityId }}
+      className={buttonVariants({ variant: 'ghost' })}
+    >
+      <ArrowLeft aria-hidden />
+      {m.player_preview_studio()}
+    </RouterLink>
+  ) : (
     <RouterLink
       to="/learn/$courseId/$activityId"
       params={{ courseId, activityId }}
@@ -38,6 +49,7 @@ export function ArenaPage() {
           </p>
           <h1 className="text-2xl font-semibold wrap-anywhere">{title}</h1>
         </header>
+        {preview ? <PreviewNote /> : null}
         {locked ? (
           <p className="text-muted-foreground">{m.code_locked()}</p>
         ) : (

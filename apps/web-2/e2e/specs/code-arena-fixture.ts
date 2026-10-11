@@ -225,6 +225,7 @@ export const gradedAttempt = (made: Made, id: string): StudentSubmission => ({
   is_late: false,
   late_penalty_pct: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
   violation_count: 0,
 })
 

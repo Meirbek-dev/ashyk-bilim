@@ -43,6 +43,7 @@ export function teacherSubmissionFromWire(value: unknown): Submission {
     ...item,
     // The grader's view has no attempt timer; the learner shape requires the field.
     time_remaining_seconds: null,
+    time_remaining_reason: null,
     draft_version: 0,
     total_items: answeredCount,
     answered_count: answeredCount,

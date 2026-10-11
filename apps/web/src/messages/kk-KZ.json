@@ -577,6 +577,7 @@
       "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "Уақыт аяқталды",
+        "deadlinePassed": "тапсыру мерзімі келді",
         "violationThresholdExceeded": "бұзушылық шегінен асып кету"
       },
       "additionalFlagged": "+{count} тағы",
@@ -1224,7 +1225,7 @@
       "certificationNamePlaceholder": "мысалы, JavaScript бойынша кеңейтілген сертификат",
       "certificationNameRequired": "Сертификат қосылған кезде атауы қажет",
       "certificationRemoveError": "Сертификатты өшіру сәтсіз аяқталды",
-      "certificationRemoved": "Сертификат сәтті жойылды",
+      "certificationRemoved": "Сертификат енді берілмейді; бұрын берілгендері жарамды болып қалады",
       "certificationSettings": "Сертификат баптаулары",
       "certificationType": "Сертификат түрі",
       "certificationTypeRequired": "Сертификат түрі қажет",
@@ -1248,7 +1249,6 @@
       "enableCertificationButton": "Сертификатты қосу",
       "errorLoadingCertifications": "Сертификаттарды жүктеу қатесі",
       "livePreviewCertificate": "Сертификаттың алдын ала қаралуы",
-      "loading": "Жүктелуде...",
       "trainingDetails": "Оқу мерзімі мен көлемі",
       "trainingDetailsDesc": "Міндетті емес. Толтырылған өрістер сертификатта басылады.",
       "courseStart": "Оқудың басталуы",
@@ -1260,6 +1260,7 @@
       "endBeforeStart": "Аяқталу күні басталу күнінен ерте болмауы керек",
       "pdfPreviewSaved": "Білім алушылар алатын PDF осылай көрінеді.",
       "pdfPreviewUnsaved": "Сертификатты PDF түрінде көру үшін өзгерістерді сақтаңыз.",
+      "loading": "Жүктелуде...",
       "maxCharacters100": "100 таңбадан аспауы тиіс",
       "maxCharacters500": "500 таңбадан аспауы тиіс",
       "noCertificationConfigured": "Сертификат бапталмаған",
@@ -10513,6 +10514,7 @@
           "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
           "autoSubmittingReason": {
             "timeExpired": "Уақыт аяқталды",
+            "deadlinePassed": "тапсыру мерзімі келді",
             "violationThresholdExceeded": "бұзушылық шегінен асып кету"
           },
           "additionalFlagged": "+{count} тағы",
@@ -10714,7 +10716,8 @@
           "connectionLostDescription": "Интернет байланысын тексеріңіз. Прогресіңіз жергілікті түрде сақталып, желі қалпына келгенде синхрондалады.",
           "draftConflictDescription": "Серверде жауаптарыңыздың жаңа нұсқасы #{latestVersion} сақталды ({latestSavedAt}). Қай нұсқаны пайдаланғыңыз келеді?",
           "draftConflictAnswerCounts": "Жергілікті: {localCount} жауап | Серверде: {serverCount} жауап",
-          "timeRemainingValue": "Қалған уақыт: {time}"
+          "timeRemainingValue": "Қалған уақыт: {time}",
+          "timeRemainingDays": "{days} к {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Сіздің шығаруыңыз",

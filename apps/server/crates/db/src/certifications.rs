@@ -14,21 +14,48 @@ pub struct CertificationRow {
     pub version: i32,
     pub created_at: i64,
     pub updated_at: i64,
+    /// Retired (turned off after it issued certificates): no new issues; the issued ones stay valid.
+    pub disabled_at: Option<i64>,
 }
 
+/// Turning the course's certificate on.
+///
+/// The course's most recently retired certification comes back with `config` (its issued certificates were
+/// never taken back), else a new one. A course that still has a live certification gets a new row, as before.
 pub async fn insert_certification(
     pool: &PgPool,
     course_id: CourseId,
     config: &serde_json::Value,
 ) -> Result<CertificationId> {
-    let id = sqlx::query_scalar!(
-        r#"INSERT INTO certifications (course_id, config) VALUES ($1, $2)
+    let mut tx = pool.begin().await?;
+    let revived = sqlx::query_scalar!(
+        r#"UPDATE certifications SET disabled_at = NULL, config = $2
+           WHERE id = (SELECT id FROM certifications
+                       WHERE course_id = $1 AND disabled_at IS NOT NULL
+                         AND NOT EXISTS (SELECT 1 FROM certifications
+                                         WHERE course_id = $1 AND disabled_at IS NULL)
+                       ORDER BY id DESC LIMIT 1
+                       FOR UPDATE)
            RETURNING id AS "id: CertificationId""#,
         course_id.0,
         config
     )
-    .fetch_one(pool)
+    .fetch_optional(&mut *tx)
     .await?;
+    let id = match revived {
+        Some(id) => id,
+        None => {
+            sqlx::query_scalar!(
+                r#"INSERT INTO certifications (course_id, config) VALUES ($1, $2)
+                   RETURNING id AS "id: CertificationId""#,
+                course_id.0,
+                config
+            )
+            .fetch_one(&mut *tx)
+            .await?
+        }
+    };
+    tx.commit().await?;
     Ok(id)
 }
 
@@ -40,7 +67,8 @@ pub async fn get_certification(
         CertificationRow,
         r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!",
+                  (extract(epoch FROM disabled_at))::bigint AS disabled_at
            FROM certifications WHERE id = $1"#,
         id.0
     )
@@ -49,6 +77,7 @@ pub async fn get_certification(
     Ok(row)
 }
 
+/// The course's live certifications (retired ones issue nothing and are not shown as the course's).
 pub async fn list_course_certifications<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
@@ -57,8 +86,9 @@ pub async fn list_course_certifications<'e>(
         CertificationRow,
         r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM certifications WHERE course_id = $1 ORDER BY id"#,
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!",
+                  (extract(epoch FROM disabled_at))::bigint AS disabled_at
+           FROM certifications WHERE course_id = $1 AND disabled_at IS NULL ORDER BY id"#,
         course_id.0
     )
     .fetch_all(db)
@@ -81,12 +111,37 @@ pub async fn update_certification_config(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Removes the template and every certificate issued from it.
+/// Turns the certification off.
+///
+/// One that issued no certificate is deleted; one that did is retired (`disabled_at`), so the issued
+/// certificates stay valid. The row lock waits for an issue in flight (its insert holds a key-share lock on
+/// this row), so a certificate issued meanwhile is never cascaded away.
 pub async fn delete_certification(pool: &PgPool, id: CertificationId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM certifications WHERE id = $1", id.0)
-        .execute(pool)
+    let mut tx = pool.begin().await?;
+    let Some(issued) = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM certificate_users WHERE certification_id = c.id) AS "issued!"
+           FROM certifications c WHERE c.id = $1 AND c.disabled_at IS NULL FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    else {
+        return Ok(false);
+    };
+    if issued {
+        sqlx::query!(
+            "UPDATE certifications SET disabled_at = now() WHERE id = $1",
+            id.0
+        )
+        .execute(&mut *tx)
         .await?;
-    Ok(deleted.rows_affected() == 1)
+    } else {
+        sqlx::query!("DELETE FROM certifications WHERE id = $1", id.0)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    Ok(true)
 }
 
 // ── Issued certificates ─────────────────────────────────────────────────────

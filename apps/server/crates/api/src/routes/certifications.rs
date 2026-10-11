@@ -170,14 +170,14 @@ pub async fn certification_preview_pdf(
     Ok(response)
 }
 
-/// Remove the template and every certificate issued from it.
+/// Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
 #[utoipa::path(
     delete, path = "/certifications/{certification_id}", tag = "certifications",
     params(("certification_id" = CertificationId, Path, description = "Certification id"),
         ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
     ),
     responses(
-        (status = 204, description = "Deleted"),
+        (status = 204, description = "Deleted, or retired when certificates were issued"),
         (status = 412, description = "Stale `If-Match`", body = Problem,
          content_type = "application/problem+json"),
     ),

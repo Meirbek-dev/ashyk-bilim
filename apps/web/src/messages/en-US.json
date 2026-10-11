@@ -614,6 +614,7 @@
       "autoSubmitting": "Auto-submitting exam: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "time expired",
+        "deadlinePassed": "the deadline has come",
         "violationThresholdExceeded": "violation threshold exceeded"
       },
       "additionalFlagged": "+{count} more",
@@ -1316,7 +1317,7 @@
       "certificationNamePlaceholder": "e.g., Advanced JavaScript Certification",
       "certificationNameRequired": "Certification name is required when certification is enabled",
       "certificationRemoveError": "Failed to remove certification",
-      "certificationRemoved": "Certification removed successfully",
+      "certificationRemoved": "Certificates are no longer given; those already issued stay valid",
       "certificationSettings": "Certification Settings",
       "certificationType": "Certification Type",
       "certificationTypeRequired": "Certification type is required",
@@ -1340,7 +1341,6 @@
       "enableCertificationButton": "Enable Certification",
       "errorLoadingCertifications": "Error loading certifications",
       "livePreviewCertificate": "Live preview of your certificate",
-      "loading": "Loading...",
       "trainingDetails": "Training dates and hours",
       "trainingDetailsDesc": "Optional. Filled fields are printed on the certificate.",
       "courseStart": "Training start",
@@ -1352,6 +1352,7 @@
       "endBeforeStart": "The end cannot be before the start",
       "pdfPreviewSaved": "This is the PDF learners receive.",
       "pdfPreviewUnsaved": "Save your changes to see the certificate as a PDF.",
+      "loading": "Loading...",
       "maxCharacters100": "Must be 100 characters or less",
       "maxCharacters500": "Must be 500 characters or less",
       "noCertificationConfigured": "No Certification Configured",
@@ -10459,6 +10460,7 @@
           "autoSubmitting": "Auto-submitting exam: {reason}",
           "autoSubmittingReason": {
             "timeExpired": "time expired",
+            "deadlinePassed": "the deadline has come",
             "violationThresholdExceeded": "violation threshold exceeded"
           },
           "additionalFlagged": "+{count} more",
@@ -10705,7 +10707,8 @@
               }
             }
           ],
-          "timeRemainingValue": "Time remaining: {time}"
+          "timeRemainingValue": "Time remaining: {time}",
+          "timeRemainingDays": "{days}d {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",

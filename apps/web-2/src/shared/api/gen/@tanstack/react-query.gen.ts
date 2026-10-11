@@ -2588,7 +2588,7 @@ export const createCertificationMutation = (options?: Partial<Options<CreateCert
 };
 
 /**
- * Remove the template and every certificate issued from it.
+ * Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
  */
 export const deleteCertificationMutation = (options?: Partial<Options<DeleteCertificationData>>): UseMutationOptions<DeleteCertificationResponse, DeleteCertificationError, Options<DeleteCertificationData>> => {
     const mutationOptions: UseMutationOptions<DeleteCertificationResponse, DeleteCertificationError, Options<DeleteCertificationData>> = {

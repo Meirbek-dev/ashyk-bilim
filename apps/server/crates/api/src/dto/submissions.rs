@@ -42,8 +42,14 @@ pub struct StudentSubmission {
     pub violation_count: i32,
     pub answered_count: usize,
     pub total_items: usize,
-    /// Seconds left on an open timed draft; `null` when untimed or closed.
+    /// Seconds left on an open draft until the server hands it in: the time
+    /// limit or a strict due date / late cutoff, whichever comes first;
+    /// `null` when neither applies or the attempt is closed.
     pub time_remaining_seconds: Option<i64>,
+    /// What hands the draft in when `time_remaining_seconds` reaches 0 (the
+    /// attempt's `auto_submit_reason` then): `time_expired` (time limit) or
+    /// `deadline_passed` (due date); `null` with `time_remaining_seconds`.
+    pub time_remaining_reason: Option<AutoSubmitReason>,
 }
 
 impl From<DomainSubmission> for StudentSubmission {
@@ -70,6 +76,7 @@ impl From<DomainSubmission> for StudentSubmission {
             answered_count: s.answered_count,
             total_items: s.total_items,
             time_remaining_seconds: s.time_remaining_seconds,
+            time_remaining_reason: s.time_remaining_reason,
         }
     }
 }

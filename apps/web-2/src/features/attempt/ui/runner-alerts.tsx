@@ -14,7 +14,8 @@ type RunnerAlertsProps = {
   guard: ReturnType<typeof useExamGuard>
   /** The 403 that shut saving, or null. */
   closed: unknown
-  expired: boolean
+  /** The clock ran out: the time limit or the due date. */
+  expired: 'time' | 'due' | null
   changed: boolean
   attemptId: SubmissionId
 }
@@ -41,10 +42,16 @@ export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: Run
         </div>
       ) : null}
       {changed ? <p className="text-warning">{m.attempt_changed()}</p> : null}
-      {closed !== null || expired ? (
+      {closed !== null || expired !== null ? (
         <div className="flex flex-col items-start gap-2">
           <ErrorAlert>
-            {expired ? m.attempt_time_up() : gateCode(closed) ? presentError(closed) : m.attempt_closed()}
+            {expired === 'due'
+              ? m.attempt_due_up()
+              : expired === 'time'
+                ? m.attempt_time_up()
+                : gateCode(closed)
+                  ? presentError(closed)
+                  : m.attempt_closed()}
           </ErrorAlert>
           <Button variant="outline" size="sm" onClick={refresh}>
             {m.attempt_refresh()}

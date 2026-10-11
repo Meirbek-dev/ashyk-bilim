@@ -1,4 +1,7 @@
 {
+  "player_preview_title": "Алдын ала қарау",
+  "player_preview_text": "Тапсырманы білім алушылар осылай көреді. Сіздің әрекеттеріңіз - сынақ: олар есептелмейді және баға журналына түспейді.",
+  "player_preview_studio": "Редакторға оралу",
   "player_back_to_course": "Курсқа",
   "player_course_page": "Курс бетіне өту",
   "player_forbidden_text": "Ойнатқыш тек курсқа тіркелгендерге ашылады.",
@@ -17,6 +20,7 @@
   "player_continue": "Жалғастыру",
   "player_finish": "Курс қорытындысы",
   "player_empty": "Мұнда әзірге ештеңе жоқ.",
+  "player_opens_at": "{date} ашылады. Оған дейін тапсырма қолжетімсіз.",
   "player_locked_text": "Бұл белсенділік сізге қолжетімсіз.",
   "player_entry_start": "Бастау",
   "player_entry_revise": "Жұмысты пысықтау",

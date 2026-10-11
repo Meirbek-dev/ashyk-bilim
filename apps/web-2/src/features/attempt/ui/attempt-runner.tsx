@@ -25,7 +25,8 @@ type RunnerProps = { assessment: AssessmentDetail; attempt: StudentSubmission; r
 
 /**
  * An open draft (B-ATT-06..17, B-ATT-21): one question at a time from `?item`, the list of questions left, the save
- * indicator and the server's clock in the top bar. At zero the attempt is handed in with what the queue holds.
+ * indicator and the server's clock in the top bar: the time limit or a strict due date, whichever comes first. At zero
+ * the attempt is handed in with what the queue holds.
  */
 export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) {
   const { courseId } = useParams({ from: ATTEMPT_ROUTE })
@@ -40,6 +41,8 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const current = Math.min(Math.max(item, 1), items.length)
   const shown = items[current - 1]
   const expired = left === 0
+  // The clock runs to the time limit or a strict due date, whichever comes first (the server says which).
+  const due = attempt.time_remaining_reason === 'deadline_passed'
   // Handed in, or reopened on a changed test («Тест изменился»): the confirmation closes either way.
   const handIn = () => submit.handIn(() => setConfirming(false))
   const timeUp = useEffectEvent(handIn)
@@ -48,7 +51,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   }, [expired])
   const actions = (
     <>
-      {left === null ? null : <AttemptTimer seconds={left} />}
+      {left === null ? null : <AttemptTimer seconds={left} due={due} />}
       <Button onClick={() => setConfirming(true)} disabled={submit.pending}>
         {m.attempt_submit()}
       </Button>
@@ -68,7 +71,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
         <RunnerAlerts
           guard={guard}
           closed={draft.closed}
-          expired={expired}
+          expired={expired ? (due ? 'due' : 'time') : null}
           changed={submit.changed}
           attemptId={attempt.id}
         />

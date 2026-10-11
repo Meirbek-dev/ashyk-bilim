@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const BlockedReason = zod
-  .enum(['restricted'])
+  .enum(['restricted', 'scheduled'])
   .describe('Why an activity is not open to the learner (`ActivityState.blocked_reason`).')
 
 export type BlockedReason = zod.input<typeof BlockedReason>

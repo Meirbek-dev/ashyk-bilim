@@ -609,6 +609,7 @@
       "autoSubmitting": "Автоматическая отправка теста: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "время истекло",
+        "deadlinePassed": "срок сдачи наступил",
         "violationThresholdExceeded": "превышение порога нарушений"
       },
       "additionalFlagged": "+{count} ещё",
@@ -1319,7 +1320,7 @@
       "certificationNamePlaceholder": "например, Сертификация по продвинутому JavaScript",
       "certificationNameRequired": "Название сертификации обязательно",
       "certificationRemoveError": "Не удалось удалить сертификацию",
-      "certificationRemoved": "Сертификация успешно удалена",
+      "certificationRemoved": "Сертификат больше не выдаётся; уже выданные остаются действительными",
       "certificationSettings": "Настройки сертификации",
       "certificationType": "Тип сертификации",
       "certificationTypeRequired": "Требуется тип сертификации",
@@ -1343,7 +1344,6 @@
       "enableCertificationButton": "Включить сертификацию",
       "errorLoadingCertifications": "Ошибка загрузки сертификаций",
       "livePreviewCertificate": "Живой предпросмотр сертификата",
-      "loading": "Загрузка...",
       "trainingDetails": "Сроки и объём обучения",
       "trainingDetailsDesc": "Необязательно. Заполненные поля печатаются на сертификате.",
       "courseStart": "Начало обучения",
@@ -1355,6 +1355,7 @@
       "endBeforeStart": "Окончание не может быть раньше начала",
       "pdfPreviewSaved": "Так выглядит PDF, который получат учащиеся.",
       "pdfPreviewUnsaved": "Сохраните изменения, чтобы увидеть сертификат в PDF.",
+      "loading": "Загрузка...",
       "maxCharacters100": "Не более 100 символов",
       "maxCharacters500": "Не более 500 символов",
       "noCertificationConfigured": "Сертификация не настроена",
@@ -11577,6 +11578,7 @@
           "autoSubmitting": "Автоматическая отправка теста: {reason}",
           "autoSubmittingReason": {
             "timeExpired": "время истекло",
+            "deadlinePassed": "срок сдачи наступил",
             "violationThresholdExceeded": "превышение порога нарушений"
           },
           "additionalFlagged": "+{count} ещё",
@@ -11831,7 +11833,8 @@
               }
             }
           ],
-          "timeRemainingValue": "Осталось времени: {time}"
+          "timeRemainingValue": "Осталось времени: {time}",
+          "timeRemainingDays": "{days} д {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",

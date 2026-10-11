@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { formatDateTime } from '#/shared/i18n/format'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
 import type { SyllabusChapter } from '../model/course'
@@ -36,6 +37,11 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
                     )}
                   </span>
                   <span className="text-sm text-muted-foreground">{meta.label()}</span>
+                  {activity.opensAt ? (
+                    <span className="text-sm text-muted-foreground">
+                      {m.course_activity_opens({ date: formatDateTime(activity.opensAt) })}
+                    </span>
+                  ) : null}
                   {activity.complete ? (
                     <StatusBadge tone="success">
                       <Check aria-hidden className="size-3" />

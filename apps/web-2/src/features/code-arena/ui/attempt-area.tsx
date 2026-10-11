@@ -20,12 +20,19 @@ type AttemptAreaProps = { courseId: string; challenge: AssessmentDetail; code: C
  */
 export function AttemptArea({ courseId, challenge, code }: AttemptAreaProps) {
   const { run, submission } = useSearch({ from: ARENA_ROUTE })
-  const { data: attempts } = useSuspenseQuery(attemptsOptions(challenge.id))
+  const { data: attempts, dataUpdatedAt } = useSuspenseQuery(attemptsOptions(challenge.id))
   const draft = draftOf(attempts)
   return (
     <>
       {draft ? (
-        <Workspace key={draft.id} courseId={courseId} challenge={challenge} code={code} draft={draft} />
+        <Workspace
+          key={draft.id}
+          courseId={courseId}
+          challenge={challenge}
+          code={code}
+          draft={draft}
+          receivedAt={dataUpdatedAt}
+        />
       ) : (
         <Entry courseId={courseId} assessmentId={challenge.id} />
       )}

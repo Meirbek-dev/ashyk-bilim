@@ -1,7 +1,7 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
-import { ensureLearner } from '#/features/player'
+import { ensureEntry } from '#/features/player'
 import { ApiError } from '#/shared/api/errors'
 import {
   attemptStateOptions,
@@ -112,12 +112,14 @@ type ArenaParams = {
   submission?: SubmissionId | undefined
 }
 
-/** The code page's loader: an enrolled learner (else 403 in place), a code challenge of the course, its attempts. */
+/**
+ * The code page's loader: an enrolled learner or the course's staff previewing (else 403 in place), a code challenge of
+ * the course, its attempts.
+ */
 export async function ensureArena(queryClient: QueryClient, { courseId, activityId, run, submission }: ArenaParams) {
-  const state = await ensureLearner(queryClient, courseId)
-  const entry = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === activityId)
-  if (entry?.activity_type !== 'code_challenge') throw notFound()
-  const names = { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null }
+  const { state, entry, preview } = await ensureEntry(queryClient, courseId, activityId)
+  if (entry.activity_type !== 'code_challenge') throw notFound()
+  const names = { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null, preview }
   if (names.locked) return names
   const [challenge] = await Promise.all([
     queryClient.ensureQueryData(challengeOptions(activityId)),

@@ -244,16 +244,26 @@ impl CertificationsService {
 
     /// UX-311: [`Self::update`]'s gate on its own, before the body is read.
     pub async fn require_updatable(&self, actor: &Actor, id: CertificationId) -> Result<()> {
-        let row = self.load(id).await?;
+        let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Update)
             .await
             .map(drop)
     }
 
+    /// Any certification, retired or not: what an issued certificate certifies.
     async fn load(&self, id: CertificationId) -> Result<CertificationRow> {
         ab_db::certifications::get_certification(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("certification"))
+    }
+
+    /// A live certification: for its authors a retired one is gone (turned off; its certificates stay).
+    async fn load_live(&self, id: CertificationId) -> Result<CertificationRow> {
+        let row = self.load(id).await?;
+        if row.disabled_at.is_some() {
+            return Err(Error::not_found("certification"));
+        }
+        Ok(row)
     }
 
     async fn issued(
@@ -355,11 +365,11 @@ impl CertificationsService {
         self.scoped_course(actor, course_id, Action::Create).await?;
         Self::require_object(config)?;
         let id = ab_db::certifications::insert_certification(&self.pool, course_id, config).await?;
-        self.load(id).await
+        self.load_live(id).await
     }
 
     pub async fn get(&self, actor: &Actor, id: CertificationId) -> Result<CertificationRow> {
-        let row = self.load(id).await?;
+        let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Read)
             .await?;
         Ok(row)
@@ -380,16 +390,17 @@ impl CertificationsService {
         id: CertificationId,
         config: &serde_json::Value,
     ) -> Result<CertificationRow> {
-        let row = self.load(id).await?;
+        let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Update)
             .await?;
         Self::require_object(config)?;
         ab_db::certifications::update_certification_config(&self.pool, id, config).await?;
-        self.load(id).await
+        self.load_live(id).await
     }
 
+    /// Turns the course's certificate off; certificates already issued stay valid (see the db call).
     pub async fn delete(&self, actor: &Actor, id: CertificationId) -> Result<()> {
-        let row = self.load(id).await?;
+        let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Delete)
             .await?;
         ab_db::certifications::delete_certification(&self.pool, id).await?;

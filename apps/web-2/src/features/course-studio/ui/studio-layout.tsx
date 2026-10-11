@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useBlocker, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eye } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -33,6 +33,18 @@ const HANDED_IN = {
 } satisfies Record<ActivityType, boolean>
 const WORK_TABS = ['/submissions', '/results']
 
+// Graded work opens as its learner sees it (a preview: never counted); lessons have no learner page of their own here.
+const PREVIEW = {
+  quiz: '/learn/$courseId/$activityId/attempt',
+  exam: '/learn/$courseId/$activityId/attempt',
+  code_challenge: '/learn/$courseId/$activityId/code',
+  file_submission: null,
+  dynamic: null,
+  video: null,
+  document: null,
+  custom: null,
+} as const satisfies Record<ActivityType, string | null>
+
 type CourseStudioLayoutProps = {
   /** The header's published control of activities backed by another object (assessments, slice 5.1); null: the switch. */
   publishControl?: (activity: ActivityDetail) => ReactNode
@@ -62,12 +74,29 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
       <span className="sr-only @3xl:not-sr-only">{m.platform_back()}</span>
     </RouterLink>
   )
+  const previewTo = PREVIEW[activity.activity_type]
+  const preview = previewTo ? (
+    <RouterLink
+      to={previewTo}
+      params={{ courseId, activityId }}
+      target="_blank"
+      className={buttonVariants({ variant: 'ghost' })}
+    >
+      <Eye aria-hidden />
+      <span className="sr-only @3xl:not-sr-only">{m.studio_preview()}</span>
+    </RouterLink>
+  ) : null
   return (
     <FocusPage
       back={back}
       title={activity.name}
       saveStatus={state ? <output>{saveLabels[state]()}</output> : null}
-      actions={publishControl?.(activity) ?? <PublishSwitch courseId={courseId} activity={activity} />}
+      actions={
+        <>
+          {preview}
+          {publishControl?.(activity) ?? <PublishSwitch courseId={courseId} activity={activity} />}
+        </>
+      }
       aside={aside}
       wide
     >

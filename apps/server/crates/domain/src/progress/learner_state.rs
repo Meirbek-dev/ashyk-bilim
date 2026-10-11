@@ -4,7 +4,9 @@
 //! "next action" the client should surface. Certificates arrive with P6.3;
 //! until then the block reports `configured: false`.
 
-use ab_core::assessments::ActivityProgressState;
+use std::collections::HashMap;
+
+use ab_core::assessments::{ActivityProgressState, Lifecycle};
 use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
 use ab_core::{Error, Result};
 use ab_db::progress::{ActivityProgressRow, CourseProgressRow};
@@ -137,6 +139,9 @@ impl NextActionReason {
 pub enum BlockedReason {
     /// An assessment the learner is not on the access list of.
     Restricted,
+    /// A test scheduled to open later (`ActivityState.opens_at_unix`): listed
+    /// so learners know it is coming, not openable until then.
+    Scheduled,
 }
 
 /// Why the caller cannot enrol (`CoursePermissions.denial_reason`).
@@ -179,6 +184,8 @@ pub struct ActivityState {
     pub is_late: bool,
     pub available: bool,
     pub blocked_reason: Option<BlockedReason>,
+    /// When a `scheduled` test opens.
+    pub opens_at_unix: Option<i64>,
     pub allowed_actions: Vec<&'static str>,
 }
 
@@ -341,12 +348,16 @@ impl LearnerStateService {
         // "enrolled" - otherwise a learner who left could never re-enrol.
         let enrolled = has_run;
 
+        let opens_at = scheduled_opening(&self.pool, course.id).await?;
         let states: Vec<(ChapterId, ActivityState)> = activities
             .iter()
-            .filter(|a| a.published)
+            .filter(|a| a.published || opens_at.contains_key(&a.id))
             .map(|a| {
                 let progress = rows.iter().find(|r| r.activity_id == a.id);
                 let mut state = activity_state(a, progress);
+                if !a.published {
+                    return (a.chapter_id, scheduled(state, opens_at.get(&a.id).copied()));
+                }
                 // BUG-318: restricted to an allowlist the learner is not on -
                 // not required, never a next step; their own results stay readable.
                 if restricted.contains(&a.id) {
@@ -411,6 +422,30 @@ impl LearnerStateService {
             outline,
         })
     }
+}
+
+/// A scheduled test's activity stays unpublished until it opens; the
+/// outline lists it with its opening time instead of hiding it.
+async fn scheduled_opening(pool: &PgPool, course_id: CourseId) -> Result<HashMap<ActivityId, i64>> {
+    Ok(
+        ab_db::assessments::list_assessments_for_course(pool, course_id)
+            .await?
+            .into_iter()
+            .filter(|a| a.lifecycle == Lifecycle::Scheduled)
+            .filter_map(|a| a.scheduled_at.map(|at| (a.activity_id, at)))
+            .collect(),
+    )
+}
+
+/// A scheduled test's entry: listed with its opening time, not openable,
+/// not required, never a next step.
+fn scheduled(mut state: ActivityState, opens_at: Option<i64>) -> ActivityState {
+    state.required = false;
+    state.available = false;
+    state.blocked_reason = Some(BlockedReason::Scheduled);
+    state.opens_at_unix = opens_at;
+    state.allowed_actions = Vec::new();
+    state
 }
 
 /// Whether the course certifies, and where the learner stands.
@@ -490,6 +525,7 @@ fn activity_state(
         is_late: progress.is_some_and(|p| p.is_late),
         available: true,
         blocked_reason: None,
+        opens_at_unix: None,
         allowed_actions: state.allowed_actions(),
     }
 }
@@ -713,6 +749,7 @@ mod tests {
             is_late: false,
             available: true,
             blocked_reason: None,
+            opens_at_unix: None,
             allowed_actions: vec![],
         }
     }

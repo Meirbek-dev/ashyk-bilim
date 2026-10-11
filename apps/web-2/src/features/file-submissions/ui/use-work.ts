@@ -35,17 +35,20 @@ export function useWork(ids: WorkIds) {
 
   const cached = () => queryClient.getQueryData(taskOptions(ids.activityId).queryKey) ?? null
 
-  function run(action: WorkAction, current: FileSubmission | null = cached()) {
-    if (!current) return
+  function run(action: WorkAction, current: FileSubmission | null = cached()): Promise<unknown> | undefined {
+    if (!current) return undefined
     for (const mutation of [draft, send, start]) mutation.reset()
     const path = { file_submission_id: current.id }
     if (action.kind === 'files') {
       const body = { files: changedFiles(openAttempt(current), action.change) }
       const done = 'add' in action.change ? m.submission_file_attached() : m.submission_file_removed()
-      draft.mutate(
-        { path, body, headers: versionHeader(current) },
-        { onSuccess: () => toast.add({ title: done }), onError: onError(action) },
-      )
+      // Settles (never rejects) once the cache holds the answer: several picked files are attached one after another.
+      return draft
+        .mutateAsync(
+          { path, body, headers: versionHeader(current) },
+          { onSuccess: () => toast.add({ title: done }), onError: onError(action) },
+        )
+        .catch(() => null)
     } else if (action.kind === 'submit') {
       send.mutate(
         { path, body: {}, headers: { ...versionHeader(current), 'Idempotency-Key': idempotency.key } },
@@ -66,13 +69,14 @@ export function useWork(ids: WorkIds) {
         { onSuccess: () => toast.add({ title: m.submission_attempt_started() }), onError: onError(action) },
       )
     }
+    return undefined
   }
 
   async function retry() {
     const action = conflict
     const fresh = await task.refetch()
     setConflict(null)
-    if (action && fresh.data) run(action, fresh.data)
+    if (action && fresh.data) void run(action, fresh.data)
   }
 
   const failed = [draft.error, send.error, start.error].find(error => error && !isStale(error))

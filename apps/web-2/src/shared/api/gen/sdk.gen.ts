@@ -1296,7 +1296,7 @@ export const createCertification = <ThrowOnError extends boolean = false>(option
 });
 
 /**
- * Remove the template and every certificate issued from it.
+ * Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
  */
 export const deleteCertification = <ThrowOnError extends boolean = false>(options: Options<DeleteCertificationData, ThrowOnError>): RequestResult<DeleteCertificationResponses, DeleteCertificationErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCertificationResponses, DeleteCertificationErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vDeleteCertificationResponse, data),

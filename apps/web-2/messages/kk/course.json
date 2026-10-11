@@ -19,6 +19,7 @@
   "course_left": "Сіз курстан шықтыңыз",
   "course_progress_title": "Сіздің ілгерілеуіңіз",
   "course_progress_count": "{total} ішінен {done} өтілді",
+  "course_activity_opens": "{date} ашылады",
   "course_activity_done": "Өтілді",
   "course_learnings_title": "Не үйренесіз",
   "course_syllabus_title": "Курс бағдарламасы",

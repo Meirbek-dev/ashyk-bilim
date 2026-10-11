@@ -69,7 +69,7 @@ export const LearnerCourseState = zod.object({
           available: zod.boolean(),
           blocked_reason: zod.union([
             zod
-              .enum(['restricted'])
+              .enum(['restricted', 'scheduled'])
               .describe('Why an activity is not open to the learner (`ActivityState.blocked_reason`).'),
             zod.null(),
           ]),
@@ -80,6 +80,9 @@ export const LearnerCourseState = zod.object({
           ]),
           id: zod.uuid(),
           is_late: zod.boolean(),
+          opens_at_unix: zod
+            .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
+            .describe('When a `scheduled` test opens.'),
           passed: zod.boolean().nullable(),
           required: zod.boolean(),
           score: zod.number().nullable(),

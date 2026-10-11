@@ -143,6 +143,10 @@ export type ActivityState = {
     due_at_unix: UnixTime | null;
     id: ActivityId;
     is_late: boolean;
+    /**
+     * When a `scheduled` test opens.
+     */
+    opens_at_unix: UnixTime | null;
     passed: boolean | null;
     required: boolean;
     score: number | null;
@@ -1072,7 +1076,7 @@ export type BlockType = 'image' | 'pdf' | 'video' | 'custom';
 /**
  * Why an activity is not open to the learner (`ActivityState.blocked_reason`).
  */
-export type BlockedReason = 'restricted';
+export type BlockedReason = 'restricted' | 'scheduled';
 
 export type Bucket = 'day' | 'week';
 
@@ -5489,8 +5493,11 @@ export type StudentSubmission = {
     started_at_unix: UnixTime | null;
     status: SubmissionStatus;
     submitted_at_unix: UnixTime | null;
+    time_remaining_reason: AutoSubmitReason | null;
     /**
-     * Seconds left on an open timed draft; `null` when untimed or closed.
+     * Seconds left on an open draft until the server hands it in: the time
+     * limit or a strict due date / late cutoff, whichever comes first;
+     * `null` when neither applies or the attempt is closed.
      */
     time_remaining_seconds: number | null;
     total_items: number;
@@ -10919,7 +10926,7 @@ export type DeleteCertificationError = DeleteCertificationErrors[keyof DeleteCer
 
 export type DeleteCertificationResponses = {
     /**
-     * Deleted
+     * Deleted, or retired when certificates were issued
      */
     204: void;
 };

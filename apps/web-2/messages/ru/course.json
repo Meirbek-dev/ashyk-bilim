@@ -19,6 +19,7 @@
   "course_left": "Вы покинули курс",
   "course_progress_title": "Ваш прогресс",
   "course_progress_count": "Пройдено {done} из {total}",
+  "course_activity_opens": "Откроется {date}",
   "course_activity_done": "Пройдено",
   "course_learnings_title": "Чему вы научитесь",
   "course_syllabus_title": "Программа курса",

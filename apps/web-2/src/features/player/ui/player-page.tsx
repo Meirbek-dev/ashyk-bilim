@@ -7,6 +7,7 @@ import { shortcuts } from '#/features/catalog'
 import { CommandPalette } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
+import { formatDateTime } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 import { toast } from '#/shared/ui/toast'
 
@@ -62,7 +63,11 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
           <h1 className="text-2xl font-semibold wrap-anywhere">{entry.title}</h1>
         </header>
         {entry.blocked_reason ? (
-          <p className="text-muted-foreground">{m.player_locked_text()}</p>
+          <p className="text-muted-foreground">
+            {entry.opens_at_unix
+              ? m.player_opens_at({ date: formatDateTime(entry.opens_at_unix) })
+              : m.player_locked_text()}
+          </p>
         ) : lesson ? (
           <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (

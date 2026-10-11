@@ -460,7 +460,7 @@ export const vBlockType = v.picklist([
 /**
  * Why an activity is not open to the learner (`ActivityState.blocked_reason`).
  */
-export const vBlockedReason = v.picklist(['restricted']);
+export const vBlockedReason = v.picklist(['restricted', 'scheduled']);
 
 export const vBucket = v.picklist(['day', 'week']);
 
@@ -4170,6 +4170,7 @@ export const vStudentSubmission = v.object({
     started_at_unix: v.nullable(vUnixTime),
     status: vSubmissionStatus,
     submitted_at_unix: v.nullable(vUnixTime),
+    time_remaining_reason: v.nullable(vAutoSubmitReason),
     time_remaining_seconds: v.nullable(v.pipe(v.number(), v.integer())),
     total_items: v.pipe(v.number(), v.integer(), v.minValue(0)),
     violation_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
@@ -5805,6 +5806,7 @@ export const vActivityState = v.object({
     due_at_unix: v.nullable(vUnixTime),
     id: vActivityId,
     is_late: v.boolean(),
+    opens_at_unix: v.nullable(vUnixTime),
     passed: v.nullable(v.boolean()),
     required: v.boolean(),
     score: v.nullable(v.number()),
@@ -7569,7 +7571,7 @@ export const vDeleteCertificationPath = v.object({
 });
 
 /**
- * Deleted
+ * Deleted, or retired when certificates were issued
  */
 export const vDeleteCertificationResponse = v.void();
 

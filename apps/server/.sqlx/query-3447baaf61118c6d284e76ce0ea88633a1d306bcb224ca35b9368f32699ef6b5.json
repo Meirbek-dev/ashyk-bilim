@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM certificate_users WHERE certification_id = c.id) AS \"issued!\"\n           FROM certifications c WHERE c.id = $1 AND c.disabled_at IS NULL FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "issued!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3447baaf61118c6d284e76ce0ea88633a1d306bcb224ca35b9368f32699ef6b5"
+}

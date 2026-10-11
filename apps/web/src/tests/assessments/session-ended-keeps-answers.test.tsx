@@ -47,6 +47,7 @@ const draft: StudentSubmission = {
   late_penalty_pct: null,
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 const changed = { [itemId]: { kind: 'OPEN_TEXT' as const, text: 'Алматы' } }
 const changedWire = { [itemId]: { kind: 'open_text', text: 'Алматы' } }

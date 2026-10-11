@@ -19,6 +19,10 @@ const KINDS: Record<ActivityType, ActivityKind> = {
 
 export const activityKind = (type: ActivityType): ActivityKind => KINDS[type]
 
+/** Course staff looking at the course as its learners do (the server's `staff_preview`): never enrolled. */
+export const staffPreview = (state: LearnerCourseState) =>
+  !state.enrolled && state.permissions.denial_reason === 'staff_preview'
+
 /** The activity in the learner's outline with its neighbours in outline order; null = not in this course. */
 export function locate(state: LearnerCourseState, id: ActivityId) {
   const flat = state.outline.flatMap(chapter => chapter.activities)

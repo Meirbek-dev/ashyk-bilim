@@ -27,13 +27,14 @@ async function handIn(page: Page) {
   await expect(page.getByRole('heading', { level: 1, name: m.attempt_number({ number: 1 }, ru) })).toBeVisible()
 }
 
-test('B-ATT-01 a guest signs in first; the course staff get 403 in place', async ({ page, makeQuiz, signInAs }) => {
+test('B-ATT-01 a guest signs in first; the course staff open a preview', async ({ page, makeQuiz, signInAs }) => {
   const quiz = await makeQuiz()
   await page.goto(quiz.url)
   await expect(page).toHaveURL(/\/login\?redirect=/)
   await signInAs('teacher')
   await page.goto(quiz.url)
-  await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
+  await expect(page.getByText(m.player_preview_title({}, ru), { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: m.attempt_start({}, ru) })).toBeVisible()
 })
 
 test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 a whole attempt, start to result', async ({

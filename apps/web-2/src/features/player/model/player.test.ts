@@ -11,6 +11,7 @@ const activity = (id: string, patch: Partial<ActivityState> = {}): ActivityState
   allowed_actions: ['start'],
   available: true,
   blocked_reason: null,
+  opens_at_unix: null,
   complete: false,
   due_at_unix: null,
   is_late: false,

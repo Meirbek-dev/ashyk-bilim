@@ -1,4 +1,7 @@
 {
+  "player_preview_title": "Preview",
+  "player_preview_text": "This is what learners see. Your attempts are trial runs: they are not counted and do not reach the gradebook.",
+  "player_preview_studio": "Back to the editor",
   "player_back_to_course": "Course",
   "player_course_page": "Go to the course page",
   "player_forbidden_text": "The player opens only for learners enrolled in the course.",
@@ -17,6 +20,7 @@
   "player_continue": "Continue",
   "player_finish": "Course summary",
   "player_empty": "Nothing here yet.",
+  "player_opens_at": "Opens {date}. Until then it is not available.",
   "player_locked_text": "This activity is not available to you.",
   "player_entry_start": "Start",
   "player_entry_revise": "Revise the submission",

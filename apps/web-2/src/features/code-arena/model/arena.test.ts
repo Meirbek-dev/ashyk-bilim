@@ -44,6 +44,7 @@ const attempt = (patch: Partial<StudentSubmission>): StudentSubmission => ({
   status: 'draft',
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
   total_items: 1,
   violation_count: 0,
   ...patch,

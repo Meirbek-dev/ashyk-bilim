@@ -1,7 +1,8 @@
 import { toAppActivityType } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
 import { unixToIso } from '@/lib/api/contract'
-import { LearnerCourseState } from '@/lib/api/generated/zod'
+import { parseLearnerCourseState } from '@/features/learner-course/api'
+import type { LearnerCourseState } from '@/lib/api/generated/zod'
 
 export type StudentActivityState =
   | 'not_started'
@@ -275,7 +276,7 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
 }
 
 export async function getStudentActivityRuntime(courseUuid: string, activityUuid: string) {
-  const state = await apiJson(`courses/${courseUuid}/learner-state`, {}, value => LearnerCourseState.parse(value))
+  const state = await apiJson(`courses/${courseUuid}/learner-state`, {}, parseLearnerCourseState)
   return toRuntime(state, activityUuid)
 }
 

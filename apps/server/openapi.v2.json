@@ -340,6 +340,17 @@
           "is_late": {
             "type": "boolean"
           },
+          "opens_at_unix": {
+            "description": "When a `scheduled` test opens.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "passed": {
             "type": [
               "boolean",
@@ -375,6 +386,7 @@
           "allowed_actions",
           "blocked_reason",
           "due_at_unix",
+          "opens_at_unix",
           "passed",
           "score"
         ],
@@ -3360,7 +3372,8 @@
       "BlockedReason": {
         "description": "Why an activity is not open to the learner (`ActivityState.blocked_reason`).",
         "enum": [
-          "restricted"
+          "restricted",
+          "scheduled"
         ],
         "type": "string"
       },
@@ -16130,8 +16143,19 @@
               }
             ]
           },
+          "time_remaining_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AutoSubmitReason",
+                "description": "What hands the draft in when `time_remaining_seconds` reaches 0 (the\nattempt's `auto_submit_reason` then): `time_expired` (time limit) or\n`deadline_passed` (due date); `null` with `time_remaining_seconds`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "time_remaining_seconds": {
-            "description": "Seconds left on an open timed draft; `null` when untimed or closed.",
+            "description": "Seconds left on an open draft until the server hands it in: the time\nlimit or a strict due date / late cutoff, whichever comes first;\n`null` when neither applies or the attempt is closed.",
             "type": [
               "integer",
               "null"
@@ -16166,6 +16190,7 @@
           "late_penalty_pct",
           "started_at_unix",
           "submitted_at_unix",
+          "time_remaining_reason",
           "time_remaining_seconds"
         ],
         "type": "object"
@@ -27459,7 +27484,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted, or retired when certificates were issued"
           },
           "412": {
             "content": {
@@ -27472,7 +27497,7 @@
             "description": "Stale `If-Match`"
           }
         },
-        "summary": "Remove the template and every certificate issued from it.",
+        "summary": "Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).",
         "tags": [
           "certifications"
         ]

@@ -37,6 +37,7 @@ const submitted: StudentSubmission = {
   grading: null,
   late_penalty_pct: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 const draft: StudentSubmission = {
   ...submitted,

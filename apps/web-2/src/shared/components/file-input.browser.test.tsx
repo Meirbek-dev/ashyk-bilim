@@ -141,6 +141,38 @@ describe('FileInput', () => {
   })
 })
 
+const png = (name: string) => new File(['abcd'], name, { type: 'image/png' })
+
+describe('FileInput with several files', () => {
+  test('the picker is named by its label and the visible button words', async () => {
+    const { input } = await renderInput()
+    await expect.element(input).toHaveAccessibleName(`${label} ${m.ui_file_choose()}`)
+  })
+
+  test('with `multiple`, picked files upload in turn, each claim awaited; files over the cap are named', async () => {
+    stubNetwork()
+    const claim = Promise.withResolvers<null>()
+    const onUploaded = vi.fn<(upload: FinalizedUpload, file: File) => Promise<unknown>>(async (_upload, file) =>
+      file.name === 'a.png' ? claim.promise : null,
+    )
+    const screen = await renderInRouter(
+      <QueryClientProvider client={new QueryClient()}>
+        <FileInput label={label} purpose="course-thumbnail" multiple={2} onUploaded={onUploaded} />
+      </QueryClientProvider>,
+    )
+    const input = screen.getByLabelText(label)
+    await expect.element(input).toHaveAttribute('multiple')
+    await userEvent.upload(input, [png('a.png'), png('b.png'), png('c.png')])
+
+    await vi.waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(1))
+    await expect.element(screen.getByText(m.ui_files_over({ count: 1 }))).toBeVisible()
+    expect(onUploaded).toHaveBeenCalledTimes(1)
+    claim.resolve(null)
+    await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'a.png, b.png' }))).toBeVisible()
+    expect(onUploaded.mock.calls.map(([, file]) => file.name)).toEqual(['a.png', 'b.png'])
+  })
+})
+
 describe('FileInput while uploading', () => {
   test('a running upload shows its size and can be cancelled; nothing is handed over', async () => {
     const api = stubNetwork()

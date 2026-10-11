@@ -67,14 +67,17 @@ export const unanswered = (items: AssessmentItem[], answers: Record<string, Item
 export const secondsLeft = (remaining: number, receivedAtMs: number, nowMs: number) =>
   Math.max(0, Math.ceil(remaining - (nowMs - receivedAtMs) / 1000))
 
-/** A countdown face: "mm:ss", or "h:mm:ss" from an hour up. */
+/** A countdown face: "mm:ss", or "h:mm:ss" from an hour up (or when `hours` asks: the part after whole days). */
 const two = (value: number) => String(value).padStart(2, '0')
-export function clock(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
+export function clock(seconds: number, hours = seconds >= 3600): string {
+  const h = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const rest = two(seconds % 60)
-  return hours ? `${hours}:${two(minutes)}:${rest}` : `${two(minutes)}:${rest}`
+  return hours ? `${h}:${two(minutes)}:${rest}` : `${two(minutes)}:${rest}`
 }
+
+/** A day: a countdown to a due date can be weeks long, its face counts whole days first. */
+export const DAY_SECONDS = 86_400
 
 /** The last five minutes are a warning. */
 export const WARN_SECONDS = 300

@@ -48,6 +48,7 @@ const draft: StudentSubmission = {
   late_penalty_pct: null,
   submitted_at_unix: null,
   time_remaining_seconds: null,
+  time_remaining_reason: null,
 }
 const inProgress = () =>
   new APIError({ code: 'idempotency-in-progress', status: 409, message: 'still being processed' })

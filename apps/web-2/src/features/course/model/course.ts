@@ -47,7 +47,15 @@ export function primaryAction(
 }
 
 /** One syllabus row: the same shape from the guest's curriculum and from the learner's outline. */
-type SyllabusActivity = { id: ActivityId; title: string; type: string; complete: boolean; available: boolean }
+type SyllabusActivity = {
+  id: ActivityId
+  title: string
+  type: string
+  complete: boolean
+  available: boolean
+  /** A scheduled test: when it opens (listed, not openable until then). */
+  opensAt: number | null
+}
 export type SyllabusChapter = { id: string; title: string; activities: SyllabusActivity[] }
 
 /** A guest's syllabus: published activities only, chapters left without any are dropped. */
@@ -64,6 +72,7 @@ export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
           type: activity.activity_type,
           complete: false,
           available: false,
+          opensAt: null,
         })),
     }))
     .filter(chapter => chapter.activities.length > 0)
@@ -80,6 +89,7 @@ export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
       type: activity.activity_type,
       complete: activity.complete,
       available: state.enrolled && activity.available,
+      opensAt: activity.opens_at_unix,
     })),
   }))
 

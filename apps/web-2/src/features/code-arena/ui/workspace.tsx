@@ -22,6 +22,7 @@ import {
 } from '../model/arena'
 import { runnerStateOptions } from '../queries'
 import { LanguageSelect } from './language-select'
+import { DraftClock } from './draft-clock'
 import { CodeEditor } from './lazy-editor'
 import { RunnerDown } from './runner-down'
 import { SubmitDialog } from './submit-dialog'
@@ -36,14 +37,21 @@ const statusText: Record<DraftStatus, () => string> = {
   conflict: m.code_save_conflict,
 }
 
-type WorkspaceProps = { courseId: string; challenge: AssessmentDetail; code: CodeItem; draft: StudentSubmission }
+type WorkspaceProps = {
+  courseId: string
+  challenge: AssessmentDetail
+  code: CodeItem
+  draft: StudentSubmission
+  /** When the attempt list (with the draft's remaining seconds) arrived. */
+  receivedAt: number
+}
 
 /**
  * The open attempt (B-COD-05..10): language, the editor, "Run" on the visible tests and "Submit". The code lives here
  * while typing and goes to the server draft after a pause (B-COD-06). A runner that is down (its read or a run or
  * hand-in answered so) leaves the editor and the draft working; "Run" and "Submit" wait for "Retry" (B-COD-23).
  */
-export function Workspace({ courseId, challenge, code, draft }: WorkspaceProps) {
+export function Workspace({ courseId, challenge, code, draft, receivedAt }: WorkspaceProps) {
   const { data: runner, refetch, isFetching } = useSuspenseQuery(runnerStateOptions())
   const languages = languagesIn(runner)
   const [answer, setAnswer] = useState(() => initialAnswer(code.body, answerOf(draft, code.item.id)))
@@ -64,7 +72,10 @@ export function Workspace({ courseId, challenge, code, draft }: WorkspaceProps) 
         <h2 id="code-workspace" className="text-xl font-semibold">
           {m.code_solution()}
         </h2>
-        <output className="text-sm text-muted-foreground">{statusText[saver.status]()}</output>
+        <div className="flex items-center gap-3">
+          <DraftClock draft={draft} receivedAt={receivedAt} onExpire={handIn} />
+          <output className="text-sm text-muted-foreground">{statusText[saver.status]()}</output>
+        </div>
       </div>
       <LanguageSelect
         label={m.code_language()}

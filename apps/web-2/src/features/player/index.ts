@@ -1,5 +1,7 @@
-export { ensureCompletion, ensureLearner, ensurePlayer } from './queries'
+export { staffPreview } from './model/player'
+export { ensureCompletion, ensureEntry, ensureLearner, ensurePlayer, learnerStateOptions } from './queries'
 export { CompletionPage } from './ui/completion-page'
 export { PlayerError } from './ui/player-error'
 export { PlayerNotFound } from './ui/player-not-found'
 export { PlayerPage } from './ui/player-page'
+export { PreviewNote } from './ui/preview-note'

@@ -390,15 +390,18 @@ function ExamTakingContent({
         onPrevious: () => goTo(Math.max(0, currentIndex - 1)),
         onNext: () => goTo(Math.min(orderedQuestions.length - 1, currentIndex + 1)),
       },
-      timer: policy.timeLimitSeconds
+      // The server's countdown: the time limit or a strict due date, whichever comes first.
+      timer: timerExpiresAt
         ? {
             startedAt: attempt.started_at ?? attempt.created_at,
-            timeLimitMinutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
             expiresAt: timerExpiresAt,
             onExpire: () => {
               toast.error(
                 t('autoSubmitting', {
-                  reason: t('autoSubmittingReason.timeExpired'),
+                  reason:
+                    attempt.time_remaining_reason === 'deadline_passed'
+                      ? t('autoSubmittingReason.deadlinePassed')
+                      : t('autoSubmittingReason.timeExpired'),
                 }),
               )
               void handleSubmit(true)
@@ -450,6 +453,7 @@ function ExamTakingContent({
       attempt.created_at,
       attempt.violation_count,
       attempt.started_at,
+      attempt.time_remaining_reason,
       currentIndex,
       handleOpenSubmitConfirmation,
       handleSubmit,
