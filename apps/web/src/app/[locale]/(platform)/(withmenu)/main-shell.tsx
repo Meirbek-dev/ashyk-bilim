@@ -1,6 +1,7 @@
 'use client'
 
 import { GamificationProvider } from '@/components/Contexts/GamificationContext'
+import EmailVerifyBanner from '@/components/auth/EmailVerifyBanner'
 import NavBar from '@/components/Objects/Menus/nav-menu'
 import { NAVBAR_HEIGHT } from '@/lib/constants'
 import type { ReactNode } from 'react'
@@ -14,7 +15,10 @@ export default function MainShell({ children }: MainShellProps) {
     <GamificationProvider>
       <NavBar />
       {/* Content area offset via CSS - resilient to viewport/notch changes */}
-      <main style={{ paddingTop: NAVBAR_HEIGHT }}>{children}</main>
+      <main style={{ paddingTop: NAVBAR_HEIGHT }}>
+        <EmailVerifyBanner />
+        {children}
+      </main>
     </GamificationProvider>
   )
 }

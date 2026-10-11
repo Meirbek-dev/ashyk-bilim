@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 vi.mock('@components/Dashboard/Menus/DashSidebar', () => ({ default: () => null }))
 vi.mock('@components/Dashboard/Menus/DashMobileMenu', () => ({ default: () => null }))
+vi.mock('@/components/auth/EmailVerifyBanner', () => ({ default: () => null }))
 
 import DashShell from '@/app/[locale]/(platform)/dash/dash-shell'
 

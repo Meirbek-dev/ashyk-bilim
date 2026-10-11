@@ -1,5 +1,6 @@
 'use client'
 
+import EmailVerifyBanner from '@/components/auth/EmailVerifyBanner'
 import DashMobileMenu from '@components/Dashboard/Menus/DashMobileMenu'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import DashSidebar from '@components/Dashboard/Menus/DashSidebar'
@@ -12,7 +13,10 @@ function DashShell({ children }: { children: ReactNode }) {
       <DashSidebar className="z-50" />
       <SidebarInset className={cn('bg-background flex min-w-0 flex-1 flex-col')}>
         {/* `SidebarInset` is the page's one <main> landmark; pages add sections, never another main (UX-081). */}
-        <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
+        <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+          <EmailVerifyBanner />
+          {children}
+        </div>
 
         {/* Mobile Navigation - Only visible on small screens */}
         <div className="md:hidden">
