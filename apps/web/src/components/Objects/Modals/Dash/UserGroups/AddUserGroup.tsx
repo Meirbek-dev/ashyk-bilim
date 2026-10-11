@@ -9,6 +9,7 @@ import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
+import { useRef } from 'react'
 import { toast } from 'sonner'
 import { useApiError } from '@/hooks/useApiError'
 import * as v from 'valibot'
@@ -40,7 +41,11 @@ function AddUserGroup(props: AddUserGroupProps) {
     },
   })
 
+  // A double click created the group twice: the second click landed on the still-closing dialog's form.
+  const submitting = useRef(false)
   const handleSubmit = async (values: UserGroupFormValues) => {
+    if (submitting.current) return
+    submitting.current = true
     const toastID = toast.loading(t('toastLoading'))
     try {
       await createUserGroup(values)
@@ -51,6 +56,8 @@ function AddUserGroup(props: AddUserGroupProps) {
       toast.success(t('toastSuccess'), { id: toastID })
     } catch (error) {
       toastApiError(error, { setError: form.setError, fallback: t('toastError'), toastId: toastID })
+      // Only a failure re-arms the form: after a success it is closing (a click on it must not create again).
+      submitting.current = false
     }
   }
 
