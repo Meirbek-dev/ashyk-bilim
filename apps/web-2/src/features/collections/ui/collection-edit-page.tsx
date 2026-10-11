@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Suspense, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { UpdateCollectionRequest } from '#/shared/api/gen/types.gen'
@@ -24,9 +24,9 @@ export function CollectionEditPage() {
   const navigate = useNavigate()
   const update = useMutation(updateCollectionOptions(useQueryClient(), collectionId))
   const [conflict, setConflict] = useState(false)
-  // The version the form is based on: a live refresh of the collection (`collection.updated`) must not move it, or a
-  // save would silently overwrite the change it brought (B-COL-10). Only "reload and retry" takes the newer one.
-  const [base] = useState(() => query.data.version)
+  // The base version: a live refresh (`collection.updated`) must not move it, or a save would silently overwrite the
+  // change (B-COL-10). Only "reload and retry" takes the newer one, then saves through the form (its leave guard).
+  const base = useRef(query.data.version)
   // Captured once: a reload after a conflict must not reset what the user typed.
   const [defaultValues] = useState<UpdateCollectionRequest>(() => ({
     name: query.data.name,
@@ -50,11 +50,11 @@ export function CollectionEditPage() {
   const form = useAppForm(vUpdateCollectionRequest, {
     leaveGuard: true,
     defaultValues,
-    onSubmit: body => update.mutateAsync(request(body, base), callbacks),
+    onSubmit: body => update.mutateAsync(request(body, base.current), callbacks),
   })
   const reloadAndRetry = async () => {
-    const fresh = await query.refetch()
-    if (fresh.data) update.mutate(request(form.state.values, fresh.data.version), callbacks)
+    base.current = (await query.refetch()).data?.version ?? base.current
+    await form.handleSubmit()
   }
   const back = (
     <Link to="/collections/$collectionId" params={{ collectionId }}>

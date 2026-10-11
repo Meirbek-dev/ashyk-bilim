@@ -22,7 +22,8 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
     from: '/_authed/teach/courses/$courseId_/activities/$activityId/settings',
   })
   const query = useSuspenseQuery(activityOptions(activityId))
-  const update = useMutation(updateActivityOptions(useQueryClient(), courseId))
+  const queryClient = useQueryClient()
+  const update = useMutation(updateActivityOptions(queryClient, courseId))
   const [conflict, setConflict] = useState(false)
   const [defaultValues] = useState(() => ({ name: query.data.name }))
   const request = (name: string, version: number) => ({
@@ -40,11 +41,16 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
   const form = useAppForm(nameSchema, {
     leaveGuard: true,
     defaultValues,
-    onSubmit: ({ name }) => update.mutateAsync(request(name, query.data.version), callbacks),
+    // The cached version at submit time: this page's and the studio's other saves move it, a retry's reload too.
+    onSubmit: ({ name }) => {
+      const version = queryClient.getQueryData(activityOptions(activityId).queryKey)?.version ?? query.data.version
+      return update.mutateAsync(request(name, version), callbacks)
+    },
   })
+  // Through the form's submit: a save it did not see would leave the leave guard asking afterwards.
   const reloadAndRetry = async () => {
-    const fresh = await query.refetch()
-    if (fresh.data) update.mutate(request(form.state.values.name, fresh.data.version), callbacks)
+    await query.refetch()
+    await form.handleSubmit()
   }
   return (
     <>
