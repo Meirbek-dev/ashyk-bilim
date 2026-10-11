@@ -3102,6 +3102,7 @@
     "dedicationMessage": "Сіздің адалдығыңыз бен қажырлы еңбегіңіз өз нәтижесін берді. Сіз бұл курстың барлық материалын меңгердіңіз."
   },
   "CoursePage": {
+    "scheduledOpens": "{date} ашылады",
     "noPublishedActivities": "Бұл курста әзірге жарияланған сабақтар жоқ",
     "about": "Туралы",
     "access": "Қол жеткізу",
@@ -7691,6 +7692,8 @@
     "activityNotFoundMessage": "Сіз іздеген белсенділік жоқ немесе жойылған.",
     "activityUnavailable": "Белсенділік қолжетімсіз",
     "activityUnavailableMessage": "Бұл белсенділік әлі жарияланбаған. Жалғастыру үшін курсқа оралыңыз.",
+    "activityScheduled": "Әлі ашылмаған",
+    "activityScheduledMessage": "Бұл оқу тапсырмасы {date} ашылады. Оған дейін оны бастауға болмайды.",
     "courseNotFound": "Курс табылмады",
     "courseNotFoundMessage": "Сіз іздеген курс жоқ немесе жойылған.",
     "signInMayHelp": "Егер сізде рұқсат болса, аккаунтқа кіріңіз.",

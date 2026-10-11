@@ -3228,6 +3228,7 @@
     "dedicationMessage": "Your dedication and hard work have paid off. You've mastered all the content in this course."
   },
   "CoursePage": {
+    "scheduledOpens": "Opens {date}",
     "noPublishedActivities": "This course has no published lessons yet",
     "about": "About",
     "access": "Access",
@@ -8105,6 +8106,8 @@
     "activityNotFoundMessage": "The activity you are looking for does not exist or has been removed.",
     "activityUnavailable": "Activity not available",
     "activityUnavailableMessage": "This activity is not published yet. Go back to the course to continue.",
+    "activityScheduled": "Not open yet",
+    "activityScheduledMessage": "This task opens on {date}. It cannot be started before then.",
     "courseNotFound": "Course Not Found",
     "courseNotFoundMessage": "The course you are looking for does not exist or has been removed.",
     "signInMayHelp": "If you have access, sign in.",

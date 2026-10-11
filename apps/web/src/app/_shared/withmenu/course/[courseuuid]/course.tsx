@@ -42,7 +42,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buildCourseOverviewPath, isCourseArchived, isCourseAuthor } from '@/lib/course-management'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import Link from '@components/ui/AppLink'
 import { cn } from '@/lib/utils'
 import { MarkdownContent } from '@/features/content-markdown'
@@ -52,7 +54,12 @@ import {
   courseDiscussionsQueryOptions,
   learnerCourseStructureQueryOptions,
 } from '@/features/courses/queries/course.query'
-import { learnerCourseProgress, learnerCourseStateQueryOptions } from '@/features/learner-course/api'
+import {
+  isScheduledRow,
+  learnerCourseProgress,
+  learnerCourseStateQueryOptions,
+  withScheduledActivities,
+} from '@/features/learner-course/api'
 
 interface CourseClientProps {
   course: AppCourse
@@ -149,6 +156,12 @@ function CourseClient(props: CourseClientProps) {
   const learnerStateQuery = useQuery(learnerCourseStateQueryOptions(courseuuid, Boolean(currentUser)))
   const learnerState = learnerStateQuery.data
   const progress = useMemo(() => learnerCourseProgress(learnerState), [learnerState])
+  // ROUND3-11: scheduled tests are listed locked («Откроется …»), not linked and not counted.
+  const locale = useLocale()
+  const chapters = useMemo(
+    () => withScheduledActivities(course?.chapters ?? [], learnerState?.scheduled ?? []),
+    [course?.chapters, learnerState?.scheduled],
+  )
 
   // Server-rendered posts seed the query; it then polls while the page is open (UX-062).
   const queryClient = useQueryClient()
@@ -169,7 +182,7 @@ function CourseClient(props: CourseClientProps) {
   const isEnrolled = learnerState?.enrolled ?? false
   // Archived: enrolment is closed, every write 409s; the page stays readable (COURSE_ARCHIVING 9.4).
   const isArchived = isCourseArchived(course) || learnerState?.permissions.denial_reason === 'course_archived'
-  const hasActivities = (course?.chapters ?? []).some((chapter: AppChapter) => (chapter.activities?.length ?? 0) > 0)
+  const hasActivities = chapters.some((chapter: AppChapter) => (chapter.activities?.length ?? 0) > 0)
 
   const [prevCourse, setPrevCourse] = useState(course)
   if (course !== prevCourse) {
@@ -419,7 +432,7 @@ function CourseClient(props: CourseClientProps) {
                     </p>
                   ) : (
                     <div className="border-border overflow-hidden rounded-xl border">
-                      {(course.chapters ?? []).map((chapter: AppChapter, idx: number) => {
+                      {chapters.map((chapter: AppChapter, idx: number) => {
                         const chapterKey = chapter.chapter_uuid ?? `chapter-${idx}`
                         const isExpanded = expandedChapters[chapterKey] ?? idx === 0
                         return (
@@ -467,6 +480,38 @@ function CourseClient(props: CourseClientProps) {
                             <CollapsibleContent>
                               <div className="border-border border-t">
                                 {(chapter.activities ?? []).map((activity: AppActivity, actIdx: number) => {
+                                  if (isScheduledRow(activity)) {
+                                    return (
+                                      <div
+                                        key={activity.activity_uuid}
+                                        data-testid={`scheduled-${activity.activity_uuid}`}
+                                        className={cn(
+                                          'flex items-center gap-4 px-5 py-3.5',
+                                          actIdx > 0 && 'border-t border-border/60',
+                                        )}
+                                      >
+                                        <div className="shrink-0">
+                                          <Lock size={16} className="text-muted-foreground" />
+                                        </div>
+                                        <div className="flex min-w-0 flex-1 flex-col">
+                                          <span className="text-muted-foreground truncate text-sm font-medium">
+                                            {activity.name}
+                                          </span>
+                                          <span className="text-muted-foreground mt-0.5 text-xs">
+                                            {activity.scheduled_opens_at_unix === null
+                                              ? getActivityTypeLabel(activity.activity_type ?? '')
+                                              : t('scheduledOpens', {
+                                                  date: formatDate(
+                                                    fromUnix(activity.scheduled_opens_at_unix),
+                                                    locale,
+                                                    DATE_TIME_LONG_OPTIONS,
+                                                  ),
+                                                })}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )
+                                  }
                                   const done = isActivityDone(activity)
                                   const current = isActivityCurrent(activity)
                                   return (

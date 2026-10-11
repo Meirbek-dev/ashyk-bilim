@@ -3275,6 +3275,7 @@
     "dedicationMessage": "Ваша преданность и усердный труд окупились. Вы освоили весь материал этого курса."
   },
   "CoursePage": {
+    "scheduledOpens": "Откроется {date}",
     "noPublishedActivities": "В этом курсе пока нет опубликованных уроков",
     "about": "О курсе",
     "access": "Доступ",
@@ -8222,6 +8223,8 @@
     "activityNotFoundMessage": "Запрашиваемая активность не существует или была удалена.",
     "activityUnavailable": "Активность недоступна",
     "activityUnavailableMessage": "Эта активность ещё не опубликована. Вернитесь к курсу, чтобы продолжить.",
+    "activityScheduled": "Ещё не открыто",
+    "activityScheduledMessage": "Эта учебная задача откроется {date}. До этого её нельзя начать.",
     "courseNotFound": "Курс не найден",
     "courseNotFoundMessage": "Запрашиваемый курс не существует или был удален.",
     "signInMayHelp": "Если у вас есть доступ, войдите в аккаунт.",

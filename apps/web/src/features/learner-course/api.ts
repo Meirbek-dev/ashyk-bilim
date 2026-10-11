@@ -1,17 +1,48 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 
+import { toAppActivityType } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
 import { LearnerCourseState } from '@/lib/api/generated/zod'
 
 export type { LearnerCourseState }
 
+/** A test that is scheduled to open: listed locked on the course page, not counted, not linked (ROUND3-11). */
+export interface ScheduledActivity {
+  id: string
+  title: string
+  activityType: string
+  opensAtUnix: number | null
+  chapterId: string
+  chapterTitle: string
+  /** The chapter's position in the server's outline (a chapter may hold nothing but the scheduled test). */
+  chapterOrder: number
+}
+
+export function scheduledActivities(state: LearnerCourseState): ScheduledActivity[] {
+  return state.outline.flatMap((chapter, chapterOrder) =>
+    chapter.activities
+      .filter(activity => activity.blocked_reason === 'scheduled')
+      .map(activity => ({
+        id: activity.id,
+        title: activity.title,
+        activityType: activity.activity_type,
+        opensAtUnix: activity.opens_at_unix ?? null,
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        chapterOrder,
+      })),
+  )
+}
+
 /**
  * The learner state as this web shows it: the server also lists a scheduled test (`blocked_reason: 'scheduled'`,
- * with its opening time) whose activity is not published yet - this web's course page, sidebar and activity page
- * follow published activities only, so the entry (and a chapter left empty) is dropped here.
+ * with its opening time) whose activity is not published yet - this web's sidebar, progress and activity page
+ * follow published activities only, so the entry (and a chapter left empty) is dropped from `outline` and kept
+ * in `scheduled` for the course page's locked «Откроется …» rows.
  */
-export function parseLearnerCourseState(value: unknown): LearnerCourseState {
+export function parseLearnerCourseState(value: unknown): LearnerCourseState & { scheduled?: ScheduledActivity[] } {
   const state = LearnerCourseState.parse(value)
+  const scheduled = scheduledActivities(state)
   const outline = state.outline
     .map(chapter => ({
       ...chapter,
@@ -19,7 +50,45 @@ export function parseLearnerCourseState(value: unknown): LearnerCourseState {
     }))
     .filter(chapter => chapter.activities.length > 0)
     .map((chapter, index) => Object.assign(chapter, { index }))
-  return { ...state, outline }
+  return { ...state, outline, scheduled }
+}
+
+/** A locked course-page row: `scheduled_opens_at_unix` marks it (no link, not counted). */
+export type ScheduledRow = AppActivity & { scheduled_opens_at_unix: number | null }
+
+export const isScheduledRow = (activity: AppActivity): activity is ScheduledRow => 'scheduled_opens_at_unix' in activity
+
+/**
+ * The course page's chapters with each scheduled test appended to its chapter as a locked row; a chapter that
+ * holds nothing published yet (so the course read left it out) is added at its outline position (ROUND3-11).
+ */
+export function withScheduledActivities(chapters: AppChapter[], scheduled: ScheduledActivity[]): AppChapter[] {
+  if (scheduled.length === 0) return chapters
+  const strip = (id: string | undefined) => (id ?? '').replace(/^chapter_/, '')
+  const merged = chapters.map(chapter => ({ ...chapter, activities: [...(chapter.activities ?? [])] }))
+  for (const entry of scheduled) {
+    const row: ScheduledRow = {
+      activity_uuid: entry.id,
+      name: entry.title,
+      activity_type: toAppActivityType(entry.activityType),
+      scheduled_opens_at_unix: entry.opensAtUnix,
+    }
+    let chapter = merged.find(candidate => strip(candidate.chapter_uuid) === entry.chapterId)
+    if (!chapter) {
+      chapter = { chapter_uuid: entry.chapterId, name: entry.chapterTitle, activities: [] }
+      // ponytail: placed at its outline index among the known chapters - exact while the chapters before it all
+      // have a published lesson (the usual case); pass the full outline order if that ever matters.
+      merged.splice(Math.min(entry.chapterOrder, merged.length), 0, chapter)
+    }
+    chapter.activities.push(row)
+  }
+  return merged
+}
+
+/** A direct link to a test that is not open yet: its entry in the learner state, else `null`. */
+export async function findScheduledActivity(courseUuid: string, activityId: string) {
+  const state = await apiJson(`courses/${courseUuid}/learner-state`, {}, value => LearnerCourseState.parse(value))
+  return scheduledActivities(state).find(activity => activity.id === activityId) ?? null
 }
 
 export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = true) =>

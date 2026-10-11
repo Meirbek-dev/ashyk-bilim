@@ -2614,3 +2614,12 @@ Both webs ask «Выйти без сохранения?» before navigating away
 composer (new post, reply, edit) that holds real text. An editor emptied again (`<p></p>` /
 an empty JSON document) or an edit back at its original text does not ask - there is nothing
 to lose. One guard per post card, so several open composers give one prompt.
+
+## Legacy course page: scheduled tests listed locked (2026-10-11)
+
+A test scheduled to open later is listed on the legacy course page in its chapter as a locked
+row «Откроется <date, time>» (no link, not in progress counts or «Следующий шаг»), from the
+learner-state entries with `blocked_reason: scheduled`. A chapter that holds only such a test is
+listed as well. A direct URL to it shows when it opens instead of «Активность не найдена» (the
+API keeps answering 404 on the activity read; no new contract). The proxy's 404 probe (ROUND3-17)
+lets these URLs through.

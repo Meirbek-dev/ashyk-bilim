@@ -10,6 +10,8 @@ import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 import { APP_NAME } from '@/lib/constants'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
+import ScheduledActivity from '@/components/Errors/ScheduledActivity'
+import { findScheduledActivity } from '@/features/learner-course/api'
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity'
 import type { CourseStructure } from '@components/Contexts/CourseContext'
@@ -22,6 +24,11 @@ interface MetadataProps {
 const fetchCourseMetadata = cache(async (courseuuid: string) => getCourseMetadata(courseuuid))
 
 const fetchActivity = cache(async (activityid: string) => getActivity(activityid))
+
+/** A test that is not open yet answers 404 on the activity read; the learner state still lists it (ROUND3-11). */
+const fetchScheduled = cache(async (courseuuid: string, activityid: string) =>
+  findScheduledActivity(courseuuid, activityid).catch(() => null),
+)
 
 const fetchRuntime = cache(async (courseuuid: string, activityid: string) =>
   getStudentActivityRuntime(courseuuid, activityid),
@@ -86,7 +93,9 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     }
     if (apiError.status === 404 || apiError.status === 422) {
       const tErrors = await getTranslations('Errors')
-      return { title: `${tErrors('activityNotFound')} - ${APP_NAME}`, robots: { index: false } }
+      const scheduled = apiError.status === 404 ? await fetchScheduled(courseuuid, activityid) : null
+      const title = scheduled ? `${scheduled.title} - ${tErrors('activityScheduled')}` : tErrors('activityNotFound')
+      return { title: `${title} - ${APP_NAME}`, robots: { index: false } }
     }
     throw error
   }
@@ -146,6 +155,8 @@ async function PlatformActivityContent({ params }: PlatformActivityPageProps) {
     }
     // A malformed id is a 422 that names nothing: not found, not an error (UX-078).
     if (apiError.status === 404 || apiError.status === 422) {
+      const scheduled = apiError.status === 404 ? await fetchScheduled(courseuuid, activityid) : null
+      if (scheduled) return <ScheduledActivity activity={scheduled} courseuuid={courseuuid} />
       const activeSession = await getSession()
       return <ResourceNotFound type="activity" courseuuid={courseuuid} session={activeSession} />
     }
