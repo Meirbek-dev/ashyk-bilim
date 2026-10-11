@@ -31,6 +31,8 @@ describe('analytics signals', () => {
     expect(signalText.completion_target_miss({ course_name: 'Алгебра', count: 3 })).toBe(
       '«Алгебра»: учащихся, которые вряд ли завершат курс в срок: 3',
     )
+    // A teacher's overview lists every course's alert together: each names its course.
+    expect(signalText.content_stale({ course_name: 'Java', days: 104 })).toBe('«Java»: курс не обновлялся 104 дн.')
     expect(signalText.low_pass_rate({ assessment_title: 'Тест 1', pass_rate: 42.5 })).toContain('42,5')
     expect(
       signalText.grading_slo_watch({

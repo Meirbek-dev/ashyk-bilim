@@ -9465,7 +9465,7 @@
     },
     "messages": {
       "grading_backlog": {
-        "title": "Grading queue needs attention",
+        "title": "{course_name}: grading queue needs attention",
         "body": [
           {
             "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
@@ -9478,7 +9478,7 @@
         ]
       },
       "engagement_dropped": {
-        "title": "Engagement dropped",
+        "title": "{course_name}: engagement dropped",
         "body": [
           {
             "declarations": ["input delta_pct", "local delta_pct_number = delta_pct: number"],
@@ -9489,7 +9489,7 @@
         ]
       },
       "content_stale": {
-        "title": "Content may be stale",
+        "title": "{course_name}: content may be stale",
         "body": [
           {
             "declarations": ["input days", "local days_plural = days: plural", "local days_number = days: number"],

@@ -51,14 +51,16 @@ fn avg_progress(snapshots: &[&ProgressSnapshot]) -> f64 {
     mean(&snapshots.iter().map(|s| s.progress_pct).collect::<Vec<_>>()).map_or(0.0, round1)
 }
 
-/// Legacy course-level `top_alert` ladder.
+/// Legacy course-level `top_alert` ladder. The overview lists these alerts of all the teacher's
+/// courses together, so each also carries `course_name` (besides the params `AnalyticsCode` documents).
 #[must_use]
 pub fn course_top_alert(
-    course_id: CourseId,
+    course: &ab_db::analytics::CourseInfoRow,
     ungraded: i64,
     engagement_delta_pct: Option<f64>,
     days_since_update: Option<i64>,
 ) -> Option<AlertItem> {
+    let (course_id, course_name) = (course.id, course.name.as_str());
     if ungraded >= 10 {
         return Some(AlertItem {
             id: format!("grading-backlog-{course_id}"),
@@ -69,7 +71,7 @@ pub fn course_top_alert(
                 Severity::Critical
             },
             code: AnalyticsCode::GradingBacklog,
-            params: serde_json::json!({ "count": ungraded }),
+            params: serde_json::json!({ "count": ungraded, "course_name": course_name }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,
@@ -83,7 +85,7 @@ pub fn course_top_alert(
             kind: AlertKind::EngagementDrop,
             severity: Severity::Warning,
             code: AnalyticsCode::EngagementDropped,
-            params: serde_json::json!({ "delta_pct": delta.abs() }),
+            params: serde_json::json!({ "delta_pct": delta.abs(), "course_name": course_name }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,
@@ -101,7 +103,7 @@ pub fn course_top_alert(
                 Severity::Warning
             },
             code: AnalyticsCode::ContentStale,
-            params: serde_json::json!({ "days": days }),
+            params: serde_json::json!({ "days": days, "course_name": course_name }),
             href: None,
             course_id: Some(course_id),
             activity_id: None,
@@ -232,7 +234,7 @@ pub fn build_course_rows(
             cohort_completion_delta_pct: (!filters.cohort_ids.is_empty())
                 .then(|| round1(completion - all_completion)),
             last_content_update_at_unix: last_update,
-            top_alert: course_top_alert(*course_id, ungraded, engagement_delta, days_since_update),
+            top_alert: course_top_alert(course, ungraded, engagement_delta, days_since_update),
         });
     }
     if !rows.is_empty() {
@@ -541,26 +543,36 @@ mod tests {
 
     #[test]
     fn alert_ladder_prefers_backlog_then_engagement_then_staleness() {
-        let id = CourseId::new();
+        let course = ab_db::analytics::CourseInfoRow {
+            id: CourseId::new(),
+            name: "Java".to_owned(),
+            creator_id: None,
+            updated_at: 0,
+            archived: false,
+        };
         assert_eq!(
-            course_top_alert(id, 30, Some(-50.0), Some(60))
+            course_top_alert(&course, 30, Some(-50.0), Some(60))
                 .unwrap()
                 .kind,
             AlertKind::GradingBacklog
         );
         assert_eq!(
-            course_top_alert(id, 30, None, None).unwrap().severity,
+            course_top_alert(&course, 30, None, None).unwrap().severity,
             Severity::Critical
         );
         assert_eq!(
-            course_top_alert(id, 0, Some(-16.0), Some(60)).unwrap().kind,
+            course_top_alert(&course, 0, Some(-16.0), Some(60))
+                .unwrap()
+                .kind,
             AlertKind::EngagementDrop
         );
-        let stale = course_top_alert(id, 0, Some(-5.0), Some(30)).unwrap();
+        let stale = course_top_alert(&course, 0, Some(-5.0), Some(30)).unwrap();
+        // Teachers see several courses' alerts in one list: each names its course.
+        assert_eq!(stale.params["course_name"], "Java");
         assert_eq!(
             (stale.kind, stale.severity),
             (AlertKind::ContentStale, Severity::Info)
         );
-        assert!(course_top_alert(id, 0, None, Some(21)).is_none());
+        assert!(course_top_alert(&course, 0, None, Some(21)).is_none());
     }
 }

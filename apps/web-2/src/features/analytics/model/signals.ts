@@ -90,9 +90,10 @@ const slo = (p: MessageParams) => ({
 
 /** The sentence for a server-composed analytics item: its code localised with its params, numbers formatted. */
 export const signalText = {
-  grading_backlog: p => m.analytics_code_grading_backlog({ count: num(p, 'count') }),
-  engagement_dropped: p => m.analytics_code_engagement_dropped({ delta: pct(p, 'delta_pct') }),
-  content_stale: p => m.analytics_code_content_stale({ days: num(p, 'days') }),
+  grading_backlog: p => m.analytics_code_grading_backlog({ course: text(p, 'course_name'), count: num(p, 'count') }),
+  engagement_dropped: p =>
+    m.analytics_code_engagement_dropped({ course: text(p, 'course_name'), delta: pct(p, 'delta_pct') }),
+  content_stale: p => m.analytics_code_content_stale({ course: text(p, 'course_name'), days: num(p, 'days') }),
   risk_spike: p => m.analytics_code_risk_spike({ count: num(p, 'count') }),
   grading_slo_breached: p => m.analytics_code_grading_slo_breached(slo(p)),
   grading_slo_watch: p => m.analytics_code_grading_slo_watch(slo(p)),

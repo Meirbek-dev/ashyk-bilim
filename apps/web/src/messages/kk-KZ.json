@@ -8952,11 +8952,11 @@
     },
     "messages": {
       "grading_backlog": {
-        "title": "Тексеру кезегі назар талап етеді",
+        "title": "{course_name}: тексеру кезегі назар талап етеді",
         "body": "{count} жұмыс әлі тексеруді күтуде."
       },
       "engagement_dropped": {
-        "title": "Белсенділік төмендеді",
+        "title": "{course_name}: белсенділік төмендеді",
         "body": [
           {
             "declarations": ["input delta_pct", "local delta_pct_number = delta_pct: number"],
@@ -8967,7 +8967,7 @@
         ]
       },
       "content_stale": {
-        "title": "Контент ескірген болуы мүмкін",
+        "title": "{course_name}: контент ескірген болуы мүмкін",
         "body": "Курс {days} күн жаңартылмаған."
       },
       "risk_spike": {

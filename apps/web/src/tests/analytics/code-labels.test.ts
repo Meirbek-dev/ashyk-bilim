@@ -115,6 +115,18 @@ describe('getAnalyticsMessage', () => {
     expect(body).not.toContain('66.7')
   })
 
+  // A teacher's overview lists every course's alert together: each title names its course.
+  it.each([
+    ['ru-RU', ru, 'Java: контент мог устареть'],
+    ['kk-KZ', kk, 'Java: контент ескірген болуы мүмкін'],
+    ['en-US', en, 'Java: content may be stale'],
+  ])('%s names the course of a course alert', (locale, messages, expected) => {
+    const t = createTranslator({ locale, messages, namespace: 'TeacherAnalytics' }) as unknown as LooseTranslator
+    expect(getAnalyticsMessage(t, { code: 'content_stale', params: { days: 104, course_name: 'Java' } }).title).toBe(
+      expected,
+    )
+  })
+
   it('renders list params through codes.* before joining', () => {
     expect(
       getAnalyticsMessage(t, { code: 'missing_event_sources', params: { sources: ['exam_attempts', 'event_log'] } })
