@@ -15,6 +15,8 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
 const webDir = path.resolve(import.meta.dirname, '..')
+// ORVAL_OUTPUT_DIR (relative to apps/web): check:contracts writes a scratch copy instead.
+const outDir = process.env.ORVAL_OUTPUT_DIR ?? 'src/lib/api/generated'
 
 const waitForWindowsFileHandles = async () => {
   if (process.platform === 'win32') {
@@ -39,7 +41,7 @@ run(process.execPath, ['scripts/postprocess-orval-output.mjs'], webDir)
 await waitForWindowsFileHandles()
 
 // Run from apps/web so vp picks up apps/web/vite.config.ts (the fmt config).
-run('vp', ['fmt', '--write', 'src/lib/api/generated'], webDir, process.platform === 'win32')
+run('vp', ['fmt', '--write', outDir], webDir, process.platform === 'win32')
 await waitForWindowsFileHandles()
 
 run(process.execPath, ['scripts/postprocess-orval-output.mjs'], webDir)

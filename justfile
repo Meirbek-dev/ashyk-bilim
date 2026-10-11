@@ -24,12 +24,22 @@ default:
     @{{ just_bin }} --list
 
 # Install pinned tools/dependencies and the commit gate. Needs Git Bash on Windows.
-setup: skills-sync
-    {{ just_bin }} server setup
-    bun install --frozen-lockfile
-    cd apps/web-2 && bun install --frozen-lockfile && bun run codegen
-    git config --local core.hooksPath .vite-hooks
+setup: setup-server setup-web setup-web2
     {{ just_bin }} doctor
+
+# One app only (setup-web, setup-web2 likewise); `just doctor` checks the full set.
+setup-server: _setup-repo
+    {{ just_bin }} server setup
+
+setup-web: _setup-repo
+    bun install --frozen-lockfile
+
+# Chromium: the vitest browser project in verify (Playwright e2e may need more browsers).
+setup-web2: _setup-repo
+    cd apps/web-2 && bun install --frozen-lockfile && bun run codegen messages && bunx playwright install chromium
+
+_setup-repo: skills-sync
+    git config --local core.hooksPath .vite-hooks
 
 # Claude compatibility copies are generated; edit only .agents/skills.
 skills-sync:

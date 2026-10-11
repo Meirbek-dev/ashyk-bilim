@@ -55,36 +55,80 @@ test('root server proxy preserves filters, bounds build jobs and defaults to cac
   }
 })
 
-test('CI codegen accepts current output and rejects modified, deleted and new artifacts', () => {
-  const workflow = readFileSync(join(root, '.github/workflows/ci.yaml'), 'utf8')
-  const block = workflow.match(/name: Codegen \(paraglide;[^\n]*\n\s+run: \|\n((?:          [^\n]*\n)+)/)?.[1]
-  assert.ok(block, 'codegen CI step must exist')
-  const script = block.split('\n').map(line => line.trimStart()).join('\n')
+test('web contract check regenerates and rejects a stale, incomplete or orphaned committed client', () => {
   for (const mode of ['clean', 'modified', 'deleted', 'new']) {
-    const dir = mkdtempSync(join(tmpdir(), 'ashyq-codegen-'))
+    const dir = mkdtempSync(join(tmpdir(), 'ashyq-contracts-'))
     try {
-      mkdirSync(join(dir, 'src/shared/api/gen'), { recursive: true })
-      writeFileSync(join(dir, 'src/shared/api/gen/sdk.ts'), 'committed\n')
-      writeFileSync(join(dir, 'src/routeTree.gen.ts'), 'committed\n')
-      writeFileSync(join(dir, 'package.json'), JSON.stringify({ scripts: { codegen: 'node generate.mjs' } }))
-      writeFileSync(join(dir, 'bun'), '#!/bin/sh\nexec node generate.mjs\n', { mode: 0o755 })
-      writeFileSync(join(dir, 'generate.mjs'), `import { writeFileSync, unlinkSync } from 'node:fs'
-if ('${mode}' === 'modified') writeFileSync('src/routeTree.gen.ts', 'changed\\n')
-if ('${mode}' === 'deleted') unlinkSync('src/shared/api/gen/sdk.ts')
-if ('${mode}' === 'new') writeFileSync('src/shared/api/gen/new.ts', 'new\\n')
+      const web = join(dir, 'apps/web')
+      mkdirSync(join(web, 'scripts'), { recursive: true })
+      mkdirSync(join(web, 'src/lib/api/generated/zod'), { recursive: true })
+      writeFileSync(join(web, 'scripts/check_contracts.mjs'), readFileSync(join(root, 'apps/web/scripts/check_contracts.mjs')))
+      writeFileSync(join(web, 'scripts/postprocess-orval-output.mjs'), '')
+      // Stands in for orval: what the current contract generates.
+      writeFileSync(join(web, 'scripts/generate-api-types.mjs'), `import { mkdirSync, writeFileSync } from 'node:fs'
+const out = process.env.ORVAL_OUTPUT_DIR
+mkdirSync(out + '/zod', { recursive: true })
+writeFileSync(out + '/index.ts', 'index\\n')
+writeFileSync(out + '/zod/a.zod.ts', 'a\\n')
 `)
-      for (const args of [['init', '-q'], ['add', '.'], ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'fixture']]) {
-        const result = run('git', args, { cwd: dir })
-        assert.equal(result.status, 0, result.stderr)
-      }
-      const result = run('sh', ['-ec', script], {
-        cwd: dir,
-        env: { ...process.env, PATH: `${dir}${delimiter}${process.env.PATH}` },
-      })
+      const committed = join(web, 'src/lib/api/generated')
+      writeFileSync(join(committed, 'index.ts'), 'index\n')
+      if (mode !== 'deleted') writeFileSync(join(committed, 'zod/a.zod.ts'), mode === 'modified' ? 'stale\n' : 'a\n')
+      if (mode === 'new') writeFileSync(join(committed, 'zod/orphan.zod.ts'), 'orphan\n')
+      const result = run(process.execPath, ['scripts/check_contracts.mjs'], { cwd: web })
       assert.equal(result.status === 0, mode === 'clean', `${mode}: ${result.stderr}`)
+      assert.deepEqual(readdirSync(join(web, 'src/lib/api')), ['generated'], 'scratch output is removed')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  }
+})
+
+test('pre-commit refuses to verify a staged web-2 file whose working copy differs', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-hook-'))
+  const git = (...args) => {
+    const result = run('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: dir })
+    assert.equal(result.status, 0, result.stderr)
+  }
+  try {
+    mkdirSync(join(dir, '.vite-hooks'))
+    mkdirSync(join(dir, 'apps/web-2'), { recursive: true })
+    mkdirSync(join(dir, 'bin'))
+    writeFileSync(join(dir, '.vite-hooks/pre-commit'), readFileSync(join(root, '.vite-hooks/pre-commit')))
+    writeFileSync(join(dir, 'bin/bun'), '#!/bin/sh\necho "$*" >>"$(git rev-parse --show-toplevel)/bun.log"\n', { mode: 0o755 })
+    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'a\n')
+    writeFileSync(join(dir, 'apps/web-2/b.ts'), 'b\n')
+    git('init', '-q')
+    git('config', 'core.autocrlf', 'false')
+    git('add', 'apps')
+    git('commit', '-qm', 'fixture')
+    const hook = () => {
+      rmSync(join(dir, 'bun.log'), { force: true })
+      const result = run('sh', ['.vite-hooks/pre-commit'], {
+        cwd: dir,
+        env: { ...process.env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` },
+      })
+      let verified = true
+      try {
+        readFileSync(join(dir, 'bun.log'))
+      } catch {
+        verified = false
+      }
+      return { status: result.status, verified, stderr: result.stderr }
+    }
+    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'staged\n')
+    git('add', 'apps/web-2/a.ts')
+    assert.deepEqual(hook(), { status: 0, verified: true, stderr: '' })
+    writeFileSync(join(dir, 'apps/web-2/b.ts'), 'unrelated unstaged\n')
+    assert.equal(hook().status, 0, 'unstaged edits to other files do not block')
+    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'unstaged fix\n')
+    const blocked = hook()
+    assert.equal(blocked.status, 1)
+    assert.equal(blocked.verified, false)
+    assert.match(blocked.stderr, /apps\/web-2\/a\.ts/)
+    assert.doesNotMatch(blocked.stderr, /b\.ts/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })
 

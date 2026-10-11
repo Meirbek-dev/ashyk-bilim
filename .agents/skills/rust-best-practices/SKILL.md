@@ -1,13 +1,6 @@
 ---
 name: rust-best-practices
-description: >
-  Guide for writing idiomatic Rust code based on Apollo GraphQL's best practices handbook. Use this skill when:
-  (1) writing new Rust code or functions,
-  (2) reviewing or refactoring existing Rust code,
-  (3) deciding between borrowing vs cloning or ownership patterns,
-  (4) implementing error handling with Result types,
-  (5) optimizing Rust code for performance,
-  (6) writing tests or documentation for Rust projects.
+description: Apollo GraphQL's Rust handbook. Use only when explicitly asked to review Rust against this handbook; rust-engineer is the default Rust guide (apps/server/AGENTS.md has the repo rules).
 license: MIT
 compatibility: Rust 1.70+, Cargo
 metadata:

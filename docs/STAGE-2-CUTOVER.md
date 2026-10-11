@@ -25,7 +25,7 @@ A() { dc exec -T server ashyq admin "$@"; }
 
 1. **Release published.** Orchestrator cuts `release/stage2` from a green `main` and pushes it.
    That CI run is green end to end: gates, `images`, `stack-smoke` incl. "Smoke with the published
-   old web" and "Smoke with the new web", `web2-e2e`, and `publish` without the `ashyq-web-2 ... not published` warning. Check:
+   old web" and "Smoke with the new web", `web2-e2e`, `publish` and `publish-web2`. Check:
    `for i in server web web-2; do docker manifest inspect ghcr.io/meirbek-dev/ashyq-$i:<sha> >/dev/null && echo ok $i; done`.
    `ashyq-web:<sha>` is the frozen old web (same digest as `ashyq-web:f5e493c4`, today's prod).
 2. **Full e2e incl. `@judge0`** on the local stand (Ф7) green with this `<sha>`'s images.

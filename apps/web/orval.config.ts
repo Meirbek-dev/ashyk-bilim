@@ -1,5 +1,8 @@
 import { defineConfig } from 'orval'
 
+// check:contracts regenerates into a scratch sibling directory (same depth, same relative imports).
+const outDir = process.env.ORVAL_OUTPUT_DIR ?? 'src/lib/api/generated'
+
 /**
  * Client generation for the v2 contract (`apps/server/openapi.v2.json`,
  * produced by `ashyq openapi`). Run `bun run generate:api-types` after the
@@ -14,13 +17,15 @@ export default defineConfig({
       },
     },
     output: {
-      target: 'src/lib/api/generated/api.ts',
+      target: `${outDir}/api.ts`,
       mode: 'tags-split',
+      // Removes files of operations/schemas the contract no longer has.
+      clean: true,
       client: 'react-query',
       httpClient: 'fetch',
       schemas: {
         type: 'zod',
-        path: 'src/lib/api/generated/zod',
+        path: `${outDir}/zod`,
       },
       tagsSplitDeduplication: true,
       override: {

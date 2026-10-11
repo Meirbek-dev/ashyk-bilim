@@ -9,7 +9,9 @@ FROM node:26.11.1-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY . .
+# Only this app's inputs: server or web-2 edits must not invalidate the Next.js build layer.
+COPY package.json bun.lock ./
+COPY apps/web ./apps/web
 
 # Public env vars are baked into the bundle at build time
 ARG NEXT_PUBLIC_SITE_URL

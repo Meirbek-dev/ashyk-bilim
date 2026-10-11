@@ -1,6 +1,6 @@
 # One workflow for gates, images, stack smoke and publish. main and release/** branches
-# publish: server, the old web (production since the 2026-10-04 rollback) and, when web2-e2e
-# is green, ashyq-web-2, all under the same <sha> (docs/STAGE-2-CUTOVER.md).
+# publish: server and the old web (production since the 2026-10-04 rollback) without waiting for
+# web2-e2e, then ashyq-web-2 when web2-e2e is green, all under the same <sha> (docs/STAGE-2-CUTOVER.md).
 # Pull requests run the gates only. Images are pushed as ci-<sha> and retagged to <sha>/latest
 # only after the full stack passed smoke; deploy.sh accepts <sha> tags only.
 name: ci
@@ -62,6 +62,8 @@ jobs:
               - 'apps/web/**'
               - 'package.json'
               - 'bun.lock'
+              # web-gates: check:contracts and check:error-codes read the contract
+              - 'apps/server/openapi.v2.json'
             web2:
               - 'apps/web-2/**'
               - 'apps/server/openapi.v2.json'
@@ -148,6 +150,8 @@ jobs:
       NEXTEST_STATUS_LEVEL: fail
       NEXTEST_FINAL_STATUS_LEVEL: fail
       NEXTEST_FAILURE_OUTPUT: final
+      # .config/nextest.toml: per-test timeouts and the JUnit report uploaded below.
+      NEXTEST_PROFILE: ci
     steps:
       - uses: actions/checkout@v7
 
@@ -175,6 +179,14 @@ jobs:
 
       - name: Tests (nextest) with coverage floor
         run: just cov
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: server-junit-${{ needs.changes.outputs.sha }}
+          path: apps/server/target/nextest/ci/junit.xml
+          retention-days: 7
+          if-no-files-found: ignore
 
   infra-gates:
     needs: changes
@@ -205,6 +217,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # The production web (apps/web): `just ci-web` = lint, typecheck, unit tests, contract, error-code
+  # and message checks. publish requires it whenever the old web is published.
+  web-gates:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: ${{ needs.changes.outputs.just-tool }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: just ci-web
+        run: just ci-web
+
   # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
   # production build with chunk budgets. Regeneration must not repair uncommitted artifacts silently.
   web2-gates:
@@ -234,11 +274,9 @@ jobs:
       - name: Playwright chromium (vitest browser project)
         run: bunx playwright install --with-deps chromium
 
-      - name: Codegen (paraglide; client and route tree must already be committed)
-        run: |
-          bun run codegen
-          git diff --exit-code HEAD -- src/shared/api/gen src/routeTree.gen.ts
-          test -z "$(git ls-files --others --exclude-standard -- src/shared/api/gen src/routeTree.gen.ts)"
+      # The committed client and route tree are checked once, by verify's codegen gate (G-09).
+      - name: Messages (gitignored paraglide output)
+        run: bun run codegen messages
 
       - name: Verify (check, tests, gates)
         env:
@@ -439,7 +477,7 @@ jobs:
         working-directory: apps/web-2
         run: |
           bun install --frozen-lockfile
-          bun run codegen
+          bun run codegen messages
           bunx playwright install --with-deps
 
       - name: Stand up
@@ -480,15 +518,15 @@ jobs:
         if: always()
         run: just web2-stand-down
 
+  # Production images (server, old web). Not web2-e2e: the replacement web's suite gates only
+  # ashyq-web-2 (publish-web2). Any red gate here withholds everything.
   publish:
-    needs: [changes, server-lint, server-test, web2-gates, infra-gates, stack-smoke, web2-e2e]
-    # main and release branches (every gate runs there). A red web2-e2e withholds ashyq-web-2 but
-    # not a server release; any red gate withholds everything (images no longer wait for gates).
+    needs: [changes, server-lint, server-test, web-gates, web2-gates, infra-gates, stack-smoke]
     if: >-
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !cancelled() &&
       needs.server-lint.result == 'success' && needs.server-test.result == 'success' &&
-      needs.web2-gates.result == 'success' && needs.infra-gates.result == 'success' &&
-      needs.stack-smoke.result == 'success'
+      needs.web-gates.result == 'success' && needs.web2-gates.result == 'success' &&
+      needs.infra-gates.result == 'success' && needs.stack-smoke.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -507,7 +545,6 @@ jobs:
         env:
           SHA: ${{ needs.changes.outputs.sha }}
           WEB_BUILT: ${{ needs.changes.outputs.web }}
-          WEB2_E2E: ${{ needs.web2-e2e.result }}
         run: |
           retag() {
             local ref="$IMAGE_REPO/ashyq-$1"
@@ -521,8 +558,27 @@ jobs:
           else
             docker buildx imagetools create -t "$IMAGE_REPO/ashyq-web:$SHA" "$IMAGE_REPO/ashyq-web:latest"
           fi
-          if [[ $WEB2_E2E == success ]]; then
-            retag web-2
-          else
-            echo "::warning::ashyq-web-2:$SHA not published (web2-e2e: $WEB2_E2E)"
-          fi
+
+  # ashyq-web-2: every production gate (through publish) plus a green web2-e2e.
+  publish-web2:
+    needs: [changes, publish, web2-e2e]
+    if: ${{ !cancelled() && needs.publish.result == 'success' && needs.web2-e2e.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag ci-<sha> as <sha> and latest (no rebuild)
+        env:
+          REF: ${{ env.IMAGE_REPO }}/ashyq-web-2
+          SHA: ${{ needs.changes.outputs.sha }}
+        run: docker buildx imagetools create -t "$REF:$SHA" -t "$REF:latest" "$REF:ci-$SHA"

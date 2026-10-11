@@ -1,6 +1,6 @@
 ---
 name: rust-async-patterns
-description: Master Rust async programming with Tokio, async traits, error handling, and concurrent patterns. Use when building async Rust applications, implementing concurrent systems, or debugging async code.
+description: Tokio patterns reference (task orchestration, channels, cancellation, async traits). Use only when designing new concurrency, not for ordinary async handlers; rust-engineer is the default Rust guide.
 ---
 
 # Rust Async Patterns

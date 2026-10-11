@@ -33,6 +33,9 @@ tmp/
 # Dependencies and build output (rebuilt inside the image)
 **/node_modules
 **/.next
+**/dist
+**/.tanstack
+**/.vitest
 **/target
 **/*.tsbuildinfo
 

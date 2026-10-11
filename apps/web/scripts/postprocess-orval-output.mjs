@@ -25,7 +25,7 @@ const writeWithRetry = (filePath, source) => {
   }
 }
 
-const generatedDir = path.resolve(import.meta.dirname, '..', 'src/lib/api/generated')
+const generatedDir = path.resolve(import.meta.dirname, '..', process.env.ORVAL_OUTPUT_DIR ?? 'src/lib/api/generated')
 
 const mutatorHelpers = new Set([
   'arrayParser',
