@@ -122,8 +122,8 @@ test('B-CST-29 a YouTube video takes only a YouTube link; a file video offers an
   const link = section.getByRole('textbox', { name: m.studio_youtube_field({}, ru) })
   await link.fill('https://vimeo.com/1')
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  // Checked by the player's own youTubeId() (dde46ae), not a URL pattern: the generic "check this value".
-  await expect(section.getByText(m.validation_invalid({}, ru))).toBeVisible()
+  // Checked by the player's own youTubeId() (dde46ae); the error names what is wrong with the link.
+  await expect(section.getByText(m.studio_youtube_not_youtube({}, ru))).toBeVisible()
   await link.fill('https://youtu.be/dQw4w9WgXcQ')
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()

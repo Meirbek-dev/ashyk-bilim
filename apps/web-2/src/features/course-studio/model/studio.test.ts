@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { Block, Contributor, CourseSummary } from '#/shared/api/gen/types.gen'
 
 import { coursesSearchSchema } from '../route'
@@ -16,6 +17,7 @@ import {
   readinessTarget,
   replacedMediaBlockIds,
   splitRoster,
+  youtubeProblem,
   youtubeSchema,
 } from './studio'
 
@@ -192,6 +194,17 @@ describe('media', () => {
       'dQw4w9WgXcQ',
     ])
       expect({ uri, ok: v.safeParse(youtubeSchema, { uri }).success }).toEqual({ uri, ok: false })
+  })
+
+  test('B-CST-29 a refused YouTube link says what is wrong with it', () => {
+    expect(youtubeProblem('dQw4w9WgXcQ')).toBe('not-link')
+    expect(youtubeProblem('http://youtu.be/dQw4w9WgXcQ')).toBe('not-link')
+    expect(youtubeProblem('https://vimeo.com/1')).toBe('not-youtube')
+    expect(youtubeProblem('https://www.youtube.com/@channel')).toBe('no-video')
+    expect(youtubeProblem('https://m.youtube.com/watch?v=dQw4w9WgXcQ')).toBeNull()
+    expect(v.safeParse(youtubeSchema, { uri: 'https://vimeo.com/1' }).issues?.[0]?.message).toBe(
+      m.studio_youtube_not_youtube(),
+    )
   })
 
   test('B-CST-29 stored shapes: YouTube {uri}, an uploaded file {filename: key, file_name}', () => {

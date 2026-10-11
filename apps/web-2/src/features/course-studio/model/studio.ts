@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 import { youTubeId } from '#/features/editor'
+import { m } from '#/paraglide/messages'
 
 import type {
   ActivityDetail,
@@ -211,9 +212,28 @@ export const youtubeSchema = v.object({
   uri: v.pipe(
     v.string(),
     v.trim(),
-    v.check(uri => uri.startsWith('https://') && youTubeId(uri) !== null),
+    v.rawCheck(({ dataset, addIssue }) => {
+      const problem = dataset.typed ? youtubeProblem(dataset.value) : null
+      if (problem) addIssue({ message: youtubeProblemText[problem]() })
+    }),
   ),
 })
+
+export type YoutubeProblem = 'not-link' | 'not-youtube' | 'no-video'
+
+/** What is wrong with a YouTube link (named to the teacher), or null when the player can embed it. */
+export function youtubeProblem(uri: string): YoutubeProblem | null {
+  if (!/^https:\/\/[^/\s]+/i.test(uri) || !URL.canParse(uri)) return 'not-link'
+  const host = new URL(uri).hostname.replace(/^(www|m|music)\./, '')
+  if (host !== 'youtube.com' && host !== 'youtu.be') return 'not-youtube'
+  return youTubeId(uri) === null ? 'no-video' : null
+}
+
+const youtubeProblemText: Record<YoutubeProblem, () => string> = {
+  'not-link': m.studio_youtube_not_link,
+  'not-youtube': m.studio_youtube_not_youtube,
+  'no-video': m.studio_youtube_no_video,
+}
 
 export const youtubeContent = (uri: string) => ({ uri, type: 'youtube' })
 
