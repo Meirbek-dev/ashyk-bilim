@@ -6,6 +6,8 @@ import { upload } from './upload'
 afterEach(() => {
   vi.unstubAllGlobals()
   FakeStorage.status = 200
+  FakeStorage.last = null
+  FakeStorage.gate = Promise.resolve()
 })
 
 describe('upload (create -> presigned PUT -> finalize)', () => {
@@ -40,5 +42,36 @@ describe('upload (create -> presigned PUT -> finalize)', () => {
 
     await expect(upload(new File(['x'], 'a.png', { type: 'image/png' }), 'avatar')).rejects.toThrow('403')
     expect(api).toHaveBeenCalledTimes(1)
+  })
+
+  test('cancelling after slot creation prevents the PUT and finalize', async () => {
+    const controller = new AbortController()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        controller.abort()
+        return json(SLOT)
+      }),
+    )
+    vi.stubGlobal('XMLHttpRequest', FakeStorage)
+    await expect(
+      upload(new File(['x'], 'a.png', { type: 'image/png' }), 'avatar', {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(FakeStorage.last).toBeNull()
+  })
+
+  test('a storage size rejection preserves its localized error code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(SLOT)),
+    )
+    vi.stubGlobal('XMLHttpRequest', FakeStorage)
+    FakeStorage.status = 413
+    await expect(upload(new File(['x'], 'a.mp4', { type: 'video/mp4' }), 'block-video')).rejects.toMatchObject({
+      code: 'payload-too-large',
+      status: 413,
+    })
   })
 })

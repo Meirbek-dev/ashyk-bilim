@@ -45,10 +45,11 @@ export function FileUpload({ node, updateAttributes }: ReactNodeViewProps) {
         disabled={claim.isPending}
         error={claim.error ? presentError(claim.error) : undefined}
         onUploaded={(upload, file) =>
-          claim.mutate(
+          claim.mutateAsync(
             {
               path: { activity_id: activityId },
               body: { block_type: blockType, upload_id: upload.id, file_name: file.name },
+              headers: { 'Idempotency-Key': upload.id },
             },
             { onSuccess: block => updateAttributes({ blockObject: fileBlockObject(block.id, upload, file.name) }) },
           )

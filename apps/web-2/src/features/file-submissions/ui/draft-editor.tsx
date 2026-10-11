@@ -11,7 +11,7 @@ import { SubmitDialog } from './submit-dialog'
 
 type DraftEditorProps = {
   task: FileSubmission
-  run: (action: WorkAction) => void
+  run: (action: WorkAction) => Promise<unknown> | undefined
   pending: boolean
   submitting: boolean
 }
@@ -26,7 +26,11 @@ export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps
   const full = files.length >= task.max_files
   return (
     <div className="flex flex-col gap-4">
-      <AttemptFiles files={files} disabled={pending} onRemove={id => run({ kind: 'files', change: { remove: id } })} />
+      <AttemptFiles
+        files={files}
+        disabled={pending}
+        onRemove={id => void run({ kind: 'files', change: { remove: id } })?.catch(() => null)}
+      />
       <FileInput
         label={m.submission_file_field()}
         description={full ? m.submission_files_full() : undefined}
@@ -53,7 +57,7 @@ export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps
           }
           onConfirm={() => {
             setConfirming(false)
-            run({ kind: 'submit' })
+            void run({ kind: 'submit' })
           }}
         />
       </div>

@@ -27,29 +27,29 @@ export function useAutosave(courseId: string, activity: ActivityDetail) {
   const stopped = useRef(false)
 
   const version = () => queryClient.getQueryData(activityOptions(activity.id).queryKey)?.version ?? activity.version
-  function send() {
+  async function send() {
     const doc = unsaved.current
     if (!doc || sending.current || stopped.current) return
     unsaved.current = null
     sending.current = true
     report(activity.id, 'saving')
-    save.mutate(
-      { path: { activity_id: activity.id }, body: { content: doc }, headers: { 'If-Match': version() } },
-      {
-        onSuccess: () => {
-          sending.current = false
-          if (unsaved.current) send()
-          else report(activity.id, 'saved')
-        },
-        onError: error => {
-          sending.current = false
-          unsaved.current ??= doc
-          stopped.current = isStale(error)
-          setConflict(stopped.current)
-          report(activity.id, 'failed')
-        },
-      },
-    )
+    // Promise continuations survive leaving the page; per-mutate callbacks do not.
+    try {
+      await save.mutateAsync({
+        path: { activity_id: activity.id },
+        body: { content: doc },
+        headers: { 'If-Match': version() },
+      })
+      sending.current = false
+      if (unsaved.current) void send()
+      else report(activity.id, 'saved')
+    } catch (error) {
+      sending.current = false
+      unsaved.current ??= doc
+      stopped.current = isStale(error)
+      setConflict(stopped.current)
+      report(activity.id, 'failed')
+    }
   }
   // Leaving the page with edits still waiting for the pause saves them now.
   const later = useDebouncer(send, { wait: SAVE_WAIT_MS, onUnmount: debouncer => debouncer.flush() })
@@ -62,7 +62,7 @@ export function useAutosave(courseId: string, activity: ActivityDetail) {
     await queryClient.fetchQuery({ ...activityOptions(activity.id), staleTime: 0 })
     stopped.current = false
     setConflict(false)
-    send()
+    void send()
   }
   return { change, conflict, setConflict, reloadAndRetry, pending: save.isPending, error: conflict ? null : save.error }
 }

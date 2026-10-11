@@ -5,10 +5,12 @@ import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { uploadAccept, type UploadLimits, type UploadPurpose } from '#/shared/api/upload'
 import { useUpload } from '#/shared/hooks/use-upload'
 import { cn } from '#/shared/lib/utils'
-import { Button, buttonVariants } from '#/shared/ui/button'
+import { presentError } from '#/shared/i18n/errors'
+import { buttonVariants } from '#/shared/ui/button'
 import { Input } from '#/shared/ui/input'
 
 import { UploadProgress } from './upload-progress'
+import { RetryUpload } from './retry-upload'
 
 type FileInputProps = {
   label: string
@@ -51,21 +53,56 @@ function useBatch(
   const [uploaded, setUploaded] = useState<string[]>([])
   const [picked, setPicked] = useState<File | null>(null)
   const [dropped, setDropped] = useState(0)
+  const [claimError, setClaimError] = useState<string | null>(null)
+  const [claimFailed, setClaimFailed] = useState<File | null>(null)
+  const [pending, setPending] = useState(false)
+  const active = useRef(false)
+  const finalized = useRef<{ file: File; upload: FinalizedUpload } | null>(null)
   async function one(next: File) {
     setPicked(next)
-    const done = await start(next)
+    setClaimError(null)
+    setClaimFailed(null)
+    const done = finalized.current?.file === next ? finalized.current.upload : await start(next)
     if (!done) return false
+    finalized.current = { file: next, upload: done }
+    try {
+      await onUploaded(done, next)
+    } catch (error) {
+      setClaimError(presentError(error))
+      setClaimFailed(next)
+      return false
+    }
+    finalized.current = null
     setUploaded(names => [...names, next.name])
-    await onUploaded(done, next)
     return true
   }
   async function take(files: File[]) {
-    const batch = files.slice(0, Math.max(max, 1))
-    setDropped(files.length - batch.length)
-    setUploaded([])
-    for (const next of batch) if (!(await one(next))) return
+    if (active.current) return
+    active.current = true
+    setPending(true)
+    try {
+      const batch = files.slice(0, Math.max(max, 0))
+      setDropped(files.length - batch.length)
+      setUploaded([])
+      finalized.current = null
+      for (const next of batch) if (!(await one(next))) return
+    } finally {
+      active.current = false
+      setPending(false)
+    }
   }
-  return { uploaded, picked, dropped, take, retry: one }
+  async function retry(file: File) {
+    if (active.current) return
+    active.current = true
+    setPending(true)
+    try {
+      await one(file)
+    } finally {
+      active.current = false
+      setPending(false)
+    }
+  }
+  return { uploaded, picked, dropped, take, retry, pending, claimError, claimFailed }
 }
 
 /**
@@ -77,14 +114,17 @@ export function FileInput(props: FileInputProps) {
   const { label, description, purpose, limits = {}, onUploaded, file, error, disabled = false, multiple = 1 } = props
   const id = useId()
   const upload = useUpload(purpose, limits)
-  const { cancel, failed, notice, progress, error: uploadError, pending } = upload
-  const { uploaded, picked, dropped, take: takeAll, retry } = useBatch(upload.start, onUploaded, multiple)
+  const { cancel, failed, notice, progress, error: uploadError } = upload
+  const batch = useBatch(upload.start, onUploaded, multiple)
+  const { uploaded, picked, dropped, pending } = batch
+  const retryFile = batch.claimFailed ?? failed
   const [dragging, setDragging] = useState(false)
   // With several files the error names the one it is about.
-  const shownError = uploadError && multiple > 1 && picked ? `${picked.name}: ${uploadError}` : (uploadError ?? error)
-  const inactive = disabled || pending
+  const ownError = batch.claimError ?? uploadError
+  const shownError = ownError && multiple > 1 && picked ? `${picked.name}: ${ownError}` : (ownError ?? error)
+  const inactive = disabled || pending || upload.pending || multiple < 1
   const take = async (files: File[]) => {
-    if (files.length > 0 && !inactive) await takeAll(files)
+    if (files.length > 0 && !inactive) await batch.take(files)
   }
   useHandedFile(file, next => take([next]))
   function drop(event: DragEvent) {
@@ -145,11 +185,7 @@ export function FileInput(props: FileInputProps) {
         {notice && !shownError ? <p className="text-warning">{notice}</p> : null}
         {shownError ? <p className="text-destructive">{shownError}</p> : null}
       </div>
-      {failed && !pending ? (
-        <Button variant="outline" size="sm" className="self-start" onClick={() => void retry(failed)}>
-          {m.ui_file_retry()}
-        </Button>
-      ) : null}
+      {retryFile && !pending ? <RetryUpload file={retryFile} disabled={disabled} retry={batch.retry} /> : null}
     </div>
   )
 }

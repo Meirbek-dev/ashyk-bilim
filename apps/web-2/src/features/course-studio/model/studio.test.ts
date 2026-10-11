@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { Contributor, CourseSummary } from '#/shared/api/gen/types.gen'
+import type { Block, Contributor, CourseSummary } from '#/shared/api/gen/types.gen'
 
 import { coursesSearchSchema } from '../route'
 import { courseStatus, presetCount } from './course'
@@ -14,6 +14,7 @@ import {
   mediaSource,
   readinessCode,
   readinessTarget,
+  replacedMediaBlockIds,
   splitRoster,
   youtubeSchema,
 } from './studio'
@@ -158,7 +159,20 @@ describe('certificate', () => {
   })
 })
 
+const block = (id: string, block_type: string): Block => ({
+  id,
+  block_type,
+  activity_id: 'a',
+  created_at_unix: 1,
+  content: { file_key: id, file_name: id, file_size: 1, file_type: 'video/mp4' },
+})
+
 describe('media', () => {
+  test('B-CST-29 replacing media releases old media claims and preserves the new file and editor blocks', () => {
+    const blocks = [block('old', 'video'), block('new', 'video'), block('image', 'image'), block('pdf', 'pdf')]
+    expect(replacedMediaBlockIds(blocks, 'video', 'new')).toEqual(['old'])
+    expect(replacedMediaBlockIds(blocks, 'pdf', 'pdf')).toEqual([])
+  })
   test('B-CST-29 a YouTube link must be a video the player can embed, over https', () => {
     expect(v.safeParse(youtubeSchema, { uri: ' https://youtu.be/dQw4w9WgXcQ?si=x ' }).output).toEqual({
       uri: 'https://youtu.be/dQw4w9WgXcQ?si=x',

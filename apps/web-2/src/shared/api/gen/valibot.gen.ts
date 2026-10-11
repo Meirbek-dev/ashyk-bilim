@@ -6177,6 +6177,10 @@ export const vListBlocksResponse = v.array(vBlock);
 
 export const vCreateBlockBody = vCreateBlockRequest;
 
+export const vCreateBlockHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
 export const vCreateBlockPath = v.object({
     activity_id: vActivityId
 });

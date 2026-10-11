@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { dashboard, login, myProfile } from '#/shared/api/gen/sdk.gen'
+import { dashboard, login, myProfile, userCourses } from '#/shared/api/gen/sdk.gen'
 
 import { type NewAccount, registerAccount, totp } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
@@ -252,16 +252,22 @@ test('B-SET-13 the gamification switches are saved and read back', async ({ page
 test('B-SET-14 the public profile comes in the server document with the courses; an unknown user is not found', async ({
   page,
   seed,
+  baseURL,
 }) => {
+  const { data } = await userCourses({
+    client: createClient(createConfig({ baseUrl: String(baseURL) })),
+    path: { username: seed.params.username },
+    throwOnError: true,
+  })
+  const course = data.items[0]
+  if (!course) throw new Error('The seeded teacher must have a public course')
   const document = await page.request.get(`/users/${seed.params.username}`)
   expect(await document.text()).toContain('E2E teacher')
   await page.goto(`/users/${seed.params.username}`)
   await expect(page.getByRole('heading', { level: 1, name: 'E2E teacher' })).toBeVisible()
   await expect(page.getByText(`@${seed.params.username}`)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'E2E seed course' })).toHaveAttribute(
-    'href',
-    `/courses/${seed.params.courseId}`,
-  )
+  const link = page.getByRole('link', { name: course.name, exact: true }).first()
+  await expect(link).toHaveAttribute('href', `/courses/${course.id}`)
   await page.goto('/users/nobody-e2e-unknown')
   await expect(page.getByRole('heading', { level: 1, name: m.settings_user_not_found({}, ru) })).toBeVisible()
 })

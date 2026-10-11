@@ -95,10 +95,12 @@ test('B-FSB-03 B-FSB-04 B-FSB-05 B-FSB-06 B-FSB-11 a learner attaches files and 
 
   await fileField(page).setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('x') })
   await expect(page.getByText(m.ui_file_wrong_type({}, ru))).toBeVisible()
-  await fileField(page).setInputFiles({ name: 'essay.pdf', mimeType: 'application/pdf', buffer: PDF })
-  await expect(page.getByText(m.submission_file_attached({}, ru))).toBeVisible()
+  await fileField(page).setInputFiles([
+    { name: 'essay.pdf', mimeType: 'application/pdf', buffer: PDF },
+    { name: 'figure.png', mimeType: 'image/png', buffer: PNG },
+  ])
+  await expect(page.getByText(m.submission_file_attached({}, ru)).last()).toBeVisible()
   await expect(page.getByRole('button', { name: 'essay.pdf', exact: true })).toBeVisible()
-  await fileField(page).setInputFiles({ name: 'figure.png', mimeType: 'image/png', buffer: PNG })
   await expect(page.getByRole('button', { name: 'figure.png', exact: true })).toBeVisible()
   await expect(page.getByText(m.submission_files_full({}, ru))).toBeVisible()
   await expect(fileField(page)).toBeDisabled()

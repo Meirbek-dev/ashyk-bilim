@@ -1,5 +1,6 @@
 import type { FinalizedUpload, UploadPurpose } from './gen/types.gen'
 import { createUpload, finalizeUpload } from './gen/sdk.gen'
+import { ApiError } from './errors'
 
 // Spec 7.3: the one way to upload a file. create (policy check, presigned PUT) -> PUT the bytes straight to storage
 // with progress -> finalize (the API verifies the object). The returned id is what a resource then claims
@@ -37,7 +38,7 @@ const KNOWN_TYPES = new Set(Object.values(TYPE_BY_EXTENSION))
 export function uploadType(file: { name?: string; type: string }): string {
   if (KNOWN_TYPES.has(file.type)) return file.type
   const extension = file.name?.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : ''
-  return TYPE_BY_EXTENSION[extension] ?? file.type
+  return TYPE_BY_EXTENSION[extension] ?? (file.type || 'application/octet-stream')
 }
 
 export type { UploadPurpose }
@@ -116,6 +117,7 @@ type UploadOptions = { onProgress?: (fraction: number) => void; signal?: AbortSi
 /** PUT with upload progress: fetch has none on HTTP/1.1, so this is the one XMLHttpRequest of the app. */
 function put(url: string, file: File, { onProgress, signal }: UploadOptions): Promise<void> {
   return new Promise((resolve, reject) => {
+    signal?.throwIfAborted()
     const request = new XMLHttpRequest()
     request.open('PUT', url)
     // Signed into the URL: exactly the declared type.
@@ -126,11 +128,23 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
       if (event.lengthComputable) onProgress?.(event.loaded / event.total)
     })
     request.addEventListener('load', () =>
-      request.status < 300 ? resolve() : reject(new Error(`storage PUT answered ${request.status}`)),
+      request.status >= 200 && request.status < 300
+        ? resolve()
+        : reject(
+            new ApiError({
+              status: request.status,
+              code: request.status === 413 ? 'payload-too-large' : 'service-unavailable',
+              fieldErrors: [],
+              requestId: null,
+              retryAfter: null,
+            }),
+          ),
     )
     request.addEventListener('error', () => reject(new Error('storage PUT failed')))
     request.addEventListener('abort', () => reject(new DOMException('upload aborted', 'AbortError')))
-    signal?.addEventListener('abort', () => request.abort(), { once: true })
+    const abort = () => request.abort()
+    signal?.addEventListener('abort', abort, { once: true })
+    request.addEventListener('loadend', () => signal?.removeEventListener('abort', abort), { once: true })
     request.send(file)
   })
 }
@@ -150,12 +164,14 @@ export async function upload(
   purpose: UploadPurpose,
   options: UploadOptions = {},
 ): Promise<FinalizedUpload> {
+  options.signal?.throwIfAborted()
   const { data: slot } = await createUpload({
     body: { purpose, mime: uploadType(file), size_bytes: file.size },
     signal: options.signal,
     throwOnError: true,
   })
   await put(storageUrl(slot.put_url), file, options)
+  options.signal?.throwIfAborted()
   // The slot id is the retry token: a repeated finalize replays the first answer instead of a 409.
   const { data } = await finalizeUpload({
     path: { upload_id: slot.id },

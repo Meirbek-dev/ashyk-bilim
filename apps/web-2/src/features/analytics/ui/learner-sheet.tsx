@@ -15,7 +15,7 @@ import { interventionOutcomeLabels, interventionStatusLabels, interventionTypeLa
 type LearnerSheetProps = {
   learnerId: UserId
   courseId: CourseId
-  /** The at-risk row on the page; a forwarded link to a learner not on this page shows a generic title, no risk. */
+  /** The table's current row, when present; otherwise find it in the course's paginated risk list. */
   row: AtRiskLearnerRow | undefined
 }
 

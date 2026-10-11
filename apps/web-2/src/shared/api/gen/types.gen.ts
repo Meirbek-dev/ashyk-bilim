@@ -6794,6 +6794,12 @@ export type ListBlocksResponse = ListBlocksResponses[keyof ListBlocksResponses];
 
 export type CreateBlockData = {
     body: CreateBlockRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
     path: {
         /**
          * Activity id

@@ -57,8 +57,10 @@ async function renderInput() {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
   FakeStorage.gate = Promise.resolve()
+  FakeStorage.status = 200
 })
 
 describe('FileInput', () => {
@@ -165,15 +167,58 @@ describe('FileInput with several files', () => {
     await userEvent.upload(input, [png('a.png'), png('b.png'), png('c.png')])
 
     await vi.waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(1))
+    await expect.element(input).toBeDisabled()
+    expect(screen.getByText(m.ui_file_uploaded({ name: 'a.png' })).query()).toBeNull()
     await expect.element(screen.getByText(m.ui_files_over({ count: 1 }))).toBeVisible()
     expect(onUploaded).toHaveBeenCalledTimes(1)
     claim.resolve(null)
     await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'a.png, b.png' }))).toBeVisible()
     expect(onUploaded.mock.calls.map(([, file]) => file.name)).toEqual(['a.png', 'b.png'])
   })
+
+  test('a failed claim stops the batch and retries the finalized file without uploading it again', async () => {
+    const api = stubNetwork()
+    const onUploaded = vi
+      .fn<(upload: FinalizedUpload, file: File) => Promise<void>>()
+      .mockRejectedValueOnce(new Error('claim failed'))
+      .mockResolvedValue(undefined)
+    const screen = await renderInRouter(
+      <QueryClientProvider client={new QueryClient()}>
+        <FileInput label={label} purpose="course-thumbnail" multiple={2} onUploaded={onUploaded} />
+      </QueryClientProvider>,
+    )
+    await userEvent.upload(screen.getByLabelText(label), [png('a.png'), png('b.png')])
+    await expect.element(screen.getByText(`a.png: ${m.errors_network()}`)).toBeVisible()
+    expect(onUploaded).toHaveBeenCalledTimes(1)
+    expect(api).toHaveBeenCalledTimes(2)
+    await screen.getByRole('button', { name: m.ui_file_retry() }).click()
+    await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'a.png' }))).toBeVisible()
+    expect(onUploaded).toHaveBeenCalledTimes(2)
+    expect(api).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('FileInput while uploading', () => {
+  test('a corrupt video is refused before storage; probe timeout cannot clean it up twice', async () => {
+    const api = stubNetwork()
+    const timeout = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal)
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    const onUploaded = vi.fn<(upload: FinalizedUpload) => void>()
+    const screen = await renderInRouter(
+      <QueryClientProvider client={new QueryClient()}>
+        <FileInput label={label} purpose="block-video" onUploaded={onUploaded} />
+      </QueryClientProvider>,
+    )
+    await userEvent.upload(screen.getByLabelText(label), new File(['not a video'], 'broken.mp4', { type: 'video/mp4' }))
+    await expect.element(screen.getByText(m.ui_file_unplayable())).toBeVisible()
+    expect(api).not.toHaveBeenCalled()
+    expect(onUploaded).not.toHaveBeenCalled()
+    expect(revoke).toHaveBeenCalledTimes(1)
+    timeout.abort()
+    expect(revoke).toHaveBeenCalledTimes(1)
+  })
+
   test('a running upload shows its size and can be cancelled; nothing is handed over', async () => {
     const api = stubNetwork()
     const held = Promise.withResolvers<null>()
@@ -201,7 +246,7 @@ describe('FileInput while uploading', () => {
 
     FakeStorage.status = 503
     await userEvent.upload(input, new File(['abcd'], 'c.png', { type: 'image/png' }))
-    await expect.element(screen.getByText(m.errors_network())).toBeVisible()
+    await expect.element(screen.getByText(m.errors_service_unavailable())).toBeVisible()
     FakeStorage.status = 200
     await screen.getByRole('button', { name: m.ui_file_retry() }).click()
     await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'c.png' }))).toBeVisible()

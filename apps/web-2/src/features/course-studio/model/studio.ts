@@ -6,6 +6,7 @@ import type {
   ActivitySubType,
   ActivityType,
   AssessmentKind,
+  Block,
   Contributor,
   ContributorRole,
   FinalizedUpload,
@@ -227,3 +228,7 @@ export const mediaBlock = (activityType: string) =>
   activityType === 'video'
     ? ({ blockType: 'video', purpose: 'block-video' } as const)
     : ({ blockType: 'pdf', purpose: 'block-pdf' } as const)
+
+/** Only the replaced media's claims: keep the new file and unrelated editor blocks. */
+export const replacedMediaBlockIds = (blocks: Block[], blockType: string, keptId: string) =>
+  blocks.filter(block => block.block_type === blockType && block.id !== keptId).map(block => block.id)

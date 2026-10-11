@@ -21,6 +21,7 @@ import {
   drillOptions,
   ensureDrill,
   interventionsOptions,
+  loadLearnerRisk,
   overviewOptions,
   savedViewsOptions,
 } from './queries'
@@ -62,7 +63,11 @@ export function loadLearners(queryClient: QueryClient, search: Search<typeof lea
   const { learnerId, courseId } = search
   return Promise.all([
     queryClient.ensureQueryData(overviewOptions(filters)),
-    queryClient.ensureQueryData(atRiskOptions(filters, search)),
+    queryClient.ensureQueryData(atRiskOptions(filters, search)).then(async data => {
+      if (learnerId && courseId && !data.items.some(row => row.user_id === learnerId && row.course_id === courseId))
+        await loadLearnerRisk(queryClient, filters, learnerId, courseId)
+      return data
+    }),
     learnerId && courseId ? queryClient.ensureQueryData(interventionsOptions(learnerId, courseId)) : null,
   ])
 }

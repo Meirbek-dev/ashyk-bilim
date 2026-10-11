@@ -13,7 +13,7 @@ function onFullscreenChange(change: () => void) {
 }
 
 // A browser without full screen (or one that refuses) leaves the notice up; the server still decides.
-const enterFullscreen = () => void document.documentElement.requestFullscreen().catch(() => null)
+const enterFullscreen = () => void document.documentElement.requestFullscreen?.().catch(() => null)
 
 /** A blur shorter than this (a permission prompt, a click into a frame) is not a tab switch. */
 const BLUR_GRACE_MS = 500

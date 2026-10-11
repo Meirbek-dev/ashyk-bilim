@@ -55,7 +55,7 @@ describe('declared type', () => {
     expect(uploadType({ name: 'lecture.MKV', type: '' })).toBe('video/x-matroska')
     expect(uploadType({ name: 'IMG_0001.MOV', type: 'video/quicktime' })).toBe('video/quicktime')
     expect(uploadType({ name: 'essay.docx', type: 'application/msword' })).toBe('application/msword')
-    expect(uploadType({ name: 'noext', type: '' })).toBe('')
+    expect(uploadType({ name: 'noext', type: '' })).toBe('application/octet-stream')
     expect(checkUpload({ name: 'lecture.mkv', size: 1, type: 'video/matroska' }, 'block-video')).toBeNull()
   })
 

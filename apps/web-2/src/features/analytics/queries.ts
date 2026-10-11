@@ -34,6 +34,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 import { PLATFORM_TIME_ZONE } from '#/shared/i18n/format'
 
+import { pageCount } from './model/analytics'
 import { apiQuery, type Filters } from './model/filters'
 
 type Table = Parameters<typeof apiQuery>[1]
@@ -43,6 +44,18 @@ export const overviewOptions = (filters: Filters) => teacherOverviewOptions({ qu
 
 export const atRiskOptions = (filters: Filters, table: Table) =>
   atRiskLearnersOptions({ query: apiQuery(filters, table) })
+
+/** A forwarded learner link is independent of the table's current page and course filter. */
+export const learnerRiskOptions = (filters: Filters, courseId: CourseId, page: number) =>
+  atRiskLearnersOptions({ query: { ...apiQuery({ ...filters, course: courseId }, { page }), page_size: 200 } })
+
+export async function loadLearnerRisk(queryClient: QueryClient, filters: Filters, userId: UserId, courseId: CourseId) {
+  for (let page = 1; ; page++) {
+    const data = await queryClient.ensureQueryData(learnerRiskOptions(filters, courseId, page))
+    const row = data.items.find(item => item.user_id === userId && item.course_id === courseId)
+    if (row || data.items.length === 0 || page >= pageCount(data.total, data.page_size)) return row
+  }
+}
 
 export const coursesOptions = (filters: Filters, page: number) =>
   courseListOptions({ query: apiQuery(filters, { page }) })

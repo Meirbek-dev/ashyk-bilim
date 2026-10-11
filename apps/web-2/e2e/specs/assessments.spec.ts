@@ -97,6 +97,35 @@ test('B-ASM-06 B-ASM-07 B-ASM-08 matching, open answer and form questions save t
   ])
 })
 
+test('B-ASM-10 an invalid score asks before switching questions and cancelling preserves the edit', async ({
+  page,
+  studio,
+  seed,
+}) => {
+  const { courseId, assessment } = await makeAssessment(studio, seed, {
+    items: [readyChoice('Первый'), readyChoice('Второй')],
+  })
+  await page.goto(studioUrl(courseId, assessment.activity_id))
+  const points = page.getByLabel(m.assessments_field_points({}, ru))
+  await points.fill('20000')
+  await expect(page.getByText(m.validation_invalid({}, ru))).toBeVisible()
+  const next = page.getByRole('link', { name: '2. Второй' })
+  const cancelled = page.waitForEvent('dialog')
+  const firstMove = next.click()
+  const warning = await cancelled
+  expect(warning.message()).toBe(m.ui_unsaved_leave({}, ru))
+  await warning.dismiss()
+  await firstMove
+  await expect(points).toHaveValue('20000')
+  await expect(page.getByRole('heading', { name: '1. Первый' })).toBeVisible()
+  const confirmed = page.waitForEvent('dialog')
+  const secondMove = next.click()
+  await (await confirmed).accept()
+  await secondMove
+  await expect(page.getByRole('heading', { name: '2. Второй' })).toBeVisible()
+  await saved(page)
+})
+
 test('B-ASM-12 B-ASM-13 B-ASM-14 questions are duplicated, deleted and reordered by keyboard', async ({
   page,
   studio,

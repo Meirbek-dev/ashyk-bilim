@@ -62,16 +62,8 @@
       "reason": "the group screen shows no courses; links are managed from the course (groupsForCourse)"
     },
     {
-      "operation": "listBlocks",
-      "reason": "blocks are created by the editor only; a page save releases the files of removed blocks"
-    },
-    {
       "operation": "getBlock",
       "reason": "no screen reads one block; the document carries the block's file"
-    },
-    {
-      "operation": "deleteBlock",
-      "reason": "a page save releases removed blocks on the server; no explicit delete"
     },
     {
       "operation": "downloadUpload",

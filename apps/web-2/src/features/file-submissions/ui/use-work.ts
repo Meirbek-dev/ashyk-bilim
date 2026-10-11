@@ -42,13 +42,11 @@ export function useWork(ids: WorkIds) {
     if (action.kind === 'files') {
       const body = { files: changedFiles(openAttempt(current), action.change) }
       const done = 'add' in action.change ? m.submission_file_attached() : m.submission_file_removed()
-      // Settles (never rejects) once the cache holds the answer: several picked files are attached one after another.
-      return draft
-        .mutateAsync(
-          { path, body, headers: versionHeader(current) },
-          { onSuccess: () => toast.add({ title: done }), onError: onError(action) },
-        )
-        .catch(() => null)
+      // FileInput waits for the updated draft and keeps a refused upload available for retry.
+      return draft.mutateAsync(
+        { path, body, headers: versionHeader(current) },
+        { onSuccess: () => toast.add({ title: done }), onError: onError(action) },
+      )
     } else if (action.kind === 'submit') {
       send.mutate(
         { path, body: {}, headers: { ...versionHeader(current), 'Idempotency-Key': idempotency.key } },
@@ -76,7 +74,7 @@ export function useWork(ids: WorkIds) {
     const action = conflict
     const fresh = await task.refetch()
     setConflict(null)
-    if (action && fresh.data) void run(action, fresh.data)
+    if (action && fresh.data) void run(action, fresh.data)?.catch(() => null)
   }
 
   const failed = [draft.error, send.error, start.error].find(error => error && !isStale(error))

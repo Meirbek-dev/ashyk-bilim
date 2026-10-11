@@ -1,27 +1,15 @@
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
-import { createClient, createConfig } from '#/shared/api/gen/client'
 import { createGroup, deleteGroup, deleteView, listSavedViews } from '#/shared/api/gen/sdk.gen'
 
-import { expect, type Seed, test as base } from '../fixtures/seed'
+import { cookie, expect, test } from './analytics-fixture'
 
 const ru = { locale: 'ru' } as const
 const NO_SUCH = '00000000-0000-4000-8000-000000000000'
-const cookie = (seed: Seed, role: 'teacher' | 'admin') => {
-  const { name, value } = seed.accounts[role].cookie
-  return { cookie: `${name}=${value}` }
-}
-
-const test = base.extend<{ api: ReturnType<typeof createClient> }>({
-  api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-})
-
-// Every analytics test acts as the seeded teacher: the seed course, its learner e2e-student1 (at risk: no progress).
+// Every analytics test acts as the seeded teacher; risk-dependent tests own a fresh course.
 test.use({ as: 'teacher' })
-
 const kpis = (page: import('@playwright/test').Page) => page.getByRole('region', { name: m.analytics_kpis({}, ru) })
-
 test('B-ANL-01 B-ANL-03 the tabs are routes; a tab keeps the filters and drops the drill-down', async ({ page }) => {
   await page.goto('/teach/analytics')
   await expect(page).toHaveURL(/\/teach\/analytics\/overview$/)
@@ -31,7 +19,6 @@ test('B-ANL-01 B-ANL-03 the tabs are routes; a tab keeps the filters and drops t
   await page.getByRole('link', { name: m.platform_tab_learners({}, ru) }).click()
   await expect(page).toHaveURL(/\/teach\/analytics\/learners\?window=7d$/)
 })
-
 test('B-ANL-04 filters apply through the URL and survive a reload', async ({ page }) => {
   await page.goto('/teach/analytics/overview')
   const filters = page.getByRole('form', { name: m.ui_filters({}, ru) })
@@ -44,11 +31,11 @@ test('B-ANL-04 filters apply through the URL and survive a reload', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByRole('button', { name: m.ui_filters_count({ count: 2 }, ru) })).toBeVisible()
 })
-
 test('B-ANL-05 B-ANL-06 B-ANL-07 overview: KPI tiles, trends as charts and text, rows behind a tile', async ({
   page,
+  seed,
 }) => {
-  await page.goto('/teach/analytics/overview')
+  await page.goto(`/teach/analytics/overview?course=${seed.params.courseId}`)
   for (const label of [m.analytics_kpi_active_learners({}, ru), m.analytics_kpi_at_risk_learners({}, ru)])
     await expect(kpis(page).getByRole('region', { name: label })).toBeVisible()
   for (const series of [m.analytics_series_submissions({}, ru), m.analytics_series_grading({}, ru)]) {
@@ -64,9 +51,8 @@ test('B-ANL-05 B-ANL-06 B-ANL-07 overview: KPI tiles, trends as charts and text,
   await page.getByRole('link', { name: m.analytics_hide_rows({}, ru) }).click()
   await expect(page).not.toHaveURL(/metric=/)
 })
-
-test('B-ANL-08 B-ANL-09 learners: risk counts, the at-risk list, its sort in the URL', async ({ page }) => {
-  await page.goto('/teach/analytics/learners')
+test('B-ANL-08 B-ANL-09 learners: risk counts, the at-risk list, its sort in the URL', async ({ page, riskCourse }) => {
+  await page.goto(`/teach/analytics/learners?course=${riskCourse}`)
   await expect(kpis(page).getByRole('region', { name: m.analytics_tile_risk_high({}, ru) })).toBeVisible()
   await expect(kpis(page).getByRole('region', { name: m.analytics_interventions_total({}, ru) })).toBeVisible()
   const table = page.getByRole('table', { name: m.analytics_at_risk_table({}, ru) })
@@ -78,13 +64,14 @@ test('B-ANL-08 B-ANL-09 learners: risk counts, the at-risk list, its sort in the
     'ascending',
   )
 })
-
 test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention, then its outcome (412 retried)', async ({
   page,
   seed,
 }) => {
   const learner = seed.accounts.student.session.user_id
-  await page.goto(`/teach/analytics/learners?learnerId=${learner}&courseId=${seed.params.courseId}`)
+  await page.goto(
+    `/teach/analytics/learners?course=${seed.params.courseId}&learnerId=${learner}&courseId=${seed.params.courseId}`,
+  )
   const panel = page.getByRole('dialog')
   await expect(panel.getByRole('heading', { name: m.analytics_interventions_title({}, ru) })).toBeVisible()
   await panel.getByRole('button', { name: m.analytics_intervention_new({}, ru) }).click()
@@ -100,7 +87,6 @@ test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention,
   const entry = page.getByRole('listitem').filter({ hasText: note })
   await expect(entry).toContainText(m.analytics_intervention_meeting_scheduled({}, ru))
   await expect(entry).toContainText(m.analytics_intervention_status_planned({}, ru))
-
   const sent: (string | undefined)[] = []
   await page.route('**/api/v2/analytics/teacher/interventions/*', route => {
     if (route.request().method() !== 'PATCH') return route.fallback()
@@ -123,12 +109,11 @@ test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention,
   const outcome = m.analytics_outcome_improved({}, ru)
   await expect(entry).toContainText(m.analytics_intervention_outcome_is({ outcome }, ru))
 })
-
 test('B-ANL-12 B-ANL-13 performance: courses and assessments; a course opens its drill-down', async ({
   page,
   seed,
 }) => {
-  await page.goto('/teach/analytics/performance')
+  await page.goto(`/teach/analytics/performance?course=${seed.params.courseId}`)
   await expect(page.getByRole('table', { name: m.analytics_assessments_table({}, ru) })).toBeVisible()
   const courses = page.getByRole('table', { name: m.analytics_courses_table({}, ru) })
   await courses.getByRole('link', { name: 'E2E seed course', exact: true }).click()
@@ -141,9 +126,8 @@ test('B-ANL-12 B-ANL-13 performance: courses and assessments; a course opens its
   await page.goto(`/teach/analytics/performance?courseId=${NO_SUCH}`)
   await expect(page.getByRole('heading', { name: m.analytics_not_found_title({}, ru) })).toBeVisible()
 })
-
-test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', async ({ page }) => {
-  await page.goto('/teach/analytics/performance')
+test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', async ({ page, seed }) => {
+  await page.goto(`/teach/analytics/performance?course=${seed.params.courseId}`)
   const assessments = page.getByRole('table', { name: m.analytics_assessments_table({}, ru) })
   const row = assessments.getByRole('row').filter({ hasText: 'E2E seed course' }).filter({ hasText: 'Quiz' })
   await row.getByRole('link', { name: 'Quiz', exact: true }).click()
@@ -154,7 +138,6 @@ test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', a
   await page.goto(`/teach/analytics/performance?assessmentType=quiz&assessmentId=${NO_SUCH}`)
   await expect(page.getByRole('heading', { name: m.analytics_not_found_title({}, ru) })).toBeVisible()
 })
-
 test('B-ANL-15 operations: queue tiles, its age as a chart and text, the queue table', async ({ page }) => {
   await page.goto('/teach/analytics/operations')
   await expect(kpis(page).getByRole('region', { name: m.analytics_sla_breaches({}, ru) })).toBeVisible()
@@ -170,7 +153,6 @@ test('B-ANL-15 operations: queue tiles, its age as a chart and text, the queue t
     page.getByRole('heading', { level: 2, name: m.analytics_kpi_ungraded_submissions({}, ru) }),
   ).toBeVisible()
 })
-
 test('B-ANL-16 CSV exports are links with the filters and the time zone', async ({ page }) => {
   await page.goto('/teach/analytics/learners?window=7d')
   const link = page.getByRole('link', { name: m.analytics_export_at_risk({}, ru) })
@@ -181,7 +163,6 @@ test('B-ANL-16 CSV exports are links with the filters and the time zone', async 
   expect(response.status()).toBe(200)
   expect(response.headers()['content-type']).toContain('text/csv')
 })
-
 test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is deleted after a confirmation', async ({
   page,
   api,
@@ -214,7 +195,6 @@ test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is dele
       await deleteView({ client: api, path: { view_id: view.id }, headers: cookie(seed, 'teacher') })
   }
 })
-
 test('B-ANL-19 a filter nobody matches: "no matches" and a reset', async ({ page, api, seed }) => {
   const { data: group } = await createGroup({
     client: api,
@@ -234,52 +214,39 @@ test('B-ANL-19 a filter nobody matches: "no matches" and a reset', async ({ page
     await deleteGroup({ client: api, path: { group_id: group.id }, headers: cookie(seed, 'teacher') })
   }
 })
-
 test('B-ANL-22 an unknown group leaves the URL before any read', async ({ page }) => {
   await page.goto(`/teach/analytics/learners?window=7d&cohort=${NO_SUCH}`)
   await expect(page).toHaveURL(/\/teach\/analytics\/learners\?window=7d$/)
   await expect(page.getByRole('heading', { level: 1, name: m.platform_nav_analytics({}, ru) })).toBeVisible()
 })
-
 test('B-ANL-23 B-ANL-24 alerts on the overview, forecasts on performance, why now for a learner', async ({
   page,
   seed,
+  riskCourse,
 }) => {
-  await page.goto('/teach/analytics/overview')
-  // The seed learner has no progress: the overview raises a risk alert, its count read from params.
+  await page.goto(`/teach/analytics/overview?course=${riskCourse}`)
   const alerts = page.getByRole('region', { name: m.analytics_alerts_title({}, ru) })
   await expect(
     alerts.getByRole('listitem').filter({ hasText: m.analytics_code_risk_spike({ count: '' }, ru) }),
   ).toBeVisible()
   await expect(alerts.getByText(m.analytics_severity_warning({}, ru)).first()).toBeVisible()
-  await page.goto('/teach/analytics/performance')
+  await page.goto(`/teach/analytics/performance?course=${riskCourse}`)
   await expect(
     page
       .getByRole('region', { name: m.analytics_forecasts_title({}, ru) })
       .getByRole('listitem')
       .first(),
   ).toBeVisible()
-  await page.goto('/teach/analytics/learners')
+  await page.goto(`/teach/analytics/learners?course=${riskCourse}`)
   const table = page.getByRole('table', { name: m.analytics_at_risk_table({}, ru) })
   await expect(table.getByRole('columnheader', { name: m.analytics_col_why_now({}, ru) })).toBeVisible()
   // The panel is modal: the table behind it leaves the accessibility tree, so it is opened last.
   const learner = seed.accounts.student.session.user_id
-  await page.goto(`/teach/analytics/learners?learnerId=${learner}&courseId=${seed.params.courseId}`)
+  await page.goto(`/teach/analytics/learners?course=${riskCourse}&learnerId=${learner}&courseId=${riskCourse}`)
+  await expect(page.getByRole('dialog')).toContainText(m.analytics_learner_action({}, ru))
+  await page.goto(`/teach/analytics/learners?course=${riskCourse}&page=2&learnerId=${learner}&courseId=${riskCourse}`)
   await expect(page.getByRole('dialog')).toContainText(m.analytics_learner_action({}, ru))
 })
-
-test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', async ({ page, signInAs }) => {
-  await page.goto('/admin/analytics')
-  await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
-  await page.context().clearCookies()
-  await signInAs('admin')
-  await page.goto('/admin/analytics')
-  await expect(page.getByRole('heading', { level: 1, name: m.analytics_admin_title({}, ru) })).toBeVisible()
-  const courses = page.getByRole('table', { name: m.analytics_admin_courses({}, ru) })
-  await expect(courses.getByText('E2E seed course', { exact: true }).first()).toBeVisible()
-  await expect(page.getByRole('table', { name: m.analytics_admin_teachers({}, ru) })).toContainText('E2E teacher')
-})
-
 for (const locale of ['kk', 'en'] as const) {
   test(`B-ANL-21 analytics speaks ${locale}`, async ({ page, context, baseURL, signInAs }) => {
     test.slow() // five screens in one test

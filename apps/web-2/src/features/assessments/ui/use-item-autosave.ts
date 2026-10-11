@@ -1,6 +1,6 @@
 import { useDebouncer } from '@tanstack/react-pacer'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { use, useRef } from 'react'
+import { use, useEffect, useEffectEvent, useRef } from 'react'
 
 import { SaveStatusContext } from '#/features/course-studio'
 import type { UpdateItemRequest } from '#/shared/api/gen/types.gen'
@@ -23,40 +23,49 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
   const version = useVersion(activityId)
   const unsaved = useRef<UpdateItemRequest | null>(null)
   const sending = useRef(false)
+  const invalid = useRef(false)
+  const discardInvalid = useEffectEvent(() => {
+    if (!invalid.current) return
+    invalid.current = false
+    report(activityId, sending.current ? 'saving' : 'saved', itemId)
+  })
+  // The form's leave guard asks first; a confirmed departure discards only the invalid edit.
+  useEffect(() => () => discardInvalid(), [])
 
-  function send() {
+  async function send() {
     const body = unsaved.current
     if (!body || sending.current) return
     unsaved.current = null
     sending.current = true
-    report(activityId, 'saving')
-    save.mutate(
-      { path: { item_id: itemId }, body, headers: version.headers() },
-      {
-        onSuccess: () => {
-          sending.current = false
-          if (unsaved.current) send()
-          else report(activityId, 'saved')
-        },
-        onError: error => {
-          version.onError(error)
-          sending.current = false
-          unsaved.current ??= body
-          report(activityId, 'failed')
-        },
-      },
-    )
+    report(activityId, 'saving', itemId)
+    // Promise continuations survive leaving the question; per-mutate callbacks do not.
+    try {
+      await save.mutateAsync({ path: { item_id: itemId }, body, headers: version.headers() })
+      sending.current = false
+      if (unsaved.current) void send()
+      else report(activityId, invalid.current ? 'dirty' : 'saved', itemId)
+    } catch (error) {
+      version.onError(error)
+      sending.current = false
+      if (!invalid.current) unsaved.current ??= body
+      report(activityId, 'failed', itemId)
+    }
   }
   const later = useDebouncer(send, { wait: SAVE_WAIT_MS, onUnmount: debouncer => debouncer.flush() })
   return {
     /** A valid edit: saved after the pause. */
     change: (body: UpdateItemRequest) => {
+      invalid.current = false
       unsaved.current = body
-      report(activityId, 'dirty')
+      report(activityId, 'dirty', itemId)
       later.maybeExecute()
     },
     /** An edit the schema refused: nothing is sent, the bar says there are unsaved changes. */
-    invalid: () => report(activityId, 'dirty'),
+    invalid: () => {
+      invalid.current = true
+      unsaved.current = null
+      report(activityId, 'dirty', itemId)
+    },
     error: save.error,
     conflict: {
       open: version.conflict,

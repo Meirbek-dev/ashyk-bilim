@@ -17,10 +17,11 @@ export function expectReread(page: Page, pathname: string): void {
  * Reads the live events refresh by design (spec 7.7): the shared seed accounts see every parallel test's collections,
  * groups, users and roles (`collection.updated`, `admin.updated`) and every grading in the shared teacher's courses
  * (`grading.updated`: the work queue), and a learner's progress is projected after their own writes
- * (`progress.updated`) and a post's own `discussion.updated`. A second GET of these within one navigation is not the
+ * (`progress.updated`, `xp.awarded`) and a post's own `discussion.updated`. A second GET of these within one navigation is not the
  * app reading twice.
  */
 const LIVE_READS = [
+  /^\/api\/v2\/gamification$/,
   /^\/api\/v2\/work$/,
   /^\/api\/v2\/collections(\/[^/]+)?$/,
   /^\/api\/v2\/(groups|users|rbac\/roles)$/,

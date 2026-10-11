@@ -1,46 +1,64 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { ActivityDetail, FinalizedUpload } from '#/shared/api/gen/types.gen'
+import { deleteBlockMutation, listBlocksOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import type { ActivityDetail, Block, FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { FileInput } from '#/shared/components/file-input'
 import { presentError } from '#/shared/i18n/errors'
 import { toast } from '#/shared/ui/toast'
 
-import { claimOptions, updateActivityOptions } from '../curriculum-queries'
-import { fileContent, mediaBlock, mediaSource } from '../model/studio'
+import { activityOptions, claimOptions, updateActivityOptions } from '../curriculum-queries'
+import { fileContent, mediaBlock, mediaSource, replacedMediaBlockIds } from '../model/studio'
 
 /**
  * An uploaded video or PDF: the current file, and a new one that replaces it. The upload is claimed for the
  * activity (`POST /activities/{id}/blocks`, else storage reaps it), then `content` points at it (`If-Match`).
  */
 export function MediaFileSection({ courseId, activity }: { courseId: string; activity: ActivityDetail }) {
+  const queryClient = useQueryClient()
   const claim = useMutation(claimOptions())
-  const update = useMutation(updateActivityOptions(useQueryClient(), courseId))
+  const update = useMutation(updateActivityOptions(queryClient, courseId))
+  const remove = useMutation(deleteBlockMutation())
+  const claimed = useRef<Block | null>(null)
   const source = mediaSource(activity)
   const { blockType, purpose } = mediaBlock(activity.activity_type)
   const video = activity.activity_type === 'video'
   const point = (upload: FinalizedUpload, file: File) =>
-    update.mutate(
+    update.mutateAsync(
       {
         path: { activity_id: activity.id },
         body: { content: fileContent(upload, file.name) },
-        headers: { 'If-Match': activity.version },
+        headers: {
+          'If-Match': queryClient.getQueryData(activityOptions(activity.id).queryKey)?.version ?? activity.version,
+        },
       },
       {
         onSuccess: () =>
           toast.add({ title: source.kind === 'file' ? m.studio_media_replaced() : m.studio_media_uploaded() }),
       },
     )
-  const replace = (upload: FinalizedUpload, file: File) =>
-    claim.mutate(
-      {
+  const replace = async (upload: FinalizedUpload, file: File) => {
+    const oldBlocks = await queryClient.fetchQuery({
+      ...listBlocksOptions({ path: { activity_id: activity.id } }),
+      staleTime: 0,
+    })
+    if (claimed.current?.content.upload_id !== upload.id) {
+      claimed.current = await claim.mutateAsync({
         path: { activity_id: activity.id },
         body: { block_type: blockType, upload_id: upload.id, file_name: file.name },
-      },
-      { onSuccess: () => point(upload, file) },
+        headers: { 'Idempotency-Key': upload.id },
+      })
+    }
+    await point(upload, file)
+    await Promise.all(
+      replacedMediaBlockIds(oldBlocks, blockType, claimed.current.id).map(blockId =>
+        remove.mutateAsync({ path: { block_id: blockId } }),
+      ),
     )
-  const error = claim.error ?? update.error
+  }
+  const error = claim.error ?? update.error ?? remove.error
   return (
     <section aria-label={m.studio_media_title()} className="flex max-w-prose flex-col gap-4">
       <div className="flex flex-col gap-1">

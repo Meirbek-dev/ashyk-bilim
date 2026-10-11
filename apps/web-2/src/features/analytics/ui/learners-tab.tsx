@@ -11,6 +11,7 @@ import { atRiskOptions, overviewOptions } from '../queries'
 import { AtRiskTable } from './at-risk-table'
 import { ExportLinks } from './export-links'
 import { LearnerSheet } from './learner-sheet'
+import { LearnerLookup } from './learner-lookup'
 
 /**
  * The learners tab (the old at-risk page merged in, spec 5.6): risk counts and interventions, the at-risk list, and
@@ -42,7 +43,11 @@ export function LearnersTab() {
       <AtRiskTable search={search} filters={filters} />
       <ExportLinks links={[{ href: exportHrefs(filters).atRisk, label: m.analytics_export_at_risk() }]} />
       {learnerId && courseId ? (
-        <LearnerSheet key={`${learnerId}:${courseId}`} learnerId={learnerId} courseId={courseId} row={open} />
+        open ? (
+          <LearnerSheet key={`${learnerId}:${courseId}`} learnerId={learnerId} courseId={courseId} row={open} />
+        ) : (
+          <LearnerLookup key={`${learnerId}:${courseId}`} learnerId={learnerId} courseId={courseId} filters={filters} />
+        )
       ) : null}
     </div>
   )

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
@@ -21,22 +21,30 @@ type VideoCheck = 'ok' | 'no-picture' | 'unplayable'
  * would get an empty black frame. 'no-picture': it opens without an image (sound only, or H.265 the browser cannot
  * decode). A file that tells nothing in 10 s passes; the server still checks the rest.
  */
-function checkVideo(file: File): Promise<VideoCheck> {
+function checkVideo(file: File, signal: AbortSignal): Promise<VideoCheck> {
   return new Promise(resolve => {
     const video = document.createElement('video')
     const url = URL.createObjectURL(file)
     const timeout = AbortSignal.timeout(10_000)
     const done = (answer: VideoCheck) => {
+      timeout.removeEventListener('abort', cancel)
+      signal.removeEventListener('abort', cancel)
+      video.removeEventListener('loadedmetadata', metadata)
+      video.removeEventListener('error', error)
       video.removeAttribute('src')
       video.load()
       URL.revokeObjectURL(url)
       resolve(answer)
     }
-    timeout.addEventListener('abort', () => done('ok'), { once: true })
+    const cancel = () => done('ok')
+    const metadata = () => done(video.videoWidth > 0 ? 'ok' : 'no-picture')
+    const error = () => done('unplayable')
+    timeout.addEventListener('abort', cancel, { once: true })
+    signal.addEventListener('abort', cancel, { once: true })
     video.preload = 'metadata'
     video.muted = true
-    video.addEventListener('loadedmetadata', () => done(video.videoWidth > 0 ? 'ok' : 'no-picture'), { once: true })
-    video.addEventListener('error', () => done('unplayable'), { once: true })
+    video.addEventListener('loadedmetadata', metadata)
+    video.addEventListener('error', error)
     video.src = url
   })
 }
@@ -64,40 +72,48 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   const [checking, setChecking] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const controller = useRef<AbortController | null>(null)
+  useEffect(() => () => controller.current?.abort(), [])
   const mutation = useMutation({
     mutationFn: ({ file, signal }: { file: File; signal: AbortSignal }) =>
       upload(file, purpose, { onProgress: setProgress, signal }),
     onSettled: () => setProgress(null),
   })
-  useLeaveGuard(mutation.isPending)
+  useLeaveGuard(mutation.isPending || checking)
 
   async function start(file: File): Promise<FinalizedUpload | null> {
-    let issue: string | null = null
-    setNotice(null)
-    const limit = checkUpload(file, purpose, limits)
-    if (limit) issue = problemText(limit)
-    else if (purpose === 'block-video') {
-      setChecking(true)
-      const video = await checkVideo(file)
-      setChecking(false)
-      if (video === 'unplayable') issue = m.ui_file_unplayable()
-      // Allowed (a sound-only lecture is fine), but the teacher should know learners may see a black frame.
-      if (video === 'no-picture') setNotice(m.ui_file_no_picture())
-    }
-    setProblem(issue)
-    setFailed(null)
-    mutation.reset()
-    if (issue) return null
-    setProgress(0)
+    if (controller.current) return null
     const abort = new AbortController()
     controller.current = abort
     try {
-      return await mutation.mutateAsync({ file, signal: abort.signal })
-    } catch {
-      // The mutation keeps the error: `error` below shows it. A cancel is no failure.
-      if (abort.signal.aborted) mutation.reset()
-      else setFailed(file)
-      return null
+      let issue: string | null = null
+      setNotice(null)
+      const limit = checkUpload(file, purpose, limits)
+      if (limit) issue = problemText(limit)
+      else if (purpose === 'block-video') {
+        setChecking(true)
+        const video = await checkVideo(file, abort.signal)
+        setChecking(false)
+        if (video === 'unplayable') issue = m.ui_file_unplayable()
+        // Allowed (a sound-only lecture is fine), but the teacher should know learners may see a black frame.
+        if (video === 'no-picture') setNotice(m.ui_file_no_picture())
+      }
+      setProblem(issue)
+      setFailed(null)
+      mutation.reset()
+      if (issue) return null
+      if (abort.signal.aborted) return null
+      setProgress(0)
+      try {
+        return await mutation.mutateAsync({ file, signal: abort.signal })
+      } catch {
+        // The mutation keeps the error: `error` below shows it. A cancel is no failure.
+        if (abort.signal.aborted) mutation.reset()
+        else setFailed(file)
+        return null
+      }
+    } finally {
+      controller.current = null
+      setChecking(false)
     }
   }
 

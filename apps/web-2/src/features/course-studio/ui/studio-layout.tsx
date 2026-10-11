@@ -11,7 +11,7 @@ import { buttonVariants } from '#/shared/ui/button'
 
 import { activityOptions } from '../curriculum-queries'
 import { PublishSwitch } from './publish-switch'
-import { SaveStatusContext, type SaveState } from './save-status'
+import { activitySaveState, SaveStatusContext, type SaveState, type SaveStates } from './save-status'
 
 const saveLabels: Record<SaveState, () => string> = {
   dirty: m.studio_save_dirty,
@@ -57,8 +57,8 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
-  const [save, setSave] = useState<{ activityId: string; state: SaveState } | null>(null)
-  const state = save?.activityId === activityId ? save.state : null
+  const [save, setSave] = useState<SaveStates>({})
+  const state = activitySaveState(save, activityId)
   // A reload or a closed tab inside the autosave pause (or with a refused save) would drop the edit: the browser asks
   // first. In-app links need no prompt: leaving the tab sends what waits (the autosave hooks flush on unmount).
   const unsaved = state === 'dirty' || state === 'saving' || state === 'failed'
@@ -110,7 +110,11 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
               </Link>
             ))}
         </nav>
-        <SaveStatusContext value={(id, next) => setSave({ activityId: id, state: next })}>
+        <SaveStatusContext
+          value={(id, next, editorId = id) =>
+            setSave(current => ({ ...current, [id]: { ...current[id], [editorId]: next } }))
+          }
+        >
           <Outlet />
         </SaveStatusContext>
       </div>

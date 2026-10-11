@@ -28,6 +28,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
   const form = useAppForm(itemFormSchema, {
     defaultValues,
     onSubmit: values => autosave.change(itemPatch(values)),
+    leaveGuard: true,
   })
   // Each edit is a submit: the schema runs, a valid form reaches onSubmit. Meta changes (submitting) are not edits.
   useEffect(() => {
