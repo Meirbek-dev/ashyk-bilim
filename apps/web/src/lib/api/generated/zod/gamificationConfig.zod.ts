@@ -9,6 +9,10 @@ import * as zod from 'zod'
 
 export const GamificationConfig = zod.object({
   daily_xp_limit: zod.int().nullable().describe('`null` = platform default (500).'),
+  default_daily_xp_limit: zod.int().describe("The platform default `daily_xp_limit` stands for (the form's hint)."),
+  default_rewards: zod
+    .record(zod.string(), zod.int())
+    .describe('Source → the platform default XP a missing override stands for.'),
   rewards: zod.record(zod.string(), zod.int()).describe('Source → XP overrides; unknown sources are ignored.'),
   updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
   version: zod

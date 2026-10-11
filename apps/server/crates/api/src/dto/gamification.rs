@@ -256,6 +256,11 @@ pub struct GamificationConfig {
     #[schema(nullable = false)]
     pub version: Option<i32>,
     pub updated_at_unix: i64,
+    /// The platform default `daily_xp_limit` stands for (the form's hint).
+    pub default_daily_xp_limit: i32,
+    /// Source → the platform default XP a missing override stands for.
+    #[schema(value_type = std::collections::BTreeMap<String, i32>)]
+    pub default_rewards: std::collections::BTreeMap<&'static str, i32>,
 }
 
 impl From<ab_db::gamification::ConfigRow> for GamificationConfig {
@@ -265,6 +270,11 @@ impl From<ab_db::gamification::ConfigRow> for GamificationConfig {
             rewards: c.rewards,
             version: Some(c.version),
             updated_at_unix: c.updated_at,
+            default_daily_xp_limit: domain::DEFAULT_DAILY_XP_LIMIT,
+            default_rewards: XpSource::ALL
+                .iter()
+                .map(|&source| (source.as_str(), domain::default_reward(source)))
+                .collect(),
         }
     }
 }

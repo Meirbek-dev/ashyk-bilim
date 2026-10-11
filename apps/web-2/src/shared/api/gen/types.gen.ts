@@ -3009,6 +3009,16 @@ export type GamificationConfig = {
      */
     daily_xp_limit: number | null;
     /**
+     * The platform default `daily_xp_limit` stands for (the form's hint).
+     */
+    default_daily_xp_limit: number;
+    /**
+     * Source → the platform default XP a missing override stands for.
+     */
+    default_rewards: {
+        [key: string]: number;
+    };
+    /**
      * Source → XP overrides; unknown sources are ignored.
      */
     rewards: {

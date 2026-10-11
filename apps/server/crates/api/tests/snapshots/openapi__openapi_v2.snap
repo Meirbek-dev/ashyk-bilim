@@ -8744,6 +8744,22 @@ expression: json
               "null"
             ]
           },
+          "default_daily_xp_limit": {
+            "description": "The platform default `daily_xp_limit` stands for (the form's hint).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "default_rewards": {
+            "additionalProperties": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "description": "Source → the platform default XP a missing override stands for.",
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "rewards": {
             "additionalProperties": {
               "format": "int32",
@@ -8767,6 +8783,8 @@ expression: json
         "required": [
           "rewards",
           "updated_at_unix",
+          "default_daily_xp_limit",
+          "default_rewards",
           "daily_xp_limit"
         ],
         "type": "object"

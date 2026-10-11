@@ -66,6 +66,8 @@ describe('admin model', () => {
       daily_xp_limit: 300,
       rewards: { course_completion: 250, admin_award: 5, login_bonus: 15 },
       updated_at_unix: 0,
+      default_daily_xp_limit: 500,
+      default_rewards: {},
     }
     const form = rulesForm(current)
     expect(form.daily_xp_limit).toBe('300')

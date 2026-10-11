@@ -390,6 +390,10 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
         .await;
     assert_eq!(config.status, StatusCode::OK, "{}", config.text());
     assert_eq!(config.json()["daily_xp_limit"], 30);
+    // The platform defaults ride along for the form's hints (round 3, item 25).
+    assert_eq!(config.json()["default_daily_xp_limit"], 500);
+    assert_eq!(config.json()["default_rewards"]["activity_completion"], 25);
+    assert_eq!(config.json()["default_rewards"]["course_completion"], 200);
     // Bob's first lesson would pay 40 > cap 30 → the award is skipped, the
     // step still lands (best-effort hook).
     let step = app
