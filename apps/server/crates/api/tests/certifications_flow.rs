@@ -530,6 +530,24 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
         .await;
     assert_eq!(listed.json().as_array().unwrap().len(), 1);
 
+    // Another instructor (certificate:create:platform, not an author) can neither add nor overwrite it.
+    let other = instructor(&app, "other").await;
+    let foreign = app
+        .post_as(
+            &other,
+            "/api/v2/certifications",
+            &serde_json::json!({ "course_id": course_id, "config": {} }),
+        )
+        .await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN, "{}", foreign.text());
+    let listed = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/certifications"),
+        )
+        .await;
+    assert_eq!(listed.json()[0]["config"]["title"], "second");
+
     let alice = learner(&app, "alice").await;
     let done = app
         .post_as(

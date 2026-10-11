@@ -362,7 +362,11 @@ impl CertificationsService {
         course_id: CourseId,
         config: &serde_json::Value,
     ) -> Result<CertificationRow> {
-        self.scoped_course(actor, course_id, Action::Create).await?;
+        // A course's template is set up by whoever may edit it: an author or a platform `update` grant.
+        // `certificate:create:platform` (every instructor) only says "may create templates at all"
+        // (`require_some_create`); gating on it let any instructor put - or, since a course has one
+        // template, overwrite - the certificate of someone else's course.
+        self.scoped_course(actor, course_id, Action::Update).await?;
         Self::require_object(config)?;
         let id = ab_db::certifications::insert_certification(&self.pool, course_id, config).await?;
         self.load_live(id).await
