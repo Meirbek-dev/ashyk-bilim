@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server'
 import { routing } from './i18n/routing'
 import { getPathInfo, toInternalAuthPath, toInternalEditorPath } from './lib/auth/routes'
 import { generateUUID } from './lib/utils'
+import { MISSING_HEADERS, isMissingResource, resourceProbe } from './lib/missing-resource'
+import { getServerAPIUrl } from './services/config/config'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -22,8 +24,9 @@ export const config = {
   ],
 }
 
-function buildRequestHeaders(req: NextRequest, requestId: string, locale?: string) {
+function buildRequestHeaders(req: NextRequest, requestId: string, locale?: string, extra?: Record<string, string>) {
   const headers = new Headers(req.headers)
+  for (const [key, value] of Object.entries(extra ?? {})) headers.set(key, value)
 
   headers.set('x-request-id', requestId)
   headers.set('x-pathname', req.nextUrl.pathname)
@@ -67,10 +70,16 @@ function attachRequestHeaders(response: NextResponse, req: NextRequest, requestI
   return withRequestId(response, requestId)
 }
 
-function rewriteWithHeaders(req: NextRequest, requestId: string, pathname: string, locale?: string) {
+function rewriteWithHeaders(
+  req: NextRequest,
+  requestId: string,
+  pathname: string,
+  locale?: string,
+  extra?: Record<string, string>,
+) {
   return withRequestId(
     NextResponse.rewrite(new URL(pathname, req.url), {
-      request: { headers: buildRequestHeaders(req, requestId, locale) },
+      request: { headers: buildRequestHeaders(req, requestId, locale, extra) },
     }),
     requestId,
   )
@@ -85,7 +94,7 @@ function isWellKnownPath(pathname: string): boolean {
   return pathname === '/.well-known' || pathname.startsWith('/.well-known/')
 }
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl
   const requestId = generateUUID()
 
@@ -132,6 +141,21 @@ export function proxy(req: NextRequest) {
   const editorRewrite = toInternalEditorPath(resolvedPathname)
   if (editorRewrite) {
     return rewriteWithHeaders(req, requestId, `${editorRewrite}${search}`, locale)
+  }
+
+  // ROUND3-17: a missing course / lesson / collection / profile answers HTTP 404 (see lib/missing-resource).
+  // Prefetches skip the probe; the navigation itself is checked.
+  const probe =
+    req.method === 'GET' && !req.headers.has('next-router-prefetch')
+      ? resourceProbe(getPathInfo(resolvedPathname).pathnameWithoutLocale)
+      : null
+  if (probe && (await isMissingResource(probe, getServerAPIUrl(), req.headers.get('cookie')))) {
+    // Nothing matches `…/__missing`, so Next renders `[locale]/not-found.tsx` with a real 404.
+    return rewriteWithHeaders(req, requestId, `${resolvedPathname.replace(/\/$/, '')}/__missing`, locale, {
+      [MISSING_HEADERS.kind]: probe.kind,
+      ...(probe.courseId ? { [MISSING_HEADERS.course]: probe.courseId } : {}),
+      ...(req.cookies.has('ab_session') ? {} : { [MISSING_HEADERS.guest]: '1' }),
+    })
   }
 
   return attachRequestHeaders(i18nResponse, req, requestId, locale)

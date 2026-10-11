@@ -7,8 +7,44 @@ import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { APP_NAME } from '@/lib/constants'
 import DocumentTitle from '@components/ui/document-title'
+import ResourceNotFound from '@/components/Errors/ResourceNotFound'
+import { MISSING_HEADERS } from '@/lib/missing-resource'
+import type { MissingKind } from '@/lib/missing-resource'
+import { headers } from 'next/headers'
+import { Suspense } from 'react'
 
-export default async function NotFound() {
+/**
+ * A missing course / lesson / collection / profile reaches here from the proxy (ROUND3-17) with its kind in the
+ * request headers: it gets the resource's own card (with «Войти» for a guest, a private course may open after
+ * signing in). The 404 status is already set, so reading the headers may stream.
+ */
+export default function NotFound() {
+  return (
+    <Suspense fallback={null}>
+      <ResolvedNotFound />
+    </Suspense>
+  )
+}
+
+async function ResolvedNotFound() {
+  const requestHeaders = await headers()
+  const kind = requestHeaders.get(MISSING_HEADERS.kind) as MissingKind | null
+  if (!kind) return <GenericNotFound />
+  const courseId = requestHeaders.get(MISSING_HEADERS.course)
+  const tErrors = await getTranslations('Errors')
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center">
+      <DocumentTitle title={`${tErrors(`${kind}NotFound`)} - ${APP_NAME}`} />
+      <ResourceNotFound
+        type={kind}
+        session={requestHeaders.has(MISSING_HEADERS.guest) ? null : true}
+        {...(courseId ? { courseuuid: courseId } : {})}
+      />
+    </main>
+  )
+}
+
+async function GenericNotFound() {
   const t = await getTranslations('NotFoundPage')
   const tCommon = await getTranslations('Common')
 

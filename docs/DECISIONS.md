@@ -2584,3 +2584,16 @@ A collection marked public whose courses are all private or archived stays visib
 its author only (the server filters closed courses out for everyone else). Saving one
 is allowed; both webs warn on save: «Курсы этой коллекции закрыты — другие
 пользователи её не увидят.» The author may be preparing courses to open later.
+
+## Legacy web: missing resources answer HTTP 404 via the proxy (2026-10-11)
+
+Owner decision: legacy 404s answer HTTP 404, not 200. Narrowing `[locale]/loading.tsx` (the
+suggested fix) cannot do it: with `cacheComponents` + `partialPrefetching` every route with an
+id serves a prerendered shell (`◐`) that commits the status to 200 before `notFound()` runs; a
+production build confirmed it. Instead `src/proxy.ts` probes the API (`courses/{id}`,
+`activities/{id}`, `collections/{id}`, `users/{name}`, with the visitor's cookie, 3 s timeout)
+for the four public detail pages and rewrites a 404/422 to an unmatched path, which Next answers
+with a real 404; `[locale]/not-found.tsx` renders the resource's card from request headers. Cost:
+one light API read per detail-page navigation (prefetches skip it). Fail-open: any other answer
+renders the page as before. A scheduled test is not "missing" (learner-state says
+`blocked_reason: scheduled`). Dashboard pages keep in-page not-found states (staff only, no SEO).
