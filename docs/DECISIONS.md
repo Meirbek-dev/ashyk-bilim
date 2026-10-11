@@ -2607,3 +2607,10 @@ with a real 404; `[locale]/not-found.tsx` renders the resource's card from reque
 one light API read per detail-page navigation (prefetches skip it). Fail-open: any other answer
 renders the page as before. A scheduled test is not "missing" (learner-state says
 `blocked_reason: scheduled`). Dashboard pages keep in-page not-found states (staff only, no SEO).
+
+## Discussion drafts: leave guard only for real text (2026-10-11)
+
+Both webs ask «Выйти без сохранения?» before navigating away from an open discussion
+composer (new post, reply, edit) that holds real text. An editor emptied again (`<p></p>` /
+an empty JSON document) or an edit back at its original text does not ask - there is nothing
+to lose. One guard per post card, so several open composers give one prompt.

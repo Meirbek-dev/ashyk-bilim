@@ -33,7 +33,7 @@ export default function DiscussionForm({ currentUser, onSubmit }: DiscussionForm
 
   const { pending, run } = useSubmitOnce()
   // A closed composer keeps its text for later but does not hold the reader on the page.
-  const leaveGuard = useComposerGuard(expanded ? content : '')
+  const leaveGuard = useComposerGuard({ content: expanded ? content : '' })
   const handleSubmit = async (formData: FormData) => {
     const nextContent = String(formData.get('content') ?? '')
 

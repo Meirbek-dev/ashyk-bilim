@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
-import { hasMeaningfulText, useSubmitOnce } from './text'
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog'
+import { hasMeaningfulText, useComposerGuard, useSubmitOnce } from './text'
 
 const RichTextEditor = dynamic(
   () =>
@@ -80,6 +81,10 @@ export default function DiscussionPost({
   }
 
   const { pending, run } = useSubmitOnce()
+  const leaveGuard = useComposerGuard(
+    { content: replyingTo ? replyContent : '' },
+    { content: editingPost ? editContent : '', initial: post.postMessage },
+  )
   const handleSubmitReply = async (formData: FormData) => {
     const nextReplyContent = String(formData.get('replyContent') ?? '')
 
@@ -346,6 +351,7 @@ export default function DiscussionPost({
           </>
         ) : null}
       </CardContent>
+      <UnsavedChangesDialog guard={leaveGuard} />
     </Card>
   )
 }
