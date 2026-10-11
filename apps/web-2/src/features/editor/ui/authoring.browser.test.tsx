@@ -60,6 +60,8 @@ describe('authoring', () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
     const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
     await insert(screen, m.editor_block_math())
+    // The new block's field takes the focus: the author types the formula right away.
+    await expect.element(screen.getByLabelText(m.editor_field_latex())).toHaveFocus()
     await screen.getByLabelText(m.editor_field_latex()).fill('\\frac{')
     await screen.getByRole('button', { name: m.editor_apply() }).click()
     await expect.element(screen.getByText(m.editor_math_invalid())).toBeVisible()
@@ -74,6 +76,7 @@ describe('authoring', () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
     const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
     await insert(screen, m.editor_block_embed())
+    await expect.element(screen.getByLabelText(m.editor_field_url())).toHaveFocus()
     await screen.getByLabelText(m.editor_field_url()).fill('javascript:alert(1)')
     await screen.getByRole('button', { name: m.editor_apply() }).click()
     await expect.element(screen.getByText(m.validation_invalid())).toBeVisible()

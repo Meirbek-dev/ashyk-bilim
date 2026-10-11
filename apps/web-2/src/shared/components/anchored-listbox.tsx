@@ -28,18 +28,29 @@ type AnchoredListboxProps = {
   /** Closed by Escape, a click outside or a pick: return focus to where the user was (the editor). */
   onOpenChange: (open: boolean) => void
   onSelect: (option: ListboxOption) => void
+  /** After the close (its animation and focus return) is over: where the focus goes next. */
+  onClosed?: () => void
 }
 
 /**
  * A searchable list anchored to anything (the "/" menu of the editor at the caret) on the stock combobox: focus moves
  * into its search input, the list filters by label as the user types, arrows move, Enter picks and closes.
  */
-export function AnchoredListbox({ label, options, anchor, open, onOpenChange, onSelect }: AnchoredListboxProps) {
+export function AnchoredListbox({
+  label,
+  options,
+  anchor,
+  open,
+  onOpenChange,
+  onSelect,
+  onClosed,
+}: AnchoredListboxProps) {
   return (
     <Combobox
       items={options}
       open={open}
       onOpenChange={next => onOpenChange(next)}
+      onOpenChangeComplete={next => (next ? undefined : onClosed?.())}
       value={null}
       onValueChange={(option: ListboxOption | null) => {
         if (option) onSelect(option)
