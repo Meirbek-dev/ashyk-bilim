@@ -1,4 +1,3 @@
-import { Accessibility } from '@dnd-kit/dom'
 import { DragDropProvider, type DragEndEvent, type DragOverEvent } from '@dnd-kit/react'
 import { move } from '@dnd-kit/helpers'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
@@ -8,6 +7,7 @@ import { useRef, useState } from 'react'
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
+import { accessibleDrag } from '#/shared/lib/drag-accessibility'
 
 import { curriculumOptions, moveActivityOptions, moveChapterOptions, placeCurriculum } from '../curriculum-queries'
 import { applyLayout, layoutMove, layoutOf, type Layout } from '../model/curriculum'
@@ -15,7 +15,6 @@ import { can } from '../model/course'
 import { courseOptions } from '../queries'
 import { ChapterSection } from './chapter-section'
 import { CreateChapterDialog } from './create-chapter-dialog'
-import { dragAccessibility } from './drag-accessibility'
 
 /**
  * `content`: chapters and their activities in order. Dragging (pointer or keyboard on a handle) rearranges a
@@ -66,7 +65,13 @@ export function ContentPage() {
     }
   }
 
-  const accessibility = dragAccessibility(curriculum)
+  const names = new Map(
+    curriculum.chapters.flatMap(chapter => [
+      [chapter.id, chapter.name] as const,
+      ...chapter.activities.map(activity => [activity.id, activity.name] as const),
+    ]),
+  )
+  const plugins = accessibleDrag(id => names.get(id))
 
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
@@ -77,7 +82,7 @@ export function ContentPage() {
         <p className="py-8 text-muted-foreground">{m.studio_content_empty()}</p>
       ) : (
         <DragDropProvider
-          plugins={defaults => defaults.map(plugin => (plugin === Accessibility ? accessibility : plugin))}
+          plugins={plugins}
           onDragStart={() => place(layoutOf(curriculum))}
           onDragOver={over}
           onDragEnd={drop}

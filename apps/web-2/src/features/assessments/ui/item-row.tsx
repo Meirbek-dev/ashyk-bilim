@@ -30,7 +30,12 @@ export function ItemRow({ courseId, activityId, item, index, open, movable }: It
       className={`flex items-start gap-2 rounded-lg border p-2 ${open ? 'border-primary bg-accent' : 'bg-card'} ${isDragging ? 'opacity-60' : ''}`}
     >
       {movable ? (
-        <IconButton ref={handleRef} label={m.assessments_item_drag({ title })} icon={<GripVertical aria-hidden />} />
+        <IconButton
+          ref={handleRef}
+          aria-roledescription={m.studio_drag_role()}
+          label={m.assessments_item_drag({ title })}
+          icon={<GripVertical aria-hidden />}
+        />
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-1">
         <Link

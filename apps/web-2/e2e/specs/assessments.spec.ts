@@ -147,6 +147,8 @@ test('B-ASM-12 B-ASM-13 B-ASM-14 questions are duplicated, deleted and reordered
   const handle = page.getByRole('button', { name: m.assessments_item_drag({ title: 'Гамма' }, ru) })
   await handle.focus()
   await page.keyboard.press('Space')
+  // A screen reader hears the question's number and title, in the interface language.
+  await expect(page.getByText(m.studio_drag_picked({ name: '3. Гамма' }, ru))).toBeAttached()
   await page.keyboard.press('ArrowUp')
   await page.keyboard.press('ArrowUp')
   await page.keyboard.press('Space')

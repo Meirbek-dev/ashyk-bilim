@@ -6,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { formatNumber } from '#/shared/i18n/format'
+import { accessibleDrag } from '#/shared/lib/drag-accessibility'
 import { presentError } from '#/shared/i18n/errors'
 
 import { inOrder, totalPoints } from '../model/items'
@@ -27,6 +28,10 @@ export function ItemList({ courseId, activityId, assessment, openId }: ItemListP
   const editable = can(assessment, 'edit')
   const version = useVersion(activityId)
   const { items } = assessment
+  const plugins = accessibleDrag(id => {
+    const item = items.find(entry => entry.id === id)
+    return item && `${item.position}. ${item.title || m.assessments_item_untitled()}`
+  })
   const drop = (event: DragEndEvent) => {
     if (event.canceled) return
     const before = items.map(item => item.id)
@@ -56,7 +61,7 @@ export function ItemList({ courseId, activityId, assessment, openId }: ItemListP
           {editable ? <p className="text-sm text-muted-foreground">{m.assessments_items_empty_hint()}</p> : null}
         </div>
       ) : (
-        <DragDropProvider onDragEnd={drop}>
+        <DragDropProvider plugins={plugins} onDragEnd={drop}>
           <ol className="flex flex-col gap-2">
             {items.map((item, index) => (
               <ItemRow
