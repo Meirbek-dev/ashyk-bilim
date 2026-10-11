@@ -44,8 +44,6 @@ function AddUserGroup(props: AddUserGroupProps) {
   // A double click created the group twice: the second click landed on the still-closing dialog's form.
   const submitting = useRef(false)
   const handleSubmit = async (values: UserGroupFormValues) => {
-    if (submitting.current) return
-    submitting.current = true
     const toastID = toast.loading(t('toastLoading'))
     try {
       await createUserGroup(values)
@@ -62,7 +60,19 @@ function AddUserGroup(props: AddUserGroupProps) {
   }
 
   return (
-    <form onSubmit={event => void form.handleSubmit(handleSubmit)(event)} className="space-y-4">
+    <form
+      onSubmit={event => {
+        if (submitting.current) {
+          event.preventDefault()
+          return
+        }
+        submitting.current = true
+        void form.handleSubmit(handleSubmit, () => {
+          submitting.current = false
+        })(event)
+      }}
+      className="space-y-4"
+    >
       <Field>
         <FieldLabel htmlFor="name">{t('nameLabel')}</FieldLabel>
         <FieldContent>

@@ -100,7 +100,7 @@ export function inlangToIcu(value: unknown): unknown {
   if (Array.isArray(value)) {
     const [message] = value
     return message && typeof message === 'object' && !Array.isArray(message) && 'match' in message
-      ? convertComplex(message as unknown as ComplexMessage)
+      ? convertComplex(message)
       : value
   }
   if (value && typeof value === 'object') {
