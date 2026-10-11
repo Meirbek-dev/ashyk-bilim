@@ -51,6 +51,8 @@ export function PostForm({
   const images = useRef<{ id: string; key: string }[]>([])
   const form = useAppForm(schema, {
     defaultValues: { content: initial },
+    // A draft with text asks before it is left behind; an editor emptied again does not (B-DSC-15).
+    leaveGuard: ({ content }) => hasText(content),
     onSubmit: async ({ content }) => {
       await onSubmit(
         content,

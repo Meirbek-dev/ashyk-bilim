@@ -82,6 +82,30 @@ test('B-DSC-03 a post needs text, carries an Idempotency-Key and lands first', a
   await expect(composer.getByRole('textbox')).toHaveText('')
 })
 
+test('B-DSC-15 a draft with text asks before the page is left; an editor emptied again does not', async ({
+  page,
+  signInAs,
+  course,
+}) => {
+  const made = await course()
+  await signInAs('student')
+  await page.goto(tab(made))
+  const editor = page.getByRole('region', { name: m.discussions_new({}, ru) }).getByRole('textbox')
+  await editor.fill('Черновик вопроса')
+  const about = page.getByRole('link', { name: m.platform_tab_about({}, ru) })
+  let asked = false
+  page.once('dialog', dialog => {
+    asked = true
+    void dialog.dismiss()
+  })
+  await about.click()
+  await expect.poll(() => asked).toBe(true)
+  await expect(page).toHaveURL(/\/discussions$/)
+  await editor.fill('')
+  await about.click()
+  await expect(page).toHaveURL(/\/about$/)
+})
+
 test('B-DSC-04 a thread opens under its post and lives in the URL', async ({ page, signInAs, course, post }) => {
   const made = await course()
   const question = await post(made, 'Вопрос с ответами.')

@@ -29,9 +29,10 @@ type AppFormOptions<T> = {
   onSubmit: (value: T) => unknown
   /**
    * Ask before a link, a reload or a closed tab drops what was typed and not saved (settings-like forms; not search
-   * boxes). A navigation the submit itself starts is never asked about.
+   * boxes). A navigation the submit itself starts is never asked about. A function asks only about values it calls
+   * worth keeping (an editor typed into and emptied again holds nothing to lose).
    */
-  leaveGuard?: boolean
+  leaveGuard?: boolean | ((value: T) => boolean)
 }
 
 /**
@@ -74,8 +75,14 @@ export function useAppForm<T>(
     },
   })
   const isField = (name: string): name is DeepKeys<T> => name in form.fieldInfo
-  const changed = useStore(form.store, state => !state.isSubmitting && JSON.stringify(state.values) !== saved)
-  const unsaved = leaveGuard && changed
+  const unsaved = useStore(
+    form.store,
+    state =>
+      leaveGuard !== false &&
+      !state.isSubmitting &&
+      JSON.stringify(state.values) !== saved &&
+      (leaveGuard === true || leaveGuard(state.values)),
+  )
   useBlocker({
     disabled: !unsaved,
     enableBeforeUnload: unsaved,

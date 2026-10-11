@@ -2729,3 +2729,9 @@ cover waited for «Сохранить» (an admin who missed it left an unclaime
 collection cover at all. Now all of them apply on upload: the platform's two images, and a new
 «Обложка» section on the collection edit page (with «Убрать обложку»); the collection page shows
 the cover.
+
+## Discussion drafts are guarded, empty editors are not (2026-10-11)
+
+Leaving a course discussion with a typed post, reply or edit lost it silently. Both webs now ask
+before the page is left while the composer holds visible text; an editor typed into and emptied
+again holds nothing, so it neither asks nor can be posted.
