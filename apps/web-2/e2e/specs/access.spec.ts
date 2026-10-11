@@ -12,7 +12,7 @@ import { expect, type Role, type Seed, test } from '../fixtures/seed'
 const ru = { locale: 'ru' } as const
 const ROLES: Role[] = ['guest', 'student', 'teacher', 'admin']
 
-type Outcome = 'renders' | 'login' | 'home' | 'forbidden'
+type Outcome = 'renders' | 'login' | 'home' | 'forbidden' | 'not-found'
 type Leaf = { id: string; group: string; path: string }
 
 /** Leaf routes of src/routeTree.gen.ts: what a user can land on. Index routes are leaves even with siblings. */
@@ -33,10 +33,14 @@ function leafRoutes(): Leaf[] {
 
 function withParams(path: string, params: Seed['params']): string {
   const values = new Map(Object.entries(params))
-  return path.replaceAll(/\$(\w+)/g, (_, name: string) => values.get(name) ?? name)
+  // The splat (`/$`) takes every address no other route does: an unknown one stands for it.
+  return path.replaceAll(/\$(\w*)/g, (_, name: string) => values.get(name) ?? (name || 'no-such-page'))
 }
 
 function expected(leaf: Leaf, role: Role, seed: Seed): Outcome {
+  // An unknown address is «Страница не найдена» for everyone, the guest too (no sign-in first); old-web URLs it
+  // redirects are covered by legacy-urls.test.ts.
+  if (leaf.id === '/$') return 'not-found'
   if (leaf.group === '_public') return 'renders'
   if (leaf.group === '_guest') return role === 'guest' ? 'renders' : 'home'
   if (role === 'guest') return 'login'
@@ -64,7 +68,7 @@ const leaves = leafRoutes()
 
 test('the matrix covers the whole route tree of spec 5.3', () => {
   expect(leaves.length).toBeGreaterThan(50)
-  expect(new Set(leaves.map(leaf => leaf.group))).toEqual(new Set(['_public', '_guest', '_authed']))
+  expect(new Set(leaves.map(leaf => leaf.group))).toEqual(new Set(['_public', '_guest', '_authed', '$']))
 })
 
 for (const role of ROLES) {
@@ -72,10 +76,14 @@ for (const role of ROLES) {
     test(`${role} visits ${leaf.id}`, async ({ page, seed, signInAs }) => {
       await signInAs(role)
       const path = withParams(leaf.path, seed.params)
-      await page.goto(path)
+      const response = await page.goto(path)
       const outcome = expected(leaf, role, seed)
       const forbidden = page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })
-      if (outcome === 'login') {
+      if (outcome === 'not-found') {
+        expect(response?.status()).toBe(404)
+        await expect(page.getByRole('heading', { name: m.platform_not_found_title({}, ru) })).toBeVisible()
+        expect(new URL(page.url()).pathname).toBe(path)
+      } else if (outcome === 'login') {
         await expect(page).toHaveURL(/\/login\?redirect=/)
       } else if (outcome === 'home') {
         await expect(page).toHaveURL(/\/home$/)
@@ -114,7 +122,9 @@ const messageKeys = Object.keys(m)
 for (const locale of ['kk', 'en'] as const) {
   for (const leaf of leaves) {
     test(`${locale} smoke of ${leaf.id}`, async ({ page, context, seed, signInAs, baseURL }) => {
-      const role = (['admin', 'student', 'guest'] as const).find(each => expected(leaf, each, seed) === 'renders')
+      const role = (['admin', 'student', 'guest'] as const).find(each =>
+        ['renders', 'not-found'].includes(expected(leaf, each, seed)),
+      )
       expect(role, 'some role sees the route').toBeDefined()
       if (role) await signInAs(role)
       await context.addCookies([{ name: 'ab_locale', value: locale, url: String(baseURL) }])
