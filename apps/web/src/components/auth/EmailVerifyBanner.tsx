@@ -2,7 +2,7 @@
 
 import { MailWarning, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 
 import { resendVerificationAction, verifyEmailAction } from '@/app/actions/auth'
@@ -11,6 +11,16 @@ import { Input } from '@/components/ui/input'
 import { useSession } from '@/hooks/useSession'
 
 const HIDDEN_KEY = 'ab.email-banner-hidden'
+const emptySubscribe = () => () => {}
+const readHidden = () => {
+  try {
+    return sessionStorage.getItem(HIDDEN_KEY)
+  } catch {
+    return null
+  }
+}
+// The server has no session storage: render nothing there and decide after hydration.
+const serverHidden = () => '?'
 
 /**
  * «Подтвердите email» above the page while the account's address is unconfirmed (`email_verified`, DECISIONS
@@ -22,19 +32,13 @@ export default function EmailVerifyBanner() {
   const errorsT = useTranslations('Errors')
   const locale = useLocale()
   const { user, refresh } = useSession()
-  // Read after mount: session storage does not exist on the server.
-  const [hiddenFor, setHiddenFor] = useState<string | null>('?')
+  const storedHidden = useSyncExternalStore(emptySubscribe, readHidden, serverHidden)
+  const [hiddenNow, setHiddenFor] = useState<string | null>(null)
+  const hiddenFor = hiddenNow ?? storedHidden
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<'verify' | 'resend' | null>(null)
-  useEffect(() => {
-    try {
-      setHiddenFor(sessionStorage.getItem(HIDDEN_KEY))
-    } catch {
-      setHiddenFor(null)
-    }
-  }, [])
-  if (!user || user.email_verified !== false || hiddenFor === '?' || hiddenFor === user.id) return null
+  if (!user || user.email_verified || hiddenFor === '?' || hiddenFor === user.id) return null
 
   const failure = (result: { code?: string }, fallback: string) => {
     const key = `codes.${result.code}`
@@ -67,7 +71,10 @@ export default function EmailVerifyBanner() {
   }
 
   return (
-    <div role="alert" className="border-border bg-card relative mx-4 my-3 max-w-5xl rounded-lg border p-4 pr-12 xl:mx-auto">
+    <div
+      role="alert"
+      className="border-border bg-card relative mx-4 my-3 max-w-5xl rounded-lg border p-4 pr-12 xl:mx-auto"
+    >
       <div className="flex items-start gap-3">
         <MailWarning className="mt-0.5 size-5 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1 space-y-3">
