@@ -19,8 +19,9 @@ const defaultValues: UpdatePlatformRequest = {}
 const contentUrl = (key: string) => `/content/${key}`
 
 /**
- * Logo and cover: a picked image uploads at once (`platform-logo` / `platform-thumbnail`), "Save" claims it. An empty
- * field leaves the current image as it is. Saved with `If-Match`; a 412 opens the conflict dialog.
+ * Logo and cover: a picked image uploads at once (`platform-logo` / `platform-thumbnail`) and becomes the platform's
+ * right away, like a course cover (it was left unclaimed when the admin missed «Сохранить»). An empty field leaves
+ * the current image as it is. Saved with `If-Match`; a 412 opens the conflict dialog.
  */
 export function PlatformBranding({ platform, base }: { platform: Platform; base: BaseVersion }) {
   const queryClient = useQueryClient()
@@ -74,14 +75,14 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
             </figure>
           ))}
         </div>
-        <form.AppField name="logo_upload_id">
+        <form.AppField name="logo_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>
           {() => <FileField label={m.admin_platform_logo()} purpose="platform-logo" />}
         </form.AppField>
-        <form.AppField name="thumbnail_upload_id">
+        <form.AppField name="thumbnail_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>
           {() => <FileField label={m.admin_platform_thumbnail()} purpose="platform-thumbnail" />}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>
   )
 }

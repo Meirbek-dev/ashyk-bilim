@@ -63,7 +63,7 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
           {field => <field.TextField label={m.admin_platform_email()} type="email" />}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>
   )
 }

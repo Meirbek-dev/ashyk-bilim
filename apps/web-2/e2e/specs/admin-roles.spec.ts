@@ -102,7 +102,9 @@ test('B-ADM-11 a custom role saves its name and its permissions, line by line', 
   const field = grants.getByLabel(m.admin_role_permissions({}, ru))
   await field.fill('course:read:all\nnot-a-grant')
   await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(grants.getByText(m.validation_invalid({}, ru))).toBeVisible()
+  // The server names the refused line; the field says which one and selects it.
+  await expect(grants.getByText(m.admin_role_permissions_refused({ lines: '2' }, ru))).toBeVisible()
+  await expect(field).toBeFocused()
   await field.fill('course:read:all\n\n quiz:read:assigned ')
   await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect
@@ -143,11 +145,23 @@ test("B-ADM-23 a role save over someone else's change asks, keeps the input and 
   await expect(conflict).toBeVisible()
   await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
   await expect(name).toHaveValue('E2E мой вариант')
+  // Nothing was saved: leaving the page still asks (a refused 412 is not a save).
+  let asked = false
+  page.once('dialog', dialog => {
+    asked = true
+    void dialog.dismiss()
+  })
+  await page.getByRole('link', { name: m.admin_roles_all({}, ru) }).click()
+  await expect.poll(() => asked).toBe(true)
+  await expect(page).toHaveURL(new RegExp(`/admin/roles/${slug}$`))
 
   await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
   await expect(conflict).toBeHidden()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E мой вариант' })).toBeVisible()
+  // The retry went through the form: saved, leaving no longer asks.
+  await page.getByRole('link', { name: m.admin_roles_all({}, ru) }).click()
+  await expect(page).toHaveURL(/\/admin\/roles$/)
 })
 
 test('B-ADM-12 B-ADM-24 deleting a role asks with its name, is sent with If-Match, then returns to the list', async ({

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ProfileSections } from '#/shared/api/gen/types.gen'
@@ -27,8 +27,13 @@ export function ProfileBuilder() {
   const [conflict, setConflict] = useState(false)
   // Captured once: a reload after a conflict must not reset what the user typed.
   const [defaultValues] = useState(() => query.data.profile)
-  const save = (document: ProfileSections, version: number) =>
-    update.mutateAsync(
+  // "Reload and retry" reads the current version and submits through the form (its leave guard): the version read
+  // is used by that submit, before the refetched profile has rendered.
+  const retryVersion = useRef<number | null>(null)
+  const save = (document: ProfileSections) => {
+    const version = retryVersion.current ?? query.data.version
+    retryVersion.current = null
+    return update.mutateAsync(
       { body: { profile: normalizeSections(document) }, version },
       {
         onSuccess: () => {
@@ -38,10 +43,11 @@ export function ProfileBuilder() {
         onError: error => setConflict(isStale(error)),
       },
     )
-  const form = useBuilderForm(defaultValues, document => save(document, query.data.version))
+  }
+  const form = useBuilderForm(defaultValues, save)
   const reloadAndRetry = async () => {
-    const fresh = await query.refetch()
-    if (fresh.data) await save(form.state.values, fresh.data.version).catch(() => undefined)
+    retryVersion.current = (await query.refetch()).data?.version ?? null
+    await form.handleSubmit()
   }
   return (
     <SettingsSection

@@ -45,7 +45,7 @@ function useRename(courseId: string, chapter: CurriculumChapter) {
   )
   // Other errors are on `rename.error` (shown by the form).
   const save = (name: string) => void write.save(name, chapter.version).catch(() => undefined)
-  return { renaming, setRenaming, renameButton, rename, done, save, dialog: write.dialog }
+  return { renaming, setRenaming, renameButton, rename, done, save, dialog: write.dialog() }
 }
 
 /** One chapter: a sortable block (by its handle) that also takes activities dropped onto it, even when empty. */

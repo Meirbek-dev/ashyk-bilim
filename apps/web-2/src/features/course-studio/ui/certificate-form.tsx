@@ -100,7 +100,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
           )}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
       <CertificatePreview certification={certification} />
       {certification.allowed_actions.includes('delete') ? (
         <DisableCertificate course={course} certification={certification} />

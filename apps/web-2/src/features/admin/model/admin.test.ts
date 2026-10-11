@@ -4,7 +4,15 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { Role } from '#/shared/api/gen/types.gen'
 
-import { permissionLines, permissionsByResource, rulesBody, rulesForm, takenField } from './admin'
+import {
+  permissionLines,
+  permissionsByResource,
+  refusedLines,
+  refusesGrants,
+  rulesBody,
+  rulesForm,
+  takenField,
+} from './admin'
 import { roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
@@ -51,6 +59,20 @@ describe('admin model', () => {
   test('B-ADM-11 the permissions field is one grant per line, blanks dropped', () => {
     expect(permissionLines(' course:read:all \n\n quiz:*:platform\n')).toEqual(['course:read:all', 'quiz:*:platform'])
     expect(permissionLines('')).toEqual([])
+  })
+
+  test('B-ADM-11 a refused grant is named by its textarea line, blank lines counted', () => {
+    const refused = new ApiError({
+      status: 422,
+      code: 'validation-failed',
+      fieldErrors: [{ field: 'permissions[1]', code: 'invalid', message: 'x' }],
+      requestId: null,
+      retryAfter: null,
+    })
+    expect(refusedLines('course:read:all\n\n  \nnot-a-grant', refused)).toEqual([4])
+    expect(refusesGrants(refused)).toBe(true)
+    expect(refusesGrants(problem('conflict'))).toBe(false)
+    expect(refusedLines('a', problem('conflict'))).toEqual([])
   })
 
   test('B-ADM-07 a taken username, email or slug belongs under its field; other errors do not', () => {

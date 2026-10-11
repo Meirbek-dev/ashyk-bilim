@@ -71,7 +71,7 @@ export function DetailsSection({ course }: { course: Course }) {
           {field => <field.SwitchField label={m.studio_field_open()} description={m.studio_field_open_hint()} />}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>
   )
 }

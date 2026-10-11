@@ -75,7 +75,7 @@ export function ThumbnailSection({ course }: { course: Course }) {
           )}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog()} />
     </>
   )
 }

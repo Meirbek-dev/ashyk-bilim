@@ -66,7 +66,7 @@ export function RoleEditSection({ role, base }: { role: Role; base: BaseVersion 
           )}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>
   )
 }

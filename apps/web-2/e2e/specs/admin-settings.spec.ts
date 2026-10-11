@@ -85,12 +85,14 @@ test("B-ADM-23 a platform save over someone else's change opens the conflict dia
   }
 })
 
-test('B-ADM-14 a logo uploads with its purpose and is claimed by "Save"', async ({ page, signInAs }) => {
+test('B-ADM-14 a logo uploads with its purpose and becomes the logo at once', async ({ page, signInAs }) => {
   await signInAs('admin')
   await page.goto('/admin/platform')
   const branding = page.getByRole('form', { name: m.admin_platform_branding({}, ru) })
   const created = page.waitForRequest(sent => sent.method() === 'POST' && sent.url().endsWith('/api/v2/uploads'))
   const finalized = page.waitForResponse(answer => /\/api\/v2\/uploads\/[^/]+\/finalize$/.test(answer.url()))
+  // No «Сохранить»: the picked image is claimed as soon as it is uploaded.
+  const saved = page.waitForRequest(sent => sent.method() === 'PATCH' && sent.url().endsWith('/api/v2/platform'))
   await branding.getByLabel(m.admin_platform_logo({}, ru)).setInputFiles({
     name: 'logo.png',
     mimeType: 'image/png',
@@ -98,8 +100,6 @@ test('B-ADM-14 a logo uploads with its purpose and is claimed by "Save"', async 
   })
   expect((await created).postDataJSON()).toMatchObject({ purpose: 'platform-logo', mime: 'image/png' })
   expect((await finalized).ok()).toBe(true)
-  const saved = page.waitForRequest(sent => sent.method() === 'PATCH' && sent.url().endsWith('/api/v2/platform'))
-  await branding.getByRole('button', { name: m.ui_save({}, ru) }).click()
   expect((await saved).postDataJSON()).toMatchObject({ logo_upload_id: expect.stringMatching(/^[0-9a-f-]{36}$/) })
   await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
   await expect(branding.getByRole('img', { name: m.admin_platform_logo({}, ru) })).toBeVisible()
@@ -126,7 +126,7 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
     const course = page.getByLabel(m.admin_xp_course_completion({}, ru))
     await course.fill('250')
     // Someone saves the rules after this page read them: the page's version is stale (412). The retry sends the
-    // input as it was (with the overrides the page read).
+    // input over the newer version, with the overrides the form does not show as that save left them.
     await updateConfig({
       client: api,
       body: { ...restore, rewards: { ...before.rewards, admin_award: 4 } },
@@ -137,7 +137,7 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
     const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
     const sent = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith('/config'))
     await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
-    expect((await sent).postDataJSON()).toMatchObject({ rewards: { admin_award: 3, course_completion: 250 } })
+    expect((await sent).postDataJSON()).toMatchObject({ rewards: { admin_award: 4, course_completion: 250 } })
     await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
     await page.reload()
     await expect(course).toHaveValue('250')

@@ -40,7 +40,8 @@ export function GamificationPage() {
   const form = useAppForm(rulesFormSchema, {
     leaveGuard: true,
     defaultValues,
-    onSubmit: values => write.save(rulesBody(values, config)),
+    // The overrides this form does not show come from the newest read (after «Обновить и повторить», the other save's).
+    onSubmit: values => write.save(rulesBody(values, queryClient.getQueryData(configOptions().queryKey) ?? config)),
   })
   return (
     <SettingsPage
@@ -68,7 +69,7 @@ export function GamificationPage() {
             </form.AppField>
           ))}
         </SettingsSection>
-        <ConflictDialog {...write.dialog} />
+        <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
       </div>
     </SettingsPage>
   )

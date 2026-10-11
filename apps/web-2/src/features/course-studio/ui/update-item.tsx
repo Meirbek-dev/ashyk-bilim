@@ -59,7 +59,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
             {field => <field.TextareaField label={m.studio_update_field_content()} required />}
           </form.AppField>
         </SettingsSection>
-        <ConflictDialog {...write.dialog} />
+        <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
         <div>
           <Button variant="ghost" onClick={() => setEditing(false)}>
             {m.ui_cancel()}

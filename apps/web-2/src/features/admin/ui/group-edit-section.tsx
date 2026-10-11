@@ -50,7 +50,7 @@ export function GroupEditSection({ group }: { group: Usergroup }) {
           {field => <field.TextareaField label={m.admin_field_description()} />}
         </form.AppField>
       </SettingsSection>
-      <ConflictDialog {...write.dialog} />
+      <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>
   )
 }

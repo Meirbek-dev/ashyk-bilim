@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { isStale } from '../model/admin'
 
@@ -9,47 +9,49 @@ import { isStale } from '../model/admin'
 export type BaseVersion = [version: number, set: (version: number) => void]
 
 /**
- * A write sent with `If-Match: <base version>`. A 412 keeps the input and opens the conflict dialog; "Reload and
- * retry" reads the object's current `version` and sends the same input again. Other errors stay on the mutation.
+ * A form's write sent with `If-Match: <base version>`. A 412 opens the conflict dialog and fails the submit, so the
+ * form keeps its input and stays unsaved (its leave guard still asks); "Reload and retry" reads the object's current
+ * `version` and submits the form again. Other errors close the dialog and stay on the mutation.
  */
 export function useIfMatch<Input>(
   [version, setVersion]: BaseVersion,
   send: (input: Input, version: number) => Promise<{ version: number } | void>,
   reload: () => Promise<number>,
 ) {
-  const [stale, setStale] = useState<{ input: Input } | null>(null)
+  const [stale, setStale] = useState(false)
   const [retrying, setRetrying] = useState(false)
-  const save = async (input: Input, at = version) => {
+  // The version "Reload and retry" just read, for the submit it starts (the state update lands a render later).
+  const reloaded = useRef<number | null>(null)
+  const save = async (input: Input) => {
+    const at = reloaded.current ?? version
+    reloaded.current = null
     try {
       const answer = await send(input, at)
-      if (answer) setVersion(answer.version)
-      setStale(null)
+      setVersion(answer ? answer.version : at)
+      setStale(false)
     } catch (error) {
-      if (!isStale(error)) throw error
-      setStale({ input })
+      setStale(isStale(error))
+      throw error
     }
   }
-  const retry = async () => {
-    if (!stale) return
-    setRetrying(true)
-    try {
-      await save(stale.input, await reload())
-    } catch {
-      // A non-412 answer closes the dialog; the form shows it from the mutation's `error`.
-      setStale(null)
-    } finally {
-      setRetrying(false)
-    }
-  }
-  return {
-    save: (input: Input) => save(input),
-    dialog: {
-      open: stale !== null,
-      onOpenChange: (open: boolean) => {
-        if (!open) setStale(null)
-      },
-      onRetry: () => void retry(),
-      pending: retrying,
+  /** The conflict dialog's props; `resubmit` is the form's submit (`() => form.handleSubmit()`). */
+  const dialog = (resubmit: () => Promise<unknown>) => ({
+    open: stale,
+    onOpenChange: (open: boolean) => {
+      if (!open) setStale(false)
     },
-  }
+    onRetry: () => {
+      setRetrying(true)
+      void reload()
+        .then(current => {
+          reloaded.current = current
+          return resubmit()
+        })
+        // The form shows a failed resubmit (its mutation's error); a failed read leaves the dialog to try again.
+        .catch(() => undefined)
+        .finally(() => setRetrying(false))
+    },
+    pending: retrying,
+  })
+  return { save, dialog }
 }

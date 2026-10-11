@@ -88,6 +88,26 @@ export const awardFormSchema = v.object({
   reason: v.string(),
 })
 
+const GRANT_FIELD = /^permissions\[(\d+)\]$/
+
+/** A 422 that names refused grant lines (shown under the field, not as the section's alert). */
+export const refusesGrants = (error: unknown): error is ApiError =>
+  error instanceof ApiError && error.fieldErrors.some(({ field }) => GRANT_FIELD.test(field))
+
+/**
+ * The textarea lines (1-based) of the grants a 422 refused: the server names each by its index in the sent list
+ * (`permissions[3]`), and blank lines were not sent.
+ */
+export function refusedLines(text: string, error: unknown): number[] {
+  if (!refusesGrants(error)) return []
+  const sent = text.split('\n').flatMap((line, at) => (line.trim() ? [at + 1] : []))
+  return error.fieldErrors.flatMap(({ field }) => {
+    const index = GRANT_FIELD.exec(field)?.[1]
+    const line = index === undefined ? undefined : sent[Number(index)]
+    return line === undefined ? [] : [line]
+  })
+}
+
 /** The permissions field: one grant per line (`permissionLines` makes the body). */
 export const permissionsFormSchema = v.object({ permissions: v.string() })
 
