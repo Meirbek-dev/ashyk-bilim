@@ -6,6 +6,8 @@ import {
   getLocale,
   isServer,
   type Locale,
+  overwriteSetLocale,
+  setLocale,
 } from '#/paraglide/runtime'
 
 /** The language prefixes the server prints on PDFs (`Language::web_prefix`; `kz` is the kk interface). */
@@ -40,6 +42,13 @@ export function definePrintedLocaleStrategy(): void {
     getLocale: () => fromPath(document.location.pathname),
     // Nothing to store: the URL is the language.
     setLocale: () => undefined,
+  })
+  // The runtime's first getLocale() in a tab saves the resolved locale through every strategy (`reload: false`),
+  // the cookie included: on the printed page that would make the certificate's language the visitor's own.
+  const write = setLocale
+  overwriteSetLocale((locale, options) => {
+    if (options?.reload === false && fromPath(document.location.pathname) !== undefined) return
+    return write(locale, options)
   })
 }
 
