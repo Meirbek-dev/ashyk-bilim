@@ -7,6 +7,7 @@ import {
   applyContributorMutation,
   getCourseOptions,
   getCurriculumOptions,
+  listDiscussionsInfiniteQueryKey,
   listEnrollmentsQueryKey,
   learnerCourseStateOptions,
   listContributorsPageInfiniteQueryKey,
@@ -110,7 +111,8 @@ const enrolment = (queryClient: QueryClient, id: CourseId) => ({
   onSuccess: ({ learner_state: state }: Trail) => {
     if (state) queryClient.setQueryData(learnerStateOptions(id).queryKey, state)
   },
-  meta: { invalidates: [listEnrollmentsQueryKey()] },
+  // The discussions tab: an enrolled learner may post now (`can_post`).
+  meta: { invalidates: [listEnrollmentsQueryKey(), listDiscussionsInfiniteQueryKey({ path: { course_id: id } })] },
 })
 export const enrollOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...enrollMutation(withState),

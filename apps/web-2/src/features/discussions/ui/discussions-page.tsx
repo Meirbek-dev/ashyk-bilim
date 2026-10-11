@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/ui/button'
 
-import { NewPost } from './new-post'
+import { Composer } from './composer'
 import { PostList } from './post-list'
 
 /** The `discussions` tab: a guest is invited to sign in (the API reads discussions only for signed-in users). */
@@ -32,7 +32,7 @@ export function DiscussionsPage() {
         <h2 id="discussions-new" className="text-xl font-semibold">
           {m.discussions_new()}
         </h2>
-        <NewPost courseId={courseId} />
+        <Composer courseId={courseId} />
       </section>
       <section aria-label={m.discussions_title()}>
         <PostList courseId={courseId} thread={thread} />

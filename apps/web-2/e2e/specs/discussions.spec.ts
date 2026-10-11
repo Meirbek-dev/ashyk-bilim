@@ -1,90 +1,39 @@
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
-import { createClient, createConfig } from '#/shared/api/gen/client'
-import {
-  courseLifecycle,
-  createActivity,
-  createChapter,
-  createCourse,
-  createDiscussion,
-  deleteCourse,
-  updateActivity,
-} from '#/shared/api/gen/sdk.gen'
-import type { Course, Discussion, DiscussionId } from '#/shared/api/gen/types.gen'
 
-import { expect, test as base } from '../fixtures/seed'
+import { expect } from '../fixtures/seed'
 import { clickUntil } from '../fixtures/test'
-import { cookieOf } from './course-studio-fixture'
+import { article, tab, test } from './discussions-fixture'
 
 const ru = { locale: 'ru' } as const
-type Author = 'teacher' | 'student'
 
-/** A post's stored content: the editor document as a JSON string, the way the composer sends it. */
-const doc = (text: string) =>
-  JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
-
-// Each test gets its own published course of the teacher; posts are made through the SDK as either account.
-const test = base.extend<{
-  api: ReturnType<typeof createClient>
-  course: () => Promise<Course>
-  post: (course: Course, text: string, author?: Author, parent?: DiscussionId) => Promise<Discussion>
-}>({
-  api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  course: async ({ api, seed }, use) => {
-    const made: string[] = []
-    const headers = cookieOf(seed, 'teacher')
-    await use(async () => {
-      const name = `E2E discussions ${randomUUID().slice(0, 8)}`
-      const { data: course } = await createCourse({ client: api, body: { name }, headers, throwOnError: true })
-      made.push(course.id)
-      const path = { course_id: course.id }
-      const chapter = await createChapter({ client: api, path, body: { name: 'Глава' }, headers, throwOnError: true })
-      const activity = await createActivity({
-        client: api,
-        path: { chapter_id: chapter.data.id },
-        body: { name: 'Страница', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
-        headers,
-      })
-      const id = activity.data?.id ?? ''
-      await updateActivity({
-        client: api,
-        path: { activity_id: id },
-        body: { published: true },
-        headers,
-        throwOnError: true,
-      })
-      await courseLifecycle({ client: api, path, body: { action: 'publish' }, headers, throwOnError: true })
-      return course
-    })
-    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
-  },
-  post: async ({ api, seed }, use) =>
-    use(async (course, text, author = 'student', parent) => {
-      const { data } = await createDiscussion({
-        client: api,
-        path: { course_id: course.id },
-        body: { content: doc(text), parent_id: parent },
-        headers: cookieOf(seed, author),
-        throwOnError: true,
-      })
-      return data
-    }),
-})
-
-const tab = (course: Course, thread?: string) => `/courses/${course.id}/discussions${thread ? `?thread=${thread}` : ''}`
-
-const article = (page: import('@playwright/test').Page, text: string) =>
-  page.locator('article').filter({ hasText: text })
-
-test('B-DSC-01 a guest is invited to sign in and come back', async ({ page, course }) => {
-  const made = await course()
+test('B-DSC-01 B-DSC-14 a guest is invited to sign in; a learner not enrolled reads and is offered the enrolment', async ({
+  page,
+  signInAs,
+  course,
+  post,
+}) => {
+  const made = await course(false)
+  await post(made, 'Пост преподавателя.', 'teacher')
   await page.goto(tab(made))
   await expect(page.getByText(m.discussions_guest({}, ru))).toBeVisible()
   await expect(page.getByRole('main').getByRole('link', { name: m.platform_nav_login({}, ru) })).toHaveAttribute(
     'href',
     `/login?redirect=${encodeURIComponent(tab(made))}`,
   )
+  await signInAs('student')
+  await page.goto(tab(made))
+  await expect(article(page, 'Пост преподавателя.')).toBeVisible()
+  await expect(page.getByText(m.discussions_members_only({}, ru))).toBeVisible()
+  const publish = page.getByRole('button', { name: m.discussions_publish({}, ru) })
+  await expect(publish).toHaveCount(0)
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: m.course_enroll({}, ru) })
+    .last()
+    .click()
+  await expect(publish).toBeVisible()
 })
 
 test('B-DSC-02 posts come newest first, twenty at a time, then "Show more"', async ({
