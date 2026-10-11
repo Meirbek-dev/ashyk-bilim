@@ -148,6 +148,11 @@ describe('B-EDT-09 view preset', () => {
   })
 })
 
+/** The test server has no such file: its load error is stopped before the player sees it, so the controls stay. */
+const quiet = (event: Event) => {
+  if (event.target instanceof HTMLVideoElement) event.stopImmediatePropagation()
+}
+
 describe('B-EDT-19 media', () => {
   test('B-EDT-19 a video file the browser cannot open says so instead of an empty frame', async () => {
     // The test server has no /content/intro.mp4: the element fails like it does on a broken or unsupported file.
@@ -173,6 +178,30 @@ describe('B-EDT-19 media', () => {
     const pdf = screen.getByTitle(m.editor_pdf_title())
     await expect.element(pdf).toHaveAttribute('src', '/content/handout.pdf')
     expect(pdf.element().hasAttribute('sandbox')).toBe(false)
+  })
+
+  test('B-EDT-19 on an iPhone (no element full screen) the video goes full screen itself, once it can', async () => {
+    const enter = vi.fn<() => void>()
+    Object.defineProperty(HTMLDivElement.prototype, 'requestFullscreen', { value: undefined, configurable: true })
+    Object.defineProperty(HTMLVideoElement.prototype, 'webkitEnterFullscreen', { value: enter, configurable: true })
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    window.addEventListener('error', quiet, true)
+    try {
+      const screen = await render(<BlockViewer content={doc('video')} />)
+      const button = screen.getByRole('button', { name: m.editor_video_fullscreen() })
+      // No metadata yet: the video would refuse (InvalidStateError), so the tap starts it instead.
+      await button.click()
+      expect(play).toHaveBeenCalled()
+      expect(enter).not.toHaveBeenCalled()
+      const video = document.querySelector('video')
+      if (video) Object.defineProperty(video, 'readyState', { value: HTMLMediaElement.HAVE_METADATA })
+      await button.click()
+      expect(enter).toHaveBeenCalledTimes(1)
+    } finally {
+      window.removeEventListener('error', quiet, true)
+      Reflect.deleteProperty(HTMLDivElement.prototype, 'requestFullscreen')
+      Reflect.deleteProperty(HTMLVideoElement.prototype, 'webkitEnterFullscreen')
+    }
   })
 
   test('B-EDT-19 a browser that draws no PDF in a page (a phone) gets the open link, not a blank box', async () => {

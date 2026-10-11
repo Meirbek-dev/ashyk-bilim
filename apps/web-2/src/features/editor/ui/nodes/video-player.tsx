@@ -14,7 +14,11 @@ function fullscreen(
   video: (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null,
 ) {
   if (frame?.requestFullscreen) void frame.requestFullscreen().catch(() => null)
-  else video?.webkitEnterFullscreen?.()
+  else if (video?.webkitEnterFullscreen) {
+    // Before its metadata the video refuses (InvalidStateError): start it instead, the next tap goes full screen.
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) video.webkitEnterFullscreen()
+    else void video.play().catch(() => null)
+  }
 }
 
 /**
