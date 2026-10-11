@@ -3,13 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as zod from 'zod'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useRouter } from '@/i18n/navigation'
 import { apiJson } from '@/lib/api-client'
+import { getAPIUrl } from '@services/config/config'
 import { cn } from '@/lib/utils'
 
 // QA-D: the API writes in-app notifications (grade released, work returned, deadlines, course updates,
@@ -57,6 +58,34 @@ export function hrefFor({ payload }: Notification): string {
   return `/course/${payload.course_id}`
 }
 
+/**
+ * The user's event stream (`GET /me/events`, the one web-2 follows): a new or read notification refreshes the bell at
+ * once. `true` while connected; a refused stream (stream cap, signed out) leaves the caller on its poll. `EventSource`
+ * reconnects on its own after a dropped connection.
+ */
+function useNotificationStream(): boolean {
+  const queryClient = useQueryClient()
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    if (typeof EventSource === 'undefined') return
+    const source = new EventSource(`${getAPIUrl().replace(/\/+$/, '')}/me/events`, { withCredentials: true })
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    source.addEventListener('connected', () => setLive(true))
+    source.addEventListener('notification.created', refresh)
+    source.addEventListener('notification.read', refresh)
+    source.addEventListener('closed', () => {
+      source.close()
+      setLive(false)
+    })
+    source.addEventListener('error', () => setLive(false))
+    return () => {
+      source.close()
+      setLive(false)
+    }
+  }, [queryClient])
+  return live
+}
+
 export function NotificationBell({ className }: { className?: string }) {
   const t = useTranslations('Components.NotificationBell')
   // The type is runtime data (filtered by KNOWN_TYPES); the typed `t` cannot see that.
@@ -65,11 +94,13 @@ export function NotificationBell({ className }: { className?: string }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const live = useNotificationStream()
 
   const unread = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => apiJson('me/notifications/unread-count', undefined, value => UnreadCount.parse(value)),
-    refetchInterval: 60_000,
+    // The user stream says when something arrives; the minute poll is only the fallback while it is refused.
+    refetchInterval: live ? false : 60_000,
   })
   const list = useQuery({
     queryKey: ['notifications', 'list'],
