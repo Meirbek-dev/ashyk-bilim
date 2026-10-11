@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Image from 'next/image'
 import { describeUserAgent } from '@/lib/user-agent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -527,5 +528,5 @@ function TotpQrCode({ uri, label }: { uri: string; label: string }) {
     queryFn: () => QRCode.toDataURL(uri, { margin: 1, width: 192 }),
     staleTime: Infinity,
   })
-  return data ? <img src={data} alt={label} width={192} height={192} className="rounded border bg-white" /> : null
+  return data ? <Image src={data} alt={label} width={192} height={192} unoptimized className="rounded border bg-white" /> : null
 }

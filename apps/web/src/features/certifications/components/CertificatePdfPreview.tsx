@@ -15,6 +15,7 @@ interface CertificatePdfPreviewProps {
 }
 
 const noop = () => () => {}
+const identityFrame = (node: ReactNode) => node
 /** Phones and in-app browsers draw no PDF inside a page (an empty frame); the page's download button stays. */
 const pdfViewerEnabled = () => (navigator as { pdfViewerEnabled?: boolean }).pdfViewerEnabled !== false
 
@@ -22,7 +23,7 @@ const pdfViewerEnabled = () => (navigator as { pdfViewerEnabled?: boolean }).pdf
  * The certificate exactly as the server prints it (the university template), shown in a frame from a Blob:
  * the PDF endpoints answer `attachment`, so a frame pointed at them would download instead of showing.
  */
-export function CertificatePdfPreview({ queryKey, load, title, frame = node => node }: CertificatePdfPreviewProps) {
+export function CertificatePdfPreview({ queryKey, load, title, frame = identityFrame }: CertificatePdfPreviewProps) {
   const canShow = useSyncExternalStore(noop, pdfViewerEnabled, () => false)
   const { data: url, isError } = useQuery({
     queryKey: ['certificate-pdf', ...queryKey],

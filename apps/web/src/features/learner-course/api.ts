@@ -18,7 +18,7 @@ export function parseLearnerCourseState(value: unknown): LearnerCourseState {
       activities: chapter.activities.filter(activity => activity.blocked_reason !== 'scheduled'),
     }))
     .filter(chapter => chapter.activities.length > 0)
-    .map((chapter, index) => ({ ...chapter, index }))
+    .map((chapter, index) => Object.assign(chapter, { index }))
   return { ...state, outline }
 }
 
