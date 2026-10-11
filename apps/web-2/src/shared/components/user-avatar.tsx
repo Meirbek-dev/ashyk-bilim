@@ -1,3 +1,4 @@
+import { contentUrl } from '#/shared/lib/content-url'
 import { Avatar, AvatarFallback, AvatarImage } from '#/shared/ui/avatar'
 
 const initials = (name: string) =>
@@ -10,13 +11,13 @@ const initials = (name: string) =>
     .toUpperCase()
 
 /**
- * A person's photo (public `avatar_key`, served at /content/<key>), else the initials, on the stock Avatar: the
+ * A person's photo (public `avatar_key`, see `contentUrl`), else the initials, on the stock Avatar: the
  * profile menu trigger, people in lists. Decorative next to the name.
  */
 export function UserAvatar({ name, avatarKey }: { name: string; avatarKey?: string | null | undefined }) {
   return (
     <Avatar aria-hidden>
-      {avatarKey ? <AvatarImage src={`/content/${avatarKey}`} alt="" /> : null}
+      {avatarKey ? <AvatarImage src={contentUrl(avatarKey)} alt="" referrerPolicy="no-referrer" /> : null}
       <AvatarFallback>{initials(name)}</AvatarFallback>
     </Avatar>
   )
