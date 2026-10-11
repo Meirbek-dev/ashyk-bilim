@@ -2570,3 +2570,10 @@ in both webs.
 Analytics are computed snapshots, not live counts. The course and test detail pages
 in both webs show «Данные на <date, time>» under the title (the response's
 `generated_at_unix`); the legacy test page's «Сформировано» tile is replaced by it.
+
+## Public collection of closed courses: warn, do not block (2026-10-11)
+
+A collection marked public whose courses are all private or archived stays visible to
+its author only (the server filters closed courses out for everyone else). Saving one
+is allowed; both webs warn on save: «Курсы этой коллекции закрыты — другие
+пользователи её не увидят.» The author may be preparing courses to open later.

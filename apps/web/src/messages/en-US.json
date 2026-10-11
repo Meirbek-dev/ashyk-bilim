@@ -8658,6 +8658,7 @@
       "missingDescription": "Please enter a description",
       "missingName": "Please enter a collection name",
       "noCoursesSelected": "Please select at least one course",
+      "hiddenFromOthers": "The courses in this collection are closed, so other users will not see it.",
       "success": "Collection created successfully!"
     },
     "visibilityLabel": "Visibility",

@@ -33,6 +33,16 @@ interface CourseListItem {
   description?: string | null
   course_uuid: string
   thumbnail_image?: string | null
+  public?: boolean
+  archived_at_unix?: number | null
+}
+
+/**
+ * A public collection whose courses are all closed (private or archived) is listed to nobody but its author,
+ * so saving it public deserves a warning (ROUND3-13, same rule as web-2).
+ */
+export function hiddenFromOthers(isPublic: boolean, courses: Pick<CourseListItem, 'public' | 'archived_at_unix'>[]) {
+  return isPublic && courses.length > 0 && courses.every(course => !course.public || course.archived_at_unix != null)
 }
 
 function NewCollection() {
@@ -115,7 +125,10 @@ function NewCollection() {
         value => Collection.parse(value),
       )
       await revalidateTags(['collections'])
-      toast.success(t('toast.success'))
+      const chosen = (courses ?? []).filter(course => selectedCourses.includes(course.id))
+      if (hiddenFromOthers(isPublic, chosen))
+        toast.warning(t('toast.success'), { description: t('toast.hiddenFromOthers') })
+      else toast.success(t('toast.success'))
       startTransition(() => router.push(getAbsoluteUrl('/collections')))
     } catch (error) {
       toastApiError(error, { fallback: t('toast.failure') })

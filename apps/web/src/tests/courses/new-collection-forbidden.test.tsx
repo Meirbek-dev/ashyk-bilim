@@ -8,7 +8,7 @@ import { APIError } from '@/lib/api/assertSuccess'
 
 const { apiJson, toast } = vi.hoisted(() => ({
   apiJson: vi.fn(),
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
 }))
 
 vi.mock('@/lib/api-client', () => ({ apiJson }))
@@ -22,7 +22,7 @@ vi.mock('@/hooks/useCourseList', () => ({
   }),
 }))
 
-import NewCollection from '@/app/_shared/withmenu/collections/new/NewCollection'
+import NewCollection, { hiddenFromOthers } from '@/app/_shared/withmenu/collections/new/NewCollection'
 
 // jsdom has no Web Animations API; Base UI's ScrollArea polls it.
 Element.prototype.getAnimations ??= () => []
@@ -109,5 +109,29 @@ describe('NewCollection required fields', () => {
     expect(toast.error).not.toHaveBeenCalledWith(ruMessages.NewCollectionPage.toast.noCoursesSelected)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Python' }))
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  })
+})
+
+// ROUND3-13: a public collection of closed courses is listed to nobody but its author - say so on save.
+describe('NewCollection of closed courses', () => {
+  it('warns on save that other users will not see a public collection of private courses', async () => {
+    apiJson.mockResolvedValueOnce({})
+    renderNewCollection()
+    fireEvent.change(screen.getByLabelText(/Название/), { target: { value: 'Моя коллекция' } })
+    fireEvent.change(screen.getByLabelText(/Описание/), { target: { value: 'Описание' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Python' }))
+    fireEvent.click(screen.getByRole('button', { name: ruMessages.NewCollectionPage.createButton }))
+    await waitFor(() =>
+      expect(toast.warning).toHaveBeenCalledWith(ruMessages.NewCollectionPage.toast.success, {
+        description: 'Курсы этой коллекции закрыты — другие пользователи её не увидят.',
+      }),
+    )
+    expect(toast.success).not.toHaveBeenCalled()
+  })
+
+  it('is quiet when one course is public and live, or the collection is private', () => {
+    expect(hiddenFromOthers(true, [{ public: false }, { public: true, archived_at_unix: null }])).toBe(false)
+    expect(hiddenFromOthers(true, [{ public: true, archived_at_unix: 1 }])).toBe(true)
+    expect(hiddenFromOthers(false, [{ public: false }])).toBe(false)
   })
 })
