@@ -2712,3 +2712,12 @@ cutoff, which leaves no late window - stays `deadline_passed`. `time_remaining_r
 the due date has passed (not only in the last 24 h) and name the reason on the result.
 Past the cutoff no new attempt opens (`PAST_DUE`, 403 `attempt-past-due`, as past a strict due
 date): before, a learner could start one and the next sweep handed it in empty.
+
+
+## An upload survives the end of the session (2026-10-11)
+
+A lecture upload can run for an hour; when the session ended meanwhile, the finalize answered
+401, web-2 signed the user out and the file was lost although its bytes were already in storage.
+Now a 401 from the upload keeps the page and the file: the picker says the session ended, offers
+«Войти снова» in a new tab, and «Повторить» only finalizes the stored upload (the server keeps a
+pending upload finalizable for 12 hours). Nothing is uploaded twice.

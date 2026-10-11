@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
+import { isSessionLost } from '#/shared/api/errors'
 import { checkUpload, upload, type UploadLimits, type UploadProblem, type UploadPurpose } from '#/shared/api/upload'
 import { formatFileSize } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
@@ -59,6 +60,31 @@ function useLeaveGuard(active: boolean) {
 }
 
 /**
+ * The upload mutation. A file whose bytes reached storage but whose finalize failed (the session ended during a long
+ * upload) keeps its slot: the retry only finalizes it once the user has signed in again, the bytes are not sent
+ * twice. A 401 keeps the page (and the file) instead of signing out.
+ */
+function useResumableUpload(purpose: UploadPurpose, setProgress: (progress: number | null) => void) {
+  const stored = useRef<{ file: File; slot: string } | null>(null)
+  return useMutation({
+    mutationFn: ({ file, signal }: { file: File; signal: AbortSignal }) =>
+      upload(file, purpose, {
+        onProgress: setProgress,
+        signal,
+        resume: stored.current?.file === file ? stored.current.slot : undefined,
+        onStored: slot => {
+          stored.current = { file, slot }
+        },
+      }),
+    onSuccess: () => {
+      stored.current = null
+    },
+    onSettled: () => setProgress(null),
+    meta: { keepsSession: true },
+  })
+}
+
+/**
  * One file through `shared/api/upload.ts` with its state: `start(file)` checks the purpose's limits (and that a
  * video plays; `notice` warns about one without a picture), uploads and resolves with the finalized upload (or null; `error` then says why). `progress` is
  * 0..1 while uploading; `cancel()` stops it, `retry()` starts the last file again after a failure.
@@ -73,11 +99,7 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   const [notice, setNotice] = useState<string | null>(null)
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
-  const mutation = useMutation({
-    mutationFn: ({ file, signal }: { file: File; signal: AbortSignal }) =>
-      upload(file, purpose, { onProgress: setProgress, signal }),
-    onSettled: () => setProgress(null),
-  })
+  const mutation = useResumableUpload(purpose, setProgress)
   useLeaveGuard(mutation.isPending || checking)
 
   async function start(file: File): Promise<FinalizedUpload | null> {
@@ -117,7 +139,9 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
     }
   }
 
-  const error = problem ?? (mutation.error ? presentError(mutation.error) : null)
+  const sessionLost = isSessionLost(mutation.error)
+  const error =
+    problem ?? (sessionLost ? m.ui_file_session_lost() : mutation.error ? presentError(mutation.error) : null)
   return {
     start,
     cancel: () => controller.current?.abort(),
@@ -127,6 +151,8 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
     failed,
     progress,
     error,
+    /** The upload stopped because the session ended: sign in again (another tab), then `retry`. */
+    sessionLost,
     pending: mutation.isPending || checking,
   }
 }

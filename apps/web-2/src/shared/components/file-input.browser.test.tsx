@@ -253,3 +253,34 @@ describe('FileInput while uploading', () => {
     expect(onUploaded).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('an upload across a lost session', () => {
+  test('a session that ended during the upload keeps the file; after signing in, the retry only finalizes it', async () => {
+    let signedIn = false
+    const api = vi.fn<(request: Request) => Promise<Response>>(async request => {
+      if (!request.url.endsWith('/finalize')) return json(SLOT)
+      if (signedIn) return json({ id: SLOT.id, key: SLOT.key, size_bytes: 4 })
+      const problem = { type: 'about:blank', title: 'Unauthorized', status: 401, code: 'session-expired' }
+      return new Response(JSON.stringify(problem), {
+        status: 401,
+        headers: { 'content-type': 'application/problem+json' },
+      })
+    })
+    vi.stubGlobal('fetch', api)
+    vi.stubGlobal('XMLHttpRequest', FakeStorage)
+    const { screen, onUploaded, input } = await renderInput()
+    await userEvent.upload(input, png('a.png'))
+    await expect.element(screen.getByText(m.ui_file_session_lost())).toBeVisible()
+    await expect.element(screen.getByRole('link', { name: m.ui_file_sign_in() })).toHaveAttribute('target', '_blank')
+    signedIn = true
+    await screen.getByRole('button', { name: m.ui_file_retry() }).click()
+    await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'a.png' }))).toBeVisible()
+    expect(onUploaded).toHaveBeenCalledTimes(1)
+    // create + finalize, then the retry's finalize alone: the bytes were not sent again.
+    expect(api.mock.calls.map(([request]) => new URL(request.url).pathname.split('/').pop())).toEqual([
+      'uploads',
+      'finalize',
+      'finalize',
+    ])
+  })
+})

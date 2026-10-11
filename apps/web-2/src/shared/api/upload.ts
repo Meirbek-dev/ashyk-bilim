@@ -112,7 +112,14 @@ export function clipboardImage(clipboard: DataTransfer | null): File | null {
   return null
 }
 
-type UploadOptions = { onProgress?: (fraction: number) => void; signal?: AbortSignal }
+type UploadOptions = {
+  onProgress?: (fraction: number) => void
+  signal?: AbortSignal
+  /** A slot whose bytes are already stored (`onStored`): only finalize it (pending slots stay finalizable 12 h). */
+  resume?: string | undefined
+  /** The bytes are in storage under this slot: a failed finalize (a session that ended meanwhile) can resume it. */
+  onStored?: (slot: string) => void
+}
 
 /** PUT with upload progress: fetch has none on HTTP/1.1, so this is the one XMLHttpRequest of the app. */
 function put(url: string, file: File, { onProgress, signal }: UploadOptions): Promise<void> {
@@ -165,17 +172,22 @@ export async function upload(
   options: UploadOptions = {},
 ): Promise<FinalizedUpload> {
   options.signal?.throwIfAborted()
-  const { data: slot } = await createUpload({
-    body: { purpose, mime: uploadType(file), size_bytes: file.size },
-    signal: options.signal,
-    throwOnError: true,
-  })
-  await put(storageUrl(slot.put_url), file, options)
+  let slot = options.resume
+  if (!slot) {
+    const { data: created } = await createUpload({
+      body: { purpose, mime: uploadType(file), size_bytes: file.size },
+      signal: options.signal,
+      throwOnError: true,
+    })
+    await put(storageUrl(created.put_url), file, options)
+    slot = created.id
+    options.onStored?.(slot)
+  }
   options.signal?.throwIfAborted()
   // The slot id is the retry token: a repeated finalize replays the first answer instead of a 409.
   const { data } = await finalizeUpload({
-    path: { upload_id: slot.id },
-    headers: { 'Idempotency-Key': slot.id },
+    path: { upload_id: slot },
+    headers: { 'Idempotency-Key': slot },
     signal: options.signal,
     throwOnError: true,
   })

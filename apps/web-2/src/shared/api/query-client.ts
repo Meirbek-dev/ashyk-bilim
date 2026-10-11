@@ -6,7 +6,11 @@ import { ApiError, isSessionLost } from './errors'
 
 declare module '@tanstack/react-query' {
   interface Register {
-    mutationMeta: { invalidates?: QueryKey[] }
+    mutationMeta: {
+      invalidates?: QueryKey[]
+      /** A 401 is this mutation's to show (an upload resumable after signing in again), not a sign-out. */
+      keepsSession?: boolean
+    }
   }
 }
 
@@ -29,7 +33,9 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     defaultOptions: { queries: { staleTime: 30_000, retry: retryOnce } },
     queryCache: new QueryCache({ onError: loseSession }),
     mutationCache: new MutationCache({
-      onError: loseSession,
+      onError: (error, _variables, _context, mutation) => {
+        if (!mutation.meta?.keepsSession) loseSession(error)
+      },
       onSuccess: async (_data, _variables, _context, mutation) => {
         const keys = mutation.meta?.invalidates
         if (keys) await Promise.all(keys.map(queryKey => queryClient.invalidateQueries({ queryKey })))

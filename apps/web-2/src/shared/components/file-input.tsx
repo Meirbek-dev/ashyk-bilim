@@ -114,10 +114,10 @@ export function FileInput(props: FileInputProps) {
   const { label, description, purpose, limits = {}, onUploaded, file, error, disabled = false, multiple = 1 } = props
   const id = useId()
   const upload = useUpload(purpose, limits)
-  const { cancel, failed, notice, progress, error: uploadError } = upload
+  const { cancel, failed, notice, progress, error: uploadError, sessionLost: lost } = upload
   const batch = useBatch(upload.start, onUploaded, multiple)
   const { uploaded, picked, dropped, pending } = batch
-  const retryFile = batch.claimFailed ?? failed
+  const again = batch.claimFailed ?? failed
   const [dragging, setDragging] = useState(false)
   // With several files the error names the one it is about.
   const ownError = batch.claimError ?? uploadError
@@ -185,7 +185,7 @@ export function FileInput(props: FileInputProps) {
         {notice && !shownError ? <p className="text-warning">{notice}</p> : null}
         {shownError ? <p className="text-destructive">{shownError}</p> : null}
       </div>
-      {retryFile && !pending ? <RetryUpload file={retryFile} disabled={disabled} retry={batch.retry} /> : null}
+      {again && !pending ? <RetryUpload file={again} disabled={disabled} retry={batch.retry} signIn={lost} /> : null}
     </div>
   )
 }

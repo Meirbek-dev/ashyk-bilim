@@ -38,6 +38,8 @@
   "ui_unsaved_leave": "You have unsaved changes. Leave the page without saving?",
   "ui_file_cancel": "Cancel upload",
   "ui_file_retry": "Retry",
+  "ui_file_session_lost": "Your session ended, but the file is already uploaded. Sign in again and press “Retry”; it will not be sent again.",
+  "ui_file_sign_in": "Sign in again (in a new tab)",
   "ui_file_progress": "{done} of {total}",
   "ui_file_checking": "Checking the file…",
   "ui_pdf_open": "Open the PDF in a new tab",
