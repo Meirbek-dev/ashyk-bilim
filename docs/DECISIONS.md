@@ -2631,3 +2631,11 @@ learner-state entries with `blocked_reason: scheduled`. A chapter that holds onl
 listed as well. A direct URL to it shows when it opens instead of «Активность не найдена» (the
 API keeps answering 404 on the activity read; no new contract). The proxy's 404 probe (ROUND3-17)
 lets these URLs through.
+
+
+## Toasts at the top on phones (2026-10-11)
+
+On a 390 px screen the bottom-anchored toasts («Отмечено», «+N XP») covered the bottom bar and,
+in the player, the «Продолжить» row a learner taps next. Below 640 px web-2 now shows toasts at
+the top of the screen (they briefly cover the top bar instead, which is never the next action);
+wider screens keep the bottom-right stack.

@@ -26,3 +26,29 @@
 body {
   @apply bg-background text-foreground antialiased;
 }
+
+/* Phones: toasts come in at the top, clear of the bottom bar and the player's «Продолжить» row (the stock kit
+   stacks them at the bottom). Unlayered, so it wins over the kit's utilities; the stack mirrors the kit's: older
+   toasts peek below the front one. */
+@media (width < 40rem) {
+  [data-slot='toast-viewport'] {
+    top: calc(env(safe-area-inset-top) + 1rem);
+    bottom: auto;
+  }
+  [data-slot='toast'] {
+    --offset-y: calc(var(--toast-offset-y) + var(--toast-index) * var(--gap) + var(--toast-swipe-movement-y));
+    top: 0;
+    bottom: auto;
+    transform-origin: top;
+    transform: translateX(var(--toast-swipe-movement-x))
+      translateY(calc(var(--toast-swipe-movement-y) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height)))
+      scale(var(--scale));
+  }
+  [data-slot='toast'][data-expanded] {
+    transform: translateX(var(--toast-swipe-movement-x)) translateY(var(--offset-y));
+  }
+  [data-slot='toast'][data-starting-style],
+  [data-slot='toast'][data-ending-style]:not([data-limited], [data-swipe-direction]) {
+    transform: translateY(-150%);
+  }
+}
