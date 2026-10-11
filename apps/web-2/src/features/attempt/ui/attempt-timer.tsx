@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { StudentSubmission } from '#/shared/api/gen/types.gen'
 import { formatDateTime } from '#/shared/i18n/format'
 
-import { clock, clockEndsAt, DAY_SECONDS, runsToDueDate, WARN_SECONDS } from '../model/attempt'
+import { clock, clockEndsAt, DAY_SECONDS, runsToDueDate, showsDueDate, WARN_SECONDS } from '../model/attempt'
 
 type AttemptTimerProps = {
   /** Seconds left now (`useCountdown`). */
@@ -17,11 +17,12 @@ type AttemptTimerProps = {
 /**
  * The server-driven countdown (B-ATT-14): "mm:ss" ("N d h:mm:ss" from a day up), in warning ink for the last five
  * minutes. A countdown to the due date has its own icon and name and runs only in the last day; before that the
- * attempt reads «Сдать до <date, time>».
+ * attempt reads «Сдать до <date, time>». Past the due date the countdown to the late cutoff runs throughout.
  */
 export function AttemptTimer({ seconds, attempt, receivedAt }: AttemptTimerProps) {
   const due = runsToDueDate(attempt.time_remaining_reason)
-  if (due && seconds > DAY_SECONDS)
+  const lateCutoff = attempt.time_remaining_reason === 'late_cutoff_passed'
+  if (showsDueDate(attempt.time_remaining_reason, seconds))
     return (
       <p className="flex items-center gap-1 text-sm leading-tight font-medium">
         <CalendarClock aria-hidden className="size-4 shrink-0" />
@@ -30,7 +31,7 @@ export function AttemptTimer({ seconds, attempt, receivedAt }: AttemptTimerProps
     )
   const tone = seconds <= WARN_SECONDS ? 'text-warning' : 'text-foreground'
   const Icon = due ? CalendarClock : Timer
-  const label = due ? m.attempt_due_left() : m.attempt_time_left()
+  const label = lateCutoff ? m.attempt_late_cutoff_left() : due ? m.attempt_due_left() : m.attempt_time_left()
   const face =
     seconds >= DAY_SECONDS
       ? m.attempt_days_clock({ days: Math.floor(seconds / DAY_SECONDS), clock: clock(seconds % DAY_SECONDS, true) })

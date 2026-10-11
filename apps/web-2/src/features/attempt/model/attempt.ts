@@ -96,6 +96,13 @@ export function clock(seconds: number, hours = seconds >= 3600): string {
 /** A day: a countdown to a due date can be weeks long, its face counts whole days first. */
 export const DAY_SECONDS = 86_400
 
+/**
+ * A due-date clock reads «Сдать до <date>» until its last day; the late cutoff counts down as soon as the due date has
+ * passed (the late window is running out).
+ */
+export const showsDueDate = (reason: AutoSubmitReason | null, seconds: number) =>
+  runsToDueDate(reason) && reason !== 'late_cutoff_passed' && seconds > DAY_SECONDS
+
 /** The last five minutes are a warning. */
 export const WARN_SECONDS = 300
 

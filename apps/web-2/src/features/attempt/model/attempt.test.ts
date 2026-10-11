@@ -9,6 +9,7 @@ import { answerText, correctText } from './answer-text'
 import {
   clock,
   clockEndsAt,
+  DAY_SECONDS,
   entryAction,
   extraPrompt,
   gateCode,
@@ -20,6 +21,7 @@ import {
   runsToDueDate,
   saveStatus,
   secondsLeft,
+  showsDueDate,
   submitOutcome,
   unanswered,
 } from './attempt'
@@ -108,6 +110,14 @@ describe('attempt clock', () => {
     expect(runsToDueDate('deadline_passed')).toBe(true)
     expect(runsToDueDate('time_expired')).toBe(false)
     expect(runsToDueDate(null)).toBe(false)
+  })
+
+  test('B-ATT-14 a due date reads «Сдать до» until its last day; the late cutoff counts down past the due date', () => {
+    expect(showsDueDate('deadline_passed', DAY_SECONDS + 1)).toBe(true)
+    expect(showsDueDate('deadline_passed', DAY_SECONDS)).toBe(false)
+    expect(showsDueDate('late_cutoff_passed', 3 * DAY_SECONDS)).toBe(false)
+    expect(runsToDueDate('late_cutoff_passed')).toBe(true)
+    expect(showsDueDate('time_expired', 3 * DAY_SECONDS)).toBe(false)
   })
 })
 
