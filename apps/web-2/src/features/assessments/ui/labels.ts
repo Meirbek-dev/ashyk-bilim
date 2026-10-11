@@ -130,6 +130,14 @@ const lockLabels: Record<EditLock, () => string> = {
   has_submissions: m.assessments_lock_has_submissions,
 }
 
+/**
+ * Why the name is read-only: as `lockReason`, except that a published test with submissions may be renamed (the title
+ * is no content change, B-ASM-30).
+ */
+export function renameLock(assessment: Pick<AssessmentDetail, 'allowed_actions' | 'edit_lock'>): string | null {
+  return assessment.edit_lock === 'has_submissions' && can(assessment, 'update') ? null : lockReason(assessment)
+}
+
 /** Why the caller cannot edit the assessment now (B-ASM-11, B-ASM-28); null while it is editable (`edit`). */
 export function lockReason(assessment: Pick<AssessmentDetail, 'allowed_actions' | 'edit_lock'>): string | null {
   if (can(assessment, 'edit')) return null
