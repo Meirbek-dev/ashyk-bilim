@@ -211,8 +211,12 @@ test('B-CST-37 the certificate template is previewed as the server PDF', async (
   const toggle = page.getByRole('button', { name: m.studio_certificate_preview({}, ru) })
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  const frame = page.locator(`iframe[title="${m.studio_certificate_preview_title({}, ru)}"]`)
-  const src = await frame.getAttribute('src')
+  // A browser without a PDF viewer (headless Chromium: `navigator.pdfViewerEnabled` false) gets the "open" link
+  // instead of the frame (1670bba); both carry the same address.
+  const preview = page
+    .locator(`iframe[title="${m.studio_certificate_preview_title({}, ru)}"]`)
+    .or(page.getByRole('link', { name: m.ui_pdf_open({}, ru) }))
+  const src = (await preview.getAttribute('src')) ?? (await preview.getAttribute('href'))
   expect(src).toMatch(/^\/api\/v2\/certifications\/[^/]+\/preview\.pdf\?lang=ru$/)
   const pdf = await page.request.get(src ?? '')
   expect(pdf.status()).toBe(200)
