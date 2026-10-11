@@ -69,7 +69,9 @@ vi.mock('@/hooks/useApiError', () => ({
 }))
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  // `scoreSummary` prints its numbers (the item total reads in item points).
+  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
+    key === 'scoreSummary' ? `${String(values?.earned)} / ${String(values?.possible)}` : key,
   useLocale: () => 'en',
   useFormatter: () => ({ number: (value: number) => String(value), dateTime: (value: Date) => value.toISOString() }),
 }))
@@ -779,6 +781,15 @@ describe('teacher review controls', () => {
       await waitFor(() => expect(mocks.saveGradingDraftMock).toHaveBeenCalled())
       expect(lastPayload()).toMatchObject({ final_score: 55, item_grades: [{ item_uuid: 'item_2', score: 6 }] })
       expect(lastPayload().item_grades).toHaveLength(1)
+    })
+
+    // ROUND3-10: 15 items of 1 point each are shares of 6.67 and summed as «100,05»; the total reads in points.
+    it('sums the item total in item points, not in shares of 100', async () => {
+      renderItemForm()
+      await waitFor(() => expect(screen.getByLabelText('2. Q2')).toHaveValue(2))
+      expect(screen.getByText('12 / 20')).toBeInTheDocument()
+      fireEvent.change(screen.getByLabelText('2. Q2'), { target: { value: '6' } })
+      expect(screen.getByText('16 / 20')).toBeInTheDocument()
     })
 
     it('keeps the switch on after a first override publish without a reload (optimistic seed)', async () => {

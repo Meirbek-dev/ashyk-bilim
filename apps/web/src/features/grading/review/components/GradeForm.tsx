@@ -146,18 +146,26 @@ export default function GradeForm({
     }
   }, [itemScaleById])
 
+  // Each item's typed points, capped at its scale (a blank or non-number counts 0)
+  const itemPoints = useMemo(
+    () =>
+      gradedItems.map(item => {
+        const val = Number.parseFloat(itemDrafts[item.item_id]?.score ?? String(scale.toPoints(item.score, item)))
+        return Number.isNaN(val) ? 0 : Math.min(val, scale.max(item))
+      }),
+    [gradedItems, itemDrafts, scale],
+  )
   // Calculated total from item drafts, on the breakdown scale (0 to the sum of the shares)
   const calculatedTotal = useMemo(() => {
     if (!hasItemGrading) return null
-    return sumScores(
-      gradedItems.map(item => {
-        const val = Number.parseFloat(itemDrafts[item.item_id]?.score ?? String(scale.toPoints(item.score, item)))
-        return Number.isNaN(val) ? 0 : scale.toShare(Math.min(val, scale.max(item)), item)
-      }),
-    )
-  }, [hasItemGrading, gradedItems, itemDrafts, scale])
+    return sumScores(gradedItems.map((item, i) => scale.toShare(itemPoints[i] ?? 0, item)))
+  }, [hasItemGrading, gradedItems, itemPoints, scale])
 
   const maxPossible = useMemo(() => sumScores(gradedItems.map(item => item.max_score)), [gradedItems])
+  // The summary reads in the author's points («14 / 15»), like each item field; the shares of 100
+  // round per item (15 × 6.67 = 100.05) and read as a broken total.
+  const pointsEarned = sumScores(itemPoints)
+  const pointsPossible = sumScores(gradedItems.map(item => scale.max(item)))
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
   // UX-117: an integrity-annulled attempt keeps its raw 0 on the server unless
@@ -558,8 +566,8 @@ export default function GradeForm({
             {calculatedTotal !== null && (
               <span className="text-muted-foreground text-xs">
                 {tItemGrading('scoreSummary', {
-                  earned: format.number(calculatedTotal, { maximumFractionDigits: 2 }),
-                  possible: format.number(maxPossible, { maximumFractionDigits: 2 }),
+                  earned: format.number(pointsEarned, { maximumFractionDigits: 2 }),
+                  possible: format.number(pointsPossible, { maximumFractionDigits: 2 }),
                   percentage: maxPossible > 0 ? Math.round((calculatedTotal / maxPossible) * 100) : 0,
                 })}
               </span>

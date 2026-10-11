@@ -2544,3 +2544,9 @@ still makes the learner count as completed (completion rates, certificates
 issued), and a course with no required activities still reads 100 % for a
 certificate holder. Teachers see the same number everywhere and what is left
 to do after the course changed.
+
+## Legacy item review totals in item points (2026-10-11)
+
+The legacy teacher review's «Оценка по элементам» summary reads in the test's own
+points (sum of the item fields, «14 / 15 (93 %)»), like web-2 and the learner's result
+card, instead of summed per-item shares of 100 that rounded to «93,38 / 100,05».
