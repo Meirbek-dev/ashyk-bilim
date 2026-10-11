@@ -16,7 +16,7 @@ interface CertificatePdfPreviewProps {
 
 const noop = () => () => {}
 /** Phones and in-app browsers draw no PDF inside a page (an empty frame); the page's download button stays. */
-const pdfViewerEnabled = () => navigator.pdfViewerEnabled !== false
+const pdfViewerEnabled = () => (navigator as { pdfViewerEnabled?: boolean }).pdfViewerEnabled !== false
 
 /**
  * The certificate exactly as the server prints it (the university template), shown in a frame from a Blob:
