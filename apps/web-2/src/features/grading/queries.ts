@@ -176,6 +176,10 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
 /** The platform's code languages: a code answer names its language, not the Judge0 id (read once per tab). */
 export const codeLanguagesOptions = () => ({ ...languagesOptions(), staleTime: Number.POSITIVE_INFINITY })
 
+const hasCodeItem = (queryClient: QueryClient, activityId: ActivityId) =>
+  queryClient.getQueryData(assessmentOptions(activityId).queryKey)?.items.some(item => item.body.kind === 'code') ??
+  false
+
 export async function ensureReview(
   queryClient: QueryClient,
   activityId: ActivityId,
@@ -190,8 +194,10 @@ export async function ensureReview(
       : queryClient.ensureQueryData(attemptOptions(submissionId))
     ).catch(orNotFound),
     queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
-    // Without it (runner not configured) the language shows as its id.
-    work.kind === 'assessment' ? queryClient.ensureQueryData(codeLanguagesOptions()).catch(() => null) : null,
+    // Only a test with a code question needs it; without it (runner not configured) the language shows as its id.
+    work.kind === 'assessment' && hasCodeItem(queryClient, activityId)
+      ? queryClient.ensureQueryData(codeLanguagesOptions()).catch(() => null)
+      : null,
   ])
 }
 
