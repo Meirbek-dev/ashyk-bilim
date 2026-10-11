@@ -500,3 +500,50 @@ async fn a_template_nobody_holds_is_deleted(pool: PgPool) {
         .unwrap();
     assert_eq!(rows, 0);
 }
+
+/// A course has one template: turning it on twice (a double click) keeps one row, with the later
+/// config, so a learner who completes gets one certificate, not one per click.
+#[sqlx::test(migrations = "../../migrations")]
+async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, activity_id) = course_with_lesson(&app, &teacher).await;
+    let mut ids = Vec::new();
+    for title in ["first", "second"] {
+        let created = app
+            .post_as(
+                &teacher,
+                "/api/v2/certifications",
+                &serde_json::json!({ "course_id": course_id, "config": { "title": title } }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        assert_eq!(created.json()["config"]["title"], title);
+        ids.push(created.json()["id"].as_str().unwrap().to_owned());
+    }
+    assert_eq!(ids[0], ids[1]);
+    let listed = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/certifications"),
+        )
+        .await;
+    assert_eq!(listed.json().as_array().unwrap().len(), 1);
+
+    let alice = learner(&app, "alice").await;
+    let done = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{activity_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::OK, "{}", done.text());
+    let mine = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/certificates/me"),
+        )
+        .await;
+    assert_eq!(mine.json().as_array().unwrap().len(), 1);
+}

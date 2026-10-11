@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO certifications (course_id, config) VALUES ($1, $2)\n                   ON CONFLICT (course_id) WHERE disabled_at IS NULL DO UPDATE SET config = EXCLUDED.config\n                   RETURNING id AS \"id: CertificationId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CertificationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certifications",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bfedca9d88cdb982cd46bb11ed29048fbea2f1e97d89df3764052e1e36ef315b"
+}

@@ -21,7 +21,9 @@ pub struct CertificationRow {
 /// Turning the course's certificate on.
 ///
 /// The course's most recently retired certification comes back with `config` (its issued certificates were
-/// never taken back), else a new one. A course that still has a live certification gets a new row, as before.
+/// never taken back), else a new one. A course has at most one live certification
+/// (`certifications_one_live_per_course`): turning it on again (a double click, a second tab) takes the new
+/// `config` on that one instead of adding a duplicate that would issue a second certificate.
 pub async fn insert_certification(
     pool: &PgPool,
     course_id: CourseId,
@@ -47,6 +49,7 @@ pub async fn insert_certification(
         None => {
             sqlx::query_scalar!(
                 r#"INSERT INTO certifications (course_id, config) VALUES ($1, $2)
+                   ON CONFLICT (course_id) WHERE disabled_at IS NULL DO UPDATE SET config = EXCLUDED.config
                    RETURNING id AS "id: CertificationId""#,
                 course_id.0,
                 config
