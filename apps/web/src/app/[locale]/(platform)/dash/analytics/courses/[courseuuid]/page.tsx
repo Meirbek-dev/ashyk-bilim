@@ -7,7 +7,9 @@ import EngagementAreaChart from '@components/Dashboard/Analytics/EngagementAreaC
 import AtRiskLearnersTable from '@components/Dashboard/Analytics/AtRiskLearnersTable'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getFormatter, getTranslations } from 'next-intl/server'
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server'
+import { fromUnix } from '@/lib/api/contract'
+import { DATE_TIME_OPTIONS, formatDate } from '@/lib/date'
 import { formatPercent } from '@/features/assessments/shared/usePercentFormat'
 import { describeAnalyticsError } from '@/lib/analytics/errors'
 import type { Metadata } from 'next'
@@ -42,9 +44,10 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
   params: Promise<{ courseuuid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [{ courseuuid }, searchParams, t, tErrors, format] = await Promise.all([
+  const [{ courseuuid }, searchParams, locale, t, tErrors, format] = await Promise.all([
     props.params,
     props.searchParams,
+    getLocale(),
     getTranslations('TeacherAnalytics'),
     getTranslations('Errors'),
     getFormatter(),
@@ -74,6 +77,10 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
             <Badge variant="outline">{t('pages.courseDetailBadge')}</Badge>
           </div>
           <CardTitle className="mt-3 text-3xl">{detail.course.name}</CardTitle>
+          {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+          <p className="text-muted-foreground text-sm" suppressHydrationWarning>
+            {t('pages.dataAsOf', { time: formatDate(fromUnix(detail.generated_at_unix), locale, DATE_TIME_OPTIONS) })}
+          </p>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <div className="border-border/60 bg-muted/20 rounded-xl border p-4">

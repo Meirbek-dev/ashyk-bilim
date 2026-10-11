@@ -9331,7 +9331,7 @@
       "assessmentColStatus": "Status",
       "assessmentPassThresholdExam": "Pass threshold from exam settings",
       "assessmentPassThreshold": "Pass threshold: {value}%",
-      "assessmentStatGenerated": "Generated",
+      "dataAsOf": "Data as of {time}",
       "assessmentOpsAuditBulkSummary": [
         {
           "declarations": [

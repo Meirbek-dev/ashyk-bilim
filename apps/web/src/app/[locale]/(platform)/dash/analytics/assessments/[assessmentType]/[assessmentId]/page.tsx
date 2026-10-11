@@ -87,9 +87,13 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
             <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
           </div>
           <CardTitle className="mt-3 text-2xl">{detail.title}</CardTitle>
+          {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
+          <p className="text-muted-foreground text-sm" suppressHydrationWarning>
+            {t('pages.dataAsOf', { time: formatDate(fromUnix(detail.generated_at_unix), locale, DATE_TIME_OPTIONS) })}
+          </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-border grid divide-x border-t md:grid-cols-4">
+          <div className="divide-border grid divide-y border-t md:grid-cols-3 md:divide-x md:divide-y-0">
             <div className="px-4 py-3">
               <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
                 {t('pages.assessmentStatSubmissionRate')}
@@ -118,15 +122,6 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
                 {detail.summary.median_score == null
                   ? t('atRisk.na')
                   : `${format.number(detail.summary.median_score, { maximumFractionDigits: 1 })}%`}
-              </div>
-            </div>
-            <div className="px-4 py-3">
-              <div className="text-muted-foreground text-[10px] tracking-wide uppercase">
-                {t('pages.assessmentStatGenerated')}
-              </div>
-              {/* Intl output for kk-KZ differs between the server's ICU and a client without kk data; keep the server text. */}
-              <div className="text-foreground mt-1 text-sm font-semibold" suppressHydrationWarning>
-                {formatDate(fromUnix(detail.generated_at_unix), locale, DATE_TIME_OPTIONS)}
               </div>
             </div>
           </div>

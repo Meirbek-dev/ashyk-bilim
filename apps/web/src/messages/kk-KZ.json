@@ -8832,7 +8832,7 @@
       "assessmentColStatus": "Күй",
       "assessmentPassThresholdExam": "Емтихан параметрлерінен өту шегі",
       "assessmentPassThreshold": "Өту шегі: {value}%",
-      "assessmentStatGenerated": "Қалыптастырылды",
+      "dataAsOf": "Деректер {time} бойынша",
       "assessmentOpsAuditBulkSummary": "{action}: {count} оқушы",
       "assessmentItemAccuracy": "Дәлдік {value}%",
       "courseContentHealthNoLearners": "Әзірге деректер жоқ: курста әлі оқушылар жоқ.",

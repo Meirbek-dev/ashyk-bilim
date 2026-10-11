@@ -2564,3 +2564,9 @@ Analytics are snapshots, so a teacher comparing a page with the live roster coul
 why the counts differ. The overview, the course and assessment drill-downs and the admin
 analytics page now show «Данные на <дата, время>» from the response's `generated_at_unix`,
 in both webs.
+
+## Analytics detail pages name their snapshot time (2026-10-11)
+
+Analytics are computed snapshots, not live counts. The course and test detail pages
+in both webs show «Данные на <date, time>» under the title (the response's
+`generated_at_unix`); the legacy test page's «Сформировано» tile is replaced by it.

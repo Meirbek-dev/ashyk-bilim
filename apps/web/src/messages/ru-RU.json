@@ -9473,7 +9473,7 @@
       "assessmentColStatus": "Статус",
       "assessmentPassThresholdExam": "Проходной порог из настроек экзамена",
       "assessmentPassThreshold": "Проходной порог: {value}%",
-      "assessmentStatGenerated": "Сформировано",
+      "dataAsOf": "Данные на {time}",
       "assessmentOpsAuditBulkSummary": [
         {
           "declarations": [
