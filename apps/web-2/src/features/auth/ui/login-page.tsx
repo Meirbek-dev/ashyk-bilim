@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { getLocale, setLocale } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
 import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
@@ -32,7 +33,12 @@ export function LoginPage() {
       login.mutateAsync(
         { body: totpStep ? body : { ...body, totp_code: undefined } },
         {
-          onSuccess: () => navigate({ href: redirect }),
+          // The profile's language applies: a different one loads the next page anew in it.
+          onSuccess: async ({ user }) => {
+            const switching = user.language !== getLocale()
+            if (switching) await setLocale(user.language, { reload: false })
+            await navigate({ href: redirect, reloadDocument: switching })
+          },
           onError: error => {
             if (error instanceof ApiError && error.code === 'mfa-required') setTotpStep(true)
           },

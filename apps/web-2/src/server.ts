@@ -1,6 +1,7 @@
 import handler from '@tanstack/react-start/server-entry'
 
 import { paraglideMiddleware } from '#/paraglide/server'
+import { definePrintedLocaleStrategy } from '#/shared/i18n/printed-locale'
 import { NONCE_HEADER, contentSecurityPolicy } from '#/shared/lib/csp'
 import { serverEnv } from '#/shared/lib/env.server'
 import { clientKey, createBudget, readLimited } from '#/shared/lib/intake'
@@ -8,6 +9,8 @@ import { SSR_STATUS_HEADER } from '#/shared/lib/ssr-status'
 
 // The web server's request chain (spec 7.4): /healthz, /_client-error, then locale, request id,
 // CSP nonce and the Start handler. Static files never get here: serve.ts answers them first.
+
+definePrintedLocaleStrategy()
 
 const REQUEST_ID = /^[\w-]{1,64}$/
 const CLIENT_ERROR_MAX_BYTES = 8 * 1024

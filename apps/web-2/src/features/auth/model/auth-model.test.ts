@@ -28,9 +28,11 @@ describe('auth model', () => {
     expect(v.parse(loginSearchSchema, { error: 'google-cancelled' })).toEqual({ error: 'google-cancelled' })
   })
 
-  test('B-AUTH-05 the Google link carries only a safe callback', () => {
-    expect(googleStartHref('/collections?q=a b')).toBe('/api/v2/auth/google?callback=%2Fcollections%3Fq%3Da%20b')
-    expect(googleStartHref('//evil.example')).toBe('/api/v2/auth/google?callback=%2Fhome')
+  test('B-AUTH-05 the Google link carries only a safe callback, back through /login (the profile language)', () => {
+    expect(googleStartHref('/collections?q=a b')).toBe(
+      '/api/v2/auth/google?callback=%2Flogin%3Fredirect%3D%252Fcollections%253Fq%253Da%2520b',
+    )
+    expect(googleStartHref('//evil.example')).toBe('/api/v2/auth/google?callback=%2Flogin%3Fredirect%3D%252Fhome')
   })
 
   test('B-AUTH-03 a rate limit names whole minutes, at least one', () => {

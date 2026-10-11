@@ -4,6 +4,7 @@ import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query
 import { ErrorView, NotFoundView, PendingView } from '#/features/platform'
 import { createQueryClient } from '#/shared/api/query-client'
 import type { AppPath } from '#/shared/auth/access'
+import { reloadOnLanguageChange } from '#/shared/i18n/printed-locale'
 import { requestNonce } from '#/shared/lib/csp'
 
 import { routeTree } from './routeTree.gen'
@@ -36,6 +37,7 @@ export function getRouter() {
   })
   setupRouterSsrQueryIntegration({ router, queryClient })
   guardViewTransitions(router)
+  reloadOnLanguageChange(router)
   return router
 }
 

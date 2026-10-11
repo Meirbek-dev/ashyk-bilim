@@ -5,10 +5,11 @@ const GOOGLE_START: GoogleStartData['url'] = '/api/v2/auth/google'
 
 /**
  * googleStart() is a browser navigation (a 303 to Google's consent screen), not a fetch: the button is a link to
- * its URL. After sign-in the server sends the browser on to `callback`.
+ * its URL. After sign-in the server sends the browser back to /login, which applies the profile's language and goes
+ * on to `callback` (shared/auth/session.ts `requireGuest`).
  */
 export const googleStartHref = (callback: string): string =>
-  `${GOOGLE_START}?callback=${encodeURIComponent(safeRedirect(callback))}`
+  `${GOOGLE_START}?callback=${encodeURIComponent(`/login?redirect=${encodeURIComponent(safeRedirect(callback))}`)}`
 
 /** Whole minutes to wait after a 429, from `Retry-After` seconds; null when the server gave no time. */
 export const retryMinutes = (retryAfterSeconds: number | null): number | null =>

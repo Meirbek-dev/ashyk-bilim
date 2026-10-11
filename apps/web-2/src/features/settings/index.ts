@@ -1,4 +1,10 @@
-export { ensurePublicProfile, gamificationOptions, profileOptions, sessionsOptions } from './queries'
+export {
+  ensurePublicProfile,
+  gamificationOptions,
+  profileOptions,
+  sessionsOptions,
+  updateProfileOptions,
+} from './queries'
 export { AppearancePage } from './ui/appearance-page'
 export { NotificationsPage } from './ui/notifications-page'
 export { ProfilePage } from './ui/profile-page'

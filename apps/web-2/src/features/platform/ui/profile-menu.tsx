@@ -1,7 +1,10 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { useLogout } from '#/features/auth'
+import { updateProfileOptions } from '#/features/settings'
 import { m } from '#/paraglide/messages'
+import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import type { WorkspaceId } from '#/shared/auth/access'
 import { AccountMenu } from '#/shared/components/account-menu'
@@ -18,6 +21,16 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
   const logout = useLogout()
   const mode = useModeChoice()
   const workspace = useWorkspaceChoice(session, current)
+  const update = useMutation(updateProfileOptions(useQueryClient()))
+  // A signed-in user's language lives in the profile (the server renders their pages in it): save, then reload in it.
+  const language = {
+    ...localeChoice(),
+    onValueChange: (value: string) => {
+      const locale = locales.find(entry => entry === value)
+      if (locale && locale !== getLocale())
+        update.mutate({ body: { locale } }, { onSuccess: () => void setLocale(locale) })
+    },
+  }
   return (
     <AccountMenu
       trigger={
@@ -30,7 +43,7 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
       detail={session.user.username}
       choice={workspace}
       actions={[{ label: m.platform_page_settings(), onSelect: () => void navigate({ to: '/settings' }) }]}
-      submenus={[mode, localeChoice()]}
+      submenus={[mode, language]}
       final={{ label: m.auth_logout(), onSelect: logout }}
     />
   )

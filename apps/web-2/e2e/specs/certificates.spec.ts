@@ -61,7 +61,7 @@ test('B-CRT-04 "Download PDF" is a plain link to the server PDF', async ({ page,
   expect(download.suggestedFilename()).toBe(`certificate-${issued.code}.pdf`)
 })
 
-test('B-CRT-06 the URL printed on the PDF opens the same page in the certificate language and keeps it', async ({
+test('B-CRT-06 the URL printed on the PDF opens the page in the certificate language, not in the visitor language', async ({
   page,
   context,
   issued,
@@ -76,18 +76,18 @@ test('B-CRT-06 the URL printed on the PDF opens the same page in the certificate
   await expect(page.locator('html')).toHaveAttribute('lang', 'kk')
   await expect(page.getByRole('heading', { level: 1, name: issued.course })).toBeVisible()
   await expect(page.getByText(m.certificates_valid({}, { locale: 'kk' }))).toBeVisible()
-  expect((await context.cookies()).find(cookie => cookie.name === 'ab_locale')?.value).toBe('kk')
-  await page.goto('/collections')
-  await expect(page.locator('html')).toHaveAttribute('lang', 'kk')
+  expect((await context.cookies()).find(cookie => cookie.name === 'ab_locale')).toBeUndefined()
+  // Leaving it (a client-side link) reloads in the visitor's own language.
+  await page.getByRole('link', { name: m.platform_nav_login({}, { locale: 'kk' }) }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
 
   await page.goto(`/en/certificates/${issued.code}/verify`)
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expect(page.getByText(m.certificates_holder({}, { locale: 'en' }))).toBeVisible()
 
   await page.goto(`/de/certificates/${issued.code}/verify`)
-  await expect(
-    page.getByRole('heading', { level: 1, name: m.platform_not_found_title({}, { locale: 'en' }) }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: m.platform_not_found_title({}, ru) })).toBeVisible()
 })
 
 for (const locale of ['kk', 'en'] as const) {

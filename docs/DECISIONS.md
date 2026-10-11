@@ -2585,6 +2585,16 @@ its author only (the server filters closed courses out for everyone else). Savin
 is allowed; both webs warn on save: «Курсы этой коллекции закрыты — другие
 пользователи её не увидят.» The author may be preparing courses to open later.
 
+
+## A signed-in user's language is the profile's; a printed certificate URL leaves it alone (2026-10-11)
+
+Web-2 kept the interface language only in the browser cookie, so the profile setting did
+nothing on another device and opening a certificate's printed `/kz/...` link switched the
+visitor's whole interface to Kazakh for good. Now the profile-menu language switch saves
+the language to the profile (as settings already did), a sign-in (password, or Google,
+which now returns through `/login?redirect=`) applies the profile's language, and the
+printed verify URL renders in the certificate's language through its own Paraglide route
+strategy without writing the cookie; leaving it reloads in the visitor's language.
 ## Legacy web: missing resources answer HTTP 404 via the proxy (2026-10-11)
 
 Owner decision: legacy 404s answer HTTP 404, not 200. Narrowing `[locale]/loading.tsx` (the

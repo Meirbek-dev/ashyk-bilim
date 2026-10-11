@@ -25,6 +25,11 @@ export const paraglideOptions = {
   outdir: './src/paraglide',
   strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
   cookieName: 'ab_locale',
+  // The URL printed on a certificate PDF speaks the certificate's language and leaves the visitor's own alone
+  // (src/shared/i18n/printed-locale.ts).
+  routeStrategies: [
+    { match: '/:prefix(ru|kz|en)/certificates/:code/verify', strategy: ['custom-printed', 'baseLocale'] },
+  ],
   emitTsDeclarations: true,
 } satisfies CompilerOptions
 

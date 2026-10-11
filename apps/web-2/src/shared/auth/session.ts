@@ -5,6 +5,9 @@ import { ApiError } from '#/shared/api/errors'
 import type { currentSessionQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { KEY_ORIGIN } from '#/shared/api/key-origin'
+import { applyProfileLanguage } from '#/shared/i18n/profile-language'
+
+import { safeRedirect } from './redirect'
 
 // The root route reads the session, so this module is in the entry chunk: no runtime import of the generated SDK
 // or query options here (each holds every operation the app uses; gate G-05). The key is the generated one,
@@ -29,7 +32,10 @@ export const sessionOptions = () =>
     },
   })
 
-type GuardInput = { context: { session: SessionInfo | null }; location: { href: string } }
+type GuardInput = {
+  context: { session: SessionInfo | null }
+  location: { href: string; search?: Record<string, unknown> }
+}
 
 /** `_authed` beforeLoad: no session -> /login with a return path. */
 export function requireSession({ context, location }: GuardInput): { session: SessionInfo } {
@@ -37,7 +43,19 @@ export function requireSession({ context, location }: GuardInput): { session: Se
   return { session: context.session }
 }
 
-/** `_guest` beforeLoad: a signed-in user has nothing to do on guest pages. */
-export function requireGuest({ context }: GuardInput): void {
-  if (context.session) throw redirect({ to: '/home' })
+/**
+ * `_guest` beforeLoad: a signed-in user has nothing to do on guest pages and goes on to `?redirect` (or /home). This is
+ * also where a Google sign-in returns (`/login?redirect=`): the page after it speaks the profile's language.
+ */
+export function requireGuest({
+  context,
+  location,
+}: {
+  context: { session: { user: Pick<SessionInfo['user'], 'language'> } | null }
+  location: GuardInput['location']
+}): void {
+  if (!context.session) return
+  applyProfileLanguage(context.session.user.language, location.href)
+  const target = location.search?.['redirect']
+  throw redirect({ href: safeRedirect(typeof target === 'string' ? target : undefined) })
 }
