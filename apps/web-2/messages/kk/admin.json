@@ -120,6 +120,7 @@
   "admin_gamification_rules": "XP ережелері",
   "admin_gamification_rules_hint": "Бос өріс - платформаның әдепкі мәні.",
   "admin_gamification_daily_limit": "Күндік XP шегі",
+  "admin_gamification_default": "Әдепкі: {value}",
   "admin_xp_activity_completion": "Белсенділікті аяқтау",
   "admin_xp_course_completion": "Курсты аяқтау",
   "admin_xp_quiz_completion": "Тестті аяқтау",

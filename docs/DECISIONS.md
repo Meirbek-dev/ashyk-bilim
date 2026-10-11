@@ -2735,3 +2735,10 @@ the cover.
 Leaving a course discussion with a typed post, reply or edit lost it silently. Both webs now ask
 before the page is left while the composer holds visible text; an editor typed into and emptied
 again holds nothing, so it neither asks nor can be posted.
+
+## XP rules name their defaults (2026-10-11)
+
+An admin editing the XP rules saw blank fields and «empty = platform default» without the
+default itself. The config now returns the platform defaults and each field shows «По умолчанию:
+<value>» under it (a description rather than a placeholder, which disappears while typing and is
+read inconsistently by screen readers).

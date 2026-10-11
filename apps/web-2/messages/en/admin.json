@@ -120,6 +120,7 @@
   "admin_gamification_rules": "XP rules",
   "admin_gamification_rules_hint": "A blank field uses the platform default.",
   "admin_gamification_daily_limit": "Daily XP limit",
+  "admin_gamification_default": "Default: {value}",
   "admin_xp_activity_completion": "Activity completed",
   "admin_xp_course_completion": "Course completed",
   "admin_xp_quiz_completion": "Quiz completed",

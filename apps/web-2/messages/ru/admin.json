@@ -122,6 +122,7 @@
   "admin_gamification_rules": "Правила XP",
   "admin_gamification_rules_hint": "Пустое поле - значение платформы по умолчанию.",
   "admin_gamification_daily_limit": "Дневной лимит XP",
+  "admin_gamification_default": "По умолчанию: {value}",
   "admin_xp_activity_completion": "Завершение активности",
   "admin_xp_course_completion": "Завершение курса",
   "admin_xp_quiz_completion": "Завершение теста",
