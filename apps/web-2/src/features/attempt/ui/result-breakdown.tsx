@@ -7,6 +7,7 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { answerText, correctText } from '../model/answer-text'
+import { extraPrompt } from '../model/attempt'
 
 /** Points to hundredths, as the grader rounds them («1,126 из 3» read as noise). */
 const round2 = (value: number) => Math.round(value * 100) / 100
@@ -36,8 +37,7 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
             const given = item ? answerText(item.body, entry.user_answer) : ''
             // The breakdown keeps points as a share of 100; the learner saw the item's own points («1 балл»).
             const scale = item && entry.max_score > 0 ? item.max_score / entry.max_score : 1
-            // Many migrated questions carry the wording only in the prompt (title «Вопрос.», «сұрақ:»).
-            const prompt = item?.body.prompt && item.body.prompt.trim() !== item.title.trim() ? item.body.prompt : null
+            const prompt = item ? extraPrompt(item) : null
             return (
               <li key={entry.item_id} className="flex flex-col gap-1 py-4 text-sm">
                 <div className="flex flex-wrap items-center gap-2">

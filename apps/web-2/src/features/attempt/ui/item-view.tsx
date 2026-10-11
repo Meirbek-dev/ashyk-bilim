@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentItem, ItemAnswer } from '#/shared/api/gen/types.gen'
 import { formatNumber } from '#/shared/i18n/format'
 
+import { extraPrompt } from '../model/attempt'
 import { ItemAnswerControl } from './item-answer-control'
 
 type ItemViewProps = {
@@ -19,7 +20,7 @@ type ItemViewProps = {
 /** One question: its number, points, title, the author's prompt (markdown) and the answer control of its kind. */
 export function ItemView(props: ItemViewProps) {
   const { item, number, total } = props
-  const prompt = item.body.prompt
+  const prompt = extraPrompt(item)
   return (
     <section className="flex flex-col gap-gutter">
       <header className="flex flex-col gap-1">

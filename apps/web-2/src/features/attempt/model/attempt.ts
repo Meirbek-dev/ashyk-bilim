@@ -60,6 +60,15 @@ export function isBlank(answer: ItemAnswer | undefined, body?: ItemBody): boolea
 }
 
 /** Questions without a complete answer, with their 1-based number in the order shown. */
+/**
+ * The prompt worth showing under the item's title, or null. Most migrated questions repeat the title as the prompt
+ * (shown twice otherwise); others keep the wording only in the prompt (title «Вопрос.», «сұрақ:»).
+ */
+export const extraPrompt = (item: AssessmentItem): string | null => {
+  const prompt = item.body.prompt ?? ''
+  return prompt.trim() && prompt.trim() !== item.title.trim() ? prompt : null
+}
+
 export const unanswered = (items: AssessmentItem[], answers: Record<string, ItemAnswer>) =>
   items.map((item, index) => ({ item, number: index + 1 })).filter(({ item }) => isBlank(answers[item.id], item.body))
 

@@ -20,7 +20,8 @@ type ItemCardProps = {
 export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
   const verdict = graded ? verdictText(graded) : null
   const tone = graded?.correct === true ? 'success' : graded?.correct === false ? 'destructive' : 'neutral'
-  const prompt = 'prompt' in item.body ? item.body.prompt : undefined
+  // Most migrated questions repeat the title as the prompt: show the wording once.
+  const prompt = item.body.prompt?.trim() && item.body.prompt.trim() !== item.title.trim() ? item.body.prompt : null
   return (
     <li className="flex flex-col gap-4 rounded-lg border bg-card p-4 text-card-foreground">
       <div className="flex flex-col gap-1">

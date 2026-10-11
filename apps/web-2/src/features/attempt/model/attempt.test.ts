@@ -9,6 +9,7 @@ import { answerText, correctText } from './answer-text'
 import {
   clock,
   entryAction,
+  extraPrompt,
   gateCode,
   isBlank,
   needsRemediation,
@@ -207,5 +208,14 @@ describe('complete answers', () => {
     }
     expect(isBlank({ kind: 'form', values: { age: '20' } }, form)).toBe(true)
     expect(isBlank({ kind: 'form', values: { city: 'Astana' } }, form)).toBe(false)
+  })
+})
+
+describe('attempt question view', () => {
+  test('B-ATT-06 a question shows its wording once: the prompt only when it adds to the title', () => {
+    const withPrompt = (title: string, prompt: string) => ({ ...item('q'), title, body: { ...choice, prompt } })
+    expect(extraPrompt(withPrompt('Какой метод?', ' Какой метод? '))).toBeNull()
+    expect(extraPrompt(withPrompt('сұрақ:', 'Иммерсивті технологияға жатады'))).toBe('Иммерсивті технологияға жатады')
+    expect(extraPrompt(item('q'))).toBeNull()
   })
 })
