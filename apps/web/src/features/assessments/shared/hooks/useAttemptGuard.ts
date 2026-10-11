@@ -23,6 +23,8 @@ export interface AttemptTimerConfig {
   timeLimitMinutes?: number | null
   /** ISO datetime when the timer expires (server-authoritative). Takes precedence over startedAt + timeLimitMinutes. */
   expiresAt?: string | null
+  /** The clock runs to a due date (or late cutoff), not a time limit: it ticks only in its last day. */
+  dueDate?: boolean
   onExpire?: () => void
 }
 

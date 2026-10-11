@@ -10717,7 +10717,8 @@
           "draftConflictDescription": "Серверде жауаптарыңыздың жаңа нұсқасы #{latestVersion} сақталды ({latestSavedAt}). Қай нұсқаны пайдаланғыңыз келеді?",
           "draftConflictAnswerCounts": "Жергілікті: {localCount} жауап | Серверде: {serverCount} жауап",
           "timeRemainingValue": "Қалған уақыт: {time}",
-          "timeRemainingDays": "{days} к {time}"
+          "timeRemainingDays": "{days} к {time}",
+          "submitBy": "{date} дейін тапсыру"
         },
         "CodeChallenge": {
           "actualOutput": "Сіздің шығаруыңыз",

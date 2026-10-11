@@ -89,6 +89,28 @@ describe('attempt surface i18n (UX-010)', () => {
     expect(screen.queryByText(/answered/)).toBeNull()
   })
 
+  // ROUND3-9: a due date weeks away is named («Сдать до …»); it ticks only in its last 24 h. A time limit always ticks.
+  it('names the due date until its last day and counts down within it', () => {
+    const dueAt = '2026-11-20T12:59:58.600Z'
+    const { rerender } = renderRu(
+      <AssessmentActionBar controls={{}} returned={false} remainingSeconds={3 * 86_400} dueAt={dueAt} />,
+    )
+    expect(screen.getByTestId('attempt-submit-by').textContent).toMatch(/^Сдать до .*2026/)
+    expect(screen.queryByRole('timer')).toBeNull()
+
+    const at = (seconds: number, due: string | null) => (
+      <NextIntlClientProvider locale="ru" messages={ruMessages}>
+        <AssessmentActionBar controls={{}} returned={false} remainingSeconds={seconds} dueAt={due} />
+      </NextIntlClientProvider>
+    )
+    rerender(at(2 * 3600, dueAt))
+    expect(screen.queryByTestId('attempt-submit-by')).toBeNull()
+    expect(screen.getByRole('timer')).toHaveTextContent('2:00:00')
+
+    rerender(at(3 * 86_400, null))
+    expect(screen.getByRole('timer')).toHaveTextContent('3 д 0:00:00')
+  })
+
   it('agrees the result-card gender in ru and keeps kk grammatical', () => {
     function Labels() {
       const t = useTranslations('Features.ActivityWorkspace')

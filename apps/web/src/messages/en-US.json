@@ -10708,7 +10708,8 @@
             }
           ],
           "timeRemainingValue": "Time remaining: {time}",
-          "timeRemainingDays": "{days}d {time}"
+          "timeRemainingDays": "{days}d {time}",
+          "submitBy": "Due by {date}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",

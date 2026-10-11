@@ -1,8 +1,9 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import {
+  CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
 import type { AttemptTimerConfig } from '@/features/assessments/shared/hooks/useAttemptGuard'
 import type { PolicyView } from '@/features/assessments/domain/policy'
 
+import { DATE_TIME_LONG_OPTIONS, formatDate } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import AppLink from '@/components/ui/AppLink'
@@ -162,6 +164,8 @@ interface AssessmentActionBarProps {
   exitHref?: string
   /** Time left on a timed attempt; shown here because the bar never scrolls away. */
   remainingSeconds?: number | null
+  /** Set when `remainingSeconds` counts down to a due date: until its last day the bar names the date instead. */
+  dueAt?: string | null
 }
 
 /**
@@ -190,12 +194,16 @@ export function AssessmentActionBar({
   primaryButtonLabelKey,
   exitHref,
   remainingSeconds = null,
+  dueAt = null,
 }: AssessmentActionBarProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
   const tAttemptActions = useTranslations('AttemptActions')
   const tActivity = useTranslations('ActivityPage')
   const { navigation } = controls
+  const locale = useLocale()
   const wordDays = (days: number, time: string) => t('timeRemainingDays', { days, time })
+  // A countdown to a due date weeks away reads as pressure: «Сдать до …» until its last 24 h.
+  const showDueDate = Boolean(dueAt) && remainingSeconds !== null && remainingSeconds > DUE_COUNTDOWN_SECONDS
 
   return (
     <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-40 border-t backdrop-blur">
@@ -208,7 +216,12 @@ export function AssessmentActionBar({
               {tActivity('backToCourse')}
             </Button>
           ) : null}
-          {remainingSeconds !== null ? (
+          {showDueDate && dueAt ? (
+            <Badge variant="outline" className="gap-1" data-testid="attempt-submit-by">
+              <CalendarClock className="size-3" />
+              {t('submitBy', { date: formatDate(roundToMinute(dueAt), locale, DATE_TIME_LONG_OPTIONS) })}
+            </Badge>
+          ) : remainingSeconds !== null ? (
             <Badge
               variant={remainingSeconds <= 60 ? 'destructive' : remainingSeconds <= 300 ? 'warning' : 'outline'}
               className="gap-1 font-mono tabular-nums"
@@ -348,6 +361,14 @@ function areShellRegistrationValuesEqual(left: unknown, right: unknown): boolean
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/** A due-date countdown starts ticking in its last day (ROUND3-9); a time limit always ticks. */
+export const DUE_COUNTDOWN_SECONDS = 86_400
+
+/** The timer end is `fetch time + remaining seconds`; due dates are whole minutes. */
+function roundToMinute(iso: string): string {
+  return new Date(Math.round(new Date(iso).getTime() / 60_000) * 60_000).toISOString()
 }
 
 /**

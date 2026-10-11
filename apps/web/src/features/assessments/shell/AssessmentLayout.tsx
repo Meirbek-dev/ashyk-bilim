@@ -242,6 +242,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           primaryButtonLabelKey={primaryButtonLabelKey}
           exitHref={`/course/${courseUuid.replace(/^course_/, '')}`}
           remainingSeconds={guard.remainingSeconds}
+          dueAt={controls.timer?.dueDate ? (controls.timer.expiresAt ?? null) : null}
         />
       </div>
 

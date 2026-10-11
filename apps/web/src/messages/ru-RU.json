@@ -11834,7 +11834,8 @@
             }
           ],
           "timeRemainingValue": "Осталось времени: {time}",
-          "timeRemainingDays": "{days} д {time}"
+          "timeRemainingDays": "{days} д {time}",
+          "submitBy": "Сдать до {date}"
         },
         "CodeChallenge": {
           "actualOutput": "Ваш вывод",

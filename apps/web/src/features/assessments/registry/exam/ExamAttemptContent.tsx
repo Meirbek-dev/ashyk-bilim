@@ -395,6 +395,7 @@ function ExamTakingContent({
         ? {
             startedAt: attempt.started_at ?? attempt.created_at,
             expiresAt: timerExpiresAt,
+            dueDate: attempt.time_remaining_reason !== 'time_expired',
             onExpire: () => {
               toast.error(
                 t('autoSubmitting', {
