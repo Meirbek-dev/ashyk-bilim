@@ -129,6 +129,15 @@ describe('/dash/admin/users (v2 AdminUserPage wire)', () => {
     expect(screen.getByRole('table')).toBeInTheDocument()
   })
 
+  // ROUND3-14: under 640 px the rows read as cards - each value cell names its column for the card layout.
+  it('labels every value cell with its column for the phone card layout', async () => {
+    renderPage()
+    const teacherRow = (await screen.findByText('teacher@ashyq.local')).closest('tr')!
+    const labels = [...teacherRow.querySelectorAll('td[data-label]')].map(cell => cell.getAttribute('data-label'))
+    expect(labels).toEqual(['tableHead.email', 'tableHead.status', 'tableHead.roles'])
+    expect(screen.getByRole('table').className).toContain('max-sm:[&_thead]:hidden')
+  })
+
   // UX-265: enabling right after disabling stacked an identical toast behind the visible one -
   // each direction has its own wording and the shared id replaces the previous toast.
   it('enabling an account toasts its own message under the shared status toast id', async () => {

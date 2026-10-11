@@ -53,6 +53,14 @@ import type { AdminUser, CreateUserBody, Role } from '@/lib/api/generated/zod'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { assignRoleToUser, createUser, removeRoleFromUser, setUserStatus } from '@/services/rbac'
 
+/** Below `sm` the table reads as cards: rows become bordered blocks, a cell with `data-label` prints its column name. */
+const PHONE_CARDS = [
+  'max-sm:block max-sm:[&_tbody]:block max-sm:[&_thead]:hidden',
+  'max-sm:[&_tr]:mb-3 max-sm:[&_tr]:block max-sm:[&_tr]:rounded-lg max-sm:[&_tr]:border max-sm:[&_tr]:px-3 max-sm:[&_tr]:py-2',
+  'max-sm:[&_td]:block max-sm:[&_td]:max-w-none max-sm:[&_td]:px-0 max-sm:[&_td]:py-1 max-sm:[&_td]:text-left max-sm:[&_td]:whitespace-normal max-sm:[&_td]:wrap-anywhere',
+  'max-sm:[&_td[data-label]]:before:text-muted-foreground max-sm:[&_td[data-label]]:before:block max-sm:[&_td[data-label]]:before:text-xs max-sm:[&_td[data-label]]:before:content-[attr(data-label)]',
+].join(' ')
+
 export default function UserRolesClient() {
   const t = useTranslations('Components.Roles')
   const { user: me, can } = useSession()
@@ -186,7 +194,8 @@ export default function UserRolesClient() {
         {users.isError ? (
           <p className="text-destructive text-sm">{t('loadFailed')}</p>
         ) : (
-          <Table>
+          // Under 640 px each user is a card: the header row hides and each cell names its column (ROUND3-14).
+          <Table className={PHONE_CARDS}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('tableHead.user')}</TableHead>
@@ -221,15 +230,15 @@ export default function UserRolesClient() {
                           <div className="text-muted-foreground text-xs">{user.organization}</div>
                         ) : null}
                       </TableCell>
-                      <TableCell className="max-w-64 truncate" title={user.email}>
+                      <TableCell className="max-w-64 truncate" title={user.email} data-label={t('tableHead.email')}>
                         {user.email}
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label={t('tableHead.status')}>
                         <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
                           {t(user.status === 'active' ? 'status.active' : 'status.disabled')}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label={t('tableHead.roles')}>
                         <div className="flex flex-wrap gap-1">
                           {user.roles.map(slug => (
                             <Badge key={slug} variant="outline" className="gap-1 pr-1">
