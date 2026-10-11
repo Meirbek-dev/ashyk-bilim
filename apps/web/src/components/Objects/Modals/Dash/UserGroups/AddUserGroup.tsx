@@ -62,7 +62,7 @@ function AddUserGroup(props: AddUserGroupProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+    <form onSubmit={event => void form.handleSubmit(handleSubmit)(event)} className="space-y-4">
       <Field>
         <FieldLabel htmlFor="name">{t('nameLabel')}</FieldLabel>
         <FieldContent>

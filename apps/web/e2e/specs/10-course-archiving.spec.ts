@@ -40,7 +40,7 @@ async function expectInCatalog(page: Page, present: boolean): Promise<void> {
 async function runLifecycle(page: Page, courseUuid: string, action: 'Archive' | 'Restore'): Promise<void> {
   await page.goto(`/en/dash/courses/${courseUuid}/review`)
   await page.waitForLoadState('networkidle')
-  await page.getByRole('button', { name: action, exact: true }).click()
+  await page.getByRole('button', { name: action, exact: true }).first().click()
   const dialog = page.getByRole('alertdialog')
   await expect(dialog).toBeVisible({ timeout: TIMEOUT })
   const done = page.waitForResponse(

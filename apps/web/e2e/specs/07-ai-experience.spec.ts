@@ -161,6 +161,7 @@ function submissionAnalysis(submissionId: string) {
   return {
     id: IDS.submissionAnalysis,
     submission_id: submissionId,
+    file_submission_attempt_id: null,
     run_id: IDS.submissionRun,
     triggered_by: IDS.user,
     status: 'complete',

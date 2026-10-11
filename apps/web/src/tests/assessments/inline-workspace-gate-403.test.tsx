@@ -121,6 +121,19 @@ describe('disabledReasonOf', () => {
 })
 
 describe('InlineAssessmentWorkspace (BUG-158)', () => {
+  it.each(['waitForRelease', 'viewResult'])('keeps the archive notice on the %s receipt', recommendedAction => {
+    mocks.vm = {
+      ...base,
+      recommendedAction,
+      disabledActionReasons: ['COURSE_ARCHIVED'],
+      canStart: false,
+      isResultVisible: recommendedAction === 'viewResult',
+    }
+    renderWorkspace()
+    expect(screen.getByText('COURSE_ARCHIVED')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'startAssessment' })).toBeNull()
+  })
+
   it('refetches attempt-state on a gated retry instead of the generic toast', async () => {
     mocks.vm = { ...base, recommendedAction: 'viewResult', isResultVisible: true, canSubmit: true }
     mocks.apiJson.mockRejectedValueOnce(gate403())

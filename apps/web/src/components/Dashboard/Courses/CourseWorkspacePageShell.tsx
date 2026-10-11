@@ -204,6 +204,7 @@ function CourseWorkspaceChrome({
         onOpenChange={setRestoreOpen}
         courseUuid={courseuuid}
         courseName={course.courseStructure.name || t('untitledCourse')}
+        onDone={() => void course.refreshCourseMeta()}
       />
 
       <section className="min-w-0 flex-1 px-4 py-8 lg:px-8">

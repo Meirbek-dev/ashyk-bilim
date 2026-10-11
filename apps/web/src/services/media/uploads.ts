@@ -92,11 +92,12 @@ export interface UploadFileOptions {
   signal?: AbortSignal
 }
 
-export async function createUpload(file: Blob, purpose: UploadPurpose): Promise<CreatedUploadType> {
+export async function createUpload(file: Blob, purpose: UploadPurpose, signal?: AbortSignal): Promise<CreatedUploadType> {
   return apiJson(
     'uploads',
     {
       method: 'POST',
+      ...(signal ? { signal } : {}),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         purpose,
@@ -108,8 +109,12 @@ export async function createUpload(file: Blob, purpose: UploadPurpose): Promise<
   )
 }
 
-export async function finalizeUpload(uploadId: string): Promise<FinalizedUploadType> {
-  return apiJson(`uploads/${encodeURIComponent(uploadId)}/finalize`, { method: 'POST' }, data =>
+export async function finalizeUpload(uploadId: string, signal?: AbortSignal): Promise<FinalizedUploadType> {
+  return apiJson(`uploads/${encodeURIComponent(uploadId)}/finalize`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': uploadId },
+    ...(signal ? { signal } : {}),
+  }, data =>
     FinalizedUpload.parse(data),
   )
 }
@@ -147,7 +152,9 @@ async function putWithProgress(url: string, file: Blob, options: UploadFileOptio
       xhr.addEventListener('abort', () =>
         reject(clientApiError('REQUEST_ABORTED', 'Upload was aborted', { path: url })),
       )
-      options.signal?.addEventListener('abort', () => xhr.abort(), { once: true })
+      const abort = () => xhr.abort()
+      options.signal?.addEventListener('abort', abort, { once: true })
+      xhr.addEventListener('loadend', () => options.signal?.removeEventListener('abort', abort), { once: true })
       xhr.send(file)
     })
   }
@@ -184,17 +191,18 @@ export async function uploadFile(
   purpose: UploadPurpose,
   options: UploadFileOptions = {},
 ): Promise<FinalizedUploadType> {
+  throwIfCancelled(options.signal)
   const guard = typeof globalThis.addEventListener === 'function' ? globalThis : null
   if (guard) {
     inFlightUploads += 1
     if (inFlightUploads === 1) guard.addEventListener('beforeunload', confirmLeavingUpload)
   }
   try {
-    const created = await createUpload(file, purpose)
+    const created = await createUpload(file, purpose, options.signal)
     throwIfCancelled(options.signal)
     await putWithProgress(created.put_url, file, options)
     throwIfCancelled(options.signal)
-    return await finalizeUpload(created.id)
+    return await finalizeUpload(created.id, options.signal)
   } finally {
     if (guard) {
       inFlightUploads -= 1

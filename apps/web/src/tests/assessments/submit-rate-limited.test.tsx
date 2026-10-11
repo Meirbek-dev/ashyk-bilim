@@ -60,7 +60,165 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 
-describe('submit rate limited', () => {
+describe('assessment submission recovery', () => {
+  it.each(['save', 'submit'])('ignores a delayed conflict recovery for an earlier %s', async action => {
+    const otherAssessmentId = '00000000-0000-4000-8000-000000000004'
+    let finishRecovery!: () => void
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit') || init?.method === 'PATCH') {
+        throw new APIError({ code: 'conflict', status: 409, message: 'draft changed' })
+      }
+      if (String(path).endsWith(submissionId)) {
+        await new Promise<void>(resolve => {
+          finishRecovery = resolve
+        })
+        return parse!(fixture)
+      }
+      const draft = String(path).includes(otherAssessmentId)
+        ? { ...fixture, assessment_id: otherAssessmentId, id: otherAssessmentId }
+        : fixture
+      return parse!(String(path).endsWith('/me') ? [draft] : draft)
+    })
+    const { result, rerender } = renderHook(({ id }) => useAssessmentSubmission(id), {
+      wrapper,
+      initialProps: { id: assessmentId },
+    })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    let submitting: Promise<unknown> | undefined
+    act(() => {
+      if (action === 'submit') submitting = result.current.submit().catch(() => undefined)
+      else result.current.save()
+    })
+    await waitFor(() => expect(finishRecovery).toBeDefined())
+    rerender({ id: otherAssessmentId })
+    await waitFor(() => expect(result.current.draft?.assessment_id).toBe(otherAssessmentId))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'new answer' }))
+    await act(async () => {
+      finishRecovery()
+      await submitting
+    })
+    await waitFor(() => expect(result.current.isSaving || result.current.isSubmitting).toBe(false))
+    expect(result.current.saveState).toBe('dirty')
+    expect(result.current.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'new answer' })
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('does not submit a different assessment after waiting for a previous autosave', async () => {
+    const otherAssessmentId = '00000000-0000-4000-8000-000000000004'
+    let finishSave!: () => void
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (init?.method === 'PATCH') {
+        await new Promise<void>(resolve => {
+          finishSave = resolve
+        })
+      }
+      const draft = String(path).includes(otherAssessmentId)
+        ? { ...fixture, assessment_id: otherAssessmentId, id: otherAssessmentId }
+        : fixture
+      return parse!(String(path).endsWith('/me') ? [draft] : draft)
+    })
+    const { result, rerender } = renderHook(({ id }) => useAssessmentSubmission(id), {
+      wrapper,
+      initialProps: { id: assessmentId },
+    })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    act(() => result.current.save())
+    await waitFor(() => expect(finishSave).toBeDefined())
+    let submitting!: Promise<unknown>
+    act(() => {
+      submitting = result.current.submit().catch(() => undefined)
+    })
+    await waitFor(() => expect(result.current.isSubmitting).toBe(true))
+    rerender({ id: otherAssessmentId })
+    await waitFor(() => expect(result.current.draft?.assessment_id).toBe(otherAssessmentId))
+    await act(async () => {
+      finishSave()
+      await submitting
+    })
+    expect(vi.mocked(apiJson).mock.calls.some(([path]) => String(path).endsWith('/submit'))).toBe(false)
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['submit', 'success'],
+    ['submit', 'error'],
+    ['save', 'success'],
+    ['save', 'error'],
+  ])('keeps another assessment unchanged when an earlier %s ends with %s', async (action, outcome) => {
+    const otherAssessmentId = '00000000-0000-4000-8000-000000000004'
+    let finishSubmit!: () => void
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit') || init?.method === 'PATCH') {
+        await new Promise<void>(resolve => {
+          finishSubmit = resolve
+        })
+        if (outcome === 'error') {
+          throw new APIError({ code: 'rate-limited', status: 429, message: 'slow down' })
+        }
+        return parse!({ ...fixture, status: action === 'submit' ? 'pending' : 'draft' })
+      }
+      const draft = String(path).includes(otherAssessmentId)
+        ? { ...fixture, assessment_id: otherAssessmentId, id: otherAssessmentId }
+        : fixture
+      return parse!(String(path).endsWith('/me') ? [draft] : draft)
+    })
+    const { result, rerender } = renderHook(({ id }) => useAssessmentSubmission(id), {
+      wrapper,
+      initialProps: { id: assessmentId },
+    })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    let submitting: ReturnType<typeof result.current.submit> | undefined
+    act(() => {
+      if (action === 'submit') submitting = result.current.submit()
+      else result.current.save()
+    })
+    await waitFor(() => expect(finishSubmit).toBeDefined())
+    rerender({ id: otherAssessmentId })
+    await waitFor(() => expect(result.current.draft?.assessment_id).toBe(otherAssessmentId))
+    act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'new assessment answer' }))
+    await act(async () => {
+      finishSubmit()
+      await submitting?.catch(() => undefined)
+    })
+    await waitFor(() => expect(result.current.isSaving || result.current.isSubmitting).toBe(false))
+    expect(result.current.answers[itemId]).toEqual({ kind: 'OPEN_TEXT', text: 'new assessment answer' })
+    expect(result.current.saveState).toBe('dirty')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('restarts draft recovery after cancelling a throttled save for a failed submit', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(100_000)
+    vi.mocked(apiJson).mockImplementation(async (path, init, parse) => {
+      if (String(path).endsWith('/submit')) {
+        throw new APIError({ code: 'rate-limited', status: 429, message: 'slow down' })
+      }
+      if (init?.method === 'PATCH') {
+        const body = JSON.parse(String(init.body))
+        return parse!({ ...fixture, answers: body.answers, draft_version: 4 })
+      }
+      return parse!(String(path).endsWith('/me') ? [fixture] : fixture)
+    })
+    const { result } = renderHook(() => useAssessmentSubmission(assessmentId), { wrapper })
+    try {
+      await waitFor(() => expect(result.current.isLoading).toBe(false))
+      act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'first save' }))
+      act(() => result.current.save())
+      await waitFor(() => expect(result.current.saveState).toBe('saved'))
+      act(() => result.current.setItemAnswer(itemId, { kind: 'OPEN_TEXT', text: 'latest answer' }))
+      act(() => result.current.save())
+      now.mockReturnValue(105_000)
+      await act(async () => {
+        await result.current.submit().catch(() => undefined)
+      })
+      await waitFor(() => expect(result.current.saveState).toBe('saved'))
+      const saves = vi.mocked(apiJson).mock.calls.filter(([, init]) => init?.method === 'PATCH')
+      expect(saves).toHaveLength(2)
+      expect(String(saves[1]![1]!.body)).toContain('latest answer')
+    } finally {
+      now.mockRestore()
+    }
+  })
+
   it('toasts the localized rate-limit copy with the Retry-After window, not the English detail', async () => {
     vi.mocked(apiJson).mockImplementation(async (path, _init, parse) => {
       if (String(path).endsWith('/submit'))

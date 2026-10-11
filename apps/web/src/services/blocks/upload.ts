@@ -46,7 +46,7 @@ export async function uploadBlockFile(
     `activities/${encodeURIComponent(activityId)}/blocks`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': upload.id },
       body: JSON.stringify({ block_type: blockType, upload_id: upload.id, file_name: file.name }),
     },
     (body: unknown) => Block.parse(body),

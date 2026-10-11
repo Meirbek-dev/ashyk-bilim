@@ -73,7 +73,7 @@ export async function createFileActivity(
     `activities/${activity.activity_uuid}/blocks`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': upload.id },
       body: JSON.stringify({ block_type: kind.blockType, upload_id: upload.id, file_name: file.name }),
     },
     (body: unknown) => Block.parse(body),
@@ -106,7 +106,7 @@ export async function replaceActivityFile(
     `activities/${id}/blocks`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': upload.id },
       body: JSON.stringify({ block_type: kind.blockType, upload_id: upload.id, file_name: file.name }),
     },
     (body: unknown) => Block.parse(body),

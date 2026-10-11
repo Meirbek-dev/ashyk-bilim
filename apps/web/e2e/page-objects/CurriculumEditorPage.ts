@@ -115,6 +115,11 @@ export class CurriculumEditorPage {
     }
 
     await expect(dialog).toBeHidden({ timeout: 15_000 })
+    if (activityType === 'Dynamic' || activityType === 'Code Challenge') {
+      // Quick-created pages and challenges open their studio automatically.
+      await this.page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 90_000 })
+      await this.goto(/\/courses\/([^/]+)/.exec(this.page.url())![1]!)
+    }
     let activityId: string | undefined
     await expect
       .poll(async () => (activityId = (await rowIds()).find(id => id && !before.has(id)) ?? undefined), {

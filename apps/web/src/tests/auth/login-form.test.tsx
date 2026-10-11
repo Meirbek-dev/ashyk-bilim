@@ -36,6 +36,15 @@ beforeEach(() => {
 })
 
 describe('/auth/login', () => {
+  it('associates the visible labels with the login and password controls', async () => {
+    const user = userEvent.setup()
+    render(<LoginClient />)
+    expect(screen.getByRole('textbox', { name: 'loginIdentifier' })).toBe(input('login'))
+    expect(screen.getByLabelText('password')).toBe(input('password'))
+    await user.click(screen.getByRole('button', { name: 'showPassword' }))
+    expect(screen.getByRole('textbox', { name: 'password' })).toBe(input('password'))
+  })
+
   // UX-019: «Back to login» on the TOTP step was a Link - the URL changed
   // but the same LoginClient kept `step: 'totp'` until a reload.
   it('returns from the TOTP step to the credentials form', async () => {

@@ -265,9 +265,6 @@ test.describe.serial('Teacher – Course Creation', () => {
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: /enable certification/i }).click()
     await page.getByRole('textbox', { name: /certification name/i }).fill(`${COURSE.title} certificate`)
-    await page
-      .getByRole('textbox', { name: /certification description/i })
-      .fill('Awarded for completing every activity of the E2E course.')
 
     // createCertification is a server action (no `/api/v2` response to watch)
     await page.getByRole('button', { name: /^save( draft)?$/i }).click()

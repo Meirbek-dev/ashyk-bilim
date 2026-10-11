@@ -64,6 +64,7 @@ describe('editor block uploads (v2)', () => {
       expect(path).toBe(`activities/${ACTIVITY_ID}/blocks`)
       expect(init.method).toBe('POST')
       expect(init.headers['Content-Type']).toBe('application/json')
+      expect(init.headers['Idempotency-Key']).toBe(UPLOAD_ID)
       expect(init.body).not.toBeInstanceOf(FormData)
       expect(JSON.parse(init.body as string)).toEqual({ block_type: type, upload_id: UPLOAD_ID, file_name: file.name })
 

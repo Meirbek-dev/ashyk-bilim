@@ -107,6 +107,25 @@ describe('uploadFile', () => {
     ).rejects.toMatchObject({ code: 'REQUEST_ABORTED' })
     expect(mocks.apiJson.mock.calls.map(([path]) => path)).toEqual(['uploads'])
   })
+
+  it('a cancelled upload never creates a slot', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(uploadFile(file('a.mp4', 'video/mp4'), 'block-video', { signal: controller.signal }))
+      .rejects.toMatchObject({ code: 'REQUEST_ABORTED' })
+    expect(mocks.apiJson).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('cancellation reaches create and finalize requests; finalize carries a stable retry key', async () => {
+    const controller = new AbortController()
+    await uploadFile(file('a.mp4', 'video/mp4'), 'block-video', { signal: controller.signal })
+    expect(mocks.apiJson.mock.calls[0]![1].signal).toBe(controller.signal)
+    expect(mocks.apiJson.mock.calls[1]![1]).toMatchObject({
+      signal: controller.signal,
+      headers: { 'Idempotency-Key': '01a09100-0000-7000-8000-0000000000e1' },
+    })
+  })
 })
 
 describe('getYouTubeVideoId (BUG-B6)', () => {

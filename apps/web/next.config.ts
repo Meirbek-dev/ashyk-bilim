@@ -30,6 +30,8 @@ const imageRemotePatterns = [
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Server action arguments include credentials.
+  logging: { serverFunctions: false },
   // Unified Caching & PPR
   cacheComponents: true,
 

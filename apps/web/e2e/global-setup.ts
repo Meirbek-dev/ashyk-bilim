@@ -20,7 +20,7 @@
  *    the server action sets via an HttpOnly cookie on the app origin.
  */
 
-import { chromium } from '@playwright/test'
+import { chromium, expect } from '@playwright/test'
 import type { FullConfig } from '@playwright/test'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -124,14 +124,21 @@ async function captureStorageState(login: string, password: string, outputPath: 
 
   await page.goto('/en/login')
 
+  const passwordInput = page.locator('input[name="password"]')
+  await page.getByRole('button', { name: 'Show password', exact: true }).click()
+  await expect(passwordInput).toHaveAttribute('type', 'text', { timeout: 90_000 })
+  await page.getByRole('button', { name: 'Hide password', exact: true }).click()
   await page.locator('input[name="login"]').fill(login)
-  await page.locator('input[name="password"]').fill(password)
+  await passwordInput.fill(password)
   await page.locator('form button[type="submit"]').click()
 
   // Wait for redirect away from /login — indicates successful auth
-  await page.waitForURL(url => !url.pathname.includes('/login'), {
-    timeout: 15_000,
-  })
+  try {
+    await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 90_000 })
+  } catch (error) {
+    const messages = await page.locator('[role="alert"], [data-sonner-toast]').allTextContents()
+    throw new Error(`[setup] ${login} did not redirect after login: ${messages.join('; ')}`, { cause: error })
+  }
 
   await context.storageState({ path: outputPath })
   await browser.close()

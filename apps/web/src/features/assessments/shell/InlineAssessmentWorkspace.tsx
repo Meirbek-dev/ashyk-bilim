@@ -56,6 +56,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useTranslations('Features.ActivityWorkspace')
+  const tReasons = useTranslations('AttemptActions.blockedReasons')
   const tCommon = useTranslations('Common')
   const { handleApiError, toastApiError } = useApiError()
   const [isPending, setIsPending] = useState(false)
@@ -262,13 +263,17 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
   // ── Routing the student to the correct surface ──────────────────────────────
 
   // UX-213: off the access list - the learner's own attempts, read-only.
-  const accessNotice = vm.accessClosed ? (
-    <Alert className="mb-4">
-      <LockKeyhole aria-hidden="true" />
-      <AlertTitle>{t('accessClosedTitle')}</AlertTitle>
-      <AlertDescription>{t('accessClosedDescription')}</AlertDescription>
-    </Alert>
-  ) : null
+  const courseArchived =
+    vm.disabledActionReasons.includes('COURSE_ARCHIVED') ||
+    learnerState.data?.permissions.denial_reason === 'course_archived'
+  const accessNotice =
+    vm.accessClosed || courseArchived ? (
+      <Alert className="mb-4">
+        <LockKeyhole aria-hidden="true" />
+        <AlertTitle>{courseArchived ? tReasons('COURSE_ARCHIVED') : t('accessClosedTitle')}</AlertTitle>
+        {!courseArchived ? <AlertDescription>{t('accessClosedDescription')}</AlertDescription> : null}
+      </Alert>
+    ) : null
 
   // Off the list with nothing handed in: no «ready to start» promise, only the notice.
   if (isPreflightMode && vm.accessClosed && recommendedAction !== 'waitForRelease' && !awaitingRelease) {

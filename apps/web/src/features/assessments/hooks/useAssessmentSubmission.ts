@@ -130,6 +130,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     return () => {
       if (nextSaveTimeoutRef.current) {
         clearTimeout(nextSaveTimeoutRef.current)
+        nextSaveTimeoutRef.current = null
       }
     }
   }, [assessmentUuid])
@@ -211,10 +212,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 
   const ensureDraft = useCallback(async () => {
     if (!assessmentUuid) throw new Error('Assessment is not ready')
+    if (assessmentScopeRef.current !== assessmentUuid) throw new Error('Assessment changed')
     if (submissionIdRef.current && draftVersionRef.current !== undefined) {
       return { id: submissionIdRef.current, version: draftVersionRef.current }
     }
     const opened = await startAssessmentSubmission(assessmentUuid)
+    if (assessmentScopeRef.current !== assessmentUuid) throw new Error('Assessment changed')
     submissionIdRef.current = opened.id
     draftVersionRef.current = opened.draft_version
     return { id: opened.id, version: opened.draft_version }
@@ -279,8 +282,15 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     [draftQueryOptions.queryKey, invalidateAssessmentState, queryClient, router, tReasons],
   )
 
+  // Mutation callbacks adopt new hook options after navigation; variables retain the originating assessment.
   const saveMutation = useMutation({
-    mutationFn: async (answers: Record<string, ItemAnswer>) => {
+    mutationFn: async ({
+      answers,
+      assessmentUuid,
+    }: {
+      answers: Record<string, ItemAnswer>
+      assessmentUuid: string | null | undefined
+    }) => {
       const active = await ensureDraft()
       const pending = saveAssessmentDraft(active.id, active.version, answers)
       saveInFlightRef.current = pending
@@ -295,8 +305,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
     },
     onMutate: () => setSaveState('saving'),
-    onSuccess: async (latest, savedAnswers) => {
-      if (assessmentScopeRef.current !== assessmentUuid) return
+    onSuccess: async (latest, { answers: savedAnswers, assessmentUuid: savedAssessmentUuid }) => {
+      if (assessmentScopeRef.current !== savedAssessmentUuid) return
       draftVersionRef.current = latest.draft_version
 
       // The reply is the saved draft: seeding the draft and attempt caches is
@@ -310,8 +320,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         await queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(assessmentUuid) })
       }
     },
-    onError: async (error: unknown) => {
-      if (assessmentScopeRef.current !== assessmentUuid) return
+    onError: async (error: unknown, variables) => {
+      if (assessmentScopeRef.current !== variables.assessmentUuid) return
       if (isSessionEnded(error)) {
         keepAnswers(submissionIdRef.current, localAnswersRef.current)
         setSaveState('dirty')
@@ -326,6 +336,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
       if (isApiError(error) && error.status === 409) {
         const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
+        if (assessmentScopeRef.current !== variables.assessmentUuid) return
         if (latest) {
           draftVersionRef.current = latest.draft_version
 
@@ -373,10 +384,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       violationCount,
     }: {
       answers: Record<string, ItemAnswer>
+      assessmentUuid: string | null | undefined
       violationCount?: number
       autoSubmit?: boolean
     }) => {
       if (nextSaveTimeoutRef.current) clearTimeout(nextSaveTimeoutRef.current)
+      nextSaveTimeoutRef.current = null
       pendingAnswersRef.current = null
       if (saveInFlightRef.current) await saveInFlightRef.current
       const active = await ensureDraft()
@@ -410,11 +423,13 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         await new Promise(resolve => setTimeout(resolve, IN_PROGRESS_RETRY_MS))
         const latest = await getMySubmission(active.id)
         if (latest.status !== 'DRAFT') return latest
+        if (assessmentScopeRef.current !== assessmentUuid) throw new Error('Assessment changed', { cause: error })
         submitRetryRef.current = { fingerprint, key: createIdempotencyKey() }
         return submitAssessmentDraft(active.id, active.version, answers, submitRetryRef.current.key, violationCount)
       }
     },
-    onSuccess: async latest => {
+    onSuccess: async (latest, variables) => {
+      if (assessmentScopeRef.current !== variables.assessmentUuid) return
       submitRetryRef.current = null
       draftVersionRef.current = latest.draft_version
 
@@ -426,7 +441,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
       await refreshLearnerCourseState(queryClient, router)
     },
-    onError: async (error: unknown) => {
+    onError: async (error: unknown, variables) => {
+      if (assessmentScopeRef.current !== variables.assessmentUuid) return
       if (isSessionEnded(error)) {
         keepAnswers(submissionIdRef.current, localAnswersRef.current)
         setSaveState('dirty')
@@ -445,6 +461,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         // learner's answers - no draft-conflict dialog, nothing to merge.
         submitRetryRef.current = null
         const reopened = await startAssessmentSubmission(assessmentUuid).catch(() => null)
+        if (assessmentScopeRef.current !== variables.assessmentUuid) return
         if (reopened) {
           draftVersionRef.current = reopened.draft_version
           syncLatestSubmission(reopened)
@@ -456,6 +473,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       }
       if (isApiError(error) && error.status === 409) {
         const latest = submissionIdRef.current ? await getMySubmission(submissionIdRef.current).catch(() => null) : null
+        if (assessmentScopeRef.current !== variables.assessmentUuid) return
         if (latest) {
           draftVersionRef.current = latest.draft_version
 
@@ -608,14 +626,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     }
 
     pendingAnswersRef.current = null
-    saveMutate(answers, {
+    saveMutate({ answers, assessmentUuid }, {
       onSuccess: () => {
+        if (assessmentScopeRef.current !== assessmentUuid) return
         lastSaveTimeRef.current = Date.now()
         if (pendingAnswersRef.current) {
           saveRef.current()
         }
       },
       onError: async (error: unknown) => {
+        if (assessmentScopeRef.current !== assessmentUuid) return
         if (isApiError(error) && error.status === 429) {
           lastSaveTimeRef.current = 0
           setSaveState('dirty')
@@ -628,7 +648,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
       },
     })
-  }, [saveMutate, saveMutation.isPending, isSubmitting])
+  }, [assessmentUuid, saveMutate, saveMutation.isPending, isSubmitting])
 
   useEffect(() => {
     saveRef.current = save
@@ -661,11 +681,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const submit = useCallback(
     (options?: SubmitOptions) =>
       submitMutateAsync({
+        assessmentUuid,
         answers: localAnswersRef.current,
         ...(options?.violationCount !== undefined ? { violationCount: options.violationCount } : {}),
         ...(options?.autoSubmit !== undefined ? { autoSubmit: options.autoSubmit } : {}),
       }),
-    [submitMutateAsync],
+    [assessmentUuid, submitMutateAsync],
   )
 
   useEffect(() => {

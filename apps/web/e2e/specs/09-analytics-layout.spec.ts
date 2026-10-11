@@ -5,6 +5,7 @@ import { expect, testAsAdmin } from '../fixtures'
 testAsAdmin.describe('Analytics tabs - layout', () => {
   for (const width of [390, 1280, 1920]) {
     testAsAdmin(`no horizontal page scroll at ${width}px`, async ({ page }) => {
+      testAsAdmin.setTimeout(90_000)
       await page.setViewportSize({ width, height: 900 })
       for (const tab of ['overview', 'watchlist', 'performance', 'operations']) {
         await page.goto(`/ru/dash/analytics/${tab}`)

@@ -75,9 +75,8 @@ test.describe('Admin – User Roles Panel', () => {
     await page.goto('/en/dash/admin/users')
 
     // Should be redirected or show an unauthorized/access-denied page
-    await page.waitForURL(url => url.pathname.includes('/unauthorized') || url.pathname.includes('/login'), {
-      timeout: 10_000,
-    })
+    await expect(page).toHaveURL(/\/(?:unauthorized|login)(?:[/?#]|$)/, { timeout: 10_000 })
+    await expect(page.getByRole('heading', { name: 'Unauthorized', exact: true })).toBeVisible()
     await context.close()
   })
 })
