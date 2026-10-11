@@ -56,16 +56,12 @@ export async function codegenDrift(): Promise<Finding[]> {
   try {
     generateApi(`./${scratch}`)
     await generateRouteTree(`./${scratchTree}`)
-    for (const file of new Set([...listAll('src/shared/api/gen'), ...listAll(scratch)])) {
-      const committed = resolve(appDir, 'src/shared/api/gen', file)
-      const regenerated = resolve(appDir, scratch, file)
-      if (!existsSync(committed) || !existsSync(regenerated) || !sameFile(committed, regenerated)) {
-        findings.push({
-          file: `src/shared/api/gen/${file}`,
-          rule: 'codegen-drift',
-          fix: 'run `bun run codegen` and commit the result',
-        })
-      }
+    for (const file of driftedFiles(resolve(appDir, 'src/shared/api/gen'), resolve(appDir, scratch))) {
+      findings.push({
+        file: `src/shared/api/gen/${file}`,
+        rule: 'codegen-drift',
+        fix: 'run `bun run codegen` and commit the result',
+      })
     }
     if (!sameFile(resolve(appDir, 'src/routeTree.gen.ts'), resolve(appDir, scratchTree))) {
       findings.push({
@@ -83,9 +79,15 @@ export async function codegenDrift(): Promise<Finding[]> {
 
 const sameFile = (a: string, b: string) => existsSync(a) && existsSync(b) && readFileSync(a).equals(readFileSync(b))
 const listAll = (dir: string): string[] =>
-  readdirSync(resolve(appDir, dir), { recursive: true, encoding: 'utf8' })
-    .filter(path => statSync(resolve(appDir, dir, path)).isFile())
+  readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .filter(path => statSync(resolve(dir, path)).isFile())
     .map(path => path.replaceAll('\\', '/'))
+
+/** Files modified, missing or extra in `committed` relative to `regenerated` (absolute directories). */
+export const driftedFiles = (committed: string, regenerated: string): string[] =>
+  [...new Set([...listAll(committed), ...listAll(regenerated)])].filter(
+    file => !sameFile(resolve(committed, file), resolve(regenerated, file)),
+  )
 
 const Budgets = v.object({ initialJsGzipKb: v.number(), chunkGzipKb: v.number(), cssGzipKb: v.number() })
 const Manifest = v.record(

@@ -115,6 +115,6 @@ PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node 
 3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`; bind it in `src/routes/`. Each `B-` id is in a test title (G-10).
 4. Focused tests while editing; pre-commit verifies the completed batch. `just ci-web2` also checks build budgets.
 
-Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file) changes only through the orchestrator; ask
-for a missing primitive or operation. Gates print `file:line rule - what to do` (<= 30 lines each); Playwright uses
-the `line` reporter. Search `sdk.gen.ts`, never paste generated files into context.
+Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file): parallel slice sessions ask the orchestrator
+for it; a single agent on an owner request is the orchestrator. Gates print `file:line rule - what to do` (<= 30 lines
+each); Playwright uses the `line` reporter. Search `sdk.gen.ts`, never paste generated files into context.

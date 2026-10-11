@@ -65,10 +65,14 @@ export async function generateRouteTree(outputFile = './src/routeTree.gen.ts'): 
   await new Generator({ config, root: appDir }).run()
 }
 
+// `codegen messages`: only the gitignored message functions (CI; the drift gate checks the committed rest).
 if (import.meta.main) {
-  generateApi()
-  await generateRouteTree()
+  const messagesOnly = process.argv[2] === 'messages'
+  if (!messagesOnly) {
+    generateApi()
+    await generateRouteTree()
+  }
   // src/paraglide is gitignored; compiling it here makes `vp check` work in a fresh worktree.
   await compile({ ...paraglideOptions, project: `${appDir}/project.inlang`, outdir: `${appDir}/src/paraglide` })
-  process.stdout.write('codegen: api client, route tree, messages\n')
+  process.stdout.write(messagesOnly ? 'codegen: messages\n' : 'codegen: api client, route tree, messages\n')
 }

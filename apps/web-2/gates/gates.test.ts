@@ -1,6 +1,11 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { expect, test } from 'vite-plus/test'
 
 import { usesOperation } from './lib.ts'
+import { driftedFiles } from './repo.ts'
 import { SUPPRESSIONS, titleIds } from './source.ts'
 
 test('an operation counts only when imported from the generated client and used', () => {
@@ -53,4 +58,28 @@ test('an unsafe cast is caught in every spelling', () => {
   ]
   expect(casts.filter(cast => unsafe?.test(cast))).toEqual(casts)
   expect(unsafe?.test('JSON.parse(raw) as unknown')).toBe(false)
+})
+
+test('codegen drift catches modified, deleted and new generated files', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'codegen-drift-'))
+  try {
+    const committed = join(dir, 'committed')
+    const regenerated = join(dir, 'regenerated')
+    for (const root of [committed, regenerated]) {
+      mkdirSync(join(root, '@tanstack'), { recursive: true })
+      writeFileSync(join(root, 'sdk.gen.ts'), 'same')
+      writeFileSync(join(root, '@tanstack/react-query.gen.ts'), 'same')
+    }
+    expect(driftedFiles(committed, regenerated)).toEqual([])
+    writeFileSync(join(committed, '@tanstack/react-query.gen.ts'), 'stale')
+    writeFileSync(join(committed, 'orphan.gen.ts'), 'deleted from the contract')
+    writeFileSync(join(regenerated, 'types.gen.ts'), 'not committed')
+    expect(driftedFiles(committed, regenerated).toSorted()).toEqual([
+      '@tanstack/react-query.gen.ts',
+      'orphan.gen.ts',
+      'types.gen.ts',
+    ])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
