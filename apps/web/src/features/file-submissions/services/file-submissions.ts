@@ -11,7 +11,14 @@ import * as zod from 'zod'
 
 import { apiBody, apiJson } from '@/lib/api-client'
 import { idempotencyHeaders, ifMatchHeaders } from '@/lib/api/headers'
-import { Attempt, DisabledReason, FileReviewPage, FileSubmission, SignedDownload } from '@/lib/api/generated/zod'
+import {
+  Attempt,
+  DisabledReason,
+  FileGradingEntry,
+  FileReviewPage,
+  FileSubmission,
+  SignedDownload,
+} from '@/lib/api/generated/zod'
 import type {
   AttachedFile,
   CreateFileSubmissionRequest,
@@ -145,6 +152,26 @@ export async function getFileSubmissionReviewQueue(
 /** Full attempt (files, feedback, rubric scores) for a grader or its owner. */
 export async function getFileSubmissionReviewAttempt(attemptId: string): Promise<FileSubmissionAttempt> {
   return apiJson(`file-submission-attempts/${id(attemptId)}`, {}, parseAttempt)
+}
+
+/**
+ * The released reviews of the attempt (DECISIONS 2026-10-11): a return comment stays readable after the learner
+ * resubmits. The newest one is left out while the result card above already shows it.
+ */
+export function earlierReviews<T extends { status: string; feedback: string; final_score: number | null }>(
+  attempt: { status: string },
+  entries: T[],
+): T[] {
+  const shown = attempt.status === 'returned' || attempt.status === 'published'
+  const notes = shown && entries[0]?.status === attempt.status ? entries.slice(1) : entries
+  return notes.filter(entry => Boolean(entry.feedback) || entry.final_score !== null)
+}
+
+/** The attempt's grading ledger: a grader sees every entry, its learner the released ones (return comments too). */
+export async function getFileGradingHistory(attemptId: string) {
+  return apiJson(`file-submission-attempts/${id(attemptId)}/grading-history`, {}, data =>
+    FileGradingEntry.array().parse(data),
+  )
 }
 
 export async function getFileSubmissionFileUrl(fileId: string): Promise<SignedDownloadType> {

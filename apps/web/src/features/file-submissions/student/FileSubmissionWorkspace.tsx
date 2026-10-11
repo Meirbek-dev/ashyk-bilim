@@ -40,6 +40,8 @@ import { useSession } from '@/hooks/useSession'
 import { Actions, Resources, Scopes } from '@/types/permissions'
 import { cn } from '@/lib/utils'
 import {
+  earlierReviews,
+  getFileGradingHistory,
   getFileSubmissionByActivity,
   saveFileSubmissionDraft,
   startFileSubmissionDraft,
@@ -456,6 +458,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       <div className="space-y-6">
         <TaskInstructions instructions={data.instructions} />
         <FileSubmissionReceipt attempt={activeAttempt} />
+        <ReviewNotes attempt={activeAttempt} />
         <SubmissionHistory attempts={data.attempts} />
       </div>
     )
@@ -533,6 +536,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
           />
         ) : null}
         {confirmDialog}
+        <ReviewNotes attempt={activeAttempt} />
         <SubmissionHistory attempts={data.attempts} />
       </div>
     )
@@ -868,6 +872,37 @@ function hasResult(attempt: FileSubmissionAttempt) {
   return (
     attempt.status === 'published' ||
     (attempt.status === 'returned' && (typeof attempt.final_score === 'number' || Boolean(attempt.feedback)))
+  )
+}
+
+function ReviewNotes({ attempt }: { attempt: FileSubmissionAttempt }) {
+  const t = useTranslations('FileSubmission')
+  const locale = useLocale()
+  const formatPercent = usePercentFormat()
+  const history = useQuery({
+    queryKey: ['file-submission', 'grading-history', attempt.id],
+    queryFn: () => getFileGradingHistory(attempt.id),
+  })
+  const notes = earlierReviews(attempt, history.data ?? [])
+  if (notes.length === 0) return null
+  return (
+    <section className="mx-auto max-w-2xl space-y-3">
+      <h3 className="text-sm font-semibold">{t('reviewHistory')}</h3>
+      <div className="divide-border border-border divide-y rounded-md border">
+        {notes.map(note => (
+          <div key={note.id} className="space-y-2 p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground text-xs">
+                {formatDate(fromUnix(note.created_at_unix), locale, DATE_TIME_LONG_OPTIONS)}
+              </span>
+              <StatusBadge status={note.status} />
+              {note.final_score === null ? null : <Badge variant="outline">{formatPercent(note.final_score)}</Badge>}
+            </div>
+            {note.feedback ? <MarkdownContent content={note.feedback} mode="compactRichText" /> : null}
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
