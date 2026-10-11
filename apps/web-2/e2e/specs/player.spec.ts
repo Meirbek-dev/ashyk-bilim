@@ -191,18 +191,17 @@ test('B-PLY-06 B-PLY-14 a done page can be unmarked; an unfinished course summar
   await expect(page.getByRole('link', { name: m.player_continue({}, ru) })).toHaveAttribute('href', play(course))
 })
 
-test('B-PLY-09 B-PLY-10 a YouTube video embeds without cookies; a document without a file says so', async ({
+test('B-PLY-09 B-PLY-10 a YouTube video embeds without cookies; a document offers its PDF', async ({
   page,
   learner,
   makeCourse,
   completeActivity,
 }) => {
-  await page.route('https://www.youtube-nocookie.com/**', route =>
-    route.fulfill({ body: '<!doctype html><title>video</title>' }),
-  )
+  await page.route('https://www.youtube-nocookie.com/**', route => route.fulfill({ body: '<title>video</title>' }))
   const course = await makeCourse({ activities: 1 })
   await completeActivity(course, { name: 'Видео', type: 'video', subType: 'video_youtube', content: { uri: YOUTUBE } })
-  await completeActivity(course, { name: 'Документ', type: 'document', subType: 'document_pdf', content: {} })
+  const pdf = { filename: 'e2e/lesson.pdf' }
+  await completeActivity(course, { name: 'Документ', type: 'document', subType: 'document_pdf', content: pdf })
   await learner.enroll(course)
   await learner.signIn()
   await page.goto(play(course, 1))
@@ -214,7 +213,7 @@ test('B-PLY-09 B-PLY-10 a YouTube video embeds without cookies; a document witho
     .getByRole('link', { name: /Документ/ })
     .click()
   await expect(page.getByRole('heading', { level: 1, name: 'Документ' })).toBeVisible()
-  await expect(page.getByText(m.player_empty({}, ru))).toBeVisible()
+  await expect(page.getByRole('link', { name: m.editor_pdf_open({}, ru) })).toHaveAttribute('href', /lesson\.pdf$/)
 })
 
 test('B-PLY-11 graded work shows an entry card whose action opens its own address', async ({
