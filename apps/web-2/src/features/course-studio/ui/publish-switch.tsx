@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
 import type { ActivityDetail } from '#/shared/api/gen/types.gen'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
@@ -12,9 +13,23 @@ import { updateActivityOptions } from '../curriculum-queries'
 
 type PublishSwitchProps = { courseId: string; activity: ActivityDetail }
 
+/** What a media lesson still needs before it goes live (409 `activity-media-missing`), by its kind. */
+const missingMedia: Record<string, () => string> = {
+  video_hosted: m.studio_publish_needs_video,
+  video_youtube: m.studio_publish_needs_link,
+  document_pdf: m.studio_publish_needs_document,
+  document_doc: m.studio_publish_needs_document,
+}
+
+const refusal = (error: unknown, activity: ActivityDetail) =>
+  error instanceof ApiError && error.code === 'activity-media-missing'
+    ? (missingMedia[activity.activity_sub_type] ?? (() => presentError(error)))()
+    : presentError(error)
+
 /**
  * Draft / published in the studio header (spec 5.4). Publishing acts at once; unpublishing asks first, because
- * learners lose the activity (UX-200). A refusal (an assessment not ready) is shown next to the switch.
+ * learners lose the activity (UX-200). A refusal (an assessment not ready, a lesson without its file or link) is
+ * shown next to the switch.
  */
 export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
   const labelId = useId()
@@ -57,7 +72,7 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
       />
       {update.error && !confirming ? (
         <span role="alert" className="max-w-48 text-sm text-destructive">
-          {presentError(update.error)}
+          {refusal(update.error, activity)}
         </span>
       ) : null}
     </div>
