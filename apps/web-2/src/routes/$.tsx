@@ -2,18 +2,19 @@ import { createFileRoute, notFound, redirect, rootRouteId } from '@tanstack/reac
 
 import { assessmentHome } from '#/features/assessments'
 import { ApiError } from '#/shared/api/errors'
-import { legacyTarget } from '#/shared/lib/legacy-urls'
 
 // Every address no route takes. An old-web URL (`/ru/course/<id>`, `/dash/...`) moves permanently to its web-2
 // page; an old `/assessments/<id>` link goes where that assessment lives now; anything else is «Страница не найдена».
+// The URL map loads on demand: `beforeLoad` sits in the entry chunk (G-05 initial JS budget).
+const legacyTarget = async (href: string) => (await import('#/shared/lib/legacy-urls')).legacyTarget(href)
 export const Route = createFileRoute('/$')({
-  beforeLoad: ({ location }) => {
-    const target = legacyTarget(location.href)
+  beforeLoad: async ({ location }) => {
+    const target = await legacyTarget(location.href)
     if (typeof target === 'string') throw redirect({ href: target, statusCode: 301 })
     if (target === null) throw notFound({ routeId: rootRouteId })
   },
   loader: async ({ context, location }) => {
-    const target = legacyTarget(location.href)
+    const target = await legacyTarget(location.href)
     if (target === null || typeof target === 'string') throw notFound({ routeId: rootRouteId })
     const home = await assessmentHome(context.queryClient, target.assessment).catch((error: unknown) => {
       if (error instanceof ApiError && error.status === 401)

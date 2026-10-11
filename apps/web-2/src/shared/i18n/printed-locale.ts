@@ -18,10 +18,13 @@ const PRINTED_LOCALES = new Map<string, Locale>([
 /** The interface locale of a printed prefix; null for anything else (that URL does not exist). */
 export const printedLocale = (prefix: string): Locale | null => PRINTED_LOCALES.get(prefix) ?? null
 
-const fromPath = (pathname: string) => printedLocale(pathname.split('/')[1] ?? '') ?? undefined
+const PRINTED_PATH = /^\/([a-z]{2})\/certificates\/[^/]+\/verify\/?$/
+
+/** The certificate's language on its printed verify URL; undefined anywhere else (the next strategy decides). */
+export const fromPath = (pathname: string) => printedLocale(PRINTED_PATH.exec(pathname)?.[1] ?? '') ?? undefined
 
 /**
- * `custom-printed`, the only strategy of `/{ru|kz|en}/certificates/{code}/verify` (paraglideOptions.routeStrategies):
+ * `custom-printed`, the first strategy (paraglideOptions): on `/{ru|kz|en}/certificates/{code}/verify` only,
  * the page speaks the certificate's language, read from its URL on the server and in the browser alike, and never
  * writes the visitor's own language (the `ab_locale` cookie). Call once in each entry, before the first render.
  */

@@ -23,13 +23,11 @@ function run(command: string, args: string[], env: Record<string, string> = {}):
 export const paraglideOptions = {
   project: './project.inlang',
   outdir: './src/paraglide',
-  strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
+  // `custom-printed` answers only on the URL printed on a certificate PDF: that page speaks the certificate's language
+  // and leaves the visitor's own alone (src/shared/i18n/printed-locale.ts). Not `routeStrategies`: its URLPattern
+  // polyfill costs 24 KB of initial JS.
+  strategy: ['custom-printed', 'cookie', 'preferredLanguage', 'baseLocale'],
   cookieName: 'ab_locale',
-  // The URL printed on a certificate PDF speaks the certificate's language and leaves the visitor's own alone
-  // (src/shared/i18n/printed-locale.ts).
-  routeStrategies: [
-    { match: '/:prefix(ru|kz|en)/certificates/:code/verify', strategy: ['custom-printed', 'baseLocale'] },
-  ],
   emitTsDeclarations: true,
 } satisfies CompilerOptions
 
