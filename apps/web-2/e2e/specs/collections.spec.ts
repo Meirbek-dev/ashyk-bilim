@@ -48,7 +48,10 @@ test(
   async ({ page, collection }) => {
     const hidden = await collection({ public: false })
     const document = await page.request.get('/collections')
-    expect(await document.text()).toContain(m.collections_title({}, ru))
+    // The document title carries the brand like every other screen.
+    expect(await document.text()).toContain(
+      `<title>${m.collections_title({}, ru)} · ${m.platform_brand({}, ru)}</title>`,
+    )
 
     await page.goto(`/collections?q=${encodeURIComponent(hidden.name)}`)
     await expect(page.getByText(m.ui_no_matches({}, ru))).toBeVisible()
