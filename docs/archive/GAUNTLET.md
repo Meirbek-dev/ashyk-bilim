@@ -1,5 +1,30 @@
 # Gauntlet Ledger — v2 browser QA
 
+## 2026-10-11 assessment and media regression pass
+
+- Fixes committed on `main`: server `9f10a83`, web-2 `a0148f0`, legacy web `fd973c2`.
+- Server CI: 734 passed, one pre-existing skip; line coverage 91.96%.
+- Web-2: full verification hook and production build/budgets passed. The 676-scenario Chromium run
+  initially had six failures; each passed its focused rerun after fixture corrections. Real H.264
+  video upload, playback, replacement, retry after attachment failure, corrupt-video rejection,
+  and storage 413 handling passed again against the final build.
+- Legacy web: CI passed 1,225 tests. All 81 Chromium scenarios passed across the full run and
+  focused reruns, including assessment authoring/submission, Judge0, PDF hand-in, grading,
+  certificate download, AI remediation, archive/restore, and real video upload/retry/playback.
+- Fixed assessment autosave/navigation races and throttled submission recovery, misleading save
+  status, sequential multi-file claims, upload cancellation/retry, duplicate media claims after
+  a lost response, graded choice-ID normalization, production video-probe CSP, off-page analytics
+  links, accessible field labels, and archive notices/client refresh. Disabled Next development
+  server-action argument logging because it can expose credentials.
+- Cross-browser smoke: Firefox 4/4 and WebKit public pages 3/3 passed. Windows WebKit 2370's
+  authenticated home page repeatedly crashes the browser target. Tracing/JIT toggles, stylesheet
+  and module isolation did not establish a safe application fix. Static authenticated markup
+  renders with the full stylesheet; broad removal of layout rules also prevents the live crash
+  but breaks the UI. Authentication coverage remains unresolved; this is not proof of a Safari
+  defect. No test was suppressed. Native backtrace and real Safari verification are outstanding.
+- Production was not deployed. Large public uploads remain blocked at the university TLS proxy
+  ([finding 32](../FINDINGS.md)); local application changes cannot raise that external limit.
+
 Durable state for the gauntlet loop (see the loop brief). Resume from this file.
 
 ## Setup facts
