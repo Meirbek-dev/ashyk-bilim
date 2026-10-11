@@ -10,7 +10,10 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 const apiJson = vi.fn()
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }))
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({ number: (value: number) => String(value) }),
+}))
 vi.mock('@/lib/api-client', () => ({ apiJson: (...args: unknown[]) => apiJson(...args) }))
 vi.mock('@services/blocks/upload', () => ({
   getBlockFileUrl: () => 'https://media.test/block-pdf/x',
