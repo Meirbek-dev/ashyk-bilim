@@ -98,10 +98,10 @@ fn grade_choice(
         .options
         .iter()
         .filter(|o| o.is_correct)
-        .map(|o| o.id.as_str())
+        .map(|o| o.id.trim())
         .collect();
     // Set semantics (legacy `set(selected)`): a repeated pick is one pick.
-    let chosen: BTreeSet<&str> = selected.iter().map(String::as_str).collect();
+    let chosen: BTreeSet<&str> = selected.iter().map(|id| id.trim()).collect();
     if chosen.is_empty() {
         return Verdict::new(0.0, false, FeedbackCode::NoAnswer, "No answer provided");
     }
@@ -473,6 +473,28 @@ mod tests {
             let grade = grade_quiz(&items, &answers, POLICY);
             assert_eq!(grade.auto_score, 100.0, "{n} items");
         }
+    }
+
+    #[test]
+    fn choice_option_ids_follow_answer_whitespace_normalization() {
+        let q = item(choice(&[" a "], &[" b "], false), 1.0);
+        let shapes = [crate::grading::answers::ItemShape {
+            id: q.id,
+            kind: q.kind,
+        }];
+        let answers = crate::grading::answers::canonicalize(
+            &Answers::new(),
+            Answers::from([(
+                q.id,
+                ItemAnswer::Choice {
+                    selected: vec![" a ".into()],
+                },
+            )]),
+            &shapes,
+        )
+        .unwrap();
+        let grade = grade_quiz(&[q], &answers, POLICY);
+        assert_eq!(grade.auto_score, 100.0);
     }
 
     /// BUG-193: duplicate picks / several rights per left count once, and

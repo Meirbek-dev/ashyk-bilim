@@ -19877,6 +19877,18 @@
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
             }
+          },
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {

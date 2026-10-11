@@ -1,5 +1,6 @@
 ---
 source: crates/api/tests/openapi.rs
+assertion_line: 11
 expression: json
 ---
 {
@@ -19880,6 +19881,18 @@ expression: json
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ActivityId"
+            }
+          },
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         ],

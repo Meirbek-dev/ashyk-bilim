@@ -462,7 +462,10 @@ pub async fn move_activity(
     post,
     path = "/activities/{activity_id}/blocks",
     tag = "courses",
-    params(("activity_id" = ActivityId, Path, description = "Activity id")),
+    params(
+        ("activity_id" = ActivityId, Path, description = "Activity id"),
+        ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+    ),
     request_body = CreateBlockRequest,
     responses(
         (status = 201, description = "Created", body = Block),
@@ -478,24 +481,32 @@ pub async fn create_block(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<ActivityId>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
-) -> ApiResult<(StatusCode, Json<Block>)> {
+) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.curriculum.writable_activity(&actor, id).await?;
     let request = ValidJson::<CreateBlockRequest>::parse(&body)?;
-    detached(async move {
-        let block = state
-            .curriculum
-            .add_block(
-                &actor,
-                id,
-                &request.block_type,
-                request.upload_id,
-                request.file_name.as_deref(),
-            )
-            .await?;
-        Ok((StatusCode::CREATED, Json(block.into())))
-    })
+    idempotent(
+        state.pool.clone(),
+        actor.user_id,
+        &format!("block:{id}"),
+        &headers,
+        &body,
+        move || async move {
+            let block = state
+                .curriculum
+                .add_block(
+                    &actor,
+                    id,
+                    &request.block_type,
+                    request.upload_id,
+                    request.file_name.as_deref(),
+                )
+                .await?;
+            Ok((StatusCode::CREATED, Block::from(block)))
+        },
+    )
     .await
 }
 

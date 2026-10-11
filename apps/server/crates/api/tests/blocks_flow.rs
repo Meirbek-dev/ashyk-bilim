@@ -1,5 +1,6 @@
 //! Activity content model + file blocks over the real upload pipeline
-//! (presigned PUT to RustFS, finalize, claim as block content).
+//! (presigned PUT to RustFS, finalize, claim as block content). Retried media
+//! claims replay their block without duplicating its upload reference.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_testkit::{MintedSession, TestApp};
@@ -95,6 +96,47 @@ async fn finalized_upload(
         .await;
     assert_eq!(finalized.status, StatusCode::OK);
     id
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn video_block_claim_replays_without_duplicate_references(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "video-author").await;
+    let (_, activity) = scaffold_activity(&app, &teacher).await;
+    let upload = finalized_upload(&app, &teacher, "block-video", "video/mp4").await;
+    let body = serde_json::json!({
+        "block_type": "video", "upload_id": upload, "file_name": "lecture.mp4",
+    });
+    let claim = |body: &serde_json::Value| {
+        app.send(
+            axum::http::Request::builder()
+                .method("POST")
+                .uri(format!("/api/v2/activities/{activity}/blocks"))
+                .header("content-type", "application/json")
+                .header("cookie", &teacher.cookie)
+                .header("idempotency-key", &upload)
+                .body(axum::body::Body::from(body.to_string()))
+                .unwrap(),
+        )
+    };
+    let (created, replayed) = tokio::join!(claim(&body), claim(&body));
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    assert_eq!(replayed.status, StatusCode::CREATED, "{}", replayed.text());
+    assert_eq!(created.json(), replayed.json());
+    let listed = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity}/blocks"))
+        .await;
+    assert_eq!(listed.json().as_array().unwrap().len(), 1);
+    let references: i32 = sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&upload).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(references, 1);
+    let mut changed = body;
+    changed["file_name"] = serde_json::json!("other.mp4");
+    let refused = claim(&changed).await;
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[sqlx::test(migrations = "../../migrations")]
