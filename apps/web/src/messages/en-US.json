@@ -1506,6 +1506,11 @@
       "toastLoading": "Creating...",
       "toastSuccess": "New group created"
     },
+    "UploadSessionNotice": {
+      "text": "Your session has ended. Sign in again in a new tab and press “Retry”: the file upload continues without sending it again.",
+      "signIn": "Sign in again (in a new tab)",
+      "retry": "Retry"
+    },
     "AlertDialog": {
       "cancel": "Cancel",
       "close": "Close",

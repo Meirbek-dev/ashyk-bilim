@@ -14,6 +14,7 @@ import { getAPIUrl, getServerAPIUrl } from '@services/config/config'
 import { ofetch } from 'ofetch'
 import type { FetchOptions, FetchResponse, MappedResponseType, ResponseType } from 'ofetch'
 import { buildLoginRedirect, isAuthRoute } from '@/lib/auth/redirect'
+import { noteUploadSessionExpired, uploadSessionHeld } from '@/lib/auth/upload-hold'
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types'
 import { clientApiError, parseApiError } from '@/lib/api/assertSuccess'
 
@@ -264,10 +265,15 @@ export function redirectBrowserToLogin(returnTo: string, code?: unknown): void {
 /**
  * Browser-side reaction to a 401: the BFF session is gone (expired, revoked,
  * or never existed), so send the user to the login page with a return path.
- * No-op on the server and on the auth pages themselves.
+ * No-op on the server and on the auth pages themselves. While an upload runs
+ * the page stays instead (`upload-hold.ts`): leaving would lose the file.
  */
 export function handleBrowserUnauthenticated(returnTo = getBrowserReturnTo(), code?: unknown): void {
   if (typeof globalThis.window === 'undefined' || isAuthRoute(globalThis.location.pathname)) {
+    return
+  }
+  if (uploadSessionHeld()) {
+    noteUploadSessionExpired()
     return
   }
   redirectBrowserToLogin(returnTo, code)

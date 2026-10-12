@@ -9,8 +9,9 @@
  * and the finalized upload `id` is then attached to its owner (profile
  * avatar, course thumbnail, block, file-submission draft, …).
  */
-import { apiJson } from '@/lib/api-client'
-import { APIError, clientApiError } from '@/lib/api/assertSuccess'
+import { apiJson, handleBrowserUnauthenticated } from '@/lib/api-client'
+import { APIError, clientApiError, isApiError } from '@/lib/api/assertSuccess'
+import { holdUploadSession, waitForSignIn } from '@/lib/auth/upload-hold'
 import { CreatedUpload, FinalizedUpload } from '@/lib/api/generated/zod'
 import type {
   CreatedUpload as CreatedUploadType,
@@ -197,20 +198,42 @@ export async function uploadFile(
 ): Promise<FinalizedUploadType> {
   throwIfCancelled(options.signal)
   const guard = typeof globalThis.addEventListener === 'function' ? globalThis : null
+  // A session that ends meanwhile keeps the page and the file (`upload-hold.ts`).
+  const release = guard ? holdUploadSession() : null
   if (guard) {
     inFlightUploads += 1
     if (inFlightUploads === 1) guard.addEventListener('beforeunload', confirmLeavingUpload)
   }
   try {
-    const created = await createUpload(file, purpose, options.signal)
+    const created = await untilSignedIn(() => createUpload(file, purpose, options.signal), options.signal)
     throwIfCancelled(options.signal)
     await putWithProgress(created.put_url, file, options)
     throwIfCancelled(options.signal)
-    return await finalizeUpload(created.id, options.signal)
+    // The bytes are stored: after a 401 only the finalize is repeated, they are not sent again.
+    return await untilSignedIn(() => finalizeUpload(created.id, options.signal), options.signal)
   } finally {
     if (guard) {
       inFlightUploads -= 1
       if (inFlightUploads === 0) guard.removeEventListener('beforeunload', confirmLeavingUpload)
+    }
+    // The last upload let go while the session is still gone: the ordinary redirect to /login.
+    if (release?.()) handleBrowserUnauthenticated()
+  }
+}
+
+/** Runs an API step; a 401 (the session ended) waits for the notice's «Повторить» and runs it again. */
+async function untilSignedIn<T>(step: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  for (;;) {
+    try {
+      return await step()
+    } catch (error) {
+      if (!(isApiError(error) && error.status === 401) || typeof globalThis.window === 'undefined') throw error
+      try {
+        await waitForSignIn(signal)
+      } catch {
+        throwIfCancelled(signal)
+        throw error
+      }
     }
   }
 }
