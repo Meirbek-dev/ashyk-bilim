@@ -65,6 +65,7 @@ function watch(page: Page, problems: string[]): void {
     if (message.type() === 'error' && !expected) problems.push(`console: ${message.text()}`)
   })
   page.on('pageerror', error => problems.push(`page error: ${error.message}`))
+  page.on('crash', () => problems.push(`page crashed on ${page.url()}`))
   // Against a built server (E2E_BASE_URL) every document carries the CSP the violations above are checked against.
   page.on('response', response => {
     const document = response.request().isNavigationRequest() && response.frame() === page.mainFrame()
@@ -74,18 +75,9 @@ function watch(page: Page, problems: string[]): void {
 }
 
 async function inspect(page: Page, problems: string[]): Promise<void> {
-  // Contrast measured mid-fade (a tooltip opening on focus) is not the page's contrast: let transitions end first.
   // The checks judge the hydrated page: an SSR form keeps its controls disabled (faded) until then.
   await page.waitForLoadState('load')
   await page.waitForFunction(() => !document.querySelector('[data-hydrating]'), null, { timeout: 10_000 })
-  await page.evaluate(() => Promise.allSettled(document.getAnimations().map(animation => animation.finished)))
-  const axe = await new AxeBuilder({ page }).analyze()
-  for (const violation of axe.violations) {
-    if (violation.impact === 'serious' || violation.impact === 'critical') {
-      const nodes = violation.nodes.map(node => node.target.join(' ')).join(', ')
-      problems.push(`axe ${violation.impact}: ${violation.id} at ${nodes} ${violation.helpUrl}`)
-    }
-  }
   const viewport = page.viewportSize()
   await page.setViewportSize({ width: 390, height: 844 })
   // The layout at 390 px once it settled: an open floating element (a focused button's tooltip, B-NOT-13 in CI)
@@ -96,6 +88,17 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   })
   if (overflow > 0) problems.push(`horizontal overflow of ${overflow}px at 390px on ${page.url()}`)
   if (viewport) await page.setViewportSize(viewport)
+  // Contrast measured mid-fade (a tooltip opening on focus) is not the page's contrast: let transitions end first.
+  await page.evaluate(() => Promise.allSettled(document.getAnimations().map(animation => animation.finished)))
+  // Axe last: it opens and closes a helper page in the context, after which WebKit (Windows) answered the next
+  // command on this page with "Target page, context or browser has been closed" although the page was open.
+  const axe = await new AxeBuilder({ page }).analyze()
+  for (const violation of axe.violations) {
+    if (violation.impact === 'serious' || violation.impact === 'critical') {
+      const nodes = violation.nodes.map(node => node.target.join(' ')).join(', ')
+      problems.push(`axe ${violation.impact}: ${violation.id} at ${nodes} ${violation.helpUrl}`)
+    }
+  }
 }
 
 export const test = base.extend({
@@ -110,7 +113,8 @@ export const test = base.extend({
       })
     })
     await use(page)
-    if (page.url().startsWith('http')) await inspect(page, problems)
+    // A page the test closed itself has nothing left to inspect; a crash is in `problems` (watch).
+    if (!page.isClosed() && page.url().startsWith('http')) await inspect(page, problems)
     expect(problems, 'page health (e2e/fixtures/test.ts)').toEqual([])
   },
 })
