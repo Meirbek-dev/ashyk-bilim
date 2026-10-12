@@ -1,9 +1,12 @@
 import { expect, test } from 'vite-plus/test'
 
+import { dashboardQueryKey, getCourseQueryKey, unreadCountQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { sessionOptions } from '#/shared/auth/session'
 
-import { createQueryClient } from './query-client'
+import { ApiError } from './errors'
+import { holdSession } from './held-session'
+import { createQueryClient, releaseSessionHold } from './query-client'
 
 const session = (userId: string): SessionInfo => ({
   user_id: userId,
@@ -39,4 +42,33 @@ test('another account in the session re-runs the guards and drops the previous a
   client.setQueryData(key, session('b'))
   client.setQueryData(key, null)
   expect(guards).toBe(2)
+})
+
+const sessionExpired = () =>
+  new ApiError({ status: 401, code: 'session-expired', fieldErrors: [], requestId: null, retryAfter: null })
+
+test('a 401 while an upload is held keeps the page; once the last hold lets go, a 401 signs out again', async () => {
+  let guards = 0
+  const client = createQueryClient(async () => void (guards += 1))
+  const key = sessionOptions().queryKey
+  client.setQueryData(key, session('a'))
+  const course = getCourseQueryKey({ path: { course_id: 'c' } })
+  client.getQueryCache().build(client, { queryKey: course })
+  const release = holdSession()
+  // No background refetch meanwhile but the session's own: a public read would answer as a guest.
+  const onFocus = client.getDefaultOptions().queries?.refetchOnWindowFocus
+  const refetches = (queryKey: readonly unknown[]) =>
+    typeof onFocus === 'function' && onFocus(client.getQueryCache().find({ queryKey, exact: true })!)
+  expect(refetches(course)).toBe(false)
+  expect(refetches(key)).toBe(true)
+  await client.prefetchQuery({ queryKey: dashboardQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+  expect(client.getQueryData(key)?.user_id).toBe('a')
+  expect(guards).toBe(0)
+  // Read again on the next focus: the user may have signed in in another tab.
+  expect(client.getQueryState(key)?.isInvalidated).toBe(true)
+  releaseSessionHold(client, release)
+  expect(refetches(course)).toBe(true)
+  await client.prefetchQuery({ queryKey: unreadCountQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+  expect(client.getQueryData(key)).toBeNull()
+  expect(guards).toBe(1)
 })

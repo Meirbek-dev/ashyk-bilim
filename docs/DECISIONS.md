@@ -2742,3 +2742,15 @@ An admin editing the XP rules saw blank fields and «empty = platform default» 
 default itself. The config now returns the platform defaults and each field shows «По умолчанию:
 <value>» under it (a description rather than a placeholder, which disappears while typing and is
 read inconsistently by screen readers).
+
+## Any 401 during an upload keeps the page (2026-10-12)
+
+The upload's own 401 already kept the page; another request of the page (a refetch, the event
+stream) still answered 401 first and sent the user to /login, losing the file. Now, while a file
+uploads or waits for its finalize, no 401 leaves the page in either web: a «Сеанс входа
+закончился» notice at the top offers «Войти снова» in a new tab (back to the same page, which
+shares the cookie), and «Повторить» finalizes the stored upload. web-2 also skips background
+refetches (window focus, reconnect) meanwhile, except the session's own: with the session gone a
+public read answers as a guest and took the editing screen away with the running upload. With no
+upload pending, or once the last one ends with the session still gone, a 401 signs out to /login
+as before.

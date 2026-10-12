@@ -3,7 +3,8 @@ import { useEffect, useId, useRef, useState, type DragEvent } from 'react'
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { uploadAccept, type UploadLimits, type UploadPurpose } from '#/shared/api/upload'
-import { useUpload } from '#/shared/hooks/use-upload'
+import { isSessionLost } from '#/shared/api/errors'
+import { useSessionHold, useUpload } from '#/shared/hooks/use-upload'
 import { cn } from '#/shared/lib/utils'
 import { presentError } from '#/shared/i18n/errors'
 import { buttonVariants } from '#/shared/ui/button'
@@ -44,7 +45,10 @@ function useHandedFile(file: File | undefined, take: (file: File) => Promise<voi
   })
 }
 
-/** Picked files upload one after another (one progress bar), each handed over in turn; the first refusal stops the rest. */
+/**
+ * Picked files upload one after another (one progress bar), each handed over in turn; the first refusal stops the rest.
+ * A claim refused because the session ended keeps the page (the session hold) until its retry.
+ */
 function useBatch(
   start: (file: File) => Promise<FinalizedUpload | null>,
   onUploaded: FileInputProps['onUploaded'],
@@ -58,6 +62,7 @@ function useBatch(
   const [pending, setPending] = useState(false)
   const active = useRef(false)
   const finalized = useRef<{ file: File; upload: FinalizedUpload } | null>(null)
+  const session = useSessionHold()
   async function one(next: File) {
     setPicked(next)
     setClaimError(null)
@@ -65,14 +70,17 @@ function useBatch(
     const done = finalized.current?.file === next ? finalized.current.upload : await start(next)
     if (!done) return false
     finalized.current = { file: next, upload: done }
+    session.hold()
     try {
       await onUploaded(done, next)
     } catch (error) {
       setClaimError(presentError(error))
       setClaimFailed(next)
+      if (!isSessionLost(error)) session.release()
       return false
     }
     finalized.current = null
+    session.release()
     setUploaded(names => [...names, next.name])
     return true
   }
@@ -85,6 +93,7 @@ function useBatch(
       setDropped(files.length - batch.length)
       setUploaded([])
       finalized.current = null
+      session.release()
       for (const next of batch) if (!(await one(next))) return
     } finally {
       active.current = false

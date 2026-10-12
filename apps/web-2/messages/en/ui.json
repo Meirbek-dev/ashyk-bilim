@@ -40,6 +40,7 @@
   "ui_file_retry": "Retry",
   "ui_file_session_lost": "Your session ended, but the file is already uploaded. Sign in again and press “Retry”; it will not be sent again.",
   "ui_file_sign_in": "Sign in again (in a new tab)",
+  "ui_session_expired": "Your session has ended. Sign in again in a new tab; the file upload will not be lost.",
   "ui_file_progress": "{done} of {total}",
   "ui_file_checking": "Checking the file…",
   "ui_pdf_open": "Open the PDF in a new tab",

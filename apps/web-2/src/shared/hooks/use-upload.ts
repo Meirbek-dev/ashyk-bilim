@@ -1,10 +1,12 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { isSessionLost } from '#/shared/api/errors'
+import { holdSession } from '#/shared/api/held-session'
+import { releaseSessionHold } from '#/shared/api/query-client'
 import { checkUpload, upload, type UploadLimits, type UploadProblem, type UploadPurpose } from '#/shared/api/upload'
 import { formatFileSize } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
@@ -59,10 +61,34 @@ function useLeaveGuard(active: boolean) {
   })
 }
 
+type Hold = RefObject<(() => boolean) | null>
+
+function release(hold: Hold, queryClient: ReturnType<typeof useQueryClient>): void {
+  const held = hold.current
+  hold.current = null
+  if (held) releaseSessionHold(queryClient, held)
+}
+
+/**
+ * Keeps the page across a lost session (`shared/api/held-session.ts`) from `hold()` until `release()` or unmount:
+ * a 401 anywhere then shows the sign-in notice instead of leaving for /login with the file.
+ */
+export function useSessionHold() {
+  const queryClient = useQueryClient()
+  const hold: Hold = useRef(null)
+  useEffect(() => () => release(hold, queryClient), [queryClient])
+  return {
+    hold: () => {
+      hold.current ??= holdSession()
+    },
+    release: () => release(hold, queryClient),
+  }
+}
+
 /**
  * The upload mutation. A file whose bytes reached storage but whose finalize failed (the session ended during a long
  * upload) keeps its slot: the retry only finalizes it once the user has signed in again, the bytes are not sent
- * twice. A 401 keeps the page (and the file) instead of signing out.
+ * twice. The caller holds the session meanwhile, so a 401 keeps the page (and the file) instead of signing out.
  */
 function useResumableUpload(purpose: UploadPurpose, setProgress: (progress: number | null) => void) {
   const stored = useRef<{ file: File; slot: string } | null>(null)
@@ -80,7 +106,6 @@ function useResumableUpload(purpose: UploadPurpose, setProgress: (progress: numb
       stored.current = null
     },
     onSettled: () => setProgress(null),
-    meta: { keepsSession: true },
   })
 }
 
@@ -101,11 +126,15 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
   useEffect(() => () => controller.current?.abort(), [])
   const mutation = useResumableUpload(purpose, setProgress)
   useLeaveGuard(mutation.isPending || checking)
+  const session = useSessionHold()
 
   async function start(file: File): Promise<FinalizedUpload | null> {
     if (controller.current) return null
     const abort = new AbortController()
     controller.current = abort
+    session.hold()
+    // Stays held after a 401: the stored file waits for «Повторить» once the user has signed in again.
+    let keep = false
     try {
       let issue: string | null = null
       setNotice(null)
@@ -127,15 +156,17 @@ export function useUpload(purpose: UploadPurpose, limits: UploadLimits = {}) {
       setProgress(0)
       try {
         return await mutation.mutateAsync({ file, signal: abort.signal })
-      } catch {
+      } catch (failure) {
         // The mutation keeps the error: `error` below shows it. A cancel is no failure.
         if (abort.signal.aborted) mutation.reset()
         else setFailed(file)
+        keep = !abort.signal.aborted && isSessionLost(failure)
         return null
       }
     } finally {
       controller.current = null
       setChecking(false)
+      if (!keep) session.release()
     }
   }
 

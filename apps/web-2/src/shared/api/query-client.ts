@@ -1,41 +1,64 @@
-import { hashKey, MutationCache, QueryCache, QueryClient, type QueryKey } from '@tanstack/react-query'
+import { hashKey, MutationCache, QueryCache, QueryClient, type Query, type QueryKey } from '@tanstack/react-query'
 
 import { sessionOptions } from '#/shared/auth/session'
 
 import { ApiError, isSessionLost } from './errors'
+import { noteSessionExpired, sessionHeld } from './held-session'
 
 declare module '@tanstack/react-query' {
   interface Register {
     mutationMeta: {
       invalidates?: QueryKey[]
-      /** A 401 is this mutation's to show (an upload resumable after signing in again), not a sign-out. */
-      keepsSession?: boolean
     }
   }
 }
 
 export type RouterContext = { queryClient: QueryClient }
 
+/** Lets go of a session hold; the last one while the session is still gone reads it again (a 401 then signs out). */
+export function releaseSessionHold(queryClient: QueryClient, release: () => boolean): void {
+  if (release()) void queryClient.invalidateQueries({ queryKey: sessionOptions().queryKey })
+}
+
 /** One retry for a GET that hit the network or a 5xx; 4xx answers are final. */
 const retryOnce = (failureCount: number, error: Error): boolean =>
   failureCount < 1 && !(error instanceof ApiError && error.status < 500)
+
+/**
+ * No background refetch (focus, reconnect) while an upload is held, except the session's own: with the session gone a
+ * public read answers as a guest and would take away the screen the upload runs on (a course without `update`).
+ */
+const refetchUnlessHeld = (query: Query): boolean =>
+  !sessionHeld() || query.queryHash === hashKey(sessionOptions().queryKey)
 
 /**
  * One QueryClient per request (SSR) or per tab. Owns the two global behaviors of spec 7.5-7.6:
  * mutations invalidate the keys in `meta.invalidates`, and a lost session re-runs the route guards.
  */
 export function createQueryClient(onSessionLost: () => Promise<void>): QueryClient {
-  // Clearing the session triggers the subscription below, which re-runs the guards.
+  // Clearing the session triggers the subscription below, which re-runs the guards. While an upload is held
+  // (`held-session.ts`) the page stays: the notice offers a sign-in, and the session is read again on the next focus.
   const loseSession = (error: Error) => {
-    if (isSessionLost(error)) queryClient.setQueryData(sessionOptions().queryKey, null)
+    if (!isSessionLost(error)) return
+    if (!sessionHeld()) {
+      queryClient.setQueryData(sessionOptions().queryKey, null)
+      return
+    }
+    noteSessionExpired()
+    void queryClient.invalidateQueries({ queryKey: sessionOptions().queryKey, refetchType: 'none' })
   }
   const queryClient: QueryClient = new QueryClient({
-    defaultOptions: { queries: { staleTime: 30_000, retry: retryOnce } },
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        retry: retryOnce,
+        refetchOnWindowFocus: refetchUnlessHeld,
+        refetchOnReconnect: refetchUnlessHeld,
+      },
+    },
     queryCache: new QueryCache({ onError: loseSession }),
     mutationCache: new MutationCache({
-      onError: (error, _variables, _context, mutation) => {
-        if (!mutation.meta?.keepsSession) loseSession(error)
-      },
+      onError: loseSession,
       onSuccess: async (_data, _variables, _context, mutation) => {
         const keys = mutation.meta?.invalidates
         if (keys) await Promise.all(keys.map(queryKey => queryClient.invalidateQueries({ queryKey })))

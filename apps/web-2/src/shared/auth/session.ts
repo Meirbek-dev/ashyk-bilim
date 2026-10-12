@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query'
 import { redirect } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
+import { noteSessionBack, noteSessionExpired, sessionHeld } from '#/shared/api/held-session'
 import type { currentSessionQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { KEY_ORIGIN } from '#/shared/api/key-origin'
@@ -24,9 +25,13 @@ export const sessionOptions = () =>
       try {
         const { currentSession } = await import('#/shared/api/gen/sdk.gen')
         const { data } = await currentSession({ signal, throwOnError: true })
+        noteSessionBack()
         return data
       } catch (error) {
-        if (error instanceof ApiError && error.status === 401) return null
+        if (!(error instanceof ApiError && error.status === 401)) throw error
+        // A held upload keeps the page: the session read keeps its last answer instead of signing out.
+        if (!sessionHeld()) return null
+        noteSessionExpired()
         throw error
       }
     },

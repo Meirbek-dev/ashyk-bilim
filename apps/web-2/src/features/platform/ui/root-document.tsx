@@ -2,10 +2,15 @@ import { HeadContent, rootRouteId, Scripts, useRouteContext } from '@tanstack/re
 import { lazy, Suspense, type ReactNode } from 'react'
 
 import { getLocale } from '#/paraglide/runtime'
+import { useSessionExpired } from '#/shared/api/held-session'
 import { modeAttribute, readAppearance, themeHref } from '#/shared/lib/appearance'
 
 // Toasts follow an action of the user, never the first paint: the stock Toaster loads after the entry (budget G-05).
 const Toaster = lazy(() => import('#/shared/ui/toast').then(module => ({ default: module.Toaster })))
+// Only while a held upload outlives the session (rare): not in the entry either.
+const SessionExpiredNotice = lazy(() =>
+  import('#/shared/components/session-expired-notice').then(module => ({ default: module.SessionExpiredNotice })),
+)
 
 /**
  * The HTML shell. Rendered even when the root route fails, so errors keep the document intact.
@@ -15,6 +20,7 @@ const Toaster = lazy(() => import('#/shared/ui/toast').then(module => ({ default
 export function RootDocument({ children }: { children: ReactNode }) {
   const session = useRouteContext({ from: rootRouteId, select: context => context.session })
   const { theme, mode } = readAppearance(session ? session.user.theme : undefined)
+  const expired = useSessionExpired()
   return (
     <html lang={getLocale()} data-theme={theme} data-mode={modeAttribute(mode)}>
       <head>
@@ -25,6 +31,7 @@ export function RootDocument({ children }: { children: ReactNode }) {
         {children}
         <Suspense fallback={null}>
           <Toaster />
+          {expired ? <SessionExpiredNotice /> : null}
         </Suspense>
         <Scripts />
       </body>
