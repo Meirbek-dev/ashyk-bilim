@@ -56,6 +56,9 @@ export default async function warmDevServer(config: FullConfig): Promise<void> {
   const baseURL = String(config.projects[0]?.use.baseURL)
   const browser = await chromium.launch()
   const context = await browser.newContext({ baseURL })
+  // `vp dev` speaks HTTP/1.1: six signed-in pages each holding /me/events take every connection the browser allows
+  // per host and the module requests behind them never finish. Warming needs no live events.
+  await context.route('**/me/events', route => route.abort())
   const cookie = await adminCookie(baseURL)
   if (cookie) await context.addCookies([{ ...cookie, url: baseURL }])
   const queue = routePaths()
