@@ -702,3 +702,28 @@ skipped).
 - **Backup missing in the morning**: `dc logs backup`, `df -h`; run `just
   backup` to see the error live.
 - **Restore refuses: `already has a postgres_data volume`**: by design; 3.4.
+
+## 5. Development machine
+
+Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just setup` once per clone.
+
+### 5.1 Hooks, formatting, line endings
+
+- pre-commit (`.vite-hooks/pre-commit` -> `infra/dev/hooks.ts`) checks the index being committed in a
+  checkout under `tmp/hooks/snap` (incremental, node_modules linked): format + type-aware lint of the
+  staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
+  Unstaged work never affects it; a failure prints the fix (`just fmt <files>`) and the log path.
+- pre-push runs `just check --base <remote tip>` in `tmp/hooks/push` (a checkout of the pushed commit).
+  Only CI skips hooks; never `--no-verify`.
+- `just fmt <files>`: the root `vite.config.ts` is the one web format config (apps/web-2's block comes
+  from `apps/web-2/fmt.config.ts`), so the result is the same from any cwd.
+- `just eol`: CRLF working copies (Windows tools) are rewritten as LF. A CRLF migration changes its sqlx
+  checksum; `ab-db`'s unit test `migrations_are_embedded_with_lf` catches it.
+
+### 5.2 Worktrees
+
+`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main, node_modules linked to the main
+checkout's, the shared cargo target (`.cargo/config.toml`), Paraglide generated. Commit there; `just wt
+land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
+the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. A branch that
+changes package.json or bun.lock needs its own `bun install` (delete the node_modules link first).

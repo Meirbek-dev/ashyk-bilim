@@ -40,12 +40,14 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
   `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
   `bun run test` (vitest, `src/tests/**`),
   `bun run check:contracts` (generated client matches `openapi.v2.json`),
-  `bun run check:error-codes`, `bun run check:messages`. Hosted CI currently builds the image
-  and stack-smokes this app; it has no separate lint/test job. Production fixes are allowed.
+  `bun run check:error-codes`, `bun run check:messages`. CI runs them (web-gates job), builds the
+  image and stack-smokes this app. The pre-commit hook checks format + type-aware lint of the staged
+  files only; `just check` runs the gates for what changed. Production fixes are allowed.
 - `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
   unrelated files, so run it deliberately and review the diff.
-- `bun run format` (`vp fmt --write`); the lint/fmt config is `vite.config.ts`
-  in this directory, vitest uses `vitest.config.ts`.
+- Format with `just fmt <files>` (`bun run format` rewrites the whole app). The format config is the
+  repo-root `vite.config.ts` (same result from any cwd); lint is `vite.config.ts` here, vitest
+  `vitest.config.ts`.
 - `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
 - Vitest runs at most four workers; use its `--maxWorkers` flag to override deliberately.
 - `bunx knip` reports dead files/exports (generated code is ignored).
