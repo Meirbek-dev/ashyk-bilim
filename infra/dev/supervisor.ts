@@ -12,6 +12,7 @@ import {
   httpUp,
   isWindows,
   killTree,
+  machineEnv,
   manifestPath,
   pipeToLog,
   slotDir,
@@ -80,7 +81,7 @@ function start(s: Running): void {
   appendFileSync(spec.log, `\n=== ${new Date().toISOString()} supervisor: start ${spec.name}\n`)
   const child = spawn(spec.command, spec.args, {
     cwd: spec.cwd,
-    env: { ...process.env, ...spec.env, NO_COLOR: '1' },
+    env: { ...process.env, ...machineEnv(), ...spec.env, NO_COLOR: '1' },
     // Through the supervisor: escape sequences are dropped on the way to the log.
     stdio: ['ignore', 'pipe', 'pipe'],
     // Own process group off Windows, so a stop kills the whole tree (taskkill /T does that on Windows).

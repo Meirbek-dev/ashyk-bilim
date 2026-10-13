@@ -748,3 +748,17 @@ follows the running slots.
   `AB__ENVIRONMENT=development` + loopback only; DECISIONS 2026-10-13). For a real-data copy:
   `just stack up 1 --db ashyq_prod`, then `just login-as <their username> 1`.
 - A database migrated from a CRLF checkout gets its migration checksums re-stamped on `stack up`.
+
+### 5.4 e2e
+
+- `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`: Playwright against a production build
+  (web-2: `vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand; legacy: `next build` into
+  `.next-e2e` + `next start`) with its own API + worker on a fresh database `e2e_<app>_<slot>` cloned from
+  `ashyq_seed` (`just db template` first when missing). Rebuilds only when the app's sources changed. Ports: slot N =
+  API 8005+10N, web-2 stand 3105+10N, legacy 3205+10N, so runs in different slots do not collide. Prints the
+  summary; everything else is in `tmp/e2e/<app>-<slot>/` (playwright.log, api.log, build.log). The database is
+  dropped afterwards unless `--keep`.
+- `just e2e-dev [web2|web] [--slot N] [args]`: the same suites against a running slot's dev servers (web-2 warms
+  every route first).
+- Both take the seed password from `infra/env/dev.local.env` and hand the suites their accounts, API log and learner
+  pool; nothing to export by hand.

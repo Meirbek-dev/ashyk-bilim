@@ -48,7 +48,8 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - Format with `just fmt <files>` (`bun run format` rewrites the whole app). The format config is the
   repo-root `vite.config.ts` (same result from any cwd); lint is `vite.config.ts` here, vitest
   `vitest.config.ts`.
-- `bun run test:e2e` (Playwright against a running stack, see `e2e/`).
+- e2e from the repo root: `just e2e web [args]` (production `next build` + own API on a fresh database) or
+  `just e2e-dev web [args]` (the running `just stack up` slot); both set the seed accounts and password.
 - Vitest runs at most four workers; use its `--maxWorkers` flag to override deliberately.
 - `bunx knip` reports dead files/exports (generated code is ignored).
 

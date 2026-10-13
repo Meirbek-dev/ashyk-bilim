@@ -18,7 +18,14 @@ import { dirname, join, resolve } from 'node:path'
 
 export const root = resolve(import.meta.dir, '../..')
 export const stackDir = join(root, 'tmp/stack')
-export const localEnvFile = join(root, 'infra/env/dev.local.env')
+/** The main checkout (a worktree's shares its secrets: one Zitadel, one seed password). */
+function findMainCheckout(): string {
+  const git = Bun.spawnSync(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root })
+  const common = git.stdout.toString().trim()
+  return git.success && common ? dirname(common) : root
+}
+export const mainCheckout = findMainCheckout()
+export const localEnvFile = join(mainCheckout, 'infra/env/dev.local.env')
 export const isWindows = process.platform === 'win32'
 export const exe = isWindows ? '.exe' : ''
 
@@ -36,6 +43,14 @@ const readEnv = (path: string) => (existsSync(path) ? parseEnv(readFileSync(path
 /** dev.env + dev.local.env (local wins). */
 export function devEnv(): Record<string, string> {
   return { ...readEnv(join(root, 'infra/env/dev.env')), ...readEnv(localEnvFile) }
+}
+
+/**
+ * dev.local.env keys other than the apps' own (AB__*, E2E_*): machine quirks every spawned process gets, e.g.
+ * SWC_NATIVE_BINDING_CACHE where next's SWC cache root is not writable.
+ */
+export function machineEnv(): Record<string, string> {
+  return Object.fromEntries(Object.entries(readEnv(localEnvFile)).filter(([key]) => !/^(AB__|E2E_)/.test(key)))
 }
 
 /** Sets `key` in dev.local.env (appends or replaces the line). */
@@ -220,7 +235,7 @@ export function run(cmd: string[], opts: { cwd?: string; env?: Record<string, st
   try {
     const result = Bun.spawnSync(cmd, {
       cwd: opts.cwd ?? root,
-      env: { ...process.env, NO_COLOR: '1', ...opts.env },
+      env: { ...process.env, NO_COLOR: '1', ...machineEnv(), ...opts.env },
       stdout: fd,
       stderr: fd,
     })

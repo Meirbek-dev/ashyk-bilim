@@ -99,13 +99,13 @@ listed in `gates/allowlist.json` with a reason (G-12).
 
 ## e2e locally
 
-API on `:8000` (`vp dev` proxies `/api/v2`; buckets and `/content`: storage `:9002`), seeded by `ashyq admin seed-e2e`.
-`E2E_PASSWORD=<seed password> vp run e2e [--grep x]` reuses or starts `vp dev` and warms every route; parallel runs in
-one tree pass `--output=<own dir>`; never commit the password. `E2E_API_LOG=<API log>`: `auth.spec.ts` reads emailed
-codes there. `e2e/fixtures/seed.ts`: `seed`, `test.use({ as: role })` (storage state per worker), `signInAs(role)`.
-**Against the production build** (CSP is sent only there, as on the stand): `bun run build`; `PORT=3101 HOST=127.0.0.1
-PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node serve.ts` (restart after a build);
-`node e2e/prod-stand.ts` (nginx in miniature, :3100); `E2E_BASE_URL=http://127.0.0.1:3100 vp run e2e` (CSP header checked).
+From the repo root (docs/RUNBOOK.md 5.3-5.4): `just e2e [web2] [playwright args]` builds the production bundle when
+sources changed, runs it behind `e2e/prod-stand.ts` (nginx in miniature, CSP sent as on the stand) with its own API on
+a fresh database cloned from `ashyq_seed`, and prints the summary (log under `tmp/e2e/`). `just e2e-dev [web2] [args]`
+drives the running `just stack up` slot's `vp dev` (`E2E_DEV_URL`; warms every route first). The password, API log
+(`E2E_API_LOG`: `auth.spec.ts` reads emailed codes there) and learner pool (`E2E_LEARNERS[_DIR]`) are set by the
+recipes; never commit the password. `e2e/fixtures/seed.ts`: `seed`, `test.use({ as: role })` (storage state per
+worker), `signInAs(role)`.
 
 ## Slice cycle (one feature)
 

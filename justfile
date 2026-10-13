@@ -108,6 +108,15 @@ stack *args:
 login-as user slot="0":
     @bun infra/dev/stack.ts login-as "$@"
 
+# Playwright against a production build + own API on a fresh database (cloned from ashyq_seed):
+# `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`. Logs: tmp/e2e/<app>-<slot>/.
+e2e *args:
+    @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts "$@"
+
+# Playwright against a running slot's dev servers: `just e2e-dev [web2|web] [--slot N] [playwright args]`.
+e2e-dev *args:
+    @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts --dev "$@"
+
 # Idempotent init of the stack in $STACK (dev|prod|smoke, default prod).
 bootstrap:
     {{ bash_bin }} infra/scripts/bootstrap.sh
@@ -134,7 +143,7 @@ web2-stand-up:
 # Verified pool accounts e2e-learner-NNN the suite takes instead of self-registering (capped per hour).
 e2e_learners := env("E2E_LEARNERS", "250")
 
-# seed-e2e (S-03) in the server container; password: E2E_PASSWORD, else tmp/web2/e2e-password.
+# seed-e2e (S-03) in the server container; password: E2E_PASSWORD, else infra/env/dev.local.env's.
 web2-seed:
     {{ lib }} && use_web2 && compose exec -T -e AB__ENVIRONMENT=development -e E2E_PASSWORD server ashyq admin seed-e2e --learners {{ e2e_learners }}
 
