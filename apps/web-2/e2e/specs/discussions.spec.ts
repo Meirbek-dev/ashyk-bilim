@@ -98,8 +98,12 @@ test('B-DSC-15 a draft with text asks before the page is left; an editor emptied
   await about.click()
   await expect.poll(() => asked).toBe(true)
   await expect(page).toHaveURL(/\/discussions$/)
-  await editor.fill('')
-  // The guard reads the emptied editor on its next update: until then a click is still asked about (and dismissed).
+  // Emptied the way a person does it. (A `fill('')` right after the dismissed confirm was not always taken by
+  // ProseMirror under CI load: the draft stayed and every later click was asked about again.)
+  await editor.click()
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.press('Backspace')
+  await expect(editor).toHaveText('')
   await clickUntil(about, () => expect(page).toHaveURL(/\/about$/, { timeout: 1000 }))
 })
 
