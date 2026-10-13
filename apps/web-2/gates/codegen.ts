@@ -1,6 +1,9 @@
 // Code generation (`bun run codegen`): API client, route tree, message functions.
 // The drift gate (G-09, gates.ts) calls generateApi / generateRouteTree into scratch locations and diffs.
+// Safe while `vp dev` serves: every output is generated into a scratch sibling and published by `publish`.
 import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
 import { compile, type CompilerOptions } from '@inlang/paraglide-js'
 import { Generator, getConfig } from '@tanstack/router-generator'
 
@@ -68,14 +71,78 @@ export async function generateRouteTree(outputFile = './src/routeTree.gen.ts'): 
   await new Generator({ config, root: appDir }).run()
 }
 
+const filesIn = (dir: string): string[] =>
+  readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter(file => statSync(join(dir, file)).isFile())
+
+/** renameSync over a file another process may be reading (Windows answers EPERM/EBUSY for a moment). */
+function replaceFile(from: string, to: string): void {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      renameSync(from, to)
+      return
+    } catch (error) {
+      const busy =
+        error instanceof Error && 'code' in error && ['EPERM', 'EBUSY', 'EACCES'].includes(String(error.code))
+      if (attempt >= 40 || !busy) throw error
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
+    }
+  }
+}
+
+/**
+ * Moves generator output from `scratch` onto `target` (a file or a directory) so a running dev server never sees a
+ * half-written or deleted module: unchanged files stay untouched (no reload), changed ones are replaced by a rename,
+ * files the generator no longer writes are removed. Returns the number of files changed.
+ */
+export function publish(scratch: string, target: string): number {
+  if (statSync(scratch).isFile()) {
+    if (existsSync(target) && readFileSync(target).equals(readFileSync(scratch))) return 0
+    replaceFile(scratch, target)
+    return 1
+  }
+  const fresh = new Set(filesIn(scratch))
+  let changed = 0
+  for (const file of fresh) {
+    const to = join(target, file)
+    if (existsSync(to) && readFileSync(to).equals(readFileSync(join(scratch, file)))) continue
+    mkdirSync(dirname(to), { recursive: true })
+    replaceFile(join(scratch, file), to)
+    changed++
+  }
+  for (const file of existsSync(target) ? filesIn(target) : []) {
+    if (fresh.has(file)) continue
+    rmSync(join(target, file))
+    changed++
+  }
+  return changed
+}
+
+/** Runs `generate(scratchPath)` and publishes the result onto `target` (paths relative to the app). */
+async function generateInto(target: string, generate: (scratch: string) => unknown): Promise<number> {
+  const isFile = target.endsWith('.ts')
+  const scratch = isFile
+    ? target.replace(/\.ts$/, `.codegen-tmp-${process.pid}.ts`)
+    : relative(appDir, mkdtempSync(resolve(appDir, `${target}.codegen-tmp-`))).replaceAll('\\', '/')
+  try {
+    await generate(`./${scratch}`)
+    return publish(resolve(appDir, scratch), resolve(appDir, target))
+  } finally {
+    rmSync(resolve(appDir, scratch), { recursive: true, force: true })
+  }
+}
+
 // `codegen messages`: only the gitignored message functions (CI; the drift gate checks the committed rest).
 if (import.meta.main) {
   const messagesOnly = process.argv[2] === 'messages'
+  let changed = 0
   if (!messagesOnly) {
-    generateApi()
-    await generateRouteTree()
+    changed += await generateInto('src/shared/api/gen', generateApi)
+    changed += await generateInto('src/routeTree.gen.ts', generateRouteTree)
   }
   // src/paraglide is gitignored; compiling it here makes `vp check` work in a fresh worktree.
-  await compile({ ...paraglideOptions, project: `${appDir}/project.inlang`, outdir: `${appDir}/src/paraglide` })
-  process.stdout.write(messagesOnly ? 'codegen: messages\n' : 'codegen: api client, route tree, messages\n')
+  changed += await generateInto('src/paraglide', outdir =>
+    compile({ ...paraglideOptions, project: `${appDir}/project.inlang`, outdir: resolve(appDir, outdir) }),
+  )
+  const what = messagesOnly ? 'messages' : 'api client, route tree, messages'
+  process.stdout.write(`codegen: ${what} (${changed} files changed)\n`)
 }

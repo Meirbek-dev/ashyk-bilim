@@ -1,6 +1,8 @@
 dist/
 .tanstack/
-src/shared/api/gen.check-tmp*/
-src/routeTree.check-tmp*.ts
+# Scratch outputs of the drift gate and of codegen (gates/codegen.ts), left only by an interrupted run.
+src/shared/api/gen.*-tmp*/
+src/routeTree.*-tmp*.ts
+src/paraglide.*-tmp*/
 test-results/
 playwright-report/

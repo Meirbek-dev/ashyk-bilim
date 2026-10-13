@@ -38,7 +38,7 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
 | `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
 | `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)                      |
-| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs                  |
 | `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
 | `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
 

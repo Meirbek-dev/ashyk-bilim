@@ -59,7 +59,8 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
   `crates/api/src/dto/*.rs`; design in `docs/ARCHITECTURE.md` §5–§7 and
   the per-slice "Routes:" notes in `docs/DECISIONS.md`.
 - `bun run generate:api-types` regenerates `src/lib/api/generated/**` (Orval,
-  react-query hooks per tag + zod schemas). Never edit generated files; fix
+  react-query hooks per tag + zod schemas; safe while `next dev` runs: only
+  changed files are replaced, by rename). Never edit generated files; fix
   `orval.config.ts` / `scripts/orval-input-transformer.mjs` /
   `scripts/postprocess-orval-output.mjs` instead. Contract defects the
   transformer papers over are listed in `docs/FINDINGS.md`.
