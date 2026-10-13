@@ -49,6 +49,10 @@ eol:
 fmt +files:
     bun infra/dev/hooks.ts fmt "$@"
 
+# Parallel work in ../ashyq-wt/<name> (shared node_modules and cargo target): `just wt new|ls|land|rm <name>`.
+wt *args:
+    bun infra/dev/wt.ts "$@"
+
 # Claude compatibility copies are generated; edit only .agents/skills.
 skills-sync:
     node infra/scripts/sync-skills.mjs
