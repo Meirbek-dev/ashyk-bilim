@@ -1,5 +1,26 @@
 # Decision log (deviations & refinements vs ARCHITECTURE.md)
 
+## 2026-10-13 — Multipart video uploads through the university proxy
+
+The outer TLS proxy refuses large single PUTs (HTTP 413), although the app,
+API and origin nginx permit 2 GiB. Both frontends request multipart intents
+for videos above 32 MiB. `POST /uploads` accepts an optional `multipart` flag
+and returns 32 MiB part URLs valid for the existing 12 hour claim window.
+Small uploads retain the create-only single PUT contract.
+
+Parts go directly to RustFS; each failed network/5xx PUT is retried at most
+twice without restarting successful parts. `POST /uploads/{id}/multipart`
+assembles the ordered ETags; the existing finalize verifies exact size and
+MIME before any resource may claim the object. Completion, cancellation,
+finalize and reap serialize on the ledger row. Completion retries never
+overwrite an existing object, and finalized intents cannot be cancelled.
+`DELETE /uploads/{id}/multipart` aborts parts; the reaper covers browser
+crashes or failed cleanup, using the persisted storage session id.
+
+Retry state survives a lost session in the current page, including parts
+awaiting assembly in web-2. Reloading still loses the browser's file and
+retry state; persistent resumable uploads are outside this change.
+
 ## 2026-08-16 — Zitadel is fully internal; passkeys dropped; first-party Google OAuth
 
 Owner declined a dedicated auth subdomain (QUESTIONS.md #1). Passkeys/WebAuthn

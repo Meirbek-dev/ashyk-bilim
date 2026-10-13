@@ -648,7 +648,11 @@ skipped).
 ### Other
 
 - **Large video upload says no network / HTTP 413 at the public origin**:
-  the university TLS proxy must allow the same 2 GiB as our `/ab-public/`
+  current frontends use multipart requests of at most 32 MiB for videos
+  larger than 32 MiB (2026-10-13). Reload an old cached page first. A 308 MiB
+  multipart storage probe through the public origin succeeded; the single
+  PUT limit below still affects old clients and other large single requests.
+  The university TLS proxy must allow the same 2 GiB as our `/ab-public/`
   and `/ab-private/` routes. A deployment of this stack cannot change that
   outer proxy. In its existing location forwarding these bucket paths to
   this stack, university IT must apply:

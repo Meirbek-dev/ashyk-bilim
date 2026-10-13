@@ -31,6 +31,8 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     ("DELETE", "/api/v2/auth/mfa/totp"),
     // Ownership checked internally (created_by == actor).
     ("POST", "/api/v2/uploads/{upload_id}/finalize"),
+    ("POST", "/api/v2/uploads/{upload_id}/multipart"),
+    ("DELETE", "/api/v2/uploads/{upload_id}/multipart"),
     // Gamification self-service: streak touch and preferences.
     ("POST", "/api/v2/gamification/streaks/{kind}"),
     ("PATCH", "/api/v2/gamification/preferences"),

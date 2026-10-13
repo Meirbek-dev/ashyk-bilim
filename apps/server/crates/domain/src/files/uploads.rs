@@ -27,6 +27,7 @@ const PRESIGN_PUT_TTL: Duration = Duration::from_mins(15);
 const PRESIGN_GET_TTL: Duration = Duration::from_mins(5);
 
 const MB: i64 = 1024 * 1024;
+pub const MULTIPART_PART_BYTES: i64 = 32 * MB;
 
 /// The `file-submission` cap in MB: a task's own limit can only be lower.
 pub const FILE_SUBMISSION_MAX_MB: i32 = 100;
@@ -136,6 +137,7 @@ pub struct CreatedUpload {
     pub id: Uuid,
     pub key: String,
     pub put_url: String,
+    pub part_urls: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -173,6 +175,7 @@ impl UploadsService {
         purpose: &str,
         mime: &str,
         size_bytes: i64,
+        multipart: bool,
     ) -> Result<CreatedUpload> {
         Self::require_create(actor)?;
         let Some((bucket, max_bytes, allowed)) = policy(purpose) else {
@@ -183,11 +186,18 @@ impl UploadsService {
             }]));
         };
         require_purpose_grant(actor, purpose)?;
-        if size_bytes > max_bytes {
+        if size_bytes < 1 || size_bytes > max_bytes {
             return Err(Error::validation(vec![FieldError {
                 field: "size_bytes".into(),
                 code: "too-large".into(),
                 message: format!("{purpose} uploads are capped at {max_bytes} bytes"),
+            }]));
+        }
+        if multipart && purpose != "block-video" {
+            return Err(Error::validation(vec![FieldError {
+                field: "multipart".into(),
+                code: "invalid".into(),
+                message: "multipart uploads are only supported for videos".into(),
             }]));
         }
         if !allowed.is_empty() && !allowed.contains(&mime) {
@@ -215,12 +225,136 @@ impl UploadsService {
             },
         )
         .await?;
-        Ok(CreatedUpload { id, key, put_url })
+        let mut part_urls = Vec::new();
+        if multipart {
+            let mut tx = self.pool.begin().await?;
+            if !ab_db::uploads::lock_pending(&mut tx, id).await? {
+                return Err(Error::conflict("upload expired"));
+            }
+            let multipart_id = self.storage.create_multipart(bucket, &key, mime).await?;
+            let saved = async {
+                ab_db::uploads::set_multipart(&mut tx, id, &multipart_id).await?;
+                for part in 1..=part_count(size_bytes) {
+                    part_urls.push(self.storage.presign_part(
+                        bucket,
+                        &key,
+                        &multipart_id,
+                        part,
+                        CLAIM_WINDOW,
+                    )?);
+                }
+                tx.commit().await?;
+                Ok::<_, Error>(())
+            }
+            .await;
+            if let Err(err) = saved {
+                self.storage
+                    .abort_multipart(bucket, &key, &multipart_id)
+                    .await?;
+                return Err(err);
+            }
+        }
+        Ok(CreatedUpload {
+            id,
+            key,
+            put_url,
+            part_urls,
+        })
+    }
+
+    /// Complete only the caller's pending intent. The row lock and object
+    /// existence check make retries safe even after the response was lost.
+    pub async fn complete_multipart(
+        &self,
+        actor: &Actor,
+        id: Uuid,
+        etags: Vec<String>,
+    ) -> Result<()> {
+        let existing = ab_db::uploads::get_upload(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if existing.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        // A lost finalize response may cause the client to repeat both steps.
+        if existing.status == "finalized" && existing.multipart_id.is_some() {
+            return Ok(());
+        }
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::uploads::lock_pending(&mut tx, id).await? {
+            return Err(Error::conflict("upload is finalized or expired"));
+        }
+        let row = ab_db::uploads::get_upload(&mut *tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if row.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        let Some(multipart_id) = row.multipart_id else {
+            return Err(Error::conflict("not a multipart upload"));
+        };
+        if i64::try_from(etags.len()).unwrap_or(i64::MAX) != part_count(row.size_bytes)
+            || etags.iter().any(|tag| {
+                tag.is_empty()
+                    || tag.len() > 256
+                    || !tag.bytes().all(|b| b.is_ascii_hexdigit() || b == b'\"')
+            })
+        {
+            return Err(Error::validation(vec![FieldError {
+                field: "etags".into(),
+                code: "invalid".into(),
+                message: "expected one storage ETag per part, in order".into(),
+            }]));
+        }
+        let bucket = bucket_from_name(&row.bucket);
+        if self.storage.head(bucket, &row.key).await?.is_none() {
+            self.storage
+                .complete_multipart(bucket, &row.key, &multipart_id, etags)
+                .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Cancellation releases storage parts immediately; the reaper covers
+    /// browser crashes and failed cleanup requests.
+    pub async fn abort_multipart(&self, actor: &Actor, id: Uuid) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::uploads::lock_pending(&mut tx, id).await? {
+            return Err(Error::conflict("upload is finalized or expired"));
+        }
+        let row = ab_db::uploads::get_upload(&mut *tx, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if row.created_by != actor.user_id {
+            return Err(Error::forbidden("not your upload"));
+        }
+        let Some(multipart_id) = row.multipart_id else {
+            return Err(Error::conflict("not a multipart upload"));
+        };
+        let bucket = bucket_from_name(&row.bucket);
+        self.storage
+            .abort_multipart(bucket, &row.key, &multipart_id)
+            .await?;
+        self.storage.delete(bucket, &row.key).await?;
+        ab_db::uploads::delete(&mut tx, id).await?;
+        tx.commit().await?;
+        Ok(())
     }
 
     /// Verify the object landed and finalize the ledger row.
     pub async fn finalize(&self, actor: &Actor, id: Uuid) -> Result<FinalizedUpload> {
-        let row = ab_db::uploads::get_upload(&self.pool, id)
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::uploads::lock_pending(&mut tx, id).await? {
+            let row = ab_db::uploads::get_upload(&mut *tx, id)
+                .await?
+                .ok_or_else(|| Error::not_found("upload"))?;
+            if row.created_by != actor.user_id {
+                return Err(Error::forbidden("not your upload"));
+            }
+            return Err(Error::conflict("upload is finalized or expired"));
+        }
+        let row = ab_db::uploads::get_upload(&mut *tx, id)
             .await?
             .ok_or_else(|| Error::not_found("upload"))?;
         if row.created_by != actor.user_id {
@@ -261,7 +395,7 @@ impl UploadsService {
             }]));
         }
         if !ab_db::uploads::mark_finalized(
-            &self.pool,
+            &mut *tx,
             id,
             actual_size,
             UNREFERENCED_GRACE.as_secs_f64(),
@@ -270,6 +404,7 @@ impl UploadsService {
         {
             return Err(Error::conflict("upload is already finalized"));
         }
+        tx.commit().await?;
         Ok(FinalizedUpload {
             id,
             key: row.key,
@@ -348,10 +483,17 @@ pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64>
         let Some(upload) = ab_db::uploads::lock_expired(&mut tx, candidate.id).await? else {
             continue;
         };
-        if let Err(err) = storage
-            .delete(bucket_from_name(&upload.bucket), &upload.key)
-            .await
-        {
+        let cleanup = async {
+            let bucket = bucket_from_name(&upload.bucket);
+            if let Some(multipart_id) = &upload.multipart_id {
+                storage
+                    .abort_multipart(bucket, &upload.key, multipart_id)
+                    .await?;
+            }
+            storage.delete(bucket, &upload.key).await
+        }
+        .await;
+        if let Err(err) = cleanup {
             tracing::warn!(key = %upload.key, %err, "object deletion failed; row kept for the next sweep");
             // Storage is likely down: end the sweep instead of holding a row lock
             // through every candidate's retries; the next sweep starts over.
@@ -367,6 +509,10 @@ pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64>
         failures_in_a_row = 0;
     }
     Ok(deleted)
+}
+
+const fn part_count(size_bytes: i64) -> i64 {
+    (size_bytes + MULTIPART_PART_BYTES - 1) / MULTIPART_PART_BYTES
 }
 
 #[cfg(test)]

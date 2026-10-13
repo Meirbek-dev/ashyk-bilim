@@ -14,6 +14,7 @@ pub struct UploadRow {
     pub mime: String,
     pub size_bytes: i64,
     pub status: String,
+    pub multipart_id: Option<String>,
 }
 
 pub struct NewUpload<'a> {
@@ -48,7 +49,7 @@ pub async fn get_upload<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Result<O
     let row = sqlx::query_as!(
         UploadRow,
         r#"SELECT id, created_by AS "created_by: UserId", purpose, bucket, key,
-                  mime, size_bytes, status
+                  mime, size_bytes, status, multipart_id
            FROM uploads WHERE id = $1"#,
         id
     )
@@ -59,8 +60,8 @@ pub async fn get_upload<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Result<O
 
 /// Transition pending → finalized with the verified size; starts the
 /// unreferenced-grace clock. Returns false if it was not pending.
-pub async fn mark_finalized(
-    pool: &PgPool,
+pub async fn mark_finalized<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     id: Uuid,
     actual_size: i64,
     grace_secs: f64,
@@ -74,7 +75,7 @@ pub async fn mark_finalized(
         actual_size,
         grace_secs
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -155,6 +156,7 @@ pub struct ReapedUpload {
     pub id: Uuid,
     pub bucket: String,
     pub key: String,
+    pub multipart_id: Option<String>,
 }
 
 /// Expired pending rows and expired unreferenced finalized rows, oldest first
@@ -165,7 +167,7 @@ pub struct ReapedUpload {
 pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,
-        r#"SELECT id, bucket, key FROM uploads
+        r#"SELECT id, bucket, key, multipart_id FROM uploads
            WHERE expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
                   OR (status = 'finalized' AND referenced_count = 0))
@@ -184,7 +186,7 @@ pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
 pub async fn lock_expired(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<Option<ReapedUpload>> {
     let row = sqlx::query_as!(
         ReapedUpload,
-        r#"SELECT id, bucket, key FROM uploads
+        r#"SELECT id, bucket, key, multipart_id FROM uploads
            WHERE id = $1
              AND expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
@@ -203,4 +205,26 @@ pub async fn delete(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<()> {
         .execute(&mut *conn)
         .await?;
     Ok(())
+}
+
+pub async fn set_multipart(
+    conn: &mut sqlx::PgConnection,
+    id: Uuid,
+    multipart_id: &str,
+) -> Result<()> {
+    sqlx::query!(
+        "UPDATE uploads SET multipart_id = $2 WHERE id = $1",
+        id,
+        multipart_id
+    )
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// Serializes complete, cancel, finalize and reap. Expired intents cannot
+/// create a new object after the reaper has removed their row.
+pub async fn lock_pending(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<bool> {
+    Ok(sqlx::query_scalar!("SELECT id FROM uploads WHERE id = $1 AND status = 'pending' AND expires_at > now() FOR UPDATE", id)
+        .fetch_optional(conn).await?.is_some())
 }

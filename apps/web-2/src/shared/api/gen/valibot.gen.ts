@@ -757,6 +757,10 @@ export const vCommonFailureRow = v.object({
 
 export const vCompare = v.picklist(['previous_period', 'none']);
 
+export const vCompleteMultipartRequest = v.strictObject({
+    etags: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(64))
+});
+
 export const vCompletionRule = v.picklist([
     'viewed',
     'submitted',
@@ -1044,12 +1048,6 @@ export const vCreateUserRequest = v.strictObject({
 export const vCreateUsergroupRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     name: v.pipe(v.string(), v.maxLength(500))
-});
-
-export const vCreatedUpload = v.object({
-    id: v.pipe(v.string(), v.uuid()),
-    key: v.string(),
-    put_url: v.string()
 });
 
 /**
@@ -2076,6 +2074,18 @@ export const vMoveActivityRequest = v.strictObject({
  */
 export const vMoveChapterRequest = v.strictObject({
     position: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+});
+
+export const vMultipartUpload = v.object({
+    part_size_bytes: v.pipe(v.number(), v.integer()),
+    part_urls: v.array(v.string())
+});
+
+export const vCreatedUpload = v.object({
+    id: v.pipe(v.string(), v.uuid()),
+    key: v.string(),
+    multipart: v.optional(vMultipartUpload),
+    put_url: v.string()
 });
 
 /**
@@ -4378,6 +4388,7 @@ export const vUploadPurpose = v.picklist([
 
 export const vCreateUploadRequest = v.strictObject({
     mime: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+    multipart: v.optional(v.boolean()),
     purpose: vUploadPurpose,
     size_bytes: v.pipe(v.number(), v.integer(), v.minValue(1))
 });
@@ -9135,6 +9146,26 @@ export const vFinalizeUploadPath = v.object({
  * Upload verified
  */
 export const vFinalizeUploadResponse = vFinalizedUpload;
+
+export const vAbortMultipartUploadPath = v.object({
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Multipart upload cancelled
+ */
+export const vAbortMultipartUploadResponse = v.void();
+
+export const vCompleteMultipartUploadBody = vCompleteMultipartRequest;
+
+export const vCompleteMultipartUploadPath = v.object({
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Parts assembled
+ */
+export const vCompleteMultipartUploadResponse = v.void();
 
 export const vListUsergroupsQuery = v.object({
     cursor: v.optional(vUsergroupId),

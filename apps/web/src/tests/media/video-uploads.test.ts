@@ -82,8 +82,9 @@ describe('uploadFile', () => {
       onProgress: vi.fn(),
     }).catch(error => error)
     expect(error).toMatchObject({ status: 413, code: 'payload-too-large' })
-    expect(presentApiError(error, { copy: { byCode: { 'payload-too-large': 'Upload size limit exceeded' } } }))
-      .toMatchObject({ description: 'Upload size limit exceeded', retryPolicy: 'none' })
+    expect(
+      presentApiError(error, { copy: { byCode: { 'payload-too-large': 'Upload size limit exceeded' } } }),
+    ).toMatchObject({ description: 'Upload size limit exceeded', retryPolicy: 'none' })
     expect(mocks.apiJson.mock.calls.map(([path]) => path)).toEqual(['uploads'])
   })
 
@@ -111,8 +112,9 @@ describe('uploadFile', () => {
   it('a cancelled upload never creates a slot', async () => {
     const controller = new AbortController()
     controller.abort()
-    await expect(uploadFile(file('a.mp4', 'video/mp4'), 'block-video', { signal: controller.signal }))
-      .rejects.toMatchObject({ code: 'REQUEST_ABORTED' })
+    await expect(
+      uploadFile(file('a.mp4', 'video/mp4'), 'block-video', { signal: controller.signal }),
+    ).rejects.toMatchObject({ code: 'REQUEST_ABORTED' })
     expect(mocks.apiJson).not.toHaveBeenCalled()
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -125,6 +127,92 @@ describe('uploadFile', () => {
       signal: controller.signal,
       headers: { 'Idempotency-Key': '01a09100-0000-7000-8000-0000000000e1' },
     })
+  })
+})
+
+describe('multipart videos', () => {
+  const partSize = 32 * 1024 * 1024
+  const slot = {
+    id: '01a09100-0000-7000-8000-0000000000e1',
+    key: 'block-video/k',
+    put_url: 'http://s3/unused',
+    multipart: { part_size_bytes: partSize, part_urls: ['http://s3/part1', 'http://s3/part2'] },
+  }
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('sends 32 MB slices, retries only a failed part, and completes with ordered ETags before finalize', async () => {
+    const sent: { url: string; size: number; headers: Record<string, string> }[] = []
+    class Parts extends EventTarget {
+      upload = new EventTarget()
+      status = 200
+      url = ''
+      headers: Record<string, string> = {}
+      open(_method: string, url: string) {
+        this.url = url
+      }
+      setRequestHeader(name: string, value: string) {
+        this.headers[name] = value
+      }
+      getResponseHeader() {
+        return this.url.endsWith('1') ? '"aaa"' : '"bbb"'
+      }
+      send(body: Blob) {
+        sent.push({ url: this.url, size: body.size, headers: this.headers })
+        this.status = sent.length === 2 ? 503 : 200
+        this.upload.dispatchEvent(
+          new ProgressEvent('progress', { lengthComputable: true, loaded: body.size, total: body.size }),
+        )
+        this.dispatchEvent(new Event('load'))
+        this.dispatchEvent(new Event('loadend'))
+      }
+    }
+    vi.stubGlobal('XMLHttpRequest', Parts)
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockImplementation(async (path: string, _init, parse) =>
+      path === 'uploads'
+        ? parse(slot)
+        : path.endsWith('/finalize')
+          ? parse({ id: slot.id, key: slot.key, size_bytes: partSize + 7 })
+          : undefined,
+    )
+    const progress: number[] = []
+    await uploadFile(new File([new Uint8Array(partSize + 7)], 'a.mp4', { type: 'video/mp4' }), 'block-video', {
+      onProgress: value => progress.push(value.percentage),
+    })
+    expect(JSON.parse(mocks.apiJson.mock.calls[0]![1].body).multipart).toBe(true)
+    expect(sent.map(({ url, size }) => [url, size])).toEqual([
+      ['http://s3/part1', partSize],
+      ['http://s3/part2', 7],
+      ['http://s3/part2', 7],
+    ])
+    expect(sent.every(({ headers }) => headers['If-None-Match'] === undefined)).toBe(true)
+    expect(sent.every(({ headers }) => headers['Content-Type'] === 'video/mp4')).toBe(true)
+    expect(mocks.apiJson.mock.calls.map(([path]) => path)).toEqual([
+      'uploads',
+      `uploads/${slot.id}/multipart`,
+      `uploads/${slot.id}/finalize`,
+    ])
+    expect(JSON.parse(mocks.apiJson.mock.calls[1]![1].body)).toEqual({ etags: ['"aaa"', '"bbb"'] })
+    expect(progress.at(-1)).toBe(100)
+    expect(progress).toEqual([...progress].sort((a, b) => a - b))
+  })
+
+  it('a fatal part error aborts the storage session and never finalizes', async () => {
+    mocks.apiJson.mockReset()
+    mocks.apiJson.mockImplementation(async (path: string, _init, parse) =>
+      path === 'uploads' ? parse(slot) : undefined,
+    )
+    const fetchMock = vi.fn(async () => new Response(null, { status: 403 }))
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('XMLHttpRequest', undefined)
+    await expect(
+      uploadFile(new File([new Uint8Array(partSize + 7)], 'a.mp4', { type: 'video/mp4' }), 'block-video'),
+    ).rejects.toMatchObject({ status: 403 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(mocks.apiJson.mock.calls.map(([path, init]) => [path, init.method])).toEqual([
+      ['uploads', 'POST'],
+      [`uploads/${slot.id}/multipart`, 'DELETE'],
+    ])
   })
 })
 

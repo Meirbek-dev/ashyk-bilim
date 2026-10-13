@@ -4532,6 +4532,24 @@ expression: json
         ],
         "type": "string"
       },
+      "CompleteMultipartRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "etags": {
+            "description": "ETag returned by each storage PUT, ordered by part number.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "etags"
+        ],
+        "type": "object"
+      },
       "CompletionRule": {
         "enum": [
           "viewed",
@@ -6448,6 +6466,10 @@ expression: json
             "minLength": 1,
             "type": "string"
           },
+          "multipart": {
+            "description": "Videos may use 32 MiB parts to fit the outer proxy's request limit.",
+            "type": "boolean"
+          },
           "purpose": {
             "$ref": "#/components/schemas/UploadPurpose",
             "description": "One of: avatar, course-thumbnail, block-image, block-pdf, block-video,\nfile-submission."
@@ -6536,6 +6558,10 @@ expression: json
           },
           "key": {
             "type": "string"
+          },
+          "multipart": {
+            "$ref": "#/components/schemas/MultipartUpload",
+            "description": "Present for a multipart intent. PUT each slice in order, without\nIf-None-Match, then complete with the returned ETags before finalize."
           },
           "put_url": {
             "description": "PUT the file bytes here (presigned; valid for ~15 minutes) with the\ndeclared `Content-Type` and `If-None-Match: *` - the URL writes the\nobject once; a replay is a 412.",
@@ -11219,6 +11245,25 @@ expression: json
         },
         "required": [
           "position"
+        ],
+        "type": "object"
+      },
+      "MultipartUpload": {
+        "properties": {
+          "part_size_bytes": {
+            "type": "integer"
+          },
+          "part_urls": {
+            "description": "Signed URLs valid for the intent's 12 hour claim window.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "part_size_bytes",
+          "part_urls"
         ],
         "type": "object"
       },
@@ -35489,6 +35534,116 @@ expression: json
           }
         },
         "summary": "Finalize after the PUT: verifies the object exists and is within policy.\nWith an `Idempotency-Key`, a retry replays the original 200 for 24h\ninstead of the \"already finalized\" 409.",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/v2/uploads/{upload_id}/multipart": {
+      "delete": {
+        "operationId": "abort_multipart_upload",
+        "parameters": [
+          {
+            "description": "Upload id",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Multipart upload cancelled"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not your upload"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Intent expired or finalized"
+          }
+        },
+        "summary": "Abort the caller's pending multipart video; expired intents are reaped.",
+        "tags": [
+          "uploads"
+        ]
+      },
+      "post": {
+        "operationId": "complete_multipart_upload",
+        "parameters": [
+          {
+            "description": "Upload id",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteMultipartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Parts assembled"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not your upload"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Intent expired or finalized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid parts"
+          }
+        },
+        "summary": "Assemble this owner's pending video parts. Retry-safe until finalized;\nfinal size and MIME verification still happens at /finalize.",
         "tags": [
           "uploads"
         ]

@@ -23,9 +23,9 @@ import type {
   UseSuspenseQueryResult,
 } from '@tanstack/react-query'
 
-import { CreateUploadRequest, CreatedUpload, FinalizedUpload, Problem } from '../zod'
+import { CompleteMultipartRequest, CreateUploadRequest, CreatedUpload, FinalizedUpload, Problem } from '../zod'
 
-import { orvalMutator, unknownParser } from '../../orval-mutator'
+import { orvalMutator, unknownParser, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -434,4 +434,189 @@ export const useFinalizeUpload = <TError = ErrorType<Problem>, TContext = unknow
   queryClient?: QueryClient,
 ): UseMutationResult<Awaited<ReturnType<typeof finalizeUpload>>, TError, FinalizeUploadMutationVariables, TContext> => {
   return useMutation(getFinalizeUploadMutationOptions(options), queryClient)
+}
+export const getAbortMultipartUploadUrl = (uploadId: string) => {
+  return `/api/v2/uploads/${uploadId}/multipart`
+}
+
+/**
+ * @summary Abort the caller's pending multipart video; expired intents are reaped.
+ */
+export const abortMultipartUpload = async (
+  uploadId: string,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  return orvalMutator<void>(
+    getAbortMultipartUploadUrl(uploadId),
+    {
+      ...options,
+      method: 'DELETE',
+    },
+    voidParser,
+  )
+}
+
+export const getAbortMultipartUploadMutationKey = () => ['abortMultipartUpload'] as const
+
+export const getAbortMultipartUploadMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof abortMultipartUpload>>,
+    TError,
+    AbortMultipartUploadMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof abortMultipartUpload>>,
+  TError,
+  AbortMultipartUploadMutationVariables,
+  TContext
+> => {
+  const mutationKey = getAbortMultipartUploadMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof abortMultipartUpload>>,
+    AbortMultipartUploadMutationVariables
+  > = props => {
+    const { uploadId } = props ?? {}
+
+    return abortMultipartUpload(uploadId, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type AbortMultipartUploadMutationResult = NonNullable<Awaited<ReturnType<typeof abortMultipartUpload>>>
+
+export type AbortMultipartUploadMutationError = ErrorType<Problem>
+export type AbortMultipartUploadMutationVariables = { uploadId: string }
+
+/**
+ * @summary Abort the caller's pending multipart video; expired intents are reaped.
+ */
+export const useAbortMultipartUpload = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof abortMultipartUpload>>,
+      TError,
+      AbortMultipartUploadMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof abortMultipartUpload>>,
+  TError,
+  AbortMultipartUploadMutationVariables,
+  TContext
+> => {
+  return useMutation(getAbortMultipartUploadMutationOptions(options), queryClient)
+}
+export const getCompleteMultipartUploadUrl = (uploadId: string) => {
+  return `/api/v2/uploads/${uploadId}/multipart`
+}
+
+/**
+ * @summary Assemble this owner's pending video parts. Retry-safe until finalized;
+final size and MIME verification still happens at /finalize.
+ */
+export const completeMultipartUpload = async (
+  uploadId: string,
+  completeMultipartRequest: CompleteMultipartRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getCompleteMultipartUploadUrl(uploadId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(completeMultipartRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getCompleteMultipartUploadMutationKey = () => ['completeMultipartUpload'] as const
+
+export const getCompleteMultipartUploadMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof completeMultipartUpload>>,
+    TError,
+    CompleteMultipartUploadMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof completeMultipartUpload>>,
+  TError,
+  CompleteMultipartUploadMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCompleteMultipartUploadMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof completeMultipartUpload>>,
+    CompleteMultipartUploadMutationVariables
+  > = props => {
+    const { uploadId, data } = props ?? {}
+
+    return completeMultipartUpload(uploadId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CompleteMultipartUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeMultipartUpload>>>
+export type CompleteMultipartUploadMutationBody = BodyType<CompleteMultipartRequest>
+export type CompleteMultipartUploadMutationError = ErrorType<Problem>
+export type CompleteMultipartUploadMutationVariables = { uploadId: string; data: BodyType<CompleteMultipartRequest> }
+
+/**
+ * @summary Assemble this owner's pending video parts. Retry-safe until finalized;
+final size and MIME verification still happens at /finalize.
+ */
+export const useCompleteMultipartUpload = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof completeMultipartUpload>>,
+      TError,
+      CompleteMultipartUploadMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof completeMultipartUpload>>,
+  TError,
+  CompleteMultipartUploadMutationVariables,
+  TContext
+> => {
+  return useMutation(getCompleteMultipartUploadMutationOptions(options), queryClient)
 }

@@ -1,10 +1,8 @@
 //! Object storage over the S3 API via `object_store` (ARCHITECTURE §11).
 //! RustFS in compose today; R2/S3/MinIO later is pure config.
 //!
-//! Upload strategy (DECISIONS-worthy simplification, recorded in the plan):
-//! single presigned PUT per object - course media tops out at hundreds of MB,
-//! comfortably under the single-PUT limit, and file bytes never transit Axum.
-//! Presigned multipart can layer in later without API changes.
+//! Small files use a create-only PUT; large videos use presigned multipart
+//! parts to stay below the university proxy's per-request body limit.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -12,8 +10,9 @@ use std::time::Duration;
 use ab_core::{Error, ErrorCode, Result};
 use hmac::{Hmac, KeyInit, Mac};
 use object_store::aws::{AmazonS3, AmazonS3Builder};
+use object_store::multipart::{MultipartStore, PartId};
 use object_store::path::Path as ObjectPath;
-use object_store::{Attribute, GetOptions, ObjectStore, ObjectStoreExt};
+use object_store::{Attribute, GetOptions, ObjectStore, ObjectStoreExt, PutMultipartOptions};
 use secrecy::{ExposeSecret, SecretString};
 use sha2::{Digest, Sha256};
 
@@ -152,6 +151,72 @@ impl StorageClient {
             &[("content-type", content_type), ("if-none-match", "*")],
             expires_in,
         )
+    }
+
+    /// Start a multipart object with the validated, final content type.
+    pub async fn create_multipart(&self, bucket: Bucket, key: &str, mime: &str) -> Result<String> {
+        let mut options = PutMultipartOptions::default();
+        options
+            .attributes
+            .insert(Attribute::ContentType, mime.to_owned().into());
+        self.store(bucket)
+            .create_multipart_opts(&ObjectPath::from(key), options)
+            .await
+            .map_err(|e| Error::internal("starting multipart upload", e))
+    }
+
+    /// A part can be retried, but only within this storage upload session.
+    pub fn presign_part(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        upload_id: &str,
+        part: i64,
+        ttl: Duration,
+    ) -> Result<String> {
+        self.presign(
+            "PUT",
+            bucket,
+            key,
+            &[("partNumber", &part.to_string()), ("uploadId", upload_id)],
+            &[],
+            ttl,
+        )
+    }
+
+    /// Callers serialize completion with the ledger lock and never complete
+    /// again once an object exists (multipart completion would overwrite it).
+    pub async fn complete_multipart(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        upload_id: &str,
+        etags: Vec<String>,
+    ) -> Result<()> {
+        self.store(bucket)
+            .complete_multipart(
+                &ObjectPath::from(key),
+                &upload_id.to_owned(),
+                etags
+                    .into_iter()
+                    .map(|content_id| PartId { content_id })
+                    .collect(),
+            )
+            .await
+            .map_err(|e| Error::internal("completing multipart upload", e))?;
+        Ok(())
+    }
+
+    /// An abort after completion/another abort is harmless.
+    pub async fn abort_multipart(&self, bucket: Bucket, key: &str, upload_id: &str) -> Result<()> {
+        match self
+            .store(bucket)
+            .abort_multipart(&ObjectPath::from(key), &upload_id.to_owned())
+            .await
+        {
+            Ok(()) | Err(object_store::Error::NotFound { .. }) => Ok(()),
+            Err(e) => Err(Error::internal("aborting multipart upload", e)),
+        }
     }
 
     /// Presigned GET. The response type and disposition are always signed

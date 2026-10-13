@@ -89,7 +89,7 @@ the `Coverage floor` step (CI run 37062388407) after passing in the plain test s
 the same run and in five other runs. Timing-dependent under llvm-cov instrumentation.
 A red server gate blocks `publish`; re-run the job until the test is made deterministic.
 
-### 32. University proxy rejects lecture videos above its upload limit
+### 32. University proxy rejects large single PUTs (multipart workaround)
 Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT
 declaring 308 MiB or 2 GiB (100 MiB is accepted). The same 308 MiB PUT
 directly through the stack's nginx succeeds in 2.7 seconds. Both the app
@@ -98,8 +98,16 @@ remaining blocker. University IT must raise its bucket-route body limit
 and disable request buffering as described in RUNBOOK.md "Other". SSH to
 that proxy was unreachable from the production host. The web fix preserves
 storage HTTP status and translates 413 as `payload-too-large` instead of
-claiming the user is offline. **Open until the outer proxy is changed and a
-large upload through the public hostname succeeds.**
+claiming the user is offline. **Open for large single PUTs until the outer
+proxy is changed; multipart mitigates video uploads as below.**
+
+Mitigation 2026-10-13: both frontends now use 32 MiB multipart requests for
+videos above 32 MiB. A production storage probe sent 308 MiB through the
+public hostname as ten parts, completed the object, verified its MIME,
+size and first/last bytes, and removed the object/session. The outer
+single-request limit remains; old cached clients still need a reload or
+the proxy configuration change. Server tests cover assembly/finalize,
+ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
 
 ## Low
 

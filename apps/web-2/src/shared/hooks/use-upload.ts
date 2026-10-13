@@ -7,7 +7,14 @@ import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { isSessionLost } from '#/shared/api/errors'
 import { holdSession } from '#/shared/api/held-session'
 import { releaseSessionHold } from '#/shared/api/query-client'
-import { checkUpload, upload, type UploadLimits, type UploadProblem, type UploadPurpose } from '#/shared/api/upload'
+import {
+  checkUpload,
+  upload,
+  type UploadLimits,
+  type UploadProblem,
+  type UploadPurpose,
+  type UploadResume,
+} from '#/shared/api/upload'
 import { formatFileSize } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
 
@@ -91,7 +98,7 @@ export function useSessionHold() {
  * twice. The caller holds the session meanwhile, so a 401 keeps the page (and the file) instead of signing out.
  */
 function useResumableUpload(purpose: UploadPurpose, setProgress: (progress: number | null) => void) {
-  const stored = useRef<{ file: File; slot: string } | null>(null)
+  const stored = useRef<{ file: File; slot: UploadResume } | null>(null)
   return useMutation({
     mutationFn: ({ file, signal }: { file: File; signal: AbortSignal }) =>
       upload(file, purpose, {

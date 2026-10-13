@@ -1,13 +1,89 @@
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 
 import { FakeStorage, json, SLOT } from './testing'
-import { upload } from './upload'
+import { upload, type UploadResume } from './upload'
 
 afterEach(() => {
   vi.unstubAllGlobals()
   FakeStorage.status = 200
   FakeStorage.last = null
   FakeStorage.gate = Promise.resolve()
+})
+
+describe('multipart video', () => {
+  test('retries just the failed slice and preserves parts when assembly needs sign-in', async () => {
+    const partSize = 32 * 1024 * 1024
+    const multipart = {
+      part_size_bytes: partSize,
+      part_urls: ['https://storage.test/part1', 'https://storage.test/part2'],
+    }
+    const sizes: number[] = []
+    class Parts extends FakeStorage {
+      override send(body: Blob) {
+        sizes.push(body.size)
+        this.status = sizes.length === 2 ? 503 : 200
+        this.upload.dispatchEvent(
+          new ProgressEvent('progress', { lengthComputable: true, loaded: body.size, total: body.size }),
+        )
+        this.dispatchEvent(new Event('load'))
+        this.dispatchEvent(new Event('loadend'))
+      }
+    }
+    vi.stubGlobal('XMLHttpRequest', Parts)
+    let signedIn = false
+    const api = vi.fn<(request: Request) => Promise<Response>>(async request => {
+      if (request.url.endsWith('/multipart'))
+        return signedIn
+          ? new Response(null, { status: 204 })
+          : new Response(JSON.stringify({ code: 'session-expired', status: 401 }), {
+              status: 401,
+              headers: { 'content-type': 'application/problem+json' },
+            })
+      return request.url.endsWith('/finalize')
+        ? json({ id: SLOT.id, key: SLOT.key, size_bytes: partSize + 7 })
+        : json({ ...SLOT, multipart })
+    })
+    vi.stubGlobal('fetch', api)
+    const file = new File([new Uint8Array(partSize + 7)], 'a.mp4', { type: 'video/mp4' })
+    let resume: UploadResume | undefined
+    await expect(
+      upload(file, 'block-video', {
+        onStored: slot => {
+          resume = slot
+        },
+      }),
+    ).rejects.toMatchObject({ status: 401 })
+    expect(sizes).toEqual([partSize, 7, 7])
+    expect(resume?.etags).toHaveLength(2)
+    expect(await api.mock.calls[0]?.[0].json()).toMatchObject({ multipart: true })
+    signedIn = true
+    await expect(upload(file, 'block-video', { resume })).resolves.toMatchObject({ id: SLOT.id })
+    expect(sizes).toEqual([partSize, 7, 7])
+    expect(api.mock.calls.map(([request]) => request.url.split('/').at(-1))).toEqual([
+      'uploads',
+      'multipart',
+      'multipart',
+      'finalize',
+    ])
+  })
+
+  test('a fatal part rejection cancels the multipart slot, without assembly or finalize', async () => {
+    const api = vi.fn<(request: Request) => Promise<Response>>(async request =>
+      request.method === 'DELETE'
+        ? new Response(null, { status: 204 })
+        : json({
+            ...SLOT,
+            multipart: { part_size_bytes: 32 * 1024 * 1024, part_urls: ['https://storage.test/part1'] },
+          }),
+    )
+    vi.stubGlobal('fetch', api)
+    vi.stubGlobal('XMLHttpRequest', FakeStorage)
+    FakeStorage.status = 403
+    await expect(upload(new File(['a'], 'a.mp4', { type: 'video/mp4' }), 'block-video')).rejects.toMatchObject({
+      status: 403,
+    })
+    expect(api.mock.calls.map(([request]) => request.method)).toEqual(['POST', 'DELETE'])
+  })
 })
 
 describe('upload (create -> presigned PUT -> finalize)', () => {

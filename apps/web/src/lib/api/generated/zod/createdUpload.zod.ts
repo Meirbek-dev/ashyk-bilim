@@ -10,6 +10,15 @@ import * as zod from 'zod'
 export const CreatedUpload = zod.object({
   id: zod.uuid(),
   key: zod.string(),
+  multipart: zod
+    .object({
+      part_size_bytes: zod.int(),
+      part_urls: zod.array(zod.string()).describe("Signed URLs valid for the intent's 12 hour claim window."),
+    })
+    .optional()
+    .describe(
+      'Present for a multipart intent. PUT each slice in order, without\nIf-None-Match, then complete with the returned ETags before finalize.',
+    ),
   put_url: zod
     .string()
     .describe(

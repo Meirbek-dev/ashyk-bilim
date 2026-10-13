@@ -338,6 +338,8 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::rbac::delete_role))
         .routes(routes!(routes::rbac::set_role_permissions))
         .routes(routes!(routes::uploads::create_upload))
+        .routes(routes!(routes::uploads::complete_multipart_upload))
+        .routes(routes!(routes::uploads::abort_multipart_upload))
         .routes(routes!(routes::uploads::finalize_upload))
         .routes(routes!(routes::uploads::download_upload))
         .routes(routes!(routes::usergroups::create_usergroup))

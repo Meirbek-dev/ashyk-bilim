@@ -11,6 +11,7 @@ export const createUploadRequestMimeMax = 255
 
 export const CreateUploadRequest = zod.object({
   mime: zod.string().min(1).max(createUploadRequestMimeMax),
+  multipart: zod.boolean().optional().describe("Videos may use 32 MiB parts to fit the outer proxy's request limit."),
   purpose: zod
     .enum([
       'avatar',

@@ -106,6 +106,7 @@ export async function createUpload(
         purpose,
         mime: uploadMime(file),
         size_bytes: file.size,
+        ...(purpose === 'block-video' && file.size > 32 * MB ? { multipart: true } : {}),
       }),
     },
     data => CreatedUpload.parse(data),
@@ -124,18 +125,24 @@ export async function finalizeUpload(uploadId: string, signal?: AbortSignal): Pr
   )
 }
 
-async function putWithProgress(url: string, file: Blob, options: UploadFileOptions): Promise<void> {
+async function putWithProgress(
+  url: string,
+  file: Blob,
+  options: UploadFileOptions,
+  multipart = false,
+): Promise<string> {
   // Signed into the URL: must be exactly what `createUpload` declared.
   const contentType = uploadMime(file)
 
   // XMLHttpRequest is the only browser primitive with upload progress events.
   if (typeof XMLHttpRequest !== 'undefined' && options.onProgress) {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
+      throwIfCancelled(options.signal)
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', url, true)
       xhr.setRequestHeader('Content-Type', contentType)
       // BUG-350: the presigned PUT is create-only (the header is signed).
-      xhr.setRequestHeader('If-None-Match', '*')
+      if (!multipart) xhr.setRequestHeader('If-None-Match', '*')
       xhr.upload.addEventListener('progress', event => {
         const total = event.lengthComputable ? event.total : file.size
         options.onProgress?.({
@@ -146,7 +153,7 @@ async function putWithProgress(url: string, file: Blob, options: UploadFileOptio
       })
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve()
+          resolve(multipart ? (xhr.getResponseHeader('ETag') ?? '') : '')
         } else {
           reject(storageUploadError(xhr.status, url))
         }
@@ -167,13 +174,69 @@ async function putWithProgress(url: string, file: Blob, options: UploadFileOptio
   const response = await fetch(url, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': contentType, 'If-None-Match': '*' },
+    headers: { 'Content-Type': contentType, ...(!multipart ? { 'If-None-Match': '*' } : {}) },
     ...(options.signal ? { signal: options.signal } : {}),
   })
   if (!response.ok) {
     throw storageUploadError(response.status, url)
   }
   options.onProgress?.({ uploadedBytes: file.size, totalBytes: file.size, percentage: 100 })
+  return response.headers.get('ETag') ?? ''
+}
+
+async function putMultipart(created: CreatedUploadType, file: Blob, options: UploadFileOptions): Promise<void> {
+  const multipart = created.multipart
+  if (!multipart) return
+  try {
+    const etags: string[] = []
+    let reportedBytes = 0
+    for (const [index, url] of multipart.part_urls.entries()) {
+      const start = index * multipart.part_size_bytes
+      const part = file.slice(start, start + multipart.part_size_bytes, uploadMime(file))
+      let etag = ''
+      for (let attempt = 0; ; attempt += 1) {
+        throwIfCancelled(options.signal)
+        try {
+          etag = await putWithProgress(
+            url,
+            part,
+            {
+              ...options,
+              onProgress: progress => {
+                reportedBytes = Math.max(reportedBytes, start + progress.uploadedBytes)
+                options.onProgress?.({
+                  uploadedBytes: reportedBytes,
+                  totalBytes: file.size,
+                  percentage: Math.round((reportedBytes / file.size) * 100),
+                })
+              },
+            },
+            true,
+          )
+          break
+        } catch (error) {
+          throwIfCancelled(options.signal)
+          if (attempt >= 2 || (isApiError(error) && error.status > 0 && error.status < 500)) throw error
+        }
+      }
+      if (!etag) throw storageUploadError(502, url)
+      etags.push(etag)
+    }
+    await untilSignedIn(
+      () =>
+        apiJson(`uploads/${created.id}/multipart`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ etags }),
+          ...(options.signal ? { signal: options.signal } : {}),
+        }),
+      options.signal,
+    )
+  } catch (error) {
+    // Best effort: a crashed browser or unavailable API is covered by the reaper.
+    await apiJson(`uploads/${created.id}/multipart`, { method: 'DELETE' }).catch(() => undefined)
+    throw error
+  }
 }
 
 function storageUploadError(status: number, path: string): APIError {
@@ -207,7 +270,8 @@ export async function uploadFile(
   try {
     const created = await untilSignedIn(() => createUpload(file, purpose, options.signal), options.signal)
     throwIfCancelled(options.signal)
-    await putWithProgress(created.put_url, file, options)
+    if (created.multipart) await putMultipart(created, file, options)
+    else await putWithProgress(created.put_url, file, options)
     throwIfCancelled(options.signal)
     // The bytes are stored: after a 401 only the finalize is repeated, they are not sent again.
     return await untilSignedIn(() => finalizeUpload(created.id, options.signal), options.signal)

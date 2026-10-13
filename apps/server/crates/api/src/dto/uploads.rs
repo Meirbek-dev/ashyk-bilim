@@ -16,6 +16,10 @@ pub struct CreateUploadRequest {
     #[garde(range(min = 1))]
     #[schema(minimum = 1)]
     pub size_bytes: i64,
+    /// Videos may use 32 MiB parts to fit the outer proxy's request limit.
+    #[serde(default)]
+    #[garde(skip)]
+    pub multipart: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -26,6 +30,27 @@ pub struct CreatedUpload {
     /// declared `Content-Type` and `If-None-Match: *` - the URL writes the
     /// object once; a replay is a 412.
     pub put_url: String,
+    /// Present for a multipart intent. PUT each slice in order, without
+    /// If-None-Match, then complete with the returned ETags before finalize.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub multipart: Option<MultipartUpload>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MultipartUpload {
+    pub part_size_bytes: i64,
+    /// Signed URLs valid for the intent's 12 hour claim window.
+    pub part_urls: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CompleteMultipartRequest {
+    /// ETag returned by each storage PUT, ordered by part number.
+    #[garde(length(min = 1, max = 64))]
+    #[schema(min_items = 1, max_items = 64)]
+    pub etags: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

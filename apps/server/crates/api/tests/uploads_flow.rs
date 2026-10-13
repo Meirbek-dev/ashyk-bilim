@@ -1,5 +1,7 @@
 //! Upload pipeline end-to-end: presigned PUT to real RustFS, finalize
-//! verification, presigned download, policy rejections, reaper.
+//! verification, presigned download, policy rejections, reaper. Multipart
+//! videos assemble ordered parts, repeat safely, reject foreign callers,
+//! retain MIME/size validation, and release cancelled/abandoned parts.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_clients::storage::{Bucket, StorageClient, StorageConfig};
@@ -8,6 +10,228 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use secrecy::SecretString;
 use sqlx::PgPool;
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn multipart_video_assembles_retries_and_stays_immutable(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("parts", "parts@example.com", &["user"])
+        .await;
+    let owner = app
+        .mint_session_for(user, &["file:create:own", "course:update:own"])
+        .await;
+    let other_user = app
+        .create_user("foreign-parts", "foreign-parts@example.com", &["user"])
+        .await;
+    let other = app.mint_session_for(other_user, &[]).await;
+    let size = 32 * 1024 * 1024 + 7;
+    let created = app
+        .post_as(
+            &owner,
+            "/api/v2/uploads",
+            &serde_json::json!({
+                "purpose": "block-video", "mime": "video/mp4", "size_bytes": size, "multipart": true
+            }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+    let body = created.json();
+    let id = body["id"].as_str().unwrap();
+    let path = format!("/api/v2/uploads/{id}/multipart");
+    let urls = body["multipart"]["part_urls"].as_array().unwrap();
+    assert_eq!(urls.len(), 2);
+    assert_eq!(body["multipart"]["part_size_bytes"], 32 * 1024 * 1024);
+    let mut etags = Vec::new();
+    for (index, url) in urls.iter().enumerate() {
+        let part =
+            vec![u8::try_from(index).unwrap(); if index == 0 { 32 * 1024 * 1024 } else { 7 }];
+        let put = reqwest::Client::new()
+            .put(url.as_str().unwrap())
+            .body(part.clone())
+            .send()
+            .await
+            .unwrap();
+        assert!(put.status().is_success(), "{}", put.text().await.unwrap());
+        etags.push(put.headers()["etag"].to_str().unwrap().to_owned());
+        // Repeating one part doesn't restart the upload.
+        let retry = reqwest::Client::new()
+            .put(url.as_str().unwrap())
+            .body(part)
+            .send()
+            .await
+            .unwrap();
+        assert!(retry.status().is_success());
+        assert_eq!(retry.headers()["etag"], etags[index]);
+    }
+    let parts = serde_json::json!({ "etags": etags });
+    assert_eq!(
+        app.post_as(&other, &path, &parts).await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.send(
+            Request::builder()
+                .method("DELETE")
+                .uri(&path)
+                .header("cookie", &other.cookie)
+                .body(Body::empty())
+                .unwrap()
+        )
+        .await
+        .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.post_as(&owner, &path, &serde_json::json!({"etags": [etags[0]]}))
+            .await
+            .status,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    for _ in 0..2 {
+        let done = app.post_as(&owner, &path, &parts).await;
+        assert_eq!(done.status, StatusCode::NO_CONTENT, "{}", done.text());
+    }
+    let finalized = app
+        .post_as(
+            &owner,
+            &format!("/api/v2/uploads/{id}/finalize"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
+    assert_eq!(finalized.json()["size_bytes"], size);
+    assert_eq!(
+        app.post_as(&owner, &path, &parts).await.status,
+        StatusCode::NO_CONTENT
+    );
+    let replay = reqwest::Client::new()
+        .put(urls[0].as_str().unwrap())
+        .body("replacement")
+        .send()
+        .await
+        .unwrap();
+    assert!(
+        !replay.status().is_success(),
+        "completed upload still accepted a part"
+    );
+    let cancelled = app
+        .send(
+            Request::builder()
+                .method("DELETE")
+                .uri(&path)
+                .header("cookie", &owner.cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(cancelled.status, StatusCode::CONFLICT);
+    let download = app
+        .get_as(&owner, &format!("/api/v2/uploads/{id}/download"))
+        .await;
+    let fetched = reqwest::get(download.headers["location"].to_str().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(fetched.headers()["content-type"], "video/mp4");
+    let bytes = fetched.bytes().await.unwrap();
+    assert_eq!(bytes.len(), size);
+    assert_eq!(&bytes[size - 7..], &[1; 7]);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn multipart_cancel_reap_and_size_validation(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("cleanup-parts", "cleanup-parts@example.com", &["user"])
+        .await;
+    let owner = app
+        .mint_session_for(user, &["file:create:own", "course:update:own"])
+        .await;
+    for mode in ["cancel", "reap", "wrong-size"] {
+        let created = app.post_as(&owner, "/api/v2/uploads", &serde_json::json!({
+            "purpose": "block-video", "mime": "video/mp4", "size_bytes": 10, "multipart": true
+        })).await;
+        assert_eq!(created.status, StatusCode::OK, "{}", created.text());
+        let body = created.json();
+        let id = body["id"].as_str().unwrap();
+        let path = format!("/api/v2/uploads/{id}/multipart");
+        let url = body["multipart"]["part_urls"][0].as_str().unwrap();
+        let put = reqwest::Client::new()
+            .put(url)
+            .body("wrong")
+            .send()
+            .await
+            .unwrap();
+        assert!(put.status().is_success());
+        let etag = put.headers()["etag"].to_str().unwrap();
+        if mode == "wrong-size" {
+            assert_eq!(
+                app.post_as(&owner, &path, &serde_json::json!({"etags": [etag]}))
+                    .await
+                    .status,
+                StatusCode::NO_CONTENT
+            );
+            let result = app
+                .post_as(
+                    &owner,
+                    &format!("/api/v2/uploads/{id}/finalize"),
+                    &serde_json::json!({}),
+                )
+                .await;
+            assert_eq!(
+                result.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{}",
+                result.text()
+            );
+        }
+        if mode == "cancel" {
+            let result = app
+                .send(
+                    Request::builder()
+                        .method("DELETE")
+                        .uri(&path)
+                        .header("cookie", &owner.cookie)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await;
+            assert_eq!(result.status, StatusCode::NO_CONTENT, "{}", result.text());
+        } else {
+            sqlx::query(
+                "UPDATE uploads SET expires_at = now() - interval '1 second' WHERE id = $1",
+            )
+            .bind(uuid::Uuid::parse_str(id).unwrap())
+            .execute(&app.pool)
+            .await
+            .unwrap();
+            let storage = StorageClient::new(&StorageConfig {
+                endpoint: std::env::var("TEST_S3_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:9002".into()),
+                access_key: "ashyq-dev".into(),
+                secret_key: SecretString::from("ashyq-dev-secret"),
+                public_bucket: "ab-public".into(),
+                private_bucket: "ab-private".into(),
+            })
+            .unwrap();
+            assert_eq!(
+                ab_domain::files::uploads::reap_expired(&app.pool, &storage)
+                    .await
+                    .unwrap(),
+                1
+            );
+        }
+        let replay = reqwest::Client::new()
+            .put(url)
+            .body("after cleanup")
+            .send()
+            .await
+            .unwrap();
+        assert!(
+            !replay.status().is_success(),
+            "{mode} retained the multipart session"
+        );
+    }
+}
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn full_upload_finalize_download_flow(pool: PgPool) {
@@ -121,15 +345,26 @@ async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
         (2_147_483_648_i64, StatusCode::OK),
         (2_147_483_649_i64, StatusCode::UNPROCESSABLE_ENTITY),
     ] {
-        let video = app
-            .post_as(
-                &session,
-                "/api/v2/uploads",
-                &serde_json::json!({ "purpose": "block-video", "mime": "video/mp4",
-                                      "size_bytes": size_bytes }),
-            )
-            .await;
-        assert_eq!(video.status, status, "{}", video.text());
+        for multipart in [false, true] {
+            let video = app
+                .post_as(
+                    &session,
+                    "/api/v2/uploads",
+                    &serde_json::json!({ "purpose": "block-video", "mime": "video/mp4",
+                                      "size_bytes": size_bytes, "multipart": multipart }),
+                )
+                .await;
+            assert_eq!(video.status, status, "{}", video.text());
+            if status == StatusCode::OK && multipart {
+                assert_eq!(
+                    video.json()["multipart"]["part_urls"]
+                        .as_array()
+                        .unwrap()
+                        .len(),
+                    64
+                );
+            }
+        }
     }
 
     let wrong_mime = app

@@ -1,5 +1,5 @@
-import type { FinalizedUpload, UploadPurpose } from './gen/types.gen'
-import { createUpload, finalizeUpload } from './gen/sdk.gen'
+import type { CreatedUpload, FinalizedUpload, UploadPurpose } from './gen/types.gen'
+import { abortMultipartUpload, completeMultipartUpload, createUpload, finalizeUpload } from './gen/sdk.gen'
 import { ApiError } from './errors'
 
 // Spec 7.3: the one way to upload a file. create (policy check, presigned PUT) -> PUT the bytes straight to storage
@@ -116,13 +116,16 @@ type UploadOptions = {
   onProgress?: (fraction: number) => void
   signal?: AbortSignal
   /** A slot whose bytes are already stored (`onStored`): only finalize it (pending slots stay finalizable 12 h). */
-  resume?: string | undefined
+  resume?: UploadResume | undefined
   /** The bytes are in storage under this slot: a failed finalize (a session that ended meanwhile) can resume it. */
-  onStored?: (slot: string) => void
+  onStored?: (slot: UploadResume) => void
 }
 
+/** In-memory retry state: completed parts need only assembly and finalize after signing in. */
+export type UploadResume = { id: string; etags?: string[] }
+
 /** PUT with upload progress: fetch has none on HTTP/1.1, so this is the one XMLHttpRequest of the app. */
-function put(url: string, file: File, { onProgress, signal }: UploadOptions): Promise<void> {
+function put(url: string, file: Blob, { onProgress, signal }: UploadOptions, multipart = false): Promise<string> {
   return new Promise((resolve, reject) => {
     signal?.throwIfAborted()
     const request = new XMLHttpRequest()
@@ -130,13 +133,13 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
     // Signed into the URL: exactly the declared type.
     request.setRequestHeader('Content-Type', uploadType(file))
     // The presigned URL writes the object once; a replay answers 412 instead of overwriting.
-    request.setRequestHeader('If-None-Match', '*')
+    if (!multipart) request.setRequestHeader('If-None-Match', '*')
     request.upload.addEventListener('progress', event => {
       if (event.lengthComputable) onProgress?.(event.loaded / event.total)
     })
     request.addEventListener('load', () =>
       request.status >= 200 && request.status < 300
-        ? resolve()
+        ? resolve(multipart ? (request.getResponseHeader('ETag') ?? '') : '')
         : reject(
             new ApiError({
               status: request.status,
@@ -154,6 +157,48 @@ function put(url: string, file: File, { onProgress, signal }: UploadOptions): Pr
     request.addEventListener('loadend', () => signal?.removeEventListener('abort', abort), { once: true })
     request.send(file)
   })
+}
+
+async function putMultipart(created: CreatedUpload, file: File, options: UploadOptions): Promise<string[]> {
+  const multipart = created.multipart
+  if (!multipart) return []
+  try {
+    const etags: string[] = []
+    let reported = 0
+    for (const [index, url] of multipart.part_urls.entries()) {
+      const start = index * multipart.part_size_bytes
+      const part = file.slice(start, start + multipart.part_size_bytes, uploadType(file))
+      let etag = ''
+      for (let attempt = 0; ; attempt += 1) {
+        options.signal?.throwIfAborted()
+        try {
+          etag = await put(
+            storageUrl(url),
+            part,
+            {
+              ...options,
+              onProgress: fraction => {
+                reported = Math.max(reported, (start + fraction * part.size) / file.size)
+                options.onProgress?.(reported)
+              },
+            },
+            true,
+          )
+          break
+        } catch (error) {
+          options.signal?.throwIfAborted()
+          if (attempt >= 2 || (error instanceof ApiError && error.status > 0 && error.status < 500)) throw error
+        }
+      }
+      if (!etag) throw new Error('storage PUT returned no ETag')
+      etags.push(etag)
+    }
+    return etags
+  } catch (error) {
+    // Best effort; the server reaps parts if this request cannot reach it.
+    await abortMultipartUpload({ path: { upload_id: created.id }, throwOnError: true }).catch(() => undefined)
+    throw error
+  }
 }
 
 /**
@@ -175,19 +220,34 @@ export async function upload(
   let slot = options.resume
   if (!slot) {
     const { data: created } = await createUpload({
-      body: { purpose, mime: uploadType(file), size_bytes: file.size },
+      body: {
+        purpose,
+        mime: uploadType(file),
+        size_bytes: file.size,
+        ...(purpose === 'block-video' && file.size > 32 * MB ? { multipart: true } : {}),
+      },
       signal: options.signal,
       throwOnError: true,
     })
-    await put(storageUrl(created.put_url), file, options)
-    slot = created.id
+    if (created.multipart) slot = { id: created.id, etags: await putMultipart(created, file, options) }
+    else {
+      await put(storageUrl(created.put_url), file, options)
+      slot = { id: created.id }
+    }
     options.onStored?.(slot)
   }
   options.signal?.throwIfAborted()
+  if (slot.etags)
+    await completeMultipartUpload({
+      path: { upload_id: slot.id },
+      body: { etags: slot.etags },
+      signal: options.signal,
+      throwOnError: true,
+    })
   // The slot id is the retry token: a repeated finalize replays the first answer instead of a 409.
   const { data } = await finalizeUpload({
-    path: { upload_id: slot },
-    headers: { 'Idempotency-Key': slot },
+    path: { upload_id: slot.id },
+    headers: { 'Idempotency-Key': slot.id },
     signal: options.signal,
     throwOnError: true,
   })

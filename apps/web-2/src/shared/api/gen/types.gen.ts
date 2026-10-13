@@ -1481,6 +1481,13 @@ export type CommonFailureRow = {
 
 export type Compare = 'previous_period' | 'none';
 
+export type CompleteMultipartRequest = {
+    /**
+     * ETag returned by each storage PUT, ordered by part number.
+     */
+    etags: Array<string>;
+};
+
 export type CompletionRule = 'viewed' | 'submitted' | 'graded' | 'passed' | 'teacher_verified';
 
 export type Confidence = 'low' | 'medium' | 'high';
@@ -2203,6 +2210,10 @@ export type CreateRoleRequest = {
 export type CreateUploadRequest = {
     mime: string;
     /**
+     * Videos may use 32 MiB parts to fit the outer proxy's request limit.
+     */
+    multipart?: boolean;
+    /**
      * One of: avatar, course-thumbnail, block-image, block-pdf, block-video,
      * file-submission.
      */
@@ -2237,6 +2248,11 @@ export type CreateUsergroupRequest = {
 export type CreatedUpload = {
     id: string;
     key: string;
+    /**
+     * Present for a multipart intent. PUT each slice in order, without
+     * If-None-Match, then complete with the returned ETags before finalize.
+     */
+    multipart?: MultipartUpload;
     /**
      * PUT the file bytes here (presigned; valid for ~15 minutes) with the
      * declared `Content-Type` and `If-None-Match: *` - the URL writes the
@@ -3821,6 +3837,14 @@ export type MoveChapterRequest = {
      * 1-based target position.
      */
     position: number;
+};
+
+export type MultipartUpload = {
+    part_size_bytes: number;
+    /**
+     * Signed URLs valid for the intent's 12 hour claim window.
+     */
+    part_urls: Array<string>;
 };
 
 export type NextAction = {
@@ -15606,6 +15630,78 @@ export type FinalizeUploadResponses = {
 };
 
 export type FinalizeUploadResponse = FinalizeUploadResponses[keyof FinalizeUploadResponses];
+
+export type AbortMultipartUploadData = {
+    body?: never;
+    path: {
+        /**
+         * Upload id
+         */
+        upload_id: string;
+    };
+    query?: never;
+    url: '/api/v2/uploads/{upload_id}/multipart';
+};
+
+export type AbortMultipartUploadErrors = {
+    /**
+     * Not your upload
+     */
+    403: Problem;
+    /**
+     * Intent expired or finalized
+     */
+    409: Problem;
+};
+
+export type AbortMultipartUploadError = AbortMultipartUploadErrors[keyof AbortMultipartUploadErrors];
+
+export type AbortMultipartUploadResponses = {
+    /**
+     * Multipart upload cancelled
+     */
+    204: void;
+};
+
+export type AbortMultipartUploadResponse = AbortMultipartUploadResponses[keyof AbortMultipartUploadResponses];
+
+export type CompleteMultipartUploadData = {
+    body: CompleteMultipartRequest;
+    path: {
+        /**
+         * Upload id
+         */
+        upload_id: string;
+    };
+    query?: never;
+    url: '/api/v2/uploads/{upload_id}/multipart';
+};
+
+export type CompleteMultipartUploadErrors = {
+    /**
+     * Not your upload
+     */
+    403: Problem;
+    /**
+     * Intent expired or finalized
+     */
+    409: Problem;
+    /**
+     * Invalid parts
+     */
+    422: Problem;
+};
+
+export type CompleteMultipartUploadError = CompleteMultipartUploadErrors[keyof CompleteMultipartUploadErrors];
+
+export type CompleteMultipartUploadResponses = {
+    /**
+     * Parts assembled
+     */
+    204: void;
+};
+
+export type CompleteMultipartUploadResponse = CompleteMultipartUploadResponses[keyof CompleteMultipartUploadResponses];
 
 export type ListUsergroupsData = {
     body?: never;

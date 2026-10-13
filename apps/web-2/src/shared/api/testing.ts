@@ -24,6 +24,9 @@ export class FakeStorage extends EventTarget {
   setRequestHeader(name: string, value: string) {
     this.headers.set(name, value)
   }
+  getResponseHeader(name: string) {
+    return name === 'ETag' ? '"0123456789abcdef0123456789abcdef"' : null
+  }
   abort() {
     this.dispatchEvent(new Event('abort'))
   }
