@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vite-plus/test'
+import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 
 import {
   formatDate,
@@ -56,5 +56,26 @@ describe('formatFileSize', () => {
     expect(formatFileSize(12, 'en')).toBe('12 byte')
     expect(formatFileSize(450.5 * 1024 * 1024, 'ru')).toBe('450,5 МБ')
     expect(formatFileSize(2048 * 1024 * 1024, 'kk')).toBe(formatFileSize(2048 * 1024 * 1024, 'ru'))
+  })
+})
+
+describe('independent of the runtime tzdata', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  // 2026-10-13T19:30:00Z: 00:30 on the 14th at UTC+5, 01:30 at the pre-2024 UTC+6.
+  const EVENING = 1_791_919_800
+
+  test('a browser that still puts Asia/Almaty at UTC+6 renders what the server renders', () => {
+    const fresh = [formatDateTime(EVENING, 'ru'), formatDayMonth(EVENING, 'en'), formatDate(EVENING, 'kk')]
+    expect(fresh).toEqual(['14 октября 2026 г., 00:30', 'Oct 14', '2026 ж. 14 қазан'])
+    // Linux WebKit (system ICU 74) and older iOS: tzdata before 2024a.
+    const Real = Intl.DateTimeFormat
+    // A function, not an arrow: the code under test calls it with `new`.
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function stale(locales, options) {
+      return new Real(locales, options?.timeZone === 'Asia/Almaty' ? { ...options, timeZone: 'Etc/GMT-6' } : options)
+    })
+    expect([formatDateTime(EVENING, 'ru'), formatDayMonth(EVENING, 'en'), formatDate(EVENING, 'kk')]).toEqual(fresh)
+    expect(toDateTimeInput(EVENING)).toBe('2026-10-14T00:30')
+    expect(fromDateTimeInput('2026-10-14T00:30')).toBe(EVENING)
   })
 })

@@ -1,8 +1,13 @@
 import { getLocale } from '#/paraglide/runtime'
 
-// One zone for every date on the server and in the browser: deadlines are unambiguous and SSR matches hydration.
-// Exported for APIs that bucket by calendar day (analytics `?timezone=`).
+// The platform's zone, for APIs that bucket by calendar day (analytics `?timezone=`; the server's tzdata is current).
 export const PLATFORM_TIME_ZONE = 'Asia/Almaty'
+
+// Every date shown, on the server and in the browser, is formatted at the platform's fixed offset: deadlines are
+// unambiguous and SSR matches hydration. Not by the 'Asia/Almaty' name: Kazakhstan moved to UTC+5 in March 2024,
+// and a browser with older tzdata (Linux WebKit on system ICU 74, older iOS/Safari) still puts it at UTC+6, an hour
+// and in the evening a day off. 'Etc/GMT-5' is UTC+5 in every tzdata (POSIX sign: minus is east).
+const FORMAT_TIME_ZONE = 'Etc/GMT-5'
 
 // Chromium ships no kk ICU data (it prints "2026 M02 1"), Node does: kk dates come from this table on
 // both sides so SSR and hydration agree (spec 12, Ф0 fallback; DECISIONS.md "Web (stage 2)").
@@ -26,7 +31,7 @@ function kkParts(epochMs: number) {
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
-    timeZone: PLATFORM_TIME_ZONE,
+    timeZone: FORMAT_TIME_ZONE,
   }).formatToParts(epochMs)
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value
   return { year: part('year'), day: part('day'), month: KK_MONTHS[Number(part('month')) - 1] }
@@ -50,7 +55,7 @@ export function formatNumber(value: number, { signed = false } = {}, locale: str
 export function formatDate(unixSeconds: number, locale: string = getLocale()): string {
   const epochMs = unixSeconds * 1000
   if (locale === 'kk') return kkDate(epochMs)
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: PLATFORM_TIME_ZONE }).format(epochMs)
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: FORMAT_TIME_ZONE }).format(epochMs)
 }
 
 /** Day and month without the year, for chart axes and dense rows, e.g. "1 февр." / "Feb 1" / "1 ақпан". */
@@ -60,9 +65,7 @@ export function formatDayMonth(unixSeconds: number, locale: string = getLocale()
     const { day, month } = kkParts(epochMs)
     return `${day} ${month}`
   }
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: PLATFORM_TIME_ZONE }).format(
-    epochMs,
-  )
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: FORMAT_TIME_ZONE }).format(epochMs)
 }
 
 /** Wall-clock parts of an instant in the platform zone, zero-padded, 24 h. */
@@ -74,7 +77,7 @@ function platformParts(epochMs: number) {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-    timeZone: PLATFORM_TIME_ZONE,
+    timeZone: FORMAT_TIME_ZONE,
   }).formatToParts(epochMs)
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(entry => entry.type === type)?.value ?? ''
   return { year: part('year'), month: part('month'), day: part('day'), hour: part('hour'), minute: part('minute') }

@@ -32,6 +32,7 @@ import { useQAThreads } from '../api/use-qa-threads'
 import { QAInput } from './qa-input'
 import { QAMessageView } from './qa-message'
 import type { QAMessage, QAThreadSummary } from '../lib/types'
+import { formatTimeZone } from '@/i18n/config'
 
 export function QAPanel({ activityUuid, courseUuid }: { activityUuid?: string | null; courseUuid: string }) {
   const t = useTranslations('AiExperience.qaInput')
@@ -260,6 +261,7 @@ function QAThreadList({
       new Intl.DateTimeFormat(locale, {
         month: 'short',
         day: 'numeric',
+        timeZone: formatTimeZone,
       }),
     [locale],
   )

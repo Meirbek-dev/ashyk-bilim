@@ -55,6 +55,7 @@ import { cn } from '@/lib/utils'
 import { CalendarDateTimePicker } from '@/components/ui/calendar'
 import { canConfirmLifecycleChange, isHighStakesAssessment } from './publishGateUtils'
 import { Link } from '@/i18n/navigation'
+import { formatTimeZone } from '@/i18n/config'
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
 type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED'
@@ -534,6 +535,7 @@ function formatAuditDate(value: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: formatTimeZone,
   }).format(new Date(value))
 }
 

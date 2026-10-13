@@ -7,6 +7,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import type { TimeSeriesPoint } from '@/types/analytics'
 import { useFormatter, useLocale } from 'next-intl'
+import { formatTimeZone } from '@/i18n/config'
 
 interface EngagementAreaChartProps {
   title: string
@@ -21,6 +22,7 @@ export default function EngagementAreaChart({ title, description, data }: Engage
     bucket: fromUnix(point.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
+      timeZone: formatTimeZone,
     }),
     value: point.value,
   }))

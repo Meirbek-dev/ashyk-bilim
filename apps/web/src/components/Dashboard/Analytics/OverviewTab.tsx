@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { AlertCircle, Activity } from 'lucide-react'
+import { formatTimeZone } from '@/i18n/config'
 
 const AnalyticsMultiSeriesTrendChart = lazy(() => import('./AnalyticsMultiSeriesTrendChart'))
 const GradingBacklogPanel = lazy(() => import('./GradingBacklogPanel'))
@@ -67,6 +68,7 @@ export default function OverviewTab({ query, data }: OverviewTabProps) {
     bucket: fromUnix(bucketStart).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
+      timeZone: formatTimeZone,
     }),
     active_learners: activeMap.get(bucketStart) ?? 0,
     completions: completionsMap.get(bucketStart) ?? 0,

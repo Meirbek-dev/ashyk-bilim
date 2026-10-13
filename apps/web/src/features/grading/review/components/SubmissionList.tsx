@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { useSession } from '@/hooks/useSession'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
 import type { StatusFilter, SubmissionListProps } from '../types'
+import { formatTimeZone } from '@/i18n/config'
 
 export default function SubmissionList({
   submissions,
@@ -197,5 +198,6 @@ function formatDate(
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: formatTimeZone,
   }).format(date)
 }

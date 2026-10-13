@@ -15,6 +15,7 @@ import NextImage from '@components/ui/NextImage'
 import { Label } from '@/components/ui/label'
 import Link from '@components/ui/AppLink'
 import type React from 'react'
+import { formatTimeZone } from '@/i18n/config'
 
 interface CertificateVerificationPageProps {
   certificateUuid: string
@@ -317,6 +318,7 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
+                        timeZone: formatTimeZone,
                       })}
                     </span>
                   </div>

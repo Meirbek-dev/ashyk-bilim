@@ -14,6 +14,7 @@ import type { TeacherAssessmentDetailResponse } from '@/types/analytics'
 import { Download, RotateCcw, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { formatTimeZone } from '@/i18n/config'
 
 interface AssessmentOperationsPanelProps {
   detail: TeacherAssessmentDetailResponse
@@ -199,7 +200,7 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
     ]
     // UX-142: the labels the panel shows, never the wire codes.
     const rows = filteredAuditHistory.map(event => [
-      fromUnix(event.occurred_at_unix).toLocaleString(locale),
+      fromUnix(event.occurred_at_unix).toLocaleString(locale, { timeZone: formatTimeZone }),
       getAnalyticsCodeLabel(t, event.source),
       event.status ? getAnalyticsCodeLabel(t, event.status) : '',
       getAnalyticsCodeLabel(t, event.action),

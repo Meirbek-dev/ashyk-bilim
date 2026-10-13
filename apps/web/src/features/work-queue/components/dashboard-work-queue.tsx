@@ -12,6 +12,7 @@ import { LmsStatusBadge, LmsStatuses } from '@/features/lms-status'
 import { cn } from '@/lib/utils'
 
 import type { DashboardToolItem, WorkQueueAudience, WorkQueueItem, WorkQueueSection } from '../types'
+import { formatTimeZone } from '@/i18n/config'
 
 interface DashboardWorkQueueProps {
   sections: WorkQueueSection[]
@@ -155,7 +156,9 @@ function WorkQueueRow({ item }: { item: WorkQueueItem }) {
               <CalendarClock className="size-3.5" aria-hidden />
               {/* Chromium ships no kk ICU data («2026 M09 11» vs Node's «2026 ж. 11 қыр.»); keep the server text. */}
               <span suppressHydrationWarning>
-                {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(timestamp))}
+                {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: formatTimeZone }).format(
+                  new Date(timestamp),
+                )}
               </span>
             </time>
           ) : null}

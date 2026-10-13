@@ -4,6 +4,7 @@ import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications'
+import { formatTimeZone } from '@/i18n/config'
 import { CertificatePdfDownloadButton } from '@/features/certifications/components/CertificatePdfDownloadButton'
 import Link from '@components/ui/AppLink'
 import { useSyncExternalStore } from 'react'
@@ -88,8 +89,8 @@ const UserCertificates: React.FC = () => {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            // Use Almaty timezone to avoid ENVIRONMENT_FALLBACK errors and match the platform locale
-            timeZone: 'Asia/Almaty',
+            // The platform's fixed offset (avoids ENVIRONMENT_FALLBACK errors; see formatTimeZone).
+            timeZone: formatTimeZone,
           })
 
           return (

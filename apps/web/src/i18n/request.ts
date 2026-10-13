@@ -1,7 +1,7 @@
 import { hasLocale } from 'next-intl'
 import type { AbstractIntlMessages } from 'next-intl'
 import { getRequestConfig } from 'next-intl/server'
-import { defaultTimeZone } from './config'
+import { formatTimeZone } from './config'
 import { inlangToIcu } from './inlang-to-icu'
 import { routing } from './routing'
 
@@ -30,6 +30,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
   return {
     locale,
     messages: await loadMessages(locale),
-    timeZone: defaultTimeZone,
+    timeZone: formatTimeZone,
   }
 })

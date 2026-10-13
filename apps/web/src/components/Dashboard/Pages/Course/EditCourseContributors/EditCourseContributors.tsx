@@ -42,13 +42,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Contributor, UpdateContributorRequest } from '@/lib/api/generated/zod'
-import type { Locale } from '@/i18n/config'
+import { formatTimeZone, type Locale } from '@/i18n/config'
 import { toast } from 'sonner'
 
 const ASSIGNABLE_ROLES: NonNullable<UpdateContributorRequest['role']>[] = ['contributor', 'maintainer', 'reporter']
 
 const formatDate = (unix: number, locale: Locale) =>
-  new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+  new Date(unix * 1000).toLocaleDateString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: formatTimeZone,
+  })
 
 const statusTone = (status: string) => (status === 'active' ? 'success' : status === 'pending' ? 'warning' : 'info')
 

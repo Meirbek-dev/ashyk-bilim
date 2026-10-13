@@ -63,6 +63,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { formatTimeZone } from '@/i18n/config'
 
 interface ManageableCourse extends Course {
   course_uuid: string
@@ -543,7 +544,7 @@ function CoursesHome({
         cell: ({ row }) => (
           <div className="text-muted-foreground text-sm">
             {row.original.update_date
-              ? new Date(row.original.update_date).toLocaleDateString(locale)
+              ? new Date(row.original.update_date).toLocaleDateString(locale, { timeZone: formatTimeZone })
               : t('table.unknownDate')}
           </div>
         ),

@@ -41,6 +41,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { formatTimeZone } from '@/i18n/config'
 
 const PAGE_SIZE = 50
 const MAX_CSV_BYTES = 1024 * 1024
@@ -205,8 +206,8 @@ export default function CourseLearners() {
         l.display_name,
         l.username,
         l.email,
-        // The local day, as on the page («sv-SE» prints YYYY-MM-DD), not the UTC one.
-        new Date(l.enrolled_at_unix * 1000).toLocaleDateString('sv-SE'),
+        // The platform's day, as on the page («sv-SE» prints YYYY-MM-DD), not the UTC one.
+        new Date(l.enrolled_at_unix * 1000).toLocaleDateString('sv-SE', { timeZone: formatTimeZone }),
         l.progress_pct === null ? '' : Math.round(l.progress_pct),
       ])
       const header = [t('colName'), t('colUsername'), t('colEmail'), t('colEnrolled'), `${t('colProgress')}, %`]

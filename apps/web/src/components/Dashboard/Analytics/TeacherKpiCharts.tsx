@@ -10,6 +10,7 @@ import KpiHealthRingsChart from './KpiHealthRingsChart'
 import KpiHealthRadarChart from './KpiHealthRadarChart'
 import { useLocale, useTranslations } from 'next-intl'
 import KpiCompletionGauge from './KpiCompletionGauge'
+import { formatTimeZone } from '@/i18n/config'
 
 interface TeacherKpiChartsProps {
   metrics: {
@@ -65,6 +66,7 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
     bucket: fromUnix(p.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
+      timeZone: formatTimeZone,
     }),
     submissions: p.value,
     grading: gradingMap.get(p.bucket_start_unix) ?? 0,
@@ -75,6 +77,7 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
     bucket: fromUnix(p.bucket_start_unix).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
+      timeZone: formatTimeZone,
     }),
     active: p.value,
   }))

@@ -45,6 +45,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { countItemActionPrompts, getItemActionPrompt, summarizeIntegrityEvents } from './operateViewUtils'
 import { ITEM_KIND_LABEL_KEYS, type UnifiedItemKind } from '@/features/assessments/domain/items'
 import { usePercentFormat } from '@/features/assessments/shared/usePercentFormat'
+import { formatTimeZone } from '@/i18n/config'
 
 const itemAnalyticsQueryOptions = (assessmentUuid: string) =>
   queryOptions({
@@ -629,5 +630,6 @@ function formatDate(value: string | null | undefined, locale: string) {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: formatTimeZone,
   }).format(new Date(value))
 }

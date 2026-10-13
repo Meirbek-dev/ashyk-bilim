@@ -198,7 +198,7 @@ const lint: OxlintConfig = {
     },
     { files: ['src/shared/lib/client-errors.ts'], rules: { 'no-restricted-globals': restrictGlobals('location') } },
     {
-      files: ['src/shared/i18n/format.ts'],
+      files: ['src/shared/i18n/format.ts', 'src/shared/i18n/format.test.ts'],
       rules: {
         'no-restricted-globals': restrictGlobals('Intl'),
         'no-restricted-properties': restrictProperties('toLocaleString', 'toLocaleDateString', 'toLocaleTimeString'),
