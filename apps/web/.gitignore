@@ -61,3 +61,6 @@ e2e/.env.test.local
 # E2E HTML reports
 /reports/e2e-html/
 /reports/e2e-results.json
+
+# `just stack up <slot>` for slot > 0 (next.config.ts typescript.tsconfigPath)
+/tsconfig.slot*.json

@@ -1,5 +1,6 @@
 // `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`: Playwright against a PRODUCTION build
-// (web-2: `vp build` + serve.ts behind e2e/prod-stand.ts; legacy: `next build` + `next start`) and its own API +
+// (web-2: `vp build` + serve.ts behind e2e/prod-stand.ts; legacy: `next build` + `next start`, beside slot 0's
+// `next dev`, which writes .next/dev) and its own API +
 // worker on a fresh database cloned from ashyq_seed (infra/dev/db.ts). Builds only when sources changed.
 // `just e2e-dev [web2|web] [--slot N] [args]`: Playwright against a running `just stack up` slot's dev servers.
 // Ports of a prod run: slot N = API 8005+10N, stand 3105+10N (web-2 serve.ts 3106+10N), legacy 3205+10N.
@@ -258,7 +259,6 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     } else {
       const app = join(root, 'apps/web')
       const web = {
-        NEXT_DIST_DIR: '.next-e2e',
         NEXT_PUBLIC_API_URL: `http://localhost:${ports.api}/api/v2/`,
         INTERNAL_API_URL: `http://127.0.0.1:${ports.api}/api/v2/`,
         NEXT_PUBLIC_SITE_URL: `${origin}/`,
@@ -268,7 +268,7 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
         NEXT_TELEMETRY_DISABLED: '1',
       }
       // NEXT_PUBLIC_* are baked into the build: the ports are part of the stamp.
-      buildIfChanged('apps/web', JSON.stringify(ports), join(app, '.next-e2e/BUILD_ID'), dir, () =>
+      buildIfChanged('apps/web', JSON.stringify(ports), join(app, '.next/BUILD_ID'), dir, () =>
         run([process.execPath, 'x', 'next', 'build'], { cwd: app, env: web, log: join(dir, 'build.log') }),
       )
       start('web', [process.execPath, 'x', 'next', 'start', '-p', String(ports.web)], app, web, dir)

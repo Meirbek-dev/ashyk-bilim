@@ -29,8 +29,10 @@ const imageRemotePatterns = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  // `just stack up <slot>` / `just e2e web`: one `next dev` or build per output folder (gitignored `.next-*`).
+  // `just stack up <slot>` for slot > 0: one `next dev` per output folder (gitignored `.next-*`), and its own
+  // gitignored tsconfig copy, which next rewrites with that folder's type includes (tsconfig.json stays untouched).
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  typescript: { tsconfigPath: process.env.NEXT_TSCONFIG_PATH || 'tsconfig.json' },
   devIndicators: false,
   // Server action arguments include credentials.
   logging: { serverFunctions: false },

@@ -224,6 +224,14 @@ interface UpOptions {
   seed: boolean
 }
 
+/** apps/web/tsconfig.slot<N>.json (gitignored): extends tsconfig.json; next adds the slot's type folders to it. */
+function slotTsconfig(slot: string): string {
+  const name = `tsconfig.slot${slot}.json`
+  const path = join(root, 'apps/web', name)
+  if (!existsSync(path)) writeFileSync(path, '{ "extends": "./tsconfig.json" }\n')
+  return name
+}
+
 function services(o: UpOptions, env: Record<string, string>): ServiceSpec[] {
   const ports = slotPorts(Number(o.slot))
   const dir = slotDir(o.slot)
@@ -268,8 +276,8 @@ function services(o: UpOptions, env: Record<string, string>): ServiceSpec[] {
         APP_URL: `http://localhost:${ports.web}`,
         CONTENT_REWRITE_TARGET: `${env['AB__STORAGE__ENDPOINT']}/${env['AB__STORAGE__PUBLIC_BUCKET']}`,
         NEXT_TELEMETRY_DISABLED: '1',
-        // One `next dev` per output folder: slots other than 0 build into their own.
-        ...(o.slot === '0' ? {} : { NEXT_DIST_DIR: `.next-slot${o.slot}` }),
+        // One `next dev` per output folder: slots other than 0 build into their own (next.config.ts).
+        ...(o.slot === '0' ? {} : { NEXT_DIST_DIR: `.next-slot${o.slot}`, NEXT_TSCONFIG_PATH: slotTsconfig(o.slot) }),
       },
       log: join(dir, 'web.log'),
       health: `http://localhost:${ports.web}/favicon.ico`,
