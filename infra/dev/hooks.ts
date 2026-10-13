@@ -23,10 +23,17 @@ function sync(cmd: string[], cwd?: string, env: Record<string, string> = {}): { 
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}`.trim() }
 }
 
+// Tools never see the hook's GIT_INDEX_FILE & co.: a tool (or test) that runs git elsewhere must not reach this repo.
+const toolEnv = {
+  ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))),
+  NO_COLOR: '1',
+  FORCE_COLOR: '0',
+}
+
 async function run(name: string, cmd: string[], cwd: string, fix?: string): Promise<Result> {
   const p = Bun.spawn(cmd, {
     cwd,
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+    env: toolEnv,
     stdout: 'pipe',
     stderr: 'pipe',
   })
@@ -93,31 +100,52 @@ function migrationEdits(): string[] {
     })
 }
 
-// Check out `tree` into tmp/hooks/<name> with its own index (incremental after the first run, ~0.2 s).
-// pre-commit and pre-push use separate dirs; git's index.lock serializes commits within one worktree.
-function snapshot(tree: string, name: string, paraglide: boolean): { snap: string; index: string } {
-  const hooks = join(top, 'tmp', 'hooks')
-  const snap = join(hooks, name)
-  const index = join(hooks, `${name}.index`)
+// Check out `tree` into tmp/hooks/snap with its own index (incremental after the first run, ~0.2 s). Commits within
+// one worktree are serialized by git's index.lock.
+function snapshot(tree: string): string {
+  const snap = join(top, 'tmp', 'hooks', 'snap')
   mkdirSync(snap, { recursive: true })
+  const index = join(top, 'tmp', 'hooks', 'snap.index')
   const read = sync(['git', `--work-tree=${snap}`, 'read-tree', '--reset', '-u', tree], top, { GIT_INDEX_FILE: index })
   if (read.code !== 0) throw new Error(`git read-tree: ${read.out}`)
-  for (const dir of ['.', 'apps/web', 'apps/web-2']) {
-    const real = join(top, dir, 'node_modules')
-    const link = join(snap, dir, 'node_modules')
-    if (exists(real) && exists(dirname(link)) && !exists(link)) symlinkSync(real, link, 'junction') // symlink off Windows
+  return snap
+}
+
+// The pushed commit as a detached linked worktree (tmp/hooks/push): git works there as in any checkout, and no
+// GIT_* environment exists that a check (or a test running `git init`) could turn against this repository.
+// Cargo shares the target dir of the main checkout (apps/server/justfile's default) instead of a cold one there.
+const cargoTarget =
+  process.env['CARGO_TARGET_DIR'] ??
+  (process.platform === 'win32'
+    ? join(process.env['LOCALAPPDATA'] ?? top, 'ashyq-bilim', 'cargo-target')
+    : join(top, 'apps', 'server', 'target'))
+
+function pushCheckout(sha: string): string {
+  const dir = join(top, 'tmp', 'hooks', 'push')
+  const cmd = exists(join(dir, '.git'))
+    ? ['git', '-C', dir, 'checkout', '--detach', '--force', '--quiet', sha]
+    : ['git', 'worktree', 'add', '--detach', '--force', dir, sha]
+  const step = Bun.spawnSync(cmd, { cwd: top, env: toolEnv, stdout: 'pipe', stderr: 'pipe' })
+  if (step.exitCode !== 0) throw new Error(`${cmd.join(' ')}: ${step.stderr.toString()}`)
+  return dir
+}
+
+// node_modules links (junction on Windows, symlink elsewhere) and web-2's gitignored Paraglide output, regenerated
+// when the checked-out catalogs changed.
+function prepare(dir: string, tree: string, paraglide: boolean): void {
+  for (const sub of ['.', 'apps/web', 'apps/web-2']) {
+    const real = join(top, sub, 'node_modules')
+    const link = join(dir, sub, 'node_modules')
+    if (exists(real) && exists(dirname(link)) && !exists(link)) symlinkSync(real, link, 'junction')
   }
-  // web-2's Paraglide output is gitignored: generate it from the checked-out catalogs when they changed.
   const messages = git('rev-parse', '-q', '--verify', `${tree}:apps/web-2/messages`).out
-  const stamp = join(hooks, `${name}.paraglide`)
-  const output = join(snap, 'apps/web-2/src/paraglide')
-  const stale = !exists(output) || !exists(stamp) || readFileSync(stamp, 'utf8') !== messages
+  const stamp = join(dir, 'apps/web-2/src/paraglide/.hook-stamp')
+  const stale = !exists(stamp) || readFileSync(stamp, 'utf8') !== messages
   if (paraglide && messages && stale) {
-    const gen = sync(['bun', 'gates/codegen.ts', 'messages'], join(snap, 'apps/web-2'))
+    const gen = sync(['bun', 'gates/codegen.ts', 'messages'], join(dir, 'apps/web-2'))
     if (gen.code !== 0) throw new Error(`web-2 codegen messages: ${gen.out}`)
     writeFileSync(stamp, messages)
   }
-  return { snap, index }
 }
 
 function web2(snap: string, files: string[]): Promise<Result>[] {
@@ -223,7 +251,8 @@ async function preCommit(): Promise<number> {
   if (files.web2.length || files.web.length || files.server.some(f => f.endsWith('.rs'))) {
     const tree = git('write-tree') // the index being committed (GIT_INDEX_FILE)
     if (tree.code !== 0) throw new Error(`git write-tree: ${tree.out}`)
-    const { snap } = snapshot(tree.out, 'snap', files.web2.length > 0)
+    const snap = snapshot(tree.out)
+    prepare(snap, tree.out, files.web2.length > 0)
     results.push(
       ...(await Promise.all([...web2(snap, files.web2), ...web(snap, files.web), ...server(snap, files.server)])),
     )
@@ -232,7 +261,7 @@ async function preCommit(): Promise<number> {
 }
 
 // stdin: "<local ref> <local sha> <remote ref> <remote sha>" per pushed ref. `just check --base <remote sha>` runs in
-// a checkout of the pushed commit (tmp/hooks/push, git pointed at it), so uncommitted work in the tree is not checked.
+// a detached worktree of the pushed commit (tmp/hooks/push), so uncommitted work in this tree is not checked.
 async function prePush(): Promise<number> {
   if (process.env['CI']) return 0
   const zero = /^0+$/
@@ -267,13 +296,12 @@ async function prePush(): Promise<number> {
     }
   }
   try {
-    const { snap, index } = snapshot(`${local}^{tree}`, 'push', true)
+    const dir = pushCheckout(local)
+    prepare(dir, local, true)
     console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
-    const gitDir = git('rev-parse', '--absolute-git-dir').out
-    const env = { ...process.env, GIT_DIR: gitDir, GIT_WORK_TREE: snap, GIT_INDEX_FILE: index }
     const p = Bun.spawn(['bun', 'infra/dev/check.ts', '--base', base], {
-      cwd: snap,
-      env,
+      cwd: dir,
+      env: { ...toolEnv, CARGO_TARGET_DIR: cargoTarget },
       stdout: 'inherit',
       stderr: 'inherit',
     })

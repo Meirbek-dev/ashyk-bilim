@@ -87,8 +87,13 @@ writeFileSync(out + '/zod/a.zod.ts', 'a\\n')
 // The hooks are bun scripts (CI's infra-gates job installs bun). A fake rustfmt fails on files containing BAD.
 test('pre-commit checks the staged snapshot, not the working copy, and refuses edits to pushed migrations', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ashyq-hook-'))
+  // Inside a hook (pre-push runs this suite) GIT_DIR & co. point at the real repository.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
   const git = (...args) => {
-    const result = run('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: dir })
+    const result = run('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], {
+      cwd: dir,
+      env,
+    })
     assert.equal(result.status, 0, result.stderr)
   }
   const lib = join(dir, 'apps/server/src/lib.rs')
@@ -101,7 +106,7 @@ test('pre-commit checks the staged snapshot, not the working copy, and refuses e
   const hook = () =>
     run('sh', ['.vite-hooks/pre-commit'], {
       cwd: dir,
-      env: { ...process.env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` },
+      env: { ...env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` },
     })
   try {
     for (const sub of ['.vite-hooks', 'infra/dev', 'apps/server/src', 'apps/server/migrations', 'bin'])
