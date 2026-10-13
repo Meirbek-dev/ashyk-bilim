@@ -25,12 +25,16 @@
 - Work on `main` (the only branch) with direct commits.
 - Never edit an applied migration; add a new one.
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
-- `just setup` installs pinned tools/dependencies, generates skill copies and enables the commit hook;
+- `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
   `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.
-- Run focused checks during an edit batch. Full web-2 verification runs once in pre-commit, on the working
-  tree, so it refuses staged files that also have unstaged edits; use `just web2 verify` for an uncommitted
-  batch. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs all three);
-  `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
+- Hooks (`.vite-hooks`, `infra/dev/hooks.ts`) check a checkout of what you commit/push, never the working
+  tree, so other people's unstaged work cannot fail them. pre-commit (< 30 s): format + type-aware lint of
+  the staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
+  pre-push: `just check` on the pushed commit (only CI skips it). Never `--no-verify`.
+- `just fmt <files>` formats exactly like the hook (root `vite.config.ts` holds the one web format config,
+  same result from any cwd; rustfmt for `.rs`). `just eol` rewrites CRLF working copies (Windows) as LF.
+- Run focused checks during an edit batch. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs
+  all three); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
 - `.agents/skills` is canonical. `.claude/skills` is an ignored compatibility copy made by
   `just skills-sync`; never edit the copy. Read only the instructions/docs relevant to the task.

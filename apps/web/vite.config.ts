@@ -1,74 +1,7 @@
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
-  fmt: {
-    printWidth: 120,
-    tabWidth: 2,
-    useTabs: false,
-
-    // Reduce syntax noise and token count.
-    semi: false,
-    singleQuote: true,
-    jsxSingleQuote: false,
-    quoteProps: 'as-needed',
-    trailingComma: 'all',
-
-    // Keep JSX/TSX more compact and easier for agents to rewrite.
-    arrowParens: 'avoid',
-    bracketSpacing: true,
-    bracketSameLine: false,
-    singleAttributePerLine: false,
-
-    // Better for diff stability and generated code consistency.
-    endOfLine: 'lf',
-    embeddedLanguageFormatting: 'auto',
-    htmlWhitespaceSensitivity: 'css',
-    proseWrap: 'preserve',
-
-    // Avoid pragma noise.
-    insertPragma: false,
-    requirePragma: false,
-
-    // Sorting improves deterministic generation and merge quality.
-    sortPackageJson: true,
-    sortTailwindcss: true,
-
-    // Remove obsolete / unnecessary defaults.
-    ignorePatterns: [
-      // Dependencies
-      'node_modules',
-      '.pnp',
-      '.pnp.js',
-
-      // Build output
-      '.next',
-      'out',
-      'build',
-      'coverage',
-      '.turbo',
-      '.vercel',
-
-      // Logs & env
-      '.env*',
-      '*.log',
-      'npm-debug.log*',
-
-      // OS / editor
-      '.DS_Store',
-      '.vscode',
-
-      // Infra
-      '.flyio',
-      'fly.toml',
-
-      // Generated files
-      'next-env.d.ts',
-      'lib/api/generated/**',
-
-      // Secrets
-      '*.pem',
-    ],
-  },
+  // fmt: the repo-root vite.config.ts (this package is in the root workspace; `vp check` reads the root block).
   lint: {
     categories: {
       correctness: 'error',

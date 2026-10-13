@@ -14,5 +14,7 @@ for (const line of git('ls-files', '--eol', '-z').split('\0')) {
   fixed.push(path)
 }
 if (fixed.length) Bun.spawnSync(['git', 'add', '--', ...fixed], { stdout: 'inherit', stderr: 'inherit' })
-console.log(`eol: ${fixed.length} file(s) rewritten as LF${fixed.length ? `\n  ${fixed.slice(0, 20).join('\n  ')}` : ''}`)
+console.log(
+  `eol: ${fixed.length} file(s) rewritten as LF${fixed.length ? `\n  ${fixed.slice(0, 20).join('\n  ')}` : ''}`,
+)
 if (fixed.length > 20) console.log(`  ... and ${fixed.length - 20} more`)

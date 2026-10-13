@@ -45,6 +45,10 @@ _setup-repo: skills-sync
 eol:
     bun infra/dev/eol.ts
 
+# Format files the way the commit hook checks them (same result from any cwd): web files, infra/dev, .rs.
+fmt +files:
+    bun infra/dev/hooks.ts fmt "$@"
+
 # Claude compatibility copies are generated; edit only .agents/skills.
 skills-sync:
     node infra/scripts/sync-skills.mjs

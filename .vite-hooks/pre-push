@@ -1,0 +1,3 @@
+#!/bin/sh
+# `just check` on what the push adds (infra/dev/hooks.ts); skipped only in CI (env CI).
+exec bun "$(git rev-parse --show-toplevel)/infra/dev/hooks.ts" pre-push

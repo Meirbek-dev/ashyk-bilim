@@ -9,6 +9,7 @@ import { defineConfig, lazyPlugins } from 'vite-plus'
 import type { OxlintConfig } from 'vite-plus/lint'
 import { playwright } from 'vite-plus/test/browser-playwright'
 
+import { fmt } from './fmt.config.ts'
 import { paraglideOptions } from './gates/codegen.ts'
 import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
@@ -272,29 +273,5 @@ export default defineConfig({
     ],
   },
   lint,
-  fmt: {
-    printWidth: 120,
-    semi: false,
-    singleQuote: true,
-    trailingComma: 'all',
-    arrowParens: 'avoid',
-    endOfLine: 'lf',
-    sortPackageJson: false,
-    sortTailwindcss: { stylesheet: 'src/styles/globals.css' },
-    ignorePatterns: [
-      'src/shared/api/gen*/',
-      'src/paraglide/',
-      'src/routeTree.*.ts',
-      'dist/',
-      'node_modules/',
-      'test-results/',
-      'playwright-report/',
-      'BACKLOG.md',
-      // Generated from the legacy theme store (phase 1.1); byte-stable generator output.
-      'public/themes/',
-      // Stock shadcn output: kept as the CLI writes it, so `shadcn add --diff` shows only real changes.
-      'src/shared/ui/',
-      'components.json',
-    ],
-  },
+  fmt,
 })

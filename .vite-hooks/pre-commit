@@ -1,17 +1,3 @@
 #!/bin/sh
-# Vite+ pre-commit (spec 8.1): when a commit touches apps/web-2, format its staged files and run
-# `vp run verify` once per commit. `just setup` enables it; no edit/Stop hooks repeat it.
-set -eu
-staged=$(git diff --cached --name-only -- apps/web-2)
-[ -n "$staged" ] || exit 0
-# verify reads the working tree: an unstaged edit to a staged file would be verified instead of the commit.
-overlap=$(git diff --name-only -- apps/web-2 | grep -Fx "$staged" || true)
-if [ -n "$overlap" ]; then
-  echo "pre-commit: staged files with unstaged edits; verify would not test what you commit:" >&2
-  echo "$overlap" | sed 's/^/  /' >&2
-  echo "Stage those edits (git add) or set them aside (git stash push --keep-index), then commit again." >&2
-  exit 1
-fi
-cd "$(git rev-parse --show-toplevel)/apps/web-2"
-bun run vp staged
-bun run verify
+# Checks only the staged content, in a checkout of the index (infra/dev/hooks.ts); `just setup` enables it.
+exec bun "$(git rev-parse --show-toplevel)/infra/dev/hooks.ts" pre-commit

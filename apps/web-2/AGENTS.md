@@ -37,7 +37,7 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
 | `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
 | `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
-| `vp run verify`                  | check + test + all gates; pre-commit runs it once, no per-edit/Stop hooks                                          |
+| `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)                      |
 | `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages                                            |
 | `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
 | `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
@@ -113,7 +113,7 @@ PUBLIC_ORIGIN=http://127.0.0.1:3100 INTERNAL_API_URL=http://127.0.0.1:8000 node 
    "Не переносится" (<= 150 lines). Reference: `src/features/collections/`.
 2. Add `messages/{ru,kk,en}/<name>.json` and list the file in `project.inlang/settings.json`.
 3. Build `queries.ts`, `model/` (pure, unit-tested), `ui/`; bind it in `src/routes/`. Each `B-` id is in a test title (G-10).
-4. Focused tests while editing; pre-commit verifies the completed batch. `just ci-web2` also checks build budgets.
+4. Focused tests while editing; pre-commit checks the staged files, pre-push runs `just check` (changes since origin).
 
 Shared code (`shared/`, `styles/`, `gates/`, `vite.config.ts`, this file): parallel slice sessions ask the orchestrator
 for it; a single agent on an owner request is the orchestrator. Gates print `file:line rule - what to do` (<= 30 lines
