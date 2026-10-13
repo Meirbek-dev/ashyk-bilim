@@ -18417,7 +18417,103 @@ expression: json
           "collection-cover",
           "discussion-image"
         ],
-        "type": "string"
+        "type": "string",
+        "x-upload-policy": {
+          "multipart_part_bytes": 33554432,
+          "purposes": {
+            "avatar": {
+              "max_bytes": 5242880,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "block-image": {
+              "max_bytes": 10485760,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "block-pdf": {
+              "max_bytes": 52428800,
+              "mime_types": [
+                "application/pdf"
+              ]
+            },
+            "block-video": {
+              "max_bytes": 2147483648,
+              "mime_types": [
+                "video/mp4",
+                "video/webm",
+                "video/x-matroska",
+                "video/quicktime",
+                "video/x-msvideo",
+                "video/x-flv"
+              ]
+            },
+            "collection-cover": {
+              "max_bytes": 10485760,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "course-thumbnail": {
+              "max_bytes": 10485760,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "discussion-image": {
+              "max_bytes": 5242880,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "file-submission": {
+              "max_bytes": 104857600,
+              "mime_types": []
+            },
+            "platform-logo": {
+              "max_bytes": 10485760,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "platform-thumbnail": {
+              "max_bytes": 10485760,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            }
+          }
+        }
       },
       "UsageSummary": {
         "description": "Platform usage against the monthly budget (legacy `AIUsageSummary`)\nplus the month's heaviest users.",

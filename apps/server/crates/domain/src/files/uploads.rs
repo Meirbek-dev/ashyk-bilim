@@ -56,6 +56,14 @@ pub fn is_purpose(purpose: &str) -> bool {
     policy(purpose).is_some()
 }
 
+/// A purpose's cap in bytes and its accepted content types (empty = any):
+/// exported in the contract (`UploadPurpose`'s `x-upload-policy`), which
+/// both webs generate their pre-upload checks from.
+#[must_use]
+pub fn limits(purpose: &str) -> Option<(i64, &'static [&'static str])> {
+    policy(purpose).map(|(_, max_bytes, mimes)| (max_bytes, mimes))
+}
+
 /// (bucket, max bytes, allowed content types - exact match; empty = any).
 fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
     match purpose {

@@ -100,6 +100,7 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
     nullability(&mut doc);
     close_all_of(&mut doc);
     deprecate_renamed(&mut doc);
+    upload_policy(&mut doc);
     if let Some(schemas) = doc
         .pointer_mut("/components/schemas")
         .and_then(Value::as_object_mut)
@@ -113,6 +114,37 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
         );
     }
     doc
+}
+
+/// `UploadPurpose` carries the server's upload policy (`x-upload-policy`):
+/// per purpose the cap and accepted types, plus the multipart part size. The
+/// webs' pre-upload checks are generated from it, so they cannot drift.
+fn upload_policy(doc: &mut Value) {
+    use ab_domain::files::uploads::{MULTIPART_PART_BYTES, limits};
+    let Some(schema) = doc
+        .pointer_mut("/components/schemas/UploadPurpose")
+        .and_then(Value::as_object_mut)
+    else {
+        return;
+    };
+    let purposes: Map<String, Value> = schema
+        .get("enum")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .filter_map(|purpose| {
+            let (max_bytes, mime_types) = limits(purpose)?;
+            Some((
+                purpose.to_owned(),
+                json!({ "max_bytes": max_bytes, "mime_types": mime_types }),
+            ))
+        })
+        .collect();
+    schema.insert(
+        "x-upload-policy".into(),
+        json!({ "multipart_part_bytes": MULTIPART_PART_BYTES, "purposes": purposes }),
+    );
 }
 
 /// An `allOf` of object schemas where one is closed
