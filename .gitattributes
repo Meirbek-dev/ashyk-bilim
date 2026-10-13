@@ -38,3 +38,14 @@ apps/server/migrations/*.sql text eol=lf
 *.dump   binary
 *.sqlite binary
 *.wasm   binary
+
+# Generated from the server contract (`just contract`): collapsed in reviews and stats. On a merge conflict do not
+# hand-merge - take either side and regenerate (`just contract`, `just server prepare`); `-merge` makes git leave the
+# client directories whole instead of writing conflict markers into them.
+apps/server/openapi.v2.json                           linguist-generated
+apps/server/crates/api/tests/snapshots/*.snap         linguist-generated
+apps/server/crates/core/src/error/snapshots/*.snap    linguist-generated
+apps/server/.sqlx/**                                  linguist-generated -diff
+apps/web-2/src/shared/api/gen/**                      linguist-generated -diff -merge
+apps/web-2/src/routeTree.gen.ts                       linguist-generated
+apps/web/src/lib/api/generated/**                     linguist-generated -diff -merge
