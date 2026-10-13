@@ -1917,7 +1917,9 @@ export const usergroupsForCourse = <ThrowOnError extends boolean = false>(option
 });
 
 /**
- * Remove a post with its replies and reactions (owner, or a moderator).
+ * Remove a post with its replies and reactions (owner, or a moderator). A
+ * post other people replied to becomes a tombstone instead (`status`
+ * `deleted`, no text or author) that keeps their replies threaded.
  */
 export const deleteDiscussion = <ThrowOnError extends boolean = false>(options: Options<DeleteDiscussionData, ThrowOnError>): RequestResult<DeleteDiscussionResponses, DeleteDiscussionErrors, ThrowOnError> => (options.client ?? client).delete<DeleteDiscussionResponses, DeleteDiscussionErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vDeleteDiscussionResponse, data),

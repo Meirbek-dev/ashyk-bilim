@@ -114,7 +114,31 @@ impl Abilities {
         }
     }
 
-    fn resolve(self, actor: &Actor, row: DiscussionRow, replies: Vec<Discussion>) -> Discussion {
+    fn resolve(
+        self,
+        actor: &Actor,
+        mut row: DiscussionRow,
+        replies: Vec<Discussion>,
+    ) -> Discussion {
+        if row.status == DiscussionStatus::Deleted {
+            // A tombstone: no text, no author, nothing to do with it.
+            row.content.clear();
+            row.user_id = None;
+            row.username = None;
+            row.display_name = None;
+            row.avatar_key = None;
+            row.my_reaction = None;
+            return Discussion {
+                is_owner: false,
+                can_update: false,
+                can_delete: false,
+                can_moderate: false,
+                allowed_actions: Vec::new(),
+                row,
+                replies,
+                parent_replies_count: None,
+            };
+        }
         let is_owner = row.user_id == Some(actor.user_id);
         let can_update = self.update_any || (is_owner && self.update_own);
         let can_delete = self.delete_any || (is_owner && self.delete_own);
@@ -285,7 +309,7 @@ impl DiscussionsService {
     /// UX-311: [`Self::update`]'s edit gate on its own (the moderator-only
     /// status change still needs the body).
     pub async fn require_editable(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
-        let (row, course) = self.load(actor, id).await?;
+        let (row, course) = self.load_live(actor, id).await?;
         course.ensure_not_archived()?;
         let abilities = Abilities::of(actor, &course, false);
         if abilities.update_any || (row.user_id == Some(actor.user_id) && abilities.update_own) {
@@ -305,12 +329,23 @@ impl DiscussionsService {
         Ok((row, course))
     }
 
-    /// One post (with its active replies) or one reply. Hidden / deleted
-    /// ones are for their author and moderators only (404 otherwise).
+    /// [`Self::load`] refusing a tombstone (404): it is never edited or
+    /// deleted again.
+    async fn load_live(&self, actor: &Actor, id: DiscussionId) -> Result<(DiscussionRow, Course)> {
+        let (row, course) = self.load(actor, id).await?;
+        if row.status == DiscussionStatus::Deleted {
+            return Err(Error::not_found("discussion"));
+        }
+        Ok((row, course))
+    }
+
+    /// One post (with its active replies) or one reply. Hidden ones are for
+    /// their author and moderators only (404 otherwise); a deleted post
+    /// reads as a tombstone.
     pub async fn get(&self, actor: &Actor, id: DiscussionId) -> Result<Discussion> {
         let (row, course) = self.load(actor, id).await?;
         let abilities = self.abilities(actor, &course).await?;
-        if row.status != DiscussionStatus::Active
+        if row.status == DiscussionStatus::Hidden
             && !abilities.moderate
             && row.user_id != Some(actor.user_id)
         {
@@ -409,7 +444,7 @@ impl DiscussionsService {
     ) -> Result<DiscussionPage> {
         let (parent, course) = self.load(actor, id).await?;
         let abilities = self.abilities(actor, &course).await?;
-        if parent.status != DiscussionStatus::Active && !abilities.moderate {
+        if parent.status == DiscussionStatus::Hidden && !abilities.moderate {
             return Err(Error::not_found("discussion"));
         }
         let limit = ab_core::page_limit(limit, MAX_PAGE)?;
@@ -561,7 +596,7 @@ impl DiscussionsService {
         status: Option<DiscussionStatus>,
         upload_ids: &[uuid::Uuid],
     ) -> Result<Discussion> {
-        let (row, course) = self.load(actor, id).await?;
+        let (row, course) = self.load_live(actor, id).await?;
         course.ensure_not_archived()?;
         let abilities = self.abilities(actor, &course).await?;
         let is_owner = row.user_id == Some(actor.user_id);
@@ -599,24 +634,30 @@ impl DiscussionsService {
         Ok(abilities.resolve(actor, fresh, Vec::new()))
     }
 
-    /// Owner or moderator removes the post (replies and reactions go too).
+    /// Owner or moderator removes the post: with its replies and reactions,
+    /// or - when others replied - down to a tombstone that keeps their
+    /// replies threaded (`ab_db::discussions::delete_discussion`).
     pub async fn delete(&self, actor: &Actor, id: DiscussionId) -> Result<()> {
-        let (row, course) = self.load(actor, id).await?;
+        let (row, course) = self.load_live(actor, id).await?;
         course.ensure_not_archived()?;
         let abilities = Abilities::of(actor, &course, false);
         let is_owner = row.user_id == Some(actor.user_id);
         if !(abilities.delete_any || (is_owner && abilities.delete_own)) {
             return Err(Error::forbidden("you cannot delete this discussion"));
         }
-        // LIVE: told after the delete (a deleted post takes its thread with
-        // it, so only a reply's thread or the course graders hear of it).
+        // LIVE: told after the delete (a removed post takes its thread with
+        // it, so only a reply's thread or the course graders hear of it; a
+        // tombstone is an update).
+        let outcome = ab_db::discussions::delete_discussion(&self.pool, id).await?;
+        if outcome == ab_db::discussions::Deleted::Missing {
+            return Err(Error::not_found("discussion"));
+        }
         let payload = crate::events::user::DiscussionUpdated {
             course_id: row.course_id,
             discussion_id: id,
             parent_id: row.parent_id,
-            deleted: true,
+            deleted: outcome == ab_db::discussions::Deleted::Removed,
         };
-        ab_db::discussions::delete_discussion(&self.pool, id).await?;
         crate::events::user::discussion(&self.pool, payload).await;
         Ok(())
     }

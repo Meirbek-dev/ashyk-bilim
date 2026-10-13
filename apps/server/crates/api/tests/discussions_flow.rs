@@ -346,7 +346,9 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
         .await;
     assert_eq!(rehidden.status, StatusCode::OK, "{}", rehidden.text());
 
-    // Deletion: stranger 403, owner 204; replies go with the post.
+    // Deletion: stranger 403, owner 204. Bob replied (even hidden), so the
+    // post stays as a tombstone - no text, no author, no actions - and his
+    // reply stays under it (owner decision 2026-10-14).
     assert_eq!(
         app.delete_as(&bob, &format!("/api/v2/discussions/{post_id}"))
             .await
@@ -359,14 +361,113 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
             .status,
         StatusCode::NO_CONTENT
     );
-    assert_eq!(
-        app.patch_as(
+    let tombstone = app
+        .get_as(&bob, &format!("/api/v2/discussions/{post_id}"))
+        .await;
+    assert_eq!(tombstone.status, StatusCode::OK, "{}", tombstone.text());
+    assert_eq!(tombstone.json()["status"], "deleted");
+    assert_eq!(tombstone.json()["content"], "");
+    assert_eq!(tombstone.json()["author"], serde_json::Value::Null);
+    assert_eq!(tombstone.json()["allowed_actions"], serde_json::json!([]));
+    // Gone for good: neither edited, deleted again nor replied to.
+    for (status, response) in [
+        (
+            StatusCode::NOT_FOUND,
+            app.delete_as(&teacher, &format!("/api/v2/discussions/{post_id}"))
+                .await,
+        ),
+        (
+            StatusCode::NOT_FOUND,
+            app.patch_as(
+                &teacher,
+                &format!("/api/v2/discussions/{post_id}"),
+                &serde_json::json!({ "status": "active" }),
+            )
+            .await,
+        ),
+        (
+            StatusCode::NOT_FOUND,
+            app.post_as(
+                &bob,
+                &format!("/api/v2/courses/{course_id}/discussions"),
+                &serde_json::json!({ "content": "Late", "parent_id": post_id }),
+            )
+            .await,
+        ),
+    ] {
+        assert_eq!(response.status, status, "{}", response.text());
+    }
+    // Only active replies list a tombstone; restoring bob's brings it back.
+    let empty = app
+        .get_as(&alice, &format!("/api/v2/courses/{course_id}/discussions"))
+        .await;
+    assert!(empty.json()["items"].as_array().unwrap().is_empty());
+    let restored = app
+        .patch_as(
             &teacher,
             &format!("/api/v2/discussions/{reply_id}"),
-            &serde_json::json!({ "status": "active" })
+            &serde_json::json!({ "status": "active" }),
         )
-        .await
-        .status,
+        .await;
+    assert_eq!(restored.status, StatusCode::OK, "{}", restored.text());
+    let listed = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions?include_replies=true"),
+        )
+        .await;
+    let items = listed.json()["items"].as_array().unwrap().clone();
+    assert_eq!(items.len(), 1, "{}", listed.text());
+    assert_eq!(items[0]["status"], "deleted");
+    assert_eq!(items[0]["content"], "");
+    assert_eq!(items[0]["replies"][0]["id"], reply_id.as_str());
+    assert_ne!(items[0]["replies"][0]["content"], "");
+    // The last reply going takes the tombstone with it.
+    assert_eq!(
+        app.delete_as(&bob, &format!("/api/v2/discussions/{reply_id}"))
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&bob, &format!("/api/v2/discussions/{post_id}"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+
+    // A post with only its author's own replies goes with them.
+    let solo = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &serde_json::json!({ "content": "Solo" }),
+        )
+        .await;
+    let solo_id = solo.json()["id"].as_str().unwrap().to_owned();
+    let own_reply = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &serde_json::json!({ "content": "Me again", "parent_id": solo_id }),
+        )
+        .await;
+    assert_eq!(
+        own_reply.status,
+        StatusCode::CREATED,
+        "{}",
+        own_reply.text()
+    );
+    assert_eq!(
+        app.delete_as(&alice, &format!("/api/v2/discussions/{solo_id}"))
+            .await
+            .status,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        app.get_as(&alice, &format!("/api/v2/discussions/{solo_id}"))
+            .await
+            .status,
         StatusCode::NOT_FOUND
     );
     let empty = app

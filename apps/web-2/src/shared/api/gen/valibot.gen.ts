@@ -8222,7 +8222,7 @@ export const vDeleteDiscussionPath = v.object({
 });
 
 /**
- * Deleted
+ * Deleted (or left as a tombstone)
  */
 export const vDeleteDiscussionResponse = v.void();
 

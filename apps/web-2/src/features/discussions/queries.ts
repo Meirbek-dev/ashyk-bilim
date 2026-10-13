@@ -125,9 +125,19 @@ export const updatePostOptions = (queryClient: QueryClient, courseId: CourseId) 
   onSuccess: (next: Discussion) => updateList(queryClient, courseId, next)(data => replaceItem(data, next)),
 })
 
+/**
+ * A delete answers 204 whatever it did: a post with replies may stay as a tombstone (others replied), and a reply's
+ * post changes (its count; a tombstone goes with its last reply). Those read the course's posts again.
+ */
 export const deletePostOptions = (queryClient: QueryClient, item: Discussion) => ({
   ...deleteDiscussionMutation(),
-  onSuccess: () => updateList(queryClient, item.course_id, item)(data => removeItem(data, item.id)),
+  onSuccess: () => {
+    if (item.parent_id || item.replies_count === 0)
+      updateList(queryClient, item.course_id, item)(data => removeItem(data, item.id))
+  },
+  meta: {
+    invalidates: item.parent_id || item.replies_count > 0 ? [postsOptions(item.course_id).queryKey] : [],
+  },
 })
 
 const reaction = (queryClient: QueryClient, item: Discussion) => (state: ReactionState) =>
@@ -143,9 +153,9 @@ export const dislikeOptions = (queryClient: QueryClient, item: Discussion) => ({
   onSuccess: reaction(queryClient, item),
 })
 
-/** An open thread: an active top-level post of this course. */
+/** An open thread: an active (or tombstoned) top-level post of this course. */
 export const opensThread = (post: Discussion | null | undefined, courseId: CourseId): post is Discussion =>
-  Boolean(post && post.course_id === courseId && post.parent_id === null && post.status === 'active')
+  Boolean(post && post.course_id === courseId && post.parent_id === null && post.status !== 'hidden')
 
 /**
  * The tab's loader: the first page of posts and the open thread's replies; a thread post that is not on that page is

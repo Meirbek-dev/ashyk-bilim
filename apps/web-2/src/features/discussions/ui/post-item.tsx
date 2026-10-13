@@ -25,13 +25,17 @@ type PostItemProps = {
   open?: boolean
 }
 
-/** One post or reply: author and date, the content, and only the actions its `allowed_actions` lists. */
+/**
+ * One post or reply: author and date, the content, and only the actions its `allowed_actions` lists. A deleted post
+ * other people replied to is a tombstone: «Сообщение удалено» instead of its author and text, its replies still open.
+ */
 export function PostItem({ item, open = false }: PostItemProps) {
   const [editing, setEditing] = useState(false)
   const update = useMutation(updatePostOptions(useQueryClient(), item.course_id))
   const can = (action: DiscussionAction) => item.allowed_actions.includes(action)
   const author = item.author?.display_name ?? m.discussions_unknown_author()
   const hidden = item.status === 'hidden'
+  const removed = item.status === 'deleted'
   const save = (content: string, uploadIds: string[]) =>
     update.mutateAsync(
       { path: { discussion_id: item.id }, body: { content, upload_ids: uploadIds } },
@@ -47,8 +51,14 @@ export function PostItem({ item, open = false }: PostItemProps) {
   return (
     <article className="flex flex-col gap-3">
       <header className="flex flex-wrap items-center gap-2 text-sm">
-        <UserAvatar name={author} avatarKey={item.author?.avatar_key} />
-        <span className="font-medium wrap-anywhere">{author}</span>
+        {removed ? (
+          <span className="text-muted-foreground italic">{m.discussions_post_deleted()}</span>
+        ) : (
+          <>
+            <UserAvatar name={author} avatarKey={item.author?.avatar_key} />
+            <span className="font-medium wrap-anywhere">{author}</span>
+          </>
+        )}
         <span className="text-muted-foreground">{formatDate(item.created_at_unix)}</span>
         {hidden ? <StatusBadge tone="warning">{m.discussions_hidden()}</StatusBadge> : null}
       </header>
@@ -62,14 +72,14 @@ export function PostItem({ item, open = false }: PostItemProps) {
           onCancel={cancel}
           focusOnMount
         />
-      ) : (
+      ) : removed ? null : (
         <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
           <BlockViewer content={item.content} discussion />
         </Suspense>
       )}
       <div className="flex flex-wrap items-center gap-1">
         {can('react') ? <PostReactions item={item} /> : null}
-        {!item.parent_id && item.status === 'active' ? (
+        {!item.parent_id && !hidden ? (
           <RouterLink
             to="/courses/$courseId/discussions"
             params={{ courseId: item.course_id }}

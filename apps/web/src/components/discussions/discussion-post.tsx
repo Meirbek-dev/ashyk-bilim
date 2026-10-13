@@ -107,12 +107,20 @@ export default function DiscussionPost({
       <CardContent className="bg-card text-card-foreground">
         <div className="p-5">
           <div className="flex items-start gap-4">
-            <UserAvatar size="md" variant="default" username={post.username} />
+            {post.deleted ? null : <UserAvatar size="md" variant="default" username={post.username} />}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="text-foreground font-semibold">{getUserDisplayName(post.firstName, post.lastName)}</h4>
-                  <span className="text-muted-foreground text-sm">@{post.username}</span>
+                  {post.deleted ? (
+                    <span className="text-muted-foreground italic">{t('postDeleted')}</span>
+                  ) : (
+                    <>
+                      <h4 className="text-foreground font-semibold">
+                        {getUserDisplayName(post.firstName, post.lastName)}
+                      </h4>
+                      <span className="text-muted-foreground text-sm">@{post.username}</span>
+                    </>
+                  )}
                   {isOwner && (
                     <Badge variant="secondary" className="h-auto px-1.5 py-0.5 text-xs">
                       {t('you')}
@@ -203,13 +211,13 @@ export default function DiscussionPost({
                     </Button>
                   </div>
                 </form>
-              ) : (
+              ) : post.deleted ? null : (
                 <div className="mt-3">
                   <RichContentRenderer content={post.postMessage} />
                 </div>
               )}
 
-              {readOnly || !canTakePart ? null : (
+              {readOnly || !canTakePart || post.deleted ? null : (
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-3">
                     <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">

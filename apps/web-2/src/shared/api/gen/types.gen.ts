@@ -12838,7 +12838,7 @@ export type DeleteDiscussionError = DeleteDiscussionErrors[keyof DeleteDiscussio
 
 export type DeleteDiscussionResponses = {
     /**
-     * Deleted
+     * Deleted (or left as a tombstone)
      */
     204: void;
 };

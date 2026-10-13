@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE course_discussions SET status = 'deleted', content = '', user_id = NULL\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0c5c42612641eec3596fb00bb2fe194e658a397572465ca75e7b6aae6414fe70"
+}

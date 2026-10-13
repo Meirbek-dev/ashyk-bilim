@@ -3781,7 +3781,9 @@ export const usergroupsForCourseOptions = (options: Options<UsergroupsForCourseD
 });
 
 /**
- * Remove a post with its replies and reactions (owner, or a moderator).
+ * Remove a post with its replies and reactions (owner, or a moderator). A
+ * post other people replied to becomes a tombstone instead (`status`
+ * `deleted`, no text or author) that keeps their replies threaded.
  */
 export const deleteDiscussionMutation = (options?: Partial<Options<DeleteDiscussionData>>): UseMutationOptions<DeleteDiscussionResponse, DeleteDiscussionError, Options<DeleteDiscussionData>> => {
     const mutationOptions: UseMutationOptions<DeleteDiscussionResponse, DeleteDiscussionError, Options<DeleteDiscussionData>> = {

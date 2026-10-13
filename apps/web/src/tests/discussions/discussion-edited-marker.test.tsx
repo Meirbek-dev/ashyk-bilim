@@ -76,3 +76,36 @@ describe('DiscussionPost moderation', () => {
     expect(onToggleHidden).toHaveBeenCalledWith(post.id)
   })
 })
+
+describe('DiscussionPost tombstone', () => {
+  // Owner decision 2026-10-14: a post deleted after others replied stays as «Сообщение удалено» over its replies.
+  it('shows «Сообщение удалено» instead of the author and text, with no votes or reply', () => {
+    render(
+      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+        <DiscussionPost
+          post={{
+            ...post,
+            deleted: true,
+            username: 'Аноним',
+            firstName: '',
+            postMessage: '',
+            upvotes: 0,
+            userVote: null,
+          }}
+          currentUser={{ id: 'me', username: 'me' } as AppUserSummary}
+          onVotePost={() => {}}
+          onVoteReply={() => {}}
+          onDeletePost={() => {}}
+          onDeleteReply={() => {}}
+          onEditPost={async () => true}
+          onEditReply={async () => true}
+          onSubmitReply={async () => true}
+          onToggleHidden={() => {}}
+        />
+      </NextIntlClientProvider>,
+    )
+    expect(screen.getByText('Сообщение удалено')).toBeTruthy()
+    expect(screen.queryByText('@Аноним')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Ответить/ })).toBeNull()
+  })
+})

@@ -393,7 +393,9 @@ export const getDeleteDiscussionUrl = (discussionId: DiscussionId) => {
 }
 
 /**
- * @summary Remove a post with its replies and reactions (owner, or a moderator).
+ * @summary Remove a post with its replies and reactions (owner, or a moderator). A
+post other people replied to becomes a tombstone instead (`status`
+`deleted`, no text or author) that keeps their replies threaded.
  */
 export const deleteDiscussion = async (
   discussionId: DiscussionId,
@@ -450,7 +452,9 @@ export type DeleteDiscussionMutationError = ErrorType<Problem>
 export type DeleteDiscussionMutationVariables = { discussionId: DiscussionId }
 
 /**
- * @summary Remove a post with its replies and reactions (owner, or a moderator).
+ * @summary Remove a post with its replies and reactions (owner, or a moderator). A
+post other people replied to becomes a tombstone instead (`status`
+`deleted`, no text or author) that keeps their replies threaded.
  */
 export const useDeleteDiscussion = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

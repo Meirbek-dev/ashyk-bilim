@@ -39,6 +39,8 @@ export interface DiscussionPostData {
   can_delete?: boolean
   can_moderate?: boolean
   hidden?: boolean
+  /** A tombstone: deleted after others replied - no author or text, the replies stay under it. */
+  deleted?: boolean
   is_owner?: boolean
   is_creator?: boolean
   available_actions?: string[]

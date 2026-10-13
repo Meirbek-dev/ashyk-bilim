@@ -153,7 +153,9 @@ pub async fn update_discussion(
     Ok(Json(updated.into()))
 }
 
-/// Remove a post with its replies and reactions (owner, or a moderator).
+/// Remove a post with its replies and reactions (owner, or a moderator). A
+/// post other people replied to becomes a tombstone instead (`status`
+/// `deleted`, no text or author) that keeps their replies threaded.
 #[utoipa::path(
     delete, path = "/discussions/{discussion_id}", tag = "discussions",
     params(("discussion_id" = DiscussionId, Path, description = "Discussion id"),
@@ -162,7 +164,7 @@ pub async fn update_discussion(
     responses(
         (status = 412, description = "Stale `If-Match`", body = Problem,
          content_type = "application/problem+json"),
-        (status = 204, description = "Deleted"),
+        (status = 204, description = "Deleted (or left as a tombstone)"),
         (status = 403, description = "Not yours and not a moderator", body = Problem,
          content_type = "application/problem+json"),
     )

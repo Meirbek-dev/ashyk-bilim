@@ -88,6 +88,7 @@ const transformDiscussionToPost = (discussion: Discussion, anonymousLabel: strin
   can_delete: discussion.allowed_actions.includes('delete'),
   can_moderate: discussion.allowed_actions.includes('moderate'),
   hidden: discussion.status === 'hidden',
+  deleted: discussion.status === 'deleted',
   is_owner: discussion.is_owner,
   id: discussion.id,
   discussion_uuid: discussion.discussion_uuid,
@@ -361,7 +362,8 @@ export default function DiscussionList({
 
     try {
       await deleteDiscussion(courseUuid, post.discussion_uuid)
-      setPosts(posts.filter(currentPost => currentPost.id !== postId))
+      // With replies it may stay as a tombstone (others replied): the refresh below shows which.
+      if (!post.replies?.length) setPosts(posts.filter(currentPost => currentPost.id !== postId))
       toast.success(t('toasts.deleted'))
 
       // Refresh data from server

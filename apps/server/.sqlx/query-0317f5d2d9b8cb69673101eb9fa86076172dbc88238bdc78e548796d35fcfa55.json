@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM course_discussions\n                          WHERE parent_id = $1 AND status <> 'deleted'\n                            AND user_id IS DISTINCT FROM $2) AS \"exists!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0317f5d2d9b8cb69673101eb9fa86076172dbc88238bdc78e548796d35fcfa55"
+}

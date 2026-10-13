@@ -126,7 +126,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "course_discussions",
         "parent_id",
         "course_discussions",
-        "a thread goes with its opening post; web-2 says so (discussions_delete_post_consequence)",
+        "a post others replied to stays as a tombstone (2026-10-14); only its author's own replies cascade",
     ),
     ("course_progress", "course_id", "courses", COURSE_DELETE),
     ("course_progress", "user_id", "users", USER_ERASURE),

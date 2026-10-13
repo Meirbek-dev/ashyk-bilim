@@ -16,7 +16,7 @@
   "discussions_saved": "Saved",
   "discussions_delete": "Delete",
   "discussions_delete_post_title": "Delete the post?",
-  "discussions_delete_post_consequence": "Its replies are deleted with it.",
+  "discussions_delete_post_consequence": "Your own replies go with it. If others have replied, a “Message deleted” note stays in its place and their replies are kept.",
   "discussions_delete_reply_title": "Delete the reply?",
   "discussions_delete_reply_consequence": "The reply is deleted for good.",
   "discussions_deleted": "Deleted",
@@ -27,5 +27,6 @@
   "discussions_restored": "Restored",
   "discussions_like": "Like",
   "discussions_dislike": "Dislike",
-  "discussions_unknown_author": "Deleted user"
+  "discussions_unknown_author": "Deleted user",
+  "discussions_post_deleted": "Message deleted"
 }

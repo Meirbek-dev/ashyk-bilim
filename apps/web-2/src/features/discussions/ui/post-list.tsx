@@ -26,7 +26,7 @@ export function PostList({ courseId, thread }: { courseId: CourseId; thread: str
       <ul className="flex flex-col gap-3">
         {linked ? <LinkedThread courseId={courseId} id={linked} /> : null}
         {posts.map(post => (
-          <PostRow key={post.id} post={post} open={post.id === thread && post.status === 'active'} />
+          <PostRow key={post.id} post={post} open={post.id === thread && post.status !== 'hidden'} />
         ))}
       </ul>
       <ShowMore

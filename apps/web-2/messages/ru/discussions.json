@@ -16,7 +16,7 @@
   "discussions_saved": "Сохранено",
   "discussions_delete": "Удалить",
   "discussions_delete_post_title": "Удалить пост?",
-  "discussions_delete_post_consequence": "Ответы на него удалятся вместе с ним.",
+  "discussions_delete_post_consequence": "Ваши ответы удалятся вместе с ним. Если ответили другие участники, на его месте останется пометка «Сообщение удалено», а их ответы сохранятся.",
   "discussions_delete_reply_title": "Удалить ответ?",
   "discussions_delete_reply_consequence": "Ответ удалится без возможности восстановления.",
   "discussions_deleted": "Удалено",
@@ -27,5 +27,6 @@
   "discussions_restored": "Возвращено",
   "discussions_like": "Нравится",
   "discussions_dislike": "Не нравится",
-  "discussions_unknown_author": "Удалённый пользователь"
+  "discussions_unknown_author": "Удалённый пользователь",
+  "discussions_post_deleted": "Сообщение удалено"
 }

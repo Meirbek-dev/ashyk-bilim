@@ -1,5 +1,23 @@
 # Decision log (deviations & refinements vs ARCHITECTURE.md)
 
+## 2026-10-14 — A discussion post others replied to leaves a tombstone
+
+Owner decision. `DELETE /discussions/{id}` of a post that has replies by other
+people (active or hidden) keeps the row as a tombstone: status `deleted`,
+content and author wiped (`user_id` NULL, so its author is no longer notified
+of replies), reactions dropped; the replies stay threaded under it. Every
+reader gets it as `status: deleted`, `content: ""`, `author: null`, no
+`allowed_actions`; lists show a tombstone while it has active replies; it is
+never edited, restored or deleted again (404), and takes no new replies. A post
+with no replies by others is deleted as before (its author's own replies go
+with it); deleting the last reply under a tombstone removes the tombstone.
+Moderation hide/restore is unchanged; a legacy `deleted` row reads the same.
+Both webs render «Сообщение удалено» in place of the author and text and keep
+the replies open; their delete confirmations say so. Tests: discussions_flow
+`posts_replies_reactions_and_moderation`, the cascade audit's `parent_id`
+reason, web-2 `post-item.browser.test.tsx`, legacy
+`discussion-edited-marker.test.tsx`.
+
 ## 2026-10-14 — Learner work is hidden, never deleted (activities and chapters)
 
 Owner decision (answers the 2026-10-13 cascade-audit question). Deleting an
@@ -2831,7 +2849,7 @@ as before.
 - **Every `ON DELETE CASCADE` onto someone's work is reviewed** (`crates/db/tests/cascade_audit.rs`,
   reason per key). The losses that remain are the designed ones: course delete (archive keeps history),
   activity/chapter delete (refused with learner work since 2026-10-14, see that entry), a thread with its opening
-  post (web-2 says so), a leave resetting completions, preview drafts, and the manual user erasure path
+  post (only without replies by others since 2026-10-14), a leave resetting completions, preview drafts, and the manual user erasure path
   (the app never deletes users). The owner's answer on handed-in work: 2026-10-14 entries above.
 - **The server's upload policy is in the contract** (`UploadPurpose`'s `x-upload-policy`); both webs
   generate their caps from it (`just contract`), so a drifted constant fails the codegen drift checks.

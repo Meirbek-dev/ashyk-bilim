@@ -63,8 +63,9 @@ pub async fn get_discussion(
     Ok(row)
 }
 
-/// Active top-level posts of a course, newest first (keyset on id);
-/// `include_hidden` (moderators) adds hidden ones so they can be restored.
+/// Active top-level posts of a course, newest first (keyset on id), and the
+/// tombstones of deleted ones that still carry replies; `include_hidden`
+/// (moderators) adds hidden ones so they can be restored.
 pub async fn list_posts(
     pool: &PgPool,
     course_id: CourseId,
@@ -90,7 +91,8 @@ pub async fn list_posts(
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
            WHERE d.course_id = $1 AND d.parent_id IS NULL
-             AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
+             AND (d.status = 'active' OR ($5 AND d.status = 'hidden')
+                  OR (d.status = 'deleted' AND d.replies_count > 0))
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
            LIMIT $4"#,
@@ -223,12 +225,77 @@ pub async fn update_discussion<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Hard delete (replies and reactions cascade).
-pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM course_discussions WHERE id = $1", id.0)
-        .execute(pool)
+/// What [`delete_discussion`] did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Deleted {
+    /// Gone with its own replies and reactions.
+    Removed,
+    /// Others replied: the post stays as a tombstone so their replies stay
+    /// threaded.
+    Tombstone,
+    /// Nothing to delete (a concurrent delete won).
+    Missing,
+}
+
+/// Delete a post or reply (owner decision 2026-10-14).
+///
+/// A post somebody else replied to becomes a tombstone: status `deleted`, its text and author
+/// wiped, its reactions dropped, the replies kept. Otherwise the row goes
+/// (its replies and reactions cascade); a reply that was the last one under
+/// a tombstone takes the tombstone with it.
+pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<Deleted> {
+    let mut tx = pool.begin().await?;
+    let Some(row) = sqlx::query!(
+        r#"SELECT user_id AS "user_id?", parent_id AS "parent_id?"
+           FROM course_discussions WHERE id = $1 FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    else {
+        return Ok(Deleted::Missing);
+    };
+    let replied_by_others = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM course_discussions
+                          WHERE parent_id = $1 AND status <> 'deleted'
+                            AND user_id IS DISTINCT FROM $2) AS "exists!""#,
+        id.0,
+        row.user_id
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    if replied_by_others {
+        sqlx::query!(
+            r#"UPDATE course_discussions SET status = 'deleted', content = '', user_id = NULL
+               WHERE id = $1"#,
+            id.0
+        )
+        .execute(&mut *tx)
         .await?;
-    Ok(deleted.rows_affected() == 1)
+        sqlx::query!(
+            "DELETE FROM discussion_reactions WHERE discussion_id = $1",
+            id.0
+        )
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        return Ok(Deleted::Tombstone);
+    }
+    sqlx::query!("DELETE FROM course_discussions WHERE id = $1", id.0)
+        .execute(&mut *tx)
+        .await?;
+    if let Some(parent) = row.parent_id {
+        sqlx::query!(
+            r#"DELETE FROM course_discussions p
+               WHERE p.id = $1 AND p.status = 'deleted'
+                 AND NOT EXISTS (SELECT 1 FROM course_discussions c WHERE c.parent_id = p.id)"#,
+            parent
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(Deleted::Removed)
 }
 
 /// Toggle a reaction: the same kind again removes it; the other kind

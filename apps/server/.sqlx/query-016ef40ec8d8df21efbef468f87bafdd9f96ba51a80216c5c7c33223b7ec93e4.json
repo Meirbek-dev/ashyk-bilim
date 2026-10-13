@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id AS \"user_id?\", parent_id AS \"parent_id?\"\n           FROM course_discussions WHERE id = $1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "parent_id?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_discussions",
+            "name": "parent_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "016ef40ec8d8df21efbef468f87bafdd9f96ba51a80216c5c7c33223b7ec93e4"
+}

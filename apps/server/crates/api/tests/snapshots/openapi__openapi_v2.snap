@@ -30855,7 +30855,7 @@ expression: json
         ],
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Deleted (or left as a tombstone)"
           },
           "403": {
             "content": {
@@ -30878,7 +30878,7 @@ expression: json
             "description": "Stale `If-Match`"
           }
         },
-        "summary": "Remove a post with its replies and reactions (owner, or a moderator).",
+        "summary": "Remove a post with its replies and reactions (owner, or a moderator). A\npost other people replied to becomes a tombstone instead (`status`\n`deleted`, no text or author) that keeps their replies threaded.",
         "tags": [
           "discussions"
         ]
