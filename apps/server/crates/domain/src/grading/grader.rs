@@ -647,4 +647,254 @@ mod tests {
         let strict = grade_code(&item(ItemBody::Code(code), 100.0), &cases, None);
         assert_eq!(strict.auto_score, 0.0);
     }
+
+    /// Property tests (gate 9d): the grader's invariants over random
+    /// quizzes, answers and policies - not just the hand-picked cases above.
+    mod props {
+        use super::*;
+        use proptest::prelude::*;
+
+        /// (correct, wrong, multiple, weight) per choice item.
+        fn quiz() -> impl Strategy<Value = Vec<(usize, usize, bool, u8)>> {
+            prop::collection::vec(
+                (1..4usize, 0..4usize, any::<bool>(), 0..10u8).prop_map(
+                    |(c, w, multiple, weight)| {
+                        // A single-answer question has exactly one right option.
+                        (if multiple { c } else { 1 }, w, multiple, weight)
+                    },
+                ),
+                1..6,
+            )
+        }
+
+        fn build(spec: &[(usize, usize, bool, u8)]) -> Vec<Item> {
+            spec.iter()
+                .map(|&(c, w, multiple, weight)| {
+                    let correct: Vec<String> = (0..c).map(|i| format!("c{i}")).collect();
+                    let wrong: Vec<String> = (0..w).map(|i| format!("w{i}")).collect();
+                    let correct: Vec<&str> = correct.iter().map(String::as_str).collect();
+                    let wrong: Vec<&str> = wrong.iter().map(String::as_str).collect();
+                    item(choice(&correct, &wrong, multiple), f64::from(weight))
+                })
+                .collect()
+        }
+
+        fn options(item: &Item) -> Vec<(String, bool)> {
+            let ItemBody::Choice(body) = &item.body else {
+                unreachable!("choice items only")
+            };
+            body.options
+                .iter()
+                .map(|o| (o.id.clone(), o.is_correct))
+                .collect()
+        }
+
+        /// Each item's picks: the options whose bit is set in its mask.
+        fn answers(items: &[Item], masks: &[u8]) -> Answers {
+            items
+                .iter()
+                .zip(masks.iter().cycle())
+                .map(|(item, mask)| {
+                    let selected = options(item)
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(i, _)| mask & (1 << i) != 0)
+                        .map(|(_, (id, _))| id)
+                        .collect();
+                    (item.id, ItemAnswer::Choice { selected })
+                })
+                .collect()
+        }
+
+        fn policy(partial_credit: bool, negative: u8) -> GraderPolicy {
+            GraderPolicy {
+                partial_credit,
+                negative_marking_percent: f64::from(negative % 101),
+            }
+        }
+
+        fn score_of(grade: &AutoGrade, id: ab_core::id::AssessmentItemId) -> f64 {
+            grade
+                .breakdown
+                .items
+                .iter()
+                .find(|g| g.item_id == id)
+                .map_or(f64::NAN, |g| g.score)
+        }
+
+        /// The bitmask of an item's right options.
+        fn right_mask(item: &Item) -> u8 {
+            options(item)
+                .iter()
+                .enumerate()
+                .filter(|(_, (_, correct))| *correct)
+                .fold(0u8, |mask, (i, _)| mask | (1 << i))
+        }
+
+        proptest! {
+            /// 0 <= total <= 100; an item never earns above its share nor
+            /// loses more than it.
+            #[test]
+            fn scores_stay_in_bounds(
+                spec in quiz(),
+                masks in prop::collection::vec(any::<u8>(), 1..6),
+                partial in any::<bool>(),
+                negative in any::<u8>(),
+            ) {
+                let items = build(&spec);
+                let grade = grade_quiz(&items, &answers(&items, &masks), policy(partial, negative));
+                prop_assert!((0.0..=100.0).contains(&grade.auto_score), "{}", grade.auto_score);
+                for g in &grade.breakdown.items {
+                    prop_assert!(
+                        g.score <= g.max_score && g.score >= -g.max_score,
+                        "{} of {}", g.score, g.max_score
+                    );
+                }
+            }
+
+            /// Several distinct picks on a single-answer question earn
+            /// nothing, whichever they are (the right one included).
+            #[test]
+            fn several_picks_on_single_answer_earn_nothing(
+                wrong in 1..5usize,
+                mask in any::<u8>(),
+                partial in any::<bool>(),
+            ) {
+                let items = build(&[(1, wrong, false, 1)]);
+                let picks = mask & u8::try_from((1u16 << (wrong + 1)) - 1).unwrap_or(u8::MAX);
+                prop_assume!(picks.count_ones() >= 2);
+                let grade = grade_quiz(&items, &answers(&items, &[picks]), policy(partial, 0));
+                prop_assert_eq!(grade.breakdown.items[0].score, 0.0);
+                prop_assert_eq!(grade.auto_score, 0.0);
+            }
+
+            /// Partial credit is monotone: one more right pick never lowers
+            /// a multiple-answer item's score, one more wrong pick never
+            /// raises it.
+            #[test]
+            fn partial_credit_is_monotone(
+                correct in 1..4usize,
+                wrong in 0..4usize,
+                mask in any::<u8>(),
+                extra in any::<prop::sample::Index>(),
+                negative in any::<u8>(),
+            ) {
+                let items = build(&[(correct, wrong, true, 1)]);
+                let n = correct + wrong;
+                let base = mask & u8::try_from((1u16 << n) - 1).unwrap_or(u8::MAX);
+                let missing: Vec<usize> = (0..n).filter(|i| base & (1 << i) == 0).collect();
+                prop_assume!(!missing.is_empty());
+                let added = missing[extra.index(missing.len())];
+                let more = base | (1 << added);
+                let p = policy(true, negative);
+                let before = grade_quiz(&items, &answers(&items, &[base]), p).breakdown.items[0].score;
+                let after = grade_quiz(&items, &answers(&items, &[more]), p).breakdown.items[0].score;
+                if added < correct {
+                    prop_assert!(after >= before, "a right pick lowered {} -> {}", before, after);
+                } else {
+                    prop_assert!(after <= before, "a wrong pick raised {} -> {}", before, after);
+                }
+            }
+
+            /// Option order, pick order and item order change nothing.
+            #[test]
+            fn shuffling_changes_nothing(
+                spec in quiz(),
+                masks in prop::collection::vec(any::<u8>(), 1..6),
+                seed in any::<u64>(),
+                partial in any::<bool>(),
+                negative in any::<u8>(),
+            ) {
+                let items = build(&spec);
+                let picks = answers(&items, &masks);
+                let p = policy(partial, negative);
+                let plain = grade_quiz(&items, &picks, p);
+                // A permutation per seed: rotate, then reverse.
+                let turn = |len: usize| {
+                    usize::try_from(seed % u64::try_from(len.max(1)).unwrap_or(1)).unwrap_or(0)
+                };
+                let mut shuffled = items.clone();
+                let k = turn(shuffled.len());
+                shuffled.rotate_left(k);
+                shuffled.reverse();
+                for item in &mut shuffled {
+                    if let ItemBody::Choice(body) = &mut item.body {
+                        let k = turn(body.options.len());
+                        body.options.rotate_left(k);
+                        body.options.reverse();
+                    }
+                }
+                let reversed: Answers = picks
+                    .iter()
+                    .map(|(id, a)| match a {
+                        ItemAnswer::Choice { selected } => (
+                            *id,
+                            ItemAnswer::Choice { selected: selected.iter().rev().cloned().collect() },
+                        ),
+                        other => (*id, other.clone()),
+                    })
+                    .collect();
+                let moved = grade_quiz(&shuffled, &reversed, p);
+                prop_assert_eq!(plain.auto_score, moved.auto_score);
+                for item in &items {
+                    prop_assert_eq!(score_of(&plain, item.id), score_of(&moved, item.id));
+                }
+            }
+
+            /// The item shares add up to 100, and the right answers to every
+            /// item score exactly 100.
+            #[test]
+            fn max_score_is_the_sum_and_all_right_is_100(spec in quiz(), negative in any::<u8>()) {
+                let items = build(&spec);
+                let right: Vec<u8> = items.iter().map(right_mask).collect();
+                let grade = grade_quiz(&items, &answers(&items, &right), policy(false, negative));
+                let sum: f64 = grade.breakdown.items.iter().map(|g| g.max_score).sum();
+                prop_assert!((sum - 100.0).abs() <= 0.01 * count(items.len()), "shares sum to {}", sum);
+                let earned: f64 = grade.breakdown.items.iter().map(|g| g.score).sum();
+                prop_assert!((earned - sum).abs() < 1e-9);
+                prop_assert_eq!(grade.auto_score, 100.0);
+            }
+
+            /// A code score is the passed share in 0..=100; all-or-nothing is
+            /// 0 or 100.
+            #[test]
+            fn code_scores_stay_in_bounds(
+                cases in prop::collection::vec((0..5u8, any::<bool>()), 0..8),
+                all_or_nothing in any::<bool>(),
+            ) {
+                let outcomes: Vec<CaseOutcome> = cases
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &(weight, passed))| CaseOutcome {
+                        test_id: format!("t{i}"),
+                        weight: f64::from(weight),
+                        passed,
+                    })
+                    .collect();
+                let body = crate::assessments::items::CodeBody {
+                    prompt: "p".into(),
+                    input_spec: String::new(),
+                    output_spec: String::new(),
+                    constraints: Vec::new(),
+                    languages: vec![71],
+                    starter_code: std::collections::BTreeMap::new(),
+                    reference_solutions: std::collections::BTreeMap::new(),
+                    tests: Vec::new(),
+                    time_limit_seconds: None,
+                    memory_limit_mb: None,
+                    max_output_kb: None,
+                    scoring_strategy: if all_or_nothing {
+                        crate::assessments::items::ScoringStrategy::AllOrNothing
+                    } else {
+                        crate::assessments::items::ScoringStrategy::PartialCredit
+                    },
+                };
+                let score = grade_code(&item(ItemBody::Code(body), 100.0), &outcomes, None).auto_score;
+                prop_assert!((0.0..=100.0).contains(&score), "{}", score);
+                if all_or_nothing {
+                    prop_assert!(score == 0.0 || score == 100.0, "{}", score);
+                }
+            }
+        }
+    }
 }
