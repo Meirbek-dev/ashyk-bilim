@@ -41,6 +41,10 @@ setup-web2: _setup-repo
 _setup-repo: skills-sync
     git config --local core.hooksPath .vite-hooks
 
+# Rewrite CRLF working copies of unmodified text files as LF (Windows tools; sqlx checksums migrations).
+eol:
+    bun infra/dev/eol.ts
+
 # Claude compatibility copies are generated; edit only .agents/skills.
 skills-sync:
     node infra/scripts/sync-skills.mjs

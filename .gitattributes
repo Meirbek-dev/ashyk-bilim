@@ -6,8 +6,35 @@
 *.yaml     text eol=lf
 *.yml      text eol=lf
 justfile   text eol=lf
+# sqlx checksums the bytes: a CRLF checkout fails `ashyq migrate` against a database migrated from LF.
+apps/server/migrations/*.sql text eol=lf
 
-*.png  binary
-*.ico  binary
-*.avif binary
-*.ttf  binary
+# Media, archives, fonts, dumps: never normalized or diffed as text.
+*.mp4    binary
+*.webm   binary
+*.mov    binary
+*.mkv    binary
+*.mp3    binary
+*.wav    binary
+*.ogg    binary
+*.pdf    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.avif   binary
+*.png    binary
+*.ico    binary
+*.bmp    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary
+*.zip    binary
+*.gz     binary
+*.tgz    binary
+*.7z     binary
+*.dump   binary
+*.sqlite binary
+*.wasm   binary

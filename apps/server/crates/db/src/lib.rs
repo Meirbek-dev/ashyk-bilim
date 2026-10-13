@@ -77,4 +77,19 @@ mod tests {
         assert_eq!(super::like_escape(r"a\x%_b"), r"a\\x\%\_b");
         assert_eq!(super::like_escape("plain"), "plain");
     }
+
+    // sqlx checksums the bytes: a CRLF working copy (Windows) builds a binary whose
+    // `ashyq migrate` refuses every database migrated from LF (CI, prod).
+    #[test]
+    fn migrations_are_embedded_with_lf() {
+        let crlf: Vec<i64> = super::MIGRATOR
+            .iter()
+            .filter(|m| m.sql.as_str().contains('\r'))
+            .map(|m| m.version)
+            .collect();
+        assert!(
+            crlf.is_empty(),
+            "CRLF in migrations {crlf:?}: run `just eol`"
+        );
+    }
 }
