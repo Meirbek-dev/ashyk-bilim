@@ -112,6 +112,12 @@ impl UsergroupsService {
         }
     }
 
+    /// The group's write gate on its own (404 unknown, 403 not a writer).
+    /// UX-311: the write handlers check it before reading the body.
+    pub async fn require_writable(&self, actor: &Actor, id: UsergroupId) -> Result<()> {
+        self.writable(actor, id).await.map(drop)
+    }
+
     async fn writable(&self, actor: &Actor, id: UsergroupId) -> Result<Usergroup> {
         let group = ab_db::usergroups::get_usergroup(&self.pool, id)
             .await?

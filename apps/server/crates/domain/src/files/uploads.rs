@@ -324,9 +324,23 @@ impl UploadsService {
         Ok(())
     }
 
+    /// 404 for an unknown upload, 403 for someone else's - decided before
+    /// its state, so a stranger learns nothing about it.
+    pub async fn require_owner(&self, actor: &Actor, id: Uuid) -> Result<()> {
+        let row = ab_db::uploads::get_upload(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("upload"))?;
+        if row.created_by == actor.user_id {
+            Ok(())
+        } else {
+            Err(Error::forbidden("not your upload"))
+        }
+    }
+
     /// Cancellation releases storage parts immediately; the reaper covers
     /// browser crashes and failed cleanup requests.
     pub async fn abort_multipart(&self, actor: &Actor, id: Uuid) -> Result<()> {
+        self.require_owner(actor, id).await?;
         let mut tx = self.pool.begin().await?;
         if !ab_db::uploads::lock_pending(&mut tx, id).await? {
             return Err(Error::conflict("upload is finalized or expired"));

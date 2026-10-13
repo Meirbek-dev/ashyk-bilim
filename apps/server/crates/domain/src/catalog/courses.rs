@@ -201,6 +201,17 @@ impl CoursesService {
         course.ensure_not_archived()
     }
 
+    /// The lifecycle gate before the body (UX-311): visible (404), then a
+    /// writer or roster manager (403); the action picks its own gate after.
+    pub async fn require_lifecycle(&self, actor: &Actor, id: CourseId) -> Result<()> {
+        let course = self.get(actor, id).await?;
+        if Self::require_write(actor, &course).is_ok() || Self::manages_roster(actor, &course) {
+            Ok(())
+        } else {
+            Err(Error::forbidden("no lifecycle access to this course"))
+        }
+    }
+
     /// [`Self::require_writable`] for an announcement's course.
     pub async fn require_writable_update(&self, actor: &Actor, id: CourseUpdateId) -> Result<()> {
         self.writable_update(actor, id).await.map(drop)

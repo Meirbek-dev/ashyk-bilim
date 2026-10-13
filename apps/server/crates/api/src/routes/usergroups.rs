@@ -145,7 +145,7 @@ pub async fn update_usergroup(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
-    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    state.usergroups.require_writable(&actor, id).await?;
     let request = ValidJson::<UpdateUsergroupRequest>::parse(&body)?;
     require_if_match(&state.pool, Versioned::Usergroup(id), &headers).await?;
     let group = state
@@ -253,7 +253,7 @@ pub async fn add_usergroup_members(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
-    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    state.usergroups.require_writable(&actor, id).await?;
     let request = ValidJson::<UsergroupMembersRequest>::parse(&body)?;
     let representation = wants_representation(&headers);
     detached(async move {
@@ -287,7 +287,7 @@ pub async fn remove_usergroup_members(
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
-    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    state.usergroups.require_writable(&actor, id).await?;
     let request = ValidJson::<UsergroupMembersRequest>::parse(&body)?;
     let representation = wants_representation(&headers);
     detached(async move {
@@ -328,7 +328,7 @@ pub async fn add_usergroup_courses(
     body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
     // UX-311: permission before the body.
-    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    state.usergroups.require_writable(&actor, id).await?;
     let request = ValidJson::<UsergroupCoursesRequest>::parse(&body)?;
     state
         .usergroups
@@ -351,7 +351,7 @@ pub async fn remove_usergroup_courses(
     body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
     // UX-311: permission before the body.
-    ab_domain::identity::UsergroupsService::require_writer(&actor)?;
+    state.usergroups.require_writable(&actor, id).await?;
     let request = ValidJson::<UsergroupCoursesRequest>::parse(&body)?;
     state
         .usergroups

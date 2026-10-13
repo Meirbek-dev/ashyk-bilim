@@ -71,8 +71,11 @@ pub async fn complete_multipart_upload(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<Uuid>,
-    ValidJson(request): ValidJson<CompleteMultipartRequest>,
+    body: axum::body::Bytes,
 ) -> ApiResult<StatusCode> {
+    // UX-311: someone else's upload is refused before its body is read.
+    state.uploads.require_owner(&actor, id).await?;
+    let request = ValidJson::<CompleteMultipartRequest>::parse(&body)?;
     state
         .uploads
         .complete_multipart(&actor, id, request.etags)

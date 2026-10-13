@@ -564,8 +564,9 @@ pub async fn course_lifecycle(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
-    // UX-311: visibility before the body; the action picks its gate.
-    state.courses.get(&actor, id).await?;
+    // UX-311: a writer or roster manager before the body; the action picks
+    // its own gate after.
+    state.courses.require_lifecycle(&actor, id).await?;
     let request = ValidJson::<CourseLifecycleRequest>::parse(&body)?;
     require_if_match(&state.pool, Versioned::Course(id), &headers).await?;
     let course = match request.action.as_str() {
