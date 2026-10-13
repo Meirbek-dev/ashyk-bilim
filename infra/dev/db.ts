@@ -10,7 +10,7 @@
 // Connection and secrets: infra/env/dev.env + dev.local.env (infra/dev/lib.ts; AB__ZITADEL__PAT, E2E_PASSWORD).
 // Zitadel is shared by every database, so the template copies the e2e accounts' rows (`e2e-%`, with their roles)
 // from --from (default ashyq_dev) before seeding: seed-e2e then reuses those Zitadel users instead of failing on an
-// existing login name. Full output of the cargo steps: tmp/db/<command>.log.
+// existing login name. `ashyq` runs through `cargo run` (ASHYQ_BIN=<binary> skips the build). Logs: tmp/db/<command>.log.
 import { SQL } from 'bun'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -57,7 +57,10 @@ async function dropDb(db: string): Promise<void> {
 /** `ashyq <args>` through cargo (rebuilt when stale) against `db`; output appended to tmp/db/<log>.log. */
 function ashyq(db: string, args: string[], log: string, extra: Record<string, string> = {}): void {
   const logPath = resolve(root, `tmp/db/${log}.log`)
-  const result = spawnSync('cargo', ['run', '--locked', '-q', '-p', 'ashyq-server', '--', ...args], {
+  // ASHYQ_BIN: an already built `ashyq` (e.g. the stack's), when the working tree holds someone's unbuildable WIP.
+  const bin = process.env['ASHYQ_BIN']
+  const [command, argv] = bin ? [bin, args] : ['cargo', ['run', '--locked', '-q', '-p', 'ashyq-server', '--', ...args]]
+  const result = spawnSync(command, argv, {
     cwd: resolve(root, 'apps/server'),
     encoding: 'utf8',
     env: {
@@ -68,6 +71,8 @@ function ashyq(db: string, args: string[], log: string, extra: Record<string, st
       NO_COLOR: '1',
       AB__ENVIRONMENT: 'development',
       AB__DATABASE__URL: urlFor(db),
+      // seed-e2e needs Redis (sessions, rate limits): a db no slot uses (slots take 4+N).
+      AB__REDIS__URL: `redis://:${env['REDIS_PASSWORD']}@127.0.0.1:${env['DEV_REDIS_PORT']}/15`,
       ...extra,
     },
     maxBuffer: 64 * 1024 * 1024,
@@ -88,22 +93,31 @@ function secret(key: string): string {
 async function template(from: string): Promise<void> {
   const started = performance.now()
   const seedEnv = { AB__ZITADEL__PAT: secret('AB__ZITADEL__PAT'), E2E_PASSWORD: secret('E2E_PASSWORD') }
+  // Built aside and swapped in at the end: a failed build never leaves a half-seeded ashyq_seed to clone.
+  const building = `${TEMPLATE}_build`
+  await dropDb(building)
+  await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(building)}`))
+  ashyq(building, ['migrate'], 'template')
+  const copied = (await exists(from)) ? await copyAccounts(from, building) : 0
+  ashyq(building, ['admin', 'seed-e2e', '--learners', process.env.E2E_LEARNERS ?? '250'], 'template', seedEnv)
   await dropDb(TEMPLATE)
-  await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(TEMPLATE)}`))
-  ashyq(TEMPLATE, ['migrate'], 'template')
-  const copied = (await exists(from)) ? await copyAccounts(from) : 0
-  ashyq(TEMPLATE, ['admin', 'seed-e2e', '--learners', process.env.E2E_LEARNERS ?? '250'], 'template', seedEnv)
-  await admin(sql => sql.unsafe(`ALTER DATABASE ${ident(TEMPLATE)} IS_TEMPLATE true`))
+  await admin(async sql => {
+    await sql.unsafe(`ALTER DATABASE ${ident(building)} RENAME TO ${ident(TEMPLATE)}`)
+    await sql.unsafe(`ALTER DATABASE ${ident(TEMPLATE)} IS_TEMPLATE true`)
+  })
   const seconds = ((performance.now() - started) / 1000).toFixed(0)
   console.log(
     `db: ${TEMPLATE} ready in ${seconds}s (${copied} e2e accounts reused from ${from}); \`just db fresh <name>\``,
   )
 }
 
+/** Bun.SQL hands json columns back parsed (an array), older drivers as text: either way, JSON text for a bind. */
+const text = (value: unknown): string => (typeof value === 'string' ? value : JSON.stringify(value))
+
 /** The e2e accounts' rows from `from` (and their role slugs), so seed-e2e finds them instead of creating them. */
-async function copyAccounts(from: string): Promise<number> {
+async function copyAccounts(from: string, into: string): Promise<number> {
   const source = new SQL(urlFor(from))
-  const target = new SQL(urlFor(TEMPLATE))
+  const target = new SQL(urlFor(into))
   try {
     const hasUsers = await source`SELECT 1 FROM information_schema.tables WHERE table_name = 'users'`
     if (hasUsers.length === 0) return 0
@@ -113,13 +127,13 @@ async function copyAccounts(from: string): Promise<number> {
                 FROM users u2 JOIN user_roles ur ON ur.user_id = u2.id JOIN roles r ON r.id = ur.role_id
                WHERE u2.username LIKE 'e2e-%') AS roles
         FROM users u WHERE u.username LIKE 'e2e-%'`
-    await target`INSERT INTO users SELECT * FROM json_populate_recordset(null::users, ${users}::json)`
+    await target`INSERT INTO users SELECT * FROM json_populate_recordset(null::users, ${text(users)}::text::json)`
     await target`
       INSERT INTO user_roles (user_id, role_id)
-      SELECT u.id, r.id FROM json_to_recordset(${roles}::json) AS x(username text, slug text)
+      SELECT u.id, r.id FROM json_to_recordset(${text(roles)}::text::json) AS x(username text, slug text)
         JOIN users u ON u.username = x.username JOIN roles r ON r.slug = x.slug
       ON CONFLICT DO NOTHING`
-    return (JSON.parse(String(users)) as unknown[]).length
+    return Array.isArray(users) ? users.length : (JSON.parse(text(users)) as unknown[]).length
   } finally {
     await source.close()
     await target.close()

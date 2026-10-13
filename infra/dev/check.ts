@@ -30,6 +30,10 @@ const CRATES: Record<string, string> = {
 // The areas run at once: a legacy test with a 10 s budget (upload-session) timed out under that load.
 const LOADED = ['--testTimeout=30000']
 
+// The sqlx macros compile against the committed .sqlx cache: online they would check every query against whatever
+// DATABASE_URL names (the tests' half-built ashyq_test failed with 638 errors). Only `prepare`/`sqlx-check` go online.
+const OFFLINE = { SQLX_OFFLINE: 'true' }
+
 const isServer = (f: string) => f.startsWith('apps/server/')
 const isLegacy = (f: string) => f.startsWith('apps/web/') || f === 'package.json' || f === 'bun.lock'
 const isWeb2 = (f: string) => f.startsWith('apps/web-2/')
@@ -62,6 +66,7 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
         name: 'server:clippy',
         cwd: server,
         cmd: ['cargo', 'clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings'],
+        env: OFFLINE,
       },
       ...(everything || crates.size > 0
         ? [
@@ -69,13 +74,13 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
               name: 'server:test',
               cwd: server,
               cmd: ['cargo', 'nextest', 'run', '--locked', '--workspace', ...filter],
-              env: testEnv(),
+              env: { ...OFFLINE, ...testEnv() },
             },
           ]
         : []),
       // The contract is exported from the API's routes and DTOs (and the domain types they show).
       ...(all || serverFiles.some(f => /^apps\/server\/(crates\/(api|domain|core)\/src|Cargo)/.test(f))
-        ? [{ name: 'server:openapi', cwd: root, cmd: ['just', 'server', 'openapi-check'] }]
+        ? [{ name: 'server:openapi', cwd: root, cmd: ['just', 'server', 'openapi-check'], env: OFFLINE }]
         : []),
     ]
   }
