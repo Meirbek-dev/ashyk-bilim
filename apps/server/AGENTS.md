@@ -17,6 +17,9 @@ Fixtures, auth limits, cutover switches and local services: `apps/server/docs/DE
 - `just server migration NAME`: append a migration.
 - `just server prepare`: refresh `.sqlx/` after SQL/schema changes; commit the cache.
 - `just server openapi`: export `openapi.v2.json`; read and commit the contract diff.
+- `just contract`: export + accept its snapshots + regenerate both web clients, one step (RUNBOOK 5.5).
+- `just check`: the gates for what changed (fmt, clippy, nextest of touched crates + dependents, openapi).
+- `just db fresh <name>` / `test-reset`: throwaway databases cloned from `ashyq_seed` (RUNBOOK 5.6).
 - `just server dev` / `serve`: watch / run the API.
 
 Keep workspace builds: selecting a crate with `-p` changes TLS feature unification on Windows.
@@ -42,6 +45,14 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
 - Endpoints use `utoipa_axum::routes!`, validated DTOs (`deny_unknown_fields`, garde), typed
   `ToSchema` responses, and happy-path/auth-failure HTTP tests. Mutations pass the RBAC sweep.
 - Permissions belong in domain services (`actor.require`), never only in handlers.
+- Every route is a row of `crates/api/tests/permission_matrix.rs` (who may get a 2xx, probed as seven
+  callers on a seeded world); a write checks the caller and the resource it names before the body
+  (UX-311). Every `ON DELETE CASCADE` onto someone's work is listed with its reason in
+  `crates/db/tests/cascade_audit.rs`. New routes and cascades fail until classified there.
+- Grading math keeps its property tests (`grading/grader.rs`, proptest) green: bounds, single-answer
+  multi-pick = 0, monotone partial credit, shuffle invariance, shares sum to 100.
+- Upload caps live only in `files/uploads.rs::policy`; the contract exports them (`x-upload-policy`) and
+  `just contract` regenerates the webs' constants.
 - Static SQL uses `query!`/`query_as!`; dynamic SQL uses `QueryBuilder`. `AssertSqlSafe` needs
   a `// SAFETY:` comment. SQL/schema edits require `prepare` and the committed `.sqlx/` cache.
 - Enqueue jobs inside the transaction that creates the underlying fact.
