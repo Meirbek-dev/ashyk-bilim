@@ -2840,3 +2840,93 @@ async fn email_verified_is_exposed_and_follows_the_code(pool: PgPool) {
         .unwrap();
     assert_eq!(stored, None);
 }
+
+/// `POST /auth/dev-login` from `peer` (a real server records the TCP peer;
+/// `oneshot` needs it handed in).
+async fn dev_login(app: &TestApp, login: &str, peer: [u8; 4]) -> ab_testkit::TestResponse {
+    let mut request = Request::post("/api/v2/auth/dev-login")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            serde_json::json!({ "login": login }).to_string(),
+        ))
+        .unwrap();
+    request
+        .extensions_mut()
+        .insert(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            peer, 50_000,
+        ))));
+    app.send(request).await
+}
+
+/// Dev login (`just login-as`): development signs a loopback caller in as
+/// any active account by username or email, no password and no Zitadel
+/// call; unknown and disabled accounts and non-loopback peers are refused.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dev_login_signs_in_as_an_existing_account(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    assert!(ab_api::app::dev_login_enabled(&app.state.config));
+    app.create_user("qa-teacher", "qa@example.com", &["instructor"])
+        .await;
+
+    for login in ["qa-teacher", "QA@example.com"] {
+        let response = dev_login(&app, login, [127, 0, 0, 1]).await;
+        assert_eq!(response.status, StatusCode::OK, "{}", response.text());
+        assert_eq!(response.json()["roles"], serde_json::json!(["instructor"]));
+        let cookie = response.session_cookie().expect("session cookie set");
+        let session = app
+            .send(
+                Request::builder()
+                    .uri("/api/v2/auth/session")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+        assert_eq!(session.status, StatusCode::OK);
+        assert_eq!(session.json()["user"]["username"], "qa-teacher");
+    }
+
+    let unknown = dev_login(&app, "nobody", [127, 0, 0, 1]).await;
+    assert_eq!(unknown.status, StatusCode::NOT_FOUND);
+    let lan = dev_login(&app, "qa-teacher", [192, 168, 1, 20]).await;
+    assert_eq!(lan.status, StatusCode::FORBIDDEN);
+    assert!(lan.session_cookie().is_none());
+
+    sqlx::query("UPDATE users SET status = 'disabled' WHERE username = 'qa-teacher'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let disabled = dev_login(&app, "qa-teacher", [127, 0, 0, 1]).await;
+    assert_eq!(disabled.status, StatusCode::FORBIDDEN);
+    assert_eq!(disabled.json()["code"], "account-disabled");
+}
+
+/// Production config: the route does not exist (the unknown-route 404,
+/// even from loopback), and the domain method refuses on its own.
+#[sqlx::test(migrations = "../../migrations")]
+async fn dev_login_does_not_exist_in_production(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.environment = ab_core::config::Environment::Production;
+    })
+    .await;
+    assert!(!ab_api::app::dev_login_enabled(&app.state.config));
+    app.create_user("qa-admin", "qa-admin@example.com", &["admin"])
+        .await;
+
+    let response = dev_login(&app, "qa-admin", [127, 0, 0, 1]).await;
+    assert_eq!(response.status, StatusCode::NOT_FOUND);
+    assert_eq!(response.json()["code"], "not-found");
+    assert!(response.session_cookie().is_none());
+
+    let refused = app
+        .state
+        .identity
+        .dev_login(
+            ab_core::config::Environment::Production,
+            "qa-admin",
+            None,
+            None,
+        )
+        .await;
+    assert!(refused.is_err(), "the domain refuses production on its own");
+}

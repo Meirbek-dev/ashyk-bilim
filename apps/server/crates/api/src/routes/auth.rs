@@ -81,20 +81,68 @@ pub async fn login(
                 user_agent: user_agent(&headers),
             })
             .await?;
-        let actor = ab_domain::identity::Actor {
-            user_id: ok.user_id,
-            permissions: ab_core::permission::PermissionSet::parse(
-                ok.permissions.iter().map(String::as_str),
-            )?,
-            roles: ok.roles,
-            permission_strings: ok.permissions,
-            mfa_enabled: ok.mfa_enabled,
-            ..ab_domain::identity::Actor::anonymous()
-        };
-        let info = session_info(&state, actor).await?;
-        Ok((jar.add(session_cookie(&state, ok.session_id)), Json(info)))
+        Ok(signed_in(&state, jar, ok).await?)
     })
     .await
+}
+
+/// The session cookie and [`SessionInfo`] of a fresh sign-in.
+async fn signed_in(
+    state: &AppState,
+    jar: CookieJar,
+    ok: ab_domain::identity::LoginOk,
+) -> ab_core::Result<(CookieJar, Json<SessionInfo>)> {
+    let actor = ab_domain::identity::Actor {
+        user_id: ok.user_id,
+        permissions: ab_core::permission::PermissionSet::parse(
+            ok.permissions.iter().map(String::as_str),
+        )?,
+        roles: ok.roles,
+        permission_strings: ok.permissions,
+        mfa_enabled: ok.mfa_enabled,
+        ..ab_domain::identity::Actor::anonymous()
+    };
+    let info = session_info(state, actor).await?;
+    Ok((jar.add(session_cookie(state, ok.session_id)), Json(info)))
+}
+
+/// `POST /api/v2/auth/dev-login` body. Not in the contract.
+#[derive(Deserialize, garde::Validate)]
+#[serde(deny_unknown_fields)]
+pub struct DevLoginRequest {
+    /// Username or email of an existing account.
+    #[garde(length(min = 1, max = 320))]
+    pub login: String,
+}
+
+/// Local QA (`just login-as`): sign in as an account without its password.
+///
+/// Routed only by [`crate::app::dev_login_enabled`] (debug build,
+/// `AB__ENVIRONMENT=development`); answers loopback peers only, so a dev
+/// server bound to 0.0.0.0 does not hand sessions to the LAN.
+pub async fn dev_login(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    headers: HeaderMap,
+    extensions: axum::http::Extensions,
+    ValidJson(request): ValidJson<DevLoginRequest>,
+) -> ApiResult<(CookieJar, Json<SessionInfo>)> {
+    let peer = extensions
+        .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
+        .map(|info| info.0.ip().to_canonical());
+    let Some(peer) = peer.filter(std::net::IpAddr::is_loopback) else {
+        return Err(Error::forbidden("dev login answers loopback clients only").into());
+    };
+    let ok = state
+        .identity
+        .dev_login(
+            state.config.environment,
+            &request.login,
+            Some(peer.to_string()),
+            user_agent(&headers),
+        )
+        .await?;
+    Ok(signed_in(&state, jar, ok).await?)
 }
 
 /// Self-registration: creates the account (default `user` role) and emails

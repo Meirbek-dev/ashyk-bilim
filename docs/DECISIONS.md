@@ -1,5 +1,23 @@
 # Decision log (deviations & refinements vs ARCHITECTURE.md)
 
+## 2026-10-13 — Dev login for local QA, off the contract
+
+Local QA on real-data copies needs any account, and a restored copy has no
+Zitadel credentials for its users (this replaces the Zitadel proxy swap).
+`POST /api/v2/auth/dev-login {login}` opens a session for an active account
+by username or email, without a password, like a Google login (no Zitadel
+session, MFA not asked). `just login-as <user> [slot]` prints the cookie.
+
+Three independent gates: the route is mounted only when
+`ab_api::app::dev_login_enabled` (a debug build AND `AB__ENVIRONMENT` not
+`production`; release images never route it, and compose.prod.yaml pins
+production), the domain method refuses the same conditions, and the handler
+answers loopback peers only (a dev API bound to 0.0.0.0 gives no sessions to
+the LAN). It is not in `openapi.v2.json` (no client calls it), like
+`/api/v2/docs`. Every use is audited as `login-dev`. Tests:
+`auth_flow.rs` `dev_login_*` (works in development; 404 + domain refusal in
+production).
+
 ## 2026-10-13 — Multipart video uploads through the university proxy
 
 The outer TLS proxy refuses large single PUTs (HTTP 413), although the app,

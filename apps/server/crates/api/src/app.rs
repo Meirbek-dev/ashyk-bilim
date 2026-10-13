@@ -5,7 +5,7 @@ use std::time::Duration;
 use ab_core::config::Config;
 use ab_core::{Error, Result};
 use axum::http::{HeaderName, HeaderValue, Method, StatusCode, header};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer;
@@ -509,6 +509,12 @@ pub fn build_router(state: AppState) -> Result<Router> {
     if serve_docs {
         router = router.merge(Scalar::with_url("/api/v2/docs", api));
     }
+    if dev_login_enabled(&state.config) {
+        router = router.route(
+            "/api/v2/auth/dev-login",
+            post(crate::routes::auth::dev_login),
+        );
+    }
 
     let request_id = HeaderName::from_static(REQUEST_ID_HEADER);
     let router = router
@@ -568,6 +574,14 @@ pub fn build_router(state: AppState) -> Result<Router> {
         )
         .with_state(state);
     Ok(router)
+}
+
+/// `POST /api/v2/auth/dev-login` (`just login-as`, local QA on real-data
+/// copies) is routed only in a debug build with `AB__ENVIRONMENT=development`:
+/// never in production, and never part of the contract.
+#[must_use]
+pub const fn dev_login_enabled(config: &Config) -> bool {
+    cfg!(debug_assertions) && !config.environment.is_production()
 }
 
 /// Strict-allowlist CORS with credentials (BFF cookies). An empty allowlist

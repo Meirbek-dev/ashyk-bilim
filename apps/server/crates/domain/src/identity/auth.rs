@@ -490,6 +490,82 @@ impl IdentityService {
         Ok(ok)
     }
 
+    /// Local QA only (`just login-as`): a session for an existing account,
+    /// found by username or email, without a password - real-data copies
+    /// have no Zitadel credentials for their users. Refused outside a debug
+    /// build with `AB__ENVIRONMENT=development`; the one caller,
+    /// `POST /api/v2/auth/dev-login`, is not even routed there
+    /// (`ab_api::app::dev_login_enabled`). Like a Google login, no Zitadel
+    /// session backs it; MFA is not asked for.
+    pub async fn dev_login(
+        &self,
+        environment: ab_core::config::Environment,
+        login: &str,
+        ip: Option<String>,
+        user_agent: Option<String>,
+    ) -> Result<LoginOk> {
+        if environment.is_production() || !cfg!(debug_assertions) {
+            return Err(Error::forbidden("dev login exists only in development"));
+        }
+        let user = ab_db::identity::find_user_for_login(&self.pool, login.trim())
+            .await?
+            .ok_or_else(|| Error::not_found("user"))?;
+        // BUG-203 fence, as `login_attempt`: a mutation between the reads
+        // and `create` refuses the session; one re-read is a fresh sign-in.
+        for _ in 0..2 {
+            let epoch = self.sessions.epoch(user.id).await?;
+            let row = ab_db::identity::find_auth_user(&self.pool, user.id)
+                .await?
+                .ok_or_else(|| Error::not_found("user"))?;
+            if row.status != "active" {
+                return Err(Error::app(
+                    ErrorCode::AccountDisabled,
+                    "account is disabled",
+                ));
+            }
+            let (roles, permissions) =
+                ab_db::identity::load_user_grants(&self.pool, user.id).await?;
+            let google_linked = ab_db::identity::google_linked(&self.pool, user.id).await?;
+            let created = self
+                .sessions
+                .create(NewSession {
+                    user_id: user.id,
+                    zitadel_user_id: row.zitadel_user_id,
+                    zitadel_session_id: String::new(),
+                    zitadel_session_token: String::new(),
+                    roles: roles.clone(),
+                    permissions: permissions.clone(),
+                    rbac_version: row.rbac_version,
+                    mfa_enabled: false,
+                    has_password: true,
+                    google_linked,
+                    ip: ip.clone(),
+                    user_agent: user_agent.clone(),
+                    epoch,
+                })
+                .await?;
+            if let Some(session_id) = created {
+                ab_db::identity::insert_auth_audit(
+                    &self.pool,
+                    Some(user.id),
+                    "login-dev",
+                    ip.as_deref(),
+                    user_agent.as_deref(),
+                    serde_json::json!({}),
+                )
+                .await?;
+                return Ok(LoginOk {
+                    session_id,
+                    user_id: user.id,
+                    roles,
+                    permissions,
+                    mfa_enabled: false,
+                });
+            }
+        }
+        Err(Error::conflict("the account changed during sign-in; retry"))
+    }
+
     /// One fenced login attempt: `Ok(None)` when a mutation bumped the epoch
     /// between the checks and `sessions.create` (the Zitadel session is
     /// discarded and the fence audited); the caller retries or refuses.
