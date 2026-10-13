@@ -13,6 +13,8 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { AlertTriangle, Check, GripVertical, Hexagon, Loader2, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations'
+import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
+import { hasErrorCode } from '@/lib/api/assertSuccess'
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +54,8 @@ interface Chapter {
   chapter_uuid?: string
   name?: string
   activities?: Activity[]
+  /** v2: `delete` is missing while an activity in it holds learner work (it is hidden instead). */
+  allowed_actions?: string[]
 }
 
 interface ChapterElementProps {
@@ -109,6 +113,7 @@ function ChapterElement({
   isDraggingActivity,
 }: ChapterElementProps) {
   const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true)
+  const { updateActivity } = useActivityMutations(course_uuid, true)
   const t = useTranslations('CourseEdit')
   const { toastApiError } = useApiError()
 
@@ -117,6 +122,12 @@ function ChapterElement({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingChapter, setIsDeletingChapter] = useState(false)
+  const [isHidingChapter, setIsHidingChapter] = useState(false)
+  // A delete the server refused for learner work (409 from a stale view): the dialog turns into «hide».
+  const [deleteRefused, setDeleteRefused] = useState(false)
+  // Owner decision 2026-10-14: a chapter whose activities hold learner work is hidden, never deleted.
+  const lockedByWork =
+    deleteRefused || Boolean(chapter.allowed_actions?.includes('update') && !chapter.allowed_actions.includes('delete'))
 
   const activities = useMemo(() => chapter.activities ?? [], [chapter.activities])
 
@@ -187,10 +198,29 @@ function ChapterElement({
       setIsDeleteDialogOpen(false)
       toast.success(t('chapterDeletedSuccess'))
     } catch (error: unknown) {
+      if (hasErrorCode(error, 'activity-has-learner-work')) {
+        setDeleteRefused(true)
+        return
+      }
       toastApiError(error, undefined, t('chapterDeleteFailed'))
       setIsDeleteDialogOpen(false)
     } finally {
       setIsDeletingChapter(false)
+    }
+  }
+
+  // «Hide» a chapter: unpublish each of its published activities (their hand-ins stay).
+  const handleHideChapter = async () => {
+    setIsHidingChapter(true)
+    try {
+      for (const activity of activities.filter(item => item.published))
+        await updateActivity(activity.activity_uuid, { published: false })
+      setIsDeleteDialogOpen(false)
+      toast.success(t('chapterHiddenToast'))
+    } catch (error: unknown) {
+      toastApiError(error, undefined, t('chapterUpdateFailed'))
+    } finally {
+      setIsHidingChapter(false)
     }
   }
 
@@ -324,29 +354,53 @@ function ChapterElement({
               <AlertDialogMedia className="bg-muted text-foreground">
                 <AlertTriangle className="size-8" />
               </AlertDialogMedia>
-              <AlertDialogTitle>{t('deleteChapterTitle', { name: chapterName })}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {activities.length > 0
-                  ? t('deleteChapterConfirmationBreakdown', {
-                      count: activities.length,
-                      published: publishedCount,
-                      drafts: draftCount,
-                    })
-                  : t('deleteChapterConfirmation')}
-              </AlertDialogDescription>
+              {lockedByWork ? (
+                <>
+                  <AlertDialogTitle>{t('lockedChapterTitle', { name: chapterName })}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {publishedCount > 0 ? t('lockedChapterMessage') : t('lockedChapterHiddenMessage')}
+                  </AlertDialogDescription>
+                </>
+              ) : (
+                <>
+                  <AlertDialogTitle>{t('deleteChapterTitle', { name: chapterName })}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {activities.length > 0
+                      ? t('deleteChapterConfirmationBreakdown', {
+                          count: activities.length,
+                          published: publishedCount,
+                          drafts: draftCount,
+                        })
+                      : t('deleteChapterConfirmation')}
+                  </AlertDialogDescription>
+                </>
+              )}
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeletingChapter} />
-              <AlertDialogAction variant="destructive" onClick={handleDeleteChapter} disabled={isDeletingChapter}>
-                {isDeletingChapter ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('deleting')}
-                  </>
-                ) : (
-                  t('deleteChapterButton')
-                )}
-              </AlertDialogAction>
+              {lockedByWork && publishedCount === 0 ? (
+                <AlertDialogCancel>{t('closeDialog')}</AlertDialogCancel>
+              ) : (
+                <AlertDialogCancel disabled={isDeletingChapter || isHidingChapter} />
+              )}
+              {lockedByWork ? (
+                publishedCount > 0 ? (
+                  <AlertDialogAction variant="destructive" onClick={handleHideChapter} disabled={isHidingChapter}>
+                    {isHidingChapter ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {t('hideChapterButton')}
+                  </AlertDialogAction>
+                ) : null
+              ) : (
+                <AlertDialogAction variant="destructive" onClick={handleDeleteChapter} disabled={isDeletingChapter}>
+                  {isDeletingChapter ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('deleting')}
+                    </>
+                  ) : (
+                    t('deleteChapterButton')
+                  )}
+                </AlertDialogAction>
+              )}
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

@@ -248,19 +248,35 @@ describe('ActivityElement capabilities (v2 grants)', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'editButton' })))
   })
 
-  // BUG-186: deleting an assessment activity cascades its hand-ins - the confirm says so.
-  it('warns about lost hand-ins when deleting an assessment activity', () => {
-    harness.permissions = new Set(['activity:delete:platform'])
-    render(
+  // BUG-186, owner decision 2026-10-14: an activity with learner work is never deleted - the delete dialog offers
+  // to hide (unpublish) it, or only explains when it is hidden already.
+  it('offers to hide an activity with learner work instead of deleting it', async () => {
+    harness.permissions = new Set(['activity:delete:platform', 'activity:update:platform'])
+    harness.updateActivity.mockResolvedValue({})
+    const withWork = (published: boolean) => ({
+      ...activity,
+      activity_type: 'TYPE_CUSTOM' as const,
+      published,
+      allowed_actions: ['update', 'move'],
+    })
+    const view = render(
       <QueryClientProvider client={new QueryClient()}>
-        <ActivityElement
-          activity={{ ...activity, activity_type: 'TYPE_CUSTOM' as const }}
-          activityIndex={0}
-          course_uuid="course-1"
-        />
+        <ActivityElement activity={withWork(true)} activityIndex={0} course_uuid="course-1" />
       </QueryClientProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'deleteButton' }))
-    expect(screen.getByText('deleteAssessmentConfirmation')).toBeInTheDocument()
+    expect(screen.getByText('lockedDeleteMessage')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'hideButton' }))
+    await waitFor(() => expect(harness.updateActivity).toHaveBeenCalledWith('act-1', { published: false }))
+    view.unmount()
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActivityElement activity={withWork(false)} activityIndex={0} course_uuid="course-1" />
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'deleteButton' }))
+    expect(screen.getByText('lockedDeleteHiddenMessage')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'hideButton' })).not.toBeInTheDocument()
   })
 })

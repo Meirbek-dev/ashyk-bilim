@@ -785,6 +785,66 @@ pub async fn update_chapter(
     Ok(updated.rows_affected() == 1)
 }
 
+/// The activities among `ids` that hold learner work.
+///
+/// Learner work: a submission or file attempt that is not a staff preview,
+/// or a code run, by someone outside the course staff (`is_course_staff`).
+/// Such an activity (or its chapter) is unpublished, never deleted
+/// (DECISIONS 2026-10-14).
+pub async fn activities_with_learner_work<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    ids: &[uuid::Uuid],
+) -> Result<Vec<ActivityId>> {
+    let rows = sqlx::query_scalar!(
+        r#"SELECT a.id AS "id!: ActivityId" FROM activities a
+           WHERE a.id = ANY($1) AND (
+               EXISTS (SELECT 1 FROM assessments s JOIN submissions u ON u.assessment_id = s.id
+                       WHERE s.activity_id = a.id AND NOT u.preview
+                         AND NOT is_course_staff(a.course_id, u.user_id))
+               OR EXISTS (SELECT 1 FROM assessments s JOIN code_runs r ON r.assessment_id = s.id
+                          WHERE s.activity_id = a.id AND NOT is_course_staff(a.course_id, r.user_id))
+               OR EXISTS (SELECT 1 FROM file_submissions f
+                          JOIN file_submission_attempts t ON t.file_submission_id = f.id
+                          WHERE f.activity_id = a.id AND NOT t.preview
+                            AND NOT is_course_staff(a.course_id, t.user_id)))"#,
+        ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
+/// 409 `activity-has-learner-work` while any of `activities` holds learner
+/// work. Their assessment and file-task rows are locked first: a hand-in
+/// racing the delete waits on its foreign-key check, so none slips in
+/// between this check and the cascade.
+async fn refuse_learner_work(
+    conn: &mut sqlx::PgConnection,
+    activities: &[uuid::Uuid],
+) -> Result<()> {
+    sqlx::query_scalar!(
+        "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+        activities
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    sqlx::query_scalar!(
+        "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+        activities
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    let with_work = activities_with_learner_work(&mut *conn, activities).await?;
+    if with_work.is_empty() {
+        return Ok(());
+    }
+    Err(ab_core::Error::app_with_details(
+        ab_core::ErrorCode::ActivityHasLearnerWork,
+        "learners have handed in work here; unpublish it instead of deleting",
+        serde_json::json!({ "activity_ids": with_work }),
+    ))
+}
+
 /// Delete a chapter, releasing the uploads of the media blocks under it
 /// (BUG-209/242 - see [`delete_course`]; lock order chapter → activities →
 /// uploads).
@@ -799,6 +859,7 @@ pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Re
     )
     .fetch_all(&mut *tx)
     .await?;
+    refuse_learner_work(&mut tx, &activities).await?;
     crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
@@ -1010,6 +1071,7 @@ pub async fn delete_activity(
     else {
         return Ok(false);
     };
+    refuse_learner_work(&mut tx, &[locked]).await?;
     crate::file_submissions::delete_files_releasing(&mut tx, &[locked], grace_secs).await?;
     delete_blocks_releasing(&mut tx, &[locked], None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)

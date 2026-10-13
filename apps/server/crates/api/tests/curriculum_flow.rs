@@ -1220,10 +1220,13 @@ async fn refused_activity_patch_writes_nothing(pool: PgPool) {
     assert_eq!(detail.json()["name"], "Quiz");
 }
 
-/// BUG-186 (test task): deleting the activity of a published quiz with a
-/// hand-in cascades the assessment and its submissions (204, both gone).
+/// BUG-186, owner decision 2026-10-14: an activity (or chapter) whose
+/// learners handed in work is never deleted - 409
+/// `activity-has-learner-work`, nothing goes, and `allowed_actions` stop
+/// offering `delete` (the webs offer unpublish). A staff preview attempt is
+/// no learner work: the delete still goes through, with the preview.
 #[sqlx::test(migrations = "../../migrations")]
-async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
+async fn deleting_an_activity_with_learner_work_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
         .create_user("deleter", "deleter@example.com", &["instructor"])
@@ -1243,6 +1246,17 @@ async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
     app.publish_course(&course_id).await;
     let chapter_id = create_chapter(&app, &teacher, &course_id, "Week 1").await;
     let (assessment_id, activity_id) = published_quiz(&app, &teacher, &chapter_id).await;
+    let (previewed_id, previewed_activity) = published_quiz(&app, &teacher, &chapter_id).await;
+
+    // The teacher's own attempt is a preview: it blocks nothing.
+    let preview = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{previewed_id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
 
     let alice = app
         .create_user("alice", "alice@example.com", &["user"])
@@ -1271,18 +1285,71 @@ async fn deleting_a_quiz_activity_cascades_its_hand_ins(pool: PgPool) {
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
 
-    let deleted = app
-        .delete_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+    // The editor's views say so before anyone tries.
+    let curriculum = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/curriculum"))
         .await;
-    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    let chapter = &curriculum.json()["chapters"][0];
+    let actions = |v: &serde_json::Value| -> Vec<String> {
+        v["allowed_actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a.as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert!(
+        !actions(chapter).contains(&"delete".to_owned()),
+        "{chapter}"
+    );
+    let listed = chapter["activities"].as_array().unwrap();
+    let of = |id: &str| listed.iter().find(|a| a["id"] == id).unwrap();
+    assert!(!actions(of(&activity_id)).contains(&"delete".to_owned()));
+    assert!(actions(of(&activity_id)).contains(&"update".to_owned()));
+    assert!(actions(of(&previewed_activity)).contains(&"delete".to_owned()));
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
+        .await;
+    assert!(!actions(&detail.json()).contains(&"delete".to_owned()));
+
+    for path in [
+        format!("/api/v2/activities/{activity_id}"),
+        format!("/api/v2/chapters/{chapter_id}"),
+    ] {
+        let refused = app.delete_as(&teacher, &path).await;
+        assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+        assert_eq!(refused.json()["code"], "activity-has-learner-work");
+        assert_eq!(
+            refused.json()["details"]["activity_ids"],
+            serde_json::json!([activity_id])
+        );
+    }
     let assessment = app
         .get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
         .await;
-    assert_eq!(assessment.status, StatusCode::NOT_FOUND);
+    assert_eq!(assessment.status, StatusCode::OK);
     let submission = app
         .get_as(&alice, &format!("/api/v2/submissions/{submission_id}"))
         .await;
-    assert_eq!(submission.status, StatusCode::NOT_FOUND);
+    assert_eq!(submission.status, StatusCode::OK);
+    let renamed = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/chapters/{chapter_id}"),
+            &serde_json::json!({ "name": "Week one" }),
+        )
+        .await;
+    assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.text());
+    assert!(!actions(&renamed.json()).contains(&"delete".to_owned()));
+
+    // Only a preview behind it: deleted as before.
+    let deleted = app
+        .delete_as(
+            &teacher,
+            &format!("/api/v2/activities/{previewed_activity}"),
+        )
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
 }
 
 /// BUG-201: a draft (or archived) assessment pins its activity's type just

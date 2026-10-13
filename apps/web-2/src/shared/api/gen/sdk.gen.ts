@@ -23,6 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 /**
  * Delete an activity; chapter siblings renumber to stay contiguous.
+ * Refused while it holds learner work: unpublish instead.
  */
 export const deleteActivity = <ThrowOnError extends boolean = false>(options: Options<DeleteActivityData, ThrowOnError>): RequestResult<DeleteActivityResponses, DeleteActivityErrors, ThrowOnError> => (options.client ?? client).delete<DeleteActivityResponses, DeleteActivityErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vDeleteActivityResponse, data),
@@ -1340,6 +1341,7 @@ export const certificationPreviewPdf = <ThrowOnError extends boolean = false>(op
 
 /**
  * Delete a chapter and its activities; siblings renumber to stay contiguous.
+ * Refused while an activity under it holds learner work: unpublish instead.
  */
 export const deleteChapter = <ThrowOnError extends boolean = false>(options: Options<DeleteChapterData, ThrowOnError>): RequestResult<DeleteChapterResponses, DeleteChapterErrors, ThrowOnError> => (options.client ?? client).delete<DeleteChapterResponses, DeleteChapterErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vDeleteChapterResponse, data),

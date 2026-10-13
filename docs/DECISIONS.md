@@ -1,5 +1,27 @@
 # Decision log (deviations & refinements vs ARCHITECTURE.md)
 
+## 2026-10-14 — Learner work is hidden, never deleted (activities and chapters)
+
+Owner decision (answers the 2026-10-13 cascade-audit question). Deleting an
+activity, or a chapter, that holds learner work is refused: 409
+`activity-has-learner-work` (details: `activity_ids`), nothing is deleted, and
+the message tells the teacher to unpublish (hide) it. Learner work is a
+submission or file attempt that is not a staff preview, or a code run, by
+someone outside the course staff (`is_course_staff`); staff previews and lesson
+progress do not count (they still go with a delete). The check runs inside the
+delete's transaction after locking the activity and its assessment / file-task
+rows, so a hand-in racing the delete waits on its foreign-key check.
+
+`allowed_actions` of an activity / chapter (curriculum, activity detail,
+chapter rename) drop `delete` while it holds learner work. Both webs keep the
+trash button for editors: without `delete` (or after a 409 from a stale view)
+the dialog says it cannot be deleted and offers «Скрыть» (unpublish the
+activity / every published activity of the chapter), or only explains when it
+is already hidden. Pinned by curriculum_flow
+`deleting_an_activity_with_learner_work_is_refused` (BUG-186) and the cascade
+audit's `ACTIVITY_DELETE` reason; web-2 `delete-activity.browser.test.tsx`,
+legacy `activity-element-grants.test.tsx`.
+
 ## 2026-10-13 — Dev login for local QA, off the contract
 
 Local QA on real-data copies needs any account, and a restored copy has no
@@ -2808,10 +2830,9 @@ as before.
   admin who is no member; the instructor role reads every group (`usergroup:read:platform`).
 - **Every `ON DELETE CASCADE` onto someone's work is reviewed** (`crates/db/tests/cascade_audit.rs`,
   reason per key). The losses that remain are the designed ones: course delete (archive keeps history),
-  activity/chapter delete (BUG-186; both delete dialogs name the lost hand-ins), a thread with its opening
+  activity/chapter delete (refused with learner work since 2026-10-14, see that entry), a thread with its opening
   post (web-2 says so), a leave resetting completions, preview drafts, and the manual user erasure path
-  (the app never deletes users). Open for the owner: whether an activity with handed-in work should refuse
-  deletion instead (unpublish keeps it).
+  (the app never deletes users). The owner's answer on handed-in work: 2026-10-14 entries above.
 - **The server's upload policy is in the contract** (`UploadPurpose`'s `x-upload-policy`); both webs
   generate their caps from it (`just contract`), so a drifted constant fails the codegen drift checks.
   Legacy's avatar cap was 2 MB against the server's 5 MB: a 2-5 MB GIF the server accepts was refused.

@@ -11,6 +11,10 @@ expression: registry
     409,
     "An account with this email already exists"
   ],
+  "activity-has-learner-work": [
+    409,
+    "Learners have handed in work here: unpublish it instead of deleting"
+  ],
   "activity-media-missing": [
     409,
     "Add the lesson's file or link before publishing it"

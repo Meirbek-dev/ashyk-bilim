@@ -57,7 +57,7 @@
   "studio_chapter_created": "Глава добавлена",
   "studio_chapter_empty": "В главе пока нет активностей",
   "studio_chapter_delete_title": "Удалить главу «{name}»?",
-  "studio_chapter_delete_consequence": "Глава удалится вместе с её активностями и ответами учащихся.",
+  "studio_chapter_delete_consequence": "Глава удалится вместе с её активностями.",
   "studio_activity_new": "Добавить активность",
   "studio_activity_new_in": "Добавить активность в «{name}»",
   "studio_activity_created": "Активность создана",
@@ -266,5 +266,13 @@
   "studio_drag_picked": "Взят элемент «{name}».",
   "studio_drag_over": "«{name}» над «{target}».",
   "studio_drag_dropped": "«{name}» перемещён.",
-  "studio_drag_canceled": "Перемещение «{name}» отменено."
+  "studio_drag_canceled": "Перемещение «{name}» отменено.",
+  "studio_hide": "Скрыть",
+  "studio_chapter_hidden": "Глава скрыта",
+  "studio_activity_locked_title": "«{name}» нельзя удалить",
+  "studio_activity_locked_consequence": "Учащиеся уже сдали здесь работы, удаление стёрло бы их. Скройте активность: учащиеся перестанут её видеть, а работы и оценки сохранятся.",
+  "studio_activity_locked_hidden": "Учащиеся уже сдали здесь работы, поэтому активность нельзя удалить. Она уже скрыта: учащиеся её не видят, работы и оценки сохранены.",
+  "studio_chapter_locked_title": "Главу «{name}» нельзя удалить",
+  "studio_chapter_locked_consequence": "В её активностях есть работы учащихся, удаление стёрло бы их. Скройте главу: все её активности снимутся с публикации, а работы и оценки сохранятся.",
+  "studio_chapter_locked_hidden": "В её активностях есть работы учащихся, поэтому главу нельзя удалить. Все её активности уже скрыты, работы и оценки сохранены."
 }

@@ -20,10 +20,15 @@ pub struct Chapter {
 
 impl Chapter {
     /// `editable`: the caller passes the course's curriculum write gate
-    /// (`CurriculumService::editable`).
-    pub fn new(c: ab_domain::catalog::curriculum::Chapter, editable: bool) -> Self {
+    /// (`CurriculumService::editable`); `learner_work`: an activity under it
+    /// holds learner work (no `delete`).
+    pub fn new(
+        c: ab_domain::catalog::curriculum::Chapter,
+        editable: bool,
+        learner_work: bool,
+    ) -> Self {
         Self {
-            allowed_actions: ChapterAction::allowed(editable),
+            allowed_actions: ChapterAction::allowed(editable, learner_work),
             id: c.id,
             course_id: c.course_id,
             name: c.name,
@@ -55,10 +60,15 @@ pub struct Activity {
 
 impl Activity {
     /// `editable`: the caller passes the course's curriculum write gate
-    /// (`CurriculumService::editable`).
-    pub fn new(a: ab_domain::catalog::curriculum::Activity, editable: bool) -> Self {
+    /// (`CurriculumService::editable`); `learner_work`: learners handed in
+    /// work (no `delete`).
+    pub fn new(
+        a: ab_domain::catalog::curriculum::Activity,
+        editable: bool,
+        learner_work: bool,
+    ) -> Self {
         Self {
-            allowed_actions: ActivityAction::allowed(editable),
+            allowed_actions: ActivityAction::allowed(editable, learner_work),
             id: a.id,
             chapter_id: a.chapter_id,
             course_id: a.course_id,
@@ -82,12 +92,16 @@ pub struct CurriculumChapter {
 
 impl From<ab_domain::catalog::curriculum::CurriculumChapter> for CurriculumChapter {
     fn from(c: ab_domain::catalog::curriculum::CurriculumChapter) -> Self {
+        let learner_work = c.learner_work;
         Self {
-            chapter: Chapter::new(c.chapter, c.editable),
+            chapter: Chapter::new(c.chapter, c.editable, !learner_work.is_empty()),
             activities: c
                 .activities
                 .into_iter()
-                .map(|a| Activity::new(a, c.editable))
+                .map(|a| {
+                    let work = learner_work.contains(&a.id);
+                    Activity::new(a, c.editable, work)
+                })
                 .collect(),
         }
     }
@@ -163,7 +177,7 @@ pub struct ActivityDetail {
 impl From<ab_domain::catalog::curriculum::ActivityDetail> for ActivityDetail {
     fn from(d: ab_domain::catalog::curriculum::ActivityDetail) -> Self {
         Self {
-            activity: Activity::new(d.activity, d.editable),
+            activity: Activity::new(d.activity, d.editable, d.learner_work),
             content: d.content.content,
             details: wire_details(d.content.details),
             settings: d.content.settings,

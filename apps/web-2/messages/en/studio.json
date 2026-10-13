@@ -55,7 +55,7 @@
   "studio_chapter_created": "Chapter added",
   "studio_chapter_empty": "This chapter has no activities yet",
   "studio_chapter_delete_title": "Delete the chapter “{name}”?",
-  "studio_chapter_delete_consequence": "The chapter is deleted with its activities and the learners’ answers.",
+  "studio_chapter_delete_consequence": "The chapter is deleted with its activities.",
   "studio_activity_new": "Add activity",
   "studio_activity_new_in": "Add an activity to “{name}”",
   "studio_activity_created": "Activity created",
@@ -262,5 +262,13 @@
   "studio_drag_picked": "Picked up «{name}».",
   "studio_drag_over": "«{name}» is over «{target}».",
   "studio_drag_dropped": "«{name}» was moved.",
-  "studio_drag_canceled": "Moving «{name}» was cancelled."
+  "studio_drag_canceled": "Moving «{name}» was cancelled.",
+  "studio_hide": "Hide",
+  "studio_chapter_hidden": "Chapter hidden",
+  "studio_activity_locked_title": "“{name}” can’t be deleted",
+  "studio_activity_locked_consequence": "Learners have submitted work here; deleting would erase it. Hide the activity instead: learners stop seeing it, their submissions and grades are kept.",
+  "studio_activity_locked_hidden": "Learners have submitted work here, so the activity can’t be deleted. It is already hidden: learners don’t see it, their submissions and grades are kept.",
+  "studio_chapter_locked_title": "The chapter “{name}” can’t be deleted",
+  "studio_chapter_locked_consequence": "Its activities hold learners’ submissions; deleting would erase them. Hide the chapter instead: all its activities are unpublished, the submissions and grades are kept.",
+  "studio_chapter_locked_hidden": "Its activities hold learners’ submissions, so it can’t be deleted. All its activities are already hidden; the submissions and grades are kept."
 }

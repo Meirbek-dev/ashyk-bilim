@@ -1544,9 +1544,11 @@ async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
     }
 }
 
-/// BUG-259: deleting the activity, chapter or course under a submitted file
-/// releases the learner's upload (count 0, reaper clock set) - the cascade
-/// drops the file rows, never the reference.
+/// BUG-259: deleting the course under a submitted file releases the
+/// learner's upload (count 0, reaper clock set) - the cascade drops the file
+/// rows, never the reference. The activity or chapter holding it is not
+/// deleted at all (409 `activity-has-learner-work`, owner 2026-10-14): the
+/// file stays referenced.
 #[sqlx::test(migrations = "../../migrations")]
 async fn deletes_release_submitted_file_uploads(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -1591,6 +1593,17 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
             _ => format!("/api/v2/courses/{course_id}"),
         };
         let deleted = app.delete_as(&deleter, &path).await;
+        if target != "course" {
+            assert_eq!(
+                deleted.status,
+                StatusCode::CONFLICT,
+                "{target}: {}",
+                deleted.text()
+            );
+            assert_eq!(deleted.json()["code"], "activity-has-learner-work");
+            assert_eq!(referenced_count(&app, &upload).await, 1, "{target}");
+            continue;
+        }
         assert_eq!(
             deleted.status,
             StatusCode::NO_CONTENT,

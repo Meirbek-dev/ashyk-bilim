@@ -92,7 +92,8 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
           onClick={() => setRenaming(true)}
         />
       ) : null}
-      {allowed('delete') ? <DeleteActivity courseId={courseId} activity={activity} /> : null}
+      {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
+      {allowed('delete') || allowed('update') ? <DeleteActivity courseId={courseId} activity={activity} /> : null}
     </li>
   )
 }

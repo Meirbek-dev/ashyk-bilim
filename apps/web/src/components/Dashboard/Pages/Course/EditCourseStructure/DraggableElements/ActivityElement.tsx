@@ -79,6 +79,8 @@ interface Activity {
   is_owner?: boolean
   is_creator?: boolean
   available_actions?: string[]
+  /** v2: `delete` is missing while learners have handed in work (they hide it instead). */
+  allowed_actions?: string[]
 }
 
 interface ActivityElementProps {
@@ -164,6 +166,8 @@ function ActivityElement({
   const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingActivity, setIsDeletingActivity] = useState(false)
+  // A delete the server refused for learner work (409 from a stale row): the dialog turns into «hide».
+  const [deleteRefused, setDeleteRefused] = useState(false)
   // UX-202: the toggle is disabled while a publish/unpublish request is in
   // flight, so focus falls to <body> — hand it back to the toggle once it is
   // enabled again (after the unpublish confirm and after a direct publish).
@@ -198,6 +202,10 @@ function ActivityElement({
   const isAuthor = isCourseAuthor(courseStructure, session?.userId)
   const canUpdate = isAuthor || can('activity', 'update', 'platform')
   const canDelete = isAuthor || can('activity', 'delete', 'platform')
+  // Learners handed in work here (owner decision 2026-10-14): never deleted, the delete dialog offers to hide it.
+  const lockedByWork =
+    deleteRefused ||
+    Boolean(activity.allowed_actions?.includes('update') && !activity.allowed_actions.includes('delete'))
 
   const handleStartEdit = () => {
     setEditedName(activity.name)
@@ -300,7 +308,8 @@ function ActivityElement({
       toast.success(t('activityDeletedSuccess'))
       setIsDeleteDialogOpen(false)
     } catch (error: unknown) {
-      toastApiError(error, undefined, t('deleteFailed'))
+      if (hasErrorCode(error, 'activity-has-learner-work')) setDeleteRefused(true)
+      else toastApiError(error, undefined, t('deleteFailed'))
     } finally {
       toast.dismiss(toastId)
       setIsDeletingActivity(false)
@@ -536,24 +545,51 @@ function ActivityElement({
             <AlertDialogMedia className="bg-muted text-foreground">
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
-            <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
-            {/* BUG-186: deleting an assessment activity cascades its hand-ins. */}
-            <AlertDialogDescription>
-              {isAssessment ? t('deleteAssessmentConfirmation') : t('deleteConfirmation')}
-            </AlertDialogDescription>
+            {lockedByWork ? (
+              <>
+                <AlertDialogTitle>{t('lockedDeleteTitle', { name: activity.name })}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {activity.published ? t('lockedDeleteMessage') : t('lockedDeleteHiddenMessage')}
+                </AlertDialogDescription>
+              </>
+            ) : (
+              <>
+                <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
+                <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
+              </>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingActivity} />
-            <AlertDialogAction variant="destructive" onClick={handleDeleteActivity} disabled={isDeletingActivity}>
-              {isDeletingActivity ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('deleting')}
-                </>
-              ) : (
-                t('deleteButton')
-              )}
-            </AlertDialogAction>
+            {lockedByWork && !activity.published ? (
+              <AlertDialogCancel>{t('close')}</AlertDialogCancel>
+            ) : (
+              <AlertDialogCancel disabled={isDeletingActivity || isUpdatingPublish} />
+            )}
+            {lockedByWork ? (
+              activity.published ? (
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={isUpdatingPublish}
+                  onClick={() => {
+                    setIsDeleteDialogOpen(false)
+                    void handleTogglePublish()
+                  }}
+                >
+                  {t('hideButton')}
+                </AlertDialogAction>
+              ) : null
+            ) : (
+              <AlertDialogAction variant="destructive" onClick={handleDeleteActivity} disabled={isDeletingActivity}>
+                {isDeletingActivity ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('deleting')}
+                  </>
+                ) : (
+                  t('deleteButton')
+                )}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

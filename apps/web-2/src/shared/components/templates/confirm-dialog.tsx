@@ -28,7 +28,8 @@ type ConfirmDialogProps = {
   consequence: string
   /** The destructive verb ("Delete"). */
   confirmLabel: string
-  onConfirm: () => void
+  /** None: the dialog only explains (nothing to do), its one button closes it. */
+  onConfirm?: (() => void) | undefined
   pending: boolean
   error: unknown
 }
@@ -48,12 +49,14 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         <AlertDialogFooter>
           <AlertDialogCancel ref={cancel} variant="ghost">
-            {m.ui_cancel()}
+            {onConfirm ? m.ui_cancel() : m.ui_close()}
           </AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending} onClick={onConfirm}>
-            {pending ? <Spinner data-icon="inline-start" /> : null}
-            {confirmLabel}
-          </AlertDialogAction>
+          {onConfirm ? (
+            <AlertDialogAction variant="destructive" disabled={pending} onClick={onConfirm}>
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              {confirmLabel}
+            </AlertDialogAction>
+          ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

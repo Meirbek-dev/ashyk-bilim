@@ -8,6 +8,7 @@ import type { AbortMultipartUploadData, AbortMultipartUploadError, AbortMultipar
 
 /**
  * Delete an activity; chapter siblings renumber to stay contiguous.
+ * Refused while it holds learner work: unpublish instead.
  */
 export const deleteActivityMutation = (options?: Partial<Options<DeleteActivityData>>): UseMutationOptions<DeleteActivityResponse, DeleteActivityError, Options<DeleteActivityData>> => {
     const mutationOptions: UseMutationOptions<DeleteActivityResponse, DeleteActivityError, Options<DeleteActivityData>> = {
@@ -2662,6 +2663,7 @@ export const certificationPreviewPdfOptions = (options: Options<CertificationPre
 
 /**
  * Delete a chapter and its activities; siblings renumber to stay contiguous.
+ * Refused while an activity under it holds learner work: unpublish instead.
  */
 export const deleteChapterMutation = (options?: Partial<Options<DeleteChapterData>>): UseMutationOptions<DeleteChapterResponse, DeleteChapterError, Options<DeleteChapterData>> => {
     const mutationOptions: UseMutationOptions<DeleteChapterResponse, DeleteChapterError, Options<DeleteChapterData>> = {

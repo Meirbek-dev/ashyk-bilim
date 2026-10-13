@@ -99,6 +99,10 @@ export const updateActivityOptions = (queryClient: QueryClient, courseId: Course
   meta: { invalidates: [readiness(courseId)] },
 })
 
+/** A delete refused because learners handed in work there (409): the studio offers to hide it instead. */
+export const learnerWorkRefusal = (error: unknown) =>
+  error instanceof ApiError && error.code === 'activity-has-learner-work'
+
 export const deleteActivityOptions = (queryClient: QueryClient, courseId: CourseId) => ({
   ...deleteActivityMutation(),
   onSuccess: (_: unknown, { path }: { path: { activity_id: string } }) =>

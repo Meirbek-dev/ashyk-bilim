@@ -115,7 +115,7 @@ pub async fn create_chapter(
                 )
                 .await?;
             // Created behind the curriculum write gate: editable.
-            Ok((StatusCode::CREATED, Chapter::new(chapter, true)))
+            Ok((StatusCode::CREATED, Chapter::new(chapter, true, false)))
         },
     )
     .await
@@ -160,10 +160,12 @@ pub async fn update_chapter(
         )
         .await?;
     // Updated behind the curriculum write gate: editable.
-    Ok(Json(Chapter::new(chapter, true)))
+    let learner_work = state.curriculum.chapter_learner_work(id).await?;
+    Ok(Json(Chapter::new(chapter, true, learner_work)))
 }
 
 /// Delete a chapter and its activities; siblings renumber to stay contiguous.
+/// Refused while an activity under it holds learner work: unpublish instead.
 #[utoipa::path(
     delete,
     path = "/chapters/{chapter_id}",
@@ -174,6 +176,8 @@ pub async fn update_chapter(
     responses(
         (status = 412, description = "Stale `If-Match`", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "`activity-has-learner-work` (details: `activity_ids`)",
+         body = Problem, content_type = "application/problem+json"),
         (status = 204, description = "Deleted"),
         (status = 403, description = "No write access", body = Problem,
          content_type = "application/problem+json"),
@@ -276,7 +280,7 @@ pub async fn create_activity(
                 )
                 .await?;
             // Created behind the curriculum write gate: editable.
-            Ok((StatusCode::CREATED, Activity::new(activity, true)))
+            Ok((StatusCode::CREATED, Activity::new(activity, true, false)))
         },
     )
     .await
@@ -384,6 +388,7 @@ pub async fn update_activity(
 }
 
 /// Delete an activity; chapter siblings renumber to stay contiguous.
+/// Refused while it holds learner work: unpublish instead.
 #[utoipa::path(
     delete,
     path = "/activities/{activity_id}",
@@ -398,6 +403,8 @@ pub async fn update_activity(
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown, inaccessible, or already deleted", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "`activity-has-learner-work`: learners handed in work",
+         body = Problem, content_type = "application/problem+json"),
         (status = 412, description = "Stale version", body = Problem,
          content_type = "application/problem+json"),
     )

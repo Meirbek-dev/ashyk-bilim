@@ -7649,6 +7649,7 @@ expression: json
           "payload-too-large",
           "activity-not-ready",
           "activity-media-missing",
+          "activity-has-learner-work",
           "course-not-ready",
           "course-archived",
           "unsupported-media-type",
@@ -19814,6 +19815,16 @@ expression: json
             },
             "description": "Unknown, inaccessible, or already deleted"
           },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`activity-has-learner-work`: learners handed in work"
+          },
           "412": {
             "content": {
               "application/problem+json": {
@@ -19825,7 +19836,7 @@ expression: json
             "description": "Stale version"
           }
         },
-        "summary": "Delete an activity; chapter siblings renumber to stay contiguous.",
+        "summary": "Delete an activity; chapter siblings renumber to stay contiguous.\nRefused while it holds learner work: unpublish instead.",
         "tags": [
           "courses"
         ]
@@ -27911,6 +27922,16 @@ expression: json
             },
             "description": "No write access"
           },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`activity-has-learner-work` (details: `activity_ids`)"
+          },
           "412": {
             "content": {
               "application/problem+json": {
@@ -27922,7 +27943,7 @@ expression: json
             "description": "Stale `If-Match`"
           }
         },
-        "summary": "Delete a chapter and its activities; siblings renumber to stay contiguous.",
+        "summary": "Delete a chapter and its activities; siblings renumber to stay contiguous.\nRefused while an activity under it holds learner work: unpublish instead.",
         "tags": [
           "courses"
         ]

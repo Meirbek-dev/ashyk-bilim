@@ -90,6 +90,7 @@ export const getDeleteActivityUrl = (activityId: ActivityId) => {
 
 /**
  * @summary Delete an activity; chapter siblings renumber to stay contiguous.
+Refused while it holds learner work: unpublish instead.
  */
 export const deleteActivity = async (
   activityId: ActivityId,
@@ -147,6 +148,7 @@ export type DeleteActivityMutationVariables = { activityId: ActivityId }
 
 /**
  * @summary Delete an activity; chapter siblings renumber to stay contiguous.
+Refused while it holds learner work: unpublish instead.
  */
 export const useDeleteActivity = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -1060,6 +1062,7 @@ export const getDeleteChapterUrl = (chapterId: ChapterId) => {
 
 /**
  * @summary Delete a chapter and its activities; siblings renumber to stay contiguous.
+Refused while an activity under it holds learner work: unpublish instead.
  */
 export const deleteChapter = async (
   chapterId: ChapterId,
@@ -1112,6 +1115,7 @@ export type DeleteChapterMutationVariables = { chapterId: ChapterId }
 
 /**
  * @summary Delete a chapter and its activities; siblings renumber to stay contiguous.
+Refused while an activity under it holds learner work: unpublish instead.
  */
 export const useDeleteChapter = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

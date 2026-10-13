@@ -50,6 +50,9 @@ pub struct CurriculumChapter {
     pub activities: Vec<Activity>,
     /// The caller passes the curriculum write gate ([`CurriculumService::editable`]).
     pub editable: bool,
+    /// Its activities holding learner work (editors only; empty otherwise):
+    /// those and the chapter are unpublished, never deleted.
+    pub learner_work: Vec<ActivityId>,
 }
 
 /// What the caller may do to a chapter (`Chapter.allowed_actions`).
@@ -57,6 +60,8 @@ pub struct CurriculumChapter {
 #[serde(rename_all = "snake_case")]
 pub enum ChapterAction {
     Update,
+    /// Absent while any of its activities holds learner work (409
+    /// `activity-has-learner-work`): unpublish them instead.
     Delete,
     Move,
     /// `POST /chapters/{id}/activities` (and assessments / file submissions under it).
@@ -69,31 +74,40 @@ pub enum ChapterAction {
 pub enum ActivityAction {
     /// Content, settings, publish toggle, blocks.
     Update,
+    /// Absent while learners have handed in work (a submission, file attempt
+    /// or code run that is no staff preview; 409 `activity-has-learner-work`):
+    /// unpublish it instead.
     Delete,
     Move,
 }
 
 impl ChapterAction {
-    /// Every chapter write shares the course's curriculum gate.
+    /// Every chapter write shares the course's curriculum gate; delete also
+    /// needs it free of learner work.
     #[must_use]
-    pub fn allowed(editable: bool) -> Vec<Self> {
-        if editable {
-            vec![Self::Update, Self::Delete, Self::Move, Self::AddActivity]
-        } else {
-            Vec::new()
+    pub fn allowed(editable: bool, learner_work: bool) -> Vec<Self> {
+        if !editable {
+            return Vec::new();
         }
+        [Self::Update, Self::Delete, Self::Move, Self::AddActivity]
+            .into_iter()
+            .filter(|a| *a != Self::Delete || !learner_work)
+            .collect()
     }
 }
 
 impl ActivityAction {
-    /// Every activity write shares the course's curriculum gate.
+    /// Every activity write shares the course's curriculum gate; delete also
+    /// needs it free of learner work.
     #[must_use]
-    pub fn allowed(editable: bool) -> Vec<Self> {
-        if editable {
-            vec![Self::Update, Self::Delete, Self::Move]
-        } else {
-            Vec::new()
+    pub fn allowed(editable: bool, learner_work: bool) -> Vec<Self> {
+        if !editable {
+            return Vec::new();
         }
+        [Self::Update, Self::Delete, Self::Move]
+            .into_iter()
+            .filter(|a| *a != Self::Delete || !learner_work)
+            .collect()
     }
 }
 
@@ -117,6 +131,8 @@ pub struct ActivityDetail {
     pub content: ActivityContent,
     /// The caller passes the curriculum write gate.
     pub editable: bool,
+    /// Learners have handed in work (editors only; `false` otherwise).
+    pub learner_work: bool,
 }
 
 /// Block create request: file-backed types claim a finalized upload; the
@@ -218,16 +234,26 @@ impl CurriculumService {
         let editable = Self::editable(actor, &course);
         let chapters = ab_db::catalog::list_chapters(&self.pool, course_id).await?;
         let activities = ab_db::catalog::list_activities(&self.pool, course_id).await?;
+        let learner_work = if editable {
+            let ids: Vec<Uuid> = activities.iter().map(|a| a.id.0).collect();
+            ab_db::catalog::activities_with_learner_work(&self.pool, &ids).await?
+        } else {
+            Vec::new()
+        };
         let mut out: Vec<CurriculumChapter> = chapters
             .into_iter()
             .map(|chapter| CurriculumChapter {
                 chapter,
                 activities: Vec::new(),
                 editable,
+                learner_work: Vec::new(),
             })
             .collect();
         for activity in activities.into_iter().filter(|a| editor || a.published) {
             if let Some(entry) = out.iter_mut().find(|c| c.chapter.id == activity.chapter_id) {
+                if learner_work.contains(&activity.id) {
+                    entry.learner_work.push(activity.id);
+                }
                 entry.activities.push(activity);
             }
         }
@@ -282,6 +308,20 @@ impl CurriculumService {
         ab_db::catalog::get_chapter(&self.pool, chapter_id)
             .await?
             .ok_or_else(|| Error::not_found("chapter"))
+    }
+
+    /// An activity under the chapter holds learner work (no `delete` then).
+    pub async fn chapter_learner_work(&self, chapter_id: ChapterId) -> Result<bool> {
+        let ids: Vec<Uuid> = ab_db::catalog::list_chapter_activity_ids(&self.pool, chapter_id)
+            .await?
+            .into_iter()
+            .map(|id| id.0)
+            .collect();
+        Ok(
+            !ab_db::catalog::activities_with_learner_work(&self.pool, &ids)
+                .await?
+                .is_empty(),
+        )
     }
 
     pub async fn delete_chapter(&self, actor: &Actor, chapter_id: ChapterId) -> Result<()> {
@@ -380,10 +420,16 @@ impl CurriculumService {
         let content = ab_db::catalog::get_activity_content(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
+        let editable = Self::editable(actor, &course);
+        let learner_work = editable
+            && !ab_db::catalog::activities_with_learner_work(&self.pool, &[activity_id.0])
+                .await?
+                .is_empty();
         Ok(ActivityDetail {
             activity,
             content,
-            editable: Self::editable(actor, &course),
+            editable,
+            learner_work,
         })
     }
 

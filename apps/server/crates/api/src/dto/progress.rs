@@ -133,7 +133,8 @@ impl TrailStep {
             complete: s.row.complete,
             teacher_verified: s.row.teacher_verified,
             grade: s.row.grade,
-            activity: Activity::new(s.activity, editable),
+            // Trail views offer no delete: advertise none (the server re-checks anyway).
+            activity: Activity::new(s.activity, editable, true),
             created_at_unix: s.row.created_at,
             updated_at_unix: s.row.updated_at,
         }

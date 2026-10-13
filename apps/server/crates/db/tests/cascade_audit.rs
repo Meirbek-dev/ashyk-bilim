@@ -21,13 +21,13 @@ const USER_ERASURE: &str = "users are only erased by hand: the app disables acco
 /// (DECISIONS 2026-10-02 "Course archive is orthogonal to `public`"): archive
 /// is the way out that keeps learner work; the UI confirms the delete.
 const COURSE_DELETE: &str = "course delete drops its history by design; archive keeps it";
-/// Deleting an activity (or its chapter) takes its learners' hand-ins and
-/// grades with it: pinned by BUG-186 (`deleting_a_quiz_activity_cascades_its_
-/// hand_ins`), and both webs' delete dialogs say so (legacy
-/// `deleteAssessmentConfirmation`, web-2 `studio_*_delete_consequence`).
-/// Unpublishing keeps them.
+/// An activity (or its chapter) with learner work - a submission, file
+/// attempt or code run that is no staff preview - is never deleted: 409
+/// `activity-has-learner-work`, the webs offer unpublish (owner 2026-10-14,
+/// `deleting_an_activity_with_learner_work_is_refused`). What still cascades
+/// is staff previews and learner progress on lessons without hand-ins.
 const ACTIVITY_DELETE: &str =
-    "activity/chapter delete drops its hand-ins; the delete dialog says so (BUG-186)";
+    "activity/chapter delete is refused while learners have work there; previews and progress go";
 /// A submission is deleted only as a staff preview draft
 /// (`discard_preview_draft`, BUG-295) or with its activity/course.
 const SUBMISSION_DELETE: &str = "only preview drafts are deleted on their own";
