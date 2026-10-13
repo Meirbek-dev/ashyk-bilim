@@ -762,3 +762,25 @@ follows the running slots.
   every route first).
 - Both take the seed password from `infra/env/dev.local.env` and hand the suites their accounts, API log and learner
   pool; nothing to export by hand.
+
+### 5.5 Checks and the contract
+
+- `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--staged`,
+  `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and their dependents (all
+  tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest `related`; web-2
+  `vp check` + vitest `related` + gates (+ build with chunk budgets when bundled code changed, skipped while
+  the sources match the last passing build); contract drift for both clients; infra `ci-infra` + `test-dev`.
+  One line per gate, logs in `tmp/check/<gate>.log`. Server tests use 127.0.0.1 (Windows: `localhost` hangs).
+- `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
+  its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and
+  the error codes still missing a message. Generated files are `linguist-generated` (.gitattributes):
+  on a merge conflict regenerate instead of merging.
+
+### 5.6 Databases
+
+- `just db template` builds `ashyq_seed` once (migrated + `ashyq admin seed-e2e`, ~1-2 min; the e2e accounts'
+  rows are copied from `ashyq_dev` first because Zitadel is shared). `just db fresh <name>` clones it in about
+  a second (`CREATE DATABASE … TEMPLATE`); `just db drop <name>`, `just db ls`.
+- `just db test-reset` recreates `ashyq_test` migrated and drops leftover `_sqlx_test_*` databases; it refuses
+  while tests hold them (`--force`). Integration tests need no setup: `#[sqlx::test]` creates a migrated
+  database per test from `ashyq_test`'s server.

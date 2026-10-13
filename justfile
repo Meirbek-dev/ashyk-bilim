@@ -61,6 +61,19 @@ skills-sync:
 doctor:
     {{ bash_bin }} infra/scripts/doctor.sh {{ just_bin }}
 
+# The gates for what changed vs origin/main plus the working tree (`--staged`: the index; `--base <ref>`;
+# `--all`: every gate). One line per gate; logs in tmp/check/. The pre-push hook runs it.
+check *args:
+    @bun infra/dev/check.ts "$@"
+
+# Export openapi.v2.json, accept its snapshots, regenerate both web clients, list the drift (tmp/contract/).
+contract:
+    @bun infra/dev/contract.ts
+
+# Throwaway databases: `just db template | fresh <name> | drop <name> | test-reset | ls` (infra/dev/db.ts).
+db *args:
+    @bun infra/dev/db.ts "$@"
+
 # All local application and infra gates; needs dependencies and the dev stack.
 # Hosted image builds, secret scans and E2E remain separate CI jobs.
 ci: ci-server ci-web ci-web2 ci-infra
@@ -83,6 +96,7 @@ ci-web2:
 # Regression checks for this development workflow; no containers required.
 test-dev:
     JUST_EXECUTABLE={{ just_bin }} node --test infra/tests/development.test.mjs
+    bun test infra/dev
 
 # Server dependencies (db redis zitadel rustfs) + init jobs; prints the Zitadel PAT path.
 dev-up:
