@@ -7,7 +7,7 @@
 //   web:    vp fmt + vp lint --quiet (type-aware, type-check) of the staged files
 //   server: rustfmt --check of the staged .rs files; refuses edits to migrations already on origin/main
 // pre-push runs `just check --base <remote tip>` on a checkout of the pushed commit; only CI (env CI) skips it.
-import { lstatSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 const MAX_LINES = 30
@@ -64,6 +64,23 @@ function exists(path: string): boolean {
   try {
     lstatSync(path)
     return true
+  } catch {
+    return false
+  }
+}
+
+function readText(path: string): string {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return pid > 0
   } catch {
     return false
   }
@@ -286,12 +303,11 @@ async function prePush(): Promise<number> {
   mkdirSync(dirname(lock), { recursive: true })
   for (let waited = 0; ; waited += 1) {
     try {
-      mkdirSync(lock) // atomic: one push checks at a time in this worktree
+      writeFileSync(lock, String(process.pid), { flag: 'wx' }) // atomic: one push checks at a time per worktree
       break
     } catch {
-      // A check never takes 2 h: the lock is from a killed push.
-      if (Date.now() - statSync(lock).mtimeMs > 7_200_000) rmSync(lock, { recursive: true, force: true })
-      if (waited % 60 === 0) console.log(`pre-push: waiting for another push's check (${lock})`)
+      if (!alive(Number(readText(lock)))) rmSync(lock, { force: true }) // left by a killed push
+      else if (waited % 60 === 0) console.log(`pre-push: waiting for another push's check (${lock})`)
       await Bun.sleep(1000)
     }
   }
@@ -307,7 +323,7 @@ async function prePush(): Promise<number> {
     })
     return await p.exited
   } finally {
-    rmSync(lock, { recursive: true, force: true })
+    rmSync(lock, { force: true })
   }
 }
 
