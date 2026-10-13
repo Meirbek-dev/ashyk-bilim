@@ -22,7 +22,7 @@
 
 ## Rules
 
-- Work on `main` (the only branch) with direct commits.
+- Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
 - Never edit an applied migration; add a new one.
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
@@ -38,3 +38,14 @@
   all three); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
 - `.agents/skills` is canonical. `.claude/skills` is an ignored compatibility copy made by
   `just skills-sync`; never edit the copy. Read only the instructions/docs relevant to the task.
+
+## Working with agents
+
+- QA/fix sweeps: hand each agent `docs/agents/QA.md` plus its lane; it covers roles, accounts, testing,
+  fixing, report format and orchestration (max 3 agents per checkout, one lane owns contract changes,
+  commit per finished item, never leave files staged, progress in a report file).
+- Parallel work without blocking: `just wt new <name>` (worktree in `../ashyq-wt/<name>`, shared
+  node_modules and cargo target), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
+  main, remove); `just wt ls`, `just wt rm <name> [--force]`.
+- One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
+  `just db fresh <name>`, `just check [--all]`, `just contract`, `just e2e`, `just fmt <files>`.
