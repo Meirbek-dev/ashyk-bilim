@@ -16,7 +16,12 @@ set script-interpreter := ["sh", "-eu"]
 # Bounds Windows linker memory; override on larger machines.
 export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", "4")
 export SQLX_OFFLINE := env("SQLX_OFFLINE", "true")
-export CARGO_TARGET_DIR := env("CARGO_TARGET_DIR", if os() == "windows" { env("LOCALAPPDATA") / "ashyq-bilim/cargo-target" } else { justfile_directory() / "target" })
+# A linked git worktree builds into `<target>-<worktree id>`: cargo names artifacts the same in every checkout, so a
+# shared dir runs another tree's code (same rule as infra/dev/cargo-target.ts).
+_git_dir := replace(shell('git rev-parse --absolute-git-dir 2>/dev/null || true'), '\', '/')
+_wt_suffix := if _git_dir =~ '/worktrees/[^/]+$' { "-" + file_name(_git_dir) } else { "" }
+_target := env("CARGO_TARGET_DIR", if os() == "windows" { env("LOCALAPPDATA") / "ashyq-bilim/cargo-target" } else { justfile_directory() / "target" })
+export CARGO_TARGET_DIR := if _target =~ (_wt_suffix + '$') { _target } else { _target + _wt_suffix }
 just_bin := quote(replace(just_executable(), '\\', '/'))
 
 default: check

@@ -713,7 +713,8 @@ Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just set
   checkout under `tmp/hooks/snap` (incremental, node_modules linked): format + type-aware lint of the
   staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
   Unstaged work never affects it; a failure prints the fix (`just fmt <files>`) and the log path.
-- pre-push runs `just check --base <remote tip>` in `tmp/hooks/push` (a checkout of the pushed commit).
+- pre-push runs `just check --base <remote tip>` in `tmp/hooks/push` (a detached worktree of the pushed commit, with
+  its own cargo target: the first push compiles the server there from scratch).
   Only CI skips hooks; never `--no-verify`.
 - `just fmt <files>`: the root `vite.config.ts` is the one web format config (apps/web-2's block comes
   from `apps/web-2/fmt.config.ts`), so the result is the same from any cwd.
@@ -724,7 +725,9 @@ Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just set
 
 `just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root and
 apps/web-2, ~45 s from bun's cache; a linked node_modules breaks turbopack's `next build`), apps/web's
-`.env`/`.env.local` copied, the shared cargo target (`.cargo/config.toml`), Paraglide generated. Commit there; `just wt
+`.env`/`.env.local` copied, its own cargo target `<base>-<name>` (cargo names artifacts the same in every
+checkout, so a shared dir runs another tree's code; `just server`, `just check`, `just stack` and `.cargo/config.toml`
+apply it, plain `cargo` with CARGO_TARGET_DIR set does not), Paraglide generated. Commit there; `just wt
 land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
 the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. Run the
 worktree's apps in their own slot (`just stack up 1`). Legacy `next build` on this machine needs

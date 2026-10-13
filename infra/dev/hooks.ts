@@ -130,13 +130,6 @@ function snapshot(tree: string): string {
 
 // The pushed commit as a detached linked worktree (tmp/hooks/push): git works there as in any checkout, and no
 // GIT_* environment exists that a check (or a test running `git init`) could turn against this repository.
-// Cargo shares the target dir of the main checkout (apps/server/justfile's default) instead of a cold one there.
-const cargoTarget =
-  process.env['CARGO_TARGET_DIR'] ??
-  (process.platform === 'win32'
-    ? join(process.env['LOCALAPPDATA'] ?? top, 'ashyq-bilim', 'cargo-target')
-    : join(top, 'apps', 'server', 'target'))
-
 function pushCheckout(sha: string): string {
   const dir = join(top, 'tmp', 'hooks', 'push')
   const cmd = exists(join(dir, '.git'))
@@ -317,7 +310,7 @@ async function prePush(): Promise<number> {
     console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
     const p = Bun.spawn(['bun', 'infra/dev/check.ts', '--base', base], {
       cwd: dir,
-      env: { ...toolEnv, CARGO_TARGET_DIR: cargoTarget },
+      env: toolEnv, // check.ts picks this checkout's own CARGO_TARGET_DIR (infra/dev/cargo-target.ts)
       stdout: 'inherit',
       stderr: 'inherit',
     })

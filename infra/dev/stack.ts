@@ -1,6 +1,7 @@
 // `just stack <up|down|status|logs|restart> [slot]` and `just login-as <user> [slot]` (docs/RUNBOOK.md "Dev stack").
 // One slot = API + worker + web-2 dev + legacy web dev on ports base + 10*slot, kept alive by supervisor.ts, against
 // the shared dev containers (`just dev-up`). Logs and the manifest: tmp/stack/<slot>/, tmp/stack/<slot>.json.
+import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { createHash, createHmac } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'

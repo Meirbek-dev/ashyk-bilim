@@ -5,6 +5,7 @@
 // `just e2e-dev [web2|web] [--slot N] [args]`: Playwright against a running `just stack up` slot's dev servers.
 // Ports of a prod run: slot N = API 8005+10N, stand 3105+10N (web-2 serve.ts 3106+10N), legacy 3205+10N.
 // Full output: tmp/e2e/<app>-<slot>/ (playwright.log, api.log, build.log); the summary is the log's tail.
+import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { type Subprocess } from 'bun'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

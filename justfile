@@ -49,7 +49,7 @@ eol:
 fmt +files:
     bun infra/dev/hooks.ts fmt "$@"
 
-# Parallel work in ../ashyq-wt/<name> (own bun install, shared cargo target): `just wt new|ls|land|rm <name>`.
+# Parallel work in ../ashyq-wt/<name> (own bun install and cargo target dir): `just wt new|ls|land|rm <name>`.
 wt *args:
     bun infra/dev/wt.ts "$@"
 

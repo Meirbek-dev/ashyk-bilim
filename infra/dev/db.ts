@@ -11,6 +11,7 @@
 // Zitadel is shared by every database, so the template copies the e2e accounts' rows (`e2e-%`, with their roles)
 // from --from (default ashyq_dev) before seeding: seed-e2e then reuses those Zitadel users instead of failing on an
 // existing login name. `ashyq` runs through `cargo run` (ASHYQ_BIN=<binary> skips the build). Logs: tmp/db/<command>.log.
+import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { SQL } from 'bun'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'

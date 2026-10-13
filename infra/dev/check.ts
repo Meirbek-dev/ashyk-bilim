@@ -4,6 +4,7 @@
 // Changed = files that differ from --base (default: where HEAD left origin/main; on main, the unpushed commits) plus
 // the working tree (staged, unstaged, untracked), or only the index with --staged. --all runs every gate. The gates
 // read the working tree, so run it on the snapshot you mean to push. Areas run in parallel, gates within one in order.
+import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'

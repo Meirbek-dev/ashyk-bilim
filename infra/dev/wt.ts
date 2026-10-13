@@ -1,7 +1,7 @@
 // `just wt new|ls|land|rm <name>`: one git worktree per parallel task, next to the main checkout.
 //   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (root + apps/web, apps/web-2;
 //                ~40 s from bun's cache - linked node_modules break turbopack, which refuses a link leaving its root),
-//                apps/web's gitignored .env files copied, cargo shares one target dir, Paraglide output generated.
+//                apps/web's gitignored .env files copied, its own cargo target dir, Paraglide output generated.
 //   ls           worktrees with their branch, commits ahead of main and uncommitted files
 //   land <name>  rebase onto main, `just check`, fast-forward main (the main checkout), remove the worktree
 //   rm <name>    remove the worktree and branch (refuses unlanded or uncommitted work without --force)
@@ -16,6 +16,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join } from 'node:path'
+
+import { cargoTargetDir } from './cargo-target.ts'
 
 const LINKED = ['.', 'apps/web', 'apps/web-2'] // node_modules links made by earlier versions of this script
 const ENV_FILES = ['apps/web/.env', 'apps/web/.env.local'] // gitignored local config of the legacy app
@@ -49,12 +51,6 @@ function target(name: string | undefined): { name: string; path: string; branch:
   return { name, path: join(root, name), branch: `wt/${name}` }
 }
 
-// Same default as apps/server/justfile, so `just server ...` and plain cargo in any worktree share artifacts.
-function cargoTarget(): string {
-  if (process.platform === 'win32') return join(process.env['LOCALAPPDATA'] ?? main, 'ashyq-bilim', 'cargo-target')
-  return join(main, 'apps', 'server', 'target')
-}
-
 async function create(name?: string): Promise<void> {
   const wt = target(name)
   if (existsSync(wt.path)) fail(`${wt.path} exists`)
@@ -79,9 +75,11 @@ async function create(name?: string): Promise<void> {
   )
   for (const install of installs)
     if (install.code !== 0) fail(`bun install in ${install.dir} failed:\n${install.out.slice(-1500)}`)
-  // Untracked cargo config in the worktree only; excluded for every worktree via the shared info/exclude.
+  // Own cargo target (shared dirs run each other's code): the config covers plain cargo when CARGO_TARGET_DIR is unset;
+  // just/check/stack apply the same rule over an env value. Untracked, excluded for every worktree (info/exclude).
+  const cargoDir = cargoTargetDir(wt.path)
   mkdirSync(join(wt.path, '.cargo'), { recursive: true })
-  writeFileSync(join(wt.path, '.cargo', 'config.toml'), `[build]\ntarget-dir = ${JSON.stringify(cargoTarget())}\n`)
+  writeFileSync(join(wt.path, '.cargo', 'config.toml'), `[build]\ntarget-dir = ${JSON.stringify(cargoDir)}\n`)
   const exclude = join(commonDir, 'info', 'exclude')
   if (!existsSync(exclude) || !readFileSync(exclude, 'utf8').includes('/.cargo/')) {
     mkdirSync(dirname(exclude), { recursive: true })
@@ -90,7 +88,7 @@ async function create(name?: string): Promise<void> {
   const gen = sh(['bun', 'gates/codegen.ts', 'messages'], join(wt.path, 'apps/web-2'))
   if (gen.code !== 0) console.log(`wt: web-2 messages codegen failed (run it in apps/web-2): ${gen.out.slice(-300)}`)
   console.log(`wt: ${wt.path} on ${wt.branch} (from main ${git('rev-parse', '--short', 'main').out})`)
-  console.log(`    own node_modules (bun install); cargo target ${cargoTarget()}`)
+  console.log(`    own node_modules (bun install); own cargo target ${cargoDir}`)
   console.log(`    commit there as usual (hooks run per worktree); then: just wt land ${wt.name}`)
 }
 
