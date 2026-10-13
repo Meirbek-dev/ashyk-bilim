@@ -48,6 +48,13 @@ fn otlp_headers_from_env() -> std::collections::HashMap<String, String> {
         .collect()
 }
 
+/// Colour only on a terminal: a redirected log (dev stack, CI) stays plain
+/// text, and `NO_COLOR` (non-empty, no-color.org) turns it off everywhere.
+fn ansi() -> bool {
+    use std::io::IsTerminal as _;
+    std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none_or(|v| v.is_empty())
+}
+
 /// Initialize the global subscriber. Idempotent for tests (subsequent calls
 /// are no-ops). Returns the guard that owns the OTLP pipeline, if any.
 pub fn init(config: &TelemetryConfig) -> TelemetryGuard {
@@ -93,7 +100,7 @@ pub fn init(config: &TelemetryConfig) -> TelemetryGuard {
             .try_init();
     } else {
         let _ = registry
-            .with(tracing_subscriber::fmt::layer().pretty())
+            .with(tracing_subscriber::fmt::layer().pretty().with_ansi(ansi()))
             .try_init();
     }
 
