@@ -1,6 +1,6 @@
 # Repository map
 
-- `justfile` - the single entry point. `just dev-up` starts local services, `just server <recipe>`
+- `justfile` - the single entry point. `just stack up [slot]` runs the local dev stack (docs/RUNBOOK.md 5.3), `just server <recipe>`
   and `just web <script>` / `just web2 <script>` proxy into the apps, `just deploy` / `rollback` / `backup` / `restore`
   run production ops. Add a recipe instead of documenting ad-hoc commands.
 - `apps/server/` - Rust API (axum + sqlx), `/api/v2`. Read `apps/server/AGENTS.md` first.

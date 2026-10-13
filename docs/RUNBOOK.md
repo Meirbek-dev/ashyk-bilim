@@ -727,3 +727,24 @@ checkout's, the shared cargo target (`.cargo/config.toml`), Paraglide generated.
 land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
 the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. A branch that
 changes package.json or bun.lock needs its own `bun install` (delete the node_modules link first).
+
+### 5.3 Dev stack
+
+`just stack up [slot] [--db NAME] [--judge0] [--seed] [--without web]` starts what a slot needs: the dev
+containers (`just dev-up` unless all answer; Judge0 only with `--judge0` / `just dev-judge0`), a debug
+build of the server, the database (created when missing, from `ashyq_seed` if it exists, then migrated;
+a new one is seeded), then API + worker + web-2 `vp dev` + legacy `next dev` under a supervisor that
+restarts a crashed process with backoff. Ports: slot N = API 8000+10N, web-2 3100+10N, legacy web
+3200+10N; Redis db 4+N; one Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets
+follows the running slots.
+
+- `just stack status` (all slots + containers), `logs <api|worker|web2|web|supervisor> [slot]`, `restart
+  <api|worker|server|web2|web> [slot]` (api/worker/server rebuild first), `seed [slot]`, `down [slot]`.
+- Files: `tmp/stack/<slot>.json` (ports, pids, db), `tmp/stack/<slot>/*.log` (no ANSI).
+- Env: `infra/env/dev.env` (committed) + `infra/env/dev.local.env` (gitignored, created by `stack up`):
+  `AB__ZITADEL__PAT` (copied from `just dev-up`'s `tmp/dev/zitadel-pat.txt`) and `E2E_PASSWORD`, the
+  password of the seed-e2e accounts (`e2e-admin`, `e2e-teacher`, `e2e-student1/2`, `e2e-learner-NNN`).
+- `just login-as <username|email> [slot]` prints `ab_session=...` for any active account (debug build +
+  `AB__ENVIRONMENT=development` + loopback only; DECISIONS 2026-10-13). For a real-data copy:
+  `just stack up 1 --db ashyq_prod`, then `just login-as <their username> 1`.
+- A database migrated from a CRLF checkout gets its migration checksums re-stamped on `stack up`.

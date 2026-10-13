@@ -95,6 +95,19 @@ dev-down:
 dev-reset:
     {{ lib }} && use_dev && compose down -v --remove-orphans
 
+# Judge0 for the dev stack (profile judge0: ~10 GB image, privileged), on DEV_JUDGE0_PORT.
+dev-judge0:
+    {{ lib }} && use_dev && COMPOSE_PROFILES=judge0 compose up -d --wait judge0-server judge0-workers
+
+# Apps of one slot (API, worker, web-2 dev, legacy dev; ports 8000/3100/3200 + 10*slot) under a
+# supervisor, containers via dev-up: `just stack up|down|status|logs|restart [..] [slot]` (no args: usage).
+stack *args:
+    @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/stack.ts "$@"
+
+# `ab_session=...` for an existing account on a running slot (dev-only endpoint, no password).
+login-as user slot="0":
+    @bun infra/dev/stack.ts login-as "$@"
+
 # Idempotent init of the stack in $STACK (dev|prod|smoke, default prod).
 bootstrap:
     {{ bash_bin }} infra/scripts/bootstrap.sh

@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 .next/
+.next-*/
 out/
 next-env.d.ts
 *.tsbuildinfo
@@ -14,6 +15,7 @@ target/
 !.env.example
 !**/e2e/.env.test
 server.env
+infra/env/dev.local.env
 .env.legacy-removed
 
 # Ops state (never commit)

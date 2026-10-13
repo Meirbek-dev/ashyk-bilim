@@ -29,6 +29,8 @@ const imageRemotePatterns = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
+  // `just stack up <slot>` / `just e2e web`: one `next dev` or build per output folder (gitignored `.next-*`).
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   devIndicators: false,
   // Server action arguments include credentials.
   logging: { serverFunctions: false },

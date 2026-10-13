@@ -91,7 +91,9 @@ override `DEV_*_PORT` in the shell for a second copy):
 | Zitadel | 8081 | PAT written to `tmp/dev/zitadel-pat.txt` (repo root) |
 | RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |
 
-Point the server at it: `cp apps/server/.env.example apps/server/.env` (the
+To run the API, worker and both webs against it: `just stack up` (docs/RUNBOOK.md 5.3; env from
+`infra/env/dev.env` + the gitignored `infra/env/dev.local.env`, `just login-as <user>` for a session).
+For cargo/sqlx alone, point the server at it: `cp apps/server/.env.example apps/server/.env` (the
 example already matches `dev.env`) and paste the PAT into `AB__ZITADEL__PAT`.
 Then from the repo root: `just server migrate` (dev database), `just server
 test` (sets `TEST_REDIS_URL`; `TEST_S3_ENDPOINT` defaults to
