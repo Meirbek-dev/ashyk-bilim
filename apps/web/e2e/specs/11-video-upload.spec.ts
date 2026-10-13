@@ -36,8 +36,8 @@ test('video block survives storage failure, retry, reload and playback', async (
   await expect(block.locator('.text-red-500')).toBeVisible({ timeout: 15_000 })
   await expect(block.locator('video')).toHaveCount(0)
 
-  const attached = page.waitForResponse(response =>
-    response.request().method() === 'POST' && /\/activities\/[^/]+\/blocks$/u.test(response.url()),
+  const attached = page.waitForResponse(
+    response => response.request().method() === 'POST' && /\/activities\/[^/]+\/blocks$/u.test(response.url()),
   )
   await picker.setInputFiles(videoFile)
   const response = await attached

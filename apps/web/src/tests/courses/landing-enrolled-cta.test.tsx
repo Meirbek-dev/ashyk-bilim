@@ -125,7 +125,15 @@ describe.each(COMPONENTS)('course landing CTA vs learner-state (%s)', (_, Compon
   it('says «Продолжить» once something is done', () => {
     renderActions({
       ...enrolledWithoutRun,
-      outline: [{ id: 'ch', activities: [{ id: 'a0', complete: true }, { id: 'a1', complete: false }] }],
+      outline: [
+        {
+          id: 'ch',
+          activities: [
+            { id: 'a0', complete: true },
+            { id: 'a1', complete: false },
+          ],
+        },
+      ],
       progress: { completed_required_count: 1, total_required_count: 2, progress_pct: 50 },
     } as unknown as LearnerCourseState)
     expect(screen.getByRole('button', { name: /Продолжить/ })).toBeInTheDocument()

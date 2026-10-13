@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  ArrowRight,
-  BookOpen,
-  BriefcaseBusiness,
-  CalendarClock,
-  CheckCircle2,
-  Inbox,
-  ShieldCheck,
-} from 'lucide-react'
+import { ArrowRight, BookOpen, BriefcaseBusiness, CalendarClock, CheckCircle2, Inbox, ShieldCheck } from 'lucide-react'
 import { useLocale } from 'next-intl'
 
 import AppLink from '@/components/ui/AppLink'

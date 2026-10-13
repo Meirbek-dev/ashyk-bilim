@@ -626,28 +626,31 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     }
 
     pendingAnswersRef.current = null
-    saveMutate({ answers, assessmentUuid }, {
-      onSuccess: () => {
-        if (assessmentScopeRef.current !== assessmentUuid) return
-        lastSaveTimeRef.current = Date.now()
-        if (pendingAnswersRef.current) {
-          saveRef.current()
-        }
-      },
-      onError: async (error: unknown) => {
-        if (assessmentScopeRef.current !== assessmentUuid) return
-        if (isApiError(error) && error.status === 429) {
-          lastSaveTimeRef.current = 0
-          setSaveState('dirty')
-          if (!nextSaveTimeoutRef.current) {
-            nextSaveTimeoutRef.current = setTimeout(() => {
-              nextSaveTimeoutRef.current = null
-              saveRef.current()
-            }, 2000)
+    saveMutate(
+      { answers, assessmentUuid },
+      {
+        onSuccess: () => {
+          if (assessmentScopeRef.current !== assessmentUuid) return
+          lastSaveTimeRef.current = Date.now()
+          if (pendingAnswersRef.current) {
+            saveRef.current()
           }
-        }
+        },
+        onError: async (error: unknown) => {
+          if (assessmentScopeRef.current !== assessmentUuid) return
+          if (isApiError(error) && error.status === 429) {
+            lastSaveTimeRef.current = 0
+            setSaveState('dirty')
+            if (!nextSaveTimeoutRef.current) {
+              nextSaveTimeoutRef.current = setTimeout(() => {
+                nextSaveTimeoutRef.current = null
+                saveRef.current()
+              }, 2000)
+            }
+          }
+        },
       },
-    })
+    )
   }, [assessmentUuid, saveMutate, saveMutation.isPending, isSubmitting])
 
   useEffect(() => {

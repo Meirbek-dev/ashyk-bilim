@@ -44,7 +44,9 @@ try {
   drift = [...new Set([...listFiles(committedDir), ...listFiles(scratchDir)])].filter(file => {
     const committed = path.join(committedDir, file)
     const regenerated = path.join(scratchDir, file)
-    return !existsSync(committed) || !existsSync(regenerated) || !readFileSync(committed).equals(readFileSync(regenerated))
+    return (
+      !existsSync(committed) || !existsSync(regenerated) || !readFileSync(committed).equals(readFileSync(regenerated))
+    )
   })
 } finally {
   rmSync(scratchDir, { recursive: true, force: true })
