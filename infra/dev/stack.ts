@@ -278,6 +278,27 @@ function services(o: UpOptions, env: Record<string, string>): ServiceSpec[] {
   return all.filter(s => !o.without.includes(s.name))
 }
 
+/**
+ * Starts a process that outlives this one. Windows hands every inheritable handle of ours (the caller's stdout pipe
+ * included) to a CreateProcess child, so whoever reads our output would wait until the supervisor exits; WMI starts
+ * it with none and outside our job object (a tool killing our process tree does not take the stack down).
+ */
+function launchDetached(command: string[], log: string): void {
+  if (process.platform !== 'win32') {
+    spawn(command[0] ?? '', command.slice(1), { cwd: root, detached: true, stdio: 'ignore' }).unref()
+    return
+  }
+  const quote = (text: string) => text.replaceAll("'", "''")
+  const line = command.map(arg => `"${arg}"`).join(' ')
+  const ps = [
+    `$startup = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [UInt16]0 }`,
+    `$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{`,
+    `CommandLine = '${quote(line)}'; CurrentDirectory = '${quote(root)}'; ProcessStartupInformation = $startup }`,
+    `if ($r.ReturnValue -ne 0) { throw "Win32_Process.Create: $($r.ReturnValue)" }`,
+  ].join('\n')
+  run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', ps], { log })
+}
+
 async function up(o: UpOptions): Promise<void> {
   const running = readManifest(o.slot)
   if (running && alive(running.supervisor)) {
@@ -310,13 +331,7 @@ async function up(o: UpOptions): Promise<void> {
     logs: dir,
     services: specs,
   })
-  const supervisor = spawn(process.execPath, [join(import.meta.dir, 'supervisor.ts'), o.slot], {
-    cwd: root,
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-  })
-  supervisor.unref()
+  launchDetached([process.execPath, join(import.meta.dir, 'supervisor.ts'), o.slot], join(dir, 'launch.log'))
   await waitFor('supervisor', async () => existsSync(manifestPath(o.slot)), 15)
   await applyBucketCors(origins)
   for (const spec of specs.filter(s => s.health)) {

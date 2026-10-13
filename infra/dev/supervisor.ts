@@ -17,7 +17,16 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 
-import { type Manifest, type ServiceSpec, isWindows, killTree, manifestPath, slotDir, writeJson } from './lib.ts'
+import {
+  type Manifest,
+  type ServiceSpec,
+  httpUp,
+  isWindows,
+  killTree,
+  manifestPath,
+  slotDir,
+  writeJson,
+} from './lib.ts'
 
 const slot = process.argv[2] ?? '0'
 const dir = slotDir(slot)
@@ -38,6 +47,9 @@ interface Running {
   backoff: number
   timer?: ReturnType<typeof setTimeout>
   now?: boolean
+  /** Answered its health URL since the last start; `failures` counts misses after that. */
+  healthy?: boolean
+  failures?: number
 }
 const services = new Map<string, Running>(
   config.services.map(spec => [spec.name, { spec, since: 0, restarts: 0, backoff: 0 }]),
@@ -79,7 +91,7 @@ function start(s: Running): void {
   writeSync(fd, `\n=== ${new Date().toISOString()} supervisor: start ${spec.name}\n`)
   const child = spawn(spec.command, spec.args, {
     cwd: spec.cwd,
-    env: { ...process.env, ...spec.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+    env: { ...process.env, ...spec.env, NO_COLOR: '1' },
     stdio: ['ignore', fd, fd],
     // Own process group off Windows, so a stop kills the whole tree (taskkill /T does that on Windows).
     detached: !isWindows,
@@ -88,6 +100,8 @@ function start(s: Running): void {
   closeSync(fd)
   s.child = child
   s.since = Date.now()
+  s.healthy = false
+  s.failures = 0
   child.on('error', error => log(`${spec.name}: ${String(error)}`))
   child.on('exit', code => s.child === child && exited(s, code))
   writeManifest()
@@ -146,6 +160,24 @@ setInterval(() => {
     }
   }
 }, 500)
+
+// Liveness: a process that answered once and then misses its health URL 3 checks in a row (vite after a failed
+// config restart, a deadlocked server) is restarted like a crashed one.
+setInterval(async () => {
+  for (const s of services.values()) {
+    const pid = s.child?.pid
+    if (stopping || !pid || !s.spec.health) continue
+    if (await httpUp(s.spec.health, 10_000)) {
+      s.healthy = true
+      s.failures = 0
+    } else if (s.healthy && (s.failures = (s.failures ?? 0) + 1) >= 3) {
+      log(`${s.spec.name}: no answer from ${s.spec.health} 3 times in a row; restarting`)
+      s.restarts++
+      s.now = true
+      killTree(pid)
+    }
+  }
+}, 30_000)
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => shutdown(signal))
 log(`supervisor ${process.pid} for slot ${slot}: ${[...services.keys()].join(', ')}`)

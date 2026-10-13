@@ -474,9 +474,10 @@ smoke stack. `STACK=web2` (`lib.sh use_web2`) = the smoke files plus
 - The server runs with `AB__ENVIRONMENT=production` (Secure session cookie).
   `seed-e2e` refuses production, so `web2-seed` runs it with
   `-e AB__ENVIRONMENT=development` in the running server container.
-- Password: `E2E_PASSWORD` (CI secret `E2E_PASSWORD`, optional), else a random
-  one per stand in `tmp/web2/e2e-password`. Failure traces contain it in
-  clear (filled inputs), so leave the secret unset.
+- Password: `E2E_PASSWORD` (CI secret `E2E_PASSWORD`, optional), else the dev
+  stack's `E2E_PASSWORD` in the gitignored `infra/env/dev.local.env` (created
+  when missing; the one seed password for seed-e2e, `just e2e` and the stand).
+  Failure traces contain it in clear (filled inputs), so leave the secret unset.
 
 | Recipe | Does |
 | --- | --- |

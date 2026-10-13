@@ -63,9 +63,13 @@ use_web2() {
   export SERVER_ENV_FILE=./tmp/web2/server.env
   mkdir -p tmp/web2
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
-  # Seeded accounts' password: E2E_PASSWORD (CI secret), else a random one per stand.
-  [[ -s tmp/web2/e2e-password ]] || echo "E2e-$(openssl rand -hex 12)-Pw1" >tmp/web2/e2e-password
-  E2E_PASSWORD=${E2E_PASSWORD:-$(<tmp/web2/e2e-password)}
+  # Seeded accounts' password: E2E_PASSWORD (CI secret), else the one of the dev stack (`just stack up`).
+  local env_file=infra/env/dev.local.env
+  if [[ -z ${E2E_PASSWORD:-} ]]; then
+    grep -q '^E2E_PASSWORD=.' "$env_file" 2>/dev/null ||
+      echo "E2E_PASSWORD=E2e-$(openssl rand -hex 12)-Pw1" >>"$env_file"
+    E2E_PASSWORD=$(sed -n 's/^E2E_PASSWORD=//p' "$env_file" | tail -n 1)
+  fi
   export E2E_PASSWORD
 }
 
