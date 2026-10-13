@@ -62,7 +62,7 @@ export async function registerAccount(baseUrl: string, account?: NewAccount): Pr
 
 /**
  * The API log (E2E_API_LOG): without a mailer (`AB__RESEND__*` unset) the API logs the emailed codes there. A local
- * `ashyq serve` colours its log: the ANSI escapes between the fields are dropped.
+ * `ashyq serve` colours its log only on a terminal (a redirected log is plain); escapes in an older log are dropped.
  */
 export function apiLog(purpose: string): string {
   const path = process.env['E2E_API_LOG']

@@ -2793,3 +2793,25 @@ refetches (window focus, reconnect) meanwhile, except the session's own: with th
 public read answers as a guest and took the editing screen away with the running upload. With no
 upload pending, or once the last one ends with the session still gone, a 401 signs out to /login
 as before.
+
+## Permission matrix, cascade audit, upload policy in the contract (2026-10-13)
+
+- **Every route is classified by who may get a 2xx** (`crates/api/tests/permission_matrix.rs`): seed-e2e's
+  course made private and opened to a group, probed as anonymous, an outsider, an enrolled peer, the learner
+  who owns the work, an instructor of other courses, the owner and an admin. A GET's 2xx set must equal its
+  row; a write is sent only as the refused callers and must answer 401/403/404 - never 2xx, never 422/409
+  before the gate (UX-311). The first run found three writes reading the body or the state first: group
+  members/courses for an instructor who does not own the group, course lifecycle for a member learner, and
+  someone else's multipart upload (409 "not multipart" told a stranger about it). All three now check the
+  caller and the resource first. Not changed, recorded in the rows: the AI scope capabilities answer an
+  invisible course 200 "unavailable" (same as an unknown id); `courses/{id}/certificates/me` is 403 for an
+  admin who is no member; the instructor role reads every group (`usergroup:read:platform`).
+- **Every `ON DELETE CASCADE` onto someone's work is reviewed** (`crates/db/tests/cascade_audit.rs`,
+  reason per key). The losses that remain are the designed ones: course delete (archive keeps history),
+  activity/chapter delete (BUG-186; both delete dialogs name the lost hand-ins), a thread with its opening
+  post (web-2 says so), a leave resetting completions, preview drafts, and the manual user erasure path
+  (the app never deletes users). Open for the owner: whether an activity with handed-in work should refuse
+  deletion instead (unpublish keeps it).
+- **The server's upload policy is in the contract** (`UploadPurpose`'s `x-upload-policy`); both webs
+  generate their caps from it (`just contract`), so a drifted constant fails the codegen drift checks.
+  Legacy's avatar cap was 2 MB against the server's 5 MB: a 2-5 MB GIF the server accepts was refused.

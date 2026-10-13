@@ -104,6 +104,12 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - **Idempotency:** retry-safe POSTs (submission submit, code runs, file
   submission submit) send `Idempotency-Key` via `idempotencyHeaders(key)`; keep
   the same key when retrying one logical action.
+- **Forms:** react-hook-form; the submit button is disabled while the mutation
+  `isPending` (a double click must not send twice); course-editor sections save
+  through `useSaveSection`; unsaved edits ask before leaving via
+  `useUnsavedChangesGuard` (`useDirtyGuard` in the course editor).
+- **Upload caps:** `UPLOAD_MAX_BYTES` (`@/services/media/uploads`), read from the
+  generated `@/lib/api/generated/upload-policy` (`just contract`); never a literal.
 - **Uploads never go through the API:** `uploadFile(file, purpose)`
   (`@/services/media/uploads`) does `POST /uploads` -> presigned `PUT` ->
   `POST /uploads/{id}/finalize` and returns `{id, key}`; attach the `id` to the
