@@ -2,6 +2,7 @@
 // Env: infra/env/dev.env (committed) < infra/env/dev.local.env (gitignored: AB__ZITADEL__PAT, E2E_PASSWORD) < the
 // per-slot values derived here. Run with bun.
 import {
+  appendFileSync,
   closeSync,
   existsSync,
   mkdirSync,
@@ -198,6 +199,20 @@ export function removeQuietly(path: string): void {
   rmSync(path, { recursive: true, force: true })
 }
 
+// CSI and OSC escape sequences: some tools colour their output whatever NO_COLOR says (rolldown, turbopack frames).
+// oxlint-disable-next-line no-control-regex
+const ANSI = /\u001B(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001B]*(?:\u0007|\u001B\\))/g
+export const stripAnsi = (text: string) => text.replace(ANSI, '')
+
+/** Appends a process's output to `log` without escape sequences (logs are read by people, agents and greps). */
+export async function pipeToLog(stream: AsyncIterable<Uint8Array | string> | null, log: string): Promise<void> {
+  if (!stream) return
+  const decoder = new TextDecoder()
+  for await (const chunk of stream) {
+    appendFileSync(log, stripAnsi(typeof chunk === 'string' ? chunk : decoder.decode(chunk, { stream: true })))
+  }
+}
+
 /** Runs a command to completion with its output in `log`; throws with the log's tail on failure. */
 export function run(cmd: string[], opts: { cwd?: string; env?: Record<string, string>; log: string }): void {
   mkdirSync(dirname(opts.log), { recursive: true })
@@ -209,8 +224,14 @@ export function run(cmd: string[], opts: { cwd?: string; env?: Record<string, st
       stdout: fd,
       stderr: fd,
     })
+    closeSync(fd)
+    writeFileSync(opts.log, stripAnsi(readFileSync(opts.log, 'utf8')))
     if (!result.success) throw new Error(`${cmd.join(' ')} failed (log ${opts.log}):\n${tail(opts.log)}`)
   } finally {
-    closeSync(fd)
+    try {
+      closeSync(fd)
+    } catch {
+      // already closed above
+    }
   }
 }

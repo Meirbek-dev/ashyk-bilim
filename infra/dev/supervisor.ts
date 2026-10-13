@@ -3,18 +3,7 @@
 // minute of uptime), writes tmp/stack/<slot>.json (pids) and logs to tmp/stack/<slot>/supervisor.log.
 // Control files in tmp/stack/<slot>/control/: `restart-<service>` (immediate restart), `stop` (stop all, exit).
 import { type ChildProcess, spawn } from 'node:child_process'
-import {
-  appendFileSync,
-  closeSync,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeSync,
-} from 'node:fs'
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -24,6 +13,7 @@ import {
   isWindows,
   killTree,
   manifestPath,
+  pipeToLog,
   slotDir,
   writeJson,
 } from './lib.ts'
@@ -87,17 +77,18 @@ function start(s: Running): void {
       log(`${spec.name}: cannot copy ${spec.copyFrom}: ${String(error)}`)
     }
   }
-  const fd = openSync(spec.log, 'a')
-  writeSync(fd, `\n=== ${new Date().toISOString()} supervisor: start ${spec.name}\n`)
+  appendFileSync(spec.log, `\n=== ${new Date().toISOString()} supervisor: start ${spec.name}\n`)
   const child = spawn(spec.command, spec.args, {
     cwd: spec.cwd,
     env: { ...process.env, ...spec.env, NO_COLOR: '1' },
-    stdio: ['ignore', fd, fd],
+    // Through the supervisor: escape sequences are dropped on the way to the log.
+    stdio: ['ignore', 'pipe', 'pipe'],
     // Own process group off Windows, so a stop kills the whole tree (taskkill /T does that on Windows).
     detached: !isWindows,
     windowsHide: true,
   })
-  closeSync(fd)
+  void pipeToLog(child.stdout, spec.log)
+  void pipeToLog(child.stderr, spec.log)
   s.child = child
   s.since = Date.now()
   s.healthy = false
