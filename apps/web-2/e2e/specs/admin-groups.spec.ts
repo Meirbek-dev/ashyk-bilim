@@ -122,7 +122,11 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   await page.getByRole('option', { name: /@e2e-student1\)/ }).click()
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: m.admin_add({}, ru), exact: true }).click()
-  await expect(page.getByText(m.admin_group_members_added({}, ru))).toBeVisible()
+  const added = page.getByText(m.admin_group_members_added({}, ru))
+  await expect(added).toBeVisible()
+  // The toast sits over the row's actions at the bottom right, and a pointer resting on it holds it open (the click
+  // below would wait on it for good): let it go first.
+  await expect(added).toBeHidden({ timeout: 15_000 })
   const member = page.getByRole('listitem').filter({ hasText: '@e2e-student1' })
   await expect(member.getByRole('link', { name: 'E2E student1' })).toBeVisible()
   await member.getByRole('button', { name: m.admin_group_member_remove({ name: 'E2E student1' }, ru) }).click()

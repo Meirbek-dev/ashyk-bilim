@@ -99,8 +99,8 @@ test('B-DSC-15 a draft with text asks before the page is left; an editor emptied
   await expect.poll(() => asked).toBe(true)
   await expect(page).toHaveURL(/\/discussions$/)
   await editor.fill('')
-  await about.click()
-  await expect(page).toHaveURL(/\/about$/)
+  // The guard reads the emptied editor on its next update: until then a click is still asked about (and dismissed).
+  await clickUntil(about, () => expect(page).toHaveURL(/\/about$/, { timeout: 1000 }))
 })
 
 test('B-DSC-04 a thread opens under its post and lives in the URL', async ({ page, signInAs, course, post }) => {
