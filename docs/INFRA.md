@@ -322,7 +322,7 @@ cancelled mid-run):
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` when `web` changed, `ashyq-web-2` when `web2` changed; all three on `main` and `release/**`; web build args from the repo variable `PROD_DOMAIN` |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` (compose.prod.yaml's own web env) and `just smoke` again |
 | web2-e2e | after images, web2 changed | three shards, each on its own Stage 2 e2e stand below, `just web2-e2e --grep-invert @judge0 --shard=N/3` |
-| publish | `main` or `release/**`, every gate and stack-smoke green (not web2-e2e) | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (frozen old web, rollback target until Ф9) |
+| publish | `main` or `release/**`, every gate and stack-smoke green (not web2-e2e) | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` (the old web, production since the rollback) |
 | publish-web2 | after publish, web2-e2e green | `ashyq-web-2` `ci-<sha>` -> `<sha>`/`latest` |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
@@ -400,7 +400,7 @@ Recorded 2026-10-02 (HEAD `e1117fe` plus the stage 1 tree), Windows 11, bun
 1.4.2, Rust 1.98.1. Every gate below is required in CI; none carries
 `continue-on-error`.
 
-Web (`apps/web`, until 2026-10-04; since then frozen and only its image is built, see Build and release):
+Web (`apps/web`, in production since the 2026-10-04 rollback; its freeze is lifted; CI job web-gates = `just ci-web`):
 
 | Gate | Command | Status |
 | --- | --- | --- |
