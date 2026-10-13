@@ -1,15 +1,14 @@
 import type { CreatedUpload, FinalizedUpload, UploadPurpose } from './gen/types.gen'
 import { abortMultipartUpload, completeMultipartUpload, createUpload, finalizeUpload } from './gen/sdk.gen'
+import { multipartPartBytes, uploadPolicy as serverPolicy } from './gen/upload-policy.gen'
 import { ApiError } from './errors'
 
 // Spec 7.3: the one way to upload a file. create (policy check, presigned PUT) -> PUT the bytes straight to storage
 // with progress -> finalize (the API verifies the object). The returned id is what a resource then claims
 // (`thumbnail_upload_id`...).
 
-const MB = 1024 * 1024
-const IMAGES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']
 // The server also stores AVI and FLV, which no browser plays: a lesson made of one shows learners nothing.
-const VIDEOS = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime']
+const UNPLAYABLE = new Set(['video/x-msvideo', 'video/x-flv'])
 
 /**
  * The type the server's policy matches exactly. Browsers disagree per OS: Chromium on Windows says
@@ -44,22 +43,17 @@ export function uploadType(file: { name?: string; type: string }): string {
 export type { UploadPurpose }
 
 /**
- * The caps of `POST /uploads` per purpose (the server's purpose policy, crates/domain/src/files/uploads.rs; the
- * contract has the purpose enum, not the limits): this pre-check only saves a doomed upload, the server still
+ * The caps of `POST /uploads` per purpose: the server's policy, generated from the contract (gen/upload-policy.gen.ts,
+ * `just contract`), minus the videos no browser plays. This pre-check only saves a doomed upload, the server still
  * decides. An empty `mimes` list accepts any type.
  */
-const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[] }> = {
-  avatar: { maxBytes: 5 * MB, mimes: IMAGES },
-  'course-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
-  'block-image': { maxBytes: 10 * MB, mimes: IMAGES },
-  'block-pdf': { maxBytes: 50 * MB, mimes: ['application/pdf'] },
-  'block-video': { maxBytes: 2048 * MB, mimes: VIDEOS },
-  'file-submission': { maxBytes: 100 * MB, mimes: [] },
-  'platform-logo': { maxBytes: 10 * MB, mimes: IMAGES },
-  'platform-thumbnail': { maxBytes: 10 * MB, mimes: IMAGES },
-  'collection-cover': { maxBytes: 10 * MB, mimes: IMAGES },
-  'discussion-image': { maxBytes: 5 * MB, mimes: IMAGES },
+const uploadPolicy = (purpose: UploadPurpose) => {
+  const { maxBytes, mimes } = serverPolicy[purpose]
+  return { maxBytes, mimes: mimes.filter(type => !UNPLAYABLE.has(type)) }
 }
+
+/** The server's cap for this purpose, in bytes. */
+export const maxUploadBytes = (purpose: UploadPurpose): number => serverPolicy[purpose].maxBytes
 
 export type UploadProblem =
   | { kind: 'empty' }
@@ -73,7 +67,7 @@ export type UploadProblem =
 export type UploadLimits = { mimes?: readonly string[]; maxBytes?: number | null }
 
 const policyOf = (purpose: UploadPurpose, limits: UploadLimits) => {
-  const policy = uploadPolicy[purpose]
+  const policy = uploadPolicy(purpose)
   return {
     maxBytes: Math.min(policy.maxBytes, limits.maxBytes ?? Infinity),
     mimes: limits.mimes?.length ? limits.mimes : policy.mimes,
@@ -224,7 +218,7 @@ export async function upload(
         purpose,
         mime: uploadType(file),
         size_bytes: file.size,
-        ...(purpose === 'block-video' && file.size > 32 * MB ? { multipart: true } : {}),
+        ...(purpose === 'block-video' && file.size > multipartPartBytes ? { multipart: true } : {}),
       },
       signal: options.signal,
       throwOnError: true,

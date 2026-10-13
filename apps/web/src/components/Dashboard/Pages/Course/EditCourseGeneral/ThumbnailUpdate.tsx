@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 import { getCourseThumbnailUrl } from '@services/media/media'
+import { UPLOAD_MAX_BYTES } from '@services/media/uploads'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { Button } from '@components/ui/button'
@@ -25,7 +26,7 @@ import type React from 'react'
 import { compressImage } from '@/lib/image-compression'
 import { useFormatBytes } from '@/features/file-submissions/useFormatBytes'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // the server's `course-thumbnail` upload policy
+const MAX_FILE_SIZE = UPLOAD_MAX_BYTES['course-thumbnail']
 const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9
 const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01
 const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const

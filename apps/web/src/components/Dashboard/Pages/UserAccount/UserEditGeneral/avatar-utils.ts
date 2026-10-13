@@ -1,8 +1,10 @@
 import { constructAcceptValue } from '@/lib/constants'
+import { UPLOAD_MAX_BYTES } from '@services/media/uploads'
 
 export const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif'])
 export const SUPPORTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
-export const MAX_AVATAR_UPLOAD_BYTES = 2 * 1024 * 1024
+// The server's `avatar` cap (it was a stricter 2 MB here: a 3 MB GIF the server takes was refused).
+export const MAX_AVATAR_UPLOAD_BYTES = UPLOAD_MAX_BYTES.avatar
 export const MAX_AVATAR_SOURCE_BYTES = 10 * 1024 * 1024
 export const AVATAR_EXPORT_SIZE = 512
 export const AVATAR_EXPORT_QUALITY = 0.88

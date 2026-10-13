@@ -12,6 +12,7 @@
 import { apiJson, handleBrowserUnauthenticated } from '@/lib/api-client'
 import { APIError, clientApiError, isApiError } from '@/lib/api/assertSuccess'
 import { holdUploadSession, waitForSignIn } from '@/lib/auth/upload-hold'
+import { MULTIPART_PART_BYTES, UPLOAD_POLICY } from '@/lib/api/generated/upload-policy'
 import { CreatedUpload, FinalizedUpload } from '@/lib/api/generated/zod'
 import type {
   CreatedUpload as CreatedUploadType,
@@ -28,19 +29,13 @@ export type UploadPurpose =
   | 'block-video'
   | 'file-submission'
 
-const MB = 1024 * 1024
-
-/** The server's upload policies (`files/uploads.rs::policy`) — validate before `POST /uploads` 422s. */
-export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = {
-  avatar: 5 * MB,
-  'course-thumbnail': 10 * MB,
-  'platform-logo': 10 * MB,
-  'platform-thumbnail': 10 * MB,
-  'block-image': 10 * MB,
-  'block-pdf': 50 * MB,
-  'block-video': 2048 * MB,
-  'file-submission': 100 * MB,
-}
+/**
+ * The server's upload caps, generated from the contract (`UploadPurpose` x-upload-policy, `just contract`):
+ * validate before `POST /uploads` 422s.
+ */
+export const UPLOAD_MAX_BYTES: Record<UploadPurpose, number> = Object.fromEntries(
+  Object.entries(UPLOAD_POLICY).map(([purpose, policy]) => [purpose, policy.maxBytes]),
+) as Record<UploadPurpose, number>
 
 /**
  * The type the server's policy matches exactly. Browsers disagree per OS:
@@ -106,7 +101,7 @@ export async function createUpload(
         purpose,
         mime: uploadMime(file),
         size_bytes: file.size,
-        ...(purpose === 'block-video' && file.size > 32 * MB ? { multipart: true } : {}),
+        ...(purpose === 'block-video' && file.size > MULTIPART_PART_BYTES ? { multipart: true } : {}),
       }),
     },
     data => CreatedUpload.parse(data),

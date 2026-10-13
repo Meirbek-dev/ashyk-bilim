@@ -3,14 +3,14 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
-import { checkUpload } from '#/shared/api/upload'
+import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
 
 export { contentUrl } from '#/shared/lib/content-url'
 
 const MB = 1024 * 1024
-export const AVATAR_MAX_MB = 5
+export const AVATAR_MAX_MB = maxUploadBytes('avatar') / MB
 
 /** Why a picked photo is refused before any request (the server's `avatar` policy), or null. */
 export function avatarProblem(file: { size: number; type: string }): string | null {
