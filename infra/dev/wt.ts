@@ -1,23 +1,24 @@
 // `just wt new|ls|land|rm <name>`: one git worktree per parallel task, next to the main checkout.
-//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main; node_modules (root, apps/web, apps/web-2) are
-//                links to the main checkout's, cargo shares one target dir, Paraglide output is generated.
+//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (root + apps/web, apps/web-2;
+//                ~40 s from bun's cache - linked node_modules break turbopack, which refuses a link leaving its root),
+//                apps/web's gitignored .env files copied, cargo shares one target dir, Paraglide output generated.
 //   ls           worktrees with their branch, commits ahead of main and uncommitted files
 //   land <name>  rebase onto main, `just check`, fast-forward main (the main checkout), remove the worktree
 //   rm <name>    remove the worktree and branch (refuses unlanded or uncommitted work without --force)
-// A worktree that changes package.json/bun.lock must not use the shared node_modules: delete the link, bun install.
 import {
   appendFileSync,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-const LINKED = ['.', 'apps/web', 'apps/web-2']
+const LINKED = ['.', 'apps/web', 'apps/web-2'] // node_modules links made by earlier versions of this script
+const ENV_FILES = ['apps/web/.env', 'apps/web/.env.local'] // gitignored local config of the legacy app
 
 function sh(cmd: string[], cwd?: string, inherit = false): { code: number; out: string } {
   const p = Bun.spawnSync(cmd, { cwd, stdout: inherit ? 'inherit' : 'pipe', stderr: inherit ? 'inherit' : 'pipe' })
@@ -54,16 +55,30 @@ function cargoTarget(): string {
   return join(main, 'apps', 'server', 'target')
 }
 
-function create(name?: string): void {
+async function create(name?: string): Promise<void> {
   const wt = target(name)
   if (existsSync(wt.path)) fail(`${wt.path} exists`)
   mkdirSync(root, { recursive: true })
   const add = git('worktree', 'add', '-b', wt.branch, wt.path, 'main')
   if (add.code !== 0) fail(add.out)
-  for (const dir of LINKED) {
-    const real = join(main, dir, 'node_modules')
-    if (existsSync(real)) symlinkSync(real, join(wt.path, dir, 'node_modules'), 'junction') // a symlink off Windows
-  }
+  for (const file of ENV_FILES) if (existsSync(join(main, file))) copyFileSync(join(main, file), join(wt.path, file))
+  const installs = await Promise.all(
+    ['.', 'apps/web-2'].map(async dir => {
+      const p = Bun.spawn(['bun', 'install', '--frozen-lockfile'], {
+        cwd: join(wt.path, dir),
+        stdout: 'pipe',
+        stderr: 'pipe',
+      })
+      const [out, err, code] = await Promise.all([
+        new Response(p.stdout).text(),
+        new Response(p.stderr).text(),
+        p.exited,
+      ])
+      return { dir, code, out: `${out}${err}` }
+    }),
+  )
+  for (const install of installs)
+    if (install.code !== 0) fail(`bun install in ${install.dir} failed:\n${install.out.slice(-1500)}`)
   // Untracked cargo config in the worktree only; excluded for every worktree via the shared info/exclude.
   mkdirSync(join(wt.path, '.cargo'), { recursive: true })
   writeFileSync(join(wt.path, '.cargo', 'config.toml'), `[build]\ntarget-dir = ${JSON.stringify(cargoTarget())}\n`)
@@ -75,7 +90,7 @@ function create(name?: string): void {
   const gen = sh(['bun', 'gates/codegen.ts', 'messages'], join(wt.path, 'apps/web-2'))
   if (gen.code !== 0) console.log(`wt: web-2 messages codegen failed (run it in apps/web-2): ${gen.out.slice(-300)}`)
   console.log(`wt: ${wt.path} on ${wt.branch} (from main ${git('rev-parse', '--short', 'main').out})`)
-  console.log(`    shared: node_modules (main checkout), cargo target ${cargoTarget()}`)
+  console.log(`    own node_modules (bun install); cargo target ${cargoTarget()}`)
   console.log(`    commit there as usual (hooks run per worktree); then: just wt land ${wt.name}`)
 }
 
@@ -92,7 +107,7 @@ function list(): void {
   }
 }
 
-// Unlink the node_modules links first: removing a tree never follows them into the main checkout's packages.
+// Unlink node_modules links first (older worktrees): removing a tree must never follow one into the main checkout.
 function remove(wt: { path: string; branch: string }, force: boolean): void {
   for (const dir of LINKED) {
     const link = join(wt.path, dir, 'node_modules')
@@ -136,7 +151,7 @@ function drop(name?: string, force = false): void {
 }
 
 const [command, name, flag] = process.argv.slice(2)
-if (command === 'new') create(name)
+if (command === 'new') await create(name)
 else if (command === 'ls') list()
 else if (command === 'land') land(name)
 else if (command === 'rm') drop(name, flag === '--force')

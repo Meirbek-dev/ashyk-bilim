@@ -722,11 +722,13 @@ Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just set
 
 ### 5.2 Worktrees
 
-`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main, node_modules linked to the main
-checkout's, the shared cargo target (`.cargo/config.toml`), Paraglide generated. Commit there; `just wt
+`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root and
+apps/web-2, ~45 s from bun's cache; a linked node_modules breaks turbopack's `next build`), apps/web's
+`.env`/`.env.local` copied, the shared cargo target (`.cargo/config.toml`), Paraglide generated. Commit there; `just wt
 land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
-the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. A branch that
-changes package.json or bun.lock needs its own `bun install` (delete the node_modules link first).
+the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. Run the
+worktree's apps in their own slot (`just stack up 1`). Legacy `next build` on this machine needs
+`SWC_NATIVE_BINDING_CACHE` (in `infra/env/dev.local.env`; `just stack`/`just e2e` pass it).
 
 ### 5.3 Dev stack
 
