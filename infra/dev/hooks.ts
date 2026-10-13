@@ -95,7 +95,7 @@ function migrationEdits(): string[] {
 
 // Check out `tree` into tmp/hooks/<name> with its own index (incremental after the first run, ~0.2 s).
 // pre-commit and pre-push use separate dirs; git's index.lock serializes commits within one worktree.
-function snapshot(tree: string, name: string): { snap: string; index: string } {
+function snapshot(tree: string, name: string, paraglide: boolean): { snap: string; index: string } {
   const hooks = join(top, 'tmp', 'hooks')
   const snap = join(hooks, name)
   const index = join(hooks, `${name}.index`)
@@ -105,13 +105,14 @@ function snapshot(tree: string, name: string): { snap: string; index: string } {
   for (const dir of ['.', 'apps/web', 'apps/web-2']) {
     const real = join(top, dir, 'node_modules')
     const link = join(snap, dir, 'node_modules')
-    if (exists(real) && !exists(link)) symlinkSync(real, link, 'junction') // a symlink off Windows
+    if (exists(real) && exists(dirname(link)) && !exists(link)) symlinkSync(real, link, 'junction') // symlink off Windows
   }
-  // web-2's Paraglide output is gitignored: generate it from the staged catalogs when they changed.
-  const messages = git('rev-parse', `${tree}:apps/web-2/messages`).out
+  // web-2's Paraglide output is gitignored: generate it from the checked-out catalogs when they changed.
+  const messages = git('rev-parse', '-q', '--verify', `${tree}:apps/web-2/messages`).out
   const stamp = join(hooks, `${name}.paraglide`)
-  const paraglide = join(snap, 'apps/web-2/src/paraglide')
-  if (!exists(paraglide) || !exists(stamp) || readFileSync(stamp, 'utf8') !== messages) {
+  const output = join(snap, 'apps/web-2/src/paraglide')
+  const stale = !exists(output) || !exists(stamp) || readFileSync(stamp, 'utf8') !== messages
+  if (paraglide && messages && stale) {
     const gen = sync(['bun', 'gates/codegen.ts', 'messages'], join(snap, 'apps/web-2'))
     if (gen.code !== 0) throw new Error(`web-2 codegen messages: ${gen.out}`)
     writeFileSync(stamp, messages)
@@ -120,6 +121,7 @@ function snapshot(tree: string, name: string): { snap: string; index: string } {
 }
 
 function web2(snap: string, files: string[]): Promise<Result>[] {
+  if (!files.length) return []
   const dir = join(snap, 'apps/web-2')
   const fmt = files.filter(f => FMT.test(f))
   const lint = files.filter(f => LINT.test(f))
@@ -169,7 +171,9 @@ function server(snap: string, files: string[]): Promise<Result>[] {
   if (!rs.length) return []
   const dir = join(snap, 'apps/server')
   const fix = `just fmt ${rs.map(f => `apps/server/${f}`).join(' ')}`
-  return [run('server rustfmt', ['rustfmt', '--check', '--color', 'never', '--edition', rustEdition(dir), ...rs], dir, fix)]
+  return [
+    run('server rustfmt', ['rustfmt', '--check', '--color', 'never', '--edition', rustEdition(dir), ...rs], dir, fix),
+  ]
 }
 
 function report(hook: string, results: Result[], started: number): number {
@@ -219,7 +223,7 @@ async function preCommit(): Promise<number> {
   if (files.web2.length || files.web.length || files.server.some(f => f.endsWith('.rs'))) {
     const tree = git('write-tree') // the index being committed (GIT_INDEX_FILE)
     if (tree.code !== 0) throw new Error(`git write-tree: ${tree.out}`)
-    const { snap } = snapshot(tree.out, 'snap')
+    const { snap } = snapshot(tree.out, 'snap', files.web2.length > 0)
     results.push(
       ...(await Promise.all([...web2(snap, files.web2), ...web(snap, files.web), ...server(snap, files.server)])),
     )
@@ -263,7 +267,7 @@ async function prePush(): Promise<number> {
     }
   }
   try {
-    const { snap, index } = snapshot(`${local}^{tree}`, 'push')
+    const { snap, index } = snapshot(`${local}^{tree}`, 'push', true)
     console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
     const gitDir = git('rev-parse', '--absolute-git-dir').out
     const env = { ...process.env, GIT_DIR: gitDir, GIT_WORK_TREE: snap, GIT_INDEX_FILE: index }

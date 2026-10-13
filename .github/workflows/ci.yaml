@@ -204,6 +204,11 @@ jobs:
       - name: just ci-infra
         run: just ci-infra
 
+      # The git hooks (infra/dev/hooks.ts) are bun scripts; test-dev runs the pre-commit hook.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
       - name: Development workflow regression checks
         run: just test-dev
 

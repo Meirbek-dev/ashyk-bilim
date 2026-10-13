@@ -84,49 +84,60 @@ writeFileSync(out + '/zod/a.zod.ts', 'a\\n')
   }
 })
 
-test('pre-commit refuses to verify a staged web-2 file whose working copy differs', () => {
+// The hooks are bun scripts (CI's infra-gates job installs bun). A fake rustfmt fails on files containing BAD.
+test('pre-commit checks the staged snapshot, not the working copy, and refuses edits to pushed migrations', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ashyq-hook-'))
   const git = (...args) => {
     const result = run('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: dir })
     assert.equal(result.status, 0, result.stderr)
   }
+  const lib = join(dir, 'apps/server/src/lib.rs')
+  const migration = join(dir, 'apps/server/migrations/1_a.sql')
+  const stage = (path, staged, unstaged) => {
+    writeFileSync(path, staged)
+    git('add', path)
+    if (unstaged !== undefined) writeFileSync(path, unstaged)
+  }
+  const hook = () =>
+    run('sh', ['.vite-hooks/pre-commit'], {
+      cwd: dir,
+      env: { ...process.env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` },
+    })
   try {
-    mkdirSync(join(dir, '.vite-hooks'))
-    mkdirSync(join(dir, 'apps/web-2'), { recursive: true })
-    mkdirSync(join(dir, 'bin'))
-    writeFileSync(join(dir, '.vite-hooks/pre-commit'), readFileSync(join(root, '.vite-hooks/pre-commit')))
-    writeFileSync(join(dir, 'bin/bun'), '#!/bin/sh\necho "$*" >>"$(git rev-parse --show-toplevel)/bun.log"\n', { mode: 0o755 })
-    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'a\n')
-    writeFileSync(join(dir, 'apps/web-2/b.ts'), 'b\n')
+    for (const sub of ['.vite-hooks', 'infra/dev', 'apps/server/src', 'apps/server/migrations', 'bin'])
+      mkdirSync(join(dir, sub), { recursive: true })
+    for (const file of ['.vite-hooks/pre-commit', 'infra/dev/hooks.ts'])
+      writeFileSync(join(dir, file), readFileSync(join(root, file)))
+    writeFileSync(join(dir, 'apps/server/Cargo.toml'), '[workspace.package]\nedition = "2024"\n')
+    writeFileSync(join(dir, 'bin/rustfmt'), '#!/bin/sh\nfor f; do :; done\n! grep -q BAD "$f"\n', { mode: 0o755 })
+    // Windows: Bun resolves the .cmd; the file is the 6th argument (rustfmt --check --color never --edition E file).
+    const cmd = ['@set f=%~6', '@set f=%f:/=\\%', '@findstr /c:BAD "%f%" >nul && exit /b 1', '@exit /b 0', '']
+    writeFileSync(join(dir, 'bin/rustfmt.cmd'), cmd.join('\r\n'))
+    writeFileSync(lib, 'ok\n')
+    writeFileSync(migration, 'select 1;\n')
     git('init', '-q')
     git('config', 'core.autocrlf', 'false')
-    git('add', 'apps')
+    git('add', '.')
     git('commit', '-qm', 'fixture')
-    const hook = () => {
-      rmSync(join(dir, 'bun.log'), { force: true })
-      const result = run('sh', ['.vite-hooks/pre-commit'], {
-        cwd: dir,
-        env: { ...process.env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` },
-      })
-      let verified = true
-      try {
-        readFileSync(join(dir, 'bun.log'))
-      } catch {
-        verified = false
-      }
-      return { status: result.status, verified, stderr: result.stderr }
-    }
-    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'staged\n')
-    git('add', 'apps/web-2/a.ts')
-    assert.deepEqual(hook(), { status: 0, verified: true, stderr: '' })
-    writeFileSync(join(dir, 'apps/web-2/b.ts'), 'unrelated unstaged\n')
-    assert.equal(hook().status, 0, 'unstaged edits to other files do not block')
-    writeFileSync(join(dir, 'apps/web-2/a.ts'), 'unstaged fix\n')
-    const blocked = hook()
-    assert.equal(blocked.status, 1)
-    assert.equal(blocked.verified, false)
-    assert.match(blocked.stderr, /apps\/web-2\/a\.ts/)
-    assert.doesNotMatch(blocked.stderr, /b\.ts/)
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD')
+
+    stage(lib, 'staged ok\n', 'BAD unstaged\n')
+    let result = hook()
+    assert.equal(result.status, 0, `the working copy is not what is committed:\n${result.stdout}${result.stderr}`)
+    stage(lib, 'BAD staged\n', 'ok unstaged\n')
+    result = hook()
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /server rustfmt failed/)
+    stage(lib, 'ok\n')
+
+    stage(migration, 'select 2;\n')
+    result = hook()
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stdout, /1_a\.sql is on origin\/main/)
+    stage(migration, 'select 1;\n')
+    stage(join(dir, 'apps/server/migrations/2_b.sql'), 'select 3;\n')
+    result = hook()
+    assert.equal(result.status, 0, `${result.stdout}${result.stderr}`)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
