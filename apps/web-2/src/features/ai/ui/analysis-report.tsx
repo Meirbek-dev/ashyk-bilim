@@ -53,6 +53,7 @@ export function AnalysisReport({ courseId, analysis }: { courseId: CourseId; ana
                 analysisId={analysis.id}
                 findingId={`finding-${index}`}
                 recommendation={recommendation}
+                review={report.finding_reviews?.[`finding-${index}`]}
               />
             ))}
           </ol>

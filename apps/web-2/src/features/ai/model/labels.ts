@@ -61,6 +61,12 @@ export const findingLabels: Record<FindingReviewAction, () => string> = {
   task_created: m.ai_finding_task_created,
 }
 
+export const findingStateLabels: Record<FindingReviewAction, () => string> = {
+  accepted: m.ai_finding_state_accepted,
+  dismissed: m.ai_finding_state_dismissed,
+  task_created: m.ai_finding_state_task_created,
+}
+
 export const sessionStatusLabels: Record<RemediationStatus, () => string> = {
   assigned: m.ai_remediation_assigned,
   in_progress: m.ai_remediation_in_progress,

@@ -203,5 +203,8 @@
   "ai_col_dataset": "Деректер жинағы",
   "ai_col_evaluator": "Әдіс",
   "ai_col_score": "Ұпай",
-  "ai_col_passed": "Сәтті"
+  "ai_col_passed": "Сәтті",
+  "ai_finding_state_accepted": "Қабылданды",
+  "ai_finding_state_dismissed": "Қабылданбады",
+  "ai_finding_state_task_created": "Тапсырма жасалды"
 }

@@ -203,5 +203,8 @@
   "ai_col_dataset": "Dataset",
   "ai_col_evaluator": "Method",
   "ai_col_score": "Score",
-  "ai_col_passed": "Passed"
+  "ai_col_passed": "Passed",
+  "ai_finding_state_accepted": "Accepted",
+  "ai_finding_state_dismissed": "Dismissed",
+  "ai_finding_state_task_created": "Task created"
 }
