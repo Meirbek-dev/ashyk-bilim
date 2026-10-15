@@ -2841,3 +2841,8 @@ deliberately not restored, or restored differently:
   carries them.
 - **Gradebook summary tiles and roll-ups are not rebuilt**: the gradebook is keyset-paged, so totals would count only
   loaded rows; the teacher inbox and the "needs grading" filter answer the same question.
+- **No notification bell in the focus layout** (player, attempt, studio editor, single review): DESIGN 5.2 gives it
+  no navigation, and a bell would pull a learner out of an exam or an author out of an unsaved lesson. The bell
+  stays in the app shell; the back button is one step away from it. The old web showed it everywhere.
+- **No "open in a popup" for link cards**: the old web framed any site in an in-app popup ("might not work on all
+  websites"); web-2 frames only catalog services (B-EDT-21), so the card's button opens a new tab (B-EDT-28).
