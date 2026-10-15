@@ -285,5 +285,9 @@
   "analytics_dq_excluded_teacher": "Алынып тасталған оқытушы әрекеттері",
   "analytics_dq_thin": "Қорытынды үшін деректер аз",
   "analytics_dq_thin_course": "{course}: білім алушылар {count}, кемінде 5 керек",
-  "analytics_dq_issues": "Деректерге ескертулер"
+  "analytics_dq_issues": "Деректерге ескертулер",
+  "analytics_admin_course": "Курс сүзгісі: {course}",
+  "analytics_admin_group": "Топ: {group}",
+  "analytics_admin_all": "барлығы",
+  "analytics_admin_roi": "Мазмұн қайтарымы"
 }

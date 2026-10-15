@@ -285,5 +285,9 @@
   "analytics_dq_excluded_teacher": "Исключено попыток преподавателей",
   "analytics_dq_thin": "Мало данных для выводов",
   "analytics_dq_thin_course": "{course}: учащихся {count}, нужно не меньше 5",
-  "analytics_dq_issues": "Замечания к данным"
+  "analytics_dq_issues": "Замечания к данным",
+  "analytics_admin_course": "Курс: {course}",
+  "analytics_admin_group": "Группа: {group}",
+  "analytics_admin_all": "все",
+  "analytics_admin_roi": "Отдача контента"
 }

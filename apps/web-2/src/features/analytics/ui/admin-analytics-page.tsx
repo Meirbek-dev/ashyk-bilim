@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow } from '#/shared/api/gen/types.gen'
@@ -7,13 +7,11 @@ import type { DataColumn } from '#/shared/components/data-columns'
 import { ListPage } from '#/shared/components/templates/list-page'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
-import { WINDOWS } from '../model/filters'
 import { adminAnalyticsOptions } from '../queries'
 import { AdminTable } from './admin-table'
-import { FilterMenu } from './filter-menu'
+import { AdminFilters } from './admin-filters'
 import { AsOf } from './as-of'
 import { hours, percent, score } from './kpi'
-import { windowLabels } from './labels'
 
 const name = (text: string) => <span className="wrap-anywhere">{text}</span>
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
@@ -63,31 +61,25 @@ const programColumns = (): DataColumn<AdminProgramRow>[] => [
 
 /** /admin/analytics: the platform at a glance over a period, top 25 of each ranking (the server cuts them). */
 export function AdminAnalyticsPage() {
-  const { window } = useSearch({ from: '/_authed/admin/analytics' })
-  const navigate = useNavigate()
-  const { data } = useSuspenseQuery(adminAnalyticsOptions(window))
+  const search = useSearch({ from: '/_authed/admin/analytics' })
+  const { data } = useSuspenseQuery(adminAnalyticsOptions(search.window, search))
   return (
     <ListPage
       title={m.analytics_admin_title()}
-      filters={
-        <FilterMenu
-          choice={{
-            label: m.analytics_admin_window({ window: windowLabels[window]() }),
-            value: window,
-            options: WINDOWS.map(value => ({ value, label: windowLabels[value]() })),
-            onValueChange: value => {
-              const next = WINDOWS.find(known => known === value)
-              if (next) void navigate({ to: '/admin/analytics', search: { window: next } })
-            },
-          }}
-        />
-      }
+      filters={<AdminFilters search={search} />}
+      activeFilters={(search.course ? 1 : 0) + (search.cohort ? 1 : 0)}
     >
       <div className="flex flex-col gap-12">
         <AsOf at={data.generated_at_unix} />
         <AdminTable
           title={m.analytics_admin_courses()}
           rows={data.course_health_ranking}
+          columns={courseColumns()}
+          getKey={row => row.course_id}
+        />
+        <AdminTable
+          title={m.analytics_admin_roi()}
+          rows={data.content_roi}
           columns={courseColumns()}
           getKey={row => row.course_id}
         />

@@ -285,5 +285,9 @@
   "analytics_dq_excluded_teacher": "Teacher attempts left out",
   "analytics_dq_thin": "Too little data to judge",
   "analytics_dq_thin_course": "{course}: {count} learners, at least 5 needed",
-  "analytics_dq_issues": "Data issues"
+  "analytics_dq_issues": "Data issues",
+  "analytics_admin_course": "Course: {course}",
+  "analytics_admin_group": "Group: {group}",
+  "analytics_admin_all": "all",
+  "analytics_admin_roi": "Content return"
 }

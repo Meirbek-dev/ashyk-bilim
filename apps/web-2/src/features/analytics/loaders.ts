@@ -3,7 +3,6 @@ import * as v from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
 import { getGroupOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
-import type { Window } from '#/shared/api/gen/types.gen'
 
 import {
   type Filters,
@@ -26,6 +25,7 @@ import {
   overviewOptions,
   savedViewsOptions,
 } from './queries'
+import type { AdminAnalyticsSearch } from './route'
 
 // Route loaders: each tab ensures what its screen reads with useSuspenseQuery (spec 7.3), from the full search.
 
@@ -93,5 +93,9 @@ export async function loadPerformance(queryClient: QueryClient, search: Search<t
   ])
 }
 
-export const loadAdminAnalytics = (queryClient: QueryClient, window: Window) =>
-  queryClient.ensureQueryData(adminAnalyticsOptions(window))
+/** The rankings in scope, and the unscoped ones whose courses and groups the filter menus offer. */
+export const loadAdminAnalytics = (queryClient: QueryClient, search: AdminAnalyticsSearch) =>
+  Promise.all([
+    queryClient.ensureQueryData(adminAnalyticsOptions(search.window, search)),
+    queryClient.ensureQueryData(adminAnalyticsOptions(search.window)),
+  ])

@@ -80,5 +80,13 @@ export function pickFilters(search: Filters): Filters {
 export const hasUnknownCohort = async (queryClient: QueryClient, filters: Filters): Promise<boolean> =>
   (await import('./loaders')).hasUnknownCohort(queryClient, filters)
 
-/** /admin/analytics?window=: the period of the platform rankings (B-ANL-31); unknown or none is the default. */
-export const adminAnalyticsSearchSchema = v.object({ window: choice(WINDOWS, filterDefaults.window) })
+/**
+ * /admin/analytics?window=&course=&cohort=: the period of the platform rankings (B-ANL-31; unknown or none is the
+ * default) and one course or group to narrow them to (B-ANL-34).
+ */
+export const adminAnalyticsSearchSchema = v.object({
+  window: choice(WINDOWS, filterDefaults.window),
+  course: optionalId,
+  cohort: optionalId,
+})
+export type AdminAnalyticsSearch = v.InferOutput<typeof adminAnalyticsSearchSchema>

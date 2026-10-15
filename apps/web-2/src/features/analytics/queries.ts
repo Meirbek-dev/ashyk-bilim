@@ -87,8 +87,15 @@ export const interventionsOptions = (userId: UserId, courseId: CourseId) =>
 
 export const savedViewsOptions = () => listSavedViewsOptions()
 
-export const adminAnalyticsOptions = (window: Window) =>
-  adminOverviewOptions({ query: { window, timezone: PLATFORM_TIME_ZONE } })
+export const adminAnalyticsOptions = (window: Window, scope: { course?: string; cohort?: string } = {}) =>
+  adminOverviewOptions({
+    query: {
+      window,
+      timezone: PLATFORM_TIME_ZONE,
+      ...(scope.course ? { course_ids: scope.course } : {}),
+      ...(scope.cohort ? { cohort_ids: scope.cohort } : {}),
+    },
+  })
 
 /** A drill-down loader: an id outside the caller's scope (404) or malformed (422) is "not found" in the tab. */
 export async function ensureDrill<T>(load: Promise<T>): Promise<T> {

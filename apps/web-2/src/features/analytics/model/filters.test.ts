@@ -100,3 +100,11 @@ test('B-ANL-33 the overview tab counts open alerts, the learners tab learners at
     learners: 5,
   })
 })
+
+test('B-ANL-34 one course or group narrows the admin rankings; a malformed id is dropped', () => {
+  expect(v.parse(adminAnalyticsSearchSchema, { course: COURSE, cohort: 'nope' })).toEqual({
+    window: '28d',
+    course: COURSE,
+    cohort: undefined,
+  })
+})
