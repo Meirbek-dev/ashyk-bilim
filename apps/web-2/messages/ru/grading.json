@@ -153,5 +153,6 @@
   "grading_violation_keys": "Запрещённое сочетание клавиш",
   "grading_criteria": "Критерии проверки ответа",
   "grading_rubric_apply": "Поставить как итог",
-  "grading_after_penalty": "После штрафа {percent} за опоздание: {score}"
+  "grading_after_penalty": "После штрафа {percent} за опоздание: {score}",
+  "grading_cell_attempts": "попыток: {count}"
 }
