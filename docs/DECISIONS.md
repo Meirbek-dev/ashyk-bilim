@@ -2805,3 +2805,18 @@ as before.
 - **The server's upload policy is in the contract** (`UploadPurpose`'s `x-upload-policy`); both webs
   generate their caps from it (`just contract`), so a drifted constant fails the codegen drift checks.
   Legacy's avatar cap was 2 MB against the server's 5 MB: a 2-5 MB GIF the server accepts was refused.
+
+## web-2 production runtime limits (2026-10-15)
+
+- **The web-2 image caps the V8 heap at 256 MiB** (`NODE_OPTIONS` in `apps/web-2/Dockerfile`). Inside the
+  image V8 sized its heap from the host (2144 MiB) and collects lazily: under 50 rps of mixed public and
+  signed-in SSR the process held ~480 MiB, too close to the 512m container limit. With the heap capped at
+  192 MiB the same mix (8-16 clients, 12 minutes, 55-75 rps) held 260-290 MiB with no upward trend; at 256 MiB
+  5 minutes at 54 rps reached 272 MiB. 256 leaves room for spikes without an OOM kill. Raise both together if
+  the container limit changes.
+- **SSR reads of the API time out after 8 s** (`shared/api/client.ts`); with Query's one retry a hung API
+  answers the document 500 after ~17 s instead of holding it until nginx's 60 s. A 5xx route error during
+  SSR is logged as one JSON line with the request id (`shared/lib/ssr-status.ts`).
+- **The web does not compress**: nginx gzips HTML, JS and CSS (`gzip_proxied any`); srvx stays plain.
+  Unhashed static files (themes, favicon, robots.txt) carry `Cache-Control: no-cache` (ETag revalidation),
+  hashed `/assets/` stay `public, max-age=31536000, immutable`, documents `private, no-store`.

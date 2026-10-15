@@ -17,7 +17,10 @@ FROM deps AS runtime-deps
 RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
 FROM node:26.11.1-alpine
+# The heap is capped for the 512m container (compose WEB_MEMORY): V8 sized it from the host (2 GiB) and collects
+# lazily, so RSS reached ~480 MiB at 50 rps; capped, it stayed under 300 MiB (docs/DECISIONS.md).
 ENV NODE_ENV=production \
+    NODE_OPTIONS=--max-old-space-size=256 \
     HOST=0.0.0.0 \
     PORT=3000
 WORKDIR /app
