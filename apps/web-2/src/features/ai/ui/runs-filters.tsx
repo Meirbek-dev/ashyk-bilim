@@ -3,6 +3,8 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { vAiRunKind, vAiRunStatus } from '#/shared/api/gen/valibot.gen'
+import { Button } from '#/shared/ui/button'
+import { Input } from '#/shared/ui/input'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
 import { RUN_DAYS, type AdminAiSearch } from '../route'
@@ -10,7 +12,10 @@ import { kindLabels, runStatusLabels } from '../model/labels'
 
 const vDays = v.pipe(v.string(), v.transform(Number), v.picklist(RUN_DAYS))
 
-/** Period, status and kind of the runs list: each is a search param (B-AI-21). */
+/**
+ * Period, status, kind, provider or model (Enter applies) and one course (set from a run's row) of the runs list: each
+ * is a search param (B-AI-21).
+ */
 export function RunsFilters({ search }: { search: AdminAiSearch }) {
   const navigate = useNavigate({ from: '/admin/ai' })
   const set = (patch: Partial<AdminAiSearch>) =>
@@ -55,6 +60,22 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
           </NativeSelectOption>
         ))}
       </NativeSelect>
+      <Input
+        key={search.provider ?? ''}
+        type="search"
+        aria-label={m.ai_filter_provider()}
+        placeholder={m.ai_filter_provider()}
+        defaultValue={search.provider ?? ''}
+        className="w-48"
+        onKeyDown={event => {
+          if (event.key === 'Enter') set({ provider: event.currentTarget.value.trim() || undefined })
+        }}
+      />
+      {search.course ? (
+        <Button variant="outline" onClick={() => set({ course: undefined })}>
+          {m.ai_filter_course_clear()}
+        </Button>
+      ) : null}
     </div>
   )
 }

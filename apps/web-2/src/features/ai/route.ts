@@ -36,13 +36,28 @@ export const adminAiSearchSchema = v.object({
   days: v.optional(v.picklist(RUN_DAYS), 7),
   status: v.optional(v.picklist(RUN_STATUSES)),
   kind: v.optional(v.picklist(RUN_KINDS)),
+  /** Substring of the provider or model name (the server's `provider` filter). */
+  provider: v.fallback(
+    v.optional(
+      v.pipe(
+        v.string(),
+        v.trim(),
+        v.maxLength(100),
+        v.transform(text => text || undefined),
+      ),
+    ),
+    undefined,
+  ),
+  course: v.fallback(v.optional(v.pipe(v.string(), v.uuid())), undefined),
   run: v.optional(v.pipe(v.string(), v.uuid())),
 })
 export type AdminAiSearch = v.InferOutput<typeof adminAiSearchSchema>
 
 /** The filter the runs query takes: unset ones are left out. */
-export const runsFilter = ({ days, status, kind }: AdminAiSearch) => ({
+export const runsFilter = ({ days, status, kind, provider, course }: AdminAiSearch) => ({
   days,
   ...(status ? { status } : {}),
   ...(kind ? { kind } : {}),
+  ...(provider ? { provider } : {}),
+  ...(course ? { course_id: course } : {}),
 })

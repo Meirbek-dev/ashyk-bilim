@@ -209,5 +209,9 @@
   "ai_finding_state_task_created": "Тапсырма жасалды",
   "ai_feedback_draft": "Пікірге қосу",
   "ai_gate_lesson": "Қателерді талдау сабағы: {title}",
-  "ai_gate_score": "нәтиже {score}%"
+  "ai_gate_score": "нәтиже {score}%",
+  "ai_filter_provider": "Провайдер немесе модель",
+  "ai_col_course": "Курс сүзгісі",
+  "ai_filter_this_course": "Тек осы курс",
+  "ai_filter_course_clear": "Барлық курстар"
 }

@@ -47,6 +47,17 @@ const columns = (): DataColumn<AdminRun>[] => [
   { id: 'started', header: m.ai_col_started(), priority: 2, cell: run => formatDate(run.started_at_unix) },
   { id: 'model', header: m.ai_col_model(), priority: 3, cell: run => run.model_name },
   { id: 'error', header: m.ai_col_error(), priority: 3, cell: run => run.error_code },
+  {
+    id: 'course',
+    header: m.ai_col_course(),
+    priority: 3,
+    cell: run =>
+      run.context.course_id ? (
+        <Link from="/admin/ai" to="." search={prev => ({ ...prev, course: run.context.course_id, run: undefined })}>
+          {m.ai_filter_this_course()}
+        </Link>
+      ) : null,
+  },
 ]
 
 /** Recent runs, filtered in the URL, keyset "Show more"; `?run=` opens one in a side sheet (B-AI-21, B-AI-22). */

@@ -209,5 +209,9 @@
   "ai_finding_state_task_created": "Task created",
   "ai_feedback_draft": "Add to feedback",
   "ai_gate_lesson": "Remediation lesson: {title}",
-  "ai_gate_score": "score {score}%"
+  "ai_gate_score": "score {score}%",
+  "ai_filter_provider": "Provider or model",
+  "ai_col_course": "Course",
+  "ai_filter_this_course": "This course only",
+  "ai_filter_course_clear": "All courses"
 }

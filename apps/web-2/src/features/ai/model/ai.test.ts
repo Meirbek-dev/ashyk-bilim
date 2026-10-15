@@ -75,6 +75,12 @@ describe('remediation and admin helpers', () => {
       status: 'failed',
       kind: 'course_qa',
     })
+    const course = '0190a5d2-0000-7000-8000-0000000000d1'
+    expect(runsFilter({ days: 7, provider: 'openrouter', course })).toEqual({
+      days: 7,
+      provider: 'openrouter',
+      course_id: course,
+    })
   })
 
   test('B-AI-08 error codes read as their texts: API codes, a lost stream, the agents own codes', () => {
