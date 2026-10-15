@@ -146,3 +146,29 @@ test('B-EDT-23 an embed of this site is refused in the dialog; a button link is 
   await screen.getByRole('button', { name: m.editor_apply() }).last().click()
   await expect.poll(() => find(last(onChange), 'button')?.attrs?.['link']).toBe('https://example.com/page')
 })
+
+const cell = (text: string) => ({
+  type: 'tableCell',
+  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+})
+
+test('B-EDT-25 the code block under the cursor takes a language; the table under it takes rows and columns', async () => {
+  const onChange = vi.fn<(doc: EditorDocument) => void>()
+  const content = {
+    type: 'doc',
+    content: [
+      { type: 'codeBlock', attrs: { language: null }, content: [{ type: 'text', text: 'print(1)' }] },
+      { type: 'table', content: [{ type: 'tableRow', content: [cell('a'), cell('b')] }] },
+    ],
+  }
+  const screen = await render(<BlockEditor activityId={ACTIVITY} content={content} onChange={onChange} />)
+  await expect.element(screen.getByRole('button', { name: m.editor_code_language() })).not.toBeInTheDocument()
+  await screen.getByText('print(1)').click()
+  await screen.getByRole('button', { name: m.editor_code_language() }).click()
+  await screen.getByRole('menuitemradio', { name: 'Python' }).click()
+  await expect.poll(() => find(last(onChange), 'codeBlock')?.attrs?.['language']).toBe('python')
+  await screen.getByText('a', { exact: true }).click()
+  await screen.getByRole('button', { name: m.editor_table() }).click()
+  await screen.getByRole('menuitem', { name: m.editor_table_row_after() }).click()
+  await expect.poll(() => find(last(onChange), 'table')?.content?.length).toBe(2)
+})

@@ -67,5 +67,15 @@
   "editor_video_mute": "Выключить звук",
   "editor_video_fullscreen": "Во весь экран",
   "editor_video_failed": "Видео не воспроизводится: файл повреждён или в формате, который браузер не поддерживает. Сообщите преподавателю.",
-  "editor_embed_own_origin": "Страницы этого сайта нельзя встроить. Вставьте адрес внешнего сервиса (YouTube, Google Docs…)."
+  "editor_embed_own_origin": "Страницы этого сайта нельзя встроить. Вставьте адрес внешнего сервиса (YouTube, Google Docs…).",
+  "editor_code_language": "Язык кода",
+  "editor_code_plain": "Обычный текст",
+  "editor_table": "Таблица",
+  "editor_table_row_before": "Добавить строку выше",
+  "editor_table_row_after": "Добавить строку ниже",
+  "editor_table_column_before": "Добавить столбец слева",
+  "editor_table_column_after": "Добавить столбец справа",
+  "editor_table_row_delete": "Удалить строку",
+  "editor_table_column_delete": "Удалить столбец",
+  "editor_table_delete": "Удалить таблицу"
 }

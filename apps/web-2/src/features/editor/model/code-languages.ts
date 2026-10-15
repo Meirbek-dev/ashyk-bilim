@@ -1,5 +1,5 @@
 /** Code block languages offered by the editor and highlighted by shiki (ported from the old web). */
-const CODE_LANGUAGES = [
+export const CODE_LANGUAGES = [
   'html',
   'css',
   'javascript',
@@ -18,7 +18,27 @@ const CODE_LANGUAGES = [
   'yaml',
 ] as const
 
-type CodeLanguage = (typeof CODE_LANGUAGES)[number]
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number]
+
+/** Their names as programmers write them (proper names: the same in every interface language). */
+export const CODE_LANGUAGE_NAMES: Record<CodeLanguage, string> = {
+  html: 'HTML',
+  css: 'CSS',
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  python: 'Python',
+  java: 'Java',
+  kotlin: 'Kotlin',
+  c: 'C',
+  cpp: 'C++',
+  go: 'Go',
+  rust: 'Rust',
+  markdown: 'Markdown',
+  json: 'JSON',
+  bash: 'Bash',
+  sql: 'SQL',
+  yaml: 'YAML',
+}
 
 const ALIASES: Record<string, CodeLanguage> = {
   ...Object.fromEntries(CODE_LANGUAGES.map(language => [language, language])),

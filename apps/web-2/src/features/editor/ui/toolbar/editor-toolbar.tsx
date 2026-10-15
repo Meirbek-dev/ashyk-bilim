@@ -5,8 +5,10 @@ import { Plus, Redo2, Undo2 } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
 
+import { CodeLanguageMenu } from './code-language-menu'
 import { FORMAT_ITEMS } from './format-items'
 import { LinkButton } from './link-button'
+import { TableMenu } from './table-menu'
 import { TextStyleMenu } from './text-style-menu'
 
 type EditorToolbarProps = {
@@ -15,7 +17,10 @@ type EditorToolbarProps = {
   onInsert?: ((anchor: Element) => void) | undefined
 }
 
-/** The editor's toolbar: text style, formatting toggles (pressed = applied), link, Insert block, undo/redo. */
+/**
+ * The editor's toolbar: text style, formatting toggles (pressed = applied), link, the code block's language and the
+ * table's rows and columns (while the cursor is in one), Insert block, undo/redo.
+ */
 export function EditorToolbar({ editor, onInsert }: EditorToolbarProps) {
   const state = useEditorState({
     editor,
@@ -23,6 +28,9 @@ export function EditorToolbar({ editor, onInsert }: EditorToolbarProps) {
       active: FORMAT_ITEMS.map(item => current.isActive(item.name)),
       link: current.isActive('link'),
       level: Number(current.getAttributes('heading')['level'] ?? 0),
+      code: current.isActive('codeBlock'),
+      language: String(current.getAttributes('codeBlock')['language'] ?? '') || null,
+      table: current.isActive('table'),
       undo: current.can().undo(),
       redo: current.can().redo(),
     }),
@@ -44,6 +52,8 @@ export function EditorToolbar({ editor, onInsert }: EditorToolbarProps) {
         />
       ))}
       <LinkButton editor={editor} active={state.link} />
+      {state.code ? <CodeLanguageMenu editor={editor} language={state.language} /> : null}
+      {state.table ? <TableMenu editor={editor} /> : null}
       {onInsert ? (
         <IconButton
           label={m.editor_insert()}

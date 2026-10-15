@@ -67,5 +67,15 @@
   "editor_video_mute": "Mute",
   "editor_video_fullscreen": "Full screen",
   "editor_video_failed": "The video does not play: the file is damaged or in a format this browser does not support. Tell your teacher.",
-  "editor_embed_own_origin": "Pages of this site cannot be embedded. Paste the address of an outside service (YouTube, Google Docs…)."
+  "editor_embed_own_origin": "Pages of this site cannot be embedded. Paste the address of an outside service (YouTube, Google Docs…).",
+  "editor_code_language": "Code language",
+  "editor_code_plain": "Plain text",
+  "editor_table": "Table",
+  "editor_table_row_before": "Add row above",
+  "editor_table_row_after": "Add row below",
+  "editor_table_column_before": "Add column left",
+  "editor_table_column_after": "Add column right",
+  "editor_table_row_delete": "Delete row",
+  "editor_table_column_delete": "Delete column",
+  "editor_table_delete": "Delete table"
 }

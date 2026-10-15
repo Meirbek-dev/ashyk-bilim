@@ -67,5 +67,15 @@
   "editor_video_mute": "Дыбысты өшіру",
   "editor_video_fullscreen": "Толық экран",
   "editor_video_failed": "Бейне ойнатылмайды: файл бүлінген немесе браузер қолдамайтын форматта. Оқытушыға хабарлаңыз.",
-  "editor_embed_own_origin": "Осы сайттың беттерін ендіруге болмайды. Сыртқы сервистің мекенжайын қойыңыз (YouTube, Google Docs…)."
+  "editor_embed_own_origin": "Осы сайттың беттерін ендіруге болмайды. Сыртқы сервистің мекенжайын қойыңыз (YouTube, Google Docs…).",
+  "editor_code_language": "Код тілі",
+  "editor_code_plain": "Қарапайым мәтін",
+  "editor_table": "Кесте",
+  "editor_table_row_before": "Жоғарыға жол қосу",
+  "editor_table_row_after": "Төменге жол қосу",
+  "editor_table_column_before": "Сол жаққа баған қосу",
+  "editor_table_column_after": "Оң жаққа баған қосу",
+  "editor_table_row_delete": "Жолды жою",
+  "editor_table_column_delete": "Бағанды жою",
+  "editor_table_delete": "Кестені жою"
 }
