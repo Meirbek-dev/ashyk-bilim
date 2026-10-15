@@ -17,17 +17,6 @@ secrets, restorable by one script and checked by `just restore-drill`
 (RUNBOOK 3.5). Copying an archive off the host by hand before risky work is
 the only offsite protection left.
 
-## High
-
-### 4. Admin credentials were shared in plaintext
-The production admin password was pasted into a chat session during rewrite
-planning. Rotate it (now a Zitadel credential) and enable MFA on the admin account.
-
-### 30. The production SSH password was written into a repository file
-On 2026-10-02 the host's SSH password was pasted into a temporary migration-plan file
-(staged, never committed or pushed; scrubbed before the first commit). Rotate it and
-switch the host to key-only authentication (`PasswordAuthentication no`).
-
 ## Medium
 
 ### 9. No monitoring or alerting in production (accepted risk)
@@ -45,18 +34,20 @@ The replacement frontend has a `web2-e2e` CI job; production Next.js Playwright
 coverage still runs by hand. `apps/web/scripts/run-vitest.mjs` also pins Vitest
 over the vite-plus bundle; remove the wrapper when the bundled version works.
 
-### 31. Responses with more than 4k of headers are a 502 at the university proxy
-Found 2026-10-04: the home page answered 502 through the proxy (200 at our nginx)
-because Next's `Link` header (hreflang + preloads) was 3.3 KB. **Fixed:** the edge
-hides `Link` on web responses and smoke checks the header size. Stage 2 contract:
-the web app must keep response headers under 3.5 KB (no preload `Link` headers).
+### 31. University proxy response-header limit (operating constraint)
+The university proxy answers 502 when response headers overflow its 4 KiB buffer.
+The edge hides `Link` on web responses and deployment smoke checks require headers
+below 3500 bytes. Preserve both guards when switching frontends: the Stage 2 web
+contract forbids preload `Link` headers. See `docs/INFRA.md` for the proxy contract.
 
-### 29. Flaky server test under coverage
-`ab-api::mfa_flow::fenced_totp_login_retries_without_replaying_the_code`
-(`crates/api/tests/mfa_flow.rs:580`, "the retry ran": left 0, right 1) failed once in
-the `Coverage floor` step (CI run 37062388407) after passing in the plain test step of
-the same run and in five other runs. Timing-dependent under llvm-cov instrumentation.
-A red server gate blocks `publish`; re-run the job until the test is made deterministic.
+### 29. Login-test fix awaits validation
+`ab-api::mfa_flow::fenced_totp_login_retries_without_replaying_the_code` now
+completes the session rewrite inside the mock authentication response, replacing
+the fixed delays that caused the intermittent "the retry ran" failure.
+Validation remains open: local successful-login tests (including unchanged tests)
+return HTTP 408, and `just ci-server` stops before coverage on the Rustls 0.23.45
+dependency advisory. Resolve those blockers and verify the test under coverage
+before closing this finding.
 
 ### 32. University proxy rejects large single PUTs (multipart workaround)
 Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT
@@ -91,21 +82,6 @@ optional overnight).
 Two imported users shared `Nurgul287@mail.ru`; the import gave the duplicates
 stable `+legacy-{id}` aliases. Tell the affected account holders which address to
 retain.
-
-### 26. Pre-assessment exam history was not imported
-The legacy database had 19 `exam` and 45 `examattempt` rows from a model the
-legacy app itself could no longer render; they were deliberately dropped. They
-exist only in pre-cutover backups.
-
-### 28. Leaderboards may carry inflated XP
-Legacy `POST /gamification/xp` let learners award themselves XP; imported totals
-may be inflated. Owner call whether to reset XP.
-
-### 33. Concurrent authenticator setup has a generic failure
-Historical QA (UX-126) found that starting TOTP setup in a second tab replaces
-the first tab's secret in Zitadel; the first tab then reports an invalid code.
-No per-enrollment nonce was implemented in that pass. Reverify before changing
-this flow; the old QA ledger is in Git history.
 
 ## Resolved by v2 (kept because code cites the numbers)
 

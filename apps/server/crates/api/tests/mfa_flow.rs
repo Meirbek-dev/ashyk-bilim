@@ -510,21 +510,38 @@ async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
     let user = app
         .create_user("mfaroler", "mfaroler@example.com", &["user"])
         .await;
-    // First use of the code: accepted, slowly (the role rewrite lands).
+    // Rewrite only after login has read the old session epoch, and finish
+    // before Zitadel returns the accepted code. No scheduler/coverage timing.
+    let sessions = app.sessions.clone();
+    let runtime = tokio::runtime::Handle::current();
     Mock::given(method("POST"))
         .and(path("/v2/sessions"))
         .and(body_partial_json(serde_json::json!({
             "checks": { "totp": { "code": "123456" } }
         })))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_delay(std::time::Duration::from_millis(400))
-                .set_body_json(serde_json::json!({
-                    "sessionId": "zit-session-1",
-                    "sessionToken": "zit-token-1",
-                    "details": {}
-                })),
-        )
+        .respond_with(move |_: &wiremock::Request| {
+            // Respond is synchronous. A scoped thread lets the test runtime
+            // drive Redis I/O while this mock waits for the fence.
+            std::thread::scope(|scope| {
+                scope
+                    .spawn(|| {
+                        runtime.block_on(sessions.rewrite_user_sessions(
+                            user,
+                            &["user".into()],
+                            &[],
+                            2,
+                        ))
+                    })
+                    .join()
+                    .unwrap()
+                    .unwrap();
+            });
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "sessionId": "zit-session-1",
+                "sessionToken": "zit-token-1",
+                "details": {}
+            }))
+        })
         .up_to_n_times(1)
         .with_priority(1)
         .mount(&app.zitadel)
@@ -562,13 +579,7 @@ async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
         .await;
 
     let body = serde_json::json!({ "login": "mfaroler", "password": "pw", "totp_code": "123456" });
-    let (login, ()) = tokio::join!(app.post_json("/api/v2/auth/login", &body), async {
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        app.sessions
-            .rewrite_user_sessions(user, &["user".into()], &[], 2)
-            .await
-            .unwrap();
-    });
+    let login = app.post_json("/api/v2/auth/login", &body).await;
     assert_eq!(login.status, StatusCode::OK, "{}", login.text());
     assert_eq!(login.json()["mfa_enabled"], true);
     assert!(login.session_cookie().is_some());
