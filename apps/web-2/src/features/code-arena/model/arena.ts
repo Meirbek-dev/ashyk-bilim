@@ -33,7 +33,8 @@ export function answerOf(attempt: StudentSubmission | undefined, itemId: string)
   return answer?.kind === 'code' ? { language: answer.language, source: answer.source ?? '' } : null
 }
 
-const starterOf = (body: CodeBody, language: number) => body.starter_code?.[String(language)] ?? ''
+const starterOf = (body: Pick<CodeBody, 'starter_code'>, language: number) =>
+  body.starter_code?.[String(language)] ?? ''
 
 /** The editor's first state: the draft's code in an allowed language, else the first language's starter code. */
 export function initialAnswer(body: CodeBody, saved: CodeAnswer | null): CodeAnswer {
@@ -41,6 +42,12 @@ export function initialAnswer(body: CodeBody, saved: CodeAnswer | null): CodeAns
   if (saved && allowed.includes(saved.language)) return saved
   const language = allowed[0] ?? 0
   return { language, source: starterOf(body, language) }
+}
+
+/** The language's starter code, when the author gave one that differs from the editor's text (B-COD-24). */
+export function starterReset(body: Pick<CodeBody, 'starter_code'>, current: CodeAnswer): CodeAnswer | null {
+  const starter = starterOf(body, current.language)
+  return starter && starter !== current.source ? { language: current.language, source: starter } : null
 }
 
 /** Code the learner has not touched (blank or the starter) follows the new language's starter; theirs stays. */

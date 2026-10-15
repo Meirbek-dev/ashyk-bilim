@@ -121,5 +121,8 @@
   "code_check_title": "Эталонные решения на всех примерах",
   "code_check_missing": "Нет эталонного решения",
   "code_check_not_allowed": "Язык не включён на платформе",
-  "code_check_ok": "Все примеры пройдены"
+  "code_check_ok": "Все примеры пройдены",
+  "code_reset_starter": "Вернуть шаблон",
+  "code_reset_starter_title": "Вернуть шаблон кода?",
+  "code_reset_starter_text": "Ваш код в редакторе заменится шаблоном преподавателя."
 }

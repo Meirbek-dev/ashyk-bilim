@@ -14,6 +14,7 @@ import {
   switchLanguage,
   testsPassed,
   upsert,
+  starterReset,
 } from './arena'
 import { caseVerdict } from './verdict'
 
@@ -157,4 +158,11 @@ describe('code runner state', () => {
     expect(isRunnerDown(new TypeError('fetch failed'))).toBe(false)
     expect(isRunnerDown(null)).toBe(false)
   })
+})
+
+test('B-COD-24 the starter is offered back only when there is one and the text differs from it', () => {
+  const withStarter = { starter_code: { '71': 'print()' } }
+  expect(starterReset(withStarter, { language: 71, source: 'x = 1' })).toEqual({ language: 71, source: 'print()' })
+  expect(starterReset(withStarter, { language: 71, source: 'print()' })).toBeNull()
+  expect(starterReset({}, { language: 71, source: 'x' })).toBeNull()
 })

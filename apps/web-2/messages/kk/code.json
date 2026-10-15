@@ -121,5 +121,8 @@
   "code_check_title": "Барлық мысалдардағы эталон шешімдер",
   "code_check_missing": "Эталон шешім жоқ",
   "code_check_not_allowed": "Тіл платформада қосылмаған",
-  "code_check_ok": "Барлық мысалдар өтті"
+  "code_check_ok": "Барлық мысалдар өтті",
+  "code_reset_starter": "Үлгіні қайтару",
+  "code_reset_starter_title": "Код үлгісін қайтару керек пе?",
+  "code_reset_starter_text": "Редактордағы кодыңыз оқытушының үлгісімен ауыстырылады."
 }

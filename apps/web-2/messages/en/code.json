@@ -121,5 +121,8 @@
   "code_check_title": "Reference solutions on every test case",
   "code_check_missing": "No reference solution",
   "code_check_not_allowed": "Language not enabled on the platform",
-  "code_check_ok": "Every test case passed"
+  "code_check_ok": "Every test case passed",
+  "code_reset_starter": "Restore the starter",
+  "code_reset_starter_title": "Restore the starter code?",
+  "code_reset_starter_text": "Your code in the editor is replaced by the teacher's starter code."
 }

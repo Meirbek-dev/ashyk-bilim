@@ -16,12 +16,11 @@ import {
   isRunnerDown,
   languageOf,
   languagesIn,
-  switchLanguage,
   type CodeAnswer,
   type CodeItem,
 } from '../model/arena'
 import { runnerStateOptions } from '../queries'
-import { LanguageSelect } from './language-select'
+import { LanguageBar } from './language-bar'
 import { DraftClock } from './draft-clock'
 import { CodeEditor } from './lazy-editor'
 import { RunnerDown } from './runner-down'
@@ -77,13 +76,7 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
           <output className="text-sm text-muted-foreground">{statusText[saver.status]()}</output>
         </div>
       </div>
-      <LanguageSelect
-        label={m.code_language()}
-        value={answer.language}
-        ids={code.body.languages ?? []}
-        languages={languages}
-        onChange={language => change(switchLanguage(code.body, answer, language))}
-      />
+      <LanguageBar body={code.body} answer={answer} languages={languages} onChange={change} />
       <Suspense fallback={<Skeleton className="h-40 w-full" />}>
         <CodeEditor
           value={answer.source}
