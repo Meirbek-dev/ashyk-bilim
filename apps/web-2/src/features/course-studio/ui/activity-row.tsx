@@ -17,19 +17,8 @@ import { RenameForm } from './rename-form'
 
 type ActivityRowProps = { courseId: string; activity: Activity; index: number }
 
-/** One activity of a chapter: type, name (into its studio), status; sortable within and across chapters. */
-export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
-  const allowed = (action: ActivityAction) => activity.allowed_actions.includes(action)
-  const { ref, handleRef, isDragging } = useSortable({
-    id: activity.id,
-    index,
-    group: activity.chapter_id,
-    type: 'activity',
-    accept: 'activity',
-    disabled: !allowed('move'),
-  })
-  const meta = activityTypeMeta[activity.activity_type]
-  const TypeIcon = meta.icon
+/** Renaming in place; focus goes back to the rename button after Save or Escape (UX-214). */
+function useRename(courseId: string, activity: Activity) {
   const [renaming, setRenaming] = useState(false)
   const renameButton = useRef<HTMLButtonElement>(null)
   const rename = useMutation(updateActivityOptions(useQueryClient(), courseId))
@@ -48,52 +37,74 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
         },
       },
     )
+  return { renaming, setRenaming, renameButton, rename, done, save }
+}
+
+/** One activity of a chapter: type, name (into its studio), status; sortable within and across chapters. */
+export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
+  const allowed = (action: ActivityAction) => activity.allowed_actions.includes(action)
+  const { ref, handleRef, isDragging } = useSortable({
+    id: activity.id,
+    index,
+    group: activity.chapter_id,
+    type: 'activity',
+    accept: 'activity',
+    disabled: !allowed('move'),
+  })
+  const meta = activityTypeMeta[activity.activity_type]
+  const TypeIcon = meta.icon
+  const { renaming, setRenaming, renameButton, rename, done, save } = useRename(courseId, activity)
   return (
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
     <li
       ref={allowed('move') ? ref : undefined}
       className={`flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2 text-card-foreground ${isDragging ? 'opacity-60' : ''}`}
     >
-      {allowed('move') ? (
-        <IconButton
-          ref={handleRef}
-          aria-roledescription={m.studio_drag_role()}
-          label={m.studio_drag_named({ name: activity.name })}
-          icon={<GripVertical aria-hidden />}
-        />
-      ) : null}
-      <TypeIcon aria-hidden className={`size-4 shrink-0 ${meta.ink}`} />
-      <span className="text-sm text-muted-foreground">{meta.label()}</span>
-      {renaming ? (
-        <RenameForm
-          name={activity.name}
-          onSave={save}
-          onCancel={done}
-          pending={rename.isPending}
-          error={rename.error}
-        />
-      ) : (
-        <span className="min-w-0 flex-1 wrap-anywhere">
-          <Link
-            to="/teach/courses/$courseId/activities/$activityId/edit"
-            params={{ courseId, activityId: activity.id }}
-          >
-            {activity.name}
-          </Link>
-        </span>
-      )}
-      <ActivityStatusBadge published={activity.published} />
-      {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
-      {allowed('update') ? (
-        <IconButton
-          ref={renameButton}
-          label={m.studio_rename_named({ name: activity.name })}
-          icon={<Pencil aria-hidden />}
-          onClick={() => setRenaming(true)}
-        />
-      ) : null}
-      {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
-      {allowed('delete') || allowed('update') ? <DeleteActivity courseId={courseId} activity={activity} /> : null}
+      {/* Two groups: on a phone the status and actions wrap under the name instead of crushing it to letters. */}
+      <div className="flex min-w-0 grow basis-56 flex-wrap items-center gap-2">
+        {allowed('move') ? (
+          <IconButton
+            ref={handleRef}
+            aria-roledescription={m.studio_drag_role()}
+            label={m.studio_drag_named({ name: activity.name })}
+            icon={<GripVertical aria-hidden />}
+          />
+        ) : null}
+        <TypeIcon aria-hidden className={`size-4 shrink-0 ${meta.ink}`} />
+        <span className="text-sm text-muted-foreground">{meta.label()}</span>
+        {renaming ? (
+          <RenameForm
+            name={activity.name}
+            onSave={save}
+            onCancel={done}
+            pending={rename.isPending}
+            error={rename.error}
+          />
+        ) : (
+          <span className="min-w-0 flex-1 wrap-anywhere">
+            <Link
+              to="/teach/courses/$courseId/activities/$activityId/edit"
+              params={{ courseId, activityId: activity.id }}
+            >
+              {activity.name}
+            </Link>
+          </span>
+        )}
+      </div>
+      <div className="ms-auto flex items-center gap-2">
+        <ActivityStatusBadge published={activity.published} />
+        {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
+        {allowed('update') ? (
+          <IconButton
+            ref={renameButton}
+            label={m.studio_rename_named({ name: activity.name })}
+            icon={<Pencil aria-hidden />}
+            onClick={() => setRenaming(true)}
+          />
+        ) : null}
+        {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
+        {allowed('delete') || allowed('update') ? <DeleteActivity courseId={courseId} activity={activity} /> : null}
+      </div>
     </li>
   )
 }
