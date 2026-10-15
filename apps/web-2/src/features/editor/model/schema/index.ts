@@ -64,7 +64,6 @@ const starterKit = () =>
       openOnClick: false,
       autolink: true,
       defaultProtocol: 'https',
-      protocols: ['http', 'https'],
       isAllowedUri: (url, context) => context.defaultValidate(url) && allowedLink(url),
       HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' },
     },
