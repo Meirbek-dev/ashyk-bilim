@@ -292,5 +292,7 @@
   "studio_bulk_confirm": "{action}: {count} courses?",
   "studio_bulk_consequence": "It applies to every selected course that allows it; the rest stay as they are.",
   "studio_bulk_done": "Done: {done}, failed: {failed}",
-  "studio_bulk_select": "Select “{name}”"
+  "studio_bulk_select": "Select “{name}”",
+  "studio_roster_check": "Check the list",
+  "studio_roster_preview": "List review: what enrolling would do (nobody is enrolled yet)"
 }

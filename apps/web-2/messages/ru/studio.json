@@ -296,5 +296,7 @@
   "studio_bulk_confirm": "{action}: курсов {count}?",
   "studio_bulk_consequence": "Действие применится к каждому выбранному курсу, который это позволяет; остальные останутся как есть.",
   "studio_bulk_done": "Готово: {done}, не удалось: {failed}",
-  "studio_bulk_select": "Выбрать «{name}»"
+  "studio_bulk_select": "Выбрать «{name}»",
+  "studio_roster_check": "Проверить список",
+  "studio_roster_preview": "Проверка списка: так будет после записи (пока никто не записан)"
 }

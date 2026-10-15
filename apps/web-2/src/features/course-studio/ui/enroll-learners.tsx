@@ -34,6 +34,8 @@ const schema = v.object({
  */
 export function EnrollLearners({ courseId }: { courseId: string }) {
   const enroll = useMutation(enrollLearnersOptions(courseId))
+  // The dry run (B-CST-46): the same outcomes per identifier, nothing written.
+  const check = useMutation(enrollLearnersOptions(courseId))
   const form = useAppForm(schema, {
     defaultValues: { list: '' },
     onSubmit: ({ list }) =>
@@ -41,6 +43,7 @@ export function EnrollLearners({ courseId }: { courseId: string }) {
         { path: { course_id: courseId }, body: { identifiers: parsePasted(list) } },
         {
           onSuccess: result => {
+            check.reset()
             form.reset()
             toast.add({ title: m.studio_roster_done({ count: summarize(result.results).counts.enrolled }) })
           },
@@ -79,13 +82,27 @@ export function EnrollLearners({ courseId }: { courseId: string }) {
         />
         <p className="text-sm text-muted-foreground">{m.studio_roster_csv_hint()}</p>
       </div>
-      {enroll.error ? <ErrorAlert>{presentError(enroll.error)}</ErrorAlert> : null}
-      <div>
+      {(enroll.error ?? check.error) ? <ErrorAlert>{presentError(enroll.error ?? check.error)}</ErrorAlert> : null}
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={enroll.isPending}>
           {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.studio_roster_submit()}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={check.isPending}
+          onClick={() => {
+            const identifiers = parsePasted(form.state.values.list)
+            if (identifiers.length > 0)
+              check.mutate({ path: { course_id: courseId }, body: { identifiers, dry_run: true } })
+          }}
+        >
+          {check.isPending ? <Spinner data-icon="inline-start" /> : null}
+          {m.studio_roster_check()}
+        </Button>
       </div>
+      {check.data ? <EnrollReport result={check.data} preview /> : null}
       {enroll.data ? <EnrollReport result={enroll.data} /> : null}
     </form>
   )

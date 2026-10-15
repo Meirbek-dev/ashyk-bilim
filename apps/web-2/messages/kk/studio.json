@@ -292,5 +292,7 @@
   "studio_bulk_confirm": "{action}: {count} курс?",
   "studio_bulk_consequence": "Әрекет мұны рұқсат ететін әр таңдалған курсқа қолданылады; қалғандары сол күйінде қалады.",
   "studio_bulk_done": "Дайын: {done}, сәтсіз: {failed}",
-  "studio_bulk_select": "«{name}» таңдау"
+  "studio_bulk_select": "«{name}» таңдау",
+  "studio_roster_check": "Тізімді тексеру",
+  "studio_roster_preview": "Тізімді тексеру: тіркелгеннен кейін осылай болады (әзірге ешкім тіркелмеді)"
 }

@@ -12,12 +12,18 @@ const outcomeLabels: Record<EnrollOutcome, () => string> = {
   account_disabled: m.studio_roster_outcome_account_disabled,
 }
 
-/** What one enrol request did: a count per outcome, then each identifier that was not added and why. */
-export function EnrollReport({ result }: { result: EnrollLearnersResponse }) {
+/**
+ * What one enrol request did (or, `preview`, would do: B-CST-46): a count per outcome, then each identifier that was
+ * not added and why.
+ */
+export function EnrollReport({ result, preview = false }: { result: EnrollLearnersResponse; preview?: boolean }) {
   const { counts, problems } = summarize(result.results)
   return (
-    <section aria-label={m.studio_roster_report()} className="flex flex-col gap-2 rounded-md border p-4 text-sm">
-      <h3 className="font-medium">{m.studio_roster_report()}</h3>
+    <section
+      aria-label={preview ? m.studio_roster_preview() : m.studio_roster_report()}
+      className="flex flex-col gap-2 rounded-md border p-4 text-sm"
+    >
+      <h3 className="font-medium">{preview ? m.studio_roster_preview() : m.studio_roster_report()}</h3>
       <ul className="flex flex-col gap-1">
         {OUTCOMES.filter(outcome => counts[outcome] > 0).map(outcome => (
           <li key={outcome} className="tabular-nums">
