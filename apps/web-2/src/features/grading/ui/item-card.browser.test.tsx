@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
+
 import type { AssessmentItem } from '#/shared/api/gen/types.gen'
 import { renderInRouter } from '#/shared/components/testing'
 
@@ -35,5 +37,22 @@ describe('ItemCard', () => {
       .element(screen.getByRole('heading', { name: 'Как работает технология дополненной реальности' }))
       .toBeInTheDocument()
     expect(screen.getByText('## **', { exact: false }).elements()).toHaveLength(0)
+  })
+
+  test('B-GRD-30 an open answer shows the grading criteria of the question author to the grader', async () => {
+    const open: AssessmentItem = {
+      ...item,
+      kind: 'open_text',
+      body: { kind: 'open_text', prompt: 'Опишите цикл', min_words: null, rubric: 'Упомянуть **условие** выхода' },
+    }
+    const screen = await renderInRouter(
+      <ol>
+        <ItemCard item={open} answer={undefined} graded={undefined}>
+          {null}
+        </ItemCard>
+      </ol>,
+    )
+    await expect.element(screen.getByRole('heading', { name: m.grading_criteria() })).toBeInTheDocument()
+    await expect.element(screen.getByText('условие')).toBeInTheDocument()
   })
 })

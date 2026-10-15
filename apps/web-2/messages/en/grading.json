@@ -148,5 +148,6 @@
   "grading_violation_devtools": "Browser DevTools opened",
   "grading_violation_resize": "Window resized",
   "grading_violation_context_menu": "Context menu",
-  "grading_violation_keys": "Blocked key combination"
+  "grading_violation_keys": "Blocked key combination",
+  "grading_criteria": "Answer review criteria"
 }

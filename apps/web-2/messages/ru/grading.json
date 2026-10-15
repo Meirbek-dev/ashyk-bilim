@@ -150,5 +150,6 @@
   "grading_violation_devtools": "Открыты DevTools браузера",
   "grading_violation_resize": "Изменение размера окна",
   "grading_violation_context_menu": "Контекстное меню",
-  "grading_violation_keys": "Запрещённое сочетание клавиш"
+  "grading_violation_keys": "Запрещённое сочетание клавиш",
+  "grading_criteria": "Критерии проверки ответа"
 }
