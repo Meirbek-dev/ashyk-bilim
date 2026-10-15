@@ -150,6 +150,8 @@ test('B-ADM-07 a new user is made in the dialog with extra roles; a taken userna
   // Extra roles are picked in the same dialog.
   await dialog.getByRole('combobox', { name: m.admin_user_field_roles({}, ru) }).click()
   await page.getByRole('option', { name: m.admin_role_moderator({}, ru), exact: true }).click()
+  // The list stays open for more picks; Escape closes it, not the dialog.
+  await page.keyboard.press('Escape')
   await create.click()
   await expect(page.getByText(m.admin_user_created({}, ru))).toBeVisible()
   await expect(page).toHaveURL(userParam)
