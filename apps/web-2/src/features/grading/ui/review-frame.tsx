@@ -1,6 +1,6 @@
 import { Link as RouterLink, useParams, useSearch } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { Suspense, type ReactNode } from 'react'
+import { Suspense, useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { SubmissionStatus, FileAttemptStatus, UserSummary } from '#/shared/api/gen/types.gen'
@@ -11,6 +11,7 @@ import { buttonVariants } from '#/shared/ui/button'
 
 import type { Work } from '../queries'
 import { scoreText, statusMeta } from './labels'
+import { FeedbackDraft } from './feedback-draft'
 import type { ReviewAside } from './review-aside'
 import { ReviewNav } from './review-nav'
 
@@ -49,42 +50,55 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
     </RouterLink>
   )
   const status = statusMeta[head.status]
+  const draftTarget = useRef<((text: string) => void) | null>(null)
+  const register = (take: (text: string) => void) => {
+    draftTarget.current = take
+    return () => {
+      if (draftTarget.current === take) draftTarget.current = null
+    }
+  }
   return (
-    <FocusPage
-      back={back}
-      title={m.grading_review_title({ name, number: head.attempt_number })}
-      aside={
-        aside
-          ? {
-              label: aside.label,
-              content: (
-                <Suspense>
-                  <aside.Panel kind={work.kind} submissionId={submissionId} />
-                </Suspense>
-              ),
-            }
-          : undefined
-      }
-      wide
-    >
-      <div className="flex flex-col gap-gutter">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-            {head.submitted_at_unix === null ? null : (
-              <span>{m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) })}</span>
-            )}
-            {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
-            {head.late_penalty_pct ? (
-              <span>{m.grading_penalty({ percent: scoreText(head.late_penalty_pct) })}</span>
-            ) : null}
-            <span className="tabular-nums">{scoreText(head.final_score)}</span>
-          </div>
-          <ReviewNav work={work} />
-        </header>
-        {children}
-      </div>
-    </FocusPage>
+    <FeedbackDraft value={register}>
+      <FocusPage
+        back={back}
+        title={m.grading_review_title({ name, number: head.attempt_number })}
+        aside={
+          aside
+            ? {
+                label: aside.label,
+                content: (
+                  <Suspense>
+                    <aside.Panel
+                      kind={work.kind}
+                      submissionId={submissionId}
+                      onFeedbackDraft={text => draftTarget.current?.(text)}
+                    />
+                  </Suspense>
+                ),
+              }
+            : undefined
+        }
+        wide
+      >
+        <div className="flex flex-col gap-gutter">
+          <header className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+              {head.submitted_at_unix === null ? null : (
+                <span>{m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) })}</span>
+              )}
+              {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
+              {head.late_penalty_pct ? (
+                <span>{m.grading_penalty({ percent: scoreText(head.late_penalty_pct) })}</span>
+              ) : null}
+              <span className="tabular-nums">{scoreText(head.final_score)}</span>
+            </div>
+            <ReviewNav work={work} />
+          </header>
+          {children}
+        </div>
+      </FocusPage>
+    </FeedbackDraft>
   )
 }

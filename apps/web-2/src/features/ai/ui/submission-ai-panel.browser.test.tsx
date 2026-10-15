@@ -95,10 +95,10 @@ function stubApi(state: { analysis: SubmissionAnalysis | null; gate: Remediation
   return api
 }
 
-const render = () =>
+const render = (onFeedbackDraft?: (text: string) => void) =>
   renderInRouter(
     <QueryClientProvider client={createQueryClient(async () => undefined)}>
-      <SubmissionAiPanel submissionId={SUBMISSION} />
+      <SubmissionAiPanel submissionId={SUBMISSION} onFeedbackDraft={onFeedbackDraft} />
     </QueryClientProvider>,
   )
 
@@ -124,5 +124,14 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     await expect.element(screen.getByRole('button', { name: m.ai_gate_assign() })).toBeDisabled()
     const queue = api.mock.calls.map(([request]) => request).find(request => request.url.endsWith('/generate/queue'))
     expect(await queue?.json()).toMatchObject({ gate_mode: true })
+  })
+
+  test('B-AI-29 "Add to feedback" hands the review form a draft from the analysis', async () => {
+    stubApi({ analysis, gate: null })
+    const draft = vi.fn<(text: string) => void>()
+    const screen = await render(draft)
+    await userEvent.click(screen.getByRole('button', { name: m.ai_feedback_draft() }))
+    expect(draft.mock.lastCall?.[0]).toContain('Ошибки в циклах.')
+    expect(draft.mock.lastCall?.[0]).toContain('**Условие выхода**')
   })
 })

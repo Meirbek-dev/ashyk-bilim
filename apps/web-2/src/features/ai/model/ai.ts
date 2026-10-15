@@ -1,4 +1,10 @@
-import type { Citation, RemediationSession, RemediationStatus, ScopeCapabilities } from '#/shared/api/gen/types.gen'
+import type {
+  Citation,
+  RemediationSession,
+  RemediationStatus,
+  ScopeCapabilities,
+  SubmissionAnalysisReport,
+} from '#/shared/api/gen/types.gen'
 
 import type { PanelTab } from '../route'
 
@@ -56,4 +62,16 @@ export function citedActivity(citation: Pick<Citation, 'source_type' | 'source_u
   if (citation.source_type !== 'activity') return null
   const id = citation.source_uuid ?? citation.citation_id.replace(/^activity:/, '')
   return UUID.test(id) ? id : null
+}
+
+/**
+ * A feedback draft from a submission analysis (B-AI-29, the old web's text): the summary, then each knowledge gap
+ * with what to work on (else its evidence), then the next step.
+ */
+export function feedbackDraft(report: Pick<SubmissionAnalysisReport, 'summary' | 'knowledge_gaps' | 'next_action'>) {
+  const gaps = (report.knowledge_gaps ?? []).map(gap => {
+    const detail = gap.remediation_goal ?? gap.evidence
+    return detail ? `- **${gap.concept}**: ${detail}` : `- **${gap.concept}**`
+  })
+  return [report.summary.trim(), gaps.join('\n'), report.next_action?.trim()].filter(Boolean).join('\n\n')
 }

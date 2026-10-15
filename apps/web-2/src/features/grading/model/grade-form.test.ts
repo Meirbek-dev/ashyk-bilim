@@ -11,6 +11,7 @@ import {
   gradeFormSchema,
   gradeRequest,
   showsInline,
+  appendDraft,
 } from './grade-form'
 
 const item = (id: string, max: number): AssessmentItem => ({
@@ -161,4 +162,10 @@ describe('B-GRD-28 file preview types', () => {
       expect(showsInline(type)).toBe(false)
     }
   })
+})
+
+test('B-GRD-31 a feedback draft goes under what is written; an empty field takes it as is', () => {
+  expect(appendDraft('', 'Черновик')).toBe('Черновик')
+  expect(appendDraft('  ', 'Черновик')).toBe('Черновик')
+  expect(appendDraft('Молодец. ', 'Черновик')).toBe('Молодец.\n\nЧерновик')
 })

@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import { Button } from '#/shared/ui/button'
 
-import { gateHolds } from '../model/ai'
+import { feedbackDraft, gateHolds } from '../model/ai'
 import {
   remediationKey,
   remediationOptions,
@@ -19,7 +19,9 @@ import { SubmissionAnalysisView } from './submission-analysis-view'
 import { useAiRun } from './use-ai-run'
 
 /** The latest analysis of the work and its remediation gate, each with its own run (B-AI-16, B-AI-17). */
-export function SubmissionAiBody({ submissionId }: { submissionId: string }) {
+type BodyProps = { submissionId: string; onFeedbackDraft?: ((text: string) => void) | undefined }
+
+export function SubmissionAiBody({ submissionId, onFeedbackDraft }: BodyProps) {
   const { data: analysis } = useSuspenseQuery(submissionAnalysisOptions(submissionId))
   const { data: gate } = useSuspenseQuery(remediationOptions(submissionId))
   const analyze = useAiRun(submissionAnalysisQueue(submissionId), [submissionAnalysisKey(submissionId)])
@@ -42,7 +44,16 @@ export function SubmissionAiBody({ submissionId }: { submissionId: string }) {
         onRetry={startAnalysis}
       />
       {analysis ? (
-        <SubmissionAnalysisView analysis={analysis} />
+        <>
+          <SubmissionAnalysisView analysis={analysis} />
+          {onFeedbackDraft ? (
+            <div>
+              <Button variant="secondary" onClick={() => onFeedbackDraft(feedbackDraft(analysis.analysis))}>
+                {m.ai_feedback_draft()}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">{m.ai_submission_empty()}</p>
       )}

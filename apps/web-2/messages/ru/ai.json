@@ -212,5 +212,6 @@
   "ai_col_passed": "Успешно",
   "ai_finding_state_accepted": "Принято",
   "ai_finding_state_dismissed": "Отклонено",
-  "ai_finding_state_task_created": "Задача создана"
+  "ai_finding_state_task_created": "Задача создана",
+  "ai_feedback_draft": "Добавить в отзыв"
 }

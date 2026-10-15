@@ -10,11 +10,18 @@ import { SubmissionAiBody } from './submission-ai-body'
  * The grader's AI (slice 6.1 mounts it in the submission workspace): the analysis of one submission (an assessment
  * submission id or a file-submission attempt id) and its remediation gate. Failures stay in this panel.
  */
-export function SubmissionAiPanel({ submissionId }: { submissionId: string }) {
+export function SubmissionAiPanel({
+  submissionId,
+  onFeedbackDraft,
+}: {
+  submissionId: string
+  /** The review page's grade form takes a feedback draft from the analysis (B-AI-29). */
+  onFeedbackDraft?: (text: string) => void
+}) {
   return (
     <CatchBoundary getResetKey={() => submissionId} errorComponent={PanelError}>
       <Suspense fallback={<ListSkeleton />}>
-        <SubmissionAiBody submissionId={submissionId} />
+        <SubmissionAiBody submissionId={submissionId} onFeedbackDraft={onFeedbackDraft} />
       </Suspense>
     </CatchBoundary>
   )

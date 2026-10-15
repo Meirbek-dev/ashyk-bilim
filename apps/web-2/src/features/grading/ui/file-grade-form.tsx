@@ -13,6 +13,7 @@ import { attemptOptions } from '../queries'
 import { GradeActions } from './grade-actions'
 import { scoreText } from './labels'
 import { useGradeSave } from './use-grade-save'
+import { useFeedbackDraft } from './feedback-draft'
 
 type FileGradeFormProps = { ids: ReviewIds; attempt: Attempt; rubric: FileRubric }
 
@@ -32,6 +33,7 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
     defaultValues: initial,
     onSubmit: values => grade.save(fileGradeRequest(values, action.current)),
   })
+  useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))
   const submit = (chosen: GradeAction) => {
     action.current = chosen
     void form.handleSubmit()

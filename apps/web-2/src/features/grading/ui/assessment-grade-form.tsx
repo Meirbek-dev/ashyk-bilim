@@ -14,6 +14,7 @@ import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
 import { scoreText } from './labels'
 import { useGradeSave } from './use-grade-save'
+import { useFeedbackDraft } from './feedback-draft'
 
 type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission; items: readonly AssessmentItem[] }
 
@@ -35,6 +36,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
     defaultValues: initial,
     onSubmit: values => grade.save(gradeRequest(values, gradeForm(submission, items), action.current)),
   })
+  useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))
   const submit = (chosen: GradeAction) => {
     action.current = chosen
     void form.handleSubmit()

@@ -150,3 +150,7 @@ export function fileGradeRequest(form: FileGradeForm, action: FileGradeAction): 
     ...(form.criteria.length > 0 ? { rubric_scores: { criteria } } : {}),
   }
 }
+
+/** A feedback draft offered by the side panel goes under what the grader wrote (B-GRD-31): nothing is replaced. */
+export const appendDraft = (current: string, draft: string): string =>
+  current.trim() ? `${current.trimEnd()}\n\n${draft}` : draft

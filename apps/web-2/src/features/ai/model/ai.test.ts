@@ -4,7 +4,7 @@ import type { ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/valibot.gen'
 
 import { RUN_KINDS, RUN_STATUSES, runsFilter } from '../route'
-import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason, citedActivity } from './ai'
+import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason, citedActivity, feedbackDraft } from './ai'
 import { runErrorText } from './labels'
 import { STREAM_LOST } from './run'
 
@@ -90,4 +90,20 @@ test('B-AI-27 a cited activity is found by source_uuid or by its activity:<id> c
   expect(citedActivity({ source_type: 'activity', citation_id: `activity:${id}` })).toBe(id)
   expect(citedActivity({ source_type: 'course', source_uuid: id, citation_id: 'course' })).toBeNull()
   expect(citedActivity({ source_type: 'activity', citation_id: 'activity:../x' })).toBeNull()
+})
+
+test('B-AI-29 the feedback draft is the summary, each gap with what to work on, then the next step', () => {
+  expect(
+    feedbackDraft({
+      summary: 'Ошибки в циклах.',
+      knowledge_gaps: [
+        { concept: 'Условие выхода', remediation_goal: 'Повторить while' },
+        { concept: 'Счётчик', evidence: 'i не растёт' },
+      ],
+      next_action: 'Решить задачу 2 заново',
+    }),
+  ).toBe(
+    'Ошибки в циклах.\n\n- **Условие выхода**: Повторить while\n- **Счётчик**: i не растёт\n\nРешить задачу 2 заново',
+  )
+  expect(feedbackDraft({ summary: 'Хорошо.' })).toBe('Хорошо.')
 })

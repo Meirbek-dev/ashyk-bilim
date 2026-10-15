@@ -206,5 +206,6 @@
   "ai_col_passed": "Сәтті",
   "ai_finding_state_accepted": "Қабылданды",
   "ai_finding_state_dismissed": "Қабылданбады",
-  "ai_finding_state_task_created": "Тапсырма жасалды"
+  "ai_finding_state_task_created": "Тапсырма жасалды",
+  "ai_feedback_draft": "Пікірге қосу"
 }
