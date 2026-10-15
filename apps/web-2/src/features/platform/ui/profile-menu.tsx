@@ -15,7 +15,7 @@ import { UserAvatar } from '#/shared/components/user-avatar'
 
 import { useWorkspaceChoice } from './workspace-switch'
 
-/** The profile menu: settings, appearance, language, the workspace (phones) and sign out. */
+/** The profile menu: the public profile, settings, appearance, language, the workspace (phones) and sign out. */
 export function ProfileMenu({ session, current }: { session: SessionInfo; current: WorkspaceId }) {
   const navigate = useNavigate()
   const logout = useLogout()
@@ -42,7 +42,13 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
       title={session.user.display_name}
       detail={session.user.username}
       choice={workspace}
-      actions={[{ label: m.platform_page_settings(), onSelect: () => void navigate({ to: '/settings' }) }]}
+      actions={[
+        {
+          label: m.platform_my_profile(),
+          onSelect: () => void navigate({ to: '/users/$username', params: { username: session.user.username } }),
+        },
+        { label: m.platform_page_settings(), onSelect: () => void navigate({ to: '/settings' }) },
+      ]}
       submenus={[mode, language]}
       final={{ label: m.auth_logout(), onSelect: logout }}
     />
