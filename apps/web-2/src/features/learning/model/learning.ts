@@ -23,3 +23,7 @@ export const countByState = (runs: readonly TrailRun[]): Record<RunState, number
   for (const run of runs) counts[runState(run)] += 1
   return counts
 }
+
+/** Where "Continue"/"Start" goes: the server's next activity of a course not yet completed; null means the course page. */
+export const nextActivity = (run: Pick<TrailRun, 'progress_pct' | 'next_activity_id'>): string | null =>
+  runState(run) === 'completed' ? null : run.next_activity_id

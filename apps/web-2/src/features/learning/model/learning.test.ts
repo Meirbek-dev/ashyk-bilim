@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import type { TrailRun } from '#/shared/api/gen/types.gen'
 
 import { learningSearchSchema } from '../route'
-import { countByState, orderRuns, runState } from './learning'
+import { countByState, nextActivity, orderRuns, runState } from './learning'
 
 function run(id: string, progress: number | null, archived = false): TrailRun {
   return {
@@ -65,5 +65,12 @@ describe('learning model', () => {
   test('B-LRN-06 archived courses go after the live ones, each group in the server order', () => {
     const runs = [run('old', 100, true), run('a', 10), run('older', 0, true), run('b', 0)]
     expect(orderRuns(runs).map(item => item.id)).toEqual(['a', 'b', 'old', 'older'])
+  })
+
+  test('B-LRN-04 the card goes to the next activity until the course is completed', () => {
+    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x' })).toBe('x')
+    expect(nextActivity({ progress_pct: null, next_activity_id: 'x' })).toBe('x')
+    expect(nextActivity({ progress_pct: 100, next_activity_id: 'x' })).toBeNull()
+    expect(nextActivity({ progress_pct: 40, next_activity_id: null })).toBeNull()
   })
 })

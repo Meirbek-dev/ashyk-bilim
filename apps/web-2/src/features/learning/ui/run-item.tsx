@@ -7,7 +7,7 @@ import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { buttonVariants } from '#/shared/ui/button'
 
-import { runState, type RunState } from '../model/learning'
+import { nextActivity, runState, type RunState } from '../model/learning'
 
 export const runStateMeta = {
   in_progress: { label: m.learning_state_in_progress, tone: 'info', action: m.learning_action_continue },
@@ -15,9 +15,10 @@ export const runStateMeta = {
   completed: { label: m.learning_state_completed, tone: 'success', action: m.learning_action_open },
 } as const satisfies Record<RunState, { label: () => string; tone: string; action: () => string }>
 
-/** One started course: name, state, the server's progress and the way back in (the course page, see SPEC). */
+/** One started course: name, state, the server's progress and the way back in (the next activity, else the course). */
 export function RunItem({ run }: { run: TrailRun }) {
   const state = runStateMeta[runState(run)]
+  const next = nextActivity(run)
   const percent = Math.round(run.progress_pct ?? 0)
   return (
     <>
@@ -41,13 +42,23 @@ export function RunItem({ run }: { run: TrailRun }) {
         </div>
       )}
       <div className="mt-2">
-        <RouterLink
-          to="/courses/$courseId"
-          params={{ courseId: run.course_id }}
-          className={buttonVariants({ variant: 'outline' })}
-        >
-          {state.action()}
-        </RouterLink>
+        {next ? (
+          <RouterLink
+            to="/learn/$courseId/$activityId"
+            params={{ courseId: run.course_id, activityId: next }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {state.action()}
+          </RouterLink>
+        ) : (
+          <RouterLink
+            to="/courses/$courseId"
+            params={{ courseId: run.course_id }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {state.action()}
+          </RouterLink>
+        )}
       </div>
     </>
   )

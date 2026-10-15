@@ -39,15 +39,12 @@ test('B-LRN-01 B-LRN-02 B-LRN-03 B-LRN-04 started courses show the server progre
   await expect(card(page, half)).toContainText(m.learning_progress({ percent: 50 }, ru))
   await expect(card(page, done)).toContainText(m.learning_state_completed({}, ru))
   await expect(card(page, done)).toContainText(m.learning_progress({ percent: 100 }, ru))
-  for (const [course, action] of [
-    [fresh, m.learning_action_start({}, ru)],
-    [half, m.learning_action_continue({}, ru)],
-    [done, m.learning_action_open({}, ru)],
+  for (const [course, action, href] of [
+    [fresh, m.learning_action_start({}, ru), `/learn/${fresh.id}/${fresh.activityIds[0]}`],
+    [half, m.learning_action_continue({}, ru), `/learn/${half.id}/${half.activityIds[1]}`],
+    [done, m.learning_action_open({}, ru), `/courses/${done.id}`],
   ] as const) {
-    await expect(card(page, course).getByRole('link', { name: action })).toHaveAttribute(
-      'href',
-      `/courses/${course.id}`,
-    )
+    await expect(card(page, course).getByRole('link', { name: action })).toHaveAttribute('href', href)
   }
 
   const filter = page.getByRole('navigation', { name: m.learning_filter_label({}, ru) })
