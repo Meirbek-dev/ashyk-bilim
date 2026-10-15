@@ -77,5 +77,13 @@
   "editor_table_column_after": "Оң жаққа баған қосу",
   "editor_table_row_delete": "Жолды жою",
   "editor_table_column_delete": "Бағанды жою",
-  "editor_table_delete": "Кестені жою"
+  "editor_table_delete": "Кестені жою",
+  "editor_align": "Туралау",
+  "editor_align_left": "Сол жақта",
+  "editor_align_center": "Ортада",
+  "editor_align_right": "Оң жақта",
+  "editor_preview_show_button": "Сайтқа өту батырмасын көрсету",
+  "editor_preview_button_label": "Батырма мәтіні",
+  "editor_field_height": "Биіктігі, px",
+  "editor_height_range": "Биіктік - 100-ден 2000 px-ке дейінгі бүтін сан."
 }

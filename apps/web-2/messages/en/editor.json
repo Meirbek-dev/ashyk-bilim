@@ -77,5 +77,13 @@
   "editor_table_column_after": "Add column right",
   "editor_table_row_delete": "Delete row",
   "editor_table_column_delete": "Delete column",
-  "editor_table_delete": "Delete table"
+  "editor_table_delete": "Delete table",
+  "editor_align": "Alignment",
+  "editor_align_left": "Left",
+  "editor_align_center": "Center",
+  "editor_align_right": "Right",
+  "editor_preview_show_button": "Show a button to the site",
+  "editor_preview_button_label": "Button text",
+  "editor_field_height": "Height, px",
+  "editor_height_range": "Height is a whole number from 100 to 2000 px."
 }

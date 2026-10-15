@@ -12,6 +12,7 @@ import { textAttr } from '../../model/document'
 import { linkHref } from '../../model/link'
 import { justify } from './align'
 import { AttrForm } from './attr-form'
+import { PreviewOptions } from './preview-options'
 
 // A preview needs a web page: `example.com` is read as https (B-EDT-23).
 const webUrl = (value: string) => {
@@ -43,29 +44,36 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
     })
   }
   return (
-    <NodeViewWrapper className={`my-4 flex flex-col gap-2 ${justify(node.attrs['alignment'])}`}>
+    <NodeViewWrapper className="my-4 flex flex-col gap-2">
       {href ? (
-        <div className="flex max-w-xl flex-col gap-1 rounded-lg border border-border bg-card p-4 text-card-foreground">
-          <p className="text-xs text-muted-foreground">{textAttr(node.attrs['site_name']) ?? new URL(href).hostname}</p>
-          <Link to={href} target="_blank" rel="noopener noreferrer">
-            {textAttr(node.attrs['title']) ?? href}
-          </Link>
-          {node.attrs['description'] ? (
-            <p className="text-sm text-muted-foreground">{String(node.attrs['description'])}</p>
-          ) : null}
-          {node.attrs['showButton'] ? (
-            <div className="pt-2">
-              <RouterLink
-                to={href}
-                className={buttonVariants({ variant: 'outline' })}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {textAttr(node.attrs['buttonLabel']) ?? m.editor_preview_open()}
-              </RouterLink>
-            </div>
-          ) : null}
+        <div className={`flex ${justify(node.attrs['alignment'])}`}>
+          <div className="flex max-w-xl flex-col gap-1 rounded-lg border border-border bg-card p-4 text-card-foreground">
+            <p className="text-xs text-muted-foreground">
+              {textAttr(node.attrs['site_name']) ?? new URL(href).hostname}
+            </p>
+            <Link to={href} target="_blank" rel="noopener noreferrer">
+              {textAttr(node.attrs['title']) ?? href}
+            </Link>
+            {node.attrs['description'] ? (
+              <p className="text-sm text-muted-foreground">{String(node.attrs['description'])}</p>
+            ) : null}
+            {node.attrs['showButton'] ? (
+              <div className="pt-2">
+                <RouterLink
+                  to={href}
+                  className={buttonVariants({ variant: 'outline' })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {textAttr(node.attrs['buttonLabel']) ?? m.editor_preview_open()}
+                </RouterLink>
+              </div>
+            ) : null}
+          </div>
         </div>
+      ) : null}
+      {editor.isEditable && selected && href ? (
+        <PreviewOptions node={node} updateAttributes={updateAttributes} />
       ) : null}
       {editor.isEditable && (selected || !href) ? (
         <AttrForm

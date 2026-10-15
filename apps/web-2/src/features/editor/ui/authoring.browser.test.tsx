@@ -198,3 +198,24 @@ test('B-EDT-27 a user block takes a person picked by name, not a typed id', asyn
   await expect.poll(() => find(last(onChange), 'blockUser')?.attrs?.['user_id']).toBe(id)
   vi.unstubAllGlobals()
 })
+
+test('B-EDT-28 an embed takes a height; a link card takes alignment and a button with its text', async () => {
+  const onChange = vi.fn<(doc: EditorDocument) => void>()
+  const preview = { type: 'blockWebPreview', attrs: { url: 'https://example.com/', title: 'Example' } }
+  const embed = { type: 'embedBlock', attrs: { url: '' } }
+  const content = { type: 'doc', content: [embed, preview, { type: 'paragraph' }] }
+  const screen = await render(<BlockEditor activityId={ACTIVITY} content={content} onChange={onChange} />)
+  await screen.getByLabelText(m.editor_field_url()).fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+  await screen.getByLabelText(m.editor_field_height()).fill('50')
+  await screen.getByRole('button', { name: m.editor_apply() }).click()
+  await expect.element(screen.getByText(m.editor_height_range())).toBeVisible()
+  await screen.getByLabelText(m.editor_field_height()).fill('720')
+  await screen.getByRole('button', { name: m.editor_apply() }).click()
+  await expect.poll(() => find(last(onChange), 'embedBlock')?.attrs?.['height']).toBe(720)
+  await screen.getByText('example.com').click()
+  await screen.getByLabelText(m.editor_align()).selectOptions(m.editor_align_center())
+  await screen.getByRole('checkbox', { name: m.editor_preview_show_button() }).click()
+  await screen.getByLabelText(m.editor_preview_button_label()).fill('Читать')
+  const card = () => find(last(onChange), 'blockWebPreview')?.attrs
+  await expect.poll(() => card()).toMatchObject({ alignment: 'center', showButton: true, buttonLabel: 'Читать' })
+})

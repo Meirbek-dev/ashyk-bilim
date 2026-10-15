@@ -7,6 +7,9 @@ import { numberAttr, textAttr } from '../../model/document'
 import { embedSandbox, embedSrc, embedTypeForUrl, isOwnSite, youTubeId } from '../../model/embed'
 import { AttrForm } from './attr-form'
 
+// Height in px, as the old editor's resize handle allowed (B-EDT-28).
+const isHeight = (value: string) => /^\d+$/.test(value) && Number(value) >= 100 && Number(value) <= 2000
+
 /**
  * embedBlock: one iframe for every provider (YouTube, Google Docs, Excalidraw, known services). The stored
  * width ('100%', '91%') and height (px) go to the iframe's own attributes; narrower embeds are centered.
@@ -31,9 +34,16 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
               ? m.editor_embed_own_origin()
               : embedSrc(embedTypeForUrl(value), value) !== null,
         },
+        { name: 'height', label: m.editor_field_height(), check: value => isHeight(value) || m.editor_height_range() },
       ]}
-      values={{ url: url ?? '' }}
-      onApply={values => updateAttributes({ url: values['url'], type: embedTypeForUrl(values['url'] ?? '') })}
+      values={{ url: url ?? '', height: String(numberAttr(node.attrs['height']) ?? 500) }}
+      onApply={values =>
+        updateAttributes({
+          url: values['url'],
+          type: embedTypeForUrl(values['url'] ?? ''),
+          height: Number(values['height']),
+        })
+      }
     />
   )
   return (

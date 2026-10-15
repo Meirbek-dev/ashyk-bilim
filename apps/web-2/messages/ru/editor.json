@@ -77,5 +77,13 @@
   "editor_table_column_after": "Добавить столбец справа",
   "editor_table_row_delete": "Удалить строку",
   "editor_table_column_delete": "Удалить столбец",
-  "editor_table_delete": "Удалить таблицу"
+  "editor_table_delete": "Удалить таблицу",
+  "editor_align": "Выравнивание",
+  "editor_align_left": "Слева",
+  "editor_align_center": "По центру",
+  "editor_align_right": "Справа",
+  "editor_preview_show_button": "Показать кнопку перехода на сайт",
+  "editor_preview_button_label": "Текст кнопки",
+  "editor_field_height": "Высота, px",
+  "editor_height_range": "Высота - целое число от 100 до 2000 px."
 }
