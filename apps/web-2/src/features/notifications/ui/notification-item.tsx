@@ -31,9 +31,10 @@ export function NotificationItem({ notification, compact = false, onNavigate }: 
   const Icon = notificationIcons[type]
   const Heading = compact ? 'h3' : 'h2'
   return (
-    <div className="flex items-start gap-3">
+    // On a phone "Mark as read" wraps under the text instead of squeezing it into a narrow column.
+    <div className="flex flex-wrap items-start gap-3">
       <Icon aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 grow basis-56 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm text-muted-foreground">{notificationTypeLabels[type]()}</p>
           {unread ? <StatusBadge tone="info">{m.notifications_new()}</StatusBadge> : null}
