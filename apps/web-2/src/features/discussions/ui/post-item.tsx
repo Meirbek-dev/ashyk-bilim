@@ -79,7 +79,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
       )}
       <div className="flex flex-wrap items-center gap-1">
         {can('react') ? <PostReactions item={item} /> : null}
-        {!item.parent_id && !hidden ? (
+        {!item.parent_id && (!hidden || can('moderate')) ? (
           <RouterLink
             to="/courses/$courseId/discussions"
             params={{ courseId: item.course_id }}
