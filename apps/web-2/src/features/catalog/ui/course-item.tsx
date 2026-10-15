@@ -3,7 +3,7 @@ import type { Course, CourseListItem } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 import { authorNames, courseState, type CourseState } from '../model/catalog'
 
