@@ -1,3 +1,4 @@
+import { useHydrated } from '@tanstack/react-router'
 import { useId, type FormEvent, type ReactElement, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -37,13 +38,15 @@ type FormDialogProps = {
 export function FormDialog(props: FormDialogProps) {
   const { open, onOpenChange, trigger, title, submitLabel, onSubmit, pending, error, children } = props
   const formId = useId()
+  // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
+  const hydrated = useHydrated()
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void onSubmit()
   }
   return (
     <Dialog open={open} onOpenChange={next => onOpenChange(next)}>
-      <DialogTrigger render={trigger} />
+      <DialogTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       <DialogContent className="max-h-dvh overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

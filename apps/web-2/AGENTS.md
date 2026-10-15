@@ -87,7 +87,7 @@ listed in `gates/allowlist.json` with a reason (G-12).
 - Before hydration (/login ~140 ms, more on the stand) an SSR page works natively: navigation is a `Link`; an action
   that changes server-rendered state (a form's fieldset, enrol, leave) stays disabled until `useHydrated()`: a click
   React replays mid-hydration breaks it (React error 418). The auth fieldset carries `data-hydrating`, which the e2e fixture
-  awaits. `FileField` / `MultiSelectField` are not bound fields: render them inside `form.AppField`.
+  awaits. `FormDialog`, `ConfirmDialog` and `SheetPanel` keep their trigger disabled (with `data-hydrating`) the same way. `FileField` / `MultiSelectField` are not bound fields: render them inside `form.AppField`.
 - Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
   signed-in). Set the slice's (lazy) component there, from its `route.ts`; an unset slot renders nothing.
 - Entry chunk (G-05, checked by `bun run build`): only `loader` and the components are code-split; `validateSearch`,

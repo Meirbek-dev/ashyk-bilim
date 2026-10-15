@@ -1,3 +1,4 @@
+import { useHydrated } from '@tanstack/react-router'
 import { useRef, type ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -38,9 +39,17 @@ type ConfirmDialogProps = {
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const { open, onOpenChange, trigger, title, consequence, confirmLabel, onConfirm, pending, error } = props
   const cancel = useRef<HTMLButtonElement>(null)
+  // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
+  const hydrated = useHydrated()
   return (
     <AlertDialog open={open} onOpenChange={next => onOpenChange(next)}>
-      {trigger ? <AlertDialogTrigger render={trigger} /> : null}
+      {trigger ? (
+        <AlertDialogTrigger
+          render={trigger}
+          disabled={!hydrated || undefined}
+          data-hydrating={hydrated ? undefined : true}
+        />
+      ) : null}
       <AlertDialogContent initialFocus={cancel}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -1,3 +1,4 @@
+import { useHydrated } from '@tanstack/react-router'
 import type { ReactElement, ReactNode } from 'react'
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#/shared/ui/sheet'
@@ -14,9 +15,13 @@ type SheetPanelProps = {
 
 /** A side panel over the page on the stock Sheet: filters, focus-layout panels when narrow, a selected list item. */
 export function SheetPanel({ trigger, open, onOpenChange, title, side, children }: SheetPanelProps) {
+  // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
+  const hydrated = useHydrated()
   return (
     <Sheet open={open} onOpenChange={next => onOpenChange?.(next)}>
-      {trigger ? <SheetTrigger render={trigger} /> : null}
+      {trigger ? (
+        <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
+      ) : null}
       <SheetContent side={side}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
