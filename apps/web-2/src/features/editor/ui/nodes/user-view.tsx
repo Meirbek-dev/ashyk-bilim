@@ -1,12 +1,14 @@
 import { CatchBoundary } from '@tanstack/react-router'
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
-import { Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 
-import { PeoplePicker } from '#/features/admin'
 import { m } from '#/paraglide/messages'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import { UserCard } from './user-card'
+
+// Authoring only: the people search (and the admin slice behind it) stays out of the viewer's chunk.
+const PeoplePicker = lazy(() => import('#/features/admin').then(module => ({ default: module.PeoplePicker })))
 
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i
 const missing = <p className="text-sm text-muted-foreground">{m.editor_user_missing()}</p>
