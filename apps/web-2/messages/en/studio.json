@@ -286,5 +286,11 @@
   "studio_sort_label": "Sort: {sort}",
   "studio_sort_updated": "Recently changed first",
   "studio_sort_name": "By name",
-  "studio_archived_since": "Archived since {date}, read-only"
+  "studio_archived_since": "Archived since {date}, read-only",
+  "studio_bulk_selected": "Courses selected: {count}",
+  "studio_bulk_delete": "Delete",
+  "studio_bulk_confirm": "{action}: {count} courses?",
+  "studio_bulk_consequence": "It applies to every selected course that allows it; the rest stay as they are.",
+  "studio_bulk_done": "Done: {done}, failed: {failed}",
+  "studio_bulk_select": "Select “{name}”"
 }

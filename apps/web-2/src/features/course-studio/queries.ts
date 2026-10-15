@@ -26,7 +26,13 @@ import {
   updateCourseMutation,
   groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { addGroupCourses, listCourses, removeGroupCourses } from '#/shared/api/gen/sdk.gen'
+import {
+  addGroupCourses,
+  courseLifecycle,
+  deleteCourse,
+  listCourses,
+  removeGroupCourses,
+} from '#/shared/api/gen/sdk.gen'
 import type {
   Certification,
   Course,
@@ -37,6 +43,7 @@ import type {
   UsergroupPage,
 } from '#/shared/api/gen/types.gen'
 
+import type { BulkAction } from './model/bulk'
 import { can, opensWorkspace, type CoursesSearch } from './model/course'
 
 const PAGE_SIZE = 20
@@ -167,6 +174,25 @@ export const unlinkGroupOptions = (queryClient: QueryClient, id: CourseId) => ({
  * again; its own cached course is left alone (the page navigates to the list, nothing reads it again).
  */
 export const deleteCourseOptions = () => ({ ...deleteCourseMutation(), meta: { invalidates: [lists()] } })
+
+/**
+ * One action on several courses (B-CST-45): a request per course, side by side; a refusal (not ready to publish, a
+ * stale version) counts as failed instead of stopping the rest. The lists are read again after.
+ */
+export const bulkCoursesOptions = () => ({
+  mutationFn: async ({ courses, action }: { courses: readonly Course[]; action: BulkAction }) => {
+    const results = await Promise.allSettled(
+      courses.map(course =>
+        action === 'delete'
+          ? deleteCourse({ ...byId(course.id), headers: { 'If-Match': course.version }, throwOnError: true })
+          : courseLifecycle({ ...byId(course.id), body: { action }, throwOnError: true }),
+      ),
+    )
+    const done = results.filter(result => result.status === 'fulfilled').length
+    return { done, failed: results.length - done }
+  },
+  meta: { invalidates: [lists()] },
+})
 
 // ---- Announcements: the cached list takes each answer (newest first). ----
 

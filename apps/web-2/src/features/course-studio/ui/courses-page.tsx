@@ -1,5 +1,6 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { hasCapability } from '#/shared/auth/access'
@@ -9,13 +10,13 @@ import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
-import { formatDate } from '#/shared/i18n/format'
 
-import { courseStatus, presetCount, type Preset } from '../model/course'
+import { presetCount, type Preset } from '../model/course'
 import { myCoursesOptions } from '../queries'
-import { CourseStatusBadge } from './course-status'
 import { CoursesSearchBox } from './courses-search'
 import { CoursesSortMenu } from './courses-sort'
+import { CourseListItem } from './course-list-item'
+import { CoursesBulkBar } from './courses-bulk-bar'
 import { CreateCourseDialog } from './create-course-dialog'
 
 const presetLabels: Record<Preset | 'all', () => string> = {
@@ -33,6 +34,13 @@ export function CoursesPage() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const query = useSuspenseInfiniteQuery(myCoursesOptions(search))
   const courses = query.data.pages.flatMap(page => page.items)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const toggle = (id: string) =>
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
   const summary = query.data.pages[0]?.summary
   const filters = (
     <nav aria-label={m.studio_preset_label()} className="flex flex-wrap">
@@ -79,21 +87,13 @@ export function CoursesPage() {
         onResetFilters={() => void navigate({ to: '/teach/courses', search: {} })}
         onRetry={() => void query.refetch()}
       >
+        <CoursesBulkBar
+          selected={courses.filter(course => selected.has(course.id))}
+          onDone={() => setSelected(new Set())}
+        />
         <DataList items={courses} getKey={course => course.id}>
           {course => (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="min-w-0 text-lg font-medium wrap-anywhere">
-                  <Link to="/teach/courses/$courseId/overview" params={{ courseId: course.id }}>
-                    {course.name}
-                  </Link>
-                </h2>
-                <CourseStatusBadge status={courseStatus(course)} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {m.studio_updated({ date: formatDate(course.updated_at_unix) })}
-              </p>
-            </>
+            <CourseListItem course={course} checked={selected.has(course.id)} onToggle={() => toggle(course.id)} />
           )}
         </DataList>
         <ShowMore

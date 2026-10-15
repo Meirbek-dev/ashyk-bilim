@@ -290,5 +290,11 @@
   "studio_sort_label": "Сортировка: {sort}",
   "studio_sort_updated": "Сначала изменённые",
   "studio_sort_name": "По названию",
-  "studio_archived_since": "В архиве с {date}, только для чтения"
+  "studio_archived_since": "В архиве с {date}, только для чтения",
+  "studio_bulk_selected": "Выбрано курсов: {count}",
+  "studio_bulk_delete": "Удалить",
+  "studio_bulk_confirm": "{action}: курсов {count}?",
+  "studio_bulk_consequence": "Действие применится к каждому выбранному курсу, который это позволяет; остальные останутся как есть.",
+  "studio_bulk_done": "Готово: {done}, не удалось: {failed}",
+  "studio_bulk_select": "Выбрать «{name}»"
 }
