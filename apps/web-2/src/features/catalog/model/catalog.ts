@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 
-import type { Course, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Course, CourseAuthor, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, type Section, visibleSections, type Workspace } from '#/shared/auth/access'
 
 import { COURSE_SORTS, courseSort, type CourseSort, type CoursesSearch, SEARCH_KINDS, type SearchKind } from '../route'
@@ -45,6 +45,10 @@ export function courseState(course: Pick<Course, 'public' | 'archived_at_unix'>)
   if (course.archived_at_unix) return 'archived'
   return course.public ? null : 'unpublished'
 }
+
+/** The card's author line: creator first (the server's order), each by display name, else username. */
+export const authorNames = (authors: readonly Pick<CourseAuthor, 'display_name' | 'username'>[]): string =>
+  authors.map(author => author.display_name.trim() || author.username).join(', ')
 
 /** Palette navigation: the sections the access table lets this user open, per workspace (B-CAT-11). */
 export function paletteSections(

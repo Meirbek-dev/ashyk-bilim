@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import type { Capability, SessionInfo } from '#/shared/api/gen/types.gen'
 
 import {
+  authorNames,
   coursesFilter,
   courseState,
   nextCoursesCursor,
@@ -56,6 +57,16 @@ describe('catalog model', () => {
     expect(courseState({ public: true, archived_at_unix: null })).toBeNull()
     expect(courseState({ public: false, archived_at_unix: null })).toBe('unpublished')
     expect(courseState({ public: true, archived_at_unix: 1_790_000_000 })).toBe('archived')
+  })
+
+  test('B-CAT-15 the author line keeps the server order and falls back to the username', () => {
+    expect(
+      authorNames([
+        { display_name: 'Анна Ли', username: 'anna' },
+        { display_name: ' ', username: 'bob' },
+      ]),
+    ).toBe('Анна Ли, bob')
+    expect(authorNames([])).toBe('')
   })
 
   test('B-CAT-07 an unknown or missing kind is "all"', () => {

@@ -84,7 +84,7 @@ test('B-CAT-02 the landing says how to start and leads to the catalog', async ({
   await expect(page.getByRole('heading', { level: 1, name: m.catalog_courses_title({}, ru) })).toBeVisible()
 })
 
-test("B-CAT-03 the catalog is public, server-rendered, and marks the author's draft", async ({
+test("B-CAT-03 B-CAT-15 the catalog is public, server-rendered, names the authors and marks the author's draft", async ({
   page,
   seed,
   signInAs,
@@ -107,6 +107,10 @@ test("B-CAT-03 the catalog is public, server-rendered, and marks the author's dr
     `/courses/${seed.params.courseId}`,
   )
   await expect(page.getByText(m.catalog_course_state_unpublished({}, ru))).toHaveCount(0)
+  // B-CAT-15: the card names the course's authors.
+  await expect(page.getByRole('listitem').filter({ hasText: SEED_COURSE })).toContainText(
+    m.catalog_course_authors({ names: '' }, ru).trim(),
+  )
 })
 
 test('B-CAT-05 the catalog search lives in the URL', async ({ page }) => {
