@@ -92,8 +92,11 @@ const applyTheme = async (slug: string) => {
   return () => link.remove()
 }
 
-// Colors must be read at rest, not halfway through a transition.
-const still = Object.assign(document.createElement('style'), { textContent: '*{transition:none!important}' })
+// Colors must be read at rest, not halfway through a transition or a dialog's enter/exit animation (a fading popup
+// reads as low contrast).
+const still = Object.assign(document.createElement('style'), {
+  textContent: '*{transition:none!important;animation:none!important}',
+})
 document.head.append(still)
 
 describe('G-15 kit contrast', () => {

@@ -11,7 +11,7 @@ html[data-theme="catppuccin"] {
   --secondary: light-dark(oklch(0.86 0.01 268.5), oklch(0.48 0.03 278.6));
   --secondary-foreground: light-dark(oklch(0.44 0.04 279.3), oklch(0.88 0.04 272.3));
   --muted: light-dark(oklch(0.91 0.01 264.5), oklch(0.3 0.03 276.2));
-  --muted-foreground: light-dark(oklch(0.5 0.03 279.1), oklch(0.75 0.04 273.9));
+  --muted-foreground: light-dark(oklch(0.5 0.03 279.1), oklch(0.79 0.04 273.9));
   --accent: light-dark(oklch(0.56 0.119 235.4), oklch(0.85 0.08 210.3));
   --accent-foreground: light-dark(oklch(1 0 0), oklch(0.24 0.03 283.9));
   --destructive: light-dark(oklch(0.52 0.209 19.8), oklch(0.76 0.13 2.8));

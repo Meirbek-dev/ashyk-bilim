@@ -5,7 +5,7 @@ html[data-theme="retro-arcade"] {
   --card: light-dark(oklch(0.93 0.03 92.4), oklch(0.31 0.05 219.7));
   --card-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
   --popover: light-dark(oklch(0.93 0.03 92.4), oklch(0.31 0.05 219.7));
-  --popover-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.76 0.02 196.8));
+  --popover-foreground: light-dark(oklch(0.31 0.05 219.7), oklch(0.82 0.02 196.8));
   --primary: light-dark(oklch(0.59 0.2 355.9), oklch(0.59 0.2 355.9));
   --primary-foreground: light-dark(oklch(1 0 0), oklch(1 0 0));
   --secondary: light-dark(oklch(0.55 0.096 187.4), oklch(0.55 0.096 187.4));
