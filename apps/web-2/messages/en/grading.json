@@ -152,5 +152,7 @@
   "grading_criteria": "Answer review criteria",
   "grading_rubric_apply": "Use as the grade",
   "grading_after_penalty": "After the {percent} late penalty: {score}",
-  "grading_cell_attempts": "attempts: {count}"
+  "grading_cell_attempts": "attempts: {count}",
+  "grading_started_at": "Started {date}",
+  "grading_graded_at": "Graded {date}"
 }

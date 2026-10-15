@@ -152,5 +152,7 @@
   "grading_criteria": "Жауапты тексеру критерийлері",
   "grading_rubric_apply": "Қорытынды ретінде қою",
   "grading_after_penalty": "Кешігу үшін {percent} айыппұлдан кейін: {score}",
-  "grading_cell_attempts": "әрекеттер: {count}"
+  "grading_cell_attempts": "әрекеттер: {count}",
+  "grading_started_at": "Басталды {date}",
+  "grading_graded_at": "Тексерілді {date}"
 }

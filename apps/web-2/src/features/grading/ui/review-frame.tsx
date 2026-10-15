@@ -25,6 +25,8 @@ type ReviewFrameProps = {
     attempt_number: number
     status: SubmissionStatus | FileAttemptStatus
     submitted_at_unix: number | null
+    started_at_unix: number | null
+    graded_at_unix: number | null
     is_late: boolean
     late_penalty_pct: number | null
     final_score: number | null
@@ -33,7 +35,10 @@ type ReviewFrameProps = {
   children: ReactNode
 }
 
-/** The focus layout of one review (B-GRD-10): back to the queue with its filters, who and when, prev / next. */
+/**
+ * The focus layout of one review (B-GRD-10): back to the queue with its filters, who and when (started, handed in,
+ * graded), prev / next.
+ */
 export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
   const { courseId, activityId, submissionId } = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
@@ -85,8 +90,14 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
             <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+              {head.started_at_unix === null ? null : (
+                <span>{m.grading_started_at({ date: formatDateTime(head.started_at_unix) })}</span>
+              )}
               {head.submitted_at_unix === null ? null : (
                 <span>{m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) })}</span>
+              )}
+              {head.graded_at_unix === null ? null : (
+                <span>{m.grading_graded_at({ date: formatDateTime(head.graded_at_unix) })}</span>
               )}
               {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
               {head.late_penalty_pct ? (
