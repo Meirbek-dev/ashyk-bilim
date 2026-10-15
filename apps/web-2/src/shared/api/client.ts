@@ -15,6 +15,9 @@ import { noteServerDate } from './server-clock'
 
 const FORWARDED_HEADERS = ['accept-language', 'user-agent', 'x-forwarded-for', 'x-request-id', 'traceparent']
 const SESSION_COOKIE = 'ab_session'
+// SSR: an API that accepts and never answers would hold the document (and its memory) until nginx gives up at 60 s;
+// past this a read fails and the route renders its error (one retry: twice this at most per read).
+const SSR_TIMEOUT_MS = 8000
 
 const apiOrigin = createIsomorphicFn()
   .server(() => serverEnv.apiOrigin)
@@ -41,15 +44,15 @@ const forwardedHeaders = createIsomorphicFn()
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const built = new Request(input, init)
+  const forwarded = forwardedHeaders()
   // Rebuilt with a buffered body: re-wrapping the Request would turn the body into a stream, which
   // browsers only upload over HTTP/2 (net::ERR_ALPN_NEGOTIATION_FAILED on HTTP/1.1).
   const request = new Request(built.url.replace(KEY_ORIGIN, apiOrigin()), {
     method: built.method,
     headers: built.headers,
-    signal: built.signal,
+    signal: forwarded ? AbortSignal.any([built.signal, AbortSignal.timeout(SSR_TIMEOUT_MS)]) : built.signal,
     body: ['GET', 'HEAD'].includes(built.method) ? null : await built.arrayBuffer(),
   })
-  const forwarded = forwardedHeaders()
   if (forwarded) {
     if (request.method !== 'GET') {
       throw new Error(`SSR only reads the API; ${request.method} ${request.url} must run in the browser (spec 7.4)`)

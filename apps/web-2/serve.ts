@@ -23,7 +23,13 @@ serve({
   gracefulShutdown: true,
   middleware: [
     async (request, next) => {
-      if (!new URL(request.url).pathname.startsWith('/assets/')) return unhashed(request, next)
+      if (!new URL(request.url).pathname.startsWith('/assets/')) {
+        const response = await unhashed(request, next)
+        // Unhashed files (themes, favicon) revalidate by ETag: without a directive browsers cache them by heuristic
+        // for days after a deploy. Documents set their own (src/server.ts).
+        if (!response.headers.has('cache-control')) response.headers.set('cache-control', 'no-cache')
+        return response
+      }
       const response = await hashed(request, next)
       // srvx omits `public`; the stage 1 web contract (and nginx's cache) expect the full directive.
       if (response.headers.get('cache-control')?.includes('immutable')) {
