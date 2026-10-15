@@ -3,6 +3,7 @@ import * as v from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
 import { getGroupOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+import type { Window } from '#/shared/api/gen/types.gen'
 
 import {
   type Filters,
@@ -92,4 +93,5 @@ export async function loadPerformance(queryClient: QueryClient, search: Search<t
   ])
 }
 
-export const loadAdminAnalytics = (queryClient: QueryClient) => queryClient.ensureQueryData(adminAnalyticsOptions())
+export const loadAdminAnalytics = (queryClient: QueryClient, window: Window) =>
+  queryClient.ensureQueryData(adminAnalyticsOptions(window))

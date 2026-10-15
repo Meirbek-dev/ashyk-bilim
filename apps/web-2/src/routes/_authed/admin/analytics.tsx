@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { AdminAnalyticsPage, loadAdminAnalytics } from '#/features/analytics'
+import { adminAnalyticsSearchSchema } from '#/features/analytics/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/admin/analytics')({
-  loader: ({ context }) => loadAdminAnalytics(context.queryClient),
+  validateSearch: adminAnalyticsSearchSchema,
+  loaderDeps: ({ search }) => search,
+  loader: ({ context, deps }) => loadAdminAnalytics(context.queryClient, deps.window),
   staticData: { title: m.platform_nav_analytics },
   component: AdminAnalyticsPage,
 })

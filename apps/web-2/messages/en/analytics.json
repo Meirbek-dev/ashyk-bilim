@@ -268,5 +268,6 @@
   "analytics_component_failures": "failed assessments",
   "analytics_component_missing": "missed required work",
   "analytics_component_grading": "awaiting your review",
-  "analytics_grade_blocks": "Review submissions ({count})"
+  "analytics_grade_blocks": "Review submissions ({count})",
+  "analytics_admin_window": "Period: {window}"
 }

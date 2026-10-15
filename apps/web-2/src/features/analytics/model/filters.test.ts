@@ -14,6 +14,7 @@ import {
   COURSE_SORTS,
   tableSort,
 } from './filters'
+import { adminAnalyticsSearchSchema } from '../route'
 
 const COURSE = '01a0fe71-945c-760e-a11a-037490019fda'
 const defaults = {
@@ -84,4 +85,10 @@ test('B-ANL-12 a header click becomes a sort key the endpoint knows; another col
   expect(tableSort(COURSE_SORTS, { id: 'name', desc: false })).toEqual({ sort: 'name', desc: undefined })
   expect(tableSort(COURSE_SORTS, { id: 'ungraded', desc: true })).toEqual({ sort: undefined, desc: undefined })
   expect(tableSort(COURSE_SORTS, undefined)).toEqual({ sort: undefined, desc: undefined })
+})
+
+test('B-ANL-31 the admin period lives in the URL; unknown or none is 28 days', () => {
+  expect(v.parse(adminAnalyticsSearchSchema, { window: '7d' })).toEqual({ window: '7d' })
+  expect(v.parse(adminAnalyticsSearchSchema, { window: '1y' })).toEqual({ window: '28d' })
+  expect(v.parse(adminAnalyticsSearchSchema, {})).toEqual({ window: '28d' })
 })

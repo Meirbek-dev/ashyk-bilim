@@ -79,3 +79,6 @@ export function pickFilters(search: Filters): Filters {
 /** The layout's guard (loaders.ts): loaded on demand, it reads a group through the SDK, which the entry chunk lacks. */
 export const hasUnknownCohort = async (queryClient: QueryClient, filters: Filters): Promise<boolean> =>
   (await import('./loaders')).hasUnknownCohort(queryClient, filters)
+
+/** /admin/analytics?window=: the period of the platform rankings (B-ANL-31); unknown or none is the default. */
+export const adminAnalyticsSearchSchema = v.object({ window: choice(WINDOWS, filterDefaults.window) })

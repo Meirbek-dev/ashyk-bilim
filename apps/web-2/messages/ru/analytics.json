@@ -268,5 +268,6 @@
   "analytics_component_failures": "несданные задания",
   "analytics_component_missing": "пропущенные обязательные",
   "analytics_component_grading": "ждут вашей проверки",
-  "analytics_grade_blocks": "Проверить работы ({count})"
+  "analytics_grade_blocks": "Проверить работы ({count})",
+  "analytics_admin_window": "Период: {window}"
 }

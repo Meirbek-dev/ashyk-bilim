@@ -31,6 +31,7 @@ import type {
   SavedView,
   SavedViewList,
   UserId,
+  Window,
 } from '#/shared/api/gen/types.gen'
 import { PLATFORM_TIME_ZONE } from '#/shared/i18n/format'
 
@@ -86,7 +87,8 @@ export const interventionsOptions = (userId: UserId, courseId: CourseId) =>
 
 export const savedViewsOptions = () => listSavedViewsOptions()
 
-export const adminAnalyticsOptions = () => adminOverviewOptions({ query: { timezone: PLATFORM_TIME_ZONE } })
+export const adminAnalyticsOptions = (window: Window) =>
+  adminOverviewOptions({ query: { window, timezone: PLATFORM_TIME_ZONE } })
 
 /** A drill-down loader: an id outside the caller's scope (404) or malformed (422) is "not found" in the tab. */
 export async function ensureDrill<T>(load: Promise<T>): Promise<T> {

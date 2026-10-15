@@ -268,5 +268,6 @@
   "analytics_component_failures": "өтпеген тапсырмалар",
   "analytics_component_missing": "өткізілген міндетті тапсырмалар",
   "analytics_component_grading": "сіздің тексеруіңізді күтуде",
-  "analytics_grade_blocks": "Жұмыстарды тексеру ({count})"
+  "analytics_grade_blocks": "Жұмыстарды тексеру ({count})",
+  "analytics_admin_window": "Кезең: {window}"
 }
