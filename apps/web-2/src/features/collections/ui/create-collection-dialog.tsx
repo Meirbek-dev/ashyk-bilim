@@ -15,9 +15,12 @@ import { createCollectionOptions } from '../queries'
 
 const defaultValues: CreateCollectionRequest = { name: '', description: '', public: true }
 
-/** "New collection": the minimum fields, then the new collection's page (DESIGN 8). Courses are added later. */
-export function CreateCollectionDialog() {
-  const [open, setOpen] = useState(false)
+/**
+ * "New collection": the minimum fields, then the new collection's page (DESIGN 8). Courses are added later. Open on
+ * arrival from the old create page (`?create=true`, B-COL-18); closing drops the parameter.
+ */
+export function CreateCollectionDialog({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen)
   const navigate = useNavigate()
   const create = useMutation(createCollectionOptions())
   const idempotency = useIdempotencyKey()
@@ -42,6 +45,8 @@ export function CreateCollectionDialog() {
     if (!next) {
       form.reset()
       create.reset()
+      if (initiallyOpen)
+        void navigate({ to: '/collections', search: prev => ({ ...prev, create: undefined }), replace: true })
     }
   }
   return (

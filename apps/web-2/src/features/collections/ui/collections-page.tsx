@@ -13,9 +13,11 @@ import { CreateCollectionDialog } from './create-collection-dialog'
 
 /** Public collections (plus the caller's own), searchable by name; "New collection" only with `collection.create`. */
 export function CollectionsPage() {
-  const { q } = useSearch({ from: '/_public/collections/' })
+  const { q, create: opened } = useSearch({ from: '/_public/collections/' })
   const { data: session } = useSuspenseQuery(sessionOptions())
-  const create = hasCapability(session, 'collection.create') ? <CreateCollectionDialog /> : null
+  const create = hasCapability(session, 'collection.create') ? (
+    <CreateCollectionDialog initiallyOpen={opened === true} />
+  ) : null
   return (
     <ListPage
       title={m.collections_title()}

@@ -12,7 +12,7 @@ describe('old web URLs', () => {
     expect(legacyTarget(`/en/course/${C}/activity/activity_${A}`)).toBe(`/learn/${C}/${A}`)
     expect(legacyTarget(`/course/${C}/activity/${A}`)).toBe(`/learn/${C}/${A}`)
     expect(legacyTarget(`/ru/collection/collection_${C}`)).toBe(`/collections/${C}`)
-    expect(legacyTarget('/ru/collections/new')).toBe('/collections')
+    expect(legacyTarget('/ru/collections/new')).toBe('/collections?create=true')
     expect(legacyTarget('/ru/user/a.b')).toBe('/users/a.b')
     expect(legacyTarget('/ru/trail')).toBe('/learning')
     expect(legacyTarget('/ru/search?q=java&type=courses')).toBe('/search?q=java')

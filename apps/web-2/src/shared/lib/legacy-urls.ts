@@ -21,7 +21,8 @@ const PATHS: [string, To][] = [
   ['/', () => '/'],
   ['/courses', () => '/courses'],
   ['/collections', () => '/collections'],
-  ['/collections/new', () => '/collections'],
+  // The old create page: the list with its create dialog open.
+  ['/collections/new', () => '/collections?create=true'],
   [`/collection/${ID}`, ([c]) => `/collections/${id(c)}`],
   [`/course/${ID}`, ([c]) => `/courses/${id(c)}`],
   [`/course/${ID}/activity/${ID}`, ([c, a]) => `/learn/${id(c)}/${id(a)}`],
