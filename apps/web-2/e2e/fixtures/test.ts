@@ -78,6 +78,9 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   // The checks judge the hydrated page: an SSR form keeps its controls disabled (faded) until then.
   await page.waitForLoadState('load')
   await page.waitForFunction(() => !document.querySelector('[data-hydrating]'), null, { timeout: 10_000 })
+  // The cursor leaves the page first: a resize slides other links under a parked cursor, and their hover preload
+  // re-reads what may be gone by now (fixture teardown already deleted the test's courses): a duplicate 404 GET.
+  await page.mouse.move(-1, -1)
   const viewport = page.viewportSize()
   await page.setViewportSize({ width: 390, height: 844 })
   // The layout at 390 px once it settled: an open floating element (a focused button's tooltip, B-NOT-13 in CI)

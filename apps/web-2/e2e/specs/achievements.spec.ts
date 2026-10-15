@@ -87,7 +87,12 @@ test('B-ACH-04 the own row is marked by id with the shared rank; B-ACH-05 the pl
   const client = createClient(createConfig({ baseUrl: String(baseURL) }))
   const board25 = async () =>
     (await leaderboard({ client, query: { limit: 25 }, headers: me.headers, throwOnError: true })).data
-  while ((await board25()).total_participants <= 25) await signIn(client, String(baseURL))
+  // Four at a time: one by one, the ~25 sign-ins a fresh `just e2e` database needs outlast the test timeout; all at
+  // once, the identity provider refuses some (503 "identity provider unreachable").
+  for (let missing = 26 - (await board25()).total_participants; missing > 0;) {
+    await Promise.all(Array.from({ length: Math.min(missing, 4) }, async () => signIn(client, String(baseURL))))
+    missing = 26 - (await board25()).total_participants
+  }
   // A fresh account sits at the very end of a board every run makes longer: lift it to just below the 25th row,
   // so it lands on the second page whatever the stand's history (parallel awards move it by a few places at most).
   const xp25 = (await board25()).entries.at(-1)?.total_xp ?? 0
