@@ -15,6 +15,7 @@ import { courseStatus, presetCount, type Preset } from '../model/course'
 import { myCoursesOptions } from '../queries'
 import { CourseStatusBadge } from './course-status'
 import { CoursesSearchBox } from './courses-search'
+import { CoursesSortMenu } from './courses-sort'
 import { CreateCourseDialog } from './create-course-dialog'
 
 const presetLabels: Record<Preset | 'all', () => string> = {
@@ -41,7 +42,7 @@ export function CoursesPage() {
           <Link
             key={preset}
             to="/teach/courses"
-            search={{ q: search.q, preset: value }}
+            search={{ q: search.q, preset: value, sort: search.sort }}
             activeOptions={{ exact: true }}
             variant="tab"
           >
@@ -60,7 +61,12 @@ export function CoursesPage() {
       count={summary ? m.studio_courses_count({ count: presetCount(summary, search.preset) }) : undefined}
       primaryAction={hasCapability(session, 'course.create') ? <CreateCourseDialog /> : null}
       // Keyed by the URL value: "back" to another search refills the box.
-      search={<CoursesSearchBox key={search.q ?? ''} search={search} />}
+      search={
+        <div className="flex flex-wrap items-end gap-2">
+          <CoursesSearchBox key={search.q ?? ''} search={search} />
+          <CoursesSortMenu search={search} />
+        </div>
+      }
       filters={filters}
       activeFilters={search.preset ? 1 : 0}
     >

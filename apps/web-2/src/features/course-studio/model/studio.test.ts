@@ -37,9 +37,15 @@ describe('course list', () => {
     expect(presetCount(summary, 'archived')).toBe(1)
   })
 
-  test('B-CST-02 a blank search is no search; an unknown preset is rejected', () => {
-    expect(v.parse(coursesSearchSchema, { q: '  ', preset: 'drafts' })).toEqual({ q: undefined, preset: 'drafts' })
+  test('B-CST-02 a blank search is no search; an unknown preset is rejected; an unknown sort is the default', () => {
+    expect(v.parse(coursesSearchSchema, { q: '  ', preset: 'drafts' })).toEqual({
+      q: undefined,
+      preset: 'drafts',
+      sort: undefined,
+    })
     expect(v.safeParse(coursesSearchSchema, { preset: 'recent' }).success).toBe(false)
+    expect(v.parse(coursesSearchSchema, { sort: 'name' }).sort).toBe('name')
+    expect(v.parse(coursesSearchSchema, { sort: 'progress' }).sort).toBeUndefined()
   })
 })
 

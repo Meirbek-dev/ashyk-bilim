@@ -282,5 +282,8 @@
   "studio_learnings_too_long": "Тармақ {max} таңбадан аспауы керек",
   "studio_field_enrolled_only": "Тапсырмалар - тек курсқа тіркелгендерге",
   "studio_field_enrolled_only_hint": "Ашық курстың тесттерін, емтихандарын, есептерін және файл тапсырмаларын кез келген кірген пайдаланушы орындай алуы үшін өшіріңіз.",
-  "studio_learners_search": "Білім алушыны іздеу"
+  "studio_learners_search": "Білім алушыны іздеу",
+  "studio_sort_label": "Сұрыптау: {sort}",
+  "studio_sort_updated": "Алдымен өзгертілгендер",
+  "studio_sort_name": "Атауы бойынша"
 }

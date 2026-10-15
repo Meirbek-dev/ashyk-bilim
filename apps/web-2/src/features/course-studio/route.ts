@@ -8,10 +8,11 @@ const blankToUndefined = v.pipe(
   v.transform(text => text || undefined),
 )
 
-/** /teach/courses?q=&preset=: the name search and the server preset; no preset is "all". */
+/** /teach/courses?q=&preset=&sort=: the name search, the server preset (none is "all") and the order (none: newest). */
 export const coursesSearchSchema = v.object({
   q: v.optional(blankToUndefined),
   preset: v.optional(v.picklist(['drafts', 'published', 'archived'])),
+  sort: v.fallback(v.optional(v.picklist(['name'])), undefined),
 })
 export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
 export type Preset = NonNullable<CoursesSearch['preset']>
