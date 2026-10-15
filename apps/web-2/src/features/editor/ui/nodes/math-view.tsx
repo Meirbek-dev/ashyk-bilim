@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 
 import { stringAttr } from './align'
 import { AttrForm } from './attr-form'
+import { MathTemplates } from './math-templates'
 
 /** blockMathEquation: a display formula rendered by KaTeX (loaded with the first formula); authoring edits LaTeX. */
 export function MathView({ node, editor, updateAttributes }: ReactNodeViewProps) {
@@ -33,8 +34,11 @@ export function MathView({ node, editor, updateAttributes }: ReactNodeViewProps)
       {/* KaTeX writes MathML next to the visual formula: screen readers read the MathML. */}
       <div ref={target} className="overflow-x-auto" />
       {invalid ? <p className="text-sm text-destructive">{m.editor_math_invalid()}</p> : null}
+      {editor.isEditable ? <MathTemplates onPick={next => updateAttributes({ math_equation: next })} /> : null}
       {editor.isEditable ? (
         <AttrForm
+          // A picked template is the new value of the field.
+          key={latex}
           fields={[{ name: 'math_equation', label: m.editor_field_latex(), multiline: true }]}
           values={{ math_equation: latex }}
           onApply={values => updateAttributes(values)}

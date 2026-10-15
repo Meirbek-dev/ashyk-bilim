@@ -85,5 +85,16 @@
   "editor_preview_show_button": "Сайтқа өту батырмасын көрсету",
   "editor_preview_button_label": "Батырма мәтіні",
   "editor_field_height": "Биіктігі, px",
-  "editor_height_range": "Биіктік - 100-ден 2000 px-ке дейінгі бүтін сан."
+  "editor_height_range": "Биіктік - 100-ден 2000 px-ке дейінгі бүтін сан.",
+  "editor_math_templates": "Формула үлгілері",
+  "editor_math_fraction": "Бөлшек",
+  "editor_math_sqrt": "Квадрат түбір",
+  "editor_math_sum": "Қосынды",
+  "editor_math_integral": "Анықталған интеграл",
+  "editor_math_limit": "Шек",
+  "editor_math_matrix": "2×2 матрица",
+  "editor_math_binomial": "Биномдық коэффициент",
+  "editor_math_quadratic": "Квадрат теңдеудің түбірлері",
+  "editor_math_vector": "Баған-вектор",
+  "editor_math_system": "Теңдеулер жүйесі"
 }

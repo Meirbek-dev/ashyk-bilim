@@ -219,3 +219,14 @@ test('B-EDT-28 an embed takes a height; a link card takes alignment and a button
   const card = () => find(last(onChange), 'blockWebPreview')?.attrs
   await expect.poll(() => card()).toMatchObject({ alignment: 'center', showButton: true, buttonLabel: 'Читать' })
 })
+
+test('B-EDT-29 a formula template replaces the formula and fills the field', async () => {
+  const onChange = vi.fn<(doc: EditorDocument) => void>()
+  const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
+  await insert(screen, m.editor_block_math())
+  await screen.getByRole('button', { name: m.editor_math_templates() }).click()
+  await screen.getByRole('menuitem', { name: m.editor_math_binomial() }).click()
+  const binomial = String.raw`\binom{n}{k}`
+  await expect.poll(() => find(last(onChange), 'blockMathEquation')?.attrs?.['math_equation']).toBe(binomial)
+  await expect.element(screen.getByLabelText(m.editor_field_latex())).toHaveValue(binomial)
+})

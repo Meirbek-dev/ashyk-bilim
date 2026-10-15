@@ -85,5 +85,16 @@
   "editor_preview_show_button": "Show a button to the site",
   "editor_preview_button_label": "Button text",
   "editor_field_height": "Height, px",
-  "editor_height_range": "Height is a whole number from 100 to 2000 px."
+  "editor_height_range": "Height is a whole number from 100 to 2000 px.",
+  "editor_math_templates": "Formula templates",
+  "editor_math_fraction": "Fraction",
+  "editor_math_sqrt": "Square root",
+  "editor_math_sum": "Sum",
+  "editor_math_integral": "Definite integral",
+  "editor_math_limit": "Limit",
+  "editor_math_matrix": "2×2 matrix",
+  "editor_math_binomial": "Binomial coefficient",
+  "editor_math_quadratic": "Quadratic formula",
+  "editor_math_vector": "Column vector",
+  "editor_math_system": "System of equations"
 }
