@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
-import { adminAward, dashboard, leaderboard, login, updatePreferences } from '#/shared/api/gen/sdk.gen'
+import { adminAward, dashboard, leaderboard, listUsers, login, updatePreferences } from '#/shared/api/gen/sdk.gen'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { registerAccount } from '../fixtures/accounts'
@@ -83,25 +83,43 @@ test('B-ACH-04 the own row is marked by id with the shared rank; B-ACH-05 the pl
   seed,
   baseURL,
 }) => {
-  // The board needs more than one page: top it up with fresh accounts on a young stand.
+  // The board needs more than one page. On a young stand (every `just e2e` database is one) seeded learners join it
+  // through an admin award, which creates their profile: signing ~25 accounts in outlasted the test under load and
+  // used up a tenth of the learner pool per run.
   const client = createClient(createConfig({ baseUrl: String(baseURL) }))
+  const admin = seed.accounts.admin.cookie
+  const asAdmin = { cookie: `${admin.name}=${admin.value}` }
   const board25 = async () =>
     (await leaderboard({ client, query: { limit: 25 }, headers: me.headers, throwOnError: true })).data
-  // Four at a time: one by one, the ~25 sign-ins a fresh `just e2e` database needs outlast the test timeout; all at
-  // once, the identity provider refuses some (503 "identity provider unreachable").
-  for (let missing = 26 - (await board25()).total_participants; missing > 0;) {
-    await Promise.all(Array.from({ length: Math.min(missing, 4) }, async () => signIn(client, String(baseURL))))
-    missing = 26 - (await board25()).total_participants
+  if ((await board25()).total_participants <= 25) {
+    const { data: learners } = await listUsers({
+      client,
+      query: { q: 'e2e-learner', limit: 100 },
+      headers: asAdmin,
+      throwOnError: true,
+    })
+    // Some already have a profile: award in batches until the board is long enough.
+    for (let start = 0; start < learners.items.length && (await board25()).total_participants <= 25; start += 10) {
+      await Promise.all(
+        learners.items.slice(start, start + 10).map(async user =>
+          adminAward({
+            client,
+            body: { user_id: user.id, amount: 1, reason: 'E2E leaderboard size' },
+            headers: asAdmin,
+            throwOnError: true,
+          }),
+        ),
+      )
+    }
   }
   // A fresh account sits at the very end of a board every run makes longer: lift it to just below the 25th row,
   // so it lands on the second page whatever the stand's history (parallel awards move it by a few places at most).
   const xp25 = (await board25()).entries.at(-1)?.total_xp ?? 0
-  const admin = seed.accounts.admin.cookie
   if (xp25 > 0)
     await adminAward({
       client: me.client,
       body: { user_id: me.userId, amount: Math.min(xp25, 100_000), reason: 'E2E leaderboard place' },
-      headers: { cookie: `${admin.name}=${admin.value}` },
+      headers: asAdmin,
       throwOnError: true,
     })
   const { profile } = await dashboardOf(me)
