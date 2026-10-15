@@ -50,6 +50,7 @@
   "assessments_form_field_label": "Подпись поля {number}",
   "assessments_form_field_type": "Тип поля {number}",
   "assessments_form_field_required": "Обязательное поле {number}",
+  "assessments_form_required": "Обязательное",
   "assessments_form_field_add": "Добавить поле",
   "assessments_form_field_remove": "Удалить поле {number}",
   "assessments_form_type_text": "Строка",

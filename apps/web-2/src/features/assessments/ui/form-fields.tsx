@@ -6,6 +6,7 @@ import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { Input } from '#/shared/ui/input'
+import { Label } from '#/shared/ui/label'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
 import { newFormField } from '../model/items'
@@ -30,6 +31,7 @@ export function FormFields({ body, onChange, editable }: FormFieldsProps) {
           <li key={field.id} className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={m.assessments_form_field_label({ number: at + 1 })}
+              placeholder={m.assessments_form_field_label({ number: at + 1 })}
               className="min-w-48 flex-1"
               value={field.label ?? ''}
               disabled={!editable}
@@ -47,12 +49,15 @@ export function FormFields({ body, onChange, editable }: FormFieldsProps) {
                 </NativeSelectOption>
               ))}
             </NativeSelect>
-            <Checkbox
-              aria-label={m.assessments_form_field_required({ number: at + 1 })}
-              checked={field.required === true}
-              disabled={!editable}
-              onCheckedChange={checked => patch(at, { required: checked })}
-            />
+            <Label className="font-normal">
+              <Checkbox
+                aria-label={m.assessments_form_field_required({ number: at + 1 })}
+                checked={field.required === true}
+                disabled={!editable}
+                onCheckedChange={checked => patch(at, { required: checked })}
+              />
+              {m.assessments_form_required()}
+            </Label>
             <IconButton
               label={m.assessments_form_field_remove({ number: at + 1 })}
               icon={<X aria-hidden />}

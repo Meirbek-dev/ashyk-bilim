@@ -50,6 +50,7 @@
   "assessments_form_field_label": "Field {number} label",
   "assessments_form_field_type": "Field {number} type",
   "assessments_form_field_required": "Field {number} is required",
+  "assessments_form_required": "Required",
   "assessments_form_field_add": "Add field",
   "assessments_form_field_remove": "Remove field {number}",
   "assessments_form_type_text": "Line",

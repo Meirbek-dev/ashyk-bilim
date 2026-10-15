@@ -50,6 +50,7 @@
   "assessments_form_field_label": "{number}-өрістің жазуы",
   "assessments_form_field_type": "{number}-өрістің түрі",
   "assessments_form_field_required": "{number}-өріс міндетті",
+  "assessments_form_required": "Міндетті",
   "assessments_form_field_add": "Өріс қосу",
   "assessments_form_field_remove": "{number}-өрісті жою",
   "assessments_form_type_text": "Жол",
