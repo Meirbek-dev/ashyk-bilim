@@ -1061,6 +1061,11 @@ export const vCurriculum = v.object({
     chapters: v.array(vCurriculumChapter)
 });
 
+export const vDailyXp = v.object({
+    earned_today: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    limit: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
 /**
  * Why a course's analytics are thin (`CourseDataGap.reason`; ENUMS).
  */
@@ -6037,6 +6042,7 @@ export const vAwardResponse = v.object({
 });
 
 export const vDashboard = v.object({
+    daily_xp: vDailyXp,
     leaderboard: vLeaderboard,
     profile: vProfile,
     recent_transactions: v.array(vTransaction),

@@ -99,6 +99,9 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(fresh.json()["profile"]["xp_to_next_level"], 100);
     assert_eq!(fresh.json()["user_rank"], 1);
     assert_eq!(fresh.json()["leaderboard"]["total_participants"], 1);
+    // Today's XP against the cap (the platform default without a config row).
+    assert_eq!(fresh.json()["daily_xp"]["earned_today"], 0);
+    assert_eq!(fresh.json()["daily_xp"]["limit"], 500);
 
     // Completing a lesson: +25 once, learning streak 1, counter 1.
     for _ in 0..2 {
@@ -115,6 +118,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(profile["learning_streak"], 1);
     assert_eq!(profile["total_activities_completed"], 1);
     assert_eq!(profile["daily_xp_earned"], 25);
+    assert_eq!(after_one.json()["daily_xp"]["earned_today"], 25);
     let recent = after_one.json()["recent_transactions"]
         .as_array()
         .unwrap()
@@ -406,6 +410,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     assert_eq!(step.status, StatusCode::OK, "{}", step.text());
     let capped = app.get_as(&bob, "/api/v2/gamification").await;
     assert_eq!(capped.json()["profile"]["total_xp"], 120);
+    assert_eq!(capped.json()["daily_xp"]["limit"], 30);
     // UX-170: the completion counts (and extends the streak) past the cap.
     assert_eq!(capped.json()["profile"]["total_activities_completed"], 1);
     assert_eq!(capped.json()["profile"]["learning_streak"], 1);

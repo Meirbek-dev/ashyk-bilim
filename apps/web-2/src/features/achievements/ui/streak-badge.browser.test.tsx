@@ -40,6 +40,7 @@ function render(learning_streak: number, last_learning_at_unix: number) {
     },
     recent_transactions: [],
     leaderboard: { entries: [], total_participants: 0, next_cursor: null },
+    daily_xp: { earned_today: 0, limit: 500 },
     user_rank: null,
   }
   client.setQueryData(dashboardQueryKey(), dashboard)

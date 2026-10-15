@@ -6611,8 +6611,34 @@ expression: json
         ],
         "description": "A chapter with its activities, in curriculum order."
       },
+      "DailyXp": {
+        "properties": {
+          "earned_today": {
+            "description": "XP earned since 00:00 UTC; 0 after a day without awards (unlike\n`Profile.daily_xp_earned`, which resets only on the next award).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "limit": {
+            "description": "The effective daily cap (admin awards are not capped); `null` = unlimited.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "earned_today",
+          "limit"
+        ],
+        "type": "object"
+      },
       "Dashboard": {
         "properties": {
+          "daily_xp": {
+            "$ref": "#/components/schemas/DailyXp",
+            "description": "Today's XP against the daily cap (UTC day, as awards judge it)."
+          },
           "leaderboard": {
             "$ref": "#/components/schemas/Leaderboard"
           },
@@ -6637,6 +6663,7 @@ expression: json
           "profile",
           "recent_transactions",
           "leaderboard",
+          "daily_xp",
           "user_rank"
         ],
         "type": "object"

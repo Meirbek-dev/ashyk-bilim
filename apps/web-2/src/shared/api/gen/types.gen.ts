@@ -2272,7 +2272,23 @@ export type CurriculumChapter = Chapter & {
     activities: Array<Activity>;
 };
 
+export type DailyXp = {
+    /**
+     * XP earned since 00:00 UTC; 0 after a day without awards (unlike
+     * `Profile.daily_xp_earned`, which resets only on the next award).
+     */
+    earned_today: number;
+    /**
+     * The effective daily cap (admin awards are not capped); `null` = unlimited.
+     */
+    limit: number | null;
+};
+
 export type Dashboard = {
+    /**
+     * Today's XP against the daily cap (UTC day, as awards judge it).
+     */
+    daily_xp: DailyXp;
     leaderboard: Leaderboard;
     profile: Profile;
     recent_transactions: Array<Transaction>;

@@ -154,6 +154,17 @@ pub struct Dashboard {
     /// `null` when the viewer opted out of the leaderboard.
     pub user_rank: Option<i64>,
     pub leaderboard: Leaderboard,
+    /// Today's XP against the daily cap (UTC day, as awards judge it).
+    pub daily_xp: DailyXp,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DailyXp {
+    /// XP earned since 00:00 UTC; 0 after a day without awards (unlike
+    /// `Profile.daily_xp_earned`, which resets only on the next award).
+    pub earned_today: i32,
+    /// The effective daily cap (admin awards are not capped); `null` = unlimited.
+    pub limit: Option<i32>,
 }
 
 impl From<domain::Dashboard> for Dashboard {
@@ -163,6 +174,10 @@ impl From<domain::Dashboard> for Dashboard {
             recent_transactions: d.recent_transactions.into_iter().map(Into::into).collect(),
             user_rank: d.user_rank,
             leaderboard: d.leaderboard.into(),
+            daily_xp: DailyXp {
+                earned_today: d.daily_xp.earned_today,
+                limit: d.daily_xp.limit,
+            },
         }
     }
 }
