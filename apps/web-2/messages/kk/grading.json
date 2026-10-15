@@ -139,5 +139,14 @@
   "grading_cell_none": "Жұмыс жоқ",
   "grading_cell_waiting": "Жаңа әрекет тексеруді күтуде",
   "grading_cell_waiting_release": "Жаңа әрекеттің бағасы жариялауды күтуде",
-  "grading_cell_link": "Жұмыс: {learner}, {activity}"
+  "grading_cell_link": "Жұмыс: {learner}, {activity}",
+  "grading_violations_title": "Өту кезіндегі бұзушылықтар",
+  "grading_violations_count": "Есептелген бұзушылықтар: {count}",
+  "grading_violation_tab_switch": "Қойындыдан шығу",
+  "grading_violation_copy_paste": "Көшіру немесе қою",
+  "grading_violation_fullscreen_exit": "Толық экран режимінен шығу",
+  "grading_violation_devtools": "Браузердің DevTools ашылды",
+  "grading_violation_resize": "Терезе өлшемін өзгерту",
+  "grading_violation_context_menu": "Контекстік мәзір",
+  "grading_violation_keys": "Тыйым салынған пернелер тіркесімі"
 }

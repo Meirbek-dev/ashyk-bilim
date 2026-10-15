@@ -7,6 +7,7 @@ import { AssessmentGradeForm } from './assessment-grade-form'
 import { HistorySection } from './history-section'
 import type { ReviewAside } from './review-aside'
 import { ReviewFrame } from './review-frame'
+import { ViolationsSection } from './violations-section'
 
 type AssessmentReviewProps = {
   courseId: string
@@ -15,7 +16,7 @@ type AssessmentReviewProps = {
   aside?: ReviewAside | undefined
 }
 
-/** A quiz, exam or code submission under review: its answers with scores, then the history (B-GRD-10..17). */
+/** A quiz, exam or code submission under review: its answers with scores, the exam guard's violations, then the history (B-GRD-10..17, B-GRD-29). */
 export function AssessmentReview({ courseId, activityId, submissionId, aside }: AssessmentReviewProps) {
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activityId))
   const { data: submission } = useSuspenseQuery(reviewOptions(submissionId))
@@ -30,6 +31,7 @@ export function AssessmentReview({ courseId, activityId, submissionId, aside }: 
         {/* One form per submission: prev / next swap the work, not the inputs of the last one. */}
         <AssessmentGradeForm key={submission.id} ids={ids} submission={submission} items={items} />
       </section>
+      <ViolationsSection submission={submission} />
       <HistorySection key={`history-${submission.id}`} work={ids.work} submissionId={submission.id} />
     </ReviewFrame>
   )

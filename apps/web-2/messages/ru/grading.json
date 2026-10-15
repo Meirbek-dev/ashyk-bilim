@@ -141,5 +141,14 @@
   "grading_cell_none": "Нет работы",
   "grading_cell_waiting": "Новая попытка ждёт проверки",
   "grading_cell_waiting_release": "Новая попытка ждёт публикации оценки",
-  "grading_cell_link": "Работа: {learner}, {activity}"
+  "grading_cell_link": "Работа: {learner}, {activity}",
+  "grading_violations_title": "Нарушения при прохождении",
+  "grading_violations_count": "Засчитано нарушений: {count}",
+  "grading_violation_tab_switch": "Уход со вкладки",
+  "grading_violation_copy_paste": "Копирование или вставка",
+  "grading_violation_fullscreen_exit": "Выход из полноэкранного режима",
+  "grading_violation_devtools": "Открыты DevTools браузера",
+  "grading_violation_resize": "Изменение размера окна",
+  "grading_violation_context_menu": "Контекстное меню",
+  "grading_violation_keys": "Запрещённое сочетание клавиш"
 }

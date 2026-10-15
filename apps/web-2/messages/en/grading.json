@@ -139,5 +139,14 @@
   "grading_cell_none": "No submission",
   "grading_cell_waiting": "A new attempt awaits review",
   "grading_cell_waiting_release": "A new attempt's grade awaits release",
-  "grading_cell_link": "Submission: {learner}, {activity}"
+  "grading_cell_link": "Submission: {learner}, {activity}",
+  "grading_violations_title": "Violations during the attempt",
+  "grading_violations_count": "Violations counted: {count}",
+  "grading_violation_tab_switch": "Left the tab",
+  "grading_violation_copy_paste": "Copy or paste",
+  "grading_violation_fullscreen_exit": "Left full screen",
+  "grading_violation_devtools": "Browser DevTools opened",
+  "grading_violation_resize": "Window resized",
+  "grading_violation_context_menu": "Context menu",
+  "grading_violation_keys": "Blocked key combination"
 }

@@ -11,6 +11,7 @@ import { formatNumber } from '#/shared/i18n/format'
 
 import type { QueueStatus } from '../route'
 import { roundScore } from '../model/scoring'
+import type { ViolationKind } from '../model/violations'
 
 /** Both status enums; a file attempt's `submitted` reads as an assessment's `pending` (ungraded vs released). */
 export const statusMeta = {
@@ -36,6 +37,16 @@ export const kindLabels = {
   code: m.grading_kind_code,
   matching: m.grading_kind_matching,
 } satisfies Record<ItemKind, () => string>
+
+export const violationLabels = {
+  tab_switch: m.grading_violation_tab_switch,
+  copy_paste: m.grading_violation_copy_paste,
+  fullscreen_exit: m.grading_violation_fullscreen_exit,
+  devtools: m.grading_violation_devtools,
+  resize: m.grading_violation_resize,
+  context_menu: m.grading_violation_context_menu,
+  keys: m.grading_violation_keys,
+} satisfies Record<ViolationKind, () => string>
 
 /** A 0..100 score at hundredths (99.99 never shows as 100), or "no grade" while there is none (BUG-202). */
 export const scoreText = (score: number | null): string =>
