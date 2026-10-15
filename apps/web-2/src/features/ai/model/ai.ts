@@ -1,4 +1,4 @@
-import type { RemediationSession, RemediationStatus, ScopeCapabilities } from '#/shared/api/gen/types.gen'
+import type { Citation, RemediationSession, RemediationStatus, ScopeCapabilities } from '#/shared/api/gen/types.gen'
 
 import type { PanelTab } from '../route'
 
@@ -45,3 +45,15 @@ export const passThreshold = (session: RemediationSession) => session.lecture.pa
 /** Share of the monthly token budget used, 0..100. */
 export const budgetUsed = (budget: number, remaining: number) =>
   budget <= 0 ? 0 : Math.min(100, Math.round((100 * (budget - remaining)) / budget))
+
+const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i
+
+/**
+ * The activity an answer cites (B-AI-27): its `source_uuid`, else the `activity:<id>` the context gave it as
+ * `citation_id`; null for any other source (a course outline, an assessment) or an id that is not one.
+ */
+export function citedActivity(citation: Pick<Citation, 'source_type' | 'source_uuid' | 'citation_id'>): string | null {
+  if (citation.source_type !== 'activity') return null
+  const id = citation.source_uuid ?? citation.citation_id.replace(/^activity:/, '')
+  return UUID.test(id) ? id : null
+}

@@ -4,7 +4,7 @@ import type { ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/valibot.gen'
 
 import { RUN_KINDS, RUN_STATUSES, runsFilter } from '../route'
-import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason } from './ai'
+import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason, citedActivity } from './ai'
 import { runErrorText } from './labels'
 import { STREAM_LOST } from './run'
 
@@ -82,4 +82,12 @@ describe('remediation and admin helpers', () => {
     expect(runErrorText(STREAM_LOST)).toContain('Связь с запуском потеряна')
     expect(runErrorText('AI_RUN_FAILED')).toBe('Запуск ИИ не удался.')
   })
+})
+
+test('B-AI-27 a cited activity is found by source_uuid or by its activity:<id> citation id; other sources are not', () => {
+  const id = '0190a5d2-0000-7000-8000-0000000000a1'
+  expect(citedActivity({ source_type: 'activity', source_uuid: id, citation_id: 'x' })).toBe(id)
+  expect(citedActivity({ source_type: 'activity', citation_id: `activity:${id}` })).toBe(id)
+  expect(citedActivity({ source_type: 'course', source_uuid: id, citation_id: 'course' })).toBeNull()
+  expect(citedActivity({ source_type: 'activity', citation_id: 'activity:../x' })).toBeNull()
 })
