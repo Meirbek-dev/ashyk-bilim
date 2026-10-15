@@ -213,5 +213,7 @@
   "ai_finding_state_accepted": "Принято",
   "ai_finding_state_dismissed": "Отклонено",
   "ai_finding_state_task_created": "Задача создана",
-  "ai_feedback_draft": "Добавить в отзыв"
+  "ai_feedback_draft": "Добавить в отзыв",
+  "ai_gate_lesson": "Урок разбора: {title}",
+  "ai_gate_score": "результат {score}%"
 }

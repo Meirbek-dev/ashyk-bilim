@@ -207,5 +207,7 @@
   "ai_finding_state_accepted": "Қабылданды",
   "ai_finding_state_dismissed": "Қабылданбады",
   "ai_finding_state_task_created": "Тапсырма жасалды",
-  "ai_feedback_draft": "Пікірге қосу"
+  "ai_feedback_draft": "Пікірге қосу",
+  "ai_gate_lesson": "Қателерді талдау сабағы: {title}",
+  "ai_gate_score": "нәтиже {score}%"
 }

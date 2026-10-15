@@ -113,7 +113,7 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     await expect.element(screen.getByRole('button', { name: m.ai_gate_assign() })).toBeDisabled()
   })
 
-  test('B-AI-16 B-AI-17 the analysis shows its gaps; the gate asks first, queues with gate_mode, then holds', async () => {
+  test('B-AI-16 B-AI-17 B-AI-30 the analysis shows its gaps; the gate asks first, queues with gate_mode, then holds', async () => {
     const api = stubApi({ analysis, gate: null })
     const screen = await render()
     await expect.element(screen.getByText('Условие выхода')).toBeVisible()
@@ -121,6 +121,8 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     await userEvent.click(screen.getByRole('button', { name: m.ai_gate_assign() }))
     await userEvent.click(screen.getByRole('alertdialog').getByRole('button', { name: m.ai_gate_assign() }))
     await expect.element(screen.getByText(m.ai_gate_assigned())).toBeVisible()
+    // B-AI-30: the assigned lesson is there for the grader to read.
+    await expect.element(screen.getByText(m.ai_gate_lesson({ title: 'Циклы' }))).toBeVisible()
     await expect.element(screen.getByRole('button', { name: m.ai_gate_assign() })).toBeDisabled()
     const queue = api.mock.calls.map(([request]) => request).find(request => request.url.endsWith('/generate/queue'))
     expect(await queue?.json()).toMatchObject({ gate_mode: true })

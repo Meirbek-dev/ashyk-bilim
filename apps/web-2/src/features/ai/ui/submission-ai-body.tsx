@@ -14,6 +14,7 @@ import {
   submissionAnalysisQueue,
 } from '../queries'
 import { AssignGate } from './assign-gate'
+import { GateLesson } from './gate-lesson'
 import { RunStatus } from './run-status'
 import { SubmissionAnalysisView } from './submission-analysis-view'
 import { useAiRun } from './use-ai-run'
@@ -60,6 +61,7 @@ export function SubmissionAiBody({ submissionId, onFeedbackDraft }: BodyProps) {
       <div className="flex flex-col items-start gap-2 border-t pt-4">
         {gate?.status === 'passed' ? <p className="text-sm">{m.ai_gate_passed()}</p> : null}
         {holding ? <p className="text-sm">{m.ai_gate_assigned()}</p> : null}
+        {gate ? <GateLesson gate={gate} /> : null}
         {analysis ? null : <p className="text-sm text-muted-foreground">{m.ai_gate_needs_analysis()}</p>}
         <AssignGate disabled={!analysis || holding || assign.pending} onConfirm={startGate} />
         <RunStatus state={assign.state} onCancel={assign.cancel} cancelling={assign.cancelling} onRetry={startGate} />

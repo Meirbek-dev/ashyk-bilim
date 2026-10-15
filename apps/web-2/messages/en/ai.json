@@ -207,5 +207,7 @@
   "ai_finding_state_accepted": "Accepted",
   "ai_finding_state_dismissed": "Dismissed",
   "ai_finding_state_task_created": "Task created",
-  "ai_feedback_draft": "Add to feedback"
+  "ai_feedback_draft": "Add to feedback",
+  "ai_gate_lesson": "Remediation lesson: {title}",
+  "ai_gate_score": "score {score}%"
 }
