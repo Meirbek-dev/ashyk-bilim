@@ -1,36 +1,16 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import type { ContentBottleneckRow, CourseId, TeacherCourseDetailResponse } from '#/shared/api/gen/types.gen'
+import type { CourseId, TeacherCourseDetailResponse } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
-import type { DataColumn } from '#/shared/components/data-columns'
-import { DataTable } from '#/shared/components/data-table'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatNumber, formatPercent } from '#/shared/i18n/format'
+import { formatNumber } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/ui/button'
 
 import { funnelLabel, healthValue } from '../model/course-health'
 import type { Filters } from '../model/filters'
-import { bottleneckLabel, severityBadges } from '../model/signals'
-
-const bottleneckColumns = (): DataColumn<ContentBottleneckRow>[] => [
-  { id: 'activity', header: m.analytics_col_activity(), priority: 1, cell: row => row.activity_name },
-  { id: 'signal', header: m.analytics_col_signal(), priority: 2, cell: row => bottleneckLabel(row.signal) },
-  {
-    id: 'completion',
-    header: m.analytics_col_completion(),
-    priority: 2,
-    cell: row => (
-      <span className="tabular-nums">{row.completion_rate === null ? '-' : formatPercent(row.completion_rate)}</span>
-    ),
-  },
-  {
-    id: 'exits',
-    header: m.analytics_col_exits(),
-    priority: 3,
-    cell: row => <span className="tabular-nums">{formatNumber(row.exit_count)}</span>,
-  },
-]
+import { severityBadges } from '../model/signals'
+import { BottlenecksTable } from './bottlenecks-table'
 
 type CourseHealthProps = { filters: Filters; courseId: CourseId; data: TeacherCourseDetailResponse }
 
@@ -65,17 +45,7 @@ export function CourseHealth({ filters, courseId, data }: CourseHealthProps) {
           ))}
         </ul>
       </section>
-      {data.content_bottlenecks.length > 0 ? (
-        <section className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">{m.analytics_bottlenecks_title()}</h3>
-          <DataTable
-            label={m.analytics_bottlenecks_title()}
-            rows={data.content_bottlenecks}
-            columns={bottleneckColumns()}
-            getKey={row => `${row.activity_id}-${row.signal}`}
-          />
-        </section>
-      ) : null}
+      <BottlenecksTable rows={data.content_bottlenecks} withCourse={false} />
       <div className="flex flex-wrap gap-2">
         <RouterLink to="/teach/analytics/learners" search={scoped} className={buttonVariants({ variant: 'outline' })}>
           {m.analytics_course_at_risk({ count: formatNumber(data.at_risk_learners.length) })}

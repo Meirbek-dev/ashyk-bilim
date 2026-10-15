@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import {
   vAnalyticsCode,
+  vContentBottleneckSignal,
   vOutlierReasonCode,
   vRecommendedAction,
   vRiskReasonCode,
@@ -19,6 +20,7 @@ import {
   signalText,
   whyNowLabels,
   riskBreakdown,
+  bottleneckLabel,
 } from './signals'
 
 /** How many different non-empty texts the values get: equal to the number of values when each has its own. */
@@ -73,4 +75,8 @@ test('B-ANL-29 the risk breakdown names its parts, largest first, without the ze
     'отставание 21,5, неактивность 10, ждут вашей проверки 4, other 1',
   )
   expect(riskBreakdown({ inactivity: 0 })).toBe('—')
+})
+
+test('B-ANL-30 every bottleneck signal of the contract reads as words', () => {
+  for (const signal of vContentBottleneckSignal.options) expect(bottleneckLabel(signal)).not.toBe(signal)
 })

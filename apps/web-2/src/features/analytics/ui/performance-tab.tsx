@@ -8,6 +8,7 @@ import { pickFilters } from '../model/filters'
 import { overviewOptions } from '../queries'
 import { AssessmentDrill } from './assessment-drill'
 import { AssessmentsTable } from './assessments-table'
+import { BottlenecksTable } from './bottlenecks-table'
 import { CourseDrill } from './course-drill'
 import { CoursesTable } from './courses-table'
 import { ExportLinks } from './export-links'
@@ -35,6 +36,7 @@ export function PerformanceTab() {
       </div>
       <CoursesTable filters={filters} page={search.coursePage} />
       <AssessmentsTable filters={filters} page={search.page} />
+      <BottlenecksTable rows={data.content_bottlenecks} withCourse />
       <ExportLinks
         links={[
           { href: hrefs.courseProgress, label: m.analytics_export_course_progress() },
