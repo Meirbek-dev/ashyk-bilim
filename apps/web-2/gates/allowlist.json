@@ -39,10 +39,6 @@
       "reason": "Established kk term (legacy catalog uses Платформа), spelled like ru."
     },
     {
-      "key": "platform_nav_ai",
-      "reason": "Abbreviation AI is used as is in every locale (spec 5.2 nav)."
-    },
-    {
       "key": "platform_nav_gamification",
       "reason": "Established kk term (legacy catalog uses Геймификация), spelled like ru."
     },

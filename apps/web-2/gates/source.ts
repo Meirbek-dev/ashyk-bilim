@@ -35,6 +35,13 @@ export function apiCoverage(phaseOverride?: number): { findings: Finding[]; enfo
     rule: 'api-coverage',
     fix: `no consumer for ${operation}(): build its UI or list it in gates/server-removals.json with a reason`,
   }))
+  for (const operation of service)
+    if (!all.includes(operation))
+      findings.push({
+        file: 'gates/allowlist.json',
+        rule: 'api-coverage',
+        fix: `service operation ${operation} is gone: drop it`,
+      })
   // A scheduled removal must still exist and still be unused, or the list lies to the server lane.
   for (const operation of removals) {
     if (!all.includes(operation))

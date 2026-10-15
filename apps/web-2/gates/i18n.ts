@@ -98,6 +98,13 @@ function checkMessage(key: string, feature: string, values: Record<string, unkno
         fix: `"${key}" equals ru: translate it, or allowlist with a reason`,
       })
     }
+    if (locale === 'kk' && text(value) !== text(ru) && sameAllowed) {
+      findings.push({
+        file: 'gates/allowlist.json',
+        rule: 'i18n-untranslated',
+        fix: `"${key}" no longer equals ru in kk: drop it from i18nSameAsRu`,
+      })
+    }
   }
 }
 
