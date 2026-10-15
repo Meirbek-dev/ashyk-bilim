@@ -8,7 +8,7 @@ import { expect as baseExpect, test } from '../fixtures/learning'
 const expect = baseExpect.configure({ timeout: 15_000 })
 const ru = { locale: 'ru' } as const
 
-test('B-PLY-16 a course finished before its certificate was set up issues one when the summary opens', async ({
+test('B-PLY-14 B-PLY-16 a course finished before its certificate was set up issues one when the summary opens', async ({
   page,
   api,
   seed,
@@ -26,5 +26,9 @@ test('B-PLY-16 a course finished before its certificate was set up issues one wh
   const link = page.getByRole('link', { name: m.player_certificate_view({}, ru) })
   await expect(link).toBeVisible()
   await expect(page.getByText(m.player_certificate_pending({}, ru))).toHaveCount(0)
-  await expect(link).toHaveAttribute('href', `/certificates/${await learner.certificateCode(course)}/verify`)
+  const code = await learner.certificateCode(course)
+  await expect(link).toHaveAttribute('href', `/certificates/${code}/verify`)
+  // B-PLY-14: the PDF is offered right there, in the interface language.
+  const pdf = page.getByRole('link', { name: m.certificates_download_pdf({}, ru) })
+  await expect(pdf).toHaveAttribute('href', `/api/v2/certificates/${code}/pdf?lang=ru`)
 })

@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
+import { CertificatePdfLink } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
@@ -70,6 +71,7 @@ export function CompletionPage() {
               {m.player_certificate_view()}
             </RouterLink>
           ) : null}
+          {code ? <CertificatePdfLink code={code} /> : null}
           <RouterLink to="/learning" className={buttonVariants({ variant: 'outline' })}>
             {m.player_my_courses()}
           </RouterLink>
