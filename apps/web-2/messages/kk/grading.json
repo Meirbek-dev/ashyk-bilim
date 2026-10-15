@@ -149,5 +149,7 @@
   "grading_violation_resize": "Терезе өлшемін өзгерту",
   "grading_violation_context_menu": "Контекстік мәзір",
   "grading_violation_keys": "Тыйым салынған пернелер тіркесімі",
-  "grading_criteria": "Жауапты тексеру критерийлері"
+  "grading_criteria": "Жауапты тексеру критерийлері",
+  "grading_rubric_apply": "Қорытынды ретінде қою",
+  "grading_after_penalty": "Кешігу үшін {percent} айыппұлдан кейін: {score}"
 }

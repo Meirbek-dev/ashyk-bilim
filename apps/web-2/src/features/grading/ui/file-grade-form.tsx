@@ -7,17 +7,20 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
 import { fileGradeForm, fileGradeRequest, fileGradeSchema } from '../model/grade-form'
-import { itemsPercent, parseScoreInput } from '../model/scoring'
 import { gradeAttemptOptions, type ReviewIds } from '../mutations'
 import { attemptOptions } from '../queries'
 import { GradeActions } from './grade-actions'
-import { scoreText } from './labels'
+import { LatePenaltyNote } from './late-penalty-note'
+import { RubricTotal } from './rubric-total'
 import { useGradeSave } from './use-grade-save'
 import { useFeedbackDraft } from './feedback-draft'
 
 type FileGradeFormProps = { ids: ReviewIds; attempt: Attempt; rubric: FileRubric }
 
-/** Rubric points, the grade (before the late penalty) and the feedback, then the actions (B-GRD-14..16). */
+/**
+ * Rubric points (their total can become the grade), the grade (before the late penalty, the result shown) and the
+ * feedback, then the actions (B-GRD-14..16, B-GRD-32).
+ */
 export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
   const queryClient = useQueryClient()
   const mutation = useMutation(gradeAttemptOptions(queryClient, ids))
@@ -54,21 +57,16 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
             </form.AppField>
           ))}
           <form.Subscribe selector={state => state.values.criteria}>
-            {rows => (
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {m.grading_rubric_total({
-                  percent: scoreText(
-                    itemsPercent(rows.map(row => ({ score: parseScoreInput(row.score, row.max) ?? 0, max: row.max }))),
-                  ),
-                })}
-              </p>
-            )}
+            {rows => <RubricTotal rows={rows} onApply={total => form.setFieldValue('final_score', String(total))} />}
           </form.Subscribe>
         </fieldset>
       ) : null}
       <form.AppField name="final_score">
         {field => <field.TextField label={m.grading_final_score()} inputMode="decimal" />}
       </form.AppField>
+      <form.Subscribe selector={state => state.values.final_score}>
+        {score => <LatePenaltyNote score={score} penaltyPct={attempt.late_penalty_pct} />}
+      </form.Subscribe>
       <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
       <GradeActions
         allowed={attempt.allowed_actions}

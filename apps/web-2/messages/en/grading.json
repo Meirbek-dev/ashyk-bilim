@@ -149,5 +149,7 @@
   "grading_violation_resize": "Window resized",
   "grading_violation_context_menu": "Context menu",
   "grading_violation_keys": "Blocked key combination",
-  "grading_criteria": "Answer review criteria"
+  "grading_criteria": "Answer review criteria",
+  "grading_rubric_apply": "Use as the grade",
+  "grading_after_penalty": "After the {percent} late penalty: {score}"
 }

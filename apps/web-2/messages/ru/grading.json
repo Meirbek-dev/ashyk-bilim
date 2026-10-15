@@ -151,5 +151,7 @@
   "grading_violation_resize": "Изменение размера окна",
   "grading_violation_context_menu": "Контекстное меню",
   "grading_violation_keys": "Запрещённое сочетание клавиш",
-  "grading_criteria": "Критерии проверки ответа"
+  "grading_criteria": "Критерии проверки ответа",
+  "grading_rubric_apply": "Поставить как итог",
+  "grading_after_penalty": "После штрафа {percent} за опоздание: {score}"
 }

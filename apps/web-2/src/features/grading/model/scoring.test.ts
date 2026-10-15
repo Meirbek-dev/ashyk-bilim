@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { isScoreInputInvalid, itemsPercent, parseScoreInput, roundScoreInput, sumScores, toItemScale } from './scoring'
+import {
+  isScoreInputInvalid,
+  itemsPercent,
+  parseScoreInput,
+  roundScoreInput,
+  sumScores,
+  toItemScale,
+  afterLatePenalty,
+} from './scoring'
 
 describe('B-GRD-22 score rounding', () => {
   test('B-GRD-22 three 33.33 items stay 99.99, the same precision as the maximum', () => {
@@ -49,4 +57,11 @@ describe('B-GRD-12 score input', () => {
     expect(isScoreInputInvalid('   ')).toBe(false)
     expect(isScoreInputInvalid('101')).toBe(true)
   })
+})
+
+test('B-GRD-32 the late penalty is applied as the server does: a share off, hundredths, clamped to 0..100', () => {
+  expect(afterLatePenalty(80, 10)).toBe(72)
+  expect(afterLatePenalty(66.67, 15)).toBe(56.67)
+  expect(afterLatePenalty(80, 150)).toBe(0)
+  expect(afterLatePenalty(80, -5)).toBe(80)
 })
