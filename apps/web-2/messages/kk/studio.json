@@ -285,5 +285,6 @@
   "studio_learners_search": "Білім алушыны іздеу",
   "studio_sort_label": "Сұрыптау: {sort}",
   "studio_sort_updated": "Алдымен өзгертілгендер",
-  "studio_sort_name": "Атауы бойынша"
+  "studio_sort_name": "Атауы бойынша",
+  "studio_archived_since": "{date} бастап мұрағатта, тек оқу үшін"
 }

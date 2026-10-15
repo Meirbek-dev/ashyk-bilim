@@ -285,5 +285,6 @@
   "studio_learners_search": "Find a learner",
   "studio_sort_label": "Sort: {sort}",
   "studio_sort_updated": "Recently changed first",
-  "studio_sort_name": "By name"
+  "studio_sort_name": "By name",
+  "studio_archived_since": "Archived since {date}, read-only"
 }

@@ -133,7 +133,10 @@ test('B-CST-21 the certificate is switched on, configured, and switched off', as
   await expect(page.getByRole('button', { name: m.studio_certificate_enable({}, ru) })).toBeVisible()
 })
 
-test('B-CST-22 archiving names what stays behind; an archived course can be restored', async ({ page, studio }) => {
+test('B-CST-22 B-CST-44 archiving names what stays behind; an archived course says so and can be restored', async ({
+  page,
+  studio,
+}) => {
   const { course } = await studio.course()
   await page.goto(tab(course.id, 'settings'))
   await page.getByRole('button', { name: m.studio_archive({}, ru) }).click()
@@ -143,6 +146,11 @@ test('B-CST-22 archiving names what stays behind; an archived course can be rest
   await confirm.getByRole('button', { name: m.studio_archive({}, ru) }).click()
   await expect(page.getByText(m.studio_archived({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_archived({}, ru)).first()).toBeVisible()
+  await expect(page.getByText(/^В архиве с /)).toBeVisible()
+  await expect(page.getByRole('link', { name: m.studio_restore({}, ru) })).toHaveAttribute(
+    'href',
+    tab(course.id, 'settings'),
+  )
   await page.getByRole('button', { name: m.studio_restore({}, ru) }).click()
   await expect(page.getByText(m.studio_restored({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()

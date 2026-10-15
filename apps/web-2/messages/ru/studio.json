@@ -289,5 +289,6 @@
   "studio_learners_search": "Поиск учащегося",
   "studio_sort_label": "Сортировка: {sort}",
   "studio_sort_updated": "Сначала изменённые",
-  "studio_sort_name": "По названию"
+  "studio_sort_name": "По названию",
+  "studio_archived_since": "В архиве с {date}, только для чтения"
 }
