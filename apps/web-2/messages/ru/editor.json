@@ -96,5 +96,6 @@
   "editor_math_binomial": "Биномиальный коэффициент",
   "editor_math_quadratic": "Корни квадратного уравнения",
   "editor_math_vector": "Вектор-столбец",
-  "editor_math_system": "Система уравнений"
+  "editor_math_system": "Система уравнений",
+  "editor_image_expand": "Открыть изображение целиком"
 }

@@ -96,5 +96,6 @@
   "editor_math_binomial": "Binomial coefficient",
   "editor_math_quadratic": "Quadratic formula",
   "editor_math_vector": "Column vector",
-  "editor_math_system": "System of equations"
+  "editor_math_system": "System of equations",
+  "editor_image_expand": "Open the image full size"
 }

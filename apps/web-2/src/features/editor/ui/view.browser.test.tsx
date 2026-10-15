@@ -3,6 +3,7 @@ import { Editor } from '@tiptap/core'
 import * as fc from 'fast-check'
 import { Suspense, type ReactNode } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { publicProfileByIdQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -226,4 +227,13 @@ describe('B-EDT-14 discussion-view preset', () => {
       .toHaveAttribute('href', 'https://www.figma.com/file/x')
     await expect.element(screen.getByTitle(m.editor_embed_title())).not.toBeInTheDocument()
   })
+})
+
+test('B-EDT-30 a lesson image opens full size in a dialog and closes with Escape', async () => {
+  const screen = await render(<BlockViewer content={doc('image')} />)
+  await screen.getByRole('button', { name: m.editor_image_expand() }).click()
+  const dialog = screen.getByRole('dialog', { name: m.editor_image_alt() })
+  await expect.element(dialog.getByRole('img', { name: m.editor_image_alt() })).toBeVisible()
+  await userEvent.keyboard('{Escape}')
+  await expect.element(dialog).not.toBeInTheDocument()
 })

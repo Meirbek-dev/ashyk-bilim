@@ -8,6 +8,7 @@ import { PdfFrame } from '#/shared/components/pdf-frame'
 import { blockFileUrl, isRecord, numberAttr } from '../../model/document'
 import { justify } from './align'
 import { FileUpload } from './file-upload'
+import { ImageView } from './image-view'
 import { VideoPlayer } from './video-player'
 
 const width = (size: unknown) => (isRecord(size) ? (numberAttr(size['width']) ?? undefined) : undefined)
@@ -36,13 +37,7 @@ export function FileView(props: ReactNodeViewProps) {
     )
   return (
     <NodeViewWrapper className={`my-4 flex ${justify(node.attrs['alignment'])}`}>
-      <img
-        src={url}
-        alt={m.editor_image_alt()}
-        width={width(node.attrs['size'])}
-        loading="lazy"
-        className="h-auto max-w-full rounded-lg"
-      />
+      <ImageView src={url} width={width(node.attrs['size'])} editable={editor.isEditable} />
     </NodeViewWrapper>
   )
 }
