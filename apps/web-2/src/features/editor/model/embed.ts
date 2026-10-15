@@ -166,6 +166,10 @@ const PROVIDERS: [type: string, match: (url: URL) => boolean][] = [
   ['codepen', url => hostIs(url, 'codepen.io')],
   ['github-gist', url => url.hostname === 'gist.github.com'],
   ['spotify', url => url.hostname === 'open.spotify.com'],
+  // The old web rewrote these on paste too (`embed-validators.ts`).
+  ['telegram', url => url.hostname === 't.me'],
+  ['quizizz', url => hostIs(url, 'quizizz.com') && url.pathname.includes('/admin/quiz/')],
+  ['edpuzzle', url => hostIs(url, 'edpuzzle.com') && url.pathname.startsWith('/media/')],
 ]
 
 /** The provider of a pasted or legacy URL; `url` when no provider rewrites its address. */

@@ -96,6 +96,13 @@ describe('B-EDT-08 embed addresses', () => {
     expect(embedSrc('excalidraw', 'https://excalidraw.com/#json=a,b')).toBe('https://excalidraw.com/?embed=1#json=a,b')
     expect(embedTypeForUrl('https://ppt-online.org/1')).toBe('url')
     expect(embedSrc('url', 'https://ppt-online.org/1')).toBe('https://ppt-online.org/1')
+    // Pasted, not only stored: the old web rewrote Telegram posts, Quizizz and Edpuzzle on paste.
+    expect(embedTypeForUrl('https://t.me/channel/12')).toBe('telegram')
+    expect(embedSrc('telegram', 'https://t.me/channel/12')).toBe('https://t.me/channel/12?embed=1')
+    expect(embedTypeForUrl('https://quizizz.com/admin/quiz/abc')).toBe('quizizz')
+    expect(embedSrc('quizizz', 'https://quizizz.com/admin/quiz/abc')).toBe('https://quizizz.com/embed/quiz/abc')
+    expect(embedTypeForUrl('https://edpuzzle.com/media/xyz')).toBe('edpuzzle')
+    expect(embedSrc('edpuzzle', 'https://edpuzzle.com/media/xyz')).toBe('https://edpuzzle.com/embed/media/xyz')
     expect(embedSrc('unknown-old-provider', 'https://h5p.org/x')).toBe('https://h5p.org/x')
     expect(embedSrc('url', 'javascript:alert(1)')).toBeNull()
   })
