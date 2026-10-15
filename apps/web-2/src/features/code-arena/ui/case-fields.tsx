@@ -5,11 +5,12 @@ import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 
 import { newTest, testCounts } from '../model/body-form'
+import { TestFilesBar } from './test-files-bar'
 import type { CodeFormApi } from './use-code-item-form'
 
 /**
  * The test builder (B-COD-16): each test case has a description, input, expected output, visible or hidden, and a
- * weight; added and removed here, saved with the item.
+ * weight; added and removed here, read from or written to a JSON/CSV file (B-COD-25), saved with the item.
  */
 export function CaseFields({ form }: { form: CodeFormApi }) {
   return (
@@ -66,6 +67,12 @@ export function CaseFields({ form }: { form: CodeFormApi }) {
                 {m.code_case_add()}
               </Button>
             </div>
+            <TestFilesBar
+              tests={list.state.value}
+              onImport={imported => {
+                for (const test of imported) list.pushValue(test)
+              }}
+            />
           </fieldset>
         )
       }}

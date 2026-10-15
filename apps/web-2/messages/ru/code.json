@@ -124,5 +124,9 @@
   "code_check_ok": "Все примеры пройдены",
   "code_reset_starter": "Вернуть шаблон",
   "code_reset_starter_title": "Вернуть шаблон кода?",
-  "code_reset_starter_text": "Ваш код в редакторе заменится шаблоном преподавателя."
+  "code_reset_starter_text": "Ваш код в редакторе заменится шаблоном преподавателя.",
+  "code_cases_import": "Импорт примеров (JSON, CSV)",
+  "code_cases_export_json": "Экспорт в JSON",
+  "code_cases_export_csv": "Экспорт в CSV",
+  "code_cases_import_bad": "В файле нет примеров: нужен JSON-массив или CSV со столбцами input и expected_output."
 }

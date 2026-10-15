@@ -124,5 +124,9 @@
   "code_check_ok": "Барлық мысалдар өтті",
   "code_reset_starter": "Үлгіні қайтару",
   "code_reset_starter_title": "Код үлгісін қайтару керек пе?",
-  "code_reset_starter_text": "Редактордағы кодыңыз оқытушының үлгісімен ауыстырылады."
+  "code_reset_starter_text": "Редактордағы кодыңыз оқытушының үлгісімен ауыстырылады.",
+  "code_cases_import": "Мысалдарды импорттау (JSON, CSV)",
+  "code_cases_export_json": "JSON-ға экспорттау",
+  "code_cases_export_csv": "CSV-ға экспорттау",
+  "code_cases_import_bad": "Файлда мысал жоқ: JSON массиві немесе input және expected_output бағандары бар CSV керек."
 }

@@ -124,5 +124,9 @@
   "code_check_ok": "Every test case passed",
   "code_reset_starter": "Restore the starter",
   "code_reset_starter_title": "Restore the starter code?",
-  "code_reset_starter_text": "Your code in the editor is replaced by the teacher's starter code."
+  "code_reset_starter_text": "Your code in the editor is replaced by the teacher's starter code.",
+  "code_cases_import": "Import test cases (JSON, CSV)",
+  "code_cases_export_json": "Export to JSON",
+  "code_cases_export_csv": "Export to CSV",
+  "code_cases_import_bad": "No test cases in the file: it needs a JSON array or a CSV with the columns expected_output and input."
 }
