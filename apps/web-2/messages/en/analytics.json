@@ -222,5 +222,20 @@
   "analytics_col_outliers": "Outliers",
   "analytics_learner_action": "What to do",
   "analytics_learner_reasons": "Risk signals",
-  "analytics_learner_last_intervention": "Last intervention"
+  "analytics_learner_last_intervention": "Last intervention",
+  "analytics_funnel_title": "Path to completion",
+  "analytics_funnel_enrolled": "Enrolled",
+  "analytics_funnel_active_7d": "Active in 7 days",
+  "analytics_funnel_completed": "Completed",
+  "analytics_chapters_title": "Learners per chapter",
+  "analytics_health_title": "Course health",
+  "analytics_health_freshness": "Content updated {days} days ago",
+  "analytics_health_freshness_unknown": "No data on content updates",
+  "analytics_health_progress": "Average progress: {value}",
+  "analytics_health_backlog": "Awaiting review: {count}",
+  "analytics_bottlenecks_title": "Bottlenecks",
+  "analytics_col_signal": "Signal",
+  "analytics_col_exits": "Exits",
+  "analytics_course_at_risk": "Learners at risk: {count}",
+  "analytics_course_assessments": "Course assessments"
 }

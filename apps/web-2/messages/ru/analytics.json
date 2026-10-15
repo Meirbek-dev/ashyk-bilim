@@ -222,5 +222,20 @@
   "analytics_col_outliers": "Отклонения",
   "analytics_learner_action": "Что сделать",
   "analytics_learner_reasons": "Признаки риска",
-  "analytics_learner_last_intervention": "Последнее вмешательство"
+  "analytics_learner_last_intervention": "Последнее вмешательство",
+  "analytics_funnel_title": "Путь к завершению",
+  "analytics_funnel_enrolled": "Записаны",
+  "analytics_funnel_active_7d": "Активны за 7 дней",
+  "analytics_funnel_completed": "Завершили",
+  "analytics_chapters_title": "Учащиеся по главам",
+  "analytics_health_title": "Состояние курса",
+  "analytics_health_freshness": "Содержимое обновлялось {days} дн. назад",
+  "analytics_health_freshness_unknown": "Нет данных об обновлении содержимого",
+  "analytics_health_progress": "Средний прогресс: {value}",
+  "analytics_health_backlog": "Ждут проверки: {count}",
+  "analytics_bottlenecks_title": "Узкие места",
+  "analytics_col_signal": "Признак",
+  "analytics_col_exits": "Уходы",
+  "analytics_course_at_risk": "Учащиеся в зоне риска: {count}",
+  "analytics_course_assessments": "Задания курса"
 }

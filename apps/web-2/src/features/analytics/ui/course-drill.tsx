@@ -14,6 +14,7 @@ import type { Filters } from '../model/filters'
 import { courseOptions } from '../queries'
 import { AsOf } from './as-of'
 import { BackLink } from './back-link'
+import { CourseHealth } from './course-health'
 
 const columns = (): DataColumn<ActivityDropoffRow>[] => [
   {
@@ -95,6 +96,7 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
           />
         </ListState>
       </section>
+      <CourseHealth filters={filters} courseId={courseId} data={data} />
     </div>
   )
 }

@@ -75,6 +75,9 @@ const pct = (p: MessageParams, key: string): string => {
   return typeof value === 'number' ? formatPercent(value) : text(p, key)
 }
 const hrs = (p: MessageParams, key: string): string => m.analytics_hours({ value: num(p, key) })
+/** A bottleneck signal in words (the course drill's table). */
+export const bottleneckLabel = (signal: ContentBottleneckSignal): string => bottleneckLabels[signal]()
+
 const bottleneck = (p: MessageParams): string => {
   const signal = p['signal']
   return v.is(vContentBottleneckSignal, signal) ? bottleneckLabels[signal]() : text(p, 'signal')

@@ -222,5 +222,20 @@
   "analytics_col_outliers": "Ауытқулар",
   "analytics_learner_action": "Не істеу керек",
   "analytics_learner_reasons": "Тәуекел белгілері",
-  "analytics_learner_last_intervention": "Соңғы араласу"
+  "analytics_learner_last_intervention": "Соңғы араласу",
+  "analytics_funnel_title": "Аяқтауға дейінгі жол",
+  "analytics_funnel_enrolled": "Тіркелгендер",
+  "analytics_funnel_active_7d": "7 күнде белсенді",
+  "analytics_funnel_completed": "Аяқтағандар",
+  "analytics_chapters_title": "Тараулар бойынша білім алушылар",
+  "analytics_health_title": "Курстың жай-күйі",
+  "analytics_health_freshness": "Мазмұн {days} күн бұрын жаңартылды",
+  "analytics_health_freshness_unknown": "Мазмұнның жаңартылуы туралы дерек жоқ",
+  "analytics_health_progress": "Орташа прогресс: {value}",
+  "analytics_health_backlog": "Тексеруді күтуде: {count}",
+  "analytics_bottlenecks_title": "Тар жерлер",
+  "analytics_col_signal": "Белгі",
+  "analytics_col_exits": "Кетулер",
+  "analytics_course_at_risk": "Тәуекел аймағындағы білім алушылар: {count}",
+  "analytics_course_assessments": "Курс тапсырмалары"
 }
