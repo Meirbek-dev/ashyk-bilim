@@ -1,21 +1,24 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { m } from '#/paraglide/messages'
 import { startEventStream } from '#/shared/api/events'
 import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { formatNumber } from '#/shared/i18n/format'
+import type { XpAwarded } from '#/shared/api/gen/types.gen'
 import { toast } from '#/shared/ui/toast'
 
+import { xpAwardToasts } from './model/notifications'
 import { applyCreated, applyRead } from './queries'
 
-/** "Report the XP I earn" is on unless the profile says otherwise (the settings' switch, B-SET-13). */
-async function xpToastsOn(queryClient: QueryClient): Promise<boolean> {
-  try {
-    const { profile } = await queryClient.ensureQueryData(dashboardOptions())
-    return profile.settings.notifications.xp_gain !== false
-  } catch {
-    return true
-  }
+/**
+ * The XP toasts for one award: "Report the XP I earn" is on unless the profile says otherwise (the settings' switch,
+ * B-SET-13); a level above the cached profile's (read before the award's refetch lands) adds the level-up toast.
+ */
+async function xpToasts(queryClient: QueryClient, award: XpAwarded): Promise<string[]> {
+  const profile = await queryClient
+    .ensureQueryData(dashboardOptions())
+    .then(data => data.profile)
+    .catch(() => null)
+  if (profile?.settings.notifications.xp_gain === false) return []
+  return xpAwardToasts(award, profile?.level ?? null)
 }
 
 /** The stream with this feature's own reactions: notifications change the cache, XP shows the ordinary toast. */
@@ -24,9 +27,7 @@ export function startLive(queryClient: QueryClient): () => void {
     if (event.event === 'notification.created') applyCreated(queryClient, event.payload)
     if (event.event === 'notification.read')
       applyRead(queryClient, event.payload.notification_id, { unread_count: event.payload.unread_count })
-    if (event.event === 'xp.awarded') {
-      const amount = formatNumber(event.payload.amount)
-      void xpToastsOn(queryClient).then(on => on && toast.add({ title: m.notifications_xp_awarded({ amount }) }))
-    }
+    if (event.event === 'xp.awarded')
+      void xpToasts(queryClient, event.payload).then(titles => titles.map(title => toast.add({ title })))
   })
 }

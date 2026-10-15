@@ -1,13 +1,16 @@
 import type { InfiniteData } from '@tanstack/react-query'
 import { linkOptions } from '@tanstack/react-router'
 
+import { m } from '#/paraglide/messages'
 import type {
   Notification,
   NotificationId,
   NotificationPage,
   NotificationPayload,
   NotificationType,
+  XpAwarded,
 } from '#/shared/api/gen/types.gen'
+import { formatNumber } from '#/shared/i18n/format'
 
 export const PAGE_SIZE = 20
 /** How many of the newest the bell's panel shows. */
@@ -80,4 +83,12 @@ export function markRead(data: Pages, id: NotificationId | null, at: number): Pa
   const read = (item: Notification): Notification =>
     item.read_at_unix === null && (id === null || item.id === id) ? { ...item, read_at_unix: at } : item
   return { ...data, pages: data.pages.map(page => ({ ...page, items: page.items.map(read) })) }
+}
+
+/** "+N XP", and "Level N!" when the award lifted the level above the one known before it (B-NOT-10, B-NOT-17). */
+export function xpAwardToasts(award: Pick<XpAwarded, 'amount' | 'level'>, previousLevel: number | null): string[] {
+  const titles = [m.notifications_xp_awarded({ amount: formatNumber(award.amount) })]
+  if (previousLevel !== null && award.level > previousLevel)
+    titles.push(m.notifications_level_up({ level: formatNumber(award.level) }))
+  return titles
 }

@@ -37,5 +37,6 @@
   "notifications_xp_awarded": "{amount} XP earned",
   "notifications_prefs_title": "What to send",
   "notifications_prefs_hint": "Notifications arrive only in the app: the bell and the Notifications page.",
-  "notifications_prefs_saved": "Notification settings saved"
+  "notifications_prefs_saved": "Notification settings saved",
+  "notifications_level_up": "New level: {level}"
 }

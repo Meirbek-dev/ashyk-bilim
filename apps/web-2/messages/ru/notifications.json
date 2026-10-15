@@ -39,5 +39,6 @@
   "notifications_xp_awarded": "Начислено {amount} XP",
   "notifications_prefs_title": "Что присылать",
   "notifications_prefs_hint": "Уведомления приходят только в приложение: на колокольчик и страницу «Уведомления».",
-  "notifications_prefs_saved": "Настройки уведомлений сохранены"
+  "notifications_prefs_saved": "Настройки уведомлений сохранены",
+  "notifications_level_up": "Новый уровень: {level}"
 }

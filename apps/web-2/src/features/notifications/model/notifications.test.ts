@@ -3,7 +3,14 @@ import { expect, expectTypeOf, test } from 'vite-plus/test'
 
 import type { Notification, NotificationPage, NotificationPayload, NotificationType } from '#/shared/api/gen/types.gen'
 
-import { badgeCount, markRead, NOTIFICATION_TYPES, notificationTarget, prependNotification } from './notifications'
+import {
+  badgeCount,
+  markRead,
+  NOTIFICATION_TYPES,
+  notificationTarget,
+  prependNotification,
+  xpAwardToasts,
+} from './notifications'
 
 const COURSE = '0190a5d2-0000-7000-8000-00000000000c'
 const ACTIVITY = '0190a5d2-0000-7000-8000-00000000000a'
@@ -96,4 +103,10 @@ test('B-NOT-08 a read marks one notification, or all of them, and keeps earlier 
 test('B-NOT-09 the settings list every notification type once', () => {
   expectTypeOf<(typeof NOTIFICATION_TYPES)[number]>().toEqualTypeOf<NotificationType>()
   expect(new Set(NOTIFICATION_TYPES).size).toBe(NOTIFICATION_TYPES.length)
+})
+
+test('B-NOT-17 an award above the known level adds the level-up toast; an unknown previous level adds none', () => {
+  expect(xpAwardToasts({ amount: 10, level: 3 }, 2)).toEqual(['Начислено 10 XP', 'Новый уровень: 3'])
+  expect(xpAwardToasts({ amount: 10, level: 3 }, 3)).toEqual(['Начислено 10 XP'])
+  expect(xpAwardToasts({ amount: 10, level: 3 }, null)).toEqual(['Начислено 10 XP'])
 })
