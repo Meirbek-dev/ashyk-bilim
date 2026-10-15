@@ -6,8 +6,8 @@ import type { CourseLearning, LearningInput } from '#/shared/api/gen/types.gen'
 // "What you'll learn" edited as text, one point per line; a leading emoji stays the point's emoji.
 
 /** `UpdateCourseRequest.learnings`: at most 30 points of 1..=300 characters (server `validate_learnings`). */
-export const MAX_LEARNINGS = 30
-export const MAX_LEARNING_LENGTH = 300
+const MAX_LEARNINGS = 30
+const MAX_LEARNING_LENGTH = 300
 const MAX_EMOJI_LENGTH = 16
 
 /** Unicode scalars, as the server counts (`chars()`), not UTF-16 units. */
