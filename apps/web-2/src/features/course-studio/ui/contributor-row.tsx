@@ -18,11 +18,15 @@ import { roleLabels } from './role-labels'
 
 type ContributorRowProps = { courseId: string; row: Contributor; manage: boolean }
 
-/** One roster row: name, role (a menu for managers), and remove; an application row offers accept and reject. */
+/**
+ * One roster row: name, role (a menu for managers), and remove; an application row offers accept and reject, a
+ * deactivated co-author's row bringing back.
+ */
 export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   const update = useMutation(updateContributorOptions(useQueryClient(), courseId))
   const role = row.role
   const applying = row.status === 'pending'
+  const inactive = row.status === 'inactive'
   const name = row.display_name || row.username
   const patch = (body: UpdateContributorRequest, done: string) =>
     update.mutate(
@@ -37,7 +41,7 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
       if (isAssignableRole(value)) patch({ role: value }, m.studio_role_saved())
     },
   }
-  const changeable = manage && role !== 'creator' && !applying
+  const changeable = manage && role !== 'creator' && !applying && !inactive
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -73,6 +77,16 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
           >
             {update.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.studio_application_accept()}
+          </Button>
+        ) : null}
+        {manage && inactive ? (
+          <Button
+            variant="secondary"
+            onClick={() => patch({ status: 'active' }, m.studio_contributor_reactivated())}
+            disabled={update.isPending}
+          >
+            {update.isPending ? <Spinner data-icon="inline-start" /> : null}
+            {m.studio_contributor_reactivate()}
           </Button>
         ) : null}
         {manage && role !== 'creator' ? <RemoveContributor courseId={courseId} row={row} applying={applying} /> : null}

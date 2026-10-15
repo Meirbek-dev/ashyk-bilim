@@ -107,11 +107,16 @@ export type RoleForm = v.InferOutput<typeof roleSchema>
 /** A menu value that is a role the team can be given. */
 export const isAssignableRole = (value: string): value is ContributorRole => v.is(vContributorRole, value)
 
-/** The team (creator first, as the server orders it) and the open applications. Inactive rows are not shown. */
-export function splitRoster(rows: readonly Contributor[]): { team: Contributor[]; pending: Contributor[] } {
+/** The team (creator first, as the server orders it), the open applications and the deactivated co-authors. */
+export function splitRoster(rows: readonly Contributor[]): {
+  team: Contributor[]
+  pending: Contributor[]
+  inactive: Contributor[]
+} {
   return {
     team: rows.filter(row => row.status === 'active'),
     pending: rows.filter(row => row.status === 'pending'),
+    inactive: rows.filter(row => row.status === 'inactive'),
   }
 }
 

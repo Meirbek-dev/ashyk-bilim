@@ -270,5 +270,9 @@
   "studio_activity_locked_hidden": "Learners have submitted work here, so the activity can’t be deleted. It is already hidden: learners don’t see it, their submissions and grades are kept.",
   "studio_chapter_locked_title": "The chapter “{name}” can’t be deleted",
   "studio_chapter_locked_consequence": "Its activities hold learners’ submissions; deleting would erase them. Hide the chapter instead: all its activities are unpublished, the submissions and grades are kept.",
-  "studio_chapter_locked_hidden": "Its activities hold learners’ submissions, so it can’t be deleted. All its activities are already hidden; the submissions and grades are kept."
+  "studio_chapter_locked_hidden": "Its activities hold learners’ submissions, so it can’t be deleted. All its activities are already hidden; the submissions and grades are kept.",
+  "studio_inactive_title": "Deactivated co-authors",
+  "studio_inactive_hint": "They cannot open the course; bring them back to the team or remove them.",
+  "studio_contributor_reactivate": "Bring back to the team",
+  "studio_contributor_reactivated": "The co-author is back on the team"
 }

@@ -97,16 +97,17 @@ const row = (patch: Partial<Contributor>): Contributor => ({
 })
 
 describe('team', () => {
-  test('B-CST-15 the team keeps the server order; applications are listed apart; inactive rows are hidden', () => {
+  test('B-CST-15 the team keeps the server order; applications and deactivated co-authors are listed apart', () => {
     const rows = [
       row({ user_id: 'c', role: 'creator' }),
       row({ user_id: 'p', status: 'pending' }),
       row({ user_id: 'm', role: 'maintainer' }),
       row({ user_id: 'x', status: 'inactive' }),
     ]
-    const { team, pending } = splitRoster(rows)
+    const { team, pending, inactive } = splitRoster(rows)
     expect(team.map(r => r.user_id)).toEqual(['c', 'm'])
     expect(pending.map(r => r.user_id)).toEqual(['p'])
+    expect(inactive.map(r => r.user_id)).toEqual(['x'])
   })
 })
 
