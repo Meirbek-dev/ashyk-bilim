@@ -2820,3 +2820,24 @@ as before.
 - **The web does not compress**: nginx gzips HTML, JS and CSS (`gzip_proxied any`); srvx stays plain.
   Unhashed static files (themes, favicon, robots.txt) carry `Cache-Control: no-cache` (ETag revalidation),
   hashed `/assets/` stay `public, max-age=31536000, immutable`, documents `private, no-store`.
+
+## web-2 parity choices against the old web (2026-10-16)
+
+The lane-A parity audit (legacy `apps/web` -> `apps/web-2`) restored most lost functions; these are the ones
+deliberately not restored, or restored differently:
+
+- **Co-authors**: rows the old web deactivated (`status: inactive`) are listed on the team tab with "Вернуть в
+  команду" and "Убрать из команды"; web-2 offers no "deactivate" of its own - removing covers it.
+- **Course tags are not edited**: the old web edited `tags` but never showed or searched them.
+- **No "publish selected" in the grading queue**: "Опубликовать оценки" publishes every graded work in one call; a
+  single work is published from its review.
+- **No learner preview of a file task**: an upload there would be a real attempt (lessons preview in the player,
+  graded work on their own pages).
+- **The AI feedback draft is appended** to the grader's feedback ("Добавить в отзыв") instead of replacing it after a
+  confirmation: nothing the grader wrote is lost, so no dialog.
+- **The lesson outline ("На этой странице") is a list above the page**, not a side column and a phone sheet: the
+  player's right column belongs to the AI panel.
+- **Video start/end, autoplay and mute stay unset and unapplied** (player SPEC): neither the studio nor the player
+  carries them.
+- **Gradebook summary tiles and roll-ups are not rebuilt**: the gradebook is keyset-paged, so totals would count only
+  loaded rows; the teacher inbox and the "needs grading" filter answer the same question.
