@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 import type { Course } from '#/shared/api/gen/types.gen'
 
 import { outlineSyllabus } from '../model/course'

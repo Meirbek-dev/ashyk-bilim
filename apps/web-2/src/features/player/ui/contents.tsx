@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { LearnerCourseState } from '#/shared/api/gen/types.gen'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 import { ContentsRow } from './contents-row'
 

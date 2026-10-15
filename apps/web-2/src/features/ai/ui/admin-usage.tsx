@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 import { budgetUsed } from '../model/ai'
 import { usageSummaryOptions } from '../queries'

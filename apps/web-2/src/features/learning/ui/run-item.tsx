@@ -1,7 +1,7 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 import type { TrailRun } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'

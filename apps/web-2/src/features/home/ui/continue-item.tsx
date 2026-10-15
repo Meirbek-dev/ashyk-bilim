@@ -3,7 +3,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import type { ContinueLearning } from '#/shared/api/gen/types.gen'
 import { buttonVariants } from '#/shared/ui/button'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 /** A started course: its next activity, the server's progress and the way back into the player. */
 export function ContinueItem({ item, primary }: { item: ContinueLearning; primary: boolean }) {

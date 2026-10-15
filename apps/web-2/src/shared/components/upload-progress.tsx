@@ -1,7 +1,7 @@
 import { m } from '#/paraglide/messages'
 import { formatFileSize } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
-import { Progress, ProgressValue } from '#/shared/ui/progress'
+import { Progress, ProgressValue } from './progress'
 
 /** The running upload: a bar with "12 MB of 450 MB" and the percent, and its cancel button. */
 export function UploadProgress({

@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/ui/button'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 import { courseCertificatesOptions, learnerStateOptions } from '../queries'
 import { BackToCourse } from './back-to-course'

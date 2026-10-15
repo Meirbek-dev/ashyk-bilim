@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { formatNumber } from '#/shared/i18n/format'
-import { Progress } from '#/shared/ui/progress'
+import { Progress } from '#/shared/components/progress'
 
 import { activeStreak, levelProgress } from '../model/achievements'
 import { achievementsOptions } from '../queries'
