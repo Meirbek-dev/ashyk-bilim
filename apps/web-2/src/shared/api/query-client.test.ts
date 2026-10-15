@@ -72,3 +72,17 @@ test('a 401 while an upload is held keeps the page; once the last hold lets go, 
   expect(client.getQueryData(key)).toBeNull()
   expect(guards).toBe(1)
 })
+
+test('clearing the cache (the SSR teardown after the response) or collecting the session is not a sign-out', () => {
+  let guards = 0
+  const client = createQueryClient(async () => void (guards += 1))
+  const key = sessionOptions().queryKey
+  client.setQueryData(key, session('a'))
+  client.clear()
+  expect(guards).toBe(0)
+  // Read again later: the same account is no change, an anonymous answer is a sign-out.
+  client.setQueryData(key, session('a'))
+  expect(guards).toBe(0)
+  client.setQueryData(key, null)
+  expect(guards).toBe(1)
+})

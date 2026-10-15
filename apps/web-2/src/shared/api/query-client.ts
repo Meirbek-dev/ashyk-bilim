@@ -67,10 +67,15 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
   })
   // A session that goes away or changes hands (401 anywhere, sign-out, another account signed in from another tab and
   // seen on a focus refetch) re-runs the guards. On a switch to another account nothing of the previous one stays.
+  // Only an answer counts (a guest is `null`): a session query without data is not a sign-out. The SSR teardown clears
+  // the cache after the response (a guard re-run there loads every route again outside the request), and garbage
+  // collection drops an unobserved one.
   const sessionKey = sessionOptions().queryKey
   let user: string | null = null
   queryClient.getQueryCache().subscribe(() => {
-    const now = queryClient.getQueryData(sessionKey)?.user_id ?? null
+    const session = queryClient.getQueryData(sessionKey)
+    if (session === undefined) return
+    const now = session?.user_id ?? null
     if (now === user) return
     const previous = user
     user = now
