@@ -23,9 +23,9 @@ export function ImageView({ src, width, editable }: ImageViewProps) {
           className="absolute top-2 right-2 size-6 rounded-md bg-background/80 p-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
         />
       </DialogTrigger>
-      <DialogContent className="max-h-dvh overflow-auto sm:max-w-5xl">
+      <DialogContent className="flex max-h-dvh flex-col sm:max-w-5xl">
         <DialogTitle className="sr-only">{m.editor_image_alt()}</DialogTitle>
-        <img src={src} alt={m.editor_image_alt()} className="h-auto w-full" />
+        <img src={src} alt={m.editor_image_alt()} className="min-h-0 w-full object-contain" />
       </DialogContent>
     </Dialog>
   )
