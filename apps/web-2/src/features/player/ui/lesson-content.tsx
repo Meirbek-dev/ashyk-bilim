@@ -6,7 +6,8 @@ import { m } from '#/paraglide/messages'
 import type { ActivityId } from '#/shared/api/gen/types.gen'
 import { Skeleton } from '#/shared/ui/skeleton'
 
-import { lessonDocument } from '../model/lesson'
+import { lessonDocument, pageWithOutline } from '../model/lesson'
+import { PageOutline } from './page-outline'
 import { activityOptions } from '../queries'
 
 /**
@@ -17,11 +18,15 @@ export function LessonContent({ activityId, onVideoEnded }: { activityId: Activi
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const content = lessonDocument(activity.activity_type, activity.activity_sub_type, activity.content)
   if (!content) return <p className="text-muted-foreground">{m.player_empty()}</p>
+  const page = pageWithOutline(content)
   return (
-    <Suspense fallback={<Skeleton className="h-row w-full" />}>
-      <VideoEndedContext value={onVideoEnded ?? null}>
-        <BlockViewer content={content} />
-      </VideoEndedContext>
-    </Suspense>
+    <>
+      {page.outline.length > 0 ? <PageOutline outline={page.outline} /> : null}
+      <Suspense fallback={<Skeleton className="h-row w-full" />}>
+        <VideoEndedContext value={onVideoEnded ?? null}>
+          <BlockViewer content={page.content} />
+        </VideoEndedContext>
+      </Suspense>
+    </>
   )
 }

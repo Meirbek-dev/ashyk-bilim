@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { lessonDocument } from './lesson'
+import { lessonDocument, pageWithOutline } from './lesson'
 
 describe('lesson content', () => {
   test('B-PLY-08 a page is shown as stored; an empty page has nothing to show', () => {
@@ -32,4 +32,20 @@ describe('lesson content', () => {
     })
     expect(lessonDocument('document', 'document_pdf', {})).toBeNull()
   })
+})
+
+const heading = (level: number, text: string) => ({
+  type: 'heading',
+  attrs: { level },
+  content: [{ type: 'text', text }],
+})
+
+test('B-PLY-17 a page with two headings or more gets "On this page", depths below its top level', () => {
+  const two = pageWithOutline({ type: 'doc', content: [heading(2, 'A'), heading(3, 'B')] })
+  expect(two.outline.map(entry => [entry.text, entry.depth])).toEqual([
+    ['A', 0],
+    ['B', 1],
+  ])
+  expect(pageWithOutline({ type: 'doc', content: [heading(2, 'A')] }).outline).toEqual([])
+  expect(pageWithOutline('<p>old</p>').outline).toEqual([])
 })
