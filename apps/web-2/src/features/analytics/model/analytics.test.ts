@@ -24,10 +24,10 @@ describe('analytics model', () => {
     expect(rows[0]?.progress_pct).toBe(40)
   })
 
-  test('B-ANL-16 CSV links are relative API paths with the filters and the time zone', () => {
+  test('B-ANL-16 CSV links are relative API paths with the filters, the time zone and the interface language', () => {
     const hrefs = exportHrefs(v.parse(filtersSchema, { window: '7d', course: COURSE }))
     expect(hrefs.atRisk).toBe(
-      `/api/v2/analytics/teacher/exports/at-risk.csv?window=7d&compare=previous_period&bucket=day&course_ids=${COURSE}&timezone=Asia%2FAlmaty`,
+      `/api/v2/analytics/teacher/exports/at-risk.csv?window=7d&compare=previous_period&bucket=day&course_ids=${COURSE}&timezone=Asia%2FAlmaty&lang=ru`,
     )
     expect(hrefs.gradingBacklog.startsWith('/api/v2/analytics/teacher/exports/grading-backlog.csv?')).toBe(true)
     expect(hrefs.courseProgress).toContain('course-progress.csv?')

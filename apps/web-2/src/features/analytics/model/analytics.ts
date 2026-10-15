@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 
+import { getLocale } from '#/paraglide/runtime'
 import { client } from '#/shared/api/gen/client.gen'
 import type {
   ExportAssessmentOutcomesData,
@@ -33,11 +34,12 @@ export function viewTarget(view: Pick<SavedView, 'view_type' | 'query'>): { tab:
 
 /**
  * The CSV exports exportAtRisk(), exportCourseProgress(), exportAssessmentOutcomes() and exportGradingBacklog() are
- * browser downloads, not fetches: plain links to their URLs with the page's filters. Relative, so they stay
+ * browser downloads, not fetches: plain links to their URLs with the page's filters, in the interface language
+ * (`?lang=`: a link cannot set `Accept-Language`). Relative, so they stay
  * same-origin (`vp dev` proxies /api/v2); the paths come from the client.
  */
 export function exportHrefs(filters: Filters) {
-  const query = apiQuery(filters)
+  const query = { ...apiQuery(filters), lang: getLocale() }
   return {
     atRisk: client.buildUrl<ExportAtRiskData>({
       url: '/api/v2/analytics/teacher/exports/at-risk.csv',

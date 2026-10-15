@@ -56,7 +56,7 @@ test('B-CRT-02 an unknown code is not valid and answers 404; the code is read wi
 test('B-CRT-04 "Download PDF" is a plain link to the server PDF', async ({ page, issued }) => {
   await page.goto(`/certificates/${issued.code}/verify`)
   const link = page.getByRole('link', { name: m.certificates_download_pdf({}, ru) })
-  await expect(link).toHaveAttribute('href', `/api/v2/certificates/${issued.code}/pdf`)
+  await expect(link).toHaveAttribute('href', `/api/v2/certificates/${issued.code}/pdf?lang=ru`)
   const [download] = await Promise.all([page.waitForEvent('download'), link.click()])
   expect(download.suggestedFilename()).toBe(`certificate-${issued.code}.pdf`)
 })

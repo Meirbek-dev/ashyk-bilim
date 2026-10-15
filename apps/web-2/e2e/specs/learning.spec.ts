@@ -102,7 +102,7 @@ test('B-LRN-07 a finished course lists its certificate with the PDF and the publ
   const item = certificates.getByRole('listitem').filter({ hasText: code })
   await expect(item.getByRole('link', { name: course.name })).toBeVisible()
   const pdf = item.getByRole('link', { name: m.certificates_download_pdf({}, ru) })
-  await expect(pdf).toHaveAttribute('href', `/api/v2/certificates/${code}/pdf`)
+  await expect(pdf).toHaveAttribute('href', `/api/v2/certificates/${code}/pdf?lang=ru`)
   const download = await page.request.get(`/api/v2/certificates/${code}/pdf`)
   expect(download.headers()['content-type']).toBe('application/pdf')
 
