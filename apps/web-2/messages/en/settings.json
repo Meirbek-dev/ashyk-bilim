@@ -103,6 +103,7 @@
   "settings_appearance_title": "Appearance",
   "settings_appearance_hint": "The theme and mode change when you press Save, without a reload; the theme and language are saved to your profile.",
   "settings_field_theme": "Theme",
+  "settings_theme_search": "Find a theme",
   "settings_field_mode": "Mode",
   "settings_gamification_title": "Achievements",
   "settings_gamification_hint": "Messages about XP and your place in the overall ranking.",
