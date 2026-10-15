@@ -40,6 +40,15 @@ export type Tab = (typeof TABS)[number]
 /** Rows per analytics table: the only numbered pages of the app (spec 7.6). */
 export const PAGE_SIZE = 25
 
+/** The tab badges (B-ANL-33): open alerts on the overview, learners at risk on learners; 0 shows nothing. */
+export const tabCounts = (overview: {
+  alerts: readonly unknown[]
+  summary: { at_risk_learners: { value: number } }
+}): Partial<Record<Tab, number>> => ({
+  overview: overview.alerts.length,
+  learners: overview.summary.at_risk_learners.value,
+})
+
 /** How many filters differ from the defaults: the "Filters (n)" button at phone width. */
 export const activeFilters = (filters: Filters): number =>
   [

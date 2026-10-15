@@ -13,6 +13,7 @@ import {
   toFilterForm,
   COURSE_SORTS,
   tableSort,
+  tabCounts,
 } from './filters'
 import { adminAnalyticsSearchSchema } from '../route'
 
@@ -91,4 +92,11 @@ test('B-ANL-31 the admin period lives in the URL; unknown or none is 28 days', (
   expect(v.parse(adminAnalyticsSearchSchema, { window: '7d' })).toEqual({ window: '7d' })
   expect(v.parse(adminAnalyticsSearchSchema, { window: '1y' })).toEqual({ window: '28d' })
   expect(v.parse(adminAnalyticsSearchSchema, {})).toEqual({ window: '28d' })
+})
+
+test('B-ANL-33 the overview tab counts open alerts, the learners tab learners at risk', () => {
+  expect(tabCounts({ alerts: [1, 2], summary: { at_risk_learners: { value: 5 } } })).toEqual({
+    overview: 2,
+    learners: 5,
+  })
 })
