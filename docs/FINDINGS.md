@@ -1,13 +1,8 @@
 # Production findings
 
-Open production/infrastructure issues, first recorded during the 2026-08-16
-architecture analysis and pruned after the 2026-09-30 cutover. Items that died
-with the legacy Python API, or were fixed by the v2 stack, were removed (see git
-history). Ordered by severity.
-
-"Fixed in repo" = done by the stage 1 modernization (`docs/INFRA.md`); prod
-gets it with the stage 1 cutover (`docs/RUNBOOK.md` section 1). Delete those
-items once the cutover has run.
+Open issues and accepted risks, ordered by severity. Keep stable finding
+numbers for code references; remove resolved items unless they document a
+constraint or are cited by code. Historical reports are in Git.
 
 ## Critical
 
@@ -22,16 +17,6 @@ secrets, restorable by one script and checked by `just restore-drill`
 (RUNBOOK 3.5). Copying an archive off the host by hand before risky work is
 the only offsite protection left.
 
-### 2. Redis has no AUTH
-**Fixed (cutover 2026-10-03).** Redis runs with
-`--requirepass` (`REDIS_PASSWORD`); the server URL carries it.
-
-### 1. Judge0 has no auth token
-**Fixed (cutover 2026-10-03).** Judge0 requires
-`AUTHN_TOKEN` (`JUDGE0_AUTHN_TOKEN`, sent by the server as
-`AB__JUDGE0__API_KEY`); smoke checks that a request without it gets 401. Its
-port is not published.
-
 ## High
 
 ### 4. Admin credentials were shared in plaintext
@@ -39,14 +24,9 @@ The production admin password was pasted into a chat session during rewrite
 planning. Rotate it (now a Zitadel credential) and enable MFA on the admin account.
 
 ### 30. The production SSH password was written into a repository file
-On 2026-10-02 the host's SSH password was pasted into `docs/MODERNIZATION-STAGE-1.md`
+On 2026-10-02 the host's SSH password was pasted into a temporary migration-plan file
 (staged, never committed or pushed; scrubbed before the first commit). Rotate it and
 switch the host to key-only authentication (`PasswordAuthentication no`).
-
-### 8. Judge0 shares the production Postgres and Redis instances
-**Fixed (cutover 2026-10-03).** Judge0 gets its own
-`judge0-db` and `judge0-redis` on the internal `exec-net` and has no network
-path to the app's `db` or `redis`.
 
 ## Medium
 
@@ -59,22 +39,11 @@ Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over
 deploys an outage, a failed nightly backup or a filling disk goes unnoticed
 until someone looks.
 
-### 10. Legacy secrets linger in the production `.env`
-**Fixed (cutover 2026-10-03).** `split-env.sh` moves
-the `PLATFORM_*` values out of `.env` into `.env.legacy-removed`, preflight
-fails while any remain in `.env`, and RUNBOOK 1.5 deletes that file.
-
-### 11. deploy.sh builds on the production box
-**Fixed (cutover 2026-10-03).** CI builds both images,
-smoke-tests the full stack and publishes `<sha>` tags to GHCR; `just deploy`
-pulls them and refuses a sha without images. Migrations are still
-forward-only: deploy dumps the database before a release that changes them.
-
-### 13. Frontend tests/E2E have no CI path
-Half closed: lint, typecheck, unit tests, the API contract and the error-code
-check run in CI (`ci.yaml`, web-gates). Still open: Playwright runs only by
-hand, and `scripts/run-vitest.mjs` pins Vitest over a stale vite-plus bundle
-(remove when vite-plus catches up).
+### 13. Production frontend E2E runs only by hand
+Lint, typecheck, unit tests, API contract and error-code checks run in CI.
+The replacement frontend has a `web2-e2e` CI job; production Next.js Playwright
+coverage still runs by hand. `apps/web/scripts/run-vitest.mjs` also pins Vitest
+over the vite-plus bundle; remove the wrapper when the bundled version works.
 
 ### 31. Responses with more than 4k of headers are a 502 at the university proxy
 Found 2026-10-04: the home page answered 502 through the proxy (200 at our nginx)
@@ -131,6 +100,12 @@ exist only in pre-cutover backups.
 ### 28. Leaderboards may carry inflated XP
 Legacy `POST /gamification/xp` let learners award themselves XP; imported totals
 may be inflated. Owner call whether to reset XP.
+
+### 33. Concurrent authenticator setup has a generic failure
+Historical QA (UX-126) found that starting TOTP setup in a second tab replaces
+the first tab's secret in Zitadel; the first tab then reports an invalid code.
+No per-enrollment nonce was implemented in that pass. Reverify before changing
+this flow; the old QA ledger is in Git history.
 
 ## Resolved by v2 (kept because code cites the numbers)
 

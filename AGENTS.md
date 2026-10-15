@@ -16,9 +16,14 @@
 - `docs/INFRA.md` - stack, networks, secrets, web contract.
 - `docs/RUNBOOK.md` - deploy, rollback, backup, restore, certificates, incidents.
 - `docs/FINDINGS.md` - open production and infra issues.
-- `docs/archive/` - finished one-off reports (incl. the GAUNTLET browser QA ledger and loop brief).
-- Large docs (`DECISIONS.md` ~160 KB, `MODERNIZATION-STAGE-2.md` ~150 KB, `MODERNIZATION-STAGE-1.md`,
-  `ARCHITECTURE.md`): never read whole. `grep -n '^##' <doc>` is the index; read only the matching section.
+- `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
+- `docs/web/DESIGN.md` - replacement frontend design system.
+- `docs/MODERNIZATION-STAGE-2.md`, `docs/STAGE-2-CUTOVER.md`, `docs/web/ACCEPTANCE.md` -
+  remaining frontend rollout scope, procedure and acceptance; `apps/web-2/BACKLOG.md` lists open work.
+- Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
+  use `rg -n '^##' <doc>` as the index; read only the matching section.
+- Keep docs about current behavior, constraints, operations and unfinished work.
+  Completed reports, audits and superseded plans belong in Git history.
 
 ## Rules
 

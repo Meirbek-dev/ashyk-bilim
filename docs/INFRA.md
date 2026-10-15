@@ -1,13 +1,9 @@
 # Infrastructure (as built)
 
-Stage 1 modernization, implemented in commit `40e0512` and the files below.
-Spec (Russian): `docs/MODERNIZATION-STAGE-1.md`. Deviations from it, with
-reasons: `docs/DECISIONS.md`, "Stage 1 modernization" (2026-10-02).
-Operations: `docs/RUNBOOK.md`.
-
-**Status 2026-10-02:** prod (`cs-mooc.tou.edu.kz`, `~/openu-prod`) still runs
-the legacy stack (`docker-compose.yml`, `extra/`, one `.env`, images built on the
-host). The switch is RUNBOOK "1. Cutover".
+Production runs the Rust API and Next.js frontend at `cs-mooc.tou.edu.kz`
+from `~/openu-prod`, behind the university TLS proxy. The replacement
+TanStack frontend is pending cutover (`docs/STAGE-2-CUTOVER.md`).
+Operations: `docs/RUNBOOK.md`; design rationale: `docs/DECISIONS.md`.
 
 ## Layout
 
@@ -28,10 +24,6 @@ infra/
                       restore-drill, renew-certificate, host-inventory, split-env
 .github/workflows/ci.yaml   gates, images, stack smoke, publish
 ```
-
-The legacy stack (`docker-compose.yml`, `extra/`, `judge0.conf`,
-`docs/DEPLOYMENT.md`) was deleted after the 2026-10-03 cutover; last version in
-git at `f5e493c4`.
 
 Root `justfile` recipes: `dev-up`, `dev-down`, `dev-reset`, `bootstrap`,
 `stack-up`, `stack-down`, `smoke`, `ci-infra`, `preflight`, `deploy`,
@@ -317,7 +309,7 @@ cancelled mid-run):
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
 | server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor; `just test` is the same suite without coverage); nextest profile `ci`: a test running 5 min is killed, JUnit report uploaded on failure |
 | web-gates | web changed | `just ci-web`: lint, typecheck, unit tests, `check:contracts` (regenerates the client into scratch and diffs), error codes, messages |
-| web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen messages`, `verify` (its codegen gate diffs the committed SDK and route tree) (check, tests, `gates.ts all`; G-13 freeze from the pushed range), `build` with chunk budgets |
+| web2-gates | web2 changed | in `apps/web-2`: `bun install`, Playwright chromium, `codegen messages`, `verify` (its codegen gate diffs the committed SDK and route tree) (check, tests, `gates.ts all`), `build` with chunk budgets |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke, `bash -n`, `nginx -t`), shellcheck, actionlint, gitleaks |
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` when `web` changed, `ashyq-web-2` when `web2` changed; all three on `main` and `release/**`; web build args from the repo variable `PROD_DOMAIN` |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` (compose.prod.yaml's own web env) and `just smoke` again |
@@ -394,37 +386,16 @@ plain http on port 18080 (`DRILL_HTTP_PORT`), self-signed cert, no Judge0;
 prints `users`/`courses` counts and elapsed time, then tears everything down.
 `RESTORE_DIR` sets the scratch dir (default `${TMPDIR:-/tmp}/ashyq-restore`).
 
-## Gates baseline
+## Quality gates
 
-Recorded 2026-10-02 (HEAD `e1117fe` plus the stage 1 tree), Windows 11, bun
-1.4.2, Rust 1.98.1. Every gate below is required in CI; none carries
-`continue-on-error`.
+`just ci-server`, `just ci-web` and `just ci-web2` run each app's local gates;
+`just ci` adds infrastructure checks. Hosted CI also builds images, scans secrets
+and runs stack/E2E jobs. The workflow and app agent guides define current checks.
+Run them on the release being considered; historical baseline results are in Git.
 
-Web (`apps/web`, in production since the 2026-10-04 rollback; its freeze is lifted; CI job web-gates = `just ci-web`):
-
-| Gate | Command | Status |
-| --- | --- | --- |
-| install | `bun install --frozen-lockfile` (repo root) | green |
-| lint | `bun run lint` (`vp lint --type-aware --type-check`, non-mutating) | green: the 2 baseline errors (`codeChallengeMarkdownValidation.ts`, `MarkdownContent.tsx`) were fixed in the stage 1 commit; warnings do not fail it |
-| typecheck | `bun run typecheck` | green |
-| test | `bun run test` | green (262 files, 1120 tests) |
-| contract | `bun run generate:api-types`, `bun run check:contracts`, `git diff --exit-code` | green |
-| error codes | `bun run check:error-codes` | green (41/41 codes in ru-RU, kk-KZ, en-US) |
-| build | `bun run build` | not a CI gate (the image build covers it) |
-| e2e | `bun run test:e2e` (Playwright) | not in CI, manual |
-| fmt | `bunx vp fmt --check` | not a gate; red, 75 of 1813 files |
-
-Tooling changes made for the baseline: `lint` no longer mutates files (the old
-command is `lint:fix`); `apps/web/vite.config.ts` excludes
-`src/lib/api/generated/` from lint (the deleted root `vite.config.ts` did);
-`scripts/generate-api-types.mjs` runs `vp fmt` from `apps/web`.
-
-Server (`apps/server`): `fmt-check`, `clippy`, `openapi-check` green locally;
-`sqlx-check`, `test`, `deny`, `machete`, `cov` need the dev stack and run in CI.
-`just ci-server` runs the same server gates locally; `just ci` runs all local app/infra gates.
-Image builds, secret scans and stack/E2E jobs remain hosted checks. `just setup` installs versions
-from `apps/server/tools.env`, dependencies, generated Claude skill copies and the commit hook.
-`just doctor` checks prerequisites in the recipe shell. Windows recipes use Git Bash's `sh`.
+`just setup` installs pinned tools, dependencies, generated compatibility skill
+copies and hooks. `just doctor` checks prerequisites inside the recipe shell.
+Windows recipes use Git Bash's `sh`.
 
 ## Web contract for stage 2
 
@@ -510,15 +481,6 @@ builds `ashyq-web-2:ci-<sha>` under the same condition; three shards, 30 min eac
 failure the HTML report, traces and server log as an artifact. Gates only the
 `ashyq-web-2` retag (`publish-web2`).
 
-## Verified in CI (2026-10-03)
-
-Branch `ci/stage1-verify` (run 37062396376, `main` at 39eabe9 plus the worker
-healthcheck and workflow fixes): infra gates, server gates on the `just dev-up`
-stack, both images, full-stack smoke from zero with the real images, and the
-second smoke with the stub web (R-09). Web gates were green on `main` at 39eabe9
-(run 37053137010). The GHCR packages are public (anonymous pull works).
-Any `ci/**` branch runs gates, images and stack smoke without publishing.
-
 ## Known gaps
 
 - **The proxy in front of prod limits response headers to 4k.** A larger response
@@ -527,12 +489,6 @@ Any `ci/**` branch runs gates, images and stack smoke without publishing.
   and smoke fails when the home page headers exceed 3500 bytes; smoke still does
   not go through the proxy itself.
 
-- ~~Prod cutover pending~~ - done 2026-10-03: release `f5e493c4` (branch
-  `release/stage1`), downtime 91 s, smoke green, real client addresses in the
-  nginx log (proxy `192.168.1.46/32`), Judge0 healthy on its own db/redis.
-  The host checkout is `release/stage1`; move it to `main` once `main` publishes again.
-  First backup with the pg_dump hooks: 1.16 GB, no service stopped. Restore drill
-  on it: 160 s, row counts match prod (RTO target 2 h met with margin).
 - **Releases come from `main` or `release/**`** (all gates run before publishing). Since 2026-10-10 the
   old web builds on `main` again: it reads the Paraglide catalogs (34d8cd2)
   through a load-time conversion and the G-13 freeze is lifted, so a release

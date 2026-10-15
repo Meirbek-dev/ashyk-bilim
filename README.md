@@ -12,7 +12,7 @@ Learning platform: Rust API, production Next.js app, and a replacement TanStack 
 | `infra/` | nginx, Postgres init, Judge0, storage, env templates, ops scripts |
 | `compose*.yaml` | Stack definitions: shared, dev, prod, smoke |
 | `justfile` | Single entry point for every task |
-| `docs/` | Architecture, decisions, infra, runbook, QA ledger |
+| `docs/` | Architecture, decisions, operations, open issues and frontend rollout |
 
 ## Quick start
 
@@ -33,7 +33,7 @@ Focused checks: `just server test-unit -E 'test(name)'`, `just web test <file>`,
 `just web2 test --project unit <file>` (or `--project browser`).
 Batch gates: `just ci-server`, `just ci-web`, `just ci-web2`; `just ci` runs all local
 application/infra gates. Hosted CI also builds images, scans secrets and runs stack/E2E tests.
-The web-2 commit hook runs full verification; no per-edit or Stop hooks repeat it.
+The commit hook checks staged files; pre-push runs `just check`. No per-edit or Stop hooks repeat checks.
 
 ## Production
 

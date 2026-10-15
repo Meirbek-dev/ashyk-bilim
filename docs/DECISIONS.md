@@ -1809,10 +1809,10 @@ BUG-183): `courses.archived_at/archived_by`.
 
 ## Stage 1 modernization: owner answers and deviations from the spec (2026-10-02)
 
-Spec: `docs/MODERNIZATION-STAGE-1.md`. As built: `docs/INFRA.md`; operations:
-`docs/RUNBOOK.md`. Prod cutover is not executed yet (RUNBOOK 1).
+As built: `docs/INFRA.md`; operations: `docs/RUNBOOK.md`.
+The infrastructure cutover completed on 2026-10-03.
 
-Owner answers (spec section 10), which replace the defaults there:
+Owner decisions:
 
 - **No offsite backups.** `./backups` on the host, 7 days. No S3 target, so
   no archive encryption either (Q2). Accepted risk: FINDINGS #3.
@@ -1861,15 +1861,12 @@ Deviations decided during implementation:
 - **Judge0 runs behind the compose profile `judge0`.** It needs `privileged`
   and host cgroups; CI runners and rootless dev machines may not start it.
   Prod sets `COMPOSE_PROFILES=judge0`; smoke runs without it.
-- **Root `vite.config.ts` deleted.** `apps/web/vite.config.ts` now excludes
-  `src/lib/api/generated/` from lint; web `lint` is non-mutating and the old
-  `--fix-dangerously` command is `lint:fix`.
 - **No `continue-on-error` web gates.** The two lint errors of the baseline
   were fixed instead of waived, so every web gate is green and required.
 
 ## UI rights: `capabilities` on the session, `allowed_actions` on resources (2026-10-03, stage 2 S-02/S-03)
 
-Stage 2 (docs/MODERNIZATION-STAGE-2.md 7.5, 10.1) makes the web draw navigation
+Stage 2 (`docs/MODERNIZATION-STAGE-2.md`) makes the web draw navigation
 and actions from server-computed rights instead of parsing `resource:action:scope`
 strings. All additive on the wire (old fields, paths and statuses unchanged;
 the `can_*` flags and `permissions` go in phase 9).
@@ -1934,7 +1931,7 @@ accounts keep their password; the document activity has no file attached.
 
 ## Web (stage 2) (2026-10-03, phase 0 skeleton)
 
-Spec: `docs/MODERNIZATION-STAGE-2.md`; code: `apps/web-2`. One entry per Ф0 assumption (spec 12),
+Spec: `docs/MODERNIZATION-STAGE-2.md`; code: `apps/web-2`. Implementation choices,
 then deviations from the spec.
 
 - **srvx + Start handler: confirmed.** `serve.ts` runs srvx 1.0.5 on Node 26 (types stripped by
@@ -1966,7 +1963,7 @@ then deviations from the spec.
 - **React Compiler with Vite 8 + Start: confirmed.** `@rolldown/plugin-babel` + `reactCompilerPreset`;
   the client bundle carries the compiler's memo cache, SSR and hydration behave.
 - **@tanstack/charts, Pacer, Hotkeys under SSR: not checked.** Nothing in the skeleton uses them;
-  each is checked with its first consumer (spec 7.10: a primitive arrives with its consumer).
+  each is checked with its first consumer (a primitive arrives with its consumer).
 - **Intl `kk`: fell back to a month table.** Node 26 formats kk; Playwright's Chromium has no kk
   ICU data ("2026 M02 1"). `formatDate` builds kk dates from numeric parts + a month table on both
   sides; `format.browser.test.ts` pins it. kk numbers are still to be checked with `formatNumber`.
@@ -2169,7 +2166,7 @@ response stay as they are (removed in phase 9).
 
 - **S-11 link scheme is one setting**: `AB__SERVER__WEB_LINKS` = `legacy`
   (default: the old web's URLs, locale prefix where it had one, `/auth/...`,
-  `/course/...`, `/dash/...`) or `v2` (spec 5.3: `/login`, `/verify-email`,
+  `/course/...`, `/dash/...`) or `v2` (new URLs: `/login`, `/verify-email`,
   `/reset-password`, `/courses/{id}`, `/learn/{course}/{activity}`,
   `/teach/courses/{c}/activities/{a}/submissions[/{id}]`,
   `/certificates/{code}/verify` with no locale). Every built web URL goes
@@ -2519,19 +2516,6 @@ gradebooks do not change on deploy). The older time-limit sweep is not
 affected. Deleting the row turns date hand-ins off.
 
 
-## "Not found" pages stay HTTP 200 + noindex in apps/web (2026-10-10)
-
-A course, profile, collection or assessment page whose id does not exist (or is
-private to an anonymous visitor) answers HTTP 200: the locale-wide and
-course-level `loading.tsx` stream the shell before the page knows the answer.
-Checked on the dev stack with a browser and a Googlebot user agent: every such
-page carries `<meta name="robots" content="noindex">`, valid public pages carry
-`index, follow`, and unknown URLs answer a real 404. A 404 status would need
-the loading skeletons removed (every navigation then waits for its data on the
-university network) and would replace the "sign in to see this course" state a
-signed-out visitor gets for a private course with a bare 404. Kept as is; the
-search-engine outcome is the same.
-
 ## Teachers enrol learners: roster, paste and CSV (2026-10-10, QA cluster H)
 
 The new assessment gate made enrolment matter, but a teacher could only list
@@ -2592,9 +2576,10 @@ formula defusing are unchanged. Replaces the comma-only exports of UX-114 / BUG-
 Root just recipes now distinguish per-app gates from hosted image, E2E and secret checks.
 Rust/Node and Cargo tools are pinned; workspace tests accept filters, default to four build
 jobs and run once through coverage in full server CI. Windows uses Git Bash rather than WSL.
-Per-edit and Stop hooks are removed: focused checks during edits, full web-2 verification
-at pre-commit. The short server guide links task-specific detail instead of requiring the
-whole architecture each session. .agents/skills is canonical; Claude copies are generated.
+Per-edit and Stop hooks are removed: focused checks during edits, staged-file checks
+at pre-commit and `just check` at pre-push. The short server guide links task-specific
+detail instead of requiring the whole architecture each session. .agents/skills is
+canonical; Claude copies are generated.
 CI checks tracked and new generated artifacts immediately after regeneration. Drift checks
 use unique scratch paths so simultaneous checks cannot delete each other's output.
 
@@ -2636,20 +2621,6 @@ clock throughout). The legacy web follows the same rule.
 The legacy teacher review's «Оценка по элементам» summary reads in the test's own
 points (sum of the item fields, «14 / 15 (93 %)»), like web-2 and the learner's result
 card, instead of summed per-item shares of 100 that rounded to «93,38 / 100,05».
-
-## Analytics pages say when their numbers were computed (2026-10-11)
-
-Analytics are snapshots, so a teacher comparing a page with the live roster could not tell
-why the counts differ. The overview, the course and assessment drill-downs and the admin
-analytics page now show «Данные на <дата, время>» from the response's `generated_at_unix`,
-in both webs.
-
-## A public collection of closed courses warns its author (2026-10-11)
-
-The server lists a collection only when the viewer can see at least one of its courses, so a
-«public» collection whose courses are all private or archived is invisible to everyone but
-its author, silently. Saving such a collection now says «Курсы этой коллекции закрыты —
-другие пользователи её не увидят» (a warning, the save still goes through); both webs.
 
 ## Analytics detail pages name their snapshot time (2026-10-11)
 
@@ -2695,13 +2666,6 @@ Bookmarks, e-mails and notifications carry the legacy URL shapes (`/ru/course/<i
 apps/web with a 301 to its equivalent (locale prefix and `course_`/`activity_` id prefixes
 dropped, `returnTo` carried as `redirect`); `/assessments/<id>` is resolved through the API.
 Paths with no equivalent stay 404. The printed certificate URL stays an alias, not a redirect.
-## Discussion drafts: leave guard only for real text (2026-10-11)
-
-Both webs ask «Выйти без сохранения?» before navigating away from an open discussion
-composer (new post, reply, edit) that holds real text. An editor emptied again (`<p></p>` /
-an empty JSON document) or an edit back at its original text does not ask - there is nothing
-to lose. One guard per post card, so several open composers give one prompt.
-
 ## Legacy course page: scheduled tests listed locked (2026-10-11)
 
 A test scheduled to open later is listed on the legacy course page in its chapter as a locked
@@ -2729,11 +2693,6 @@ sign-up what they vouch for, `POST /auth/verify-email` `true`. Accounts older th
 read as verified (no banner) and are asked again next time. Both webs show «Подтвердите email»
 above the content with the code field, «Отправить код ещё раз» and «Скрыть» (hidden for the
 browser session); a confirmed code removes the banner. Sign-in never depends on it.
-
-## XP rules show the platform defaults (2026-10-11)
-
-`GET /gamification/config` also answers `default_daily_xp_limit` and `default_rewards` (every
-XP source with its built-in reward), so the admin form shows what an empty field stands for.
 
 ## Notification bell follows the user stream; ten streams per user (2026-10-11)
 
@@ -2792,14 +2751,6 @@ the due date has passed (not only in the last 24 h) and name the reason on the r
 Past the cutoff no new attempt opens (`PAST_DUE`, 403 `attempt-past-due`, as past a strict due
 date): before, a learner could start one and the next sweep handed it in empty.
 
-
-## An upload survives the end of the session (2026-10-11)
-
-A lecture upload can run for an hour; when the session ended meanwhile, the finalize answered
-401, web-2 signed the user out and the file was lost although its bytes were already in storage.
-Now a 401 from the upload keeps the page and the file: the picker says the session ended, offers
-«Войти снова» in a new tab, and «Повторить» only finalizes the stored upload (the server keeps a
-pending upload finalizable for 12 hours). Nothing is uploaded twice.
 
 ## Every cover applies on upload (2026-10-11)
 

@@ -605,19 +605,12 @@ full-stack smoke passed (`docs/INFRA.md`). Agents
 commit directly to `main` and treat a red pipeline as a stop-the-line event:
 **the branch must be green at the end of every working session.**
 
-## 15. Frontend impact (in scope, Q28)
+## 15. Frontend integration
 
-- Orval source switches to `openapi.v2.json`; base path `/api/v2`; regenerated
-  client replaces `src/lib/api/generated/**` wholesale. TanStack Query patterns,
-  zod response validation, and the ofetch mutator survive with path/shape updates.
-- Auth pages: login/signup/forgot/reset rework against the new BFF endpoints
-  (`mfa-required` challenge flow, Google redirect via Zitadel intent). The
-  `/api/auth/refresh` route handler, refresh single-flight, and cookie-bridge
-  complexity are deleted.
-- Error handling: map `problem+json.code` → i18n message catalogs (script-synced
-  from the Rust error registry).
-- nginx: `/api/v2 → server`, `/content/* → rustfs public bucket`, auth-path
-  special-casing removed. (Template change ships with the cutover, not before.)
+Both frontends consume `/api/v2` from `apps/server/openapi.v2.json`;
+`just contract` regenerates both clients. Read their app-specific `AGENTS.md`
+for client conventions and `docs/INFRA.md` for the web/edge contract.
+The Next.js frontend remains live until `docs/STAGE-2-CUTOVER.md` is completed.
 
 ## 16. Configuration & secrets
 

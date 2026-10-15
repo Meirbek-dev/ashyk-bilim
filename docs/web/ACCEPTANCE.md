@@ -1,31 +1,42 @@
-# Stage 2 acceptance (spec section 13), state on 2026-10-04
+# Frontend replacement acceptance
 
-Source: `docs/MODERNIZATION-STAGE-2.md` section 13. "Now" = checked on `main` before cutover; "Cutover" =
-can only be checked at or after `docs/STAGE-2-CUTOVER.md` section 2 or phase 9 (old web deleted, `web-2`
-renamed). Evidence is the CI run named below or the report in brackets.
+Production still uses Next.js. Check these requirements on the release being
+considered; old CI run numbers and completed implementation logs are in Git.
+Procedure: `docs/STAGE-2-CUTOVER.md`. Remaining work: `apps/web-2/BACKLOG.md`.
 
-| # | Item | Now | Cutover / phase 9 |
-| --- | --- | --- | --- |
-| 1 | clone -> `just dev-up` -> `just web dev`, same-origin | Same-origin: `vp dev` proxies `/api/v2`, buckets and `/content`; the prod stand (nginx) too | `just web` still runs `apps/web`; it points at the new web after the rename |
-| 2 | `vp run verify` and e2e green in CI; 0 warnings, 0 skipped; allowlist with reasons | CI run 37178939498 (7151581): every job green, `web2-e2e` 671 passed, 0 failed, 0 retries; `vp run verify` green locally; allowlist: 6 `i18nSameAsRu` entries, all with a reason, no suppressions; `@judge0` specs are filtered out by `--grep-invert` in CI, not skipped | `@judge0` specs: done on 2026-10-04 on the local stand (production build behind `prod-stand.ts`, API image built from 81f6241, Judge0 1.13.1 on rootless podman): `e2e/specs/code-arena*` 17/17, the `@judge0` spec included (FIN-2) |
-| 3 | image without build args; the e2e image runs in prod | `ashyq-web-2` builds with no `build-args` (ci.yaml sets them for `web` only); `web2-e2e` runs the CI image | Same digest in prod: `publish` on `release/stage2` retags it; checked in cutover 1.1 |
-| 4 | `docker compose exec web env`: only `PUBLIC_ORIGIN`, `INTERNAL_API_URL` + system | The new web reads only those two (`env.server.ts`), plus `PORT`/`HOST` with defaults (`serve.ts`) | `compose.prod.yaml` still passes `NEXT_*` and `APP_URL` for the old web: removed in phase 9 |
-| 5 | every OpenAPI operation used by the web (G-07); every `B-` has a test (G-10) | G-07 and G-10 enforced by `gates.ts` (green); 26 operations without a consumer listed in `gates/server-removals.json` and `apps/server/docs/phase9-removals.md` | Phase 9 deletes those operations from the server; then the removals list is empty |
-| 6 | G-14 on a fresh prod copy; G-15 on all 63 themes | G-14 148/148 documents, 1051/1051 texts on the 2026-10-04 restore (P-8); G-15 64/64 (W-2) | G-14 again on the newest backup right before cutover (precondition 1.3) |
-| 7 | role matrix on all 5.3 routes in ru; kk/en smoke; all routes at 390 px | `access.spec.ts` (matrix from `access.ts`, kk/en smoke) and the 390 px overflow check in the shared fixture, in `web2-e2e` | Prod browser pass per role at 390 px and desktop (cutover 2.5) |
-| 8 | budgets 6.2; CSP with nonce; console clean on all e2e routes | Chunk budgets in `bun run build` (initial JS 174.7 KB); the fixture fails a document without CSP, any console error or CSP violation | Prod `/` carries `content-security-policy` with a nonce (cutover 2.5); 7-day `/_client-error` watch (2.7) |
-| 9 | the `git grep` over `apps/web`, contract, compose, infra, CI, justfile is empty | Not yet: `apps/web` (582 files), `web-2` in compose/CI/justfile, legacy names in the contract | Only after phase 9: old web deleted, `web-2` renamed, legacy operations removed |
-| 10 | no old web in the repo; no operation without a consumer or old names; `main` green | `main` green (run 37178939498; `publish` runs on `release/**` only) | Old web deletion and contract cleanup are phase 9 (after the 7-day window, owner decision) |
+## Before cutover
 
-Dependency bump b707d68 (server `Cargo.*`, web-2 `package.json`/`bun.lock`): covered by CI run 37188033446 (3967047, includes b1d86df and 81f6241), every
-job on top of it incl. `web2-e2e` (3 shards, all green).
+- Current app gates and production-build E2E pass; no unexplained skips,
+  warnings or suppressions. Allowlist entries have reasons.
+- Full local Judge0 scenarios pass; record any AI coverage that CI omits.
+- The replacement image builds without domain-specific arguments and is the
+  same image tested by CI and deployed to production.
+- G-07 classifies every operation; G-10 covers every feature behavior.
+  Temporary removals agree with `apps/server/docs/phase9-removals.md`.
+- G-14 loses no editor/markdown content on a fresh production restore, before
+  and after data migration. G-15 passes every supported theme and mode.
+- Role access is verified in ru, with kk/en smoke. Student and grading flows
+  work at 390 px, without page overflow, serious/critical axe findings,
+  unexpected console errors or CSP violations.
+- Bundle/performance budgets pass. Firefox and WebKit smoke pass; investigate
+  the unresolved authenticated Windows WebKit crash and verify real Safari.
+- Fresh backup, exam-free window, smoke accounts and rollback images are ready.
 
-A configured runner that is down (Judge0 outage) no longer breaks the code pages: B-COD-23, b1d86df.
+## At cutover and during observation
 
-Gap closing on 2026-10-04 (server S-GAPS, S-GAPS-2, S-GAPS-3; web W-3, W-4, W-5):
-- S-GAPS / S-GAPS-2 (server): the operations and fields the web was missing, then feature switches, group stats, scored remediation, inbox data, If-Match, LIVE events, enums. W-3 / W-4 (web): each has a consumer and a `B-` test; no G-07 "consumer pending" left; CI green on 0cfb547 (run 37219537187).
-- S-GAPS-3 (server): remediation answers only after the hand-in, typed work/next-action enums, no dangling `$ref`s (18606b4).
-- W-5: the Achievements nav item follows `show_gamification` (B-ACH-13); uploads PUT to the same-origin bucket path in every build (the local prod-build stand presigned for `localhost:9002` and CSP blocked it; prod and the CI stand presign for the public origin, so they were never affected).
-- Still open locally only: WebKit on Windows crashes on B-AUTH-01 (`page.goto` after sign-out); Linux WebKit in CI passes.
+- Public pages, sign-in/out, each role's main flow, password-reset links,
+  certificate verification (including printed QR URLs), uploads and downloads work.
+- CSP has a nonce; response headers fit the university proxy limit.
+- Watch client/server errors, 5xx, user reports and memory for seven days.
+  Any data-loss report triggers rollback and triage.
+- The owner explicitly closes the rollback window before irreversible migration.
 
-Open before cutover: G-14 on the newest backup, the owner's window.
+## After the rollback window
+
+- Remove the old frontend, compatibility operations/fields/settings and temporary
+  contract exceptions. Rename `apps/web-2` to `apps/web`; update all callers/configs.
+- The web container needs only `PUBLIC_ORIGIN`, `INTERNAL_API_URL` and system
+  variables; remove Next.js environment keys and build arguments.
+- No stale Next.js, old API names, `web-2` paths or temporary rollout markers
+  remain in active source/configuration. All final application and release gates pass.
+- Refresh root/app agent guides and delete completed rollout guides/backlog.

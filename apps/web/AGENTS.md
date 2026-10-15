@@ -128,6 +128,13 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
   client-side with `can(resource, action, scope)`. A browser-side 401 redirects
   to `/login`. Auth server actions live in `src/app/actions/auth.ts`.
 
+## Visual conventions
+
+Use the existing shadcn primitives and semantic color tokens. Keep typography,
+spacing, borders and radii consistent with neighboring screens. Avoid decorative
+gradients, icons and motion; animation should explain a state change and respect
+reduced motion. Preserve keyboard access, focus states and responsive layouts.
+
 ## Feature layout
 
 - `src/services/**` - plain async functions per resource (server and client

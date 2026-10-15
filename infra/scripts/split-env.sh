@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-off host migration to the two-file env layout (docs/MODERNIZATION-STAGE-1.md 5.4):
+# One-off host migration to the two-file env layout (docs/INFRA.md, Secrets and config):
 #   AB__*, OTEL_* -> server.env        (mode 600; the server reads both)
 #   PLATFORM_* -> .env.legacy-removed  (mode 600)
 #   the rest stays in .env, plus COMPOSE_PROJECT_NAME=openu-prod if absent.

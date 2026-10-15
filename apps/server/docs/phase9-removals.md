@@ -1,7 +1,7 @@
 # Phase 9 removals (stage 2 contract step)
 
 Everything the server keeps only for the old web (`apps/web`) and deletes at
-the contract step (MODERNIZATION-STAGE-2 §2, gate G-07), once the new web is
+the contract step (`docs/STAGE-2-CUTOVER.md` section 4, gate G-07), once the new web is
 live and the rollback window has closed. One row per removal; `target` is an
 `operationId`, a `Schema.field`, a behaviour or a setting; `replacement` is
 what the new web uses instead (`-` = nothing, just delete). Deprecated

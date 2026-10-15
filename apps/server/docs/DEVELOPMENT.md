@@ -23,12 +23,12 @@ env as the API (`.env`): `E2E_PASSWORD=... just seed-e2e`.
 ### Stage 2 cutover switches
 
 - **Web links** `AB__SERVER__WEB_LINKS`: `legacy` (default, the old web's
-  URLs) or `v2` (the new web's URL map, spec 5.3). Every link the server
+  URLs) or `v2` (the new web's URL map). Every link the server
   builds follows it: verification / reset emails, the Google sign-in error
   redirect, the certificate PDF's QR code, `next_action.href`, work-queue
   hrefs. Set `v2` in the release that switches the web; a web rollback sets
   `legacy` again (no server rollback). Code: `ab_core::links`.
-- **Data migrations** (spec 10.2), idempotent, `--dry-run` prints counts,
+- **Data migrations** (`docs/STAGE-2-CUTOVER.md`), idempotent, `--dry-run` prints counts,
   safe while the old web runs; same env as the API:
   - `ashyq admin migrate-editor-docs [--dry-run] [--after-cutover]` - D-01:
     `blockEmbed` → `embedBlock`, plain-paragraph HTML posts → JSON documents.
