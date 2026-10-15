@@ -126,7 +126,7 @@ test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, a
   }
 })
 
-test('B-ADM-07 a new user is made in the dialog; a taken username lands under its field', async ({
+test('B-ADM-07 a new user is made in the dialog with extra roles; a taken username lands under its field', async ({
   page,
   signInAs,
 }) => {
@@ -147,10 +147,14 @@ test('B-ADM-07 a new user is made in the dialog; a taken username lands under it
   await create.click()
   await expect(dialog.getByText(m.errors_username_taken({}, ru))).toBeVisible()
   await dialog.getByLabel(m.admin_user_username({}, ru)).fill(username)
+  // Extra roles are picked in the same dialog.
+  await dialog.getByRole('combobox', { name: m.admin_user_field_roles({}, ru) }).click()
+  await page.getByRole('option', { name: m.admin_role_moderator({}, ru), exact: true }).click()
   await create.click()
   await expect(page.getByText(m.admin_user_created({}, ru))).toBeVisible()
   await expect(page).toHaveURL(userParam)
   await expect(panel(page, 'Новый Пользователь').getByText(`${username}@e2e.test`)).toBeVisible()
+  await expect(panel(page, 'Новый Пользователь').getByText(m.admin_role_moderator({}, ru)).first()).toBeVisible()
 })
 
 test('B-ADM-16 "Award XP" sends its idempotency key in the body', async ({ page, account }) => {

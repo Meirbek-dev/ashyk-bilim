@@ -163,5 +163,7 @@
   "admin_users_sort_name": "Аты бойынша",
   "admin_users_status_label": "Күйі: {status}",
   "admin_users_role_label": "Рөлі: {role}",
-  "admin_users_filter_all": "барлығы"
+  "admin_users_filter_all": "барлығы",
+  "admin_user_field_roles": "Қосымша рөлдер",
+  "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады."
 }

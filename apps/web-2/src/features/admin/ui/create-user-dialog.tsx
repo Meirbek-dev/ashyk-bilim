@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
@@ -14,19 +14,35 @@ import { toast } from '#/shared/ui/toast'
 
 import { takenField } from '../model/admin'
 import { createUserOptions } from '../queries'
+import { CreateUserRoles } from './create-user-roles'
 
-const defaultValues: CreateUserRequest = { first_name: '', last_name: '', username: '', email: '', password: '' }
+const defaultValues: CreateUserRequest = {
+  first_name: '',
+  last_name: '',
+  username: '',
+  email: '',
+  password: '',
+  roles: [],
+}
 // An empty password field means "none" (Google only): only a typed one must meet the contract's length.
 const schema = v.object({
   ...vCreateUserRequest.entries,
   password: v.union([v.literal(''), vCreateUserRequest.entries.password]),
 })
 
+/** Blank password and no extra roles are left out (Google-only sign-in, the default role). */
+const requestOf = (body: CreateUserRequest): CreateUserRequest => ({
+  ...body,
+  password: body.password || undefined,
+  roles: body.roles?.length ? body.roles : undefined,
+})
+
 /**
- * "New user": the account with a verified email and the `user` role; roles are added in the panel that opens next.
- * No password = Google sign-in only. A taken username or email lands under its field.
+ * "New user": the account with a verified email, the `user` role and the extra roles picked here (when the caller
+ * reads roles); the panel opens next. No password = Google sign-in only. A taken username or email lands under its
+ * field.
  */
-export function CreateUserDialog() {
+export function CreateUserDialog({ withRoles }: { withRoles: boolean }) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const create = useMutation(createUserOptions())
@@ -35,7 +51,7 @@ export function CreateUserDialog() {
     onSubmit: body =>
       create
         .mutateAsync(
-          { body: { ...body, password: body.password || undefined } },
+          { body: requestOf(body) },
           {
             onSuccess: async user => {
               setOpen(false)
@@ -91,6 +107,15 @@ export function CreateUserDialog() {
           />
         )}
       </form.AppField>
+      {withRoles ? (
+        <form.AppField name="roles">
+          {() => (
+            <Suspense fallback={null}>
+              <CreateUserRoles />
+            </Suspense>
+          )}
+        </form.AppField>
+      ) : null}
     </FormDialog>
   )
 }

@@ -167,5 +167,7 @@
   "admin_users_sort_name": "По имени",
   "admin_users_status_label": "Статус: {status}",
   "admin_users_role_label": "Роль: {role}",
-  "admin_users_filter_all": "все"
+  "admin_users_filter_all": "все",
+  "admin_user_field_roles": "Дополнительные роли",
+  "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда."
 }
