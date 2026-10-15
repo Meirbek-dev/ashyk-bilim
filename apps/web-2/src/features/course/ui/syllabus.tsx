@@ -27,7 +27,7 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
               return (
                 <li key={activity.id} className="flex min-h-row flex-wrap items-center gap-x-3 gap-y-1 border-b py-2">
                   <Icon aria-hidden className={`size-5 shrink-0 ${meta.ink}`} />
-                  <span className="min-w-0 flex-1 wrap-anywhere">
+                  <span className="min-w-0 grow basis-48 wrap-anywhere">
                     {activity.available ? (
                       <Link to="/learn/$courseId/$activityId" params={{ courseId, activityId: activity.id }}>
                         {activity.title}

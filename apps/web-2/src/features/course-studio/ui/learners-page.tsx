@@ -57,7 +57,7 @@ export function LearnersPage() {
           <DataList items={groups.data} getKey={group => group.id}>
             {group => (
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div className="flex min-w-0 grow basis-48 flex-col gap-1">
                   <h3 className="text-base font-medium wrap-anywhere">{group.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {m.studio_group_members({ count: group.member_count })}

@@ -29,7 +29,7 @@ export function OverrideRow({ assessmentId, row, name, editable }: OverrideRowPr
   ].filter(term => term !== null)
   return (
     <li className="flex flex-wrap items-start gap-2 border-b py-2">
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 grow basis-48 flex-col gap-0.5">
         <span className="font-medium wrap-anywhere">{name}</span>
         <span className="text-sm text-muted-foreground">{terms.join(' · ')}</span>
         {row.note ? <span className="text-sm wrap-anywhere">{row.note}</span> : null}

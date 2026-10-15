@@ -45,7 +45,7 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="min-w-0 flex-1 wrap-anywhere">
+        <p className="min-w-0 grow basis-48 wrap-anywhere">
           <Link to="/users/$username" params={{ username: row.username }}>
             {name}
           </Link>{' '}

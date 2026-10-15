@@ -46,7 +46,7 @@ export function LearnersSection({ courseId, courseName }: { courseId: string; co
         <DataList items={query.data} getKey={learner => learner.user_id}>
           {learner => (
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex min-w-0 grow basis-48 flex-col gap-1">
                 <p className="wrap-anywhere">
                   <Link to="/users/$username" params={{ username: learner.username }}>
                     {learner.display_name || learner.username}
