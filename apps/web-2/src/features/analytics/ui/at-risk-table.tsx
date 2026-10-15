@@ -45,6 +45,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
       return (
         <StatusBadge tone={badge.tone}>
           {badge.label()} · {formatNumber(row.risk_score)}
+          {row.risk_score_delta ? ` (${formatNumber(row.risk_score_delta, { signed: true })})` : null}
         </StatusBadge>
       )
     },

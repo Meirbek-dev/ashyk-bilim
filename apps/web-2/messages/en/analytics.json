@@ -261,5 +261,12 @@
   "analytics_slo_title": "Review deadline",
   "analytics_slo_target": "Target, h",
   "analytics_slo_p90": "90th percentile",
-  "analytics_slo_overdue": "Overdue"
+  "analytics_slo_overdue": "Overdue",
+  "analytics_learner_components": "Risk made of",
+  "analytics_component_inactivity": "inactivity",
+  "analytics_component_progress": "falling behind",
+  "analytics_component_failures": "failed assessments",
+  "analytics_component_missing": "missed required work",
+  "analytics_component_grading": "awaiting your review",
+  "analytics_grade_blocks": "Review submissions ({count})"
 }

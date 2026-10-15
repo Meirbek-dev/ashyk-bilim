@@ -261,5 +261,12 @@
   "analytics_slo_title": "Тексеру мерзімі",
   "analytics_slo_target": "Мақсат, сағ",
   "analytics_slo_p90": "90-шы процентиль",
-  "analytics_slo_overdue": "Мерзімі өткен"
+  "analytics_slo_overdue": "Мерзімі өткен",
+  "analytics_learner_components": "Тәуекел неден құралады",
+  "analytics_component_inactivity": "белсенділіктің болмауы",
+  "analytics_component_progress": "артта қалу",
+  "analytics_component_failures": "өтпеген тапсырмалар",
+  "analytics_component_missing": "өткізілген міндетті тапсырмалар",
+  "analytics_component_grading": "сіздің тексеруіңізді күтуде",
+  "analytics_grade_blocks": "Жұмыстарды тексеру ({count})"
 }

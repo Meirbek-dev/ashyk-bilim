@@ -18,6 +18,7 @@ import {
   signalHref,
   signalText,
   whyNowLabels,
+  riskBreakdown,
 } from './signals'
 
 /** How many different non-empty texts the values get: equal to the number of values when each has its own. */
@@ -65,4 +66,11 @@ describe('analytics signals', () => {
     expect(signalHref('/dash/analytics/learners/at-risk')).toBeUndefined()
     expect(signalHref(null)).toBeUndefined()
   })
+})
+
+test('B-ANL-29 the risk breakdown names its parts, largest first, without the zero ones', () => {
+  expect(riskBreakdown({ inactivity: 10, progress: 21.5, failures: 0, grading: 4, other: 1 })).toBe(
+    'отставание 21,5, неактивность 10, ждут вашей проверки 4, other 1',
+  )
+  expect(riskBreakdown({ inactivity: 0 })).toBe('—')
 })

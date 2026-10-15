@@ -1,12 +1,13 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { Link as RouterLink, useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AtRiskLearnerRow, CourseId, UserId } from '#/shared/api/gen/types.gen'
 import { SheetPanel } from '#/shared/components/sheet-panel'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDate, formatNumber } from '#/shared/i18n/format'
+import { buttonVariants } from '#/shared/ui/button'
 
-import { recommendedActionLabels, riskReasonLabels, whyNowLabels } from '../model/signals'
+import { recommendedActionLabels, riskBreakdown, riskReasonLabels, whyNowLabels } from '../model/signals'
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
 import { InterventionEditDialog } from './intervention-edit-dialog'
@@ -51,6 +52,8 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
               <dd>{row.reason_codes.map(code => riskReasonLabels[code]()).join(', ')}</dd>
             </>
           ) : null}
+          <dt className="text-muted-foreground">{m.analytics_learner_components()}</dt>
+          <dd>{riskBreakdown(row.risk_components)}</dd>
           {row.last_intervention_type ? (
             <>
               <dt className="text-muted-foreground">{m.analytics_learner_last_intervention()}</dt>
@@ -58,6 +61,11 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
             </>
           ) : null}
         </dl>
+      ) : null}
+      {row && row.open_grading_blocks > 0 ? (
+        <RouterLink to="/teach" search={{ course: row.course_id }} className={buttonVariants({ variant: 'outline' })}>
+          {m.analytics_grade_blocks({ count: formatNumber(row.open_grading_blocks) })}
+        </RouterLink>
       ) : null}
       <div>
         <InterventionDialog learnerId={learnerId} courseId={courseId} />

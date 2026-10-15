@@ -138,3 +138,19 @@ export const signalText = {
  */
 export const signalHref = (href: string | null | undefined): string | undefined =>
   href?.startsWith('/teach/analytics') ? href : undefined
+
+const COMPONENTS: Record<string, () => string> = {
+  inactivity: m.analytics_component_inactivity,
+  progress: m.analytics_component_progress,
+  failures: m.analytics_component_failures,
+  missing: m.analytics_component_missing,
+  grading: m.analytics_component_grading,
+}
+
+/** What the risk score is made of (`risk_components`), largest first, zero parts left out; unknown keys as sent. */
+export const riskBreakdown = (components: Record<string, number>): string =>
+  Object.entries(components)
+    .filter(([, points]) => points > 0)
+    .toSorted(([, a], [, b]) => b - a)
+    .map(([key, points]) => `${COMPONENTS[key]?.() ?? key} ${formatNumber(points)}`)
+    .join(', ') || '—'

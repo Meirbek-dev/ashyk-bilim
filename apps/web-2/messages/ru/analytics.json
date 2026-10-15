@@ -261,5 +261,12 @@
   "analytics_slo_title": "Срок проверки",
   "analytics_slo_target": "Цель, ч",
   "analytics_slo_p90": "90-й процентиль",
-  "analytics_slo_overdue": "Просрочено"
+  "analytics_slo_overdue": "Просрочено",
+  "analytics_learner_components": "Из чего риск",
+  "analytics_component_inactivity": "неактивность",
+  "analytics_component_progress": "отставание",
+  "analytics_component_failures": "несданные задания",
+  "analytics_component_missing": "пропущенные обязательные",
+  "analytics_component_grading": "ждут вашей проверки",
+  "analytics_grade_blocks": "Проверить работы ({count})"
 }
