@@ -101,7 +101,7 @@
   "settings_totp_disabled": "Двухфакторная аутентификация отключена",
   "settings_totp_google": "Вход через Google код не спрашивает.",
   "settings_appearance_title": "Оформление",
-  "settings_appearance_hint": "Тема и режим применяются сразу; тема и язык сохраняются в профиле.",
+  "settings_appearance_hint": "Тема и режим меняются по кнопке «Сохранить», без перезагрузки; тема и язык сохраняются в профиле.",
   "settings_field_theme": "Тема",
   "settings_field_mode": "Режим",
   "settings_gamification_title": "Достижения",

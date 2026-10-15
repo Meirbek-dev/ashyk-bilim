@@ -101,7 +101,7 @@
   "settings_totp_disabled": "Two-factor authentication turned off",
   "settings_totp_google": "Signing in with Google does not ask for the code.",
   "settings_appearance_title": "Appearance",
-  "settings_appearance_hint": "The theme and mode apply at once; the theme and language are saved to your profile.",
+  "settings_appearance_hint": "The theme and mode change when you press Save, without a reload; the theme and language are saved to your profile.",
   "settings_field_theme": "Theme",
   "settings_field_mode": "Mode",
   "settings_gamification_title": "Achievements",

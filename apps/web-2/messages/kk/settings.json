@@ -101,7 +101,7 @@
   "settings_totp_disabled": "Екі факторлы аутентификация өшірілді",
   "settings_totp_google": "Google арқылы кіргенде код сұралмайды.",
   "settings_appearance_title": "Безендіру",
-  "settings_appearance_hint": "Тақырып пен режим бірден қолданылады; тақырып пен тіл профильде сақталады.",
+  "settings_appearance_hint": "Тақырып пен режим «Сақтау» басылғанда бетті қайта жүктемей өзгереді; тақырып пен тіл профильде сақталады.",
   "settings_field_theme": "Тақырып",
   "settings_field_mode": "Көрініс режимі",
   "settings_gamification_title": "Жетістіктер",
