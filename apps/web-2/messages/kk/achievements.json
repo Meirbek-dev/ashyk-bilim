@@ -36,5 +36,9 @@
   "achievements_source_admin_award": "Әкімші марапаты",
   "achievements_source_code_challenge_completion": "Код есебі шешілді",
   "achievements_source_code_challenge_perfect": "Қатесіз код",
-  "achievements_source_code_challenge_first_solve": "Есептің алғашқы шешімі"
+  "achievements_source_code_challenge_first_solve": "Есептің алғашқы шешімі",
+  "achievements_daily_title": "Бүгінгі XP",
+  "achievements_daily_of": "{limit} XP ішінен {earned} (күндік лимит)",
+  "achievements_daily_reached": "{limit} XP күндік лимитке жетті: жаңа XP ертең есептеледі",
+  "achievements_daily_unlimited": "{earned} XP, күндік лимитсіз"
 }

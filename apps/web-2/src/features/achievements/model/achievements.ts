@@ -34,3 +34,7 @@ export function homeStreak(profile: Profile, nowUnix: number): number | null {
   const days = activeStreak(profile.learning_streak, profile.last_learning_at_unix, nowUnix)
   return days > 0 ? days : null
 }
+
+/** Today's XP against the daily cap (B-ACH-14): the share used, null when the platform sets no cap. */
+export const dailyShare = (daily: { earned_today: number; limit: number | null }): number | null =>
+  daily.limit ? Math.min(100, Math.round((daily.earned_today / daily.limit) * 100)) : null

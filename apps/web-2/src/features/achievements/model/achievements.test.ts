@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { DisplaySettings, Profile } from '#/shared/api/gen/types.gen'
 
-import { activeStreak, homeStreak, levelProgress } from './achievements'
+import { activeStreak, homeStreak, levelProgress, dailyShare } from './achievements'
 
 const DAY = 86_400
 const NOW = 20_729 * DAY + 3600 // 01:00 UTC
@@ -65,4 +65,10 @@ describe('achievements model', () => {
     expect(homeStreak(off({ animated_effects: null, compact_mode: null, show_gamification: false }), NOW)).toBeNull()
     expect(homeStreak(off({ animated_effects: null, compact_mode: null, show_streaks: true }), NOW)).toBe(4)
   })
+})
+
+test('B-ACH-14 the share of the daily cap used today; no cap is no bar', () => {
+  expect(dailyShare({ earned_today: 120, limit: 500 })).toBe(24)
+  expect(dailyShare({ earned_today: 600, limit: 500 })).toBe(100)
+  expect(dailyShare({ earned_today: 50, limit: null })).toBeNull()
 })

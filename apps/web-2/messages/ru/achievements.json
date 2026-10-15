@@ -38,5 +38,9 @@
   "achievements_source_admin_award": "Награда от администратора",
   "achievements_source_code_challenge_completion": "Задача с кодом решена",
   "achievements_source_code_challenge_perfect": "Код без ошибок",
-  "achievements_source_code_challenge_first_solve": "Первое решение задачи"
+  "achievements_source_code_challenge_first_solve": "Первое решение задачи",
+  "achievements_daily_title": "XP за сегодня",
+  "achievements_daily_of": "{earned} из {limit} XP (дневной лимит)",
+  "achievements_daily_reached": "Дневной лимит {limit} XP достигнут: новое XP начислится завтра",
+  "achievements_daily_unlimited": "{earned} XP, без дневного лимита"
 }

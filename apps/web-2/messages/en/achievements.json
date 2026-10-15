@@ -36,5 +36,9 @@
   "achievements_source_admin_award": "Admin award",
   "achievements_source_code_challenge_completion": "Code challenge solved",
   "achievements_source_code_challenge_perfect": "Flawless code",
-  "achievements_source_code_challenge_first_solve": "First solve of a challenge"
+  "achievements_source_code_challenge_first_solve": "First solve of a challenge",
+  "achievements_daily_title": "XP today",
+  "achievements_daily_of": "{earned} of {limit} XP (daily cap)",
+  "achievements_daily_reached": "Daily cap of {limit} XP reached: new XP counts from tomorrow",
+  "achievements_daily_unlimited": "{earned} XP, no daily cap"
 }
