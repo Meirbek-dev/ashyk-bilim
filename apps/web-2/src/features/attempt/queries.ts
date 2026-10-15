@@ -47,6 +47,18 @@ export const submitOptions = (courseId: CourseId, assessmentId: AssessmentId) =>
 export const saveOptions = () => ({ ...saveSubmissionDraftMutation(), meta: {} })
 export const violationOptions = () => ({ ...reportViolationMutation(), meta: {} })
 
+/**
+ * The server's violation count into the cached attempt. Only the count changes; the read keeps its time, because the
+ * clock counts `time_remaining_seconds` from it (useCountdown): a fresh `updatedAt` would wind the timer back by the
+ * time since that read.
+ */
+export function noteViolations(queryClient: QueryClient, id: SubmissionId, count: number): void {
+  const key = submissionKey(id)
+  queryClient.setQueryData<StudentSubmission>(key, old => (old ? { ...old, violation_count: count } : old), {
+    updatedAt: queryClient.getQueryState(key)?.dataUpdatedAt,
+  })
+}
+
 const missing = (error: unknown): never => {
   if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
   throw error

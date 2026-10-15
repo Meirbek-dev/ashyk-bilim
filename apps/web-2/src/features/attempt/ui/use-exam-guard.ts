@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useState, useSyncExternalStore } from 'react
 import type { Policy, StudentSubmission, ViolationState } from '#/shared/api/gen/types.gen'
 
 import { protections } from '../model/attempt'
-import { submissionOptions, violationOptions } from '../queries'
+import { noteViolations, violationOptions } from '../queries'
 
 function onFullscreenChange(change: () => void) {
   document.addEventListener('fullscreenchange', change)
@@ -39,9 +39,7 @@ export function useExamGuard(policy: Policy, attempt: StudentSubmission) {
       {
         onSuccess: fresh => {
           setState(fresh)
-          queryClient.setQueryData(submissionOptions(attempt.id).queryKey, old =>
-            old ? { ...old, violation_count: fresh.violation_count } : old,
-          )
+          noteViolations(queryClient, attempt.id, fresh.violation_count)
         },
       },
     )
