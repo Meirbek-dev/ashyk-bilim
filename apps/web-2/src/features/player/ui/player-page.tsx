@@ -11,7 +11,7 @@ import { formatDateTime } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, locate } from '../model/player'
+import { activityKind, locate, staffPreview } from '../model/player'
 import { learnerStateOptions, markOptions } from '../queries'
 import { BackToCourse } from './back-to-course'
 import { Contents } from './contents'
@@ -20,6 +20,7 @@ import { LessonContent } from './lesson-content'
 import { NeighbourLinks } from './neighbour-links'
 import { PlayerAction } from './player-action'
 import { PlayerNotFound } from './player-not-found'
+import { UnlistedLesson } from './unlisted-lesson'
 
 /**
  * The activity player (spec 5.4): contents left (a sheet when narrow), the activity, its one action and the
@@ -33,8 +34,13 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   const mark = useMutation(markOptions(useQueryClient(), courseId))
   useHotkey(shortcuts.contents.hotkey, () => setContentsOpen(open => !open))
   const found = locate(state, activityId)
-  // Unpublished while open: the re-read state no longer lists it.
-  if (!found) return <PlayerNotFound />
+  // Not in the outline: unpublished (staff preview it from its own read), or unpublished while open.
+  if (!found)
+    return staffPreview(state) ? (
+      <UnlistedLesson courseId={courseId} activityId={activityId} title={state.title} aside={aside} />
+    ) : (
+      <PlayerNotFound />
+    )
   const { entry, prev, next } = found
   const meta = activityTypeMeta[entry.activity_type]
   const Icon = meta.icon

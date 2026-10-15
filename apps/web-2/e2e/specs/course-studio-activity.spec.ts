@@ -169,3 +169,22 @@ test('B-CST-34 a legacy custom activity has no editor: edit says so and links to
   await expect(page).toHaveURL(new RegExp(`/activities/${custom.data.id}/settings`))
   await expect(page.getByRole('textbox', { name: m.studio_field_name({}, ru) })).toHaveValue('Своя')
 })
+
+test('B-CST-43 B-PLY-01 the workspace and a lesson studio open the course and the lesson as a learner sees them', async ({
+  page,
+  studio,
+}) => {
+  const made = await studio.course({ chapters: [{ pages: [{ name: 'Лекция', published: false }] }] })
+  const activity = made.chapters[0]?.activities[0]
+  if (!activity) throw new Error('no activity')
+  await page.goto(`/teach/courses/${made.course.id}/overview`)
+  await expect(page.getByRole('link', { name: m.studio_preview({}, ru) })).toHaveAttribute(
+    'href',
+    `/courses/${made.course.id}`,
+  )
+  await page.goto(studioUrl(made.course.id, activity.id))
+  const preview = page.getByRole('link', { name: m.studio_preview({}, ru) })
+  await expect(preview).toHaveAttribute('href', `/learn/${made.course.id}/${activity.id}`)
+  await page.goto(`/learn/${made.course.id}/${activity.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Лекция' })).toBeVisible()
+})

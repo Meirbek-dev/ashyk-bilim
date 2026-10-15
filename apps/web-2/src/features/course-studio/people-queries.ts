@@ -26,9 +26,9 @@ import type {
 const PAGE_SIZE = 20
 const byId = (id: CourseId) => ({ path: { course_id: id } })
 
-/** The course's learners, newest first, keyset paged (roster managers). */
-export const learnersOptions = (id: CourseId) => {
-  const query = { limit: PAGE_SIZE }
+/** The course's learners, newest first, keyset paged (roster managers); `q` searches them on the server. */
+export const learnersOptions = (id: CourseId, q?: string) => {
+  const query = { limit: PAGE_SIZE, ...(q ? { q } : {}) }
   return infiniteQueryOptions<
     CourseLearnerPage,
     ApiError,

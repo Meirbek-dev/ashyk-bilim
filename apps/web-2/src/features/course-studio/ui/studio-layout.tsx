@@ -33,16 +33,17 @@ const HANDED_IN = {
 } satisfies Record<ActivityType, boolean>
 const WORK_TABS = ['/submissions', '/results']
 
-// Graded work opens as its learner sees it (a preview: never counted); lessons have no learner page of their own here.
+// The activity as its learner sees it (B-CST-43): graded work on its own page (a preview: never counted), a lesson in
+// the player (staff preview). A file task has none: an upload there would be a real attempt.
 const PREVIEW = {
   quiz: '/learn/$courseId/$activityId/attempt',
   exam: '/learn/$courseId/$activityId/attempt',
   code_challenge: '/learn/$courseId/$activityId/code',
   file_submission: null,
-  dynamic: null,
-  video: null,
-  document: null,
-  custom: null,
+  dynamic: '/learn/$courseId/$activityId',
+  video: '/learn/$courseId/$activityId',
+  document: '/learn/$courseId/$activityId',
+  custom: '/learn/$courseId/$activityId',
 } as const satisfies Record<ActivityType, string | null>
 
 type CourseStudioLayoutProps = {

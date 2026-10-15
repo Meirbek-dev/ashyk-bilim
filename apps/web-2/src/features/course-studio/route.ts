@@ -15,3 +15,6 @@ export const coursesSearchSchema = v.object({
 })
 export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
 export type Preset = NonNullable<CoursesSearch['preset']>
+
+/** /teach/courses/$courseId/learners?q=: the roster search (name, username or email, on the server). */
+export const learnersSearchSchema = v.object({ q: v.optional(blankToUndefined) })

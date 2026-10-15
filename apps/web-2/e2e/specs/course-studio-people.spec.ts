@@ -19,7 +19,7 @@ test('B-CST-13 learners says who sees the course, by its status', async ({ page,
   await expect(page.getByText(m.studio_access_published({}, ru))).toBeVisible()
 })
 
-test('B-CST-35 learners lists who enrolled; one is removed from the course after a confirmation', async ({
+test('B-CST-35 learners lists who enrolled, found by a search; one is removed after a confirmation', async ({
   page,
   studio,
   seed,
@@ -31,11 +31,22 @@ test('B-CST-35 learners lists who enrolled; one is removed from the course after
   const learners = page.getByRole('region', { name: m.studio_learners_title({}, ru) })
   const row = learners.getByRole('listitem').filter({ hasText: '@e2e-student1' })
   await expect(row).toContainText('0 %')
+  await expect(row).toContainText('@e2e.test')
+  const search = learners.getByRole('searchbox', { name: m.studio_learners_search({}, ru) })
+  await search.fill('nobody-at-all')
+  await search.press('Enter')
+  await expect(page).toHaveURL(/[?&]q=nobody-at-all/)
+  await expect(learners.getByText(m.ui_no_matches({}, ru))).toBeVisible()
+  await search.fill('e2e-student1')
+  await search.press('Enter')
+  await expect(row).toBeVisible()
   await row.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: /^Исключить «/ })
   await expect(confirm.getByText(m.studio_learner_remove_consequence({}, ru))).toBeVisible()
   await confirm.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
   await expect(page.getByText(m.studio_learner_removed({}, ru))).toBeVisible()
+  await expect(learners.getByText(m.ui_no_matches({}, ru))).toBeVisible()
+  await page.goto(tab(course.id, 'learners'))
   await expect(learners.getByText(m.studio_learners_empty({}, ru))).toBeVisible()
 })
 

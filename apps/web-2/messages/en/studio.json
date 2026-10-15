@@ -281,5 +281,6 @@
   "studio_learnings_too_many": "At most {max} points",
   "studio_learnings_too_long": "A point is at most {max} characters",
   "studio_field_enrolled_only": "Assessments only for learners enrolled in the course",
-  "studio_field_enrolled_only_hint": "Turn off to let anyone signed in take the quizzes, exams, code tasks and file tasks of a public course."
+  "studio_field_enrolled_only_hint": "Turn off to let anyone signed in take the quizzes, exams, code tasks and file tasks of a public course.",
+  "studio_learners_search": "Find a learner"
 }

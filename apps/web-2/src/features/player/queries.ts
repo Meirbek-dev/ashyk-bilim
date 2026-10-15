@@ -95,7 +95,13 @@ export async function ensureCompletion(queryClient: QueryClient, courseId: Cours
 export async function ensurePlayer(queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) {
   const state = await ensureLearner(queryClient, courseId)
   const found = locate(state, activityId)
-  if (!found) throw notFound()
+  if (!found) {
+    // Staff previewing an activity the outline does not list (unpublished): its own read, a lesson of this course.
+    if (!staffPreview(state)) throw notFound()
+    const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
+    if (activity.course_id !== courseId || activityKind(activity.activity_type) !== 'lesson') throw notFound()
+    return { title: activity.name }
+  }
   const { entry } = found
   if (!entry.blocked_reason && activityKind(entry.activity_type) === 'lesson')
     await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
