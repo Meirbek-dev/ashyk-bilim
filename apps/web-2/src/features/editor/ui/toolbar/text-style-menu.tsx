@@ -6,9 +6,9 @@ import { ChoiceItems } from '#/shared/components/choice-items'
 import { IconButton } from '#/shared/components/icon-button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 
-const LEVELS = [1, 2, 3] as const
+const LEVELS = [1, 2, 3, 4, 5, 6] as const
 
-/** Paragraph or heading 1-3 for the block under the cursor. */
+/** Paragraph or heading 1-6 (as the old editor offered) for the block under the cursor. */
 export function TextStyleMenu({ editor, level }: { editor: Editor; level: number }) {
   const choose = (value: string) => {
     const next = LEVELS.find(candidate => String(candidate) === value)
