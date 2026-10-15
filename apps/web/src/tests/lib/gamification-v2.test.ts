@@ -64,6 +64,7 @@ const dashboard = {
       triggered_level_up: false,
     },
   ],
+  daily_xp: { earned_today: 10, limit: 500 },
   user_rank: 1,
 }
 
