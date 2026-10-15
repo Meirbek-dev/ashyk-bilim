@@ -16,7 +16,8 @@ import { courseVersion, updateCourseOptions } from '../queries'
 import { useIfMatch } from './use-if-match'
 
 /**
- * "Details": name, short description, the markdown description and whether co-author applications are open. Saved
+ * "Details": name, short description, the markdown description, whether co-author applications are open and whether
+ * only enrolled learners take the course's assessments (B-CST-42). Saved
  * with `If-Match: version`; a 412 opens the conflict dialog.
  */
 export function DetailsSection({ course }: { course: Course }) {
@@ -36,6 +37,7 @@ export function DetailsSection({ course }: { course: Course }) {
     about: course.about,
     description: course.description,
     open_to_contributors: course.open_to_contributors,
+    assessments_require_enrollment: course.assessments_require_enrollment,
   }))
   const form = useAppForm(vUpdateCourseRequest, {
     leaveGuard: true,
@@ -69,6 +71,14 @@ export function DetailsSection({ course }: { course: Course }) {
         </form.AppField>
         <form.AppField name="open_to_contributors">
           {field => <field.SwitchField label={m.studio_field_open()} description={m.studio_field_open_hint()} />}
+        </form.AppField>
+        <form.AppField name="assessments_require_enrollment">
+          {field => (
+            <field.SwitchField
+              label={m.studio_field_enrolled_only()}
+              description={m.studio_field_enrolled_only_hint()}
+            />
+          )}
         </form.AppField>
       </SettingsSection>
       <ConflictDialog {...write.dialog(() => form.handleSubmit())} />

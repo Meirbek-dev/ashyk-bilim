@@ -274,5 +274,12 @@
   "studio_inactive_title": "Deactivated co-authors",
   "studio_inactive_hint": "They cannot open the course; bring them back to the team or remove them.",
   "studio_contributor_reactivate": "Bring back to the team",
-  "studio_contributor_reactivated": "The co-author is back on the team"
+  "studio_contributor_reactivated": "The co-author is back on the team",
+  "studio_learnings_title": "What you'll learn",
+  "studio_learnings_hint": "The list on the course page. One point per line; an emoji at the start of a line becomes the point's icon.",
+  "studio_learnings_field": "Points",
+  "studio_learnings_too_many": "At most {max} points",
+  "studio_learnings_too_long": "A point is at most {max} characters",
+  "studio_field_enrolled_only": "Assessments only for learners enrolled in the course",
+  "studio_field_enrolled_only_hint": "Turn off to let anyone signed in take the quizzes, exams, code tasks and file tasks of a public course."
 }

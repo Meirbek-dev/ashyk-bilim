@@ -16,7 +16,7 @@ const PIXEL = Buffer.from(
 
 test.use({ as: 'teacher' })
 
-test('B-CST-19 details save with their own button; an empty name stays on the field', async ({
+test('B-CST-19 B-CST-42 details save with their own button; an empty name stays on the field', async ({
   page,
   studio,
   seed,
@@ -34,12 +34,17 @@ test('B-CST-19 details save with their own button; an empty name stays on the fi
     .getByRole('textbox', { name: m.studio_field_description({}, ru), exact: true })
     .fill('Подробное описание')
   await section.getByRole('switch', { name: m.studio_field_open({}, ru) }).click()
+  await section.getByRole('switch', { name: m.studio_field_enrolled_only({}, ru) }).click()
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: `${course.name} (новое)` })).toBeVisible()
   const headers = cookieOf(seed, 'teacher')
   const { data } = await getCourse({ client: studio.api, path: { course_id: course.id }, headers, throwOnError: true })
-  expect(data).toMatchObject({ about: 'Коротко о курсе', open_to_contributors: true })
+  expect(data).toMatchObject({
+    about: 'Коротко о курсе',
+    open_to_contributors: true,
+    assessments_require_enrollment: false,
+  })
   expect(data.description).toContain('Подробное описание')
 })
 

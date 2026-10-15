@@ -9,9 +9,13 @@ import { ArchiveSection } from './archive-section'
 import { CertificateSection } from './certificate-section'
 import { DeleteCourse } from './delete-course'
 import { DetailsSection } from './details-section'
+import { LearningsSection } from './learnings-section'
 import { ThumbnailSection } from './thumbnail-section'
 
-/** `settings`: the sections of SettingsPage, each with its own Save: details, cover, certificate, archive, delete. */
+/**
+ * `settings`: the sections of SettingsPage, each with its own Save: details, what you'll learn, cover, certificate,
+ * archive, delete.
+ */
 export function CourseSettingsPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/settings' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
@@ -21,6 +25,7 @@ export function CourseSettingsPage() {
       {can(course, 'update') ? (
         <>
           <DetailsSection course={course} />
+          <LearningsSection course={course} />
           <ThumbnailSection course={course} />
           <CertificateSection course={course} />
         </>
