@@ -7,12 +7,19 @@ import type { ItemAnswer, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { sessionOptions } from '#/shared/auth/session'
 
 import { retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
-import { ack, enqueue, overlay, patchOf, type Queue } from '../model/queue'
+import { ack, enqueue, overlay, patchOf, type Entry, type Queue } from '../model/queue'
 import { saveOptions, submissionOptions } from '../queries'
 import { draftStore, loadQueue, queueOf, updateQueue } from './draft-store'
 import { useOnline } from './use-online'
 
 const EMPTY: Queue = []
+
+/**
+ * The queue change for a new answer: pure, the entry minted once by the caller, so this tab's memory and storage get
+ * the same id. Minted inside, each copy got its own and the acknowledgement left the stored one behind, to be adopted
+ * and sent again by a reload or another tab over a newer answer.
+ */
+const adding = (entry: Entry) => (queue: Queue) => enqueue(queue, entry)
 
 /** Read the attempt again; true while it is still an open draft (otherwise the page turns to its result). */
 async function stillDraft(queryClient: QueryClient, attempt: StudentSubmission) {
@@ -87,7 +94,7 @@ export function useAttemptDraft(attempt: StudentSubmission) {
   }, [online, paced])
 
   const change = (item: string, answer: ItemAnswer) => {
-    updateQueue(id, current => enqueue(current, { id: crypto.randomUUID(), item, answer }))
+    updateQueue(id, adding({ id: crypto.randomUUID(), item, answer }))
     if (stopped.current === 'conflict') stopped.current = null
     paced.maybeExecute()
   }
@@ -106,4 +113,19 @@ export function useAttemptDraft(attempt: StudentSubmission) {
     setConflict,
     reloadAndRetry,
   }
+}
+
+/**
+ * Before a hand-in: the draft as the server holds it (another tab or device may have saved since this tab read it), so
+ * the answers on screen and the unanswered list are what «Сдать» hands in (B-ATT-16); the confirmation waits for it.
+ */
+export function useDraftReread(attempt: StudentSubmission) {
+  const queryClient = useQueryClient()
+  const [rereading, setRereading] = useState(false)
+  const reread = async () => {
+    setRereading(true)
+    await stillDraft(queryClient, attempt)
+    setRereading(false)
+  }
+  return { reread, rereading }
 }

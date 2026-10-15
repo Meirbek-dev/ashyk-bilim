@@ -1,22 +1,20 @@
 import { useParams, useSearch } from '@tanstack/react-router'
 import { useEffect, useEffectEvent, useState } from 'react'
 
-import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
-import { Button } from '#/shared/ui/button'
 
 import { runsToDueDate, unanswered } from '../model/attempt'
 import { AttemptFrame, ATTEMPT_ROUTE } from './attempt-frame'
-import { AttemptTimer } from './attempt-timer'
 import { ItemNavigator } from './item-navigator'
 import { ItemPager } from './item-pager'
 import { ItemView } from './item-view'
 import { ReturnNote } from './return-note'
+import { RunnerActions } from './runner-actions'
 import { RunnerAlerts } from './runner-alerts'
 import { SaveIndicator } from './save-indicator'
 import { SubmitDialog } from './submit-dialog'
-import { useAttemptDraft } from './use-attempt-draft'
+import { useAttemptDraft, useDraftReread } from './use-attempt-draft'
 import { useCountdown } from './use-countdown'
 import { useExamGuard } from './use-exam-guard'
 import { useSubmitAttempt } from './use-submit-attempt'
@@ -32,6 +30,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const { courseId } = useParams({ from: ATTEMPT_ROUTE })
   const { item = 1 } = useSearch({ from: ATTEMPT_ROUTE })
   const draft = useAttemptDraft(attempt)
+  const { reread, rereading } = useDraftReread(attempt)
   const submit = useSubmitAttempt(attempt, courseId)
   const guard = useExamGuard(assessment.policy, attempt)
   const left = useCountdown(attempt.time_remaining_seconds, receivedAt)
@@ -49,19 +48,20 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   useEffect(() => {
     if (expired) timeUp()
   }, [expired])
-  const actions = (
-    <>
-      {left === null ? null : <AttemptTimer seconds={left} attempt={attempt} receivedAt={receivedAt} />}
-      <Button onClick={() => setConfirming(true)} disabled={submit.pending}>
-        {m.attempt_submit()}
-      </Button>
-    </>
-  )
   return (
     <AttemptFrame
       title={assessment.title}
       saveStatus={<SaveIndicator status={draft.status} />}
-      actions={actions}
+      actions={
+        <RunnerActions
+          left={left}
+          attempt={attempt}
+          receivedAt={receivedAt}
+          pending={submit.pending}
+          onSubmit={() => setConfirming(true)}
+          refresh={reread}
+        />
+      }
       contents={
         <ItemNavigator items={items} answers={draft.answers} current={current} onPick={() => setContentsOpen(false)} />
       }
@@ -94,7 +94,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
         onOpenChange={setConfirming}
         unanswered={unanswered(items, draft.answers)}
         onSubmit={handIn}
-        pending={submit.pending}
+        pending={submit.pending || rereading}
         error={submit.error}
       />
       <ConflictDialog

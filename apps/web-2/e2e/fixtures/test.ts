@@ -27,6 +27,8 @@ const LIVE_READS = [
   /^\/api\/v2\/(groups|users|rbac\/roles)$/,
   /^\/api\/v2\/courses\/[^/]+\/learner-state$/,
   /^\/api\/v2\/(courses\/[^/]+\/discussions|discussions\/[^/]+\/replies)$/,
+  // «Сдать» rereads the open draft: another tab or device may have saved since (B-ATT-16).
+  /^\/api\/v2\/submissions\/[^/]+$/,
 ]
 
 /** Pages answered 5xx on purpose (a routed outage, B-COD-23): Chromium logs each such answer as a resource error. */
