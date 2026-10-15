@@ -15,6 +15,10 @@ import {
 } from '../route'
 
 export {
+  ASSESSMENT_SORTS,
+  type AssessmentSort,
+  COURSE_SORTS,
+  type CourseSort,
   BUCKETS,
   COMPARES,
   type Filters,
@@ -64,6 +68,15 @@ export function learnerSort(sort: { id: string; desc: boolean } | undefined): {
 } {
   if (!sort || !v.is(v.picklist(LEARNER_SORTS), sort.id)) return { sort: undefined, desc: undefined }
   return { sort: sort.id, desc: sort.desc || undefined }
+}
+
+/** A header click of a performance table as URL state: a key the endpoint sorts by, else the server's order. */
+export function tableSort<K extends string>(
+  keys: readonly K[],
+  sort: { id: string; desc: boolean } | undefined,
+): { sort: K | undefined; desc: boolean | undefined } {
+  const key = keys.find(known => known === sort?.id)
+  return key ? { sort: key, desc: sort?.desc || undefined } : { sort: undefined, desc: undefined }
 }
 
 /** The filter form: selects hold strings, "" is "all" for the course and the group. */

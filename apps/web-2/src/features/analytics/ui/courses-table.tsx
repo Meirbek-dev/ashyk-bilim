@@ -9,7 +9,7 @@ import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
-import { activeFilters, type Filters } from '../model/filters'
+import { activeFilters, COURSE_SORTS, type CourseSort, type Filters, tableSort } from '../model/filters'
 import { coursesOptions } from '../queries'
 import { Pager } from './pager'
 
@@ -17,7 +17,8 @@ const count = (value: number) => <span className="tabular-nums">{formatNumber(va
 
 const columns = (): DataColumn<TeacherCourseRow>[] => [
   {
-    id: 'course',
+    id: 'name',
+    sortable: true,
     header: m.analytics_col_course(),
     priority: 1,
     cell: row => (
@@ -28,19 +29,40 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
   },
   {
     id: 'completion',
+    sortable: true,
     header: m.analytics_col_completion(),
     priority: 2,
     cell: row => <span className="tabular-nums">{formatPercent(row.completion_rate)}</span>,
   },
-  { id: 'active', header: m.analytics_col_active(), priority: 2, cell: row => count(row.active_learners_7d) },
-  { id: 'risk', header: m.analytics_kpi_at_risk_learners(), priority: 2, cell: row => count(row.at_risk_learners) },
-  { id: 'health', header: m.analytics_col_health(), priority: 3, cell: row => count(row.content_health_score) },
+  {
+    id: 'active',
+    sortable: true,
+    header: m.analytics_col_active(),
+    priority: 2,
+    cell: row => count(row.active_learners_7d),
+  },
+  {
+    id: 'risk',
+    sortable: true,
+    header: m.analytics_kpi_at_risk_learners(),
+    priority: 2,
+    cell: row => count(row.at_risk_learners),
+  },
+  {
+    id: 'health',
+    sortable: true,
+    header: m.analytics_col_health(),
+    priority: 3,
+    cell: row => count(row.content_health_score),
+  },
   { id: 'ungraded', header: m.analytics_col_ungraded(), priority: 3, cell: row => count(row.ungraded_submissions) },
 ]
 
 /** The caller's courses with their completion and health; a course opens its drill-down. */
-export function CoursesTable({ filters, page }: { filters: Filters; page: number }) {
-  const query = useSuspenseQuery(coursesOptions(filters, page))
+type CoursesTableProps = { filters: Filters; page: number; order: { sort?: CourseSort; desc?: boolean } }
+
+export function CoursesTable({ filters, page, order }: CoursesTableProps) {
+  const query = useSuspenseQuery(coursesOptions(filters, page, order))
   const navigate = useNavigate()
   return (
     <section className="flex flex-col gap-4">
@@ -59,6 +81,11 @@ export function CoursesTable({ filters, page }: { filters: Filters; page: number
           rows={query.data.items}
           columns={columns()}
           getKey={row => row.course_id}
+          sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
+          onSortChange={next => {
+            const { sort, desc } = tableSort(COURSE_SORTS, next)
+            void navigate({ to: '.', search: prev => ({ ...prev, courseSort: sort, courseDesc: desc, coursePage: 1 }) })
+          }}
         />
         <Pager page={page} total={query.data.total} param="coursePage" />
       </ListState>

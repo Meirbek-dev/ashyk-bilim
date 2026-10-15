@@ -85,8 +85,10 @@ export async function loadPerformance(queryClient: QueryClient, search: Search<t
   }
   if (courseId) return ensureDrill(queryClient.ensureQueryData(courseOptions(filters, courseId)))
   return Promise.all([
-    queryClient.ensureQueryData(coursesOptions(filters, search.coursePage)),
-    queryClient.ensureQueryData(assessmentsOptions(filters, search.page)),
+    queryClient.ensureQueryData(
+      coursesOptions(filters, search.coursePage, { sort: search.courseSort, desc: search.courseDesc }),
+    ),
+    queryClient.ensureQueryData(assessmentsOptions(filters, search.page, { sort: search.sort, desc: search.desc })),
   ])
 }
 

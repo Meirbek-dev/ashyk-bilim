@@ -57,11 +57,13 @@ export async function loadLearnerRisk(queryClient: QueryClient, filters: Filters
   }
 }
 
-export const coursesOptions = (filters: Filters, page: number) =>
-  courseListOptions({ query: apiQuery(filters, { page }) })
+type Order = { sort?: string | undefined; desc?: boolean | undefined }
 
-export const assessmentsOptions = (filters: Filters, page: number) =>
-  assessmentListOptions({ query: apiQuery(filters, { page }) })
+export const coursesOptions = (filters: Filters, page: number, order: Order = {}) =>
+  courseListOptions({ query: apiQuery(filters, { page, ...order }) })
+
+export const assessmentsOptions = (filters: Filters, page: number, order: Order = {}) =>
+  assessmentListOptions({ query: apiQuery(filters, { page, ...order }) })
 
 export const courseOptions = (filters: Filters, id: CourseId) =>
   courseDetailOptions({ path: { course_id: id }, query: apiQuery(filters) })

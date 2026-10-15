@@ -9,7 +9,7 @@ import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 
-import { activeFilters, type Filters } from '../model/filters'
+import { activeFilters, ASSESSMENT_SORTS, type AssessmentSort, type Filters, tableSort } from '../model/filters'
 import { outlierLabels } from '../model/signals'
 import { assessmentsOptions } from '../queries'
 import { hours, percent, score } from './kpi'
@@ -17,7 +17,8 @@ import { Pager } from './pager'
 
 const columns = (): DataColumn<AssessmentOutlierRow>[] => [
   {
-    id: 'assessment',
+    id: 'title',
+    sortable: true,
     header: m.analytics_col_assessment(),
     priority: 1,
     cell: row => (
@@ -49,11 +50,18 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     priority: 2,
     cell: row => <span className="wrap-anywhere">{row.course_name}</span>,
   },
-  { id: 'submission', header: m.analytics_col_submission(), priority: 2, cell: row => percent(row.submission_rate) },
-  { id: 'pass', header: m.analytics_col_pass(), priority: 2, cell: row => percent(row.pass_rate) },
+  {
+    id: 'submission',
+    sortable: true,
+    header: m.analytics_col_submission(),
+    priority: 2,
+    cell: row => percent(row.submission_rate),
+  },
+  { id: 'pass', sortable: true, header: m.analytics_col_pass(), priority: 2, cell: row => percent(row.pass_rate) },
   { id: 'median', header: m.analytics_col_median(), priority: 3, cell: row => score(row.median_score) },
   {
     id: 'latency',
+    sortable: true,
     header: m.analytics_col_latency(),
     priority: 3,
     cell: row => hours(row.grading_latency_hours_p50),
@@ -67,8 +75,10 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
 ]
 
 /** Assessment outcomes across the caller's courses; an assessment opens its drill-down with the learners. */
-export function AssessmentsTable({ filters, page }: { filters: Filters; page: number }) {
-  const query = useSuspenseQuery(assessmentsOptions(filters, page))
+type AssessmentsTableProps = { filters: Filters; page: number; order: { sort?: AssessmentSort; desc?: boolean } }
+
+export function AssessmentsTable({ filters, page, order }: AssessmentsTableProps) {
+  const query = useSuspenseQuery(assessmentsOptions(filters, page, order))
   const navigate = useNavigate()
   return (
     <section className="flex flex-col gap-4">
@@ -87,6 +97,10 @@ export function AssessmentsTable({ filters, page }: { filters: Filters; page: nu
           rows={query.data.items}
           columns={columns()}
           getKey={row => row.assessment_id}
+          sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
+          onSortChange={next =>
+            void navigate({ to: '.', search: prev => ({ ...prev, ...tableSort(ASSESSMENT_SORTS, next), page: 1 }) })
+          }
         />
         <Pager page={page} total={query.data.total} />
       </ListState>

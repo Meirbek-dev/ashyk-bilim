@@ -11,6 +11,8 @@ import {
   pickFilters,
   tabOf,
   toFilterForm,
+  COURSE_SORTS,
+  tableSort,
 } from './filters'
 
 const COURSE = '01a0fe71-945c-760e-a11a-037490019fda'
@@ -75,4 +77,11 @@ describe('analytics filters', () => {
     expect(learnerSort({ id: 'course', desc: false })).toEqual({ sort: undefined, desc: undefined })
     expect(learnerSort(undefined)).toEqual({ sort: undefined, desc: undefined })
   })
+})
+
+test('B-ANL-12 a header click becomes a sort key the endpoint knows; another column is the server order', () => {
+  expect(tableSort(COURSE_SORTS, { id: 'completion', desc: true })).toEqual({ sort: 'completion', desc: true })
+  expect(tableSort(COURSE_SORTS, { id: 'name', desc: false })).toEqual({ sort: 'name', desc: undefined })
+  expect(tableSort(COURSE_SORTS, { id: 'ungraded', desc: true })).toEqual({ sort: undefined, desc: undefined })
+  expect(tableSort(COURSE_SORTS, undefined)).toEqual({ sort: undefined, desc: undefined })
 })

@@ -48,10 +48,23 @@ export const learnersSearchSchema = v.object({
   courseId: optionalId,
 })
 
-/** performance: the two tables' pages, or a drill-down into one course or one assessment (`page` then pages it). */
+/** `sort_by` keys of the two performance tables (server `SORT_KEYS`), each a column of its table. */
+export const COURSE_SORTS = ['name', 'active', 'completion', 'risk', 'health'] as const
+export const ASSESSMENT_SORTS = ['title', 'submission', 'pass', 'latency'] as const
+export type CourseSort = (typeof COURSE_SORTS)[number]
+export type AssessmentSort = (typeof ASSESSMENT_SORTS)[number]
+
+/**
+ * performance: the two tables' pages and orders, or a drill-down into one course or one assessment (`page` then
+ * pages it). An unknown order is the server's.
+ */
 export const performanceSearchSchema = v.object({
   page,
   coursePage: page,
+  courseSort: v.fallback(v.optional(v.picklist(COURSE_SORTS)), undefined),
+  courseDesc: v.fallback(v.optional(v.boolean()), undefined),
+  sort: v.fallback(v.optional(v.picklist(ASSESSMENT_SORTS)), undefined),
+  desc: v.fallback(v.optional(v.boolean()), undefined),
   courseId: optionalId,
   assessmentType: v.fallback(v.optional(v.picklist(['quiz', 'exam', 'code_challenge'])), undefined),
   assessmentId: optionalId,

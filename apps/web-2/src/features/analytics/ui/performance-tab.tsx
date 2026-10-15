@@ -34,8 +34,12 @@ export function PerformanceTab() {
         <SignalList title={m.analytics_forecasts_title()} items={data.forecasts} />
         <SignalList title={m.analytics_anomalies_title()} items={data.anomalies} />
       </div>
-      <CoursesTable filters={filters} page={search.coursePage} />
-      <AssessmentsTable filters={filters} page={search.page} />
+      <CoursesTable
+        filters={filters}
+        page={search.coursePage}
+        order={{ sort: search.courseSort, desc: search.courseDesc }}
+      />
+      <AssessmentsTable filters={filters} page={search.page} order={{ sort: search.sort, desc: search.desc }} />
       <BottlenecksTable rows={data.content_bottlenecks} withCourse />
       <ExportLinks
         links={[
