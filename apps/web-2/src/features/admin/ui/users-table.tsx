@@ -11,7 +11,7 @@ import { ShowMore } from '#/shared/components/show-more'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
 
-import { usersListOptions } from '../queries'
+import { usersListOptions, type UsersFilter } from '../queries'
 import { userStatusBadges } from './labels'
 import { RoleNames } from './role-names'
 
@@ -23,7 +23,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     // The panel opens from the URL (R-07): this link is the shareable address of the user.
     cell: user => (
       <span className="flex flex-col wrap-anywhere">
-        <Link to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
+        <Link from="/admin/users" to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
           {user.display_name || user.username}
         </Link>
         <span className="wrap-anywhere text-muted-foreground">@{user.username}</span>
@@ -54,9 +54,9 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
   },
 ]
 
-/** The directory, newest first, "Show more" by keyset cursor; a search with no hits offers to reset it. */
-export function UsersTable({ q, namedRoles }: { q: string | undefined; namedRoles: boolean }) {
-  const query = useSuspenseInfiniteQuery(usersListOptions(q))
+/** The directory in the URL's order, "Show more" by keyset cursor; a search or filter with no hits offers to reset. */
+export function UsersTable({ filter, namedRoles }: { filter: UsersFilter; namedRoles: boolean }) {
+  const query = useSuspenseInfiniteQuery(usersListOptions(filter))
   const navigate = useNavigate()
   const users = query.data.pages.flatMap(page => page.items)
   return (
@@ -64,7 +64,7 @@ export function UsersTable({ q, namedRoles }: { q: string | undefined; namedRole
       pending={false}
       error={query.error}
       count={users.length}
-      filtered={q !== undefined}
+      filtered={Boolean(filter.q ?? filter.status ?? filter.role)}
       emptyText={m.admin_users_empty()}
       onResetFilters={() => void navigate({ to: '/admin/users', search: {} })}
       onRetry={() => void query.refetch()}

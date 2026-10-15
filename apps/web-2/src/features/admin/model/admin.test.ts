@@ -1,3 +1,4 @@
+import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
 import { m } from '#/paraglide/messages'
@@ -13,6 +14,7 @@ import {
   rulesForm,
   takenField,
 } from './admin'
+import { usersSearchSchema } from '../route'
 import { roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
@@ -103,5 +105,18 @@ describe('admin model', () => {
       daily_xp_limit: undefined,
       rewards: { course_completion: 250, admin_award: 5, quiz_completion: 40 },
     })
+  })
+})
+
+test('B-ADM-26 order, status and role live in the URL; an unknown order or status is the default', () => {
+  expect(v.parse(usersSearchSchema, { sort: 'name', status: 'disabled', role: 'teacher' })).toMatchObject({
+    sort: 'name',
+    status: 'disabled',
+    role: 'teacher',
+  })
+  expect(v.parse(usersSearchSchema, { sort: 'oldest', status: 'banned', role: ' ' })).toMatchObject({
+    sort: undefined,
+    status: undefined,
+    role: undefined,
   })
 })

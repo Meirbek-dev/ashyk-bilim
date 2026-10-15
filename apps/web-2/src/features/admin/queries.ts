@@ -51,8 +51,17 @@ export const nextCursor = (page: { next_cursor: string | null }) => page.next_cu
 
 // Composed by hand: the generated infinite options type the queryFn as skippable, which useSuspenseInfiniteQuery
 // rejects. Key and request still come from the generated client.
-export const usersListOptions = (q: string | undefined) => {
-  const query = { limit: PAGE_SIZE, ...(q ? { q } : {}) }
+/** The directory's filters: the URL's search, order, status and role (each left out when unset). */
+export type UsersFilter = Pick<UsersSearch, 'q' | 'sort' | 'status' | 'role'>
+
+export const usersListOptions = ({ q, sort, status, role }: UsersFilter) => {
+  const query = {
+    limit: PAGE_SIZE,
+    ...(q ? { q } : {}),
+    ...(sort ? { sort } : {}),
+    ...(status ? { status } : {}),
+    ...(role ? { role } : {}),
+  }
   return infiniteQueryOptions<
     AdminUserPage,
     ApiError,
@@ -90,9 +99,9 @@ export const userOptions = (id: UserId) =>
  * names need `admin.roles`, the group choice `groups.manage`).
  */
 export function loadUsersPage(queryClient: QueryClient, session: SessionInfo | null, search: UsersSearch) {
-  const { q, user } = search
+  const { user } = search
   return Promise.all([
-    queryClient.ensureInfiniteQueryData(usersListOptions(q)),
+    queryClient.ensureInfiniteQueryData(usersListOptions(search)),
     user ? queryClient.ensureQueryData(userOptions(user)) : null,
     hasCapability(session, 'admin.roles') ? queryClient.ensureQueryData(rolesOptions()) : null,
     user && hasCapability(session, 'groups.manage') ? queryClient.ensureQueryData(groupChoicesOptions()) : null,

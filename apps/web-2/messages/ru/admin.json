@@ -161,5 +161,11 @@
   "admin_group_member_removed": "Участник убран",
   "admin_group_delete_title": "Удалить группу «{name}»?",
   "admin_group_delete_consequence": "Участники и курсы будут отвязаны от группы.",
-  "admin_group_deleted": "Группа удалена"
+  "admin_group_deleted": "Группа удалена",
+  "admin_users_sort_label": "Сортировка: {sort}",
+  "admin_users_sort_newest": "Сначала новые",
+  "admin_users_sort_name": "По имени",
+  "admin_users_status_label": "Статус: {status}",
+  "admin_users_role_label": "Роль: {role}",
+  "admin_users_filter_all": "все"
 }

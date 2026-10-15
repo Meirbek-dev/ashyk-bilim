@@ -25,8 +25,8 @@ import { UserStatus } from './user-status'
 export function UserSheet({ id }: { id: string }) {
   const { data: user } = useSuspenseQuery(userOptions(id))
   const { data: session } = useSuspenseQuery(sessionOptions())
-  const navigate = useNavigate()
-  const close = () => void navigate({ to: '/admin/users', search: prev => ({ ...prev, user: undefined }) })
+  const navigate = useNavigate({ from: '/admin/users' })
+  const close = () => void navigate({ search: prev => ({ ...prev, user: undefined }) })
   const namedRoles = hasCapability(session, 'admin.roles')
   const badge = user ? userStatusBadges[user.status] : null
   return (

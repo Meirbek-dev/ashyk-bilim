@@ -8,6 +8,15 @@ const blankToUndefined = v.pipe(
   v.transform(text => text || undefined),
 )
 
-/** /admin/users?q=&user=: the directory search and the user open in the side panel (by id: shareable). */
-export const usersSearchSchema = v.object({ q: v.optional(blankToUndefined), user: v.optional(blankToUndefined) })
+/**
+ * /admin/users?q=&sort=&status=&role=&user=: the directory search, order (none: newest), status and role filters, and
+ * the user open in the side panel (by id: shareable). An unknown order or status is the default.
+ */
+export const usersSearchSchema = v.object({
+  q: v.optional(blankToUndefined),
+  sort: v.fallback(v.optional(v.picklist(['name'])), undefined),
+  status: v.fallback(v.optional(v.picklist(['active', 'disabled'])), undefined),
+  role: v.optional(blankToUndefined),
+  user: v.optional(blankToUndefined),
+})
 export type UsersSearch = v.InferOutput<typeof usersSearchSchema>

@@ -157,5 +157,11 @@
   "admin_group_member_removed": "Мүше шығарылды",
   "admin_group_delete_title": "«{name}» атты топты жою керек пе?",
   "admin_group_delete_consequence": "Мүшелер мен курстар топтан ажыратылады.",
-  "admin_group_deleted": "Топ жойылды"
+  "admin_group_deleted": "Топ жойылды",
+  "admin_users_sort_label": "Сұрыптау: {sort}",
+  "admin_users_sort_newest": "Алдымен жаңалары",
+  "admin_users_sort_name": "Аты бойынша",
+  "admin_users_status_label": "Күйі: {status}",
+  "admin_users_role_label": "Рөлі: {role}",
+  "admin_users_filter_all": "барлығы"
 }
