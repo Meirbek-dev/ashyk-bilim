@@ -72,6 +72,36 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is publishe
   await expect(instructions.getByText(m.errors_conflict({}, ru))).toBeVisible()
 })
 
+test('B-FSB-13 the header switch publishes and unpublishes the task, not the bare activity', async ({
+  page,
+  makeCourse,
+  tasks,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  const task = await tasks.make(course, { publish: false, instructions: '' })
+  await page.goto(studio(course, task))
+  const publishing = page.getByRole('region', { name: m.submission_publishing({}, ru) })
+  const toggle = page.getByRole('switch', { name: m.studio_published_switch({}, ru) })
+  await toggle.click()
+  await expect(page.getByRole('alert').getByText(m.submission_publish_needs_instructions({}, ru))).toBeVisible()
+
+  const instructions = form(page, m.submission_instructions({}, ru))
+  await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('Опишите опыт')
+  await save(page, m.submission_instructions({}, ru))
+  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await toggle.click()
+  await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
+  await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
+  await expect(toggle).toBeChecked()
+
+  await toggle.click()
+  const confirm = page.getByRole('alertdialog', { name: m.submission_unpublish_title({}, ru) })
+  await confirm.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
+  await expect(page.getByText(m.submission_unpublished_toast({}, ru))).toBeVisible()
+  await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
+  await expect(toggle).not.toBeChecked()
+})
+
 test('B-FSB-15 rubric criteria are added, checked, saved and removed', async ({ page, api, makeCourse, tasks }) => {
   const course = await makeCourse({ activities: 1 })
   const task = await tasks.make(course)

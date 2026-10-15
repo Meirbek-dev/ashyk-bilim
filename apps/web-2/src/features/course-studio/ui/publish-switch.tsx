@@ -71,7 +71,7 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
         error={update.error}
       />
       {update.error && !confirming ? (
-        <span role="alert" className="max-w-48 text-sm text-destructive">
+        <span role="alert" className="max-w-64 text-sm text-destructive">
           {refusal(update.error, activity)}
         </span>
       ) : null}
