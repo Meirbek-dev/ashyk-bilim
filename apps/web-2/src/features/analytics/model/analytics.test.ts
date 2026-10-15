@@ -24,6 +24,17 @@ describe('analytics model', () => {
     expect(rows[0]?.progress_pct).toBe(40)
   })
 
+  test('B-ANL-28 drill rows keep steps, attempts, last score, submission date and the missed review deadline', () => {
+    const [progress, pass, backlog] = drillRows([
+      { user_id: 'u1', user_display_name: 'A', completed_steps: 3, total_steps: 5 },
+      { user_id: 'u2', user_display_name: 'B', attempts: 2, last_score: 40, submitted_at_unix: 1_760_000_000 },
+      { user_id: 'u3', user_display_name: 'C', age_hours: 80, sla_breached: true },
+    ])
+    expect(progress).toMatchObject({ completed_steps: 3, total_steps: 5 })
+    expect(pass).toMatchObject({ attempts: 2, last_score: 40, submitted_at_unix: 1_760_000_000 })
+    expect(backlog?.sla_breached).toBe(true)
+  })
+
   test('B-ANL-16 CSV links are relative API paths with the filters, the time zone and the interface language', () => {
     const hrefs = exportHrefs(v.parse(filtersSchema, { window: '7d', course: COURSE }))
     expect(hrefs.atRisk).toBe(

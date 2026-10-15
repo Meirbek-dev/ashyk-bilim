@@ -79,6 +79,12 @@ const drillRowSchema = v.object({
   submission_id: v.optional(v.string()),
   best_score: v.nullish(v.number()),
   passed: v.optional(v.boolean()),
+  completed_steps: v.optional(v.number()),
+  total_steps: v.optional(v.number()),
+  submitted_at_unix: v.nullish(v.number()),
+  sla_breached: v.optional(v.boolean()),
+  attempts: v.optional(v.number()),
+  last_score: v.nullish(v.number()),
 })
 export type DrillRow = v.InferOutput<typeof drillRowSchema>
 

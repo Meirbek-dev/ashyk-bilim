@@ -10,6 +10,7 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 import type { Filters } from '../model/filters'
 import { assessmentOptions } from '../queries'
 import { AsOf } from './as-of'
+import { AssessmentInsights } from './assessment-insights'
 import { BackLink } from './back-link'
 import { DrillSection } from './drill-section'
 import { hours, percent, score } from './kpi'
@@ -49,6 +50,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
         data={data.score_distribution.map(bucket => ({ label: bucket.label, value: bucket.count }))}
         formatValue={value => formatNumber(value)}
       />
+      <AssessmentInsights data={data} />
       <DrillSection
         title={m.analytics_pass_rows()}
         metric="pass_rate"
