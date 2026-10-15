@@ -28,5 +28,6 @@
   "discussions_like": "Like",
   "discussions_dislike": "Dislike",
   "discussions_unknown_author": "Deleted user",
-  "discussions_post_deleted": "Message deleted"
+  "discussions_post_deleted": "Message deleted",
+  "discussions_archived": "The course is archived: the discussion is read-only."
 }

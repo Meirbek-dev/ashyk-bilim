@@ -28,5 +28,6 @@
   "discussions_like": "Ұнайды",
   "discussions_dislike": "Ұнамайды",
   "discussions_unknown_author": "Жойылған пайдаланушы",
-  "discussions_post_deleted": "Хабарлама жойылды"
+  "discussions_post_deleted": "Хабарлама жойылды",
+  "discussions_archived": "Курс мұрағатта: талқылау тек оқу үшін ашық."
 }
