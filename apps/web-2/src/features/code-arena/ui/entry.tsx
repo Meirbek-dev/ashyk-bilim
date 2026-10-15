@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { Suspense } from 'react'
+
+import { RemediationGate } from '#/features/ai'
 
 import { m } from '#/paraglide/messages'
+import type { ActivityId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
@@ -12,9 +16,11 @@ import { reasonLabels } from './labels'
 
 /**
  * No open attempt (B-COD-04): what the learner may still do, from the server's attempt state. "Start" opens a draft;
- * its answer joins the history, which turns this into the editor.
+ * its answer joins the history, which turns this into the editor. A remediation gate shows its session in place.
  */
-export function Entry({ courseId, assessmentId }: { courseId: string; assessmentId: string }) {
+type EntryProps = { courseId: string; assessmentId: string; activityId: ActivityId }
+
+export function Entry({ courseId, assessmentId, activityId }: EntryProps) {
   const { data: state } = useSuspenseQuery(stateOptions(assessmentId))
   const start = useMutation(startOptions(useQueryClient(), courseId, assessmentId))
   const { max_attempts: max, due_at_unix: due, time_limit_seconds: limit } = state.effective
@@ -43,6 +49,11 @@ export function Entry({ courseId, assessmentId }: { courseId: string; assessment
           ))}
         </ul>
       )}
+      {state.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
+        <Suspense fallback={null}>
+          <RemediationGate activityId={activityId} invalidates={[stateOptions(assessmentId).queryKey]} />
+        </Suspense>
+      ) : null}
       {start.error ? <ErrorAlert>{presentError(start.error)}</ErrorAlert> : null}
     </section>
   )

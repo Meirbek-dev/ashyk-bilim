@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 
+import { RemediationGate } from '#/features/ai'
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
@@ -8,7 +9,6 @@ import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { needsRemediation } from '../model/attempt'
 import { attemptsOptions, stateOptions } from '../queries'
 import { AttemptFrame } from './attempt-frame'
-import { attemptSlots } from './attempt-slots'
 import { AttemptsList } from './attempts-list'
 import { EntryAction } from './entry-action'
 import { PolicySummary } from './policy-summary'
@@ -17,7 +17,6 @@ import { PolicySummary } from './policy-summary'
 export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
   const { data: state } = useSuspenseQuery(stateOptions(assessment.id))
   const { data: attempts } = useSuspenseQuery(attemptsOptions(assessment.id))
-  const Remediation = attemptSlots.remediation
   return (
     <AttemptFrame title={assessment.title}>
       <article className="flex flex-col gap-gutter">
@@ -32,7 +31,12 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
         {needsRemediation(state) ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{m.attempt_remediation_heading()}</h2>
-            {Remediation ? <Remediation assessmentId={assessment.id} submissionId={attempts[0]?.id ?? null} /> : null}
+            <Suspense fallback={null}>
+              <RemediationGate
+                activityId={assessment.activity_id}
+                invalidates={[stateOptions(assessment.id).queryKey, attemptsOptions(assessment.id).queryKey]}
+              />
+            </Suspense>
           </section>
         ) : null}
         <AttemptsList attempts={attempts} />

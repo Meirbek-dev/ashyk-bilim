@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { type QueryKey, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
@@ -19,9 +19,11 @@ import { RemediationAnswer } from './remediation-answer'
  * One remediation session (B-AI-19): the micro-lecture, its objectives, the questions. "Finish" opens once every
  * question has an answer and hands the answers in: the server scores them and only then sends the answer key.
  */
-export function RemediationSessionView({ session, userId }: { session: RemediationSession; userId: UserId }) {
+type SessionViewProps = { session: RemediationSession; userId: UserId; invalidates?: QueryKey[] }
+
+export function RemediationSessionView({ session, userId, invalidates = [] }: SessionViewProps) {
   const queryClient = useQueryClient()
-  const complete = useMutation(completeSessionOptions(queryClient, userId))
+  const complete = useMutation({ ...completeSessionOptions(queryClient, userId), meta: { invalidates } })
   const { lecture } = session
   const questions = session.test.questions
   const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ''))

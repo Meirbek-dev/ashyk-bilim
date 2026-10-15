@@ -1,3 +1,4 @@
+import type { QueryKey } from '@tanstack/react-query'
 import { Suspense, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -10,10 +11,10 @@ import { Button } from '#/shared/ui/button'
 import { sessionStatusLabels } from '../model/labels'
 import { RemediationSessionView } from './remediation-session'
 
-type RemediationTabProps = { sessions: RemediationSession[]; userId: UserId }
+type RemediationTabProps = { sessions: RemediationSession[]; userId: UserId; invalidates?: QueryKey[] }
 
 /** The learner's remediation sessions of this activity (B-AI-19); one opens at a time. */
-export function RemediationTab({ sessions, userId }: RemediationTabProps) {
+export function RemediationTab({ sessions, userId, invalidates }: RemediationTabProps) {
   const [openId, setOpenId] = useState<AiRemediationSessionId | null>(sessions[0]?.id ?? null)
   const open = sessions.find(session => session.id === openId)
   return (
@@ -38,7 +39,7 @@ export function RemediationTab({ sessions, userId }: RemediationTabProps) {
       </ul>
       {open ? (
         <Suspense fallback={<ListSkeleton />}>
-          <RemediationSessionView key={open.id} session={open} userId={userId} />
+          <RemediationSessionView key={open.id} session={open} userId={userId} invalidates={invalidates} />
         </Suspense>
       ) : null}
     </div>

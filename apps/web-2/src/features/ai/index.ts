@@ -11,6 +11,10 @@ export const AdminAiPage = lazy(() => import('./ui/admin-ai-page').then(module =
 export const SubmissionAiPanel = lazy(() =>
   import('./ui/submission-ai-panel').then(module => ({ default: module.SubmissionAiPanel })),
 )
+/** The learner's remediation where it blocks a new attempt (quiz entry, file task, code task). */
+export const RemediationGate = lazy(() =>
+  import('./ui/remediation-gate').then(module => ({ default: module.RemediationGate })),
+)
 
 // Route-side helpers: no UI at runtime.
 export { evalsOptions, prefetchPanel, runsOptions, settingsOptions, usageSummaryOptions } from './queries'

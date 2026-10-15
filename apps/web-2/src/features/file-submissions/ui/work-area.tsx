@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 
+import { RemediationGate } from '#/features/ai'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
@@ -9,7 +10,7 @@ import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
 import { attemptsLeft, workOf } from '../model/task'
-import type { WorkIds } from '../queries'
+import { taskOptions, type WorkIds } from '../queries'
 import { AttemptFiles } from './attempt-files'
 import { DraftEditor } from './draft-editor'
 import { GradeDetails } from './grade-details'
@@ -20,7 +21,8 @@ import { useWork } from './use-work'
 
 /**
  * The learner's work, by the newest attempt: files to change and submit, the receipt, or the result with a new
- * attempt. The server's `disabled_reasons` replace whatever the learner would do next (B-FSB-09).
+ * attempt. The server's `disabled_reasons` replace whatever the learner would do next (B-FSB-09); a remediation gate
+ * shows its session in place.
  */
 export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) {
   const work = useWork(ids)
@@ -52,6 +54,11 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
             <li key={reason}>{reason}</li>
           ))}
         </ul>
+      ) : null}
+      {next && task.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
+        <Suspense fallback={null}>
+          <RemediationGate activityId={task.activity_id} invalidates={[taskOptions(task.activity_id).queryKey]} />
+        </Suspense>
       ) : null}
       {next && reasons.length === 0 && state.kind === 'edit' ? (
         <DraftEditor task={task} run={work.run} pending={work.pending} submitting={work.submitting} />

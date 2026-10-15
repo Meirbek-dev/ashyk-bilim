@@ -34,7 +34,7 @@ export function AttemptArea({ courseId, challenge, code }: AttemptAreaProps) {
           receivedAt={dataUpdatedAt}
         />
       ) : (
-        <Entry courseId={courseId} assessmentId={challenge.id} />
+        <Entry courseId={courseId} assessmentId={challenge.id} activityId={challenge.activity_id} />
       )}
       {run ? <RunResult runId={run} /> : null}
       <RunList itemId={code.item.id} selected={run} />
