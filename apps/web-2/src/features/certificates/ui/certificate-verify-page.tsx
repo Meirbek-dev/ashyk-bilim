@@ -2,10 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { BadgeCheck } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 
+import { certificateKind } from '../model/certificates'
 import { verificationOptions } from '../queries'
 import { CertificatePdfLink } from './certificate-pdf-link'
 
@@ -15,9 +17,19 @@ import { CertificatePdfLink } from './certificate-pdf-link'
  */
 export function CertificateVerifyPage({ code }: { code: string }) {
   const { data } = useSuspenseQuery(verificationOptions(code))
-  const { certificate, course, holder, instructor_name: instructor } = data
+  const { certificate, certification, course, holder, instructor_name: instructor } = data
+  const kind = certificateKind(certification.config)
   const fields = [
     { label: m.certificates_holder(), value: holder.display_name },
+    {
+      label: m.certificates_course(),
+      value: (
+        <Link to="/courses/$courseId" params={{ courseId: course.id }}>
+          {course.name}
+        </Link>
+      ),
+    },
+    ...(kind ? [{ label: m.certificates_name(), value: kind }] : []),
     ...(instructor ? [{ label: m.certificates_instructor(), value: instructor }] : []),
     { label: m.certificates_code(), value: certificate.verify_code },
   ]

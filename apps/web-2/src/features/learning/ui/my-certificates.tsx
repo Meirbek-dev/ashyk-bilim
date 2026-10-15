@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
-import { CertificatePdfLink } from '#/features/certificates'
+import { CertificatePdfLink, certificateKind } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
@@ -29,13 +29,16 @@ export function MyCertificates() {
         onRetry={() => void query.refetch()}
       >
         <DataList items={query.data} getKey={issued => issued.certificate.id}>
-          {({ certificate, course, instructor_name: instructor }) => (
+          {({ certificate, certification, course, instructor_name: instructor }) => (
             <>
               <h3 className="font-medium wrap-anywhere">
                 <Link to="/courses/$courseId" params={{ courseId: course.id }}>
                   {course.name}
                 </Link>
               </h3>
+              {certificateKind(certification.config) ? (
+                <p className="text-sm wrap-anywhere">{certificateKind(certification.config)}</p>
+              ) : null}
               <p className="text-sm wrap-anywhere text-muted-foreground">
                 {m.learning_certificate_meta({
                   date: formatDate(certificate.issued_at_unix),

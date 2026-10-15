@@ -8,5 +8,16 @@
   "certificates_code": "Сертификат коды",
   "certificates_download_pdf": "PDF жүктеу",
   "certificates_og_title": "{holder} сертификаты: {course}",
-  "certificates_summary": "Түпнұсқа сертификат, {date} берілген."
+  "certificates_summary": "Түпнұсқа сертификат, {date} берілген.",
+  "certificates_course": "Курс атауы",
+  "certificates_name": "Сертификат атауы",
+  "certificates_type_completion": "Курсты аяқтағаны үшін",
+  "certificates_type_achievement": "Жетістік үшін",
+  "certificates_type_assessment": "Бағалау нәтижесі бойынша",
+  "certificates_type_participation": "Қатысқаны үшін",
+  "certificates_type_mastery": "Дағдыны меңгеру",
+  "certificates_type_professional": "Кәсіби даму",
+  "certificates_type_continuing": "Қосымша білім",
+  "certificates_type_workshop": "Шеберхана",
+  "certificates_type_specialization": "Мамандандыру"
 }

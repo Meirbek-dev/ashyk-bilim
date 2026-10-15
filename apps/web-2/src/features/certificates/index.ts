@@ -1,4 +1,4 @@
-export { certificationPreviewHref } from './model/certificates'
+export { certificateKind, certificationPreviewHref } from './model/certificates'
 export { ensureVerification } from './queries'
 export { CertificateInvalid } from './ui/certificate-invalid'
 export { CertificatePdfLink } from './ui/certificate-pdf-link'

@@ -8,5 +8,16 @@
   "certificates_code": "Код сертификата",
   "certificates_download_pdf": "Скачать PDF",
   "certificates_og_title": "Сертификат: {holder}, {course}",
-  "certificates_summary": "Подлинный сертификат, выдан {date}"
+  "certificates_summary": "Подлинный сертификат, выдан {date}",
+  "certificates_course": "Курс",
+  "certificates_name": "Сертификат",
+  "certificates_type_completion": "За завершение курса",
+  "certificates_type_achievement": "За достижение",
+  "certificates_type_assessment": "По результатам оценивания",
+  "certificates_type_participation": "За участие",
+  "certificates_type_mastery": "Освоение навыка",
+  "certificates_type_professional": "Профессиональное развитие",
+  "certificates_type_continuing": "Дополнительное образование",
+  "certificates_type_workshop": "Семинар",
+  "certificates_type_specialization": "Специализация"
 }

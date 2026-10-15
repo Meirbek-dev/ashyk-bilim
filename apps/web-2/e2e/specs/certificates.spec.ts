@@ -31,6 +31,10 @@ test(
     await expect(page.getByRole('heading', { level: 1, name: issued.course })).toBeVisible()
     await expect(page.getByText(m.certificates_valid({}, ru))).toBeVisible()
     await expect(page.getByText(issued.holder)).toBeVisible()
+    await expect(page.getByRole('main').getByRole('link', { name: issued.course })).toHaveAttribute(
+      'href',
+      /^\/courses\//,
+    )
     await expect(page.getByText(issued.code)).toBeVisible()
     await expect(page.getByText(formatDate(Date.now() / 1000, 'ru'))).toBeVisible()
     await expect(page).toHaveTitle(title)

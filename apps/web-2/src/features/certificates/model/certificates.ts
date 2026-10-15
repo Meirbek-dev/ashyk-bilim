@@ -1,5 +1,12 @@
+import { m } from '#/paraglide/messages'
 import { client } from '#/shared/api/gen/client.gen'
-import type { CertificatePdfData, CertificationPreviewPdfData, UiLanguage } from '#/shared/api/gen/types.gen'
+import type {
+  CertificatePdfData,
+  CertificationConfig,
+  CertificationPreviewPdfData,
+  CertificationType,
+  UiLanguage,
+} from '#/shared/api/gen/types.gen'
 
 /**
  * certificatePdf() is a browser download (the API answers `Content-Disposition: attachment`), not a fetch: the button
@@ -25,3 +32,23 @@ export const certificationPreviewHref = (certificationId: string, lang: UiLangua
     query: { lang },
     baseUrl: '',
   })
+
+// The type keys the server prints on the PDF (certifications/pdf.rs `type_label`).
+const typeLabels: Record<CertificationType, () => string> = {
+  completion: m.certificates_type_completion,
+  achievement: m.certificates_type_achievement,
+  assessment: m.certificates_type_assessment,
+  participation: m.certificates_type_participation,
+  mastery: m.certificates_type_mastery,
+  professional: m.certificates_type_professional,
+  continuing: m.certificates_type_continuing,
+  workshop: m.certificates_type_workshop,
+  specialization: m.certificates_type_specialization,
+}
+
+/** The certificate as its PDF names it: the author's name and the type, each left out when unset. */
+export function certificateKind(config: CertificationConfig): string {
+  const name = config.certification_name?.trim()
+  const type = config.certification_type ? typeLabels[config.certification_type]() : ''
+  return [name, type].filter(Boolean).join(' · ')
+}
