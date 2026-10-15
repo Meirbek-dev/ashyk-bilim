@@ -269,5 +269,21 @@
   "analytics_component_missing": "missed required work",
   "analytics_component_grading": "awaiting your review",
   "analytics_grade_blocks": "Review submissions ({count})",
-  "analytics_admin_window": "Period: {window}"
+  "analytics_admin_window": "Period: {window}",
+  "analytics_dq_title": "Data quality",
+  "analytics_dq_mode": "Mode",
+  "analytics_mode_live": "Live data",
+  "analytics_mode_rollup": "Rollup",
+  "analytics_dq_rollup": "Last recomputed",
+  "analytics_dq_freshness": "Freshness",
+  "analytics_dq_minutes": "{count} min ago",
+  "analytics_dq_confidence": "Confidence",
+  "analytics_confidence_low": "Low",
+  "analytics_confidence_medium": "Medium",
+  "analytics_confidence_high": "High",
+  "analytics_dq_excluded_preview": "Preview attempts left out",
+  "analytics_dq_excluded_teacher": "Teacher attempts left out",
+  "analytics_dq_thin": "Too little data to judge",
+  "analytics_dq_thin_course": "{course}: {count} learners, at least 5 needed",
+  "analytics_dq_issues": "Data issues"
 }

@@ -14,6 +14,7 @@ import { formatNumber } from '#/shared/i18n/format'
 import { exportHrefs } from '../model/analytics'
 import { pickFilters } from '../model/filters'
 import { overviewOptions } from '../queries'
+import { DataQuality } from './data-quality'
 import { DrillSection } from './drill-section'
 import { ExportLinks } from './export-links'
 import { hours } from './kpi'
@@ -110,6 +111,7 @@ export function OperationsTab() {
       <ExportLinks
         links={[{ href: exportHrefs(filters).gradingBacklog, label: m.analytics_export_grading_backlog() }]}
       />
+      <DataQuality quality={data.data_quality} />
     </div>
   )
 }

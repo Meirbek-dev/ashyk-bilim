@@ -269,5 +269,21 @@
   "analytics_component_missing": "өткізілген міндетті тапсырмалар",
   "analytics_component_grading": "сіздің тексеруіңізді күтуде",
   "analytics_grade_blocks": "Жұмыстарды тексеру ({count})",
-  "analytics_admin_window": "Кезең: {window}"
+  "analytics_admin_window": "Кезең: {window}",
+  "analytics_dq_title": "Деректер сапасы",
+  "analytics_dq_mode": "Деректер режимі",
+  "analytics_mode_live": "Тірі деректер",
+  "analytics_mode_rollup": "Жиынтық",
+  "analytics_dq_rollup": "Соңғы қайта есептеу",
+  "analytics_dq_freshness": "Жаңалығы",
+  "analytics_dq_minutes": "{count} мин бұрын",
+  "analytics_dq_confidence": "Сенімділік",
+  "analytics_confidence_low": "Төмен",
+  "analytics_confidence_medium": "Орташа",
+  "analytics_confidence_high": "Жоғары",
+  "analytics_dq_excluded_preview": "Алынып тасталған сынақ әрекеттері",
+  "analytics_dq_excluded_teacher": "Алынып тасталған оқытушы әрекеттері",
+  "analytics_dq_thin": "Қорытынды үшін деректер аз",
+  "analytics_dq_thin_course": "{course}: білім алушылар {count}, кемінде 5 керек",
+  "analytics_dq_issues": "Деректерге ескертулер"
 }

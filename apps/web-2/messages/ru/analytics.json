@@ -269,5 +269,21 @@
   "analytics_component_missing": "пропущенные обязательные",
   "analytics_component_grading": "ждут вашей проверки",
   "analytics_grade_blocks": "Проверить работы ({count})",
-  "analytics_admin_window": "Период: {window}"
+  "analytics_admin_window": "Период: {window}",
+  "analytics_dq_title": "Качество данных",
+  "analytics_dq_mode": "Режим",
+  "analytics_mode_live": "Живые данные",
+  "analytics_mode_rollup": "Сводка",
+  "analytics_dq_rollup": "Последний пересчёт",
+  "analytics_dq_freshness": "Свежесть",
+  "analytics_dq_minutes": "{count} мин назад",
+  "analytics_dq_confidence": "Достоверность",
+  "analytics_confidence_low": "Низкая",
+  "analytics_confidence_medium": "Средняя",
+  "analytics_confidence_high": "Высокая",
+  "analytics_dq_excluded_preview": "Исключено пробных попыток",
+  "analytics_dq_excluded_teacher": "Исключено попыток преподавателей",
+  "analytics_dq_thin": "Мало данных для выводов",
+  "analytics_dq_thin_course": "{course}: учащихся {count}, нужно не меньше 5",
+  "analytics_dq_issues": "Замечания к данным"
 }
