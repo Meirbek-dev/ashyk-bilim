@@ -172,3 +172,25 @@ test('B-EDT-25 the code block under the cursor takes a language; the table under
   await screen.getByRole('menuitem', { name: m.editor_table_row_after() }).click()
   await expect.poll(() => find(last(onChange), 'table')?.content?.length).toBe(2)
 })
+
+test('B-EDT-27 a user block takes a person picked by name, not a typed id', async () => {
+  const id = '0199a8d5-da4c-753b-a6c4-a08d294bbab6'
+  const hit = { id, username: 'aigerim', display_name: 'Айгерим Сапарова', avatar_key: null }
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (request: Request) => {
+      const path = new URL(request.url).pathname
+      if (path.endsWith('/search'))
+        return Response.json({ users: [hit], courses: [], collections: [], next_cursor: null })
+      if (path.endsWith(`/users/by-id/${id}`)) return Response.json({ ...hit, bio: '', profile: { sections: [] } })
+      return new Response(null, { status: 404 })
+    }),
+  )
+  const onChange = vi.fn<(doc: EditorDocument) => void>()
+  const content = { type: 'doc', content: [{ type: 'blockUser', attrs: { user_id: '' } }] }
+  const screen = await render(<BlockEditor activityId={ACTIVITY} content={content} onChange={onChange} />)
+  await screen.getByRole('combobox', { name: m.editor_field_user() }).click()
+  await screen.getByRole('option', { name: /Айгерим Сапарова/ }).click()
+  await expect.poll(() => find(last(onChange), 'blockUser')?.attrs?.['user_id']).toBe(id)
+  vi.unstubAllGlobals()
+})

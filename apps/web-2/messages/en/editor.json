@@ -53,7 +53,7 @@
   "editor_field_question": "Question",
   "editor_field_answer": "Answer",
   "editor_field_latex": "LaTeX formula",
-  "editor_field_user_id": "User ID",
+  "editor_field_user": "Person (name or username)",
   "editor_apply": "Apply",
   "editor_block_image": "Image",
   "editor_block_video": "Video",

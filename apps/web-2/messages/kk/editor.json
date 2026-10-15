@@ -53,7 +53,7 @@
   "editor_field_question": "Сұрақ",
   "editor_field_answer": "Жауап",
   "editor_field_latex": "LaTeX формуласы",
-  "editor_field_user_id": "Пайдаланушы ID-і",
+  "editor_field_user": "Адам (аты немесе пайдаланушы аты)",
   "editor_apply": "Қолдану",
   "editor_block_image": "Сурет",
   "editor_block_video": "Бейне",

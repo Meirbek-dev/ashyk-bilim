@@ -53,7 +53,7 @@
   "editor_field_question": "Вопрос",
   "editor_field_answer": "Ответ",
   "editor_field_latex": "Формула LaTeX",
-  "editor_field_user_id": "ID пользователя",
+  "editor_field_user": "Человек (имя или имя пользователя)",
   "editor_apply": "Применить",
   "editor_block_image": "Изображение",
   "editor_block_video": "Видео",
