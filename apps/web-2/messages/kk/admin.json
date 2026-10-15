@@ -76,7 +76,7 @@
   ],
   "admin_role_permissions_empty": "Рөлдің құқықтары жоқ.",
   "admin_role_permissions_hint": "Әр жолға бір құқық: ресурс:әрекет:аумақ, мысалы course:read:all.",
-  "admin_role_permissions_refused": "{lines}-жолдар: мұндай құқық жоқ. Ресурсты, әрекетті және аймақты тексеріңіз.",
+  "admin_role_permissions_refused": "Мұндай құқықтар жоқ, жолдар: {lines}. Ресурсты, әрекетті және аймақты тексеріңіз.",
   "admin_role_new": "Жаңа рөл",
   "admin_role_created": "Рөл жасалды",
   "admin_role_not_found": "Рөл табылмады",

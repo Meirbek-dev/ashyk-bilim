@@ -76,7 +76,7 @@
   ],
   "admin_role_permissions_empty": "The role has no permissions.",
   "admin_role_permissions_hint": "One permission per line: resource:action:scope, e.g. course:read:all.",
-  "admin_role_permissions_refused": "Lines {lines}: no such permission. Check the resource, action and scope.",
+  "admin_role_permissions_refused": "No such permission on these lines: {lines}. Check the resource, action and scope.",
   "admin_role_new": "New role",
   "admin_role_created": "Role created",
   "admin_role_not_found": "Role not found",
