@@ -29,7 +29,7 @@ async function insert(screen: Awaited<ReturnType<typeof render>>, block: string)
 }
 
 // The lazy editor chunk (Tiptap, shiki, KaTeX) compiles on first import: warm it outside the 15 s test timeout.
-beforeAll(() => import('./block-editor'), 120_000)
+beforeAll(() => Promise.all([import('./block-editor'), import('katex')]), 120_000)
 
 describe('authoring', () => {
   test('B-EDT-11 typing and Bold change the document; the button shows the applied format', async () => {

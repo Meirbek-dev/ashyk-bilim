@@ -11,13 +11,13 @@ const TEMPLATES: { label: () => string; latex: string }[] = [
   { label: m.editor_math_sum, latex: String.raw`\sum_{i=1}^{n} x_i` },
   { label: m.editor_math_integral, latex: String.raw`\int_{a}^{b} f(x) \, dx` },
   { label: m.editor_math_limit, latex: String.raw`\lim_{x \to \infty} f(x)` },
-  { label: m.editor_math_matrix, latex: String.raw`\begin{pmatrix} a & b \ c & d \end{pmatrix}` },
+  { label: m.editor_math_matrix, latex: String.raw`\begin{pmatrix} a & b \\ c & d \end{pmatrix}` },
   { label: m.editor_math_binomial, latex: String.raw`\binom{n}{k}` },
   { label: m.editor_math_quadratic, latex: String.raw`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}` },
-  { label: m.editor_math_vector, latex: String.raw`\vec{v} = \begin{pmatrix} x \ y \ z \end{pmatrix}` },
+  { label: m.editor_math_vector, latex: String.raw`\vec{v} = \begin{pmatrix} x \\ y \\ z \end{pmatrix}` },
   {
     label: m.editor_math_system,
-    latex: String.raw`\begin{cases} a_1x + b_1y = c_1 \ a_2x + b_2y = c_2 \end{cases}`,
+    latex: String.raw`\begin{cases} a_1x + b_1y = c_1 \\ a_2x + b_2y = c_2 \end{cases}`,
   },
 ]
 
