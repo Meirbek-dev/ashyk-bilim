@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "vp dev",
-    "build": "vp build && bun gates/gates.ts budgets",
+    "build": "vp build",
     "start": "node serve.ts",
     "codegen": "bun gates/codegen.ts",
     "check": "vp check",

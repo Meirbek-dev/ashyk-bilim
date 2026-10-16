@@ -498,8 +498,7 @@ follows the running slots.
 - `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--staged`,
   `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and their dependents (all
   tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest `related`; web-2
-  `vp check` + vitest `related` + gates (+ build with chunk budgets when bundled code changed, skipped while
-  the sources match the last passing build); contract drift for both clients; infra `ci-infra` + `test-dev`.
+  `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` + `test-dev`.
   One line per gate, logs in `tmp/check/<gate>.log`. Server tests use 127.0.0.1 (Windows: `localhost` hangs).
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
   its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and

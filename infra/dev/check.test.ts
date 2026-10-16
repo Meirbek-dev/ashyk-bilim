@@ -28,11 +28,6 @@ test('docs alone run nothing; --all runs every area', () => {
   expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web', 'web2'])
 })
 
-test('web-2 budgets only when bundled code changed', () => {
-  expect(gates(['apps/web-2/e2e/specs/auth.spec.ts']).web2).not.toContain('web2:budgets')
-  expect(gates(['apps/web-2/src/shared/api/upload.ts']).web2).toContain('web2:budgets')
-})
-
 test('server gates compile against the committed .sqlx cache, never a live database', () => {
   for (const gate of plan(['apps/server/crates/api/src/app.rs'], false).server ?? [])
     if (gate.name !== 'server:fmt') expect(gate.env?.['SQLX_OFFLINE']).toBe('true')

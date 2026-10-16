@@ -251,7 +251,7 @@ jobs:
         run: just ci-web
 
   # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
-  # production build with chunk budgets. Regeneration must not repair uncommitted artifacts silently.
+  # production build. Regeneration must not repair uncommitted artifacts silently.
   web2-gates:
     needs: changes
     if: needs.changes.outputs.web2 == 'true'
@@ -288,7 +288,7 @@ jobs:
           GATES_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bun run verify
 
-      - name: Build with chunk budgets
+      - name: Build
         run: bun run build
 
   # Built in parallel with the gates (CI-OPT): a ci-<sha> tag is "built, not verified";

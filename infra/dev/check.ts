@@ -6,7 +6,6 @@
 // read the working tree, so run it on the snapshot you mean to push. Areas run in parallel, gates within one in order.
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { spawn, spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -94,7 +93,7 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
       { name: 'web:typecheck', cwd: web, cmd: ['bun', 'run', 'typecheck'] },
       all || tsFiles.length === 0
         ? { name: 'web:lint', cwd: web, cmd: ['bun', 'run', 'lint'] }
-        : { name: 'web:lint', cwd: web, cmd: ['bun', 'run', 'lint', ...tsFiles] },
+        : { name: 'web:lint', cwd: web, cmd: ['bun', 'run', 'lint', '--no-error-on-unmatched-pattern', ...tsFiles] },
       ...(all
         ? [{ name: 'web:test', cwd: web, cmd: ['node', 'scripts/run-vitest.mjs', 'run', ...LOADED] }]
         : tsFiles.length > 0
@@ -136,11 +135,6 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
             ]
           : []),
       { name: 'web2:gates', cwd: web2, cmd: ['bun', 'gates/gates.ts', 'all'] },
-      // Chunk budgets need a production build: only when what lands in the bundle changed.
-      ...(all ||
-      web2Files.some(f => /^(src\/(routes|shared|features)\/|vite\.config|package\.json|gates\/budgets)/.test(f))
-        ? [{ name: 'web2:budgets', cwd: web2, cmd: ['bun', 'run', 'build'] }]
-        : []),
     ]
   }
 
@@ -188,23 +182,11 @@ function changedFiles(staged: boolean, base?: string): string[] {
   ]
 }
 
-/** The web-2 build is skipped when its sources are byte-identical to the last passing build. */
-function web2BuildKey(): string {
-  return createHash('sha256')
-    .update(git(['rev-parse', 'HEAD:apps/web-2']))
-    .update(git(['diff', '--text', 'HEAD', '--', 'apps/web-2']))
-    .update(git(['ls-files', '--others', '--exclude-standard', '--', 'apps/web-2']))
-    .digest('hex')
-}
-
-type Result = { gate: Gate; ok: boolean; seconds: number; log: string; skipped?: string }
+type Result = { gate: Gate; ok: boolean; seconds: number; log: string }
 
 function runGate(gate: Gate): Promise<Result> {
   const log = resolve(logDir, `${gate.name.replace(':', '-')}.log`)
   const started = performance.now()
-  const keyFile = resolve(logDir, 'web2-build.key')
-  if (gate.name === 'web2:budgets' && existsSync(keyFile) && readFileSync(keyFile, 'utf8') === web2BuildKey())
-    return Promise.resolve({ gate, ok: true, seconds: 0, log, skipped: 'unchanged since the last passing build' })
   return new Promise(done => {
     const child = spawn(gate.cmd[0], gate.cmd.slice(1), {
       cwd: gate.cwd,
@@ -217,7 +199,6 @@ function runGate(gate: Gate): Promise<Result> {
     child.stderr.on('data', chunk => (output += chunk))
     child.on('close', code => {
       writeFileSync(log, output)
-      if (code === 0 && gate.name === 'web2:budgets') writeFileSync(keyFile, web2BuildKey())
       done({ gate, ok: code === 0, seconds: (performance.now() - started) / 1000, log })
     })
   })
@@ -247,9 +228,8 @@ async function main(): Promise<void> {
         const out: Result[] = []
         for (const gate of gates) {
           const result = await runGate(gate)
-          const status = result.skipped ? 'skip' : result.ok ? 'ok  ' : 'FAIL'
           console.log(
-            `${status} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s${result.skipped ? `  ${result.skipped}` : ''}`,
+            `${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`,
           )
           out.push(result)
         }

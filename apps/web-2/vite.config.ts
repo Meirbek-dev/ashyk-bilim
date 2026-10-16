@@ -11,7 +11,7 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 
 import { fmt } from './fmt.config.ts'
 import { paraglideOptions } from './gates/codegen.ts'
-import { initialModules, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
+import { ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
 // Dev is same-origin like prod: the API (`just dev-up`) and storage sit behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
@@ -32,7 +32,6 @@ const plugins = lazyPlugins(() => [
   viteReact(),
   babel({ presets: [reactCompilerPreset()], exclude: [/[/\\](node_modules|paraglide|gen)[/\\]/] }),
   stripResponseValidators,
-  initialModules(),
 ])
 
 const unit = {

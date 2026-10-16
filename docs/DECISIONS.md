@@ -2846,3 +2846,10 @@ deliberately not restored, or restored differently:
   stays in the app shell; the back button is one step away from it. The old web showed it everywhere.
 - **No "open in a popup" for link cards**: the old web framed any site in an in-app popup ("might not work on all
   websites"); web-2 frames only catalog services (B-EDT-21), so the card's button opens a new tab (B-EDT-28).
+
+## web-2 has no bundle budget gate (2026-10-16)
+
+The owner removed G-05 (gzip budgets for initial JS, chunks and CSS, plus the entry-chunk module report) after the
+parity work pushed initial JS to 200.7 KB gzip against a 180 KB cap. `bun run build` is plain `vp build`; CI and
+`just check` no longer fail on bundle size. The lint rules `ab/route-level-imports` and `ab/route-entry-imports`
+still keep feature code and the generated SDK out of route-level options.

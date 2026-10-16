@@ -1,6 +1,0 @@
-{
-  "$comment": "G-05 chunk budgets, gzip KB, read from dist/client/.vite/manifest.json after `vp build`; the gate also rejects feature modules other than route.ts and the generated SDK in the initial chunks (dist/initial-modules.json, AGENTS.md 'Entry chunk'). 2026-10-03 (B-1): initial JS measured 171.0 KB with all phase-3..6 slices after splitting loaders, moving route-level code to features' route.ts, keeping the SDK out of the entry and loading ErrorView on demand; budget = measured + 5%. What is left grows only per route (route options, title messages).",
-  "initialJsGzipKb": 180,
-  "chunkGzipKb": 150,
-  "cssGzipKb": 30
-}

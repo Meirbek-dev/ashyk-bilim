@@ -21,7 +21,7 @@ Production runs `apps/web` after rollback; its freeze is lifted. Spec: `docs/MOD
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP           |
 | `serve.ts`                          | production entry: srvx static files + the Start handler                        |
 | `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                   |
-| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`, `budgets.json`           |
+| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`                           |
 | `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)      |
 
 Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
@@ -29,18 +29,18 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## Commands (run in apps/web-2)
 
-| Command                          | Does                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                                    |
-| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                          |
-| `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                         |
-| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                            |
-| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                            |
-| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs budgets |
-| `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)                      |
-| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs                  |
-| `bun run build`                  | `vp build` + chunk budgets; `bun run start` serves `dist/`                                                         |
-| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                                   |
+| Command                          | Does                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                            |
+| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                  |
+| `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                 |
+| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                    |
+| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                    |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs |
+| `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)              |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs          |
+| `bun run build`                  | `vp build`; `bun run start` serves `dist/`                                                                 |
+| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                           |
 
 ## One way to do each thing (lint and gates reject the alternatives)
 
@@ -90,12 +90,11 @@ listed in `gates/allowlist.json` with a reason (G-12).
   awaits. `FormDialog`, `ConfirmDialog` and `SheetPanel` keep their trigger disabled (with `data-hydrating`) the same way. `FileField` / `MultiSelectField` are not bound fields: render them inside `form.AppField`.
 - Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
   signed-in). Set the slice's (lazy) component there, from its `route.ts`; an unset slot renders nothing.
-- Entry chunk (G-05, checked by `bun run build`): only `loader` and the components are code-split; `validateSearch`,
+- Entry chunk: only `loader` and the components are code-split; `validateSearch`,
   `search`, `beforeLoad`, `loaderDeps`, `head`, `staticData` and the root route (the shell) stay in the entry, which
   takes whole modules. Those options use a feature only via `#/features/<name>/route` (lint `ab/route-level-imports`);
   `route.ts` holds that code itself, no static import of its feature (`ab/route-entry-imports`; else `import()`). No
-  generated SDK there (the session key is spelled out, pinned by `session.test.ts`). The gate prints any other
-  feature module or SDK file in the initial chunks with its import chain (`dist/initial-modules.json`).
+  generated SDK there (the session key is spelled out, pinned by `session.test.ts`).
 
 ## e2e locally
 

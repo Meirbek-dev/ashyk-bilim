@@ -57,7 +57,7 @@ The pre-commit hook checks staged files; pre-push runs `just check`.
 - Every feature behavior (`B-...`) has a test (G-10); every API operation has
   a consumer or an explicit service/removal classification (G-07).
 - Generated contract/client drift, import boundaries, dead code, translations,
-  UI tokens, suppressions and bundle budgets are checked by the app's gates.
+  UI tokens and suppressions are checked by the app's gates.
   Gate implementations/configuration are the current source for exact thresholds.
 - Heavy editors, renderers and media components stay out of the entry bundle.
   Avoid repeated GETs on navigation; the original SSR targets are at most three

@@ -18,7 +18,7 @@ Procedure: `docs/STAGE-2-CUTOVER.md`. Remaining work: `apps/web-2/BACKLOG.md`.
 - Role access is verified in ru, with kk/en smoke. Student and grading flows
   work at 390 px, without page overflow, serious/critical axe findings,
   unexpected console errors or CSP violations.
-- Bundle/performance budgets pass. Firefox and WebKit smoke pass (Linux WebKit;
+- Firefox and WebKit smoke pass (Linux WebKit;
   Windows WebKit flakes are a browser-build crash, see `apps/web-2/BACKLOG.md`);
   verify real Safari.
 - The web container stays well under its memory limit under load (heap cap in
