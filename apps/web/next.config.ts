@@ -68,7 +68,7 @@ const nextConfig: NextConfig = {
 
   partialPrefetching: true,
 
-  allowedDevOrigins: ['https://cs-mooc.tou.edu.kz', 'http://192.168.12.35', 'http://192.168.1.46'],
+  allowedDevOrigins: ['cs-mooc.tou.edu.kz', '192.168.12.35', '192.168.1.46'],
   experimental: {
     turbopackRustReactCompiler: true,
     turbopackFileSystemCacheForDev: false,

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { MarkdownCodeBlock } from '@/features/content-markdown'
+import { highlightCode } from '@/features/content-markdown/lib/shiki'
 
 // Mock navigator.clipboard
 const mockWriteText = vi.fn().mockResolvedValue(undefined)
@@ -61,6 +62,14 @@ describe('MarkdownCodeBlock', () => {
   it('renders copy button', () => {
     render(<MarkdownCodeBlock code="hello" language="text" />)
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument()
+  })
+
+  it('shows current source while a replacement highlight is pending', async () => {
+    const { container, rerender } = render(<MarkdownCodeBlock code="first" language="typescript" />)
+    await waitFor(() => expect(container.querySelector('code')?.textContent).toBe('console.log("hi")'))
+    vi.mocked(highlightCode).mockImplementationOnce(() => new Promise(() => {}))
+    rerender(<MarkdownCodeBlock code="second" language="text" />)
+    expect(container.querySelector('code')?.textContent).toBe('second')
   })
 
   it('copies code to clipboard on copy button click', async () => {

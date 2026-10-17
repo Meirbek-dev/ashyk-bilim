@@ -18,7 +18,7 @@ interface MarkdownCodeBlockProps {
 export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers = false }: MarkdownCodeBlockProps) {
   const t = useTranslations('Features.ContentMarkdown')
   const [copied, setCopied] = useState(false)
-  const [highlighted, setHighlighted] = useState<string | null>(null)
+  const [highlighted, setHighlighted] = useState<{ code: string; lang: string; html: string } | null>(null)
 
   const lang = language ?? 'text'
   const languageName = getLanguageDisplayName(lang)
@@ -26,20 +26,13 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
   const displayName = languageName === 'Text' ? t('plainText') : languageName
   const isDiff = lang === 'diff'
 
-  const [prevCode, setPrevCode] = useState(code)
-  const [prevLang, setPrevLang] = useState(lang)
-
-  if (code !== prevCode || lang !== prevLang) {
-    setPrevCode(code)
-    setPrevLang(lang)
-    setHighlighted(null)
-  }
+  const highlightedHtml = highlighted?.code === code && highlighted.lang === lang ? highlighted.html : null
 
   useEffect(() => {
     let cancelled = false
     highlightCode(code, lang)
       .then(html => {
-        if (!cancelled) setHighlighted(html)
+        if (!cancelled) setHighlighted({ code, lang, html })
         return html
       })
       .catch(() => undefined)
@@ -84,7 +77,7 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
       </div>
 
       {/* Code body */}
-      {highlighted ? (
+      {highlightedHtml ? (
         // Shiki injects its own <pre><code> with theme CSS vars.
         // We apply overflow + padding via a wrapper so shiki classes win inside.
         <div
@@ -100,7 +93,7 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
             ],
           )}
           // Shiki output is sanitized HTML from trusted highlighted code
-          dangerouslySetInnerHTML={{ __html: highlighted }}
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
         />
       ) : (
         // Skeleton / fallback while Shiki loads

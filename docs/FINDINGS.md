@@ -79,6 +79,14 @@ stack-exhaustion denial of service high; no patched release is available as of 2
 not the application runtime. Avoid processing untrusted glob patterns with the CLI. Remove this finding when
 shadcn drops the affected dependency or a compatible patched version becomes available; do not suppress the audit.
 
+### 34. Tiptap mathematics has not declared KaTeX 0.19 compatibility
+
+`apps/web-2` pins `katex@0.19.0`, but `@tiptap/extension-mathematics@3.32.0` declares
+`^0.16.4 || ^0.17.0 || ^0.18.0` as its peer range. The markdown round-trip and browser math tests pass with
+the pinned version; this is an upstream compatibility declaration gap, not an observed rendering failure.
+Keep those tests when updating either package. Remove this finding when the extension's peer range includes
+0.19; do not downgrade KaTeX or edit installed package metadata just to silence the peer warning.
+
 ### 18. The per-assessment `required` flag does not drive progress
 Legacy progress hard-coded `required = True` for every submission-backed
 activity; v2 keeps that behaviour (so migrated courses complete the same way) and
