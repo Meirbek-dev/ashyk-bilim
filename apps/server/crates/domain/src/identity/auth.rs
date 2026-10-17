@@ -1241,8 +1241,13 @@ impl IdentityService {
     /// `GET /users/me`. Accounts older than the `users.email_verified`
     /// column ask Zitadel once and keep the answer; with Zitadel unreachable
     /// the account counts as verified (no banner) and the next read asks
-    /// again.
+    /// again. Without a mailer no code can reach the user, so nobody is asked
+    /// to confirm (Zitadel's own flag stays unverified: Google linking still
+    /// needs a real confirmation).
     pub async fn email_verified(&self, user_id: UserId, stored: Option<bool>) -> Result<bool> {
+        if self.mailer.is_none() {
+            return Ok(true);
+        }
         if let Some(verified) = stored {
             return Ok(verified);
         }

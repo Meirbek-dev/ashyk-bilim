@@ -206,6 +206,7 @@ pub async fn register(
                         language,
                     })
                     .await?;
+                let profile = crate::routes::users::with_email_state(&state, profile).await?;
                 Ok((
                     StatusCode::CREATED,
                     // A registration always sets a password (UX-198).

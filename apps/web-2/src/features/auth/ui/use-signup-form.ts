@@ -35,8 +35,14 @@ export function useSignupForm() {
           // The UI language picks the language of the verification email (UX-101).
           { body, headers: { 'Idempotency-Key': idempotency.key, 'Accept-Language': getLocale() } },
           {
-            onSuccess: async () => {
+            onSuccess: async profile => {
               idempotency.settle()
+              // Without email delivery the server reports the address as confirmed: straight to sign-in.
+              if (profile.email_verified) {
+                toast.add({ title: m.auth_signup_done_signin() })
+                await navigate({ to: '/login' })
+                return
+              }
               toast.add({ title: m.auth_signup_done() })
               await navigate({ to: '/verify-email', search: { email: body.email } })
             },
