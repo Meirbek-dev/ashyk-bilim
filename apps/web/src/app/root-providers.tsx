@@ -1,6 +1,7 @@
 'use client'
 
 import NextTopLoader from 'nextjs-toploader'
+import { MotionConfig } from 'motion/react'
 import { Toaster } from '@/components/ui/sonner'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { ThemeProvider, useTheme } from '@/components/providers/theme-provider'
@@ -53,7 +54,9 @@ export default function RootProviders({ children, initialSession, initialThemeMo
           {...(initialThemeMode === undefined ? {} : { initialMode: initialThemeMode })}
         >
           <ValibotProvider>
-            <TopLoaderWithTheme>{children}</TopLoaderWithTheme>
+            <MotionConfig reducedMotion="user">
+              <TopLoaderWithTheme>{children}</TopLoaderWithTheme>
+            </MotionConfig>
           </ValibotProvider>
         </ThemeProvider>
       </SessionProvider>

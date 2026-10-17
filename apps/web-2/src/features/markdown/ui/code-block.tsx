@@ -16,16 +16,19 @@ type CodeBlockProps = { code: string; language?: string | undefined }
  */
 export function CodeBlock({ code, language }: CodeBlockProps) {
   const grammar = grammarOf(language)
-  const [highlighted, setHighlighted] = useState<ReactNode>(null)
+  const [highlighted, setHighlighted] = useState<{ code: string; grammar: string; node: ReactNode } | null>(null)
   const [copied, setCopied] = useState(false)
   useEffect(() => {
     let live = true
     if (grammar)
-      void highlighter(grammar).then(ready => {
-        const tree = ready.codeToHast(code, { lang: grammar, themes: THEMES, defaultColor: false })
-        if (live) setHighlighted(toJsxRuntime(tree, { Fragment, jsx, jsxs }))
-        return null
-      })
+      void highlighter(grammar)
+        .then(ready => {
+          const tree = ready.codeToHast(code, { lang: grammar, themes: THEMES, defaultColor: false })
+          if (live) setHighlighted({ code, grammar, node: toJsxRuntime(tree, { Fragment, jsx, jsxs }) })
+          return null
+        })
+        // Highlighting is optional: a failed grammar download leaves the current source readable.
+        .catch(() => undefined)
     return () => {
       live = false
     }
@@ -43,7 +46,9 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
           onClick={copy}
         />
       </figcaption>
-      {highlighted ?? (
+      {highlighted?.code === code && highlighted.grammar === grammar ? (
+        highlighted.node
+      ) : (
         <pre>
           <code>{code}</code>
         </pre>
