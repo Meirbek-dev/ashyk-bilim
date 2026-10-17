@@ -5,7 +5,7 @@ import RootProviders from '../root-providers'
 import { HtmlLangSync } from '@/components/providers/HtmlLangSync'
 import { IntlPolyfillGate } from '@/components/providers/IntlPolyfillGate'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
-import { getMessages, setRequestLocale } from 'next-intl/server'
+import { setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
@@ -51,10 +51,10 @@ async function LocaleLayoutContent({ children, params }: LocaleLayoutProps) {
 
   setRequestLocale(locale)
 
-  const messages = await getMessages()
-
+  // Rendered from a Server Component, the provider inherits locale, messages, timeZone and now
+  // from `src/i18n/request.ts`.
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider>
       <HtmlLangSync locale={locale} />
       <IntlPolyfillGate locale={locale}>
         <Suspense fallback={null}>

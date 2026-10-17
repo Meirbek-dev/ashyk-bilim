@@ -20,12 +20,11 @@ import { useCourseUpdates } from '@/features/courses/hooks/useCourseQueries'
 import { useContributors } from '@/features/courses/hooks/useContributors'
 import type { Contributor } from '@/lib/api/generated/zod'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
 import { useQueryClient } from '@tanstack/react-query'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
-import { format, formatDistanceToNow } from 'date-fns'
+import RelativeTime from '@/components/discussions/relative-time'
 import { Controller, useForm } from 'react-hook-form'
 import { Textarea } from '@components/ui/textarea'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -33,7 +32,7 @@ import { useState, useTransition } from 'react'
 import { Skeleton } from '@components/ui/skeleton'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import * as v from 'valibot'
@@ -317,7 +316,6 @@ function UpdatesListView({ courseUuid }: { courseUuid: string }) {
     enabled: isAuthenticated,
   })
   const t = useTranslations('Courses.CourseAuthors')
-  const locale = useDateFnsLocale()
 
   // Reserve the empty-state height while loading so the card does not jump in.
   if (!updates && isAuthenticated) return <Skeleton className="h-10 w-full rounded-lg" />
@@ -344,15 +342,7 @@ function UpdatesListView({ courseUuid }: { courseUuid: string }) {
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-baseline space-x-2">
                 <h4 className="text-foreground truncate text-sm font-medium">{update.title}</h4>
-                <span
-                  title={format(new Date(update.creation_date), 'MMMM d, yyyy', { locale })}
-                  className="text-muted-foreground text-[11px] font-medium whitespace-nowrap"
-                >
-                  {formatDistanceToNow(new Date(update.creation_date), {
-                    addSuffix: true,
-                    locale,
-                  })}
-                </span>
+                <UpdateStamp date={update.creation_date} />
               </div>
               <p className="text-muted-foreground line-clamp-3 text-sm">{update.content}</p>
             </div>
@@ -459,3 +449,15 @@ function CourseAuthors({ courseUuid }: CourseAuthorsProps) {
 }
 
 export default CourseAuthors
+
+function UpdateStamp({ date }: { date: string }) {
+  const format = useFormatter()
+  return (
+    <span
+      title={format.dateTime(new Date(date), { dateStyle: 'long' })}
+      className="text-muted-foreground text-[11px] font-medium whitespace-nowrap"
+    >
+      <RelativeTime date={date} />
+    </span>
+  )
+}

@@ -1,12 +1,10 @@
 'use client'
 
 import { EmptyState, GamificationCard, LoadingState, getXPSourceTheme } from '@/lib/gamification'
-import { useDateFnsLocale } from '@/hooks/useDateFnsLocale'
 import type { XPTransaction } from '@/types/gamification'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { formatDistanceToNow } from 'date-fns'
+import RelativeTime from '@/components/discussions/relative-time'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface RecentActivityFeedProps {
@@ -16,16 +14,7 @@ interface RecentActivityFeedProps {
 
 export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFeedProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
-  const locale = useDateFnsLocale()
-
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    globalThis.setTimeout(() => {
-      setMounted(true)
-    }, 0)
-  }, [])
-
-  if (!mounted || isLoading) {
+  if (isLoading) {
     return <LoadingState title={t('dashboard.recentActivity')} variant="feed" itemCount={5} />
   }
 
@@ -41,12 +30,6 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
         <div className="space-y-3">
           {transactions.map(transaction => {
             const theme = getXPSourceTheme(transaction.source)
-            const timeAgo = transaction.created_at
-              ? formatDistanceToNow(new Date(transaction.created_at), {
-                  addSuffix: true,
-                  locale,
-                })
-              : ''
 
             return (
               <div
@@ -62,7 +45,9 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
                       ? t(`xpSources.${transaction.source}`)
                       : t('xpSources.unknown', { source: transaction.source })}
                   </p>
-                  <p className="text-muted-foreground text-xs">{timeAgo}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {transaction.created_at ? <RelativeTime date={transaction.created_at} /> : null}
+                  </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <span className="text-sm font-semibold tabular-nums">+{transaction.amount}</span>

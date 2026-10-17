@@ -7,7 +7,7 @@ import { DEFAULT_AVATAR_PATH, getAvatarInitials, resolveAvatarUrl } from '@servi
 import { useTranslations } from 'next-intl'
 import { MessageSquareText, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { memo, useMemo } from 'react'
+import { useMemo } from 'react'
 import type { AvatarUser, PredefinedAvatar } from '@services/media/avatar'
 import type { ComponentProps } from 'react'
 
@@ -133,4 +133,4 @@ function UserAvatar(props: UserAvatarProps) {
   return avatarElement
 }
 
-export default memo(UserAvatar)
+export default UserAvatar
