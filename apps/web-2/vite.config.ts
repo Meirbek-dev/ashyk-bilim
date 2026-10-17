@@ -56,6 +56,10 @@ const FORMAT = 'Format dates and numbers with #/shared/i18n/format.ts (platform 
 const STORAGE = 'Browser storage goes through storageItem() / cookieItem() from #/shared/lib/storage.ts.'
 const TIMERS =
   'No hand-made timers or polling: TanStack Pacer for debounce/throttle; Query + the event stream for freshness.'
+const QUERY =
+  "Imperative reads: queryClient.query(options); a loader reads the cache first with { ...xOptions(), staleTime: 'static' }."
+const INFINITE_QUERY =
+  "Imperative reads: queryClient.infiniteQuery(options); a loader reads the cache first with { ...xOptions(), staleTime: 'static' }."
 const FEATURE_INDEX =
   'Import another feature only through #/features/<name> (or its entry-chunk part #/features/<name>/route). Inside a feature use relative paths.'
 
@@ -95,6 +99,12 @@ const properties = [
     message: 'Declare meta: { invalidates: [xQueryKey()] } on the mutation; one MutationCache handler invalidates.',
   },
   { object: 'vi', property: 'mock', message: 'Do not mock modules: test the real module; stub the network at fetch.' },
+  // Deprecated in Query 5.104 (removed in v6): `query` / `infiniteQuery` replace them.
+  ...['ensureQueryData', 'fetchQuery', 'prefetchQuery'].map(property => ({ property, message: QUERY })),
+  ...['ensureInfiniteQueryData', 'fetchInfiniteQuery', 'prefetchInfiniteQuery'].map(property => ({
+    property,
+    message: INFINITE_QUERY,
+  })),
 ]
 const restrictProperties = (...allowed: string[]): Rules['no-restricted-properties'] => [
   'error',

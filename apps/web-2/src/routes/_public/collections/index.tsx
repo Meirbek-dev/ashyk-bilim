@@ -9,8 +9,8 @@ export const Route = createFileRoute('/_public/collections/')({
   loaderDeps: ({ search }) => ({ q: search.q }),
   loader: ({ context, deps }) =>
     deps.q
-      ? context.queryClient.ensureQueryData(collectionsSearchOptions(deps.q))
-      : context.queryClient.ensureInfiniteQueryData(collectionsListOptions()),
+      ? context.queryClient.query({ ...collectionsSearchOptions(deps.q), staleTime: 'static' })
+      : context.queryClient.infiniteQuery({ ...collectionsListOptions(), staleTime: 'static' }),
   staticData: { title: m.collections_title },
   component: CollectionsPage,
 })

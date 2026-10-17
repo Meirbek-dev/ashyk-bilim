@@ -24,7 +24,7 @@ type RunnerAlertsProps = {
 export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: RunnerAlertsProps) {
   const queryClient = useQueryClient()
   // Handed in meanwhile (the server's timer sweep)? The reread turns the page into the result.
-  const refresh = () => void queryClient.fetchQuery({ ...submissionOptions(attemptId), staleTime: 0 }).catch(() => null)
+  const refresh = () => void queryClient.query({ ...submissionOptions(attemptId), staleTime: 0 }).catch(() => null)
   return (
     <div className="flex flex-col gap-2 text-sm empty:hidden">
       {guard.active && guard.count > 0 ? (

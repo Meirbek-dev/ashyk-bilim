@@ -51,7 +51,7 @@ export const updateChapterOptions = (queryClient: QueryClient, courseId: CourseI
 
 /** "Reload and retry" after a 412: the chapter's current `version` (a deleted one keeps its own: the write 404s). */
 export const chapterVersion = async (queryClient: QueryClient, courseId: CourseId, chapter: Chapter) =>
-  (await queryClient.fetchQuery({ ...curriculumOptions(courseId), staleTime: 0 })).chapters.find(
+  (await queryClient.query({ ...curriculumOptions(courseId), staleTime: 0 })).chapters.find(
     row => row.id === chapter.id,
   )?.version ?? chapter.version
 
@@ -115,10 +115,12 @@ export const claimOptions = () => createBlockMutation()
 
 /** Studio loader: an unknown activity is "not found"; one the caller may not change is a 403 in place. */
 export async function ensureStudio(queryClient: QueryClient, courseId: CourseId, activityId: string) {
-  const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch((error: unknown) => {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
-    throw error
-  })
+  const activity = await queryClient
+    .query({ ...activityOptions(activityId), staleTime: 'static' })
+    .catch((error: unknown) => {
+      if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
+      throw error
+    })
   if (activity.course_id !== courseId) throw notFound()
   if (!activity.allowed_actions.includes('update')) {
     throw new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })

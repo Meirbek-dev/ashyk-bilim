@@ -59,7 +59,7 @@ const missing = (error: unknown) => {
  * previews: never counted, never graded); anyone else (not enrolled, no access) gets a 403 in place.
  */
 export async function ensureLearner(queryClient: QueryClient, courseId: CourseId) {
-  const state = await queryClient.ensureQueryData(learnerStateOptions(courseId)).catch(missing)
+  const state = await queryClient.query({ ...learnerStateOptions(courseId), staleTime: 'static' }).catch(missing)
   if (!state.enrolled && !staffPreview(state)) throw forbidden()
   return state
 }
@@ -76,7 +76,7 @@ export async function ensureEntry(queryClient: QueryClient, courseId: CourseId, 
   const listed = locate(state, activityId)?.entry
   if (listed) return { state, preview, entry: preview ? { ...listed, blocked_reason: null } : (listed as Entry) }
   if (!preview) throw notFound()
-  const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
+  const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
   if (activity.course_id !== courseId) throw notFound()
   const entry: Entry = { title: activity.name, activity_type: activity.activity_type, blocked_reason: null }
   return { state, preview, entry }
@@ -85,7 +85,7 @@ export async function ensureEntry(queryClient: QueryClient, courseId: CourseId, 
 /** The summary's loader: the learner state, then the course's certificates (issued on the spot when due). */
 export async function ensureCompletion(queryClient: QueryClient, courseId: CourseId) {
   await ensureLearner(queryClient, courseId)
-  await queryClient.ensureQueryData(courseCertificatesOptions(courseId))
+  await queryClient.query({ ...courseCertificatesOptions(courseId), staleTime: 'static' })
 }
 
 /**
@@ -98,12 +98,12 @@ export async function ensurePlayer(queryClient: QueryClient, courseId: CourseId,
   if (!found) {
     // Staff previewing an activity the outline does not list (unpublished): its own read, a lesson of this course.
     if (!staffPreview(state)) throw notFound()
-    const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
+    const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
     if (activity.course_id !== courseId || activityKind(activity.activity_type) !== 'lesson') throw notFound()
     return { title: activity.name }
   }
   const { entry } = found
   if (!entry.blocked_reason && activityKind(entry.activity_type) === 'lesson')
-    await queryClient.ensureQueryData(activityOptions(activityId)).catch(missing)
+    await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
   return { title: entry.title }
 }

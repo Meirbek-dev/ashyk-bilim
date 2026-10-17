@@ -7,7 +7,8 @@ import { m } from '#/paraglide/messages'
 
 // Readiness, then the AI course analysis (slice 6.3) under it.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId/overview')({
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(readinessOptions(params.courseId)),
+  loader: ({ context, params }) =>
+    context.queryClient.query({ ...readinessOptions(params.courseId), staleTime: 'static' }),
   staticData: { title: m.platform_tab_overview },
   component: function Overview() {
     return (

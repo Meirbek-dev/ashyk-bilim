@@ -23,7 +23,7 @@ const adding = (entry: Entry) => (queue: Queue) => enqueue(queue, entry)
 
 /** Read the attempt again; true while it is still an open draft (otherwise the page turns to its result). */
 async function stillDraft(queryClient: QueryClient, attempt: StudentSubmission) {
-  const fresh = await queryClient.fetchQuery({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
+  const fresh = await queryClient.query({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
   return fresh?.status === 'draft'
 }
 

@@ -28,7 +28,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
   const grade = useGradeSave(
     (body: GradeRequest, version) =>
       mutation.mutateAsync({ path: { submission_id: submission.id }, body, headers: { 'If-Match': version } }),
-    async () => (await queryClient.fetchQuery({ ...reviewOptions(submission.id), staleTime: 0 })).version,
+    async () => (await queryClient.query({ ...reviewOptions(submission.id), staleTime: 0 })).version,
     submission.version,
   )
   // The diff base is the work as last saved (the cache holds every answer), so only what changed since goes out.

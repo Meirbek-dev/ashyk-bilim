@@ -59,7 +59,7 @@ export function useAutosave(courseId: string, activity: ActivityDetail) {
     later.maybeExecute()
   }
   const reloadAndRetry = async () => {
-    await queryClient.fetchQuery({ ...activityOptions(activity.id), staleTime: 0 })
+    await queryClient.query({ ...activityOptions(activity.id), staleTime: 0 })
     stopped.current = false
     setConflict(false)
     void send()

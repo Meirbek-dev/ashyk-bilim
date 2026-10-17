@@ -40,7 +40,7 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
       },
     )
   const replace = async (upload: FinalizedUpload, file: File) => {
-    const oldBlocks = await queryClient.fetchQuery({
+    const oldBlocks = await queryClient.query({
       ...listBlocksOptions({ path: { activity_id: activity.id } }),
       staleTime: 0,
     })

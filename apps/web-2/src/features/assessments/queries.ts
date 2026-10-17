@@ -196,7 +196,7 @@ export const overrideVersion = (queryClient: QueryClient, id: string, row: Stude
   null
 
 export const reloadOverrides = (queryClient: QueryClient, id: string) =>
-  queryClient.fetchQuery({ ...overridesOptions(id), staleTime: 0 })
+  queryClient.query({ ...overridesOptions(id), staleTime: 0 })
 
 export const updateOverrideOptions = (queryClient: QueryClient, id: string) => ({
   ...updateOverrideMutation(),

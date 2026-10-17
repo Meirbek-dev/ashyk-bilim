@@ -4,7 +4,7 @@ import { PlatformPage, platformOptions } from '#/features/admin'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/admin/platform')({
-  loader: ({ context }) => context.queryClient.ensureQueryData(platformOptions()),
+  loader: ({ context }) => context.queryClient.query({ ...platformOptions(), staleTime: 'static' }),
   staticData: { title: m.platform_nav_platform },
   component: PlatformPage,
 })

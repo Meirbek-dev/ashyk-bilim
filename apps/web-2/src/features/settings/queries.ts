@@ -139,8 +139,8 @@ export const publicProfileOptions = (username: string) => generatedPublicProfile
 /** Route loader of /users/$username: an unknown user is "not found". */
 export async function ensurePublicProfile(queryClient: QueryClient, username: string) {
   const [profile] = await Promise.all([
-    queryClient.ensureQueryData(publicProfileOptions(username)),
-    queryClient.ensureInfiniteQueryData(userCoursesListOptions(username)),
+    queryClient.query({ ...publicProfileOptions(username), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...userCoursesListOptions(username), staleTime: 'static' }),
   ]).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) throw notFound()
     throw error

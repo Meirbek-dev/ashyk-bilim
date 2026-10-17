@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 export const Route = createFileRoute('/_authed/teach/')({
   validateSearch: inboxSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) => context.queryClient.ensureInfiniteQueryData(teachWorkOptions(deps)),
+  loader: ({ context, deps }) => context.queryClient.infiniteQuery({ ...teachWorkOptions(deps), staleTime: 'static' }),
   staticData: { title: m.platform_nav_inbox },
   component: InboxPage,
 })

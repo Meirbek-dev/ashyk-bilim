@@ -14,7 +14,7 @@ import { applyCreated, applyRead } from './queries'
  */
 async function xpToasts(queryClient: QueryClient, award: XpAwarded): Promise<string[]> {
   const profile = await queryClient
-    .ensureQueryData(dashboardOptions())
+    .query({ ...dashboardOptions(), staleTime: 'static' })
     .then(data => data.profile)
     .catch(() => null)
   if (profile?.settings.notifications.xp_gain === false) return []

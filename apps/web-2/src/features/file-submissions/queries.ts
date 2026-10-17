@@ -75,11 +75,13 @@ export async function ensureSubmission(queryClient: QueryClient, courseId: Cours
   const entry = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === activityId)
   if (entry?.activity_type !== 'file_submission') throw notFound()
   if (!entry.blocked_reason) {
-    const task = await queryClient.ensureQueryData(taskOptions(activityId))
+    const task = await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })
     if (task)
       await Promise.all([
-        queryClient.ensureQueryData(historyOptions(task.id)),
-        task.current_attempt ? queryClient.ensureQueryData(reviewNotesOptions(task.current_attempt.id)) : null,
+        queryClient.query({ ...historyOptions(task.id), staleTime: 'static' }),
+        task.current_attempt
+          ? queryClient.query({ ...reviewNotesOptions(task.current_attempt.id), staleTime: 'static' })
+          : null,
       ])
   }
   // Names for the page, not the learner state itself: the page does not observe it, so a hand-in that invalidates it
@@ -124,9 +126,11 @@ export const startOptions = (queryClient: QueryClient, ids: WorkIds) => ({
 /** The studio tab's loader: whether the activity is a file submission, with its config read. */
 export async function ensureTaskStudio(queryClient: QueryClient, activityId: ActivityId) {
   // The layout's loader reads the same activity and answers its 404 / 403: this one only branches.
-  const activity = await queryClient.ensureQueryData(getActivityOptions(byActivity(activityId))).catch(() => null)
+  const activity = await queryClient
+    .query({ ...getActivityOptions(byActivity(activityId)), staleTime: 'static' })
+    .catch(() => null)
   if (activity?.activity_type !== 'file_submission') return { fileSubmission: false }
-  await queryClient.ensureQueryData(taskOptions(activityId))
+  await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })
   return { fileSubmission: true }
 }
 

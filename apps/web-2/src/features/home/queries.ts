@@ -13,7 +13,7 @@ export const homeAgendaOptions = () => agendaOptions({ query: { days: DEADLINE_D
  */
 export const ensureHome = (queryClient: QueryClient) =>
   Promise.all([
-    queryClient.ensureQueryData(homeAgendaOptions()),
-    queryClient.ensureInfiniteQueryData(learnerWorkOptions()),
-    queryClient.ensureQueryData(dashboardOptions()),
+    queryClient.query({ ...homeAgendaOptions(), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...learnerWorkOptions(), staleTime: 'static' }),
+    queryClient.query({ ...dashboardOptions(), staleTime: 'static' }),
   ])

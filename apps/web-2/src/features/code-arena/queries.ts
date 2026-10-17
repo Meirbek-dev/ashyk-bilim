@@ -122,17 +122,17 @@ export async function ensureArena(queryClient: QueryClient, { courseId, activity
   const names = { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null, preview }
   if (names.locked) return names
   const [challenge] = await Promise.all([
-    queryClient.ensureQueryData(challengeOptions(activityId)),
-    queryClient.ensureQueryData(runnerStateOptions()),
+    queryClient.query({ ...challengeOptions(activityId), staleTime: 'static' }),
+    queryClient.query({ ...runnerStateOptions(), staleTime: 'static' }),
   ])
   const code = codeItemOf(challenge)
   if (!challenge || !code) return names
   await Promise.all([
-    queryClient.ensureQueryData(stateOptions(challenge.id)),
-    queryClient.ensureQueryData(attemptsOptions(challenge.id)),
-    queryClient.ensureQueryData(myRunsOptions(code.item.id)),
-    run ? queryClient.ensureQueryData(runOptions(run)) : null,
-    submission ? queryClient.ensureQueryData(finalRunOptions(code.item.id, submission)) : null,
+    queryClient.query({ ...stateOptions(challenge.id), staleTime: 'static' }),
+    queryClient.query({ ...attemptsOptions(challenge.id), staleTime: 'static' }),
+    queryClient.query({ ...myRunsOptions(code.item.id), staleTime: 'static' }),
+    run ? queryClient.query({ ...runOptions(run), staleTime: 'static' }) : null,
+    submission ? queryClient.query({ ...finalRunOptions(code.item.id, submission), staleTime: 'static' }) : null,
   ])
   return names
 }
@@ -181,11 +181,13 @@ export const runCodeOptions = (queryClient: QueryClient) => ({
 /** The studio tab's loader: whether the activity is a code challenge, with its assessment and the languages read. */
 export async function ensureCodeStudio(queryClient: QueryClient, activityId: ActivityId) {
   // The layout's loader reads the same activity and answers its 404 / 403: this one only branches.
-  const activity = await queryClient.ensureQueryData(getActivityOptions(byActivity(activityId))).catch(() => null)
+  const activity = await queryClient
+    .query({ ...getActivityOptions(byActivity(activityId)), staleTime: 'static' })
+    .catch(() => null)
   if (activity?.activity_type !== 'code_challenge') return { codeChallenge: false }
   await Promise.all([
-    queryClient.ensureQueryData(challengeOptions(activityId)),
-    queryClient.ensureQueryData(runnerStateOptions()),
+    queryClient.query({ ...challengeOptions(activityId), staleTime: 'static' }),
+    queryClient.query({ ...runnerStateOptions(), staleTime: 'static' }),
   ])
   return { codeChallenge: true }
 }

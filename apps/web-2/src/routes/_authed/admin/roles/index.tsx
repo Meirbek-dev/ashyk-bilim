@@ -4,7 +4,7 @@ import { RolesPage, rolesOptions } from '#/features/admin'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/admin/roles/')({
-  loader: ({ context }) => context.queryClient.ensureQueryData(rolesOptions()),
+  loader: ({ context }) => context.queryClient.query({ ...rolesOptions(), staleTime: 'static' }),
   staticData: { title: m.platform_nav_roles },
   component: RolesPage,
 })

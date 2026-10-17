@@ -27,7 +27,7 @@ export function FilesList({ files }: { files: readonly AttachedFile[] }) {
   const [shown, setShown] = useState<{ name: string; path: string; pdf: boolean } | null>(null)
   async function signed(file: AttachedFile, disposition?: Disposition) {
     try {
-      const answer = await queryClient.fetchQuery(downloadOptions(file.id, disposition))
+      const answer = await queryClient.query(downloadOptions(file.id, disposition))
       setError(null)
       return answer.path
     } catch (failed) {

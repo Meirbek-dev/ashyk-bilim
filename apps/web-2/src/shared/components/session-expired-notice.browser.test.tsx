@@ -88,11 +88,11 @@ describe('a lost session seen first by another read', () => {
       requestId: null,
       retryAfter: null,
     })
-    await client.prefetchQuery({ queryKey: dashboardQueryKey(), queryFn: () => Promise.reject(lost) })
+    await client.query({ queryKey: dashboardQueryKey(), queryFn: () => Promise.reject(lost) }).catch(() => undefined)
     await expect.element(screen.getByRole('alert').filter({ hasText: m.ui_session_expired() })).toBeVisible()
     await expect.element(screen.getByRole('link', { name: m.ui_file_sign_in() })).toHaveAttribute('target', '_blank')
     // The event stream's 401 reads the session again: it answers 401 too, and the page still stays.
-    await client.fetchQuery({ ...sessionOptions(), staleTime: 0 }).catch(() => null)
+    await client.query({ ...sessionOptions(), staleTime: 0 }).catch(() => null)
     expect(client.getQueryData(sessionOptions().queryKey)?.user_id).toBe('u1')
     expect(guards).toBe(0)
 

@@ -73,8 +73,7 @@ export function useQaTurn({ courseId, activityId, threadId, onThread }: QaTurnOp
       dispatch({ type: 'finished', result })
       const thread = finishedThreadId(result) ?? threadId
       // Fresh, not cached: the turn leaves the screen once the thread holds it. A failed read keeps the turn shown.
-      if (thread)
-        await queryClient.fetchQuery({ ...threadOptions(courseId, thread), staleTime: 0 }).catch(() => undefined)
+      if (thread) await queryClient.query({ ...threadOptions(courseId, thread), staleTime: 0 }).catch(() => undefined)
       // A new thread goes into the URL before the thread list is read again (`meta.invalidates`).
       if (thread && thread !== threadId) onThread(thread)
       return thread

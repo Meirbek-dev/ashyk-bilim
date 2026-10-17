@@ -8,7 +8,9 @@ import { ssrStatusHeaders } from '#/shared/lib/ssr-status'
 import appCss from '#/styles/globals.css?url'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: async ({ context }) => ({ session: await context.queryClient.ensureQueryData(sessionOptions()) }),
+  beforeLoad: async ({ context }) => ({
+    session: await context.queryClient.query({ ...sessionOptions(), staleTime: 'static' }),
+  }),
   head: ({ matches }) => {
     // The deepest route with a title names the document; a route's own head may still override it.
     const title = matches.findLast(match => match.staticData.title)?.staticData.title?.()

@@ -77,14 +77,15 @@ export async function ensureAttempt(
   { courseId, activityId, attemptId }: { courseId: CourseId; activityId: ActivityId; attemptId?: SubmissionId },
 ) {
   await ensureEntry(queryClient, courseId, activityId)
-  const assessment = await queryClient.ensureQueryData(assessmentOptions(activityId)).catch(missing)
+  const assessment = await queryClient.query({ ...assessmentOptions(activityId), staleTime: 'static' }).catch(missing)
   if (assessment.kind === 'code_challenge') throw notFound()
   const [submission] = await Promise.all([
-    attemptId ? queryClient.ensureQueryData(submissionOptions(attemptId)).catch(missing) : null,
-    queryClient.ensureQueryData(stateOptions(assessment.id)),
-    queryClient.ensureQueryData(attemptsOptions(assessment.id)),
+    attemptId ? queryClient.query({ ...submissionOptions(attemptId), staleTime: 'static' }).catch(missing) : null,
+    queryClient.query({ ...stateOptions(assessment.id), staleTime: 'static' }),
+    queryClient.query({ ...attemptsOptions(assessment.id), staleTime: 'static' }),
   ])
   if (submission && submission.assessment_id !== assessment.id) throw notFound()
-  if (submission && released(submission)) await queryClient.ensureQueryData(feedbackOptions(submission.id))
+  if (submission && released(submission))
+    await queryClient.query({ ...feedbackOptions(submission.id), staleTime: 'static' })
   return { title: assessment.title }
 }

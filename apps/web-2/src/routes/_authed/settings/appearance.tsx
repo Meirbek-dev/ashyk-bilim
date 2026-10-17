@@ -9,8 +9,8 @@ export const Route = createFileRoute('/_authed/settings/appearance')({
   ssr: false,
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(profileOptions()),
-      context.queryClient.ensureQueryData(themeManifestOptions()),
+      context.queryClient.query({ ...profileOptions(), staleTime: 'static' }),
+      context.queryClient.query({ ...themeManifestOptions(), staleTime: 'static' }),
     ]),
   staticData: { title: m.platform_tab_appearance },
   component: AppearancePage,

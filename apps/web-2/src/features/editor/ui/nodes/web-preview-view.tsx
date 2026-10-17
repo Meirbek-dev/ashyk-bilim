@@ -28,12 +28,10 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
   const apply = async ({ url: typed = '' }: Record<string, string>) => {
     const next = webUrl(typed) ?? typed
     // A 422 (a local or private address) goes under the field; any other failure keeps the link without a card.
-    const preview = await queryClient
-      .fetchQuery(linkPreviewOptions({ query: { url: next } }))
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.fieldErrors.length > 0) throw error
-        return null
-      })
+    const preview = await queryClient.query(linkPreviewOptions({ query: { url: next } })).catch((error: unknown) => {
+      if (error instanceof ApiError && error.fieldErrors.length > 0) throw error
+      return null
+    })
     updateAttributes({
       url: next,
       title: preview?.title ?? null,

@@ -85,7 +85,7 @@ export const xpHistoryListOptions = () => {
 /** Route loader of /achievements: the reads in parallel. */
 export const ensureAchievements = (queryClient: QueryClient) =>
   Promise.all([
-    queryClient.ensureQueryData(achievementsOptions()),
-    queryClient.ensureInfiniteQueryData(leaderboardListOptions()),
-    queryClient.ensureInfiniteQueryData(xpHistoryListOptions()),
+    queryClient.query({ ...achievementsOptions(), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...leaderboardListOptions(), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...xpHistoryListOptions(), staleTime: 'static' }),
   ])

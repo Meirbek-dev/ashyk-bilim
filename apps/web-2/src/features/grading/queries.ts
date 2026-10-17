@@ -114,13 +114,16 @@ const orNotFound = (error: unknown): never => {
 
 /** What is graded behind the activity; null for a page, a video, a document. */
 async function ensureWork(queryClient: QueryClient, activityId: ActivityId): Promise<Work | null> {
-  const activity = await queryClient.ensureQueryData(activityOptions(activityId)).catch(orNotFound)
+  const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(orNotFound)
   const kind = workKind(activity.activity_type)
   if (kind === 'assessment') {
-    const assessment = await queryClient.ensureQueryData(assessmentOptions(activityId)).catch(orNotFound)
+    const assessment = await queryClient
+      .query({ ...assessmentOptions(activityId), staleTime: 'static' })
+      .catch(orNotFound)
     return { kind, id: assessment.id }
   }
-  if (kind === 'file') return { kind, id: (await queryClient.ensureQueryData(taskOptions(activityId))).id }
+  if (kind === 'file')
+    return { kind, id: (await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })).id }
   return null
 }
 
@@ -162,13 +165,13 @@ export function queueOptions(work: Work, search: QueueSearch) {
 export async function ensureQueue(queryClient: QueryClient, activityId: ActivityId, search: QueueSearch) {
   const work = await ensureWork(queryClient, activityId)
   if (!work) return
-  const { course_id: courseId } = await queryClient.ensureQueryData(activityOptions(activityId))
+  const { course_id: courseId } = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' })
   await Promise.all([
-    queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
+    queryClient.infiniteQuery({ ...queueOptions(work, search), staleTime: 'static' }),
     work.kind === 'assessment'
-      ? queryClient.ensureQueryData(statsOptionsOf(work.id, search.group))
-      : queryClient.ensureQueryData(fileStatsOptions(work.id, search.group)),
-    queryClient.ensureQueryData(groupsOptions(courseId)),
+      ? queryClient.query({ ...statsOptionsOf(work.id, search.group), staleTime: 'static' })
+      : queryClient.query({ ...fileStatsOptions(work.id, search.group), staleTime: 'static' }),
+    queryClient.query({ ...groupsOptions(courseId), staleTime: 'static' }),
   ])
 }
 
@@ -190,13 +193,13 @@ export async function ensureReview(
   if (!work) throw notFound()
   await Promise.all([
     (work.kind === 'assessment'
-      ? queryClient.ensureQueryData(reviewOptions(submissionId))
-      : queryClient.ensureQueryData(attemptOptions(submissionId))
+      ? queryClient.query({ ...reviewOptions(submissionId), staleTime: 'static' })
+      : queryClient.query({ ...attemptOptions(submissionId), staleTime: 'static' })
     ).catch(orNotFound),
-    queryClient.ensureInfiniteQueryData(queueOptions(work, search)),
+    queryClient.infiniteQuery({ ...queueOptions(work, search), staleTime: 'static' }),
     // Only a test with a code question needs it; without it (runner not configured) the language shows as its id.
     work.kind === 'assessment' && hasCodeItem(queryClient, activityId)
-      ? queryClient.ensureQueryData(codeLanguagesOptions()).catch(() => null)
+      ? queryClient.query({ ...codeLanguagesOptions(), staleTime: 'static' }).catch(() => null)
       : null,
   ])
 }
@@ -205,8 +208,8 @@ export async function ensureResults(queryClient: QueryClient, activityId: Activi
   const work = await ensureWork(queryClient, activityId)
   if (work?.kind !== 'assessment') return
   await Promise.all([
-    queryClient.ensureQueryData(statsOptionsOf(work.id)),
-    queryClient.ensureQueryData(itemStatsOptions(work.id)),
+    queryClient.query({ ...statsOptionsOf(work.id), staleTime: 'static' }),
+    queryClient.query({ ...itemStatsOptions(work.id), staleTime: 'static' }),
   ])
 }
 
@@ -233,6 +236,6 @@ export const gradebookOptions = (courseId: CourseId, search: GradebookSearch) =>
 
 export const ensureGradebook = (queryClient: QueryClient, courseId: CourseId, search: GradebookSearch) =>
   Promise.all([
-    queryClient.ensureInfiniteQueryData(gradebookOptions(courseId, search)),
-    queryClient.ensureQueryData(groupsOptions(courseId)),
+    queryClient.infiniteQuery({ ...gradebookOptions(courseId, search), staleTime: 'static' }),
+    queryClient.query({ ...groupsOptions(courseId), staleTime: 'static' }),
   ])

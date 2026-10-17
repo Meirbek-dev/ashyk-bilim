@@ -17,8 +17,8 @@ function NotificationSettings() {
 export const Route = createFileRoute('/_authed/settings/notifications')({
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(gamificationOptions()),
-      context.queryClient.ensureQueryData(preferencesOptions()),
+      context.queryClient.query({ ...gamificationOptions(), staleTime: 'static' }),
+      context.queryClient.query({ ...preferencesOptions(), staleTime: 'static' }),
     ]),
   staticData: { title: m.platform_page_notifications },
   component: NotificationSettings,

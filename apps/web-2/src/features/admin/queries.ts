@@ -101,10 +101,12 @@ export const userOptions = (id: UserId) =>
 export function loadUsersPage(queryClient: QueryClient, session: SessionInfo | null, search: UsersSearch) {
   const { user } = search
   return Promise.all([
-    queryClient.ensureInfiniteQueryData(usersListOptions(search)),
-    user ? queryClient.ensureQueryData(userOptions(user)) : null,
-    hasCapability(session, 'admin.roles') ? queryClient.ensureQueryData(rolesOptions()) : null,
-    user && hasCapability(session, 'groups.manage') ? queryClient.ensureQueryData(groupChoicesOptions()) : null,
+    queryClient.infiniteQuery({ ...usersListOptions(search), staleTime: 'static' }),
+    user ? queryClient.query({ ...userOptions(user), staleTime: 'static' }) : null,
+    hasCapability(session, 'admin.roles') ? queryClient.query({ ...rolesOptions(), staleTime: 'static' }) : null,
+    user && hasCapability(session, 'groups.manage')
+      ? queryClient.query({ ...groupChoicesOptions(), staleTime: 'static' })
+      : null,
   ])
 }
 
@@ -149,7 +151,7 @@ export const roleOptions = (slug: string) => getRoleOptions({ path: { slug } })
 
 /** Route loader of a role page: an unknown slug is "not found". */
 export const ensureRole = (queryClient: QueryClient, slug: string) =>
-  queryClient.ensureQueryData(roleOptions(slug)).catch(notFoundOn404)
+  queryClient.query({ ...roleOptions(slug), staleTime: 'static' }).catch(notFoundOn404)
 
 /** The answered role replaces the role page's copy and its row of the cached list. */
 const putRole = (queryClient: QueryClient) => (next: Role | void) => {
@@ -167,7 +169,7 @@ export const roleWrite = (version: number) => ({ headers: { ...representation.he
 
 /** A role's current `version`, read past the cache: "Reload and retry" after a 412. */
 export const roleVersion = async (queryClient: QueryClient, slug: string) =>
-  (await queryClient.fetchQuery({ ...roleOptions(slug), staleTime: 0 })).version
+  (await queryClient.query({ ...roleOptions(slug), staleTime: 0 })).version
 
 export const updateRoleOptions = (queryClient: QueryClient) => ({
   ...updateRoleMutation(),
@@ -192,7 +194,7 @@ export const platformOptions = () => getPlatformOptions()
 
 /** The platform's current `version`, read past the cache: "Reload and retry" after a 412. */
 export const platformVersion = async (queryClient: QueryClient) =>
-  (await queryClient.fetchQuery({ ...platformOptions(), staleTime: 0 })).version
+  (await queryClient.query({ ...platformOptions(), staleTime: 0 })).version
 
 export const updatePlatformOptions = (queryClient: QueryClient) => ({
   ...updatePlatformMutation(),
@@ -202,7 +204,7 @@ export const updatePlatformOptions = (queryClient: QueryClient) => ({
 export const configOptions = () => getConfigOptions()
 
 export const configVersion = async (queryClient: QueryClient) =>
-  (await queryClient.fetchQuery({ ...configOptions(), staleTime: 0 })).version ?? 0
+  (await queryClient.query({ ...configOptions(), staleTime: 0 })).version ?? 0
 
 export const updateConfigOptions = (queryClient: QueryClient) => ({
   ...updateConfigMutation(),

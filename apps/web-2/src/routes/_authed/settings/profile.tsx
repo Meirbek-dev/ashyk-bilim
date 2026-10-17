@@ -4,7 +4,7 @@ import { ProfilePage, profileOptions } from '#/features/settings'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/settings/profile')({
-  loader: ({ context }) => context.queryClient.ensureQueryData(profileOptions()),
+  loader: ({ context }) => context.queryClient.query({ ...profileOptions(), staleTime: 'static' }),
   staticData: { title: m.platform_tab_profile },
   component: ProfilePage,
 })

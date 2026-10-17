@@ -46,7 +46,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const rules = protections(assessment.policy)
   const action = entryAction(state)
   const reread = async () => {
-    await queryClient.fetchQuery({ ...stateOptions(assessment.id), staleTime: 0 }).catch(() => null)
+    await queryClient.query({ ...stateOptions(assessment.id), staleTime: 0 }).catch(() => null)
   }
   if (action.kind === 'continue')
     return (

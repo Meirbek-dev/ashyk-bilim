@@ -162,9 +162,9 @@ export const opensThread = (post: Discussion | null | undefined, courseId: Cours
  * read alone (`linkedPostOptions`).
  */
 export async function ensureDiscussions(queryClient: QueryClient, courseId: CourseId, thread: string | undefined) {
-  const posts = await queryClient.ensureInfiniteQueryData(postsOptions(courseId))
+  const posts = await queryClient.infiniteQuery({ ...postsOptions(courseId), staleTime: 'static' })
   if (!thread) return
   const listed = posts.pages.flatMap(page => page.items).find(post => post.id === thread)
-  const open = listed ?? (await queryClient.ensureQueryData(linkedPostOptions(thread)))
-  if (opensThread(open, courseId)) await queryClient.ensureInfiniteQueryData(repliesOptions(open.id))
+  const open = listed ?? (await queryClient.query({ ...linkedPostOptions(thread), staleTime: 'static' }))
+  if (opensThread(open, courseId)) await queryClient.infiniteQuery({ ...repliesOptions(open.id), staleTime: 'static' })
 }

@@ -8,7 +8,7 @@ export const verificationOptions = (code: string) => verifyCertificateOptions({ 
 
 /** Route loader: an unknown code (404) is the "not valid" state, drawn by the route's notFoundComponent. */
 export async function ensureVerification(queryClient: QueryClient, code: string) {
-  return queryClient.ensureQueryData(verificationOptions(code)).catch((error: unknown) => {
+  return queryClient.query({ ...verificationOptions(code), staleTime: 'static' }).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) throw notFound()
     throw error
   })

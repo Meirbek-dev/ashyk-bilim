@@ -8,7 +8,10 @@ export const Route = createFileRoute('/_public/courses/')({
   validateSearch: coursesSearchSchema,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>
-    context.queryClient.ensureInfiniteQueryData(coursesListOptions(coursesFilter(deps, context.session !== null))),
+    context.queryClient.infiniteQuery({
+      ...coursesListOptions(coursesFilter(deps, context.session !== null)),
+      staleTime: 'static',
+    }),
   staticData: { title: m.platform_nav_courses },
   component: CoursesPage,
 })

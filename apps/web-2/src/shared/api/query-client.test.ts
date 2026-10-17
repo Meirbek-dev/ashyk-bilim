@@ -61,14 +61,18 @@ test('a 401 while an upload is held keeps the page; once the last hold lets go, 
     typeof onFocus === 'function' && onFocus(client.getQueryCache().find({ queryKey, exact: true })!)
   expect(refetches(course)).toBe(false)
   expect(refetches(key)).toBe(true)
-  await client.prefetchQuery({ queryKey: dashboardQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+  await client
+    .query({ queryKey: dashboardQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+    .catch(() => undefined)
   expect(client.getQueryData(key)?.user_id).toBe('a')
   expect(guards).toBe(0)
   // Read again on the next focus: the user may have signed in in another tab.
   expect(client.getQueryState(key)?.isInvalidated).toBe(true)
   releaseSessionHold(client, release)
   expect(refetches(course)).toBe(true)
-  await client.prefetchQuery({ queryKey: unreadCountQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+  await client
+    .query({ queryKey: unreadCountQueryKey(), queryFn: () => Promise.reject(sessionExpired()) })
+    .catch(() => undefined)
   expect(client.getQueryData(key)).toBeNull()
   expect(guards).toBe(1)
 })

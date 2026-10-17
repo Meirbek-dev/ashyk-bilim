@@ -45,7 +45,7 @@ export const groupOptions = (id: UsergroupId) => getGroupOptions({ path: { group
 
 /** A group's current `version`, read past the cache: "Reload and retry" after a 412. */
 export const groupVersion = async (queryClient: QueryClient, id: UsergroupId) =>
-  (await queryClient.fetchQuery({ ...groupOptions(id), staleTime: 0 })).version
+  (await queryClient.query({ ...groupOptions(id), staleTime: 0 })).version
 
 const membersKey = (id: UsergroupId) =>
   listGroupMembersPageInfiniteQueryKey({ path: { group_id: id }, query: { limit: PAGE_SIZE } })
@@ -72,8 +72,8 @@ export const membersOptions = (id: UsergroupId) =>
 /** Route loader of a group page: an unknown or malformed id is "not found". */
 export const ensureGroup = (queryClient: QueryClient, id: UsergroupId) =>
   Promise.all([
-    queryClient.ensureQueryData(groupOptions(id)),
-    queryClient.ensureInfiniteQueryData(membersOptions(id)),
+    queryClient.query({ ...groupOptions(id), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...membersOptions(id), staleTime: 'static' }),
   ]).catch(notFoundOn404)
 
 // The infinite group lists only: the panel's group choices stay as loaded (a refetch there repeats its GET).

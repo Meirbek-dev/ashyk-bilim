@@ -140,9 +140,9 @@ export const withdrawOptions = (queryClient: QueryClient, id: CourseId, userId: 
  */
 export async function ensureCoursePage(queryClient: QueryClient, id: CourseId, session: SessionInfo | null) {
   const [course] = await Promise.all([
-    queryClient.ensureQueryData(courseOptions(id)),
-    queryClient.ensureInfiniteQueryData(contributorsOptions(id)),
-    session ? queryClient.ensureQueryData(learnerStateOptions(id)) : null,
+    queryClient.query({ ...courseOptions(id), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...contributorsOptions(id), staleTime: 'static' }),
+    session ? queryClient.query({ ...learnerStateOptions(id), staleTime: 'static' }) : null,
   ]).catch((error: unknown) => {
     if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
     throw error

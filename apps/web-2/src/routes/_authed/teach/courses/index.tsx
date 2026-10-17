@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 export const Route = createFileRoute('/_authed/teach/courses/')({
   validateSearch: coursesSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) => context.queryClient.ensureInfiniteQueryData(myCoursesOptions(deps)),
+  loader: ({ context, deps }) => context.queryClient.infiniteQuery({ ...myCoursesOptions(deps), staleTime: 'static' }),
   staticData: { title: m.platform_nav_teach_courses },
   component: CoursesPage,
 })

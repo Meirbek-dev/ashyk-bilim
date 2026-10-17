@@ -36,4 +36,7 @@ export const certificatesOptions = () => {
 
 /** Route loader of /learning: the caller's courses and certificates, side by side. */
 export const ensureLearning = (queryClient: QueryClient) =>
-  Promise.all([queryClient.ensureQueryData(trailOptions()), queryClient.ensureInfiniteQueryData(certificatesOptions())])
+  Promise.all([
+    queryClient.query({ ...trailOptions(), staleTime: 'static' }),
+    queryClient.infiniteQuery({ ...certificatesOptions(), staleTime: 'static' }),
+  ])

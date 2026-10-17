@@ -35,7 +35,7 @@ export function useTaskSave(task: FileSubmission) {
     if (!stale) return
     setRetrying(true)
     try {
-      const fresh = await queryClient.fetchQuery({ ...taskOptions(task.activity_id), staleTime: 0 })
+      const fresh = await queryClient.query({ ...taskOptions(task.activity_id), staleTime: 0 })
       await save(stale, fresh?.version)
     } catch {
       // A non-412 answer closes the dialog; the section shows it from the mutation's `error`.

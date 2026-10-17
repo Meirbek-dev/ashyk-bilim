@@ -22,7 +22,7 @@ export function useVersion(activityId: string) {
     setConflict,
     onError: (error: unknown) => setConflict(isStale(error)),
     reload: async () => {
-      await queryClient.fetchQuery({ ...assessmentOptions(activityId), staleTime: 0 })
+      await queryClient.query({ ...assessmentOptions(activityId), staleTime: 0 })
       setConflict(false)
     },
   }

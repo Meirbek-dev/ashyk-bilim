@@ -9,8 +9,8 @@ export const Route = createFileRoute('/_authed/notifications')({
   loaderDeps: ({ search }) => ({ unread: search.unread ?? false }),
   loader: ({ context, deps }) =>
     Promise.all([
-      context.queryClient.ensureInfiniteQueryData(notificationsListOptions(deps.unread)),
-      context.queryClient.ensureQueryData(unreadOptions()),
+      context.queryClient.infiniteQuery({ ...notificationsListOptions(deps.unread), staleTime: 'static' }),
+      context.queryClient.query({ ...unreadOptions(), staleTime: 'static' }),
     ]),
   staticData: { title: m.platform_page_notifications },
   component: NotificationsPage,

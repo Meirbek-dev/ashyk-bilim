@@ -9,9 +9,9 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/learners'
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(courseGroupsOptions(params.courseId)),
-      context.queryClient.ensureQueryData(linkableGroupsOptions()),
-      context.queryClient.ensureInfiniteQueryData(learnersOptions(params.courseId, deps.q)),
+      context.queryClient.query({ ...courseGroupsOptions(params.courseId), staleTime: 'static' }),
+      context.queryClient.query({ ...linkableGroupsOptions(), staleTime: 'static' }),
+      context.queryClient.infiniteQuery({ ...learnersOptions(params.courseId, deps.q), staleTime: 'static' }),
     ]),
   staticData: { title: m.platform_tab_learners },
   component: LearnersPage,

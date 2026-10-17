@@ -4,7 +4,7 @@ import { configOptions, GamificationPage } from '#/features/admin'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/admin/gamification')({
-  loader: ({ context }) => context.queryClient.ensureQueryData(configOptions()),
+  loader: ({ context }) => context.queryClient.query({ ...configOptions(), staleTime: 'static' }),
   staticData: { title: m.platform_nav_gamification },
   component: GamificationPage,
 })

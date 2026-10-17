@@ -38,7 +38,7 @@ type Search<T extends v.GenericSchema> = Filters & v.InferOutput<T>
 export async function hasUnknownCohort(queryClient: QueryClient, filters: Filters): Promise<boolean> {
   if (!filters.cohort) return false
   try {
-    await queryClient.ensureQueryData(getGroupOptions({ path: { group_id: filters.cohort } }))
+    await queryClient.query({ ...getGroupOptions({ path: { group_id: filters.cohort } }), staleTime: 'static' })
     return false
   } catch (error) {
     if (error instanceof ApiError && [403, 404, 422].includes(error.status)) return true
@@ -48,14 +48,19 @@ export async function hasUnknownCohort(queryClient: QueryClient, filters: Filter
 
 /** The layout: the overview answer carries the filter choices (courses, groups); the saved views. */
 export const loadAnalytics = (queryClient: QueryClient, filters: Filters) =>
-  Promise.all([queryClient.ensureQueryData(overviewOptions(filters)), queryClient.ensureQueryData(savedViewsOptions())])
+  Promise.all([
+    queryClient.query({ ...overviewOptions(filters), staleTime: 'static' }),
+    queryClient.query({ ...savedViewsOptions(), staleTime: 'static' }),
+  ])
 
 /** overview and operations: the KPI answer and, when open, the rows behind one tile. */
 export function loadMetricTab(queryClient: QueryClient, search: Search<typeof metricSearchSchema>) {
   const filters = pickFilters(search)
   return Promise.all([
-    queryClient.ensureQueryData(overviewOptions(filters)),
-    search.metric ? queryClient.ensureQueryData(drillOptions(filters, search.metric, search.page)) : null,
+    queryClient.query({ ...overviewOptions(filters), staleTime: 'static' }),
+    search.metric
+      ? queryClient.query({ ...drillOptions(filters, search.metric, search.page), staleTime: 'static' })
+      : null,
   ])
 }
 
@@ -63,13 +68,15 @@ export function loadLearners(queryClient: QueryClient, search: Search<typeof lea
   const filters = pickFilters(search)
   const { learnerId, courseId } = search
   return Promise.all([
-    queryClient.ensureQueryData(overviewOptions(filters)),
-    queryClient.ensureQueryData(atRiskOptions(filters, search)).then(async data => {
+    queryClient.query({ ...overviewOptions(filters), staleTime: 'static' }),
+    queryClient.query({ ...atRiskOptions(filters, search), staleTime: 'static' }).then(async data => {
       if (learnerId && courseId && !data.items.some(row => row.user_id === learnerId && row.course_id === courseId))
         await loadLearnerRisk(queryClient, filters, learnerId, courseId)
       return data
     }),
-    learnerId && courseId ? queryClient.ensureQueryData(interventionsOptions(learnerId, courseId)) : null,
+    learnerId && courseId
+      ? queryClient.query({ ...interventionsOptions(learnerId, courseId), staleTime: 'static' })
+      : null,
   ])
 }
 
@@ -80,22 +87,30 @@ export async function loadPerformance(queryClient: QueryClient, search: Search<t
   if (assessmentType && assessmentId) {
     const assessment = { assessment_type: assessmentType, assessment_id: assessmentId }
     return Promise.all([
-      ensureDrill(queryClient.ensureQueryData(assessmentOptions(filters, assessmentType, assessmentId))),
-      ensureDrill(queryClient.ensureQueryData(drillOptions(filters, 'pass_rate', search.page, assessment))),
+      ensureDrill(
+        queryClient.query({ ...assessmentOptions(filters, assessmentType, assessmentId), staleTime: 'static' }),
+      ),
+      ensureDrill(
+        queryClient.query({ ...drillOptions(filters, 'pass_rate', search.page, assessment), staleTime: 'static' }),
+      ),
     ])
   }
-  if (courseId) return ensureDrill(queryClient.ensureQueryData(courseOptions(filters, courseId)))
+  if (courseId) return ensureDrill(queryClient.query({ ...courseOptions(filters, courseId), staleTime: 'static' }))
   return Promise.all([
-    queryClient.ensureQueryData(
-      coursesOptions(filters, search.coursePage, { sort: search.courseSort, desc: search.courseDesc }),
-    ),
-    queryClient.ensureQueryData(assessmentsOptions(filters, search.page, { sort: search.sort, desc: search.desc })),
+    queryClient.query({
+      ...coursesOptions(filters, search.coursePage, { sort: search.courseSort, desc: search.courseDesc }),
+      staleTime: 'static',
+    }),
+    queryClient.query({
+      ...assessmentsOptions(filters, search.page, { sort: search.sort, desc: search.desc }),
+      staleTime: 'static',
+    }),
   ])
 }
 
 /** The rankings in scope, and the unscoped ones whose courses and groups the filter menus offer. */
 export const loadAdminAnalytics = (queryClient: QueryClient, search: AdminAnalyticsSearch) =>
   Promise.all([
-    queryClient.ensureQueryData(adminAnalyticsOptions(search.window, search)),
-    queryClient.ensureQueryData(adminAnalyticsOptions(search.window)),
+    queryClient.query({ ...adminAnalyticsOptions(search.window, search), staleTime: 'static' }),
+    queryClient.query({ ...adminAnalyticsOptions(search.window), staleTime: 'static' }),
   ])

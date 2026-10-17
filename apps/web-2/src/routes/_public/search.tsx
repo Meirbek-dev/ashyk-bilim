@@ -7,7 +7,8 @@ import { m } from '#/paraglide/messages'
 export const Route = createFileRoute('/_public/search')({
   validateSearch: searchPageSchema,
   loaderDeps: ({ search }) => ({ q: search.q }),
-  loader: ({ context, deps }) => (deps.q ? context.queryClient.ensureQueryData(searchResultsOptions(deps.q)) : null),
+  loader: ({ context, deps }) =>
+    deps.q ? context.queryClient.query({ ...searchResultsOptions(deps.q), staleTime: 'static' }) : null,
   staticData: { title: m.platform_page_search },
   component: SearchPage,
 })

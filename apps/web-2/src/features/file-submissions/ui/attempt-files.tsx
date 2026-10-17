@@ -32,7 +32,7 @@ export function AttemptFiles({ files, onRemove, disabled = false }: AttemptFiles
     // Opened in the click itself: Safari blocks a window.open that comes after an await as a pop-up.
     const tab = inline ? window.open('', '_blank') : null
     try {
-      const signed = await queryClient.fetchQuery(downloadOptions(file.id, inline ? 'inline' : 'attachment'))
+      const signed = await queryClient.query(downloadOptions(file.id, inline ? 'inline' : 'attachment'))
       setError(null)
       if (tab) {
         tab.opener = null

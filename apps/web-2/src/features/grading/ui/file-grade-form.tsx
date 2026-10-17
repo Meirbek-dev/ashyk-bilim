@@ -29,7 +29,7 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
   const grade = useGradeSave(
     (body: FileGradeRequest, version) =>
       mutation.mutateAsync({ path: { attempt_id: attempt.id }, body, headers: { 'If-Match': version } }),
-    async () => (await queryClient.fetchQuery({ ...attemptOptions(attempt.id), staleTime: 0 })).version,
+    async () => (await queryClient.query({ ...attemptOptions(attempt.id), staleTime: 0 })).version,
     attempt.version,
   )
   const form = useAppForm(fileGradeSchema, {

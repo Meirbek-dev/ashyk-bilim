@@ -30,7 +30,7 @@ export function useSubmitAttempt(attempt: StudentSubmission, courseId: CourseId)
 
   // A 409 or 403: was it handed in meanwhile (the timer sweep, another tab)? Then the page shows the result.
   async function reread(reopenDraft: boolean, onClose?: () => void) {
-    const fresh = await queryClient.fetchQuery({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
+    const fresh = await queryClient.query({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
     if (fresh?.status !== 'draft' || !reopenDraft) return
     const reopened = await reopen.mutateAsync({ path: { assessment_id: attempt.assessment_id } }).catch(() => null)
     if (!reopened) return

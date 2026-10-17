@@ -5,8 +5,8 @@ import { LandingPage, landingCoursesOptions, platformOptions } from '#/features/
 export const Route = createFileRoute('/_guest/')({
   loader: async ({ context }) => {
     const [platform] = await Promise.all([
-      context.queryClient.ensureQueryData(platformOptions()),
-      context.queryClient.ensureQueryData(landingCoursesOptions()),
+      context.queryClient.query({ ...platformOptions(), staleTime: 'static' }),
+      context.queryClient.query({ ...landingCoursesOptions(), staleTime: 'static' }),
     ])
     return platform
   },

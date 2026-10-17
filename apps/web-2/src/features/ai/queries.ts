@@ -64,7 +64,7 @@ export const capabilitiesOptions = ({ courseId, activityId, surface }: Scope) =>
 
 /** Route loaders of the pages with the panel: the panel's own errors stay in the panel (prefetch never throws). */
 export const prefetchPanel = (queryClient: QueryClient, scope: Scope) =>
-  queryClient.prefetchQuery(capabilitiesOptions(scope))
+  queryClient.query(capabilitiesOptions(scope)).catch(() => undefined)
 
 // ---- Q&A ----
 export const threadsOptions = (courseId: CourseId) => qaThreadsOptions({ path: { course_id: courseId } })

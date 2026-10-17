@@ -10,10 +10,10 @@ export const Route = createFileRoute('/_authed/admin/ai')({
   loaderDeps: ({ search }) => runsFilter(search),
   loader: ({ context: { queryClient }, deps }) =>
     Promise.all([
-      queryClient.ensureQueryData(settingsOptions()),
-      queryClient.ensureQueryData(usageSummaryOptions()),
-      queryClient.ensureQueryData(evalsOptions()),
-      queryClient.ensureInfiniteQueryData(runsOptions(deps)),
+      queryClient.query({ ...settingsOptions(), staleTime: 'static' }),
+      queryClient.query({ ...usageSummaryOptions(), staleTime: 'static' }),
+      queryClient.query({ ...evalsOptions(), staleTime: 'static' }),
+      queryClient.infiniteQuery({ ...runsOptions(deps), staleTime: 'static' }),
     ]),
   staticData: { title: m.platform_nav_ai },
   component: AdminAiPage,

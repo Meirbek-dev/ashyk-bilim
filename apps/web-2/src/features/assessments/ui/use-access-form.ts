@@ -46,7 +46,7 @@ export function useAccessForm(activityId: string, assessment: AssessmentDetail, 
     onSubmit: body => (locksOut(body) && !confirming ? setConfirming(true) : send(body)),
   })
   const reloadAndRetry = async () => {
-    await queryClient.fetchQuery({ ...accessOptions(assessment.id), staleTime: 0 })
+    await queryClient.query({ ...accessOptions(assessment.id), staleTime: 0 })
     await send(form.state.values).catch(() => undefined)
   }
   return { form, save, conflict, setConflict, confirming, setConfirming, send, reloadAndRetry }

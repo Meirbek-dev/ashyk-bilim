@@ -86,10 +86,12 @@ export const deleteCollectionOptions = () => ({ ...deleteCollectionMutation(), m
  * collection does not list in `allowed_actions` is a 403 shown in place (spec 5.2).
  */
 export async function ensureCollection(queryClient: QueryClient, id: CollectionId, action?: CollectionAction) {
-  const collection = await queryClient.ensureQueryData(collectionOptions(id)).catch((error: unknown) => {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
-    throw error
-  })
+  const collection = await queryClient
+    .query({ ...collectionOptions(id), staleTime: 'static' })
+    .catch((error: unknown) => {
+      if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
+      throw error
+    })
   if (action && !can(collection, action)) {
     throw new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })
   }

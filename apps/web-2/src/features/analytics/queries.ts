@@ -52,7 +52,7 @@ export const learnerRiskOptions = (filters: Filters, courseId: CourseId, page: n
 
 export async function loadLearnerRisk(queryClient: QueryClient, filters: Filters, userId: UserId, courseId: CourseId) {
   for (let page = 1; ; page++) {
-    const data = await queryClient.ensureQueryData(learnerRiskOptions(filters, courseId, page))
+    const data = await queryClient.query({ ...learnerRiskOptions(filters, courseId, page), staleTime: 'static' })
     const row = data.items.find(item => item.user_id === userId && item.course_id === courseId)
     if (row || data.items.length === 0 || page >= pageCount(data.total, data.page_size)) return row
   }
@@ -138,7 +138,7 @@ export const interventionVersion = (queryClient: QueryClient, item: Intervention
 
 /** A retry after a 412 reads the history again: the row's current `version`. */
 export const reloadInterventions = (queryClient: QueryClient, userId: UserId, courseId: CourseId) =>
-  queryClient.fetchQuery({ ...interventionsOptions(userId, courseId), staleTime: 0 })
+  queryClient.query({ ...interventionsOptions(userId, courseId), staleTime: 0 })
 
 /** Saving overwrites the view of the same name and tab: the answer replaces it in the cached list or is added. */
 export const saveViewOptions = (queryClient: QueryClient) => ({

@@ -85,7 +85,7 @@ export { contributorsOptions, updatesOptions }
  * a course the caller may neither edit nor restore is a 403 shown in place (spec 5.2).
  */
 export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
-  const course = await queryClient.ensureQueryData(courseOptions(id)).catch((error: unknown) => {
+  const course = await queryClient.query({ ...courseOptions(id), staleTime: 'static' }).catch((error: unknown) => {
     if (error instanceof ApiError && (error.status === 404 || error.status === 422)) throw notFound()
     throw error
   })
@@ -97,10 +97,10 @@ export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
 
 /** Loader of `settings`: the certificate configuration, and the archive preview when the course can be archived. */
 export async function ensureCourseSettings(queryClient: QueryClient, id: CourseId) {
-  const course = await queryClient.ensureQueryData(courseOptions(id))
+  const course = await queryClient.query({ ...courseOptions(id), staleTime: 'static' })
   await Promise.all([
-    queryClient.ensureQueryData(certificationsOptions(id)),
-    can(course, 'archive') ? queryClient.ensureQueryData(archivePreviewOptions(id)) : null,
+    queryClient.query({ ...certificationsOptions(id), staleTime: 'static' }),
+    can(course, 'archive') ? queryClient.query({ ...archivePreviewOptions(id), staleTime: 'static' }) : null,
   ])
 }
 
@@ -109,7 +109,7 @@ export async function ensureCourseSettings(queryClient: QueryClient, id: CourseI
 // "Reload and retry" after a 412 (`useIfMatch`): the object's current `version`, read again into the cache. A row
 // gone meanwhile keeps its old version: the write then answers 404.
 export const courseVersion = async (queryClient: QueryClient, id: CourseId) =>
-  (await queryClient.fetchQuery({ ...courseOptions(id), staleTime: 0 })).version
+  (await queryClient.query({ ...courseOptions(id), staleTime: 0 })).version
 
 const putCourse = (queryClient: QueryClient) => (course: Course) =>
   queryClient.setQueryData(getCourseQueryKey(byId(course.id)), course)
@@ -203,9 +203,8 @@ export const createUpdateOptions = (queryClient: QueryClient, id: CourseId) => (
 
 // Every loaded page is read again; a row gone meanwhile keeps its old version (the write then answers 404).
 export const updateVersion = async (queryClient: QueryClient, id: CourseId, update: CourseUpdate) =>
-  (await queryClient.fetchInfiniteQuery({ ...updatesOptions(id), staleTime: 0 })).pages
-    .flatMap(page => page.items)
-    .find(row => row.id === update.id)?.version ?? update.version
+  (await queryClient.infiniteQuery({ ...updatesOptions(id), staleTime: 0 })).find(row => row.id === update.id)
+    ?.version ?? update.version
 
 export const editUpdateOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...editCourseUpdateMutation(),
@@ -233,8 +232,8 @@ export const createCertificationOptions = (queryClient: QueryClient, id: CourseI
 })
 
 export const certificationVersion = async (queryClient: QueryClient, id: CourseId, row: Certification) =>
-  (await queryClient.fetchQuery({ ...certificationsOptions(id), staleTime: 0 })).find(old => old.id === row.id)
-    ?.version ?? row.version
+  (await queryClient.query({ ...certificationsOptions(id), staleTime: 0 })).find(old => old.id === row.id)?.version ??
+  row.version
 
 export const updateCertificationOptions = (queryClient: QueryClient, id: CourseId) => ({
   ...updateCertificationMutation(),
