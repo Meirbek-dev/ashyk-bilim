@@ -100,7 +100,7 @@ test('B-AUTH-05 the Google button links to the API with the checked return path'
   await expect(page.getByRole('alert')).toHaveText(m.errors_google_oauth_expired({}, ru))
 })
 
-test('B-AUTH-06 B-AUTH-07 a guest signs up and lands on the email check', async ({ page }) => {
+test('B-AUTH-06 B-AUTH-07 a guest signs up and, without email delivery, lands on sign-in', async ({ page }) => {
   const account = newAccount()
   await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
   await page.goto('/signup')
@@ -125,9 +125,9 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up and lands on the email check', async 
 
   await field(m.auth_signup_field_username({}, ru)).fill(account.username)
   await submit.click()
-  await expect(page).toHaveURL(new RegExp(`/verify-email\\?email=${encodeURIComponent(account.email)}`))
-  await expect(page.getByText(m.auth_signup_done({}, ru))).toBeVisible()
-  await expect(page.getByLabel(m.auth_signup_field_email({}, ru))).toHaveValue(account.email)
+  // The stand has no mailer: the address counts as confirmed, so no code step.
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByText(m.auth_signup_done_signin({}, ru))).toBeVisible()
 })
 
 test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the input', async ({ page, baseURL }) => {
@@ -148,21 +148,18 @@ test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the inp
   await expect(page.getByText(m.auth_verify_done({}, ru))).toBeVisible()
 })
 
-test('B-AUTH-15 a signed-in account with an unconfirmed address confirms it from the banner', async ({
+test('B-AUTH-15 without email delivery a new account is never asked to confirm its address', async ({
   page,
   baseURL,
 }) => {
   const account = await registerAccount(String(baseURL), newAccount())
-  const code = await verificationCode(account.email)
   await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
   await page.goto('/login')
   await signIn(page, account.username, account.password)
-  const banner = page.getByRole('alert').filter({ hasText: m.auth_banner_title({}, ru) })
-  await expect(banner).toBeVisible()
-  await banner.getByLabel(m.auth_verify_field_code({}, ru)).fill(code)
-  await banner.getByRole('button', { name: m.auth_verify_submit({}, ru) }).click()
-  await expect(page.getByText(m.auth_verify_done({}, ru))).toBeVisible()
-  await expect(banner).toHaveCount(0)
+  await expect(page).toHaveURL(/\/home$/)
+  const session: unknown = await (await page.request.get('/api/v2/auth/session')).json()
+  expect(session).toMatchObject({ user: { email_verified: true } })
+  await expect(page.getByRole('alert').filter({ hasText: m.auth_banner_title({}, ru) })).toHaveCount(0)
 })
 
 /** The emailed reset code: without a mailer the API logs it like the verification code (accounts.ts). The latest. */
