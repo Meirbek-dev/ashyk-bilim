@@ -32,7 +32,7 @@ import { Textarea } from '@components/ui/textarea'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import DOMPurify from 'dompurify'
+import { sanitizeEmbedCode, sanitizeEmbedUrl } from './embed-sanitize'
 import { getYouTubeVideoId } from '@/lib/utils'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { Button } from '@/components/ui/button'
@@ -169,32 +169,6 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
     guide: 'https://support.google.com/docs/answer/2839588',
   },
 ]
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-const sanitizeUrl = (url: string): string => {
-  const trimmed = url.trim()
-  if (!trimmed) return ''
-
-  const sanitized = DOMPurify.sanitize(trimmed)
-  if (!sanitized) return ''
-
-  try {
-    const parsed = new URL(sanitized)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      parsed.protocol = 'https:'
-      return parsed.toString()
-    }
-    return sanitized
-  } catch {
-    if (!/^[A-Za-z]+:\/\//.test(sanitized)) {
-      return `https://${sanitized}`
-    }
-    return sanitized
-  }
-}
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -533,7 +507,7 @@ function EmbedObjectsComponent(props: TypedNodeViewProps<EmbedNodeAttrs>) {
 
   // State
   const [embedType, setEmbedType] = useState<EmbedType>(props.node.attrs.embedType || 'url')
-  const [embedUrl, setEmbedUrl] = useState(props.node.attrs.embedUrl || '')
+  const [embedUrl, setEmbedUrl] = useState(() => sanitizeEmbedUrl(props.node.attrs.embedUrl || ''))
   const [embedCode, setEmbedCode] = useState(props.node.attrs.embedCode || '')
   const [embedHeight, setEmbedHeight] = useState(props.node.attrs.embedHeight || 300)
   const [embedWidth, setEmbedWidth] = useState(props.node.attrs.embedWidth || '100%')
@@ -552,15 +526,14 @@ function EmbedObjectsComponent(props: TypedNodeViewProps<EmbedNodeAttrs>) {
 
   // Sanitized embed code
   const sanitizedEmbedCode = useMemo(
-    () =>
-      embedType === 'code' && embedCode ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] }) : '',
+    () => (embedType === 'code' && embedCode ? sanitizeEmbedCode(embedCode) : ''),
     [embedType, embedCode],
   )
 
   // Handlers
   const handleUrlChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const sanitized = sanitizeUrl(e.target.value)
+      const sanitized = sanitizeEmbedUrl(e.target.value)
       setEmbedUrl(sanitized)
       updateAttributes({ embedUrl: sanitized, embedType: 'url' })
     },
@@ -599,7 +572,7 @@ function EmbedObjectsComponent(props: TypedNodeViewProps<EmbedNodeAttrs>) {
   const handleInputSubmit = useCallback(
     (formData: FormData) => {
       if (activeInput === 'url') {
-        const nextUrl = sanitizeUrl(String(formData.get('embedUrl') ?? ''))
+        const nextUrl = sanitizeEmbedUrl(String(formData.get('embedUrl') ?? ''))
         setEmbedType('url')
         setEmbedUrl(nextUrl)
         updateAttributes({ embedUrl: nextUrl, embedType: 'url' })
