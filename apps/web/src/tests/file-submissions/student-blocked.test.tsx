@@ -140,7 +140,11 @@ describe('FileSubmissionWorkspace blocked states', () => {
     expect(screen.getByRole('button', { name: 'open' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'submitFiles' })).toBeNull()
     await waitFor(() =>
-      expect(mocks.apiJson).toHaveBeenCalledWith(`ai/remediation/student/${USER_ID}`, undefined, expect.any(Function)),
+      expect(mocks.apiJson).toHaveBeenCalledWith(
+        `ai/remediation/student/${USER_ID}`,
+        { signal: expect.any(AbortSignal) },
+        expect.any(Function),
+      ),
     )
   })
 })

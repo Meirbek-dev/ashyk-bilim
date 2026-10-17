@@ -6,9 +6,10 @@ import { Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { stripEntityPrefix, toAppCourse } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { Collection, CoursePage } from '@/lib/api/generated/zod'
 import { useDebouncedValue } from '@/hooks/useDebounce'
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
+import { infiniteQueryOptions, keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { useApiError } from '@/hooks/useApiError'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -48,6 +49,19 @@ export function hiddenFromOthers(isPublic: boolean, courses: Pick<CourseListItem
 
 const PICKER_PAGE_SIZE = 50
 
+const coursePickerQueryOptions = (query: string) =>
+  infiniteQueryOptions({
+    queryKey: queryKeys.courses.collectionPicker(query),
+    queryFn: ({ pageParam, signal }) => {
+      const params = new URLSearchParams({ limit: String(PICKER_PAGE_SIZE) })
+      if (query) params.set('q', query)
+      if (pageParam) params.set('cursor', pageParam)
+      return apiJson(`courses?${params}`, { signal }, value => CoursePage.parse(value))
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: page => page.next_cursor ?? undefined,
+  })
+
 function NewCollection() {
   const t = useTranslations('NewCollectionPage')
   const [name, setName] = useState('')
@@ -62,18 +76,7 @@ function NewCollection() {
   // The picker searches the server (`q`) and pages with the cursor: every course the user can see is reachable,
   // not only the first page of 20 filtered in the browser.
   const query = useDebouncedValue(searchQuery.trim(), 250)
-  const coursesQuery = useInfiniteQuery({
-    queryKey: ['courses', 'collection-picker', query],
-    queryFn: ({ pageParam }) => {
-      const params = new URLSearchParams({ limit: String(PICKER_PAGE_SIZE) })
-      if (query) params.set('q', query)
-      if (pageParam) params.set('cursor', pageParam)
-      return apiJson(`courses?${params}`, {}, value => CoursePage.parse(value))
-    },
-    initialPageParam: null as string | null,
-    getNextPageParam: page => page.next_cursor ?? undefined,
-    placeholderData: keepPreviousData,
-  })
+  const coursesQuery = useInfiniteQuery({ ...coursePickerQueryOptions(query), placeholderData: keepPreviousData })
   // `isPending`, not `isLoading`: the server render has no fetch running, and must match the first client render.
   const { error, isPending: isLoading } = coursesQuery
   const courses = (coursesQuery.data?.pages.flatMap(page => page.items.map(toAppCourse)) ?? []) as CourseListItem[]

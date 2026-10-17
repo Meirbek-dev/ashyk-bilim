@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups'
 import { userGroupUsersQueryOptions } from '@/features/users/queries/users.query'
 import { useDebouncedValue } from '@/hooks/useDebounce'
@@ -26,6 +26,12 @@ type PickerRow = Pick<UsergroupMember, 'id' | 'username' | 'display_name'>
 
 const MIN_QUERY = 2
 
+const peopleSearchQueryOptions = (q: string) =>
+  queryOptions({
+    queryKey: queryKeys.search.people(q),
+    queryFn: ({ signal }) => search({ q, limit: 50 }, { signal }),
+  })
+
 /**
  * Rows = current members ∪ people matching the search. The admin directory
  * (`GET /users`) needs `platform:read:platform`, which instructors lack; the
@@ -40,8 +46,7 @@ function ManageUsers(props: ManageUsersProps) {
   const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id)
   const { data: members = [] } = useQuery(userGroupUsersQueryOptions(props.usergroup_id))
   const hits = useQuery({
-    queryKey: queryKeys.search.people(query),
-    queryFn: () => search({ q: query, limit: 50 }),
+    ...peopleSearchQueryOptions(query),
     enabled: query.length >= MIN_QUERY,
     select: results => results.users,
   })

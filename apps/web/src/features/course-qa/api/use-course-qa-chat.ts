@@ -5,6 +5,7 @@ import { aiLanguageFor } from '@/i18n/config'
 
 import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 import { createAGUIAgent } from '@/lib/ag-ui-transport'
 import { isApiError } from '@/lib/api/assertSuccess'
@@ -137,7 +138,7 @@ export function useCourseQAChat({ activityUuid, courseUuid, onThread, threadUuid
         // UX-299: the optimistic question + answer stay until the saved thread is in the cache -
         // dropping them first flashed the empty state while the thread loaded.
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.courseQa.threads(courseUuid) }),
           ...(nextThreadUuid
             ? [queryClient.fetchQuery(qaThreadQueryOptions(courseUuid, nextThreadUuid)).catch(() => undefined)]
             : []),

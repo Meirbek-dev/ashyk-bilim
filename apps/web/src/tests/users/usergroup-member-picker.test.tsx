@@ -58,7 +58,7 @@ describe('ManageUsers picker', () => {
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'lea' } })
     expect(await screen.findByText('Aigerim')).toBeInTheDocument()
-    expect(mocks.search).toHaveBeenCalledWith({ q: 'lea', limit: 50 })
+    expect(mocks.search).toHaveBeenCalledWith({ q: 'lea', limit: 50 }, { signal: expect.any(AbortSignal) })
     // A member returned by the search is not listed twice.
     expect(screen.getAllByText('Alice')).toHaveLength(1)
   })

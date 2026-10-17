@@ -3,6 +3,7 @@ import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import { toAppActivityType } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
 import { LearnerCourseState } from '@/lib/api/generated/zod'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 export type { LearnerCourseState }
 
@@ -93,7 +94,7 @@ export async function findScheduledActivity(courseUuid: string, activityId: stri
 
 export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = true) =>
   queryOptions({
-    queryKey: ['learner-course', courseUuid, 'state'],
+    queryKey: queryKeys.learnerCourse.state(courseUuid),
     queryFn: () => apiJson(`courses/${courseUuid}/learner-state`, {}, parseLearnerCourseState),
     enabled: enabled && Boolean(courseUuid),
     // Teachers publish/unpublish while the learner reads: refresh on focus and remount (UX-050).
@@ -109,10 +110,10 @@ export const learnerCourseStateQueryOptions = (courseUuid: string, enabled = tru
  */
 export async function refreshLearnerCourseState(queryClient: QueryClient, router: { refresh: () => void }) {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['learner-course'] }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.learnerCourse.all() }),
     // UX-097: the activity page seeds its runtime query from the server prop
     // (`initialData`), so a `router.refresh()` alone never reaches the header chip.
-    queryClient.invalidateQueries({ queryKey: ['student-activity'] }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.studentActivity.all() }),
   ])
   router.refresh()
 }

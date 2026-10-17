@@ -1,10 +1,16 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import CollectionThumbnail from '@components/Objects/Thumbnails/CollectionThumbnail'
 import { toAppCollection } from '@/hooks/courses/courseKeys'
 import { listCollections } from '@/lib/api/generated/collections/collections'
 import { queryKeys } from '@/lib/react-query/queryKeys'
+
+const collectionsQueryOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.collections.list(),
+    queryFn: async ({ signal }) => (await listCollections({ limit: 20 }, { signal })).items.map(toAppCollection),
+  })
 
 interface CollectionsGridProps {
   initialCollections: AppCollection[]
@@ -19,8 +25,7 @@ interface CollectionsGridProps {
  */
 export default function CollectionsGrid({ initialCollections, empty }: CollectionsGridProps) {
   const { data: collections } = useQuery({
-    queryKey: queryKeys.collections.list(),
-    queryFn: async () => (await listCollections({ limit: 20 })).items.map(toAppCollection),
+    ...collectionsQueryOptions(),
     initialData: initialCollections,
     staleTime: 5_000,
     refetchOnWindowFocus: true,

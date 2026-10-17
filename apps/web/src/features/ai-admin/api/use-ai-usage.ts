@@ -1,8 +1,9 @@
 'use client'
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, skipToken, useQuery } from '@tanstack/react-query'
 
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 import { AdminRunDetail, AdminRunPage, AdminSettings, EvalDashboard, UsageSummary } from '@/lib/api/generated/zod'
 
@@ -25,22 +26,46 @@ export interface AIOperationFilters {
 
 export function aiUsageQueryOptions() {
   return queryOptions({
-    queryKey: ['ai-usage'],
-    queryFn: () => apiJson('ai/usage', undefined, value => UsageSummary.parse(value)),
+    queryKey: queryKeys.ai.usage(),
+    queryFn: ({ signal }) => apiJson('ai/usage', { signal }, value => UsageSummary.parse(value)),
   })
 }
 
 export function aiAdminSettingsQueryOptions() {
   return queryOptions({
-    queryKey: ['ai-admin-settings'],
-    queryFn: () => apiJson('ai/admin/settings', undefined, value => AdminSettings.parse(value)),
+    queryKey: queryKeys.ai.adminSettings(),
+    queryFn: ({ signal }) => apiJson('ai/admin/settings', { signal }, value => AdminSettings.parse(value)),
   })
 }
 
 export function aiEvalDashboardQueryOptions() {
   return queryOptions({
-    queryKey: ['ai-eval-dashboard'],
-    queryFn: () => apiJson('ai/admin/evals', undefined, value => EvalDashboard.parse(value)),
+    queryKey: queryKeys.ai.evalDashboard(),
+    queryFn: ({ signal }) => apiJson('ai/admin/evals', { signal }, value => EvalDashboard.parse(value)),
+  })
+}
+
+export function aiOperationRunsQueryOptions(filters: AIOperationFilters) {
+  const params = new URLSearchParams({ days: String(filters.days) })
+  if (filters.status) params.set('status', filters.status)
+  if (filters.feature) params.set('kind', filters.feature)
+  if (filters.provider) params.set('provider', filters.provider)
+  if (filters.courseUuid) params.set('course_id', filters.courseUuid)
+  return queryOptions({
+    queryKey: queryKeys.ai.operationRuns(filters),
+    // Keyset page `{items, next_cursor}`; the console shows the first page.
+    // ponytail: walk `next_cursor` (collectPages) if one window ever exceeds a page.
+    queryFn: ({ signal }) =>
+      apiJson(`ai/admin/runs?${params.toString()}`, { signal }, value => AdminRunPage.parse(value).items),
+  })
+}
+
+export function aiOperationRunDetailQueryOptions(runUuid: string | null) {
+  return queryOptions({
+    queryKey: queryKeys.ai.operationRun(runUuid),
+    queryFn: runUuid
+      ? ({ signal }) => apiJson(`ai/admin/runs/${runUuid}`, { signal }, value => AdminRunDetail.parse(value))
+      : skipToken,
   })
 }
 
@@ -57,23 +82,9 @@ export function useAIEvalDashboard() {
 }
 
 export function useAIOperationRuns(filters: AIOperationFilters) {
-  const params = new URLSearchParams({ days: String(filters.days) })
-  if (filters.status) params.set('status', filters.status)
-  if (filters.feature) params.set('kind', filters.feature)
-  if (filters.provider) params.set('provider', filters.provider)
-  if (filters.courseUuid) params.set('course_id', filters.courseUuid)
-  return useQuery({
-    queryKey: ['ai-operation-runs', filters],
-    // Keyset page `{items, next_cursor}`; the console shows the first page.
-    // ponytail: walk `next_cursor` (collectPages) if one window ever exceeds a page.
-    queryFn: () => apiJson(`ai/admin/runs?${params.toString()}`, undefined, value => AdminRunPage.parse(value).items),
-  })
+  return useQuery(aiOperationRunsQueryOptions(filters))
 }
 
 export function useAIOperationRunDetail(runUuid: string | null) {
-  return useQuery({
-    queryKey: ['ai-operation-run', runUuid],
-    queryFn: () => apiJson(`ai/admin/runs/${runUuid}`, undefined, value => AdminRunDetail.parse(value)),
-    enabled: Boolean(runUuid),
-  })
+  return useQuery(aiOperationRunDetailQueryOptions(runUuid))
 }

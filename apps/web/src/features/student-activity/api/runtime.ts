@@ -1,5 +1,7 @@
+import { queryOptions } from '@tanstack/react-query'
 import { toAppActivityType } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { unixToIso } from '@/lib/api/contract'
 import { parseLearnerCourseState } from '@/features/learner-course/api'
 import type { LearnerCourseState } from '@/lib/api/generated/zod'
@@ -275,8 +277,12 @@ function toRuntime(state: LearnerCourseState, activityId: string): StudentActivi
   }
 }
 
-export async function getStudentActivityRuntime(courseUuid: string, activityUuid: string) {
-  const state = await apiJson(`courses/${courseUuid}/learner-state`, {}, parseLearnerCourseState)
+export async function getStudentActivityRuntime(
+  courseUuid: string,
+  activityUuid: string,
+  signal: AbortSignal | null = null,
+) {
+  const state = await apiJson(`courses/${courseUuid}/learner-state`, { signal }, parseLearnerCourseState)
   return toRuntime(state, activityUuid)
 }
 
@@ -295,4 +301,12 @@ export async function runStudentActivityAction(
   const runtime = await getStudentActivityRuntime(courseUuid, activityUuid)
   if (!runtime) throw new Error(`Activity ${activityUuid} is not in course ${courseUuid}`)
   return runtime
+}
+
+/** The activity page's runtime; the server render seeds it (`initialData`) and the action bar invalidates it. */
+export function studentActivityRuntimeQueryOptions(courseUuid: string, activityUuid: string) {
+  return queryOptions({
+    queryKey: queryKeys.studentActivity.runtime(courseUuid, activityUuid),
+    queryFn: ({ signal }) => getStudentActivityRuntime(courseUuid, activityUuid, signal),
+  })
 }

@@ -29,10 +29,10 @@ export function EnrollGate({ courseId }: { courseId: string }) {
       await Promise.all([
         revalidateTags(['courses']),
         queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
-        queryClient.invalidateQueries({ queryKey: ['learner-course'] }),
-        queryClient.invalidateQueries({ queryKey: ['student-activity'] }),
-        queryClient.invalidateQueries({ queryKey: ['assessments'] }),
-        queryClient.invalidateQueries({ queryKey: ['file-submission'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.learnerCourse.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.studentActivity.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.all() }),
       ])
     },
     onError: error => toastApiError(error, { fallback: t('enrollFailed') }),

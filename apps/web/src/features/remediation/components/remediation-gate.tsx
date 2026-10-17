@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button'
 import { useSession } from '@/hooks/useSession'
 import { useApiError } from '@/hooks/useApiError'
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { MarkdownContent } from '@/features/content-markdown'
 
-import { RemediationSessionView } from '../api/use-remediation'
+import { RemediationSessionView, myRemediationSessionsQueryOptions } from '../api/use-remediation'
 import { RemediationResultShell } from './remediation-result-shell'
 
 /** `test.questions` of a session: the generator's practice questions (answers included - self-check). */
@@ -26,8 +27,6 @@ const PracticeQuestion = zod.looseObject({
 type PracticeQuestion = zod.output<typeof PracticeQuestion>
 
 export const REMEDIATION_REQUIRED = 'REMEDIATION_REQUIRED'
-
-const mySessionsQueryKey = (userId: string) => ['remediation-sessions', 'mine', userId] as const
 
 /** The unpassed gate-mode session that blocks this learner on `activityId`, if any - the server's `active_remediation_gate`. */
 function activeGateFor(sessions: RemediationSessionView[], activityId: string) {
@@ -42,10 +41,7 @@ export function useRemediationGate(activityId: string, { poll = false } = {}) {
   const { user } = useSession()
   const userId = user?.id ?? ''
   const sessions = useQuery({
-    queryKey: mySessionsQueryKey(userId),
-    queryFn: () =>
-      apiJson(`ai/remediation/student/${userId}`, undefined, value => RemediationSessionView.array().parse(value)),
-    enabled: Boolean(userId),
+    ...myRemediationSessionsQueryOptions(userId),
     staleTime: 0,
     refetchOnWindowFocus: 'always',
     refetchInterval: poll ? 15_000 : false,
@@ -93,10 +89,10 @@ export function RemediationGate({ activityId, onCompleted }: { activityId: strin
         t(result.status === 'passed' ? 'completedPassed' : 'completedFailed', { score: result.score ?? 0 }),
       )
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: mySessionsQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.remediation.mine(userId) }),
         // The gate lifts server-side: every attempt-state / file-attempt read must follow without a reload.
-        queryClient.invalidateQueries({ queryKey: ['assessments'] }),
-        queryClient.invalidateQueries({ queryKey: ['file-submission'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.all() }),
       ])
       setOpen(false)
       setRevealed(new Set())

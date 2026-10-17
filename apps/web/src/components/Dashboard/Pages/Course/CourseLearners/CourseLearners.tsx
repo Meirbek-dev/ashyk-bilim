@@ -15,10 +15,17 @@ import { CourseEditorNotice } from '@/features/courses/editor/components/CourseE
 import { CourseEditorSection } from '@/features/courses/editor/components/CourseEditorSection'
 import { getCourseWorkflowToneClass } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { enrollCourseLearners, listCourseLearners, removeCourseLearner } from '@/lib/api/generated/progress/progress'
-import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
+import { courseUsergroupsQueryOptions } from '@/features/courses/queries/course.query'
 import type { CourseLearner, EnrollLearnersResponse, EnrollOutcome } from '@/lib/api/generated/zod'
 import { MAX_ROSTER_IDENTIFIERS, decodeCsv, parsePastedIdentifiers, parseRosterCsv } from '@/lib/roster-import'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  skipToken,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { Download, FileUp, GraduationCap, Loader2, Search, Trash2, UserPlus, Users } from 'lucide-react'
 import { collectPages, unixToIso } from '@/lib/api/contract'
 import { csvBlob, saveBlob } from '@/lib/download'
@@ -45,6 +52,22 @@ import { formatTimeZone } from '@/i18n/config'
 
 const PAGE_SIZE = 50
 const MAX_CSV_BYTES = 1024 * 1024
+
+/** `GET /courses/{id}/learners`, keyset pages per search; skipped until the course id is known. */
+const rosterQueryOptions = (courseId: string, q: string) =>
+  infiniteQueryOptions({
+    queryKey: queryKeys.courses.roster(courseId, q),
+    queryFn: courseId
+      ? ({ pageParam, signal }) =>
+          listCourseLearners(
+            courseId,
+            { limit: PAGE_SIZE, ...(pageParam ? { cursor: pageParam } : {}), ...(q ? { q } : {}) },
+            { signal },
+          )
+      : skipToken,
+    initialPageParam: '',
+    getNextPageParam: page => page.next_cursor ?? undefined,
+  })
 const OUTCOMES: EnrollOutcome[] = [
   'enrolled',
   'already_enrolled',
@@ -77,24 +100,9 @@ export default function CourseLearners() {
 
   const [search, setSearch] = useState('')
   const q = useDebouncedValue(search.trim(), 300)
-  const roster = useInfiniteQuery({
-    queryKey: queryKeys.courses.roster(courseId, q),
-    queryFn: ({ pageParam }) =>
-      listCourseLearners(courseId, {
-        limit: PAGE_SIZE,
-        ...(pageParam ? { cursor: pageParam } : {}),
-        ...(q ? { q } : {}),
-      }),
-    initialPageParam: '',
-    getNextPageParam: page => page.next_cursor ?? undefined,
-    enabled: Boolean(courseId),
-  })
+  const roster = useInfiniteQuery(rosterQueryOptions(courseId, q))
   const learners = roster.data?.pages.flatMap(page => page.items) ?? []
-  const groups = useQuery({
-    queryKey: queryKeys.courses.usergroups(courseId),
-    queryFn: () => usergroupsForCourse(courseId),
-    enabled: Boolean(courseId),
-  })
+  const groups = useQuery(courseUsergroupsQueryOptions(courseId))
   const linkedGroups = groups.data ?? []
 
   const refresh = () =>

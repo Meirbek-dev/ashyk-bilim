@@ -1,9 +1,20 @@
 export const queryKeys = {
+  ai: {
+    usage: () => ['ai-usage'] as const,
+    adminSettings: () => ['ai-admin-settings'] as const,
+    evalDashboard: () => ['ai-eval-dashboard'] as const,
+    operationRuns: (filters: object) => ['ai-operation-runs', filters] as const,
+    operationRun: (runUuid: string | null) => ['ai-operation-run', runUuid] as const,
+  },
   activities: {
     detail: (activityUuid: string) => ['activities', 'detail', activityUuid] as const,
     linkPreview: (url: string) => ['activities', 'link-preview', url] as const,
   },
   assessments: {
+    /** Prefix: every assessment read (a lifted gate or an enrolment changes them all). */
+    all: () => ['assessments'] as const,
+    /** Prefix: every per-activity copy (`activity`, `studio`, `review`, `activityDetail`). */
+    activityAll: () => ['assessments', 'activity'] as const,
     attemptState: (assessmentUuid: string | null | undefined) =>
       ['assessments', 'attempt-state', assessmentUuid || 'missing'] as const,
     mySubmissions: (assessmentUuid: string | null | undefined) =>
@@ -39,6 +50,7 @@ export const queryKeys = {
     list: () => ['collections', 'list'] as const,
   },
   courses: {
+    collectionPicker: (q: string) => ['courses', 'collection-picker', q] as const,
     contributors: (courseUuid: string) => ['courses', 'contributors', courseUuid] as const,
     readiness: (courseUuid: string) => ['courses', courseUuid, 'readiness'] as const,
     learners: (courseUuid: string) => ['courses', 'learners', courseUuid] as const,
@@ -56,6 +68,8 @@ export const queryKeys = {
       ['courses', 'discussion-replies', courseUuid, discussionUuid, { limit, offset }] as const,
   },
   grading: {
+    /** Prefix: every grading read (the course grading stream refreshes them all). */
+    all: () => ['grading'] as const,
     detail: (submissionUuid: string, assessmentUuid: string) =>
       ['grading', 'submission', assessmentUuid, submissionUuid] as const,
     gradebook: (courseUuid: string) => ['grading', 'gradebook', courseUuid] as const,
@@ -79,6 +93,8 @@ export const queryKeys = {
     people: (query: string) => ['search', 'people', query] as const,
   },
   studentActivity: {
+    /** Prefix: every activity runtime. */
+    all: () => ['student-activity'] as const,
     runtime: (courseUuid: string, activityUuid: string) =>
       ['student-activity', 'runtime', courseUuid, activityUuid] as const,
   },
@@ -98,6 +114,34 @@ export const queryKeys = {
   auth: {
     session: () => ['auth', 'session'] as const,
     sessions: () => ['auth', 'sessions'] as const,
+    totpQr: (uri: string) => ['totp-qr', uri] as const,
+  },
+  certificatePdf: (key: readonly unknown[]) => ['certificate-pdf', ...key] as const,
+  courseQa: {
+    threads: (courseUuid: string) => ['course-qa-threads', courseUuid] as const,
+    thread: (courseUuid: string, threadUuid: string) => ['course-qa-thread', courseUuid, threadUuid] as const,
+  },
+  fileSubmissions: {
+    /** Prefix: every file-submission read (learner, studio and review). */
+    all: () => ['file-submission'] as const,
+    activity: (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const,
+    gradingHistory: (attemptId: string) => ['file-submission', 'grading-history', attemptId] as const,
+  },
+  learnerCourse: {
+    /** Prefix: every learner-state projection. */
+    all: () => ['learner-course'] as const,
+    state: (courseUuid: string) => ['learner-course', courseUuid, 'state'] as const,
+  },
+  notifications: {
+    /** Prefix: the bell's count and list. */
+    all: () => ['notifications'] as const,
+    unreadCount: () => ['notifications', 'unread-count'] as const,
+    list: () => ['notifications', 'list'] as const,
+  },
+  remediation: {
+    /** Prefix: every remediation-session read. */
+    all: () => ['remediation-sessions'] as const,
+    mine: (userId: string) => ['remediation-sessions', 'mine', userId] as const,
   },
   users: {
     me: () => ['users', 'me'] as const,

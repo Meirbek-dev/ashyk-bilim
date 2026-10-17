@@ -1,6 +1,7 @@
 'use client'
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import * as zod from 'zod'
 
 import { apiJson } from '@/lib/api-client'
@@ -13,8 +14,9 @@ const QaTranscript = zod.array(QaMessage.extend({ citations: zod.unknown() }))
 
 export function qaThreadQueryOptions(courseUuid: string, threadUuid: string) {
   return queryOptions({
-    queryKey: ['course-qa-thread', courseUuid, threadUuid],
-    queryFn: () => apiJson(`ai/qa/${courseUuid}/threads/${threadUuid}`, undefined, value => QaTranscript.parse(value)),
+    queryKey: queryKeys.courseQa.thread(courseUuid, threadUuid),
+    queryFn: ({ signal }) =>
+      apiJson(`ai/qa/${courseUuid}/threads/${threadUuid}`, { signal }, value => QaTranscript.parse(value)),
     enabled: Boolean(courseUuid && threadUuid),
   })
 }

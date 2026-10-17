@@ -99,7 +99,7 @@ describe('course Q&A on the v2 wire', () => {
     await waitFor(() =>
       expect(mocks.apiJson).toHaveBeenCalledWith(
         `ai/qa/${COURSE_ID}/threads/${THREAD_ID}`,
-        undefined,
+        { signal: expect.any(AbortSignal) },
         expect.any(Function),
       ),
     )

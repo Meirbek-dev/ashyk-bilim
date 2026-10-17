@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { describeUserAgent } from '@/lib/user-agent'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import QRCode from 'qrcode'
@@ -37,6 +37,19 @@ import {
   verifyTotpEnrollment,
 } from '@services/auth/auth'
 import type { SessionInfo, TotpEnrollment } from '@/lib/api/generated/zod'
+
+const sessionsQueryOptions = () =>
+  queryOptions({ queryKey: queryKeys.auth.sessions(), queryFn: ({ signal }) => listSessions(signal) })
+
+const sessionInfoQueryOptions = () =>
+  queryOptions({ queryKey: queryKeys.auth.session(), queryFn: ({ signal }) => getSessionInfo(signal) })
+
+const totpQrQueryOptions = (uri: string) =>
+  queryOptions({
+    queryKey: queryKeys.auth.totpQr(uri),
+    queryFn: () => QRCode.toDataURL(uri, { margin: 1, width: 192 }),
+    staleTime: Infinity,
+  })
 
 /**
  * Security settings against the v2 BFF: the list of live sessions with
@@ -78,8 +91,7 @@ function SessionsSection({ t }: { t: Translator }) {
   const queryClient = useQueryClient()
   const { toastApiError } = useApiError()
   const sessionsQuery = useQuery({
-    queryKey: queryKeys.auth.sessions(),
-    queryFn: listSessions,
+    ...sessionsQueryOptions(),
     // A session revoked from another tab shows on focus (UX-101), like the TOTP
     // query — the client default is `refetchOnWindowFocus: false` (UX-107).
     staleTime: 5_000,
@@ -338,8 +350,7 @@ function TotpSection({
   // UX-082: `initialActive` is the server render's snapshot; a disable in
   // another tab must show here, so the live flag is re-read on focus.
   const sessionQuery = useQuery({
-    queryKey: queryKeys.auth.session(),
-    queryFn: getSessionInfo,
+    ...sessionInfoQueryOptions(),
     staleTime: 0,
     refetchOnWindowFocus: true,
     retry: 1,
@@ -395,11 +406,7 @@ function TotpSection({
         setEnrollment(null)
         void (async () => {
           try {
-            const session = await queryClient.fetchQuery({
-              queryKey: queryKeys.auth.session(),
-              queryFn: getSessionInfo,
-              staleTime: 0,
-            })
+            const session = await queryClient.fetchQuery({ ...sessionInfoQueryOptions(), staleTime: 0 })
             if (session.mfa_enabled) resyncActive()
             else toast.info(t('totpEnrollmentReset'))
           } catch {
@@ -523,11 +530,7 @@ function TotpSection({
 
 /** The `otpauth://` URI as a QR code: authenticator apps on a phone scan it from the computer screen. */
 function TotpQrCode({ uri, label }: { uri: string; label: string }) {
-  const { data } = useQuery({
-    queryKey: ['totp-qr', uri],
-    queryFn: () => QRCode.toDataURL(uri, { margin: 1, width: 192 }),
-    staleTime: Infinity,
-  })
+  const { data } = useQuery(totpQrQueryOptions(uri))
   return data ? (
     <Image src={data} alt={label} width={192} height={192} unoptimized className="rounded border bg-white" />
   ) : null

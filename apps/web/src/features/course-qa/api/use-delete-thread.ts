@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -15,7 +16,7 @@ export function useDeleteQAThread(courseUuid: string) {
     mutationFn: (threadUuid: string) => deleteQaThread(courseUuid, threadUuid),
     onSuccess: () => {
       toast.success(t('threadDeleted'))
-      return queryClient.invalidateQueries({ queryKey: ['course-qa-threads', courseUuid] })
+      return queryClient.invalidateQueries({ queryKey: queryKeys.courseQa.threads(courseUuid) })
     },
     onError: error => toastApiError(error),
   })

@@ -44,6 +44,10 @@ describe('useAIOperationRuns (BUG-032)', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(Array.isArray(result.current.data)).toBe(true)
     expect(result.current.data?.map(run => run.id)).toEqual([page.items[0]!.id])
-    expect(apiJson).toHaveBeenCalledWith('ai/admin/runs?days=7', undefined, expect.any(Function))
+    expect(apiJson).toHaveBeenCalledWith(
+      'ai/admin/runs?days=7',
+      { signal: expect.any(AbortSignal) },
+      expect.any(Function),
+    )
   })
 })

@@ -1,9 +1,10 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { type ReactNode, useSyncExternalStore } from 'react'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 interface CertificatePdfPreviewProps {
   /** Cache key of this exact PDF (code / certification version + locale). */
@@ -13,6 +14,15 @@ interface CertificatePdfPreviewProps {
   /** Wraps the frame (card + heading); nothing at all is rendered where no frame can be shown. */
   frame?: (preview: ReactNode) => ReactNode
 }
+
+const certificatePdfQueryOptions = (key: readonly unknown[], load: () => Promise<Blob>) =>
+  queryOptions({
+    queryKey: queryKeys.certificatePdf(key),
+    // ponytail: the object URL is never revoked (one ~200 KB PDF per distinct certificate per tab).
+    queryFn: async () => URL.createObjectURL(await load()),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
 
 const noop = () => () => {}
 const identityFrame = (node: ReactNode) => node
@@ -25,14 +35,7 @@ const pdfViewerEnabled = () => (navigator as { pdfViewerEnabled?: boolean }).pdf
  */
 export function CertificatePdfPreview({ queryKey, load, title, frame = identityFrame }: CertificatePdfPreviewProps) {
   const canShow = useSyncExternalStore(noop, pdfViewerEnabled, () => false)
-  const { data: url, isError } = useQuery({
-    queryKey: ['certificate-pdf', ...queryKey],
-    // ponytail: the object URL is never revoked (one ~200 KB PDF per distinct certificate per tab).
-    queryFn: async () => URL.createObjectURL(await load()),
-    enabled: canShow,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  })
+  const { data: url, isError } = useQuery({ ...certificatePdfQueryOptions(queryKey, load), enabled: canShow })
 
   if (!canShow || isError) return null
   if (!url) return frame(<Skeleton className="aspect-[297/210] w-full rounded-lg" />)

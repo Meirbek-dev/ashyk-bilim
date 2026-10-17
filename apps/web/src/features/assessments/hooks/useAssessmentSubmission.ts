@@ -9,7 +9,6 @@ import { toast } from 'sonner'
 import { createIdempotencyKey } from '@/lib/api/headers'
 import {
   getAssessmentDraft,
-  getMyAssessmentSubmissions,
   getMySubmission,
   startAssessmentSubmission,
   saveAssessmentDraft,
@@ -22,6 +21,7 @@ import { disabledReasonOf } from '../domain/disabled-reason'
 import { cloneJsonValue } from '@/lib/json-clone'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { refreshLearnerCourseState } from '@/features/learner-course/api'
+import { mySubmissionsQueryOptions } from '../queries'
 import { reportClientError } from '@/services/telemetry/client'
 import { isAnswered } from '../domain/items'
 import type { ItemAnswer } from '../domain/items'
@@ -170,22 +170,13 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       // cached copy by the assessment it carries, so no caller has to pass
       // (or normalize) the activity id for a re-sync to reload them.
       queryClient.invalidateQueries({
-        queryKey: ['assessments', 'activity'],
+        queryKey: queryKeys.assessments.activityAll(),
         predicate: query => (query.state.data as { id?: unknown } | undefined)?.id === assessmentUuid,
       }),
     ])
   }, [assessmentUuid, draftQueryOptions.queryKey, queryClient, submissionsQueryKey])
 
-  const submissionsQuery = useQuery({
-    ...queryOptions({
-      queryKey: submissionsQueryKey,
-      queryFn: async () => {
-        if (!assessmentUuid) throw new Error('Assessment is not ready')
-        return getMyAssessmentSubmissions(assessmentUuid)
-      },
-      enabled: Boolean(assessmentUuid),
-    }),
-  })
+  const submissionsQuery = useQuery(mySubmissionsQueryOptions(assessmentUuid))
 
   // `submissions/draft` answers 404 when no attempt is open; only ask once the
   // attempt list says there is one (saves/starts seed the cache directly).

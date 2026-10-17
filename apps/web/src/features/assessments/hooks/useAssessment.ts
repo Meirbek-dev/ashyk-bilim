@@ -19,14 +19,13 @@ import { isApiError } from '@/lib/api/assertSuccess'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'
 
-import { assessmentByActivityQueryOptions } from '../queries'
+import { assessmentByActivityQueryOptions, attemptStateQueryOptions, mySubmissionsQueryOptions } from '../queries'
 import { canArchive, canPublish, canSchedule, isAssessmentEditable } from '../domain/lifecycle'
 import { classifyValidationIssue } from '../domain/readiness'
 import { itemFromWire, lifecycleFromWire, policyFromWire } from '../domain/assessment-wire'
-import { AttemptState, Readiness } from '@/lib/api/generated/zod'
-import type { AttemptStateOutput } from '@/lib/api/generated/zod'
+import { Readiness } from '@/lib/api/generated/zod'
+import type { AttemptState, AttemptStateOutput } from '@/lib/api/generated/zod'
 import { unixToIso } from '@/lib/api/contract'
-import { getMyAssessmentSubmissions } from '../submission-client'
 import { assessmentTypeToKind } from '../domain/view-models'
 import type { AssessmentKind, AssessmentSurface, AttemptViewModel, StudioViewModel } from '../domain/view-models'
 
@@ -106,10 +105,8 @@ function useAssessment(
   })
 
   const attempt = useQuery({
-    queryKey: queryKeys.assessments.attemptState(assessment?.id),
-    queryFn: () =>
-      apiJson(`assessments/${assessment!.id}/attempt-state`, undefined, value => AttemptState.parse(value)),
-    enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
+    ...attemptStateQueryOptions(assessment?.id),
+    enabled: options.surface === 'ATTEMPT',
     // BUG-158: a teacher may gate the retake (or spend the last attempt) while
     // the learner sits on the result page - follow the server on focus and
     // every 15 s once a hand-in exists, the same policy as the release poll.
@@ -120,9 +117,8 @@ function useAssessment(
     },
   })
   const submissions = useQuery({
-    queryKey: queryKeys.assessments.mySubmissions(assessment?.id),
-    queryFn: () => getMyAssessmentSubmissions(assessment!.id),
-    enabled: options.surface === 'ATTEMPT' && Boolean(assessment),
+    ...mySubmissionsQueryOptions(assessment?.id),
+    enabled: options.surface === 'ATTEMPT',
     // UX-061: a hand-in waiting on the teacher polls for the release while the
     // tab is visible (default `refetchIntervalInBackground: false`); UX-115: a
     // released result keeps following the teacher (a republished feedback
@@ -148,8 +144,8 @@ function useAssessment(
   useEffect(() => {
     if (releasedGrades === null) return
     if (releasedGradesRef.current !== null && releasedGradesRef.current !== releasedGrades) {
-      void queryClient.invalidateQueries({ queryKey: ['learner-course'] })
-      void queryClient.invalidateQueries({ queryKey: ['student-activity'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.learnerCourse.all() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.studentActivity.all() })
     }
     releasedGradesRef.current = releasedGrades
   }, [releasedGrades, queryClient])

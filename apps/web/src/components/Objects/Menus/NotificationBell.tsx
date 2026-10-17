@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useRouter } from '@/i18n/navigation'
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { getAPIUrl } from '@services/config/config'
 import { cn } from '@/lib/utils'
 
@@ -40,6 +41,18 @@ type Notification = zod.infer<typeof Notification>
 const NotificationPage = zod.object({ items: zod.array(Notification), next_cursor: zod.string().nullable() })
 const UnreadCount = zod.object({ unread_count: zod.number() })
 
+const unreadCountQueryOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.notifications.unreadCount(),
+    queryFn: ({ signal }) => apiJson('me/notifications/unread-count', { signal }, value => UnreadCount.parse(value)),
+  })
+
+const notificationListQueryOptions = () =>
+  queryOptions({
+    queryKey: queryKeys.notifications.list(),
+    queryFn: ({ signal }) => apiJson('me/notifications?limit=20', { signal }, value => NotificationPage.parse(value)),
+  })
+
 const KNOWN_TYPES = new Set([
   'grade_published',
   'submission_returned',
@@ -69,7 +82,7 @@ function useNotificationStream(): boolean {
   useEffect(() => {
     if (typeof EventSource === 'undefined') return
     const source = new EventSource(`${getAPIUrl().replace(/\/+$/, '')}/me/events`, { withCredentials: true })
-    const refresh = () => void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() })
     source.addEventListener('connected', () => setLive(true))
     source.addEventListener('notification.created', refresh)
     source.addEventListener('notification.read', refresh)
@@ -97,17 +110,12 @@ export function NotificationBell({ className }: { className?: string }) {
   const live = useNotificationStream()
 
   const unread = useQuery({
-    queryKey: ['notifications', 'unread-count'],
-    queryFn: () => apiJson('me/notifications/unread-count', undefined, value => UnreadCount.parse(value)),
+    ...unreadCountQueryOptions(),
     // The user stream says when something arrives; the minute poll is only the fallback while it is refused.
     refetchInterval: live ? false : 60_000,
   })
-  const list = useQuery({
-    queryKey: ['notifications', 'list'],
-    queryFn: () => apiJson('me/notifications?limit=20', undefined, value => NotificationPage.parse(value)),
-    enabled: open,
-  })
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+  const list = useQuery({ ...notificationListQueryOptions(), enabled: open })
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() })
   const markRead = useMutation({
     mutationFn: (id: string) => apiJson(`me/notifications/${id}/read`, { method: 'POST' }),
     onSettled: refresh,

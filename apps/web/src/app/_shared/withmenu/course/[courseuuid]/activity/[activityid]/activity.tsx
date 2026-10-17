@@ -4,11 +4,13 @@ import type { Activity, CourseStructure } from '@components/Contexts/CourseConte
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import StudentActivityWorkspace from '@/features/student-activity/shell/StudentActivityWorkspace'
 import { useRuntimeAction } from '@/features/student-activity/shell/BottomActionBar'
-import { getStudentActivityRuntime, type StudentActivityRuntime } from '@/features/student-activity/api/runtime'
+import {
+  studentActivityRuntimeQueryOptions,
+  type StudentActivityRuntime,
+} from '@/features/student-activity/api/runtime'
 import { ActivityLayoutProvider } from '@/features/assessments/shell/ActivityLayoutContext'
 import { ActivityContentRenderer } from './ActivityContentRenderer'
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/react-query/queryKeys'
 
 interface ActivityClientProps {
   activityid: string
@@ -29,8 +31,7 @@ export default function ActivityClient({
   // then follows learner-state's focus policy so the sidebar sees a lesson
   // published meanwhile (UX-080). Unpublished under us → keep the last runtime.
   const { data } = useQuery({
-    queryKey: queryKeys.studentActivity.runtime(courseuuid, activityid),
-    queryFn: () => getStudentActivityRuntime(courseuuid, activityid),
+    ...studentActivityRuntimeQueryOptions(courseuuid, activityid),
     initialData: initialRuntime,
     staleTime: 5_000,
     refetchOnWindowFocus: true,

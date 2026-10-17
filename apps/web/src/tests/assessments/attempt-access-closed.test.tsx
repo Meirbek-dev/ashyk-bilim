@@ -12,7 +12,8 @@ import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment
 const mocks = vi.hoisted(() => ({ submissions: vi.fn() }))
 
 vi.mock('@/services/telemetry/client', () => ({ reportClientError: vi.fn().mockResolvedValue(undefined) }))
-vi.mock('@/features/assessments/queries', () => ({
+vi.mock('@/features/assessments/queries', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/features/assessments/queries')>()),
   assessmentByActivityQueryOptions: (id: string) => ({
     queryKey: ['assessment', id],
     queryFn: async () => ({

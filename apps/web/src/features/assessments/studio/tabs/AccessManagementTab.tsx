@@ -16,17 +16,17 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useTranslations } from 'next-intl'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { createOverride, deleteOverride, updateOverride } from '@/lib/api/generated/assessments/assessments'
 import {
-  createOverride,
-  deleteOverride,
-  listOverrides,
-  updateOverride,
-} from '@/lib/api/generated/assessments/assessments'
-import { assessmentAccessQueryOptions, setVersionedAccess } from '@/features/assessments/queries'
-import { listUsergroupMembers, usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
+  assessmentAccessQueryOptions,
+  assessmentOverridesQueryOptions,
+  setVersionedAccess,
+} from '@/features/assessments/queries'
+import { courseUsergroupsQueryOptions } from '@/features/courses/queries/course.query'
+import { listUsergroupMembers } from '@/lib/api/generated/usergroups/usergroups'
 import type { OverrideRequest, StudentOverride } from '@/lib/api/generated/zod'
 import { toUnix } from '@/lib/api/contract'
 import { hasErrorCode, isApiError } from '@/lib/api/assertSuccess'
@@ -58,6 +58,19 @@ import {
   uniqueById,
 } from './accessBuilderUtils'
 import type { AccessGroupRow, AccessLearner, AccessMode } from './accessBuilderUtils'
+
+/** The course members (the gradebook's learners and cells), the access picker's learner source. */
+function courseMembersQueryOptions(courseUuid: string | null) {
+  return queryOptions({
+    queryKey: queryKeys.courses.learners(courseUuid ?? ''),
+    queryFn: courseUuid
+      ? async () => {
+          const pages = await collectGradebookPages(courseUuid)
+          return { users: uniqueById(pages.flatMap(page => page.users)), cells: pages.flatMap(page => page.cells) }
+        }
+      : skipToken,
+  })
+}
 
 interface AccessManagementTabProps {
   assessmentUuid: string
@@ -97,23 +110,12 @@ export default function AccessManagementTab({ assessmentUuid, courseUuid, disabl
   const accessKey = queryKeys.assessments.access(assessmentUuid)
   const overridesKey = queryKeys.assessments.overrides(assessmentUuid)
   const accessQuery = useQuery(assessmentAccessQueryOptions(assessmentUuid))
-  const overridesQuery = useQuery({ queryKey: overridesKey, queryFn: () => listOverrides(assessmentUuid) })
+  const overridesQuery = useQuery(assessmentOverridesQueryOptions(assessmentUuid))
   // v2 has no `access/eligible-*` search routes: the pickers are the course's
   // linked groups and the gradebook's learners (the course members), filtered
   // client-side.
-  const groupsQuery = useQuery({
-    queryKey: queryKeys.courses.usergroups(courseUuid ?? ''),
-    queryFn: () => usergroupsForCourse(courseUuid ?? ''),
-    enabled: Boolean(courseUuid),
-  })
-  const learnersQuery = useQuery({
-    queryKey: queryKeys.courses.learners(courseUuid ?? ''),
-    queryFn: async () => {
-      const pages = await collectGradebookPages(courseUuid ?? '')
-      return { users: uniqueById(pages.flatMap(page => page.users)), cells: pages.flatMap(page => page.cells) }
-    },
-    enabled: Boolean(courseUuid),
-  })
+  const groupsQuery = useQuery(courseUsergroupsQueryOptions(courseUuid))
+  const learnersQuery = useQuery(courseMembersQueryOptions(courseUuid))
   const access = accessQuery.data ?? null
   const overrides = useMemo(() => overridesQuery.data ?? [], [overridesQuery.data])
   const isLoading =

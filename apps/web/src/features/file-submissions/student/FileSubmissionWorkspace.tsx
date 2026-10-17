@@ -75,12 +75,10 @@ interface FileSubmissionWorkspaceProps {
   course: CourseStructure
 }
 
-const queryKey = (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const
-
 export function fileSubmissionQueryOptions(activityUuid: string) {
   return queryOptions({
-    queryKey: queryKey(activityUuid),
-    queryFn: () => getFileSubmissionByActivity(activityUuid),
+    queryKey: queryKeys.fileSubmissions.activity(activityUuid),
+    queryFn: ({ signal }) => getFileSubmissionByActivity(activityUuid, signal),
     enabled: Boolean(activityUuid),
     // UX-068: a hand-in waiting on the teacher (submitted, graded, or returned
     // and then re-graded) polls for the release while the tab is visible.
@@ -92,6 +90,13 @@ export function fileSubmissionQueryOptions(activityUuid: string) {
       const status = query.state.data?.current_attempt?.status
       return isAwaitingTeacher(status) ? 10_000 : status === 'published' || status === 'draft' ? 15_000 : false
     },
+  })
+}
+
+function fileGradingHistoryQueryOptions(attemptId: string) {
+  return queryOptions({
+    queryKey: queryKeys.fileSubmissions.gradingHistory(attemptId),
+    queryFn: ({ signal }) => getFileGradingHistory(attemptId, signal),
   })
 }
 
@@ -202,8 +207,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
   useEffect(() => {
     if (status === 'published') {
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() })
-      queryClient.invalidateQueries({ queryKey: ['learner-course'] })
-      queryClient.invalidateQueries({ queryKey: ['student-activity'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.learnerCourse.all() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.studentActivity.all() })
     }
   }, [status, queryClient])
 
@@ -296,24 +301,22 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         const version = attempt?.version ?? null
         return submit ? submitFileSubmission(data.id, files, version) : saveFileSubmissionDraft(data.id, files, version)
       }
-      const cached = queryClient.getQueryData<FileSubmissionActivity>(queryKey(activityUuid))?.current_attempt ?? null
+      const cached =
+        queryClient.getQueryData<FileSubmissionActivity>(queryKeys.fileSubmissions.activity(activityUuid))
+          ?.current_attempt ?? null
       try {
         return await send(started && (!cached || cached.version < started.version) ? started : cached)
       } catch (error) {
         if (!hasErrorCode(error, 'precondition-failed')) throw error
         // Stale anyway (a write landed between the read and the send): refetch, retry once.
-        const latest = await queryClient.fetchQuery({
-          queryKey: queryKey(activityUuid),
-          queryFn: () => getFileSubmissionByActivity(activityUuid),
-          staleTime: 0,
-        })
+        const latest = await queryClient.fetchQuery({ ...fileSubmissionQueryOptions(activityUuid), staleTime: 0 })
         return send(latest.current_attempt ?? null)
       }
     },
     onSuccess: async (_attempt, { submit }) => {
       setSlots([])
       setIsUploading(false)
-      await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.activity(activityUuid) })
       toast.success(submit ? t('submittedToast') : t('draftSavedToast'))
       // The header badge follows the learner-state projection (UX-089): a draft is «in progress» too.
       await refreshLearnerCourseState(queryClient, router)
@@ -326,8 +329,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
         // refetch so the blocked state replaces the form, and say why.
         toast.error(tReasons.has(reason) ? tReasons(reason) : tReasons('UNKNOWN'))
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
-          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.activity(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.remediation.all() }),
         ])
         await refreshLearnerCourseState(queryClient, router)
         return
@@ -374,7 +377,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       return startFileSubmissionDraft(data.id)
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.activity(activityUuid) })
       // UX-100: the header chip read the previous result until a reload.
       await refreshLearnerCourseState(queryClient, router)
       inputRef.current?.click()
@@ -383,8 +386,8 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
       if (disabledReasonOf(err)) {
         // BUG-158: the gate landed while the result was open — show it instead of «no permission».
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) }),
-          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.activity(activityUuid) }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.remediation.all() }),
         ])
         return
       }
@@ -484,7 +487,7 @@ export default function FileSubmissionWorkspace({ activity, course }: FileSubmis
     const handleRevise = canRevise
       ? async () => {
           await queryClient.invalidateQueries({
-            queryKey: queryKey(activityUuid),
+            queryKey: queryKeys.fileSubmissions.activity(activityUuid),
           })
         }
       : undefined
@@ -879,10 +882,7 @@ function ReviewNotes({ attempt }: { attempt: FileSubmissionAttempt }) {
   const t = useTranslations('FileSubmission')
   const locale = useLocale()
   const formatPercent = usePercentFormat()
-  const history = useQuery({
-    queryKey: ['file-submission', 'grading-history', attempt.id],
-    queryFn: () => getFileGradingHistory(attempt.id),
-  })
+  const history = useQuery(fileGradingHistoryQueryOptions(attempt.id))
   const notes = earlierReviews(attempt, history.data ?? [])
   if (notes.length === 0) return null
   return (

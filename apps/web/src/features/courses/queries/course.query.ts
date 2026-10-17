@@ -2,7 +2,8 @@ import { getCourseEditorBundle } from '@services/courses/editor'
 import { getCourseMetadata } from '@services/courses/courses'
 import { getCourseDiscussions } from '@services/courses/discussions'
 import { apiJson, apiResult } from '@/lib/api-client'
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, skipToken } from '@tanstack/react-query'
+import { usergroupsForCourse } from '@/lib/api/generated/usergroups/usergroups'
 import { z } from 'zod'
 import {
   CoursePage,
@@ -152,5 +153,13 @@ export function certificateDetailQueryOptions(verifyCode: string) {
       const result = await apiResult(`certificates/${verifyCode}`, {}, value => VerifiedCertificate.parse(value))
       return { ...result, data: toAppCertification(result.data) }
     },
+  })
+}
+
+/** The usergroups linked to a course; skipped until the id is known. */
+export function courseUsergroupsQueryOptions(courseUuid: string | null | undefined) {
+  return queryOptions({
+    queryKey: queryKeys.courses.usergroups(courseUuid ?? ''),
+    queryFn: courseUuid ? ({ signal }) => usergroupsForCourse(courseUuid, { signal }) : skipToken,
   })
 }

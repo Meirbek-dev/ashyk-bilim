@@ -147,7 +147,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.assessments.attemptState(vm.assessmentUuid) }),
           queryClient.invalidateQueries({ queryKey: queryKeys.assessments.mySubmissions(vm.assessmentUuid) }),
-          queryClient.invalidateQueries({ queryKey: ['remediation-sessions'] }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.remediation.all() }),
         ])
         if (gated) return
       }

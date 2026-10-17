@@ -69,8 +69,11 @@ const parseAttempt = (data: unknown) => AttemptView.parse(data)
 const parseReviewPage = (data: unknown) => FileReviewPage.parse(data)
 const parseSignedDownload = (data: unknown) => SignedDownload.parse(data)
 
-export async function getFileSubmissionByActivity(activityId: string): Promise<FileSubmissionActivity> {
-  return apiJson(`activities/${id(activityId)}/file-submission`, { timeoutMs: 10_000 }, parseFileSubmission)
+export async function getFileSubmissionByActivity(
+  activityId: string,
+  signal: AbortSignal | null = null,
+): Promise<FileSubmissionActivity> {
+  return apiJson(`activities/${id(activityId)}/file-submission`, { timeoutMs: 10_000, signal }, parseFileSubmission)
 }
 
 export async function createFileSubmissionActivity(
@@ -168,8 +171,8 @@ export function earlierReviews<T extends { status: string; feedback: string; fin
 }
 
 /** The attempt's grading ledger: a grader sees every entry, its learner the released ones (return comments too). */
-export async function getFileGradingHistory(attemptId: string) {
-  return apiJson(`file-submission-attempts/${id(attemptId)}/grading-history`, {}, data =>
+export async function getFileGradingHistory(attemptId: string, signal: AbortSignal | null = null) {
+  return apiJson(`file-submission-attempts/${id(attemptId)}/grading-history`, { signal }, data =>
     FileGradingEntry.array().parse(data),
   )
 }

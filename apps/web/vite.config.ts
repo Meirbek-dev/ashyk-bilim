@@ -67,7 +67,7 @@ export default defineConfig({
       'query/no-unstable-deps': 'error',
       'query/infinite-query-property-order': 'error',
       'query/no-void-query-fn': 'error',
-      'query/prefer-query-options': 'warn',
+      'query/prefer-query-options': 'error',
       'query/mutation-property-order': 'error',
       // Match the repository's one-declaration-per-statement convention.
       'one-var': ['warn', 'never'],

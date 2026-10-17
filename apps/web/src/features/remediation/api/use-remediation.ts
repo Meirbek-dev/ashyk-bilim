@@ -1,9 +1,10 @@
 'use client'
 
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { queryOptions, skipToken, useMutation, useQuery } from '@tanstack/react-query'
 import * as zod from 'zod'
 
 import { apiJson } from '@/lib/api-client'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 import { queueRemediation } from '@/lib/api/generated/ai/ai'
 import { RemediationSession } from '@/lib/api/generated/zod'
 import type { RemediationRequest } from '@/lib/api/generated/zod'
@@ -26,6 +27,17 @@ export function remediationSessionQueryOptions(sessionId: string) {
     queryFn: () =>
       apiJson(`ai/remediation/sessions/${sessionId}`, undefined, value => RemediationSessionView.parse(value)),
     enabled: Boolean(sessionId),
+  })
+}
+
+/** The learner's own sessions; skipped until the user id is known. */
+export function myRemediationSessionsQueryOptions(userId: string) {
+  return queryOptions({
+    queryKey: queryKeys.remediation.mine(userId),
+    queryFn: userId
+      ? ({ signal }) =>
+          apiJson(`ai/remediation/student/${userId}`, { signal }, value => RemediationSessionView.array().parse(value))
+      : skipToken,
   })
 }
 

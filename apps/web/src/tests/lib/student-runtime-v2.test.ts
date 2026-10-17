@@ -75,7 +75,7 @@ describe('learner runtime v2 adapter', () => {
 
   it('uses the learner projection and preserves IDs and due dates', async () => {
     const runtime = (await getStudentActivityRuntime(courseId, activityId))!
-    expect(apiJson).toHaveBeenCalledWith(`courses/${courseId}/learner-state`, {}, expect.any(Function))
+    expect(apiJson).toHaveBeenCalledWith(`courses/${courseId}/learner-state`, { signal: null }, expect.any(Function))
     expect(runtime.activity).toMatchObject({ id: activityId, chapter_id: chapterId, type: 'TYPE_DYNAMIC' })
     expect(runtime.primary_action).toEqual({ id: 'mark_complete', enabled: true })
     expect(runtime.progress.due_at).toBe('2023-11-14T22:13:20.000Z')

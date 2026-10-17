@@ -24,13 +24,13 @@ export async function logout(options?: LogoutOptions): Promise<void> {
 // ── Sessions (BFF) ─────────────────────────────────────────────────────────────
 
 /** The caller's current session (`GET /auth/session`): grants and `mfa_enabled`. */
-export async function getSessionInfo(): Promise<SessionInfoType> {
-  return apiJson('auth/session', {}, data => SessionInfo.parse(data))
+export async function getSessionInfo(signal: AbortSignal | null = null): Promise<SessionInfoType> {
+  return apiJson('auth/session', { signal }, data => SessionInfo.parse(data))
 }
 
 /** All live sessions of the caller (`GET /auth/sessions`). */
-export async function listSessions(): Promise<SessionSummaryType[]> {
-  return apiJson('auth/sessions', {}, data => SessionSummary.array().parse(data))
+export async function listSessions(signal: AbortSignal | null = null): Promise<SessionSummaryType[]> {
+  return apiJson('auth/sessions', { signal }, data => SessionSummary.array().parse(data))
 }
 
 /** Revoke one of the caller's sessions by its non-bearer handle. */

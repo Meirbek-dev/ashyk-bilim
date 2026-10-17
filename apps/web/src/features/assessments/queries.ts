@@ -1,9 +1,11 @@
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, skipToken } from '@tanstack/react-query'
 import { apiJson } from '@/lib/api-client'
 import { ifMatchHeaders } from '@/lib/api/headers'
 import { queryKeys } from '@/lib/react-query/queryKeys'
-import { AccessView, AssessmentDetail, ActivityId } from '@/lib/api/generated/zod'
+import { AccessView, AssessmentDetail, ActivityId, AttemptState } from '@/lib/api/generated/zod'
 import type { SetAccessRequest } from '@/lib/api/generated/zod'
+import { getMyAssessmentSubmissions } from './submission-client'
+import { listOverrides } from '@/lib/api/generated/assessments/assessments'
 
 /** The access policy; its `version` is the `If-Match` a save must echo (UX-154). */
 export function getVersionedAccess(assessmentUuid: string): Promise<AccessView> {
@@ -44,5 +46,32 @@ export function assessmentByActivityQueryOptions(activityUuid: string) {
         AssessmentDetail.parse(value),
       ),
     enabled: Boolean(normalizedUuid),
+  })
+}
+
+/** The learner's attempt-state (can start / continue, disabled reasons); skipped until the id is known. */
+export function attemptStateQueryOptions(assessmentUuid: string | null | undefined) {
+  return queryOptions({
+    queryKey: queryKeys.assessments.attemptState(assessmentUuid),
+    queryFn: assessmentUuid
+      ? ({ signal }) =>
+          apiJson(`assessments/${assessmentUuid}/attempt-state`, { signal }, value => AttemptState.parse(value))
+      : skipToken,
+  })
+}
+
+/** The learner's own attempts, newest first; skipped until the id is known. */
+export function mySubmissionsQueryOptions(assessmentUuid: string | null | undefined) {
+  return queryOptions({
+    queryKey: queryKeys.assessments.mySubmissions(assessmentUuid),
+    queryFn: assessmentUuid ? ({ signal }) => getMyAssessmentSubmissions(assessmentUuid, signal) : skipToken,
+  })
+}
+
+/** Per-learner policy overrides of an assessment. */
+export function assessmentOverridesQueryOptions(assessmentUuid: string) {
+  return queryOptions({
+    queryKey: queryKeys.assessments.overrides(assessmentUuid),
+    queryFn: ({ signal }) => listOverrides(assessmentUuid, { signal }),
   })
 }

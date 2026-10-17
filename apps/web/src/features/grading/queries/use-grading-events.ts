@@ -10,6 +10,7 @@ import { useRouter } from '@/i18n/navigation'
 import { handleBrowserUnauthenticated } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
 import { useApiError } from '@/hooks/useApiError'
+import { queryKeys } from '@/lib/react-query/queryKeys'
 
 /** Named SSE events on `GET courses/{id}/grading/events`. */
 export const GRADING_EVENT_NAMES = [
@@ -71,8 +72,8 @@ export function useCourseGradingEvents(courseId: string | null | undefined): Cou
     if (!courseId || accessLost || typeof EventSource === 'undefined') return
     const source = new EventSource(courseGradingEventsUrl(courseId), { withCredentials: true })
     const invalidate = () => {
-      void queryClient.invalidateQueries({ queryKey: ['grading'] })
-      void queryClient.invalidateQueries({ queryKey: ['file-submission'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.grading.all() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fileSubmissions.all() })
     }
     const lost = () => {
       source.close()

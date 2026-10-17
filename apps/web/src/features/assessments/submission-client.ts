@@ -19,8 +19,8 @@ export async function getAssessmentDraft(assessmentId: string): Promise<Assessme
   }
 }
 
-export function getMyAssessmentSubmissions(assessmentId: string) {
-  return apiJson(`assessments/${AssessmentId.parse(assessmentId)}/submissions/me`, undefined, value =>
+export function getMyAssessmentSubmissions(assessmentId: string, signal: AbortSignal | null = null) {
+  return apiJson(`assessments/${AssessmentId.parse(assessmentId)}/submissions/me`, { signal }, value =>
     StudentSubmission.array().parse(value).map(submissionFromWire),
   )
 }

@@ -16,7 +16,12 @@ vi.mock('@/features/student-activity/shell/StudentActivityWorkspace', () => ({ d
 vi.mock('@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer', () => ({
   ActivityContentRenderer: () => null,
 }))
-vi.mock('@/features/student-activity/api/runtime', () => ({ getStudentActivityRuntime: vi.fn() }))
+vi.mock('@/features/student-activity/api/runtime', () => ({
+  studentActivityRuntimeQueryOptions: (courseUuid: string, activityUuid: string) => ({
+    queryKey: ['student-activity', 'runtime', courseUuid, activityUuid],
+    queryFn: vi.fn(),
+  }),
+}))
 vi.mock('@/features/student-activity/shell/BottomActionBar', () => ({
   useRuntimeAction: () => ({ isPending: false, run: vi.fn() }),
 }))
