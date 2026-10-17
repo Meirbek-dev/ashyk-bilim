@@ -11,7 +11,7 @@ export function UpdatesSection({ updates }: { updates: readonly AgendaCourseUpda
   if (updates.length === 0) return null
   return (
     <HomeSection title={m.home_updates_title()}>
-      <DataList items={updates} getKey={update => update.update_id}>
+      <DataList variant="rows" items={updates} getKey={update => update.update_id}>
         {update => (
           <>
             <h3 className="text-base font-medium wrap-anywhere">

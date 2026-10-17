@@ -10,7 +10,7 @@ import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 import { collectionActionLabels, collectionVisibility, collectionVisibilityLabels } from '#/shared/i18n/labels'
 import { contentUrl } from '#/shared/lib/content-url'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { can } from '../model/collections'
 import { collectionOptions } from '../queries'

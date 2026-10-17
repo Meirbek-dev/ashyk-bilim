@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { activityOptions } from '../curriculum-queries'
 import { MediaFileSection } from './media-file-section'

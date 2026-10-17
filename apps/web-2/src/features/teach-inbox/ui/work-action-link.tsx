@@ -2,7 +2,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { WorkItem } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { type RowAction, rowAction, submissionIdOf } from '../model/inbox'
 

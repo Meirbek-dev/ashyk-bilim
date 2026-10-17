@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { StudentSubmission } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import type { CodeItem } from '../model/arena'
 import { ARENA_PATH } from './arena-route'

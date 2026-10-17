@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import { Anchor } from '#/shared/components/anchor'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { googleStartHref } from '../model/login-search'
 

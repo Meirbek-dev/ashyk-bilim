@@ -6,7 +6,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import { linkPreviewOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { Link } from '#/shared/components/link'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { textAttr } from '../../model/document'
 import { linkHref } from '../../model/link'

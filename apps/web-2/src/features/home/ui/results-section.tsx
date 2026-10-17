@@ -13,24 +13,38 @@ export function ResultsSection({ results }: { results: readonly RecentResult[] }
   if (results.length === 0) return null
   return (
     <HomeSection title={m.home_results_title()}>
-      <DataList items={results} getKey={result => `${result.kind}-${result.activity_id}-${result.at_unix}`}>
+      <DataList
+        variant="rows"
+        items={results}
+        getKey={result => `${result.kind}-${result.activity_id}-${result.at_unix}`}
+      >
         {result => {
           const kind = resultKinds[result.kind]
           return (
-            <>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <StatusBadge tone={kind.tone}>{kind.label()}</StatusBadge>
-                {result.score === null ? null : (
-                  <span className="tabular-nums">{m.home_score({ score: formatNumber(result.score) })}</span>
-                )}
+            <div className="flex items-start gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div>
+                  <StatusBadge tone={kind.tone}>{kind.label()}</StatusBadge>
+                </div>
+                <PlayerLink courseId={result.course_id} activityId={result.activity_id}>
+                  {result.activity_name}
+                </PlayerLink>
+                <p className="text-sm wrap-anywhere text-muted-foreground">
+                  {result.course_name} · {formatDate(result.at_unix)}
+                </p>
               </div>
-              <PlayerLink courseId={result.course_id} activityId={result.activity_id}>
-                {result.activity_name}
-              </PlayerLink>
-              <p className="text-sm wrap-anywhere text-muted-foreground">
-                {result.course_name} · {formatDate(result.at_unix)}
-              </p>
-            </>
+              {result.score === null ? null : (
+                <p className="flex shrink-0 flex-col items-end">
+                  <span className="sr-only">{m.home_score({ score: formatNumber(result.score) })}</span>
+                  <span aria-hidden className="text-xs text-muted-foreground">
+                    {m.home_score_label()}
+                  </span>
+                  <span aria-hidden className="font-heading text-2xl font-semibold tabular-nums">
+                    {formatNumber(result.score)}
+                  </span>
+                </p>
+              )}
+            </div>
           )
         }}
       </DataList>

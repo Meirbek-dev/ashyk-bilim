@@ -7,7 +7,7 @@ import { isSessionLost } from '#/shared/api/errors'
 import { useSessionHold, useUpload } from '#/shared/hooks/use-upload'
 import { cn } from '#/shared/lib/utils'
 import { presentError } from '#/shared/i18n/errors'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from './button-variants'
 import { Input } from '#/shared/ui/input'
 
 import { UploadProgress } from './upload-progress'

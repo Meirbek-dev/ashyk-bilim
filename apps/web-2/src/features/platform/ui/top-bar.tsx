@@ -4,7 +4,8 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import type { WorkspaceId } from '#/shared/auth/access'
-import { buttonVariants } from '#/shared/ui/button'
+import { BrandMark } from '#/shared/components/brand-mark'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { shellSlots } from './shell-slots'
 
@@ -20,8 +21,12 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
   const Notifications = shellSlots.notifications
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-2 md:px-4">
-      <RouterLink to="/" className={buttonVariants({ variant: 'ghost' })}>
-        {m.platform_brand()}
+      <RouterLink
+        to="/"
+        className="flex items-center gap-2 rounded-md px-2 py-1 font-heading text-lg font-semibold whitespace-nowrap"
+      >
+        <BrandMark />
+        <span className="sr-only sm:not-sr-only">{m.platform_brand()}</span>
       </RouterLink>
       {session ? (
         <div className="hidden lg:block">

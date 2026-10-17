@@ -5,7 +5,7 @@ import type { CourseId, TeacherCourseDetailResponse } from '#/shared/api/gen/typ
 import { Bars } from '#/shared/components/charts/bars'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { funnelLabel, healthValue } from '../model/course-health'
 import type { Filters } from '../model/filters'

@@ -27,7 +27,7 @@ const columns = [
 const tones = ['neutral', 'success', 'warning', 'info', 'destructive'] as const
 const variants = ['default', 'secondary', 'outline', 'ghost', 'destructive'] as const
 
-/** The stock shadcn primitives and our composites as features use them. */
+/** The stock shadcn primitives and our composites as features use them, plus the reward ink and the pill link. */
 function ReferenceSet() {
   return (
     <DetailPage
@@ -47,6 +47,12 @@ function ReferenceSet() {
     >
       <p>{text.line}</p>
       <Link to="/">{text.tab}</Link>
+      <Link to="/" variant="pill">
+        {text.tab}
+      </Link>
+      <p className="text-reward">{text.line}</p>
+      <p className="bg-reward/10 text-reward">{text.line}</p>
+      <p className="bg-card text-reward">{text.line}</p>
       {variants.map(variant => (
         <Button key={variant} variant={variant}>
           {variant}

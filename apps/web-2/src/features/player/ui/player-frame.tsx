@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { BackToCourse } from './back-to-course'
 

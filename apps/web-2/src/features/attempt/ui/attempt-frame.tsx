@@ -6,7 +6,7 @@ import type { ComponentProps } from 'react'
 import { learnerStateOptions, PreviewNote, staffPreview } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 export const ATTEMPT_ROUTE = '/_authed/learn/$courseId/$activityId_/attempt'
 export const ATTEMPT_PATH = '/learn/$courseId/$activityId/attempt'

@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { activityTypeMeta } from '#/shared/i18n/labels'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { TaskView } from './task-view'
 

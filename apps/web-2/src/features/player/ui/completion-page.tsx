@@ -5,7 +5,7 @@ import { CertificatePdfLink } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { Progress } from '#/shared/components/progress'
 
 import { courseCertificatesOptions, learnerStateOptions } from '../queries'

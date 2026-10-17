@@ -9,7 +9,7 @@ import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { queueCsvHref } from '../model/exports'
 import { activeFilters, sortSearch, statusCounts, tableSort } from '../model/queue'

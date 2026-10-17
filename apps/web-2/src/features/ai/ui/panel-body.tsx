@@ -3,7 +3,7 @@ import { useNavigate, useSearch, Link as RouterLink } from '@tanstack/react-rout
 
 import { m } from '#/paraglide/messages'
 import type { UserId } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { offersAnalysis, panelTabs, pickTab, sessionsOf, unavailableReason, type UnavailableReason } from '../model/ai'
 import { capabilitiesOptions, sessionsOptions, type Scope } from '../queries'

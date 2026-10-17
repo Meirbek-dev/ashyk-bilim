@@ -4,7 +4,7 @@ import { Link } from '#/shared/components/link'
 import { UserAvatar } from '#/shared/components/user-avatar'
 
 import type { SearchKind } from '../model/catalog'
-import { CourseItem } from './course-item'
+import { CourseGrid } from './course-grid'
 import { searchKindLabels } from './kind-labels'
 
 /** One section of the search answer: its heading and its hits, each a link to the object's page. */
@@ -12,11 +12,7 @@ export function SearchSection({ kind, results }: { kind: SearchKind; results: Se
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-xl font-semibold">{searchKindLabels[kind]()}</h2>
-      {kind === 'courses' ? (
-        <DataList items={results.courses} getKey={course => course.id}>
-          {course => <CourseItem course={course} level={3} />}
-        </DataList>
-      ) : null}
+      {kind === 'courses' ? <CourseGrid courses={results.courses} level={3} /> : null}
       {kind === 'collections' ? (
         <DataList items={results.collections} getKey={collection => collection.id}>
           {collection => (

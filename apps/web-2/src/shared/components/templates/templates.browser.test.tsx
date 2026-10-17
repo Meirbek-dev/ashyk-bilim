@@ -6,7 +6,7 @@ import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { Button } from '#/shared/ui/button'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '../button-variants'
 
 import { renderInRouter } from '../testing'
 import { DetailPage } from './detail-page'

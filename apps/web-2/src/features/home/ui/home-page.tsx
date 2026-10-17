@@ -5,8 +5,7 @@ import { StreakBadge, useLoginStreak } from '#/features/achievements'
 import { learnerWorkOptions } from '#/features/teach-inbox'
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
-import { DetailPage } from '#/shared/components/templates/detail-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { attentionWork, isEmptyToday } from '../model/agenda'
 import { homeAgendaOptions } from '../queries'
@@ -28,10 +27,15 @@ export function HomePage() {
     recent_results,
   )
   const empty = isEmptyToday(agenda.data, attention)
+  // Results and announcements make a side column from @4xl; without either the page stays one column.
+  const side = recent_results.length > 0 || course_updates.length > 0
   return (
-    <DetailPage title={m.home_title()}>
-      <div className="flex flex-col gap-8">
+    <section className="@container flex flex-col gap-10">
+      <header className="flex flex-col gap-4 @2xl:flex-row @2xl:items-end @2xl:justify-between">
+        <h1 className="text-display font-semibold">{m.home_title()}</h1>
         <StreakBadge />
+      </header>
+      <div className="flex flex-col gap-12">
         <ListState
           pending={false}
           error={agenda.error}
@@ -46,12 +50,20 @@ export function HomePage() {
           onRetry={() => void agenda.refetch()}
         >
           <ContinueSection items={continue_learning} />
-          <AttentionSection items={attention} />
-          <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />
-          <ResultsSection results={recent_results} />
-          <UpdatesSection updates={course_updates} />
+          <div className={side ? 'grid gap-12 @4xl:grid-cols-5 @4xl:gap-8' : 'flex flex-col gap-12'}>
+            <div className="flex flex-col gap-12 @4xl:col-span-3">
+              <AttentionSection items={attention} />
+              <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />
+            </div>
+            {side ? (
+              <div className="flex flex-col gap-12 @4xl:col-span-2">
+                <ResultsSection results={recent_results} />
+                <UpdatesSection updates={course_updates} />
+              </div>
+            ) : null}
+          </div>
         </ListState>
       </div>
-    </DetailPage>
+    </section>
   )
 }

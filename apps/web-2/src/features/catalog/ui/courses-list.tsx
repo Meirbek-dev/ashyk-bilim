@@ -2,13 +2,12 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/components/data-list'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 
 import type { CoursesFilter } from '../model/catalog'
 import { coursesListOptions } from '../queries'
-import { CourseItem } from './course-item'
+import { CourseGrid } from './course-grid'
 
 /** The catalog in the requested order, "Show more" by keyset cursor (spec 5.6). The sort is not a filter. */
 export function CoursesList({ filter }: { filter: CoursesFilter }) {
@@ -25,9 +24,7 @@ export function CoursesList({ filter }: { filter: CoursesFilter }) {
       onResetFilters={() => void navigate({ search: prev => ({ ...prev, q: undefined }) })}
       onRetry={() => void query.refetch()}
     >
-      <DataList items={courses} getKey={course => course.id}>
-        {course => <CourseItem course={course} />}
-      </DataList>
+      <CourseGrid courses={courses} />
       <ShowMore
         hasMore={query.hasNextPage}
         pending={query.isFetchingNextPage}

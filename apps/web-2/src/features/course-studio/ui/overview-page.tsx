@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { readinessOptions } from '../queries'
 import { ReadinessList } from './readiness-list'
