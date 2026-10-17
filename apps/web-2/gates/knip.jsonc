@@ -2,7 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // Start, Vite, Vitest and Playwright entries are detected by knip's plugins.
   "entry": ["src/routes/**/*.tsx", "gates/*.ts", "gates/*.mjs", "e2e/prod-stand.ts"],
-  "project": ["src/**/*.{ts,tsx}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
+  // CSS is in the project so knip follows `@import` (tailwindcss, the fonts, tw-animate-css, shadcn/tailwind.css).
+  "project": ["src/**/*.{ts,tsx,css}", "gates/**/*.ts", "e2e/**/*.ts", "*.ts"],
   "ignore": ["src/shared/api/gen/**", "src/shared/api/gen.check-tmp*/**", "src/routeTree.check-tmp*.ts"],
   // Stock shadcn files (`bunx shadcn add`) keep their full export list so `shadcn add --overwrite` stays a no-op diff;
   // an unused stock FILE is still reported (remove it).
@@ -10,14 +11,5 @@
   "ignoreDependencies": [
     // Loaded by path from project.inlang/settings.json "modules".
     "@inlang/plugin-message-format",
-    // Imported from CSS (src/styles/globals.css), which knip does not parse.
-    "tailwindcss",
-    "@fontsource-variable/inter",
-    "@fontsource-variable/geist-mono",
-    "tw-animate-css",
-    // The shadcn CLI (`bunx shadcn add`) and its CSS (shadcn/tailwind.css, imported by globals.css).
-    "shadcn",
-    // Resolved by the codegen module hook (gates/ts6-hooks.mjs), not by an import statement.
-    "typescript-6",
   ],
 }

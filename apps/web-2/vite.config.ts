@@ -165,10 +165,12 @@ const lint: OxlintConfig = {
     'react/no-danger': 'error',
     'react/no-multi-comp': 'error',
     'react/forbid-elements': ['error', { forbid: forbiddenElements }],
-    'react/forbid-dom-props': [
-      'error',
-      { forbid: [{ propName: 'style', message: 'Use Tailwind classes on tokens.' }] },
-    ],
+    // DESIGN 12 on class strings (G-11 scans the same in CSS and plain strings). Off: `no-restyle` (the kit's own
+    // files and 28 deliberate looks fail its contracts), `no-unknown-classes` (prose.css classes), `require-static-classes`
+    // (status tones come from a Record).
+    'shadcn/no-raw-colors': 'error',
+    'shadcn/no-arbitrary-values': 'error',
+    'shadcn/no-inline-styles': 'error',
     'no-restricted-globals': restrictGlobals(),
     'no-restricted-properties': restrictProperties(),
     'no-restricted-imports': restrictImports('any'),
@@ -223,6 +225,7 @@ const lint: OxlintConfig = {
         'jsx-a11y/label-has-associated-control': 'off',
         'typescript/no-unsafe-type-assertion': 'off',
         'no-underscore-dangle': 'off',
+        'shadcn/no-arbitrary-values': 'off',
       },
     },
     // Chromium shows no PDF in a sandboxed frame; the component frames same-origin paths only.
@@ -264,11 +267,12 @@ export default defineConfig({
   test: {
     // Several worktrees run verify at once: the fixed default port (63315) collides.
     api: { strictPort: false },
+    // Inline projects inherit this config (Vitest 5 default).
     projects: [
-      { extends: true, test: unit },
+      { test: unit },
       // The browser project's Vite server inherits `server.strictPort` (the dev server's): free it for parallel runs.
-      { extends: true, server: { strictPort: false }, test: browser },
-      ...(process.env['G15'] ? [{ extends: true, test: themes }] : []),
+      { server: { strictPort: false }, test: browser },
+      ...(process.env['G15'] ? [{ test: themes }] : []),
     ],
   },
   lint,
