@@ -224,8 +224,8 @@ test('B-EDT-29 a formula template replaces the formula and fills the field', asy
   const onChange = vi.fn<(doc: EditorDocument) => void>()
   const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
   await insert(screen, m.editor_block_math())
-  // KaTeX loads with the first formula; its render moves the menu, which a loaded runner then misses.
-  await expect.poll(() => document.querySelector('.katex') !== null).toBe(true)
+  // The insert menu focuses the formula field once its close animation ends; focus moving later closes the templates.
+  await expect.element(screen.getByLabelText(m.editor_field_latex())).toHaveFocus()
   await screen.getByRole('button', { name: m.editor_math_templates() }).click()
   await screen.getByRole('menuitem', { name: m.editor_math_binomial() }).click()
   const binomial = String.raw`\binom{n}{k}`
