@@ -1,7 +1,7 @@
 'use client'
 
 import { useDeferredValue, useEffect, useEffectEvent, useState } from 'react'
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
   Download,
@@ -215,7 +215,7 @@ export default function FileSubmissionReviewWorkspace({
           limit: PAGE_SIZE,
         }),
       enabled: Boolean(config?.id),
-      placeholderData: previous => previous,
+      placeholderData: keepPreviousData,
     }),
   )
 

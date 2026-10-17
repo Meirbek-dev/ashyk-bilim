@@ -8,7 +8,7 @@ import { stripEntityPrefix, toAppCourse } from '@/hooks/courses/courseKeys'
 import { apiJson } from '@/lib/api-client'
 import { Collection, CoursePage } from '@/lib/api/generated/zod'
 import { useDebouncedValue } from '@/hooks/useDebounce'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { useApiError } from '@/hooks/useApiError'
 import { revalidateTags } from '@/lib/cache/revalidate'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -72,7 +72,7 @@ function NewCollection() {
     },
     initialPageParam: null as string | null,
     getNextPageParam: page => page.next_cursor ?? undefined,
-    placeholderData: previous => previous,
+    placeholderData: keepPreviousData,
   })
   // `isPending`, not `isLoading`: the server render has no fetch running, and must match the first client render.
   const { error, isPending: isLoading } = coursesQuery

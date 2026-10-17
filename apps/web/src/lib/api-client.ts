@@ -226,25 +226,18 @@ function isRetryableMethod(method: string | undefined): boolean {
   return RETRYABLE_METHODS.has((method ?? 'GET').toUpperCase())
 }
 
+// Per-request options (headers, credentials, retry) are set in
+// `buildApiTransportOptions`; ofetch copies them into the hook context, so
+// the error path can read the same `X-Request-ID` the request carried. Only
+// the server cookie forward is async and lives here.
 const apiTransport = ofetch.create({
-  retryStatusCodes: RETRY_STATUS_CODES,
   async onRequest({ options }) {
-    const isServer = typeof globalThis.window === 'undefined'
+    if (typeof globalThis.window !== 'undefined') return
     const headers = new Headers(options.headers)
-
-    if (!headers.has('traceparent')) {
-      headers.set('traceparent', createTraceparent())
-    }
-    if (!headers.has('X-Request-ID')) {
-      headers.set('X-Request-ID', createFrontendRequestId())
-    }
-
-    if (isServer && !headers.has('Cookie')) {
-      const serverCookieHeader = await getServerCookieHeader()
-      if (serverCookieHeader) headers.set('Cookie', serverCookieHeader)
-    }
-
-    options.credentials = 'include'
+    if (headers.has('Cookie')) return
+    const serverCookieHeader = await getServerCookieHeader()
+    if (!serverCookieHeader) return
+    headers.set('Cookie', serverCookieHeader)
     options.headers = headers
   },
 })
