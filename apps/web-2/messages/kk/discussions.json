@@ -25,8 +25,8 @@
   "discussions_hidden": "Жасырылған",
   "discussions_hidden_done": "Жасырылды",
   "discussions_restored": "Қайтарылды",
-  "discussions_like": "Ұнайды",
-  "discussions_dislike": "Ұнамайды",
+  "discussions_like": "Ұнайды: {count}",
+  "discussions_dislike": "Ұнамайды: {count}",
   "discussions_unknown_author": "Жойылған пайдаланушы",
   "discussions_post_deleted": "Хабарлама жойылды",
   "discussions_archived": "Курс мұрағатта: талқылау тек оқу үшін ашық."

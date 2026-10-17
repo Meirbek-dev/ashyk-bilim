@@ -25,8 +25,8 @@
   "discussions_hidden": "Hidden",
   "discussions_hidden_done": "Hidden",
   "discussions_restored": "Restored",
-  "discussions_like": "Like",
-  "discussions_dislike": "Dislike",
+  "discussions_like": "Like: {count}",
+  "discussions_dislike": "Dislike: {count}",
   "discussions_unknown_author": "Deleted user",
   "discussions_post_deleted": "Message deleted",
   "discussions_archived": "The course is archived: the discussion is read-only."
