@@ -113,6 +113,7 @@
     "vitest": "5.0.5"
   },
   "overrides": {
+    "js-yaml": "4.3.2",
     "katex": "0.19.0",
     "vitest": "5.0.5"
   }

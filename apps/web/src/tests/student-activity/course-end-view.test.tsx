@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'
+import confetti from 'canvas-confetti'
 
 import CourseEndView from '@components/Pages/Activity/CourseEndView'
 import { learnerCourseStateQueryOptions, type LearnerCourseState } from '@/features/learner-course/api'
@@ -97,6 +98,12 @@ function renderView(learnerState: LearnerCourseState) {
 }
 
 describe('CourseEndView (BUG-165)', () => {
+  it('respects the reduced-motion preference for completion confetti', () => {
+    vi.mocked(confetti).mockClear()
+    renderView(state())
+    expect(confetti).toHaveBeenCalledWith(expect.objectContaining({ disableForReducedMotion: true }))
+  })
+
   it('3 lessons + 2 quizzes all done → completed view with «5 из 5»', () => {
     renderView(state())
     expect(screen.getByText(/Поздравляем!/)).toBeInTheDocument()

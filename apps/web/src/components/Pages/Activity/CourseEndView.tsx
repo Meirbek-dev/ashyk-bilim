@@ -94,6 +94,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
     // Big opening bursts
     confetti({
+      disableForReducedMotion: true,
       particleCount: 140,
       spread: 100,
       origin: { y: 0.4 },
@@ -103,6 +104,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     })
     const t1 = setTimeout(() => {
       confetti({
+        disableForReducedMotion: true,
         particleCount: 90,
         spread: 80,
         shapes: ['star'],
@@ -114,6 +116,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }, 200)
     const t2 = setTimeout(() => {
       confetti({
+        disableForReducedMotion: true,
         particleCount: 80,
         spread: 70,
         origin: { x: 0.2, y: 0.5 },
@@ -122,6 +125,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         colors,
       })
       confetti({
+        disableForReducedMotion: true,
         particleCount: 80,
         spread: 70,
         origin: { x: 0.8, y: 0.5 },
@@ -139,6 +143,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         return
       }
       confetti({
+        disableForReducedMotion: true,
         particleCount: 7,
         angle: 60,
         spread: 58,
@@ -148,6 +153,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         colors,
       })
       confetti({
+        disableForReducedMotion: true,
         particleCount: 7,
         angle: 120,
         spread: 58,

@@ -40,7 +40,6 @@ export default defineConfig({
       'e2e/',
       'scripts/',
       'playwright.config.ts',
-      'eslint.config.*',
       'src/components/providers/session-provider.tsx',
       'src/features/assessments/registry/code-challenge/hooks.ts',
       'src/features/assessments/shell/AssessmentLayout.tsx',
@@ -62,6 +61,13 @@ export default defineConfig({
       'unicorn',
     ],
     rules: {
+      'query/exhaustive-deps': 'error',
+      'query/no-rest-destructuring': 'warn',
+      'query/stable-query-client': 'error',
+      'query/no-unstable-deps': 'error',
+      'query/infinite-query-property-order': 'error',
+      'query/no-void-query-fn': 'error',
+      'query/mutation-property-order': 'error',
       // Match the repository's one-declaration-per-statement convention.
       'one-var': ['warn', 'never'],
       // Compiler diagnostics are provided by the React Hooks JS plugin.
@@ -305,6 +311,7 @@ export default defineConfig({
       typeCheck: true,
     },
     jsPlugins: [
+      { name: 'query', specifier: '@tanstack/eslint-plugin-query' },
       {
         name: 'react-hooks-js',
         specifier: 'eslint-plugin-react-hooks',

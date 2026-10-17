@@ -262,9 +262,7 @@ function UserGroups() {
             </CardAction>
           </CardHeader>
           <CardContent className="pt-4">
-            {/* `isPending`, not `isLoading`: while the persisted cache is
-                restoring the client is pending-but-idle, so `isLoading` is
-                false on the client and true on the server (hydration mismatch). */}
+            {/* Pending means no data yet, including when an offline request is paused. */}
             {isPending ? (
               <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm" role="status">
                 <Loader2 size={16} className="animate-spin" aria-hidden />

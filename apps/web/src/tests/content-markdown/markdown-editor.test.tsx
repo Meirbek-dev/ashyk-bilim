@@ -65,6 +65,18 @@ describe('MarkdownEditor', () => {
     expect(editor.schema.nodes.codeBlock).toBeUndefined()
   })
 
+  it('preserves editable tables with header and body cells through a Markdown round trip', () => {
+    const extensions = buildEditorExtensions({ config: getMarkdownPreset('questionPrompt') })
+    editor = new Editor({ extensions })
+    expect(editor.commands.insertTable({ rows: 2, cols: 2, withHeaderRow: true })).toBe(true)
+    const markdown = (editor.storage as { markdown?: { getMarkdown(): string } }).markdown?.getMarkdown()
+    expect(markdown).toContain('|')
+    editor.commands.setContent(markdown ?? '', { emitUpdate: false })
+    expect(editor.getHTML()).toContain('<th')
+    expect(editor.getHTML()).toContain('<td')
+    expect(editor.$nodes('tableRow')).toHaveLength(2)
+  })
+
   it('supports source mode editing against the canonical Markdown string', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()

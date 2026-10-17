@@ -53,6 +53,7 @@ export function CodeEditor({ value, mode, label, onChange, readOnly = false }: C
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
   const language = useRef(new Compartment())
+  const configuration = useRef(new Compartment())
   // Read when the view is built and when it reports an edit: neither is a reason to rebuild it.
   const initialDoc = useEffectEvent(() => value)
   const changed = useEffectEvent((text: string) => onChange?.(text))
@@ -75,9 +76,7 @@ export function CodeEditor({ value, mode, label, onChange, readOnly = false }: C
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           chrome,
           language.current.of([]),
-          EditorState.readOnly.of(readOnly),
-          EditorView.editable.of(!readOnly),
-          EditorView.contentAttributes.of({ 'aria-label': label }),
+          configuration.current.of([]),
           EditorView.updateListener.of(update => {
             const typed = update.transactions.some(transaction => !transaction.annotation(fromProps))
             if (update.docChanged && typed) changed(update.state.doc.toString())
@@ -86,7 +85,21 @@ export function CodeEditor({ value, mode, label, onChange, readOnly = false }: C
       }),
     })
     view.current = created
-    return () => created.destroy()
+    return () => {
+      view.current = null
+      created.destroy()
+    }
+  }, [])
+
+  // Reconfigure the existing view: rebuilding it drops history, selection and the loaded language.
+  useEffect(() => {
+    view.current?.dispatch({
+      effects: configuration.current.reconfigure([
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
+        EditorView.contentAttributes.of({ 'aria-label': label }),
+      ]),
+    })
   }, [readOnly, label])
 
   useEffect(() => {

@@ -1,13 +1,58 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import Editor from '@monaco-editor/react'
 import type { OnChange, OnMount } from '@monaco-editor/react'
+import dynamic from 'next/dynamic'
 import { useTranslations } from 'next-intl'
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { cn } from '@/lib/utils'
 import { WidgetErrorBoundary } from '@/components/ui/widget-error-boundary'
+
+// Use the installed ESM build (including dependency overrides), not the wrapper's older CDN/AMD default.
+const Editor = dynamic(
+  async () => {
+    const [monaco, { default: MonacoEditor, loader }] = await Promise.all([
+      import('monaco-editor'),
+      import('@monaco-editor/react'),
+    ])
+    globalThis.MonacoEnvironment = {
+      getWorker(_moduleId, label) {
+        switch (label) {
+          case 'json': {
+            return new Worker(new URL('monaco-editor/language/json/json.worker.js', import.meta.url), {
+              type: 'module',
+            })
+          }
+          case 'css':
+          case 'scss':
+          case 'less': {
+            return new Worker(new URL('monaco-editor/language/css/css.worker.js', import.meta.url), { type: 'module' })
+          }
+          case 'html':
+          case 'handlebars':
+          case 'razor': {
+            return new Worker(new URL('monaco-editor/language/html/html.worker.js', import.meta.url), {
+              type: 'module',
+            })
+          }
+          case 'typescript':
+          case 'javascript': {
+            return new Worker(new URL('monaco-editor/language/typescript/ts.worker.js', import.meta.url), {
+              type: 'module',
+            })
+          }
+          default: {
+            return new Worker(new URL('monaco-editor/editor/editor.worker.js', import.meta.url), { type: 'module' })
+          }
+        }
+      },
+    }
+    loader.config({ monaco })
+    return MonacoEditor
+  },
+  { ssr: false },
+)
 
 export interface Language {
   id: number

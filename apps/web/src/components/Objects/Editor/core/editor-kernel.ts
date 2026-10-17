@@ -1,10 +1,7 @@
 import { generateHTML } from '@tiptap/core'
 import type { Content, Extension, JSONContent, Mark, Node } from '@tiptap/core'
 import Image from '@tiptap/extension-image'
-import { Table } from '@tiptap/extension-table'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { TableHeader } from '@tiptap/extension-table-header'
-import { TableRow } from '@tiptap/extension-table-row'
+import { TableKit } from '@tiptap/extension-table'
 import { StarterKit } from '@tiptap/starter-kit'
 import CharacterCount from '@tiptap/extension-character-count'
 import Focus from '@tiptap/extension-focus'
@@ -94,10 +91,7 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
     Badges.configure({ editable, activity }),
     Buttons.configure({ editable, activity }),
     UserBlock.configure({ editable, activity }),
-    Table.configure({ resizable: editable }),
-    TableRow,
-    TableHeader,
-    TableCell,
+    TableKit.configure({ table: { resizable: editable } }),
     WebPreview.configure({ editable, activity }),
     Flipcard.configure({ editable, activity }),
     Scenarios.configure({ editable, activity }),

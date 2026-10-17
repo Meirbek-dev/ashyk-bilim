@@ -71,6 +71,14 @@ ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
 
 ## Low
 
+### 33. shadcn CLI retains an unpatched braces dependency
+
+Both frontends' development dependency chain `shadcn -> @shadcn/registry -> fast-glob -> micromatch -> braces`
+includes `braces@3.0.3`. [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) rates its
+stack-exhaustion denial of service high; no patched release is available as of 2026-10-17. It is used by tooling,
+not the application runtime. Avoid processing untrusted glob patterns with the CLI. Remove this finding when
+shadcn drops the affected dependency or a compatible patched version becomes available; do not suppress the audit.
+
 ### 18. The per-assessment `required` flag does not drive progress
 Legacy progress hard-coded `required = True` for every submission-backed
 activity; v2 keeps that behaviour (so migrated courses complete the same way) and

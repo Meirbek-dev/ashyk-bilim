@@ -145,14 +145,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           // A submit swaps the draft row for the submitted one before the
           // observer re-renders with `enabled: false`; an invalidation in that
           // window must not turn into a `submissions/draft` 404.
-          const known = queryClient.getQueryData<AssessmentSubmissionRead[]>(submissionsQueryKey)
+          const known = queryClient.getQueryData<AssessmentSubmissionRead[]>(
+            queryKeys.assessments.mySubmissions(assessmentUuid),
+          )
           if (known && !known.some(row => row.status === 'DRAFT')) {
             return { assessment_uuid: assessmentUuid, submission: null } satisfies DraftRead
           }
           return { assessment_uuid: assessmentUuid, submission: await getAssessmentDraft(assessmentUuid) }
         },
       }),
-    [assessmentUuid, queryClient, submissionsQueryKey],
+    [assessmentUuid, queryClient],
   )
 
   const invalidateAssessmentState = useCallback(async () => {

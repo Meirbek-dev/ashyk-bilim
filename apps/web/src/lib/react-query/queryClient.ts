@@ -1,7 +1,6 @@
 'use client'
 
 import { MutationCache, QueryCache, QueryClient, environmentManager } from '@tanstack/react-query'
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Mutation, Query } from '@tanstack/react-query'
 import { handleBrowserUnauthenticated, isCredentialCheckCode } from '@/lib/api-client'
 import { isApiError } from '@/lib/api/assertSuccess'
@@ -119,22 +118,4 @@ export function getQueryClient() {
 
   browserQueryClient ??= makeQueryClient()
   return browserQueryClient
-}
-
-/**
- * SessionStorage persister for the query cache.
- * Uses sessionStorage so data is cleared when the browser tab closes,
- * avoiding stale data across different user sessions on shared devices.
- * Only created in the browser — returns null on the server.
- */
-export function createQueryPersister() {
-  if (typeof globalThis.window === 'undefined') return null
-  return createAsyncStoragePersister({
-    storage: globalThis.sessionStorage,
-    key: 'tanstack-query-cache',
-  })
-}
-
-export function shouldPersistQuery(query: Query) {
-  return query.meta?.persist === true && query.state.status === 'success'
 }

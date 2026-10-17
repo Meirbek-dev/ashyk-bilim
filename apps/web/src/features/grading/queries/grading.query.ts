@@ -128,10 +128,10 @@ export function courseGradebookQueryOptions(
   params?: CourseGradebookQueryParams,
   { live = false }: { live?: boolean } = {},
 ) {
+  void params
   return queryOptions({
     queryKey: queryKeys.grading.gradebook(courseUuid),
     queryFn: async () => {
-      void params
       const [pages, course, curriculum] = await Promise.all([
         collectGradebookPages(courseUuid),
         getCourse(courseUuid),
