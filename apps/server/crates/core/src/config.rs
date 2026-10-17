@@ -144,6 +144,15 @@ impl AuthLimits {
 )]
 #[derive(Debug, Clone, Deserialize)]
 pub struct AiConfig {
+    /// Anthropic Messages API, the primary provider when its key is set.
+    pub claude_api_key: Option<SecretString>,
+    #[serde(default = "AiConfig::default_claude_model")]
+    pub claude_model: String,
+    /// Origin + version prefix, no trailing slash. Tests point it at a fake.
+    #[serde(default = "AiConfig::default_claude_base_url")]
+    pub claude_base_url: String,
+    #[serde(default = "AiConfig::default_openai_timeout_secs")]
+    pub claude_timeout_secs: f64,
     pub openai_api_key: Option<SecretString>,
     #[serde(default = "AiConfig::default_openai_model")]
     pub openai_model: String,
@@ -197,6 +206,12 @@ pub struct AiConfig {
 }
 
 impl AiConfig {
+    fn default_claude_model() -> String {
+        "claude-haiku-5-5".into()
+    }
+    fn default_claude_base_url() -> String {
+        "https://api.anthropic.com/v1".into()
+    }
     fn default_openai_model() -> String {
         "gpt-6-luna".into()
     }
@@ -241,7 +256,8 @@ impl AiConfig {
     /// Legacy admin `provider_ready`: any provider key present.
     #[must_use]
     pub fn provider_ready(&self) -> bool {
-        Self::key_present(self.openai_api_key.as_ref())
+        Self::key_present(self.claude_api_key.as_ref())
+            || Self::key_present(self.openai_api_key.as_ref())
             || Self::key_present(self.openrouter_api_key.as_ref())
     }
 
@@ -280,6 +296,10 @@ impl AiConfig {
         };
         serde_json::json!({
             "status": status,
+            "claude_api_key": self.claude_api_key.as_ref().map(|_| "[redacted]"),
+            "claude_model": self.claude_model,
+            "claude_base_url": self.claude_base_url,
+            "claude_timeout_secs": self.claude_timeout_secs,
             "openai_api_key": self.openai_api_key.as_ref().map(|_| "[redacted]"),
             "openai_model": self.openai_model,
             "openai_base_url": self.openai_base_url,
@@ -309,6 +329,10 @@ impl AiConfig {
 impl Default for AiConfig {
     fn default() -> Self {
         Self {
+            claude_api_key: None,
+            claude_model: Self::default_claude_model(),
+            claude_base_url: Self::default_claude_base_url(),
+            claude_timeout_secs: Self::default_openai_timeout_secs(),
             openai_api_key: None,
             openai_model: Self::default_openai_model(),
             openai_base_url: Self::default_openai_base_url(),

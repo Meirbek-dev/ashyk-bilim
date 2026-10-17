@@ -444,6 +444,13 @@ export type AiEffectiveConfig = {
     ai_draft_mode_enabled: boolean;
     ai_enabled: boolean;
     analysis_requests_per_hour_per_user: number;
+    /**
+     * `"[redacted]"` when set.
+     */
+    claude_api_key: string | null;
+    claude_base_url: string;
+    claude_model: string;
+    claude_timeout_secs: number;
     course_analysis_enabled: boolean;
     course_qa_enabled: boolean;
     lecture_authoring_enabled: boolean;

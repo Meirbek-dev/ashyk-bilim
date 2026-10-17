@@ -334,3 +334,133 @@ async fn no_providers_means_disabled() {
     let mapped: ab_core::Error = LlmError::Disabled.into();
     assert_eq!(mapped.code(), ab_core::ErrorCode::AiDisabled);
 }
+
+#[tokio::test]
+async fn anthropic_completion_sends_the_messages_shape_and_falls_back_on_refusal() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(header("x-api-key", "anthropic-key"))
+        .and(header("anthropic-version", "2023-06-01"))
+        .and(body_partial_json(serde_json::json!({
+            "model": "claude-haiku-5-5",
+            "stream": false,
+            "max_tokens": 256,
+            "messages": [
+                { "role": "user", "content": "Role: student\nQuestion: what is a monad?" }
+            ]
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "msg_1", "type": "message", "role": "assistant", "model": "claude-haiku-5-5",
+            "content": [
+                { "type": "thinking", "thinking": "", "signature": "s" },
+                { "type": "text", "text": "{\"answer_markdown\": \"A monoid.\"}" }
+            ],
+            "stop_reason": "end_turn",
+            "usage": { "input_tokens": 30, "output_tokens": 9 }
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let llm = client(vec![provider(
+        "anthropic",
+        &server,
+        "claude-haiku-5-5",
+        Duration::from_secs(2),
+    )]);
+    let completion = llm.complete(&request()).await.unwrap();
+    assert_eq!(completion.model_name, "anthropic:claude-haiku-5-5");
+    assert_eq!(completion.text, "{\"answer_markdown\": \"A monoid.\"}");
+    assert_eq!(completion.usage.input_tokens, Some(30));
+    assert_eq!(completion.usage.output_tokens, Some(9));
+    // The system prompt and the schema instruction travel in `system`.
+    let sent: serde_json::Value = server.received_requests().await.unwrap()[0]
+        .body_json()
+        .unwrap();
+    let system = sent["system"].as_str().unwrap();
+    assert!(system.starts_with("You answer questions about a course."));
+    assert!(system.contains("answer_markdown"));
+    assert!(sent.get("temperature").is_none());
+
+    let refusing = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "model": "claude-haiku-5-5", "content": [], "stop_reason": "refusal",
+            "usage": { "input_tokens": 30, "output_tokens": 0 }
+        })))
+        .mount(&refusing)
+        .await;
+    let fallback = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(completion_body("{}", "gpt-6-luna")))
+        .expect(1)
+        .mount(&fallback)
+        .await;
+    let llm = client(vec![
+        provider(
+            "anthropic",
+            &refusing,
+            "claude-haiku-5-5",
+            Duration::from_secs(2),
+        ),
+        provider("openai", &fallback, "gpt-6-luna", Duration::from_secs(2)),
+    ]);
+    assert_eq!(llm.complete(&request()).await.unwrap().provider, "openai");
+}
+
+#[tokio::test]
+async fn anthropic_stream_yields_text_deltas_then_usage() {
+    let server = MockServer::start().await;
+    let sse = concat!(
+        "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-5-5\",\"content\":[],\"usage\":{\"input_tokens\":12,\"output_tokens\":1}}}\n\n",
+        "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s\"}}\n\n",
+        "event: ping\ndata: {\"type\":\"ping\"}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hel\"}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"lo\"}}\n\n",
+        "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":5}}\n\n",
+        "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+    );
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(body_partial_json(serde_json::json!({ "stream": true })))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(sse),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let llm = client(vec![provider(
+        "anthropic",
+        &server,
+        "claude-haiku-5-5",
+        Duration::from_secs(2),
+    )]);
+    let chunks: Vec<_> = llm
+        .stream(&request())
+        .await
+        .unwrap()
+        .map(Result::unwrap)
+        .collect()
+        .await;
+    assert_eq!(
+        chunks,
+        vec![
+            StreamChunk::Delta("Hel".into()),
+            StreamChunk::Delta("lo".into()),
+            StreamChunk::Done {
+                model_name: "anthropic:claude-haiku-5-5".into(),
+                usage: ab_clients::llm::Usage {
+                    input_tokens: Some(12),
+                    output_tokens: Some(5)
+                },
+            },
+        ]
+    );
+}

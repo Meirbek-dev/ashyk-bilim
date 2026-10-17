@@ -1,8 +1,9 @@
 //! `LlmClient` - the one facade the domain talks to for language models.
 //!
-//! Speaks the OpenAI-compatible `POST {base_url}/chat/completions` contract
-//! (OpenAI primary, OpenRouter fallback - both use the same wire shape), so
-//! the provider chain is pure config. Provider wire types never leave this
+//! Speaks the Anthropic Messages API (`POST {base_url}/messages`) for the
+//! provider named [`ANTHROPIC`] and the OpenAI-compatible
+//! `POST {base_url}/chat/completions` contract for the rest (OpenAI,
+//! OpenRouter), so the provider chain is pure config. Provider wire types never leave this
 //! module: `ab-domain` sees [`CompletionRequest`], [`Completion`],
 //! [`StreamChunk`] and [`LlmError`] only. Structured output requests a JSON
 //! schema (`response_format: json_schema`) and parses the reply with serde,
@@ -19,6 +20,12 @@ use futures::{Stream, StreamExt};
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
+
+/// Provider name that selects the Anthropic Messages wire shape.
+pub const ANTHROPIC: &str = "anthropic";
+
+/// Messages API version header.
+const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 /// One provider in the chain. `name` is the operator-facing label used in
 /// `model_name` strings (`openai:gpt-…`), logs and admin filters.
@@ -251,13 +258,56 @@ impl From<WireUsage> for Usage {
     }
 }
 
+#[derive(Deserialize)]
+struct MessagesResponse {
+    model: Option<String>,
+    #[serde(default)]
+    content: Vec<ContentBlock>,
+    stop_reason: Option<String>,
+    usage: Option<MessagesUsage>,
+}
+
+/// Text and thinking blocks alike; only `text` blocks carry the reply.
+#[derive(Deserialize)]
+struct ContentBlock {
+    #[serde(rename = "type")]
+    kind: String,
+    text: Option<String>,
+}
+
+#[derive(Deserialize, Default, Clone, Copy)]
+struct MessagesUsage {
+    input_tokens: Option<u32>,
+    output_tokens: Option<u32>,
+}
+
+/// One Messages streaming event (`message_start`, `content_block_delta`,
+/// `message_delta`, `message_stop`, `error`, `ping`, ...).
+#[derive(Deserialize)]
+struct MessagesEvent {
+    #[serde(rename = "type")]
+    kind: String,
+    message: Option<MessagesResponse>,
+    delta: Option<MessagesDelta>,
+    usage: Option<MessagesUsage>,
+    error: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize)]
+struct MessagesDelta {
+    #[serde(rename = "type")]
+    kind: Option<String>,
+    text: Option<String>,
+    stop_reason: Option<String>,
+}
+
 impl LlmConfig {
-    /// The provider chain the `AB__AI__*` section describes: OpenAI when
-    /// its key is set, then OpenRouter when its key is set. Empty when
+    /// The provider chain the `AB__AI__*` section describes: Claude, then
+    /// OpenAI, then OpenRouter, each when its key is set. Empty when
     /// neither is configured or the master switch is off.
     #[must_use]
     pub fn from_ai_config(config: &ab_core::config::AiConfig) -> Self {
-        let mut providers = Vec::with_capacity(2);
+        let mut providers = Vec::with_capacity(3);
         if !config.ai_enabled {
             return Self {
                 providers,
@@ -269,6 +319,15 @@ impl LlmConfig {
                 .filter(|k| !k.expose_secret().trim().is_empty())
                 .cloned()
         };
+        if let Some(api_key) = key_of(&config.claude_api_key) {
+            providers.push(ProviderConfig {
+                name: ANTHROPIC.into(),
+                base_url: config.claude_base_url.trim_end_matches('/').to_owned(),
+                api_key,
+                model: config.claude_model.clone(),
+                timeout: Duration::from_secs_f64(config.claude_timeout_secs.max(0.1)),
+            });
+        }
         if let Some(api_key) = key_of(&config.openai_api_key) {
             providers.push(ProviderConfig {
                 name: "openai".into(),
@@ -424,6 +483,9 @@ impl LlmClient {
         request: &CompletionRequest,
         stream: bool,
     ) -> serde_json::Value {
+        if provider.config.name == ANTHROPIC {
+            return self.messages_body(provider, request, stream);
+        }
         let mut body = serde_json::json!({
             "model": provider.config.model,
             "messages": request.messages,
@@ -453,17 +515,69 @@ impl LlmClient {
         body
     }
 
+    /// The Messages API body. System messages join into `system`; the
+    /// schema goes there as an instruction (the agents' schemas are not
+    /// strict-mode schemas), the reply is parsed leniently and repaired once.
+    /// No `temperature`: Claude Haiku 5.5 rejects non-default sampling.
+    /// Effort `low` keeps adaptive thinking short for interactive calls.
+    fn messages_body(
+        &self,
+        provider: &Provider,
+        request: &CompletionRequest,
+        stream: bool,
+    ) -> serde_json::Value {
+        let mut system: Vec<String> = request
+            .messages
+            .iter()
+            .filter(|m| m.role == Role::System)
+            .map(|m| m.content.clone())
+            .collect();
+        if let Some(schema) = &request.output_schema {
+            system.push(format!(
+                "Reply with only a JSON object (no prose, no code fences) that matches \
+                 the JSON schema \"{}\":\n{}",
+                schema.name, schema.schema
+            ));
+        }
+        let messages: Vec<&ChatMessage> = request
+            .messages
+            .iter()
+            .filter(|m| m.role != Role::System)
+            .collect();
+        let mut body = serde_json::json!({
+            "model": provider.config.model,
+            "max_tokens": request.max_output_tokens.unwrap_or(self.max_output_tokens),
+            "messages": messages,
+            "output_config": { "effort": "low" },
+            "stream": stream,
+        });
+        if !system.is_empty() {
+            body["system"] = system.join("\n\n").into();
+        }
+        body
+    }
+
     fn post(
         &self,
         provider: &Provider,
         request: &CompletionRequest,
         stream: bool,
     ) -> reqwest::RequestBuilder {
+        let body = self.body(provider, request, stream);
+        let key = provider.config.api_key.expose_secret();
+        if provider.config.name == ANTHROPIC {
+            return provider
+                .http
+                .post(format!("{}/messages", provider.config.base_url))
+                .header("x-api-key", key)
+                .header("anthropic-version", ANTHROPIC_VERSION)
+                .json(&body);
+        }
         provider
             .http
             .post(format!("{}/chat/completions", provider.config.base_url))
-            .bearer_auth(provider.config.api_key.expose_secret())
-            .json(&self.body(provider, request, stream))
+            .bearer_auth(key)
+            .json(&body)
     }
 
     async fn complete_with(
@@ -483,6 +597,9 @@ impl LlmClient {
             .map_err(|e| LlmError::Unavailable(format!("reading completion body: {e}")))?;
         if !status.is_success() {
             return Err(classify(status, &text));
+        }
+        if provider.config.name == ANTHROPIC {
+            return messages_completion(&provider.config, &text);
         }
         let parsed: ChatResponse = serde_json::from_str(&text)
             .map_err(|e| LlmError::Unavailable(format!("completion shape: {e}")))?;
@@ -517,6 +634,9 @@ impl LlmClient {
             return Err(classify(status, &text));
         }
         let config = provider.config.clone();
+        if config.name == ANTHROPIC {
+            return Ok(messages_stream(config, response));
+        }
         let mut bytes = response.bytes_stream();
         let stream = async_stream::stream! {
             let mut buffer: Vec<u8> = Vec::new();
@@ -588,6 +708,125 @@ impl LlmClient {
         };
         Ok(Box::pin(stream))
     }
+}
+
+impl From<MessagesUsage> for Usage {
+    fn from(u: MessagesUsage) -> Self {
+        Self {
+            input_tokens: u.input_tokens,
+            output_tokens: u.output_tokens,
+        }
+    }
+}
+
+/// A refusal falls through the chain like any rejection.
+fn refused(stop_reason: Option<&str>) -> Option<LlmError> {
+    (stop_reason == Some("refusal")).then(|| LlmError::Rejected("the model declined".into()))
+}
+
+fn messages_completion(config: &ProviderConfig, body: &str) -> Result<Completion, LlmError> {
+    let parsed: MessagesResponse = serde_json::from_str(body)
+        .map_err(|e| LlmError::Unavailable(format!("completion shape: {e}")))?;
+    if let Some(err) = refused(parsed.stop_reason.as_deref()) {
+        return Err(err);
+    }
+    let text: String = parsed
+        .content
+        .into_iter()
+        .filter(|b| b.kind == "text")
+        .filter_map(|b| b.text)
+        .collect();
+    if text.is_empty() {
+        return Err(LlmError::Rejected(format!(
+            "completion carried no text (stop_reason {:?})",
+            parsed.stop_reason
+        )));
+    }
+    Ok(Completion {
+        text,
+        model_name: model_label(config, parsed.model.as_deref()),
+        provider: config.name.clone(),
+        usage: parsed.usage.map(Into::into).unwrap_or_default(),
+    })
+}
+
+/// Messages SSE: text deltas in order, usage from `message_start` (input)
+/// and `message_delta` (output, cumulative), done at `message_stop`.
+fn messages_stream(config: ProviderConfig, response: reqwest::Response) -> CompletionStream {
+    let mut bytes = response.bytes_stream();
+    Box::pin(async_stream::stream! {
+        let mut buffer: Vec<u8> = Vec::new();
+        let mut model: Option<String> = None;
+        let mut usage = Usage::default();
+        loop {
+            let event = match take_event(&mut buffer) {
+                Some(event) => event,
+                None => match bytes.next().await {
+                    Some(Ok(chunk)) => {
+                        buffer.extend_from_slice(&chunk);
+                        continue;
+                    }
+                    Some(Err(err)) => {
+                        yield Err(LlmError::Unavailable(format!("stream interrupted: {err}")));
+                        return;
+                    }
+                    // A final event without the trailing blank line.
+                    None if !buffer.is_empty() => std::mem::take(&mut buffer),
+                    None => {
+                        yield Err(LlmError::Unavailable("stream ended before message_stop".into()));
+                        return;
+                    }
+                },
+            };
+            let SseEvent::Data(data) = parse_event(&event) else { continue };
+            let parsed = match serde_json::from_str::<MessagesEvent>(&data) {
+                Ok(parsed) => parsed,
+                Err(err) => {
+                    yield Err(LlmError::Unavailable(format!("stream event shape: {err}")));
+                    return;
+                }
+            };
+            match parsed.kind.as_str() {
+                "message_start" => {
+                    if let Some(message) = parsed.message {
+                        model = message.model.or(model);
+                        if let Some(u) = message.usage {
+                            usage.input_tokens = u.input_tokens;
+                        }
+                    }
+                }
+                "content_block_delta" => {
+                    if let Some(delta) = parsed.delta
+                        && delta.kind.as_deref() == Some("text_delta")
+                        && let Some(text) = delta.text
+                        && !text.is_empty()
+                    {
+                        yield Ok(StreamChunk::Delta(text));
+                    }
+                }
+                "message_delta" => {
+                    if let Some(err) = refused(parsed.delta.as_ref().and_then(|d| d.stop_reason.as_deref())) {
+                        yield Err(err);
+                        return;
+                    }
+                    if let Some(u) = parsed.usage.and_then(|u| u.output_tokens) {
+                        usage.output_tokens = Some(u);
+                    }
+                }
+                "message_stop" => break,
+                "error" => {
+                    let detail = parsed.error.map(|e| e.to_string()).unwrap_or_default();
+                    yield Err(LlmError::Unavailable(format!("stream error: {detail}")));
+                    return;
+                }
+                _ => {}
+            }
+        }
+        yield Ok(StreamChunk::Done {
+            model_name: model_label(&config, model.as_deref()),
+            usage,
+        });
+    })
 }
 
 fn model_label(config: &ProviderConfig, reported: Option<&str>) -> String {

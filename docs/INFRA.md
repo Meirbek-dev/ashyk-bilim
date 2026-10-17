@@ -183,7 +183,7 @@ prod derives it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`,
 | `AB__ZITADEL__PAT` | appended by bootstrap from `zitadel_machinekey/pat.txt` |
 | `AB__GOOGLE__CLIENT_ID`, `AB__GOOGLE__CLIENT_SECRET`, `AB__GOOGLE__REDIRECT_URI` | optional, all or none |
 | `AB__RESEND__API_KEY`, `AB__RESEND__FROM` | optional, all or none (`FROM` has no default) |
-| `AB__AI__OPENAI_API_KEY`, `AB__AI__OPENROUTER_API_KEY` | optional; models default in the server config |
+| `AB__AI__CLAUDE_API_KEY`, `AB__AI__OPENAI_API_KEY`, `AB__AI__OPENROUTER_API_KEY` | optional; tried in that order (Claude Haiku 5.5 first); models default in the server config |
 | `AB__TELEMETRY__OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` | optional |
 
 Compose sets these for server, worker and server-migrate (`x-server-env`,

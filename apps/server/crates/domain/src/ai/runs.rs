@@ -686,7 +686,9 @@ impl AiService {
         require_admin(actor)?;
         let switches = self.feature_switches().await?;
         let c = &self.config;
-        let model = if c.openai_api_key.is_some() {
+        let model = if c.claude_api_key.is_some() {
+            c.claude_model.clone()
+        } else if c.openai_api_key.is_some() {
             c.openai_model.clone()
         } else {
             c.openrouter_model.clone()

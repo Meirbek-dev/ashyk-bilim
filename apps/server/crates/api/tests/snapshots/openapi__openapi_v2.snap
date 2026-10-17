@@ -1259,6 +1259,23 @@ expression: json
             "format": "int32",
             "type": "integer"
           },
+          "claude_api_key": {
+            "description": "`\"[redacted]\"` when set.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claude_base_url": {
+            "type": "string"
+          },
+          "claude_model": {
+            "type": "string"
+          },
+          "claude_timeout_secs": {
+            "format": "double",
+            "type": "number"
+          },
           "course_analysis_enabled": {
             "type": "boolean"
           },
@@ -1336,6 +1353,9 @@ expression: json
         },
         "required": [
           "status",
+          "claude_model",
+          "claude_base_url",
+          "claude_timeout_secs",
           "openai_model",
           "openai_base_url",
           "openrouter_model",
@@ -1356,6 +1376,7 @@ expression: json
           "semantic_memory_enabled",
           "analysis_requests_per_hour_per_user",
           "remediation_requests_per_hour_per_user",
+          "claude_api_key",
           "openai_api_key",
           "openrouter_api_key"
         ],

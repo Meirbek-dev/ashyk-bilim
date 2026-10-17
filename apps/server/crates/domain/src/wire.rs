@@ -420,6 +420,11 @@ pub struct AiEffectiveConfig {
     /// `enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.
     pub status: String,
     /// `"[redacted]"` when set.
+    pub claude_api_key: Option<String>,
+    pub claude_model: String,
+    pub claude_base_url: String,
+    pub claude_timeout_secs: f64,
+    /// `"[redacted]"` when set.
     pub openai_api_key: Option<String>,
     pub openai_model: String,
     pub openai_base_url: String,
