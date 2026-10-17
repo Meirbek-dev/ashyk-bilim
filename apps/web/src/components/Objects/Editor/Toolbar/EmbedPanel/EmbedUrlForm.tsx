@@ -3,13 +3,10 @@
 import { useId, createElement } from 'react'
 import { useTranslations } from 'next-intl'
 import { Globe2, BookOpen, ExternalLink, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react'
-import * as Si from '@icons-pack/react-simple-icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getEmbedProvider } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
-
-type AppIcon = React.ComponentType<{ className?: string }>
 
 interface EmbedUrlFormProps {
   type: EmbedType
@@ -17,12 +14,6 @@ interface EmbedUrlFormProps {
   onChange: (url: string) => void
   error: string | null
   onErrorChange: (error: string | null) => void
-}
-
-function getSimpleIcon(iconName?: string): AppIcon | null {
-  if (!iconName) return null
-  const iconCandidate = (Si as Record<string, unknown>)[iconName]
-  return typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
 }
 
 function parseBoldText(text: string): React.ReactNode {
@@ -55,7 +46,7 @@ export function EmbedUrlForm({ type, url, onChange, error, onErrorChange }: Embe
     onChange(event.target.value)
   }
 
-  const Icon = getSimpleIcon(provider?.iconName)
+  const Icon = provider?.icon ?? null
   const FallbackIcon = Globe2
   const hasInstructions = typeof t.has === 'function' && t.has(`providers.${provider?.type}.instructions`)
   const instructionsString = hasInstructions && provider ? t(`providers.${provider.type}.instructions`) : null

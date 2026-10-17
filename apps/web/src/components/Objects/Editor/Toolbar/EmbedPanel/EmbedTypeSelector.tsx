@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import * as Si from '@icons-pack/react-simple-icons'
 import { cn } from '@/lib/utils'
 import { EMBED_CATEGORIES, EMBED_PROVIDERS } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 import type {
@@ -89,8 +88,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
           >
             {filteredProviders.map((provider: EmbedProvider) => {
               const isSelected = selectedType === provider.type
-              const iconCandidate = provider.iconName ? (Si as Record<string, unknown>)[provider.iconName] : null
-              const Icon = typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
+              const Icon = provider.icon ?? null
 
               return (
                 <button

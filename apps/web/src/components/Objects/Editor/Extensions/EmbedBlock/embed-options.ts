@@ -1,13 +1,65 @@
 /**
  * Embed provider registry for Ashyq Bilim LMS.
- *
- * Icon names reference named exports from `@icons-pack/react-simple-icons`.
- * Usage in a component:
- *
- *   import * as Si from '@icons-pack/react-simple-icons';
- *   const Icon = provider.iconName ? (Si as Record<string, React.ElementType>)[provider.iconName] : null;
- *   {Icon && <Icon size={16} />}
  */
+
+import type { ComponentType } from 'react'
+import {
+  SiAirtable,
+  SiClickup,
+  SiCoda,
+  SiCodesandbox,
+  SiDeezer,
+  SiDiscord,
+  SiExcalidraw,
+  SiFigma,
+  SiGithub,
+  SiGitpod,
+  SiGlitch,
+  SiGoogle,
+  SiGooglecolab,
+  SiGoogledocs,
+  SiGoogleforms,
+  SiGooglemaps,
+  SiGooglesheets,
+  SiGoogleslides,
+  SiHuggingface,
+  SiJsfiddle,
+  SiJupyter,
+  SiKaggle,
+  SiKahoot,
+  SiLooker,
+  SiLoom,
+  SiLottiefiles,
+  SiMiro,
+  SiMixcloud,
+  SiMural,
+  SiNotion,
+  SiObservable,
+  SiOverleaf,
+  SiPadlet,
+  SiPrezi,
+  SiQuizlet,
+  SiReplit,
+  SiSketchfab,
+  SiSlides,
+  SiSoundcloud,
+  SiSpotify,
+  SiStackblitz,
+  SiSuno,
+  SiSymbolab,
+  SiTed,
+  SiTelegram,
+  SiTldraw,
+  SiTrello,
+  SiTypeform,
+  SiVimeo,
+  SiVk,
+  SiWeightsandbiases,
+  SiWistia,
+  SiYoutube,
+} from '@icons-pack/react-simple-icons'
+
+export type AppIcon = ComponentType<{ className?: string; size?: number | string }>
 
 export type EmbedCategoryId =
   | 'popular'
@@ -56,8 +108,7 @@ export interface EmbedProvider {
   defaultHeight: number
   allow?: string
   requiresEmbedUrl?: boolean
-  /** Named export from `@icons-pack/react-simple-icons`, e.g. `'SiYoutube'`. */
-  iconName?: string
+  icon?: AppIcon
   exampleUrl?: string
   helpUrl?: string
 }
@@ -71,7 +122,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.figma.com/file/...',
     hostnames: ['figma.com', 'www.figma.com'],
     defaultHeight: 560,
-    iconName: 'SiFigma',
+    icon: SiFigma,
     exampleUrl: 'https://www.figma.com/file/LKQ4gTR757PVMMsrr73g9g/UTK-Web-Design-System',
     helpUrl: 'https://help.figma.com/hc/en-us/articles/360039824474-Embed-files-and-prototypes',
   },
@@ -81,7 +132,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.canva.com/design/...',
     hostnames: ['canva.com', 'www.canva.com'],
     defaultHeight: 560,
-    iconName: 'SiCanva',
     exampleUrl: 'https://www.canva.com/design/DAF-x2Y2F2Q/view',
     helpUrl: 'https://www.canva.com/help/embed-designs/',
   },
@@ -91,7 +141,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://miro.com/app/board/...',
     hostnames: ['miro.com', 'www.miro.com'],
     defaultHeight: 560,
-    iconName: 'SiMiro',
+    icon: SiMiro,
     exampleUrl: 'https://miro.com/app/board/uXjVP479xCE=/',
     helpUrl: 'https://help.miro.com/hc/en-us/articles/360016335640-Embed-boards-into-websites',
   },
@@ -101,7 +151,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://excalidraw.com/#room=...',
     hostnames: ['excalidraw.com'],
     defaultHeight: 520,
-    iconName: 'SiExcalidraw',
+    icon: SiExcalidraw,
     exampleUrl: 'https://excalidraw.com/#room=c62706dbb2ba05273be4,t7oFk_0X_Y12398457',
     helpUrl: 'https://plus.excalidraw.com/blog/how-to-embed',
   },
@@ -111,7 +161,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://tldraw.com/r/room-id',
     hostnames: ['tldraw.com'],
     defaultHeight: 520,
-    iconName: 'SiTldraw',
+    icon: SiTldraw,
     exampleUrl: 'https://tldraw.com/r/lms_math_geometry_demo',
     helpUrl: 'https://tldraw.dev/',
   },
@@ -121,7 +171,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://app.mural.co/...',
     hostnames: ['mural.co', 'app.mural.co'],
     defaultHeight: 560,
-    iconName: 'SiMural',
+    icon: SiMural,
   },
   {
     type: 'spline',
@@ -129,7 +179,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://my.spline.design/...',
     hostnames: ['spline.design', 'my.spline.design'],
     defaultHeight: 560,
-    iconName: 'SiSpline',
   },
   {
     type: 'lottiefiles',
@@ -137,7 +186,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://lottiefiles.com/...',
     hostnames: ['lottiefiles.com', 'www.lottiefiles.com'],
     defaultHeight: 420,
-    iconName: 'SiLottiefiles',
+    icon: SiLottiefiles,
   },
   {
     type: 'sketchpad',
@@ -153,7 +202,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://prezi.com/view/...',
     hostnames: ['prezi.com'],
     defaultHeight: 560,
-    iconName: 'SiPrezi',
+    icon: SiPrezi,
   },
   {
     type: 'pitch',
@@ -161,7 +210,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://pitch.com/public/...',
     hostnames: ['pitch.com'],
     defaultHeight: 560,
-    iconName: 'SiPitch',
   },
   {
     type: 'gamma',
@@ -169,7 +217,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://gamma.app/public/...',
     hostnames: ['gamma.app'],
     defaultHeight: 560,
-    iconName: 'SiGamma',
   },
   {
     type: 'google-slides',
@@ -177,7 +224,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/presentation/d/.../edit',
     hostnames: ['docs.google.com'],
     defaultHeight: 560,
-    iconName: 'SiGoogleslides',
+    icon: SiGoogleslides,
     exampleUrl: 'https://docs.google.com/presentation/d/1yN_t3v8gJd4p7uFv_W8t45H7g9_K0E3S4f4u_8p7q-o/edit',
     helpUrl: 'https://support.google.com/docs/answer/37579',
   },
@@ -187,7 +234,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://onedrive.live.com/embed?resid=...',
     hostnames: ['office.com', 'microsoft.com', 'live.com'],
     defaultHeight: 560,
-    iconName: 'SiMicrosoftpowerpoint',
   },
   {
     type: 'ms-whiteboard',
@@ -195,7 +241,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://whiteboard.office.com/me/whiteboards/...',
     hostnames: ['whiteboard.office.com', 'whiteboard.microsoft.com'],
     defaultHeight: 560,
-    iconName: 'SiMicrosoft',
   },
   {
     type: 'explain-everything',
@@ -203,7 +248,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://explaineverything.com/board/...',
     hostnames: ['explaineverything.com'],
     defaultHeight: 560,
-    iconName: 'SiExplaineverything',
   },
   {
     type: 'slides-com',
@@ -212,7 +256,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['slides.com'],
     defaultHeight: 560,
     requiresEmbedUrl: true,
-    iconName: 'SiSlides',
+    icon: SiSlides,
   },
 
   // ─── CODE ────────────────────────────────────────────────────────────────────
@@ -223,7 +267,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['jsfiddle.net'],
     defaultHeight: 460,
     requiresEmbedUrl: true,
-    iconName: 'SiJsfiddle',
+    icon: SiJsfiddle,
   },
   {
     type: 'codepen',
@@ -231,7 +275,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://codepen.io/user/pen/...',
     hostnames: ['codepen.io'],
     defaultHeight: 460,
-    iconName: 'SiCodepen',
     exampleUrl: 'https://codepen.io/sdras/pen/gWWQGb',
     helpUrl: 'https://blog.codepen.io/documentation/features/embedded-pens/',
   },
@@ -241,7 +284,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://replit.com/@user/repl-name',
     hostnames: ['replit.com'],
     defaultHeight: 560,
-    iconName: 'SiReplit',
+    icon: SiReplit,
   },
   {
     type: 'stackblitz',
@@ -249,7 +292,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://stackblitz.com/edit/...',
     hostnames: ['stackblitz.com'],
     defaultHeight: 560,
-    iconName: 'SiStackblitz',
+    icon: SiStackblitz,
   },
   {
     type: 'github-gist',
@@ -257,7 +300,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://gist.github.com/user/id',
     hostnames: ['gist.github.com'],
     defaultHeight: 420,
-    iconName: 'SiGithub',
+    icon: SiGithub,
   },
   {
     type: 'glitch',
@@ -265,7 +308,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://glitch.com/edit/#!/project',
     hostnames: ['glitch.com'],
     defaultHeight: 560,
-    iconName: 'SiGlitch',
+    icon: SiGlitch,
   },
   {
     type: 'codesnip',
@@ -280,7 +323,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://codesandbox.io/p/sandbox/...',
     hostnames: ['codesandbox.io'],
     defaultHeight: 560,
-    iconName: 'SiCodesandbox',
+    icon: SiCodesandbox,
   },
   // NEW ↓
   {
@@ -290,7 +333,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['observablehq.com'],
     defaultHeight: 520,
     requiresEmbedUrl: true,
-    iconName: 'SiObservable',
+    icon: SiObservable,
   },
   {
     type: 'mybinder',
@@ -298,7 +341,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://mybinder.org/v2/gh/user/repo/HEAD',
     hostnames: ['mybinder.org'],
     defaultHeight: 640,
-    iconName: 'SiJupyter',
+    icon: SiJupyter,
   },
   {
     type: 'kaggle',
@@ -307,7 +350,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['kaggle.com', 'www.kaggle.com'],
     defaultHeight: 560,
     requiresEmbedUrl: true,
-    iconName: 'SiKaggle',
+    icon: SiKaggle,
   },
   {
     type: 'huggingface',
@@ -315,7 +358,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://huggingface.co/spaces/user/space',
     hostnames: ['huggingface.co'],
     defaultHeight: 640,
-    iconName: 'SiHuggingface',
+    icon: SiHuggingface,
   },
   {
     type: 'wandb',
@@ -323,7 +366,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://api.wandb.ai/links/user/report-id',
     hostnames: ['wandb.ai', 'api.wandb.ai'],
     defaultHeight: 560,
-    iconName: 'SiWeightsandbiases',
+    icon: SiWeightsandbiases,
   },
   {
     type: 'gitpod',
@@ -331,7 +374,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://gitpod.io/#https://github.com/user/repo',
     hostnames: ['gitpod.io'],
     defaultHeight: 640,
-    iconName: 'SiGitpod',
+    icon: SiGitpod,
   },
   {
     type: 'google-colab',
@@ -339,7 +382,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://colab.research.google.com/drive/...',
     hostnames: ['colab.research.google.com'],
     defaultHeight: 560,
-    iconName: 'SiGooglecolab',
+    icon: SiGooglecolab,
   },
 
   // ─── MEDIA ───────────────────────────────────────────────────────────────────
@@ -350,7 +393,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
     defaultHeight: 420,
     allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
-    iconName: 'SiYoutube',
+    icon: SiYoutube,
     exampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     helpUrl: 'https://support.google.com/youtube/answer/171780',
   },
@@ -361,7 +404,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'],
     defaultHeight: 420,
     allow: 'autoplay; fullscreen; picture-in-picture',
-    iconName: 'SiVimeo',
+    icon: SiVimeo,
   },
   {
     type: 'loom',
@@ -369,7 +412,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.loom.com/share/...',
     hostnames: ['loom.com', 'www.loom.com'],
     defaultHeight: 420,
-    iconName: 'SiLoom',
+    icon: SiLoom,
   },
   {
     type: 'google-vids',
@@ -377,7 +420,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://vids.google.com/...',
     hostnames: ['vids.google.com', 'drive.google.com'],
     defaultHeight: 480,
-    iconName: 'SiGoogle',
+    icon: SiGoogle,
   },
   {
     type: 'wistia',
@@ -385,7 +428,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://fast.wistia.net/embed/iframe/...',
     hostnames: ['wistia.com', 'fast.wistia.net'],
     defaultHeight: 420,
-    iconName: 'SiWistia',
+    icon: SiWistia,
   },
   {
     type: 'spotify',
@@ -393,7 +436,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://open.spotify.com/...',
     hostnames: ['open.spotify.com', 'spotify.com'],
     defaultHeight: 352,
-    iconName: 'SiSpotify',
+    icon: SiSpotify,
     exampleUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX10zKzsJ2jva',
     helpUrl: 'https://developer.spotify.com/documentation/widgets/guides/sharing-spotify-content/',
   },
@@ -403,7 +446,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://soundcloud.com/...',
     hostnames: ['soundcloud.com', 'w.soundcloud.com'],
     defaultHeight: 320,
-    iconName: 'SiSoundcloud',
+    icon: SiSoundcloud,
   },
   {
     type: 'suno',
@@ -411,7 +454,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://suno.com/song/...',
     hostnames: ['suno.com', 'www.suno.com'],
     defaultHeight: 420,
-    iconName: 'SiSuno',
+    icon: SiSuno,
   },
   {
     type: 'sodaphonic',
@@ -428,7 +471,6 @@ export const EMBED_PROVIDERS = [
     hostnames: ['rutube.ru'],
     defaultHeight: 420,
     allow: 'autoplay; fullscreen',
-    iconName: 'SiRutube',
   },
   {
     type: 'vk-video',
@@ -437,7 +479,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['vk.com', 'vkvideo.ru'],
     defaultHeight: 420,
     allow: 'autoplay; encrypted-media; fullscreen',
-    iconName: 'SiVk',
+    icon: SiVk,
   },
   {
     type: 'vk-clips',
@@ -445,7 +487,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://vk.com/clip-...',
     hostnames: ['vk.com'],
     defaultHeight: 560,
-    iconName: 'SiVk',
+    icon: SiVk,
   },
   {
     type: 'ted',
@@ -455,7 +497,7 @@ export const EMBED_PROVIDERS = [
     defaultHeight: 480,
     allow: 'autoplay; fullscreen',
     requiresEmbedUrl: true,
-    iconName: 'SiTed',
+    icon: SiTed,
   },
   {
     type: 'deezer',
@@ -464,7 +506,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['deezer.com', 'www.deezer.com', 'widget.deezer.com'],
     defaultHeight: 350,
     requiresEmbedUrl: true,
-    iconName: 'SiDeezer',
+    icon: SiDeezer,
   },
   {
     type: 'mixcloud',
@@ -473,7 +515,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['mixcloud.com', 'www.mixcloud.com'],
     defaultHeight: 120,
     requiresEmbedUrl: true,
-    iconName: 'SiMixcloud',
+    icon: SiMixcloud,
   },
   {
     type: 'panopto',
@@ -483,7 +525,6 @@ export const EMBED_PROVIDERS = [
     defaultHeight: 480,
     allow: 'autoplay; fullscreen',
     requiresEmbedUrl: true,
-    iconName: 'SiPanopto',
   },
   {
     type: 'kaltura',
@@ -493,7 +534,6 @@ export const EMBED_PROVIDERS = [
     defaultHeight: 480,
     allow: 'autoplay; fullscreen',
     requiresEmbedUrl: true,
-    iconName: 'SiKaltura',
   },
 
   // ─── ASSESSMENT ──────────────────────────────────────────────────────────────
@@ -503,7 +543,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://h5p.org/h5p/embed/...',
     hostnames: ['h5p.org', 'h5p.com'],
     defaultHeight: 560,
-    iconName: 'SiH5p',
   },
   {
     type: 'genially',
@@ -511,7 +550,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://view.genially.com/...',
     hostnames: ['genially.com', 'view.genially.com'],
     defaultHeight: 560,
-    iconName: 'SiGenially',
   },
   {
     type: 'typeform',
@@ -519,7 +557,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://form.typeform.com/to/...',
     hostnames: ['typeform.com', 'form.typeform.com'],
     defaultHeight: 560,
-    iconName: 'SiTypeform',
+    icon: SiTypeform,
   },
   {
     type: 'jotform',
@@ -527,7 +565,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://form.jotform.com/...',
     hostnames: ['jotform.com', 'form.jotform.com'],
     defaultHeight: 560,
-    iconName: 'SiJotform',
   },
   {
     type: 'google-forms',
@@ -535,7 +572,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/forms/d/e/...',
     hostnames: ['docs.google.com'],
     defaultHeight: 640,
-    iconName: 'SiGoogleforms',
+    icon: SiGoogleforms,
     exampleUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSf2_RUXS8yvK1q0M-5lE9g7U8M1_W3T6u-W5x6g7M3k8u8g/viewform',
     helpUrl: 'https://support.google.com/docs/answer/37579',
   },
@@ -545,7 +582,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://tally.so/r/...',
     hostnames: ['tally.so'],
     defaultHeight: 560,
-    iconName: 'SiTally',
   },
   {
     type: 'quizlet',
@@ -553,7 +589,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://quizlet.com/...',
     hostnames: ['quizlet.com', 'www.quizlet.com'],
     defaultHeight: 500,
-    iconName: 'SiQuizlet',
+    icon: SiQuizlet,
   },
   {
     type: 'kahoot',
@@ -561,7 +597,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://create.kahoot.it/share/...',
     hostnames: ['kahoot.it', 'create.kahoot.it'],
     defaultHeight: 500,
-    iconName: 'SiKahoot',
+    icon: SiKahoot,
   },
   {
     type: 'mentimeter',
@@ -569,7 +605,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.mentimeter.com/...',
     hostnames: ['mentimeter.com', 'www.mentimeter.com'],
     defaultHeight: 560,
-    iconName: 'SiMentimeter',
   },
   // NEW ↓
   {
@@ -585,7 +620,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://quizizz.com/admin/quiz/...',
     hostnames: ['quizizz.com'],
     defaultHeight: 500,
-    iconName: 'SiQuizizz',
   },
   {
     type: 'edpuzzle',
@@ -600,7 +634,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.plickers.com/...',
     hostnames: ['plickers.com', 'www.plickers.com'],
     defaultHeight: 500,
-    iconName: 'SiPlickers',
   },
   {
     type: 'wooclap',
@@ -617,7 +650,6 @@ export const EMBED_PROVIDERS = [
     hostnames: ['sli.do', 'wall.sli.do', 'slido.com'],
     defaultHeight: 560,
     requiresEmbedUrl: true,
-    iconName: 'SiSlido',
   },
   {
     type: 'nearpod',
@@ -641,7 +673,6 @@ export const EMBED_PROVIDERS = [
     hostnames: ['polleverywhere.com', 'www.polleverywhere.com'],
     defaultHeight: 480,
     requiresEmbedUrl: true,
-    iconName: 'SiPolleverywhere',
   },
 
   // ─── PRODUCTIVITY ────────────────────────────────────────────────────────────
@@ -651,7 +682,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://airtable.com/embed/...',
     hostnames: ['airtable.com'],
     defaultHeight: 560,
-    iconName: 'SiAirtable',
+    icon: SiAirtable,
   },
   {
     type: 'google-sheets',
@@ -659,7 +690,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/spreadsheets/d/...',
     hostnames: ['docs.google.com'],
     defaultHeight: 560,
-    iconName: 'SiGooglesheets',
+    icon: SiGooglesheets,
     exampleUrl: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvAHSDuXn22Z0dQ2n219yqTFS51M/edit',
     helpUrl: 'https://support.google.com/docs/answer/37579',
   },
@@ -669,7 +700,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://trello.com/b/...',
     hostnames: ['trello.com'],
     defaultHeight: 560,
-    iconName: 'SiTrello',
+    icon: SiTrello,
   },
   {
     type: 'notion',
@@ -677,7 +708,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.notion.so/...',
     hostnames: ['notion.so', 'www.notion.so'],
     defaultHeight: 560,
-    iconName: 'SiNotion',
+    icon: SiNotion,
   },
   {
     type: 'coda',
@@ -685,7 +716,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://coda.io/embed/...',
     hostnames: ['coda.io'],
     defaultHeight: 560,
-    iconName: 'SiCoda',
+    icon: SiCoda,
   },
   {
     type: 'tableau',
@@ -693,7 +724,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://public.tableau.com/views/...',
     hostnames: ['public.tableau.com', 'tableau.com'],
     defaultHeight: 640,
-    iconName: 'SiTableau',
   },
   // NEW ↓
   {
@@ -703,7 +733,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['lookerstudio.google.com', 'datastudio.google.com'],
     defaultHeight: 640,
     requiresEmbedUrl: true,
-    iconName: 'SiLooker',
+    icon: SiLooker,
   },
   {
     type: 'clickup',
@@ -712,7 +742,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['app.clickup.com', 'clickup.com'],
     defaultHeight: 560,
     requiresEmbedUrl: true,
-    iconName: 'SiClickup',
+    icon: SiClickup,
   },
   {
     type: 'wakelet',
@@ -720,7 +750,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://wakelet.com/wake/...',
     hostnames: ['wakelet.com'],
     defaultHeight: 560,
-    iconName: 'SiWakelet',
   },
   {
     type: 'datalens',
@@ -728,7 +757,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://datalens.yandex.ru/embed/...',
     hostnames: ['datalens.yandex.ru', 'datalens.yandex.com'],
     defaultHeight: 560,
-    iconName: 'SiYandex',
   },
   {
     type: 'google-docs',
@@ -736,7 +764,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/document/d/.../edit',
     hostnames: ['docs.google.com'],
     defaultHeight: 640,
-    iconName: 'SiGoogledocs',
+    icon: SiGoogledocs,
     exampleUrl: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvAHSDuXn22Z0dQ2n219yqTFS51M/edit',
     helpUrl: 'https://support.google.com/docs/answer/37579',
   },
@@ -748,7 +776,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.desmos.com/calculator/...',
     hostnames: ['desmos.com', 'www.desmos.com'],
     defaultHeight: 520,
-    iconName: 'SiDesmos',
     exampleUrl: 'https://www.desmos.com/calculator/28v0s8h138',
     helpUrl: 'https://desmos.helpscoutdocs.com/article/30-sharing-graphs',
   },
@@ -758,7 +785,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.geogebra.org/m/...',
     hostnames: ['geogebra.org', 'www.geogebra.org'],
     defaultHeight: 560,
-    iconName: 'SiGeogebra',
     exampleUrl: 'https://www.geogebra.org/m/xc7eq7zc',
     helpUrl: 'https://www.geogebra.org/manual/en/Embedding_GeoGebra_Applets',
   },
@@ -768,7 +794,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.wolframalpha.com/...',
     hostnames: ['wolframalpha.com', 'www.wolframalpha.com'],
     defaultHeight: 500,
-    iconName: 'SiWolframalpha',
   },
   {
     type: 'phet',
@@ -776,7 +801,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://phet.colorado.edu/sims/html/...',
     hostnames: ['phet.colorado.edu'],
     defaultHeight: 620,
-    iconName: 'SiPhet',
   },
   {
     type: 'sketchfab',
@@ -785,7 +809,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['sketchfab.com', 'www.sketchfab.com'],
     defaultHeight: 520,
     allow: 'autoplay; fullscreen; xr-spatial-tracking',
-    iconName: 'SiSketchfab',
+    icon: SiSketchfab,
   },
   {
     type: 'texlyre',
@@ -801,7 +825,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://yandex.ru/maps/...',
     hostnames: ['yandex.ru', 'yandex.com', 'maps.yandex.ru'],
     defaultHeight: 480,
-    iconName: 'SiYandex',
   },
   {
     type: 'brilliant',
@@ -809,7 +832,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://brilliant.org/courses/...',
     hostnames: ['brilliant.org'],
     defaultHeight: 600,
-    iconName: 'SiBrilliant',
   },
   {
     type: 'symbolab',
@@ -817,7 +839,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.symbolab.com/solver/...',
     hostnames: ['symbolab.com', 'www.symbolab.com'],
     defaultHeight: 600,
-    iconName: 'SiSymbolab',
+    icon: SiSymbolab,
   },
   {
     type: 'stepik',
@@ -826,7 +848,6 @@ export const EMBED_PROVIDERS = [
     hostnames: ['stepik.org'],
     defaultHeight: 600,
     requiresEmbedUrl: true,
-    iconName: 'SiStepik',
   },
   {
     type: 'overleaf',
@@ -834,7 +855,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.overleaf.com/read/...',
     hostnames: ['overleaf.com', 'www.overleaf.com'],
     defaultHeight: 640,
-    iconName: 'SiOverleaf',
+    icon: SiOverleaf,
   },
   {
     type: 'molview',
@@ -851,7 +872,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['google.com', 'www.google.com', 'maps.google.com'],
     defaultHeight: 480,
     requiresEmbedUrl: true,
-    iconName: 'SiGooglemaps',
+    icon: SiGooglemaps,
   },
   {
     type: 'chemtube3d',
@@ -868,7 +889,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://notebooklm.google.com/...',
     hostnames: ['notebooklm.google.com'],
     defaultHeight: 560,
-    iconName: 'SiGoogle',
+    icon: SiGoogle,
   },
   {
     type: 'hyperbeam',
@@ -883,7 +904,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://discord.com/invite/...',
     hostnames: ['discord.com', 'discord.gg'],
     defaultHeight: 420,
-    iconName: 'SiDiscord',
+    icon: SiDiscord,
   },
   // NEW ↓
   {
@@ -892,7 +913,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://t.me/channel/123',
     hostnames: ['t.me'],
     defaultHeight: 400,
-    iconName: 'SiTelegram',
+    icon: SiTelegram,
   },
   {
     type: 'chatgpt',
@@ -900,7 +921,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://chatgpt.com/share/...',
     hostnames: ['chatgpt.com', 'openai.com'],
     defaultHeight: 560,
-    iconName: 'SiOpenai',
   },
   {
     type: 'padlet',
@@ -908,7 +928,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://padlet.com/user/board',
     hostnames: ['padlet.com'],
     defaultHeight: 560,
-    iconName: 'SiPadlet',
+    icon: SiPadlet,
   },
   {
     type: 'flip',
@@ -916,7 +936,6 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://flip.com/groups/...',
     hostnames: ['flip.com'],
     defaultHeight: 560,
-    iconName: 'SiFlip',
   },
 ] as const satisfies readonly EmbedProvider[]
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
-import * as Si from '@icons-pack/react-simple-icons'
+import { SiExcalidraw } from '@icons-pack/react-simple-icons'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import { buildExcalidrawSrc } from './embed-validators'
@@ -145,7 +145,7 @@ function ExcalidrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
         ) : (
           /* Placeholder shown during SSR or when URL is missing */
           <div className="flex h-full w-full flex-col items-center justify-center gap-3">
-            <Si.SiExcalidraw className="size-10 text-gray-300" />
+            <SiExcalidraw className="size-10 text-gray-300" />
             <p className="text-sm text-gray-400">
               {url ? `${tCommon('loading')} ${t('providers.excalidraw.label')}…` : t('noUrlConfigured')}
             </p>

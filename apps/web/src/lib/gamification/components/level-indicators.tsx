@@ -12,8 +12,7 @@
 import { useLocale, useTranslations } from 'next-intl'
 
 import type { UserGamificationProfile } from '@/types/gamification'
-import { useReducedMotion } from '@/hooks/use-reduced-motion'
-import { motion, useAnimationControls } from 'motion/react'
+import { motion, useAnimationControls, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { getLevelInfo } from '../levels'
 import { cn } from '@/lib/utils'

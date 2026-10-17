@@ -1,9 +1,4 @@
-import type { ClassValue } from 'cn'
-import { clsx, twMerge } from 'cn'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+export { cn } from 'cn'
 
 /**
  * Generates a UUID. Uses the Web Crypto API (available in all modern browsers

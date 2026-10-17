@@ -1,52 +1,50 @@
 'use client'
 
-import { createHighlighter } from 'shiki/bundle/web'
-
-import langPython from 'shiki/langs/python.mjs'
-import langJava from 'shiki/langs/java.mjs'
-import langKotlin from 'shiki/langs/kotlin.mjs'
-import langC from 'shiki/langs/c.mjs'
-import langCpp from 'shiki/langs/cpp.mjs'
-import langGo from 'shiki/langs/go.mjs'
-import langRust from 'shiki/langs/rust.mjs'
-import langBash from 'shiki/langs/bash.mjs'
-import langSql from 'shiki/langs/sql.mjs'
-import langYaml from 'shiki/langs/yaml.mjs'
-import langDiff from 'shiki/langs/diff.mjs'
+import { createHighlighterCore } from 'shiki/core'
+import type { HighlighterCore } from 'shiki/core'
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import { bundledLanguages } from 'shiki/langs'
 
 /**
  * Singleton Shiki highlighter shared by:
  * - MarkdownCodeBlock (renderer)
  * - tiptap-extension-code-block-shiki (editor)
  *
- * Uses shiki/bundle/web for optimal browser bundle size.
+ * Fine-grained core bundle with the JavaScript regex engine: one chunk per
+ * grammar and theme, no oniguruma wasm. The editor decorates only loaded
+ * languages, so the common set is loaded up front; `highlightCode` fetches
+ * anything else from `bundledLanguages` on demand.
  */
-let highlighterPromise: ReturnType<typeof createHighlighter> | null = null
-let resolvedHighlighter: Awaited<ReturnType<typeof createHighlighter>> | null = null
+const PRELOADED_LANGS = [
+  'html',
+  'css',
+  'javascript',
+  'typescript',
+  'markdown',
+  'json',
+  'python',
+  'java',
+  'kotlin',
+  'c',
+  'cpp',
+  'go',
+  'rust',
+  'bash',
+  'sql',
+  'yaml',
+  'diff',
+] as const
+
+let highlighterPromise: Promise<HighlighterCore> | null = null
+let resolvedHighlighter: HighlighterCore | null = null
 
 export const getHighlighter = () => {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ['github-dark', 'github-light'],
-      langs: [
-        'html',
-        'css',
-        'javascript',
-        'typescript',
-        'markdown',
-        'json',
-        langPython,
-        langJava,
-        langKotlin,
-        langC,
-        langCpp,
-        langGo,
-        langRust,
-        langBash,
-        langSql,
-        langYaml,
-        langDiff,
-      ],
+    highlighterPromise = createHighlighterCore({
+      themes: [import('shiki/themes/github-dark.mjs'), import('shiki/themes/github-light.mjs')],
+      langs: PRELOADED_LANGS.map(lang => bundledLanguages[lang]),
+      // forgiving: an exotic fence language with an unsupported pattern degrades, it does not break the editor.
+      engine: createJavaScriptRegexEngine({ forgiving: true }),
     }).then(highlighter => {
       resolvedHighlighter = highlighter
       return highlighter
@@ -64,10 +62,13 @@ export const getResolvedHighlighter = () => resolvedHighlighter
 export async function highlightCode(code: string, lang: string): Promise<string> {
   const highlighter = await getHighlighter()
 
-  const loaded = highlighter.getLoadedLanguages()
-  if (!loaded.includes(lang)) {
+  if (!highlighter.getLoadedLanguages().includes(lang)) {
+    const grammar = Object.hasOwn(bundledLanguages, lang)
+      ? bundledLanguages[lang as keyof typeof bundledLanguages]
+      : null
     try {
-      await highlighter.loadLanguage(lang as Parameters<typeof highlighter.loadLanguage>[0])
+      if (!grammar) throw new Error(`unknown language: ${lang}`)
+      await highlighter.loadLanguage(grammar)
     } catch {
       lang = 'text'
     }
@@ -82,7 +83,6 @@ export async function highlightCode(code: string, lang: string): Promise<string>
     defaultColor: false,
   })
 }
-
 /** Language display names for known identifiers. */
 const LANG_DISPLAY: Record<string, string> = {
   js: 'JavaScript',

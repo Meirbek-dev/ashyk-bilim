@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 const emptySubscribe = () => () => {}
 const getClientSnapshot = () => true
 const getServerSnapshot = () => false
-import * as Si from '@icons-pack/react-simple-icons'
+import { SiTldraw } from '@icons-pack/react-simple-icons'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import type { EmbedBlockAttrs } from './EmbedBlock'
@@ -130,7 +130,7 @@ function TldrawNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
           />
         ) : (
           <div className="bg-muted/50 flex h-full w-full flex-col items-center justify-center gap-3">
-            <Si.SiTldraw className="size-10 text-gray-300" />
+            <SiTldraw className="size-10 text-gray-300" />
             <p className="text-sm text-gray-400">{loadingLabel}</p>
           </div>
         )}

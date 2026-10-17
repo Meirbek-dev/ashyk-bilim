@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, createElement } from 'react'
 import { ExternalLink, GripHorizontal, Pencil, Trash2 } from 'lucide-react'
-import * as Si from '@icons-pack/react-simple-icons'
 import { NodeViewWrapper } from '@tiptap/react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
@@ -17,12 +16,6 @@ const MAX_HEIGHT = 1600
 
 function clampHeight(value: number): number {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value))
-}
-
-function getSimpleIcon(iconName?: string): AppIcon | null {
-  if (!iconName) return null
-  const iconCandidate = (Si as Record<string, unknown>)[iconName]
-  return typeof iconCandidate === 'function' ? (iconCandidate as AppIcon) : null
 }
 
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
@@ -104,7 +97,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     )
   }
 
-  const Icon = getSimpleIcon(provider.iconName)
+  const Icon = provider.icon ?? null
 
   return (
     <NodeViewWrapper className="embed-block-node-view my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>

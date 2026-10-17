@@ -1,5 +1,5 @@
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
+import { Placeholder } from '@tiptap/extensions'
 import Link from '@tiptap/extension-link'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from 'tiptap-markdown'

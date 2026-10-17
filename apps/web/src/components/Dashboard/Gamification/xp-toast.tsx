@@ -9,13 +9,12 @@
 
 'use client'
 
-import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { useReducedData } from '@/hooks/use-reduced-data'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Award } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 
 interface LevelUpCelebrationProps {
   newLevel: number

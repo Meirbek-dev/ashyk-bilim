@@ -50,29 +50,8 @@ function ChartContainer({
   const uniqueId = React.useId()
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, '')}`
 
+  // Client-only: recharts sizes the chart to this container itself (`responsive` + 100% CSS size), nothing to hydrate.
   const isMounted = React.useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = React.useState<{
-    width: number
-    height: number
-  } | null>(null)
-
-  React.useEffect(() => {
-    if (!isMounted || !containerRef.current) return
-
-    const observer = new ResizeObserver(entries => {
-      const entry = entries[0]
-      if (entry && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        })
-      }
-    })
-
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [isMounted])
 
   const chartContextValue = React.useMemo(() => ({ config }), [config])
 
@@ -83,7 +62,6 @@ function ChartContainer({
   return (
     <ChartContext.Provider value={chartContextValue}>
       <div
-        ref={containerRef}
         data-slot="chart"
         data-chart={chartId}
         className={cn(
@@ -93,19 +71,18 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        {dimensions ? (
-          <div style={{ width: dimensions.width, height: dimensions.height }}>
-            {React.Children.map(children, child => {
-              if (React.isValidElement(child)) {
-                return React.cloneElement(child as React.ReactElement<{ width?: number; height?: number }>, {
-                  width: dimensions.width,
-                  height: dimensions.height,
-                })
-              }
-              return child
-            })}
-          </div>
-        ) : null}
+        {React.Children.map(children, child =>
+          React.isValidElement(child)
+            ? React.cloneElement(
+                child as React.ReactElement<{ responsive?: boolean; width?: string; height?: string }>,
+                {
+                  responsive: true,
+                  width: '100%',
+                  height: '100%',
+                },
+              )
+            : child,
+        )}
       </div>
     </ChartContext.Provider>
   )

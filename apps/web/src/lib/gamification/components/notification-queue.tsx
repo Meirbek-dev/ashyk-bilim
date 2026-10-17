@@ -15,8 +15,7 @@
 
 'use client'
 
-import { useReducedMotion } from '@/hooks/use-reduced-motion'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { animations } from '../design-tokens'
 
