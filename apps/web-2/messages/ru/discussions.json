@@ -25,8 +25,8 @@
   "discussions_hidden": "Скрыт",
   "discussions_hidden_done": "Скрыто",
   "discussions_restored": "Возвращено",
-  "discussions_like": "Нравится",
-  "discussions_dislike": "Не нравится",
+  "discussions_like": "Нравится: {count}",
+  "discussions_dislike": "Не нравится: {count}",
   "discussions_unknown_author": "Удалённый пользователь",
   "discussions_post_deleted": "Сообщение удалено",
   "discussions_archived": "Курс в архиве: обсуждение открыто только для чтения."

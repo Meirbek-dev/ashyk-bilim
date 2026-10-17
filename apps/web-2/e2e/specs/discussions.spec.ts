@@ -213,12 +213,15 @@ test('B-DSC-08 the course author hides and restores a post; its owner cannot', a
   await expect(item.getByText(m.discussions_hidden({}, ru), { exact: true })).toHaveCount(0)
 })
 
+// The like button's name carries its count (label in name): «Нравится: 1».
+const likeName = new RegExp(`^${m.discussions_like({ count: '' }, ru)}`)
+
 test('B-DSC-09 like toggles with the counts the server answers', async ({ page, signInAs, course, post }) => {
   const made = await course()
   await post(made, 'Полезный пост.', 'teacher')
   await signInAs('student')
   await page.goto(tab(made))
-  const like = article(page, 'Полезный пост.').getByRole('button', { name: m.discussions_like({}, ru), exact: true })
+  const like = article(page, 'Полезный пост.').getByRole('button', { name: likeName })
   await clickUntil(like, () => expect(like).toHaveAttribute('aria-pressed', 'true', { timeout: 2000 }))
   await expect(like).toHaveText('1')
   await like.click()
@@ -242,7 +245,7 @@ test('B-DSC-10 writes update the list from their answers, not from a re-read', a
     await page.waitForTimeout(20_000)
     await route.fallback()
   })
-  const like = article(page, 'Пост для реакции.').getByRole('button', { name: m.discussions_like({}, ru), exact: true })
+  const like = article(page, 'Пост для реакции.').getByRole('button', { name: likeName })
   await clickUntil(like, () => expect(like).toHaveText('1', { timeout: 2000 }))
   const composer = page.getByRole('region', { name: m.discussions_new({}, ru) })
   await composer.getByRole('textbox').fill('Ещё один пост.')

@@ -42,9 +42,9 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
     <RouterLink
       to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
       params={{ courseId, activityId: cell.activity_id, submissionId: target }}
-      aria-label={m.grading_cell_link({ learner, activity })}
       className={linkVariants.text}
     >
+      <span className="sr-only">{m.grading_cell_link({ learner, activity })} </span>
       {content}
     </RouterLink>
   )

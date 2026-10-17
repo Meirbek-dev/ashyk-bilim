@@ -4,6 +4,7 @@ import { ThumbsDown, ThumbsUp } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import type { Discussion } from '#/shared/api/gen/types.gen'
 import { presentError } from '#/shared/i18n/errors'
+import { formatNumber } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
@@ -20,27 +21,25 @@ export function PostReactions({ item }: { item: Discussion }) {
     <>
       <Button
         variant="ghost"
-        aria-label={m.discussions_like()}
+        aria-label={m.discussions_like({ count: formatNumber(item.likes_count) })}
         aria-pressed={item.is_liked}
-
         onClick={() => like.mutate({ path })}
         disabled={like.isPending}
       >
         {like.isPending ? <Spinner data-icon="inline-start" /> : null}
         <ThumbsUp aria-hidden />
-        <span className="tabular-nums">{item.likes_count}</span>
+        <span className="tabular-nums">{formatNumber(item.likes_count)}</span>
       </Button>
       <Button
         variant="ghost"
-        aria-label={m.discussions_dislike()}
+        aria-label={m.discussions_dislike({ count: formatNumber(item.dislikes_count) })}
         aria-pressed={item.is_disliked}
-
         onClick={() => dislike.mutate({ path })}
         disabled={dislike.isPending}
       >
         {dislike.isPending ? <Spinner data-icon="inline-start" /> : null}
         <ThumbsDown aria-hidden />
-        <span className="tabular-nums">{item.dislikes_count}</span>
+        <span className="tabular-nums">{formatNumber(item.dislikes_count)}</span>
       </Button>
       {error ? <p className="w-full text-sm text-destructive">{presentError(error)}</p> : null}
     </>
