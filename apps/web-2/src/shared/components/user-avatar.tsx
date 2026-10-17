@@ -1,7 +1,7 @@
 import { contentUrl } from '#/shared/lib/content-url'
 import { Avatar, AvatarFallback, AvatarImage } from '#/shared/ui/avatar'
 
-const initials = (name: string) =>
+export const userInitials = (name: string) =>
   name
     .split(/\s+/)
     .filter(Boolean)
@@ -18,7 +18,7 @@ export function UserAvatar({ name, avatarKey }: { name: string; avatarKey?: stri
   return (
     <Avatar aria-hidden>
       {avatarKey ? <AvatarImage src={contentUrl(avatarKey)} alt="" referrerPolicy="no-referrer" /> : null}
-      <AvatarFallback>{initials(name)}</AvatarFallback>
+      <AvatarFallback>{userInitials(name)}</AvatarFallback>
     </Avatar>
   )
 }

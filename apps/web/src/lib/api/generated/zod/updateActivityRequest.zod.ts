@@ -72,6 +72,13 @@ export const UpdateActivityRequest = zod.object({
     .object({
       required: zod.boolean().optional().describe('Absent = required.'),
     })
+    .catchall(
+      zod
+        .unknown()
+        .describe(
+          'Any JSON value. Only where the value is opaque by protocol (AG-UI\n`state`, `forwardedProps`, tool parameter schemas, message metadata) -\nnever for data the server or the web interprets.',
+        ),
+    )
     .optional()
     .describe(
       '`activities.settings`.\n\nThe server reads `required` (progress: `false` makes the activity\noptional). Migrated legacy rows keep the legacy\nassessment settings they had (exam / code-challenge keys such as\n`time_limit`, `attempt_limit`, `kind`): kept as is, read by nobody.',

@@ -11,7 +11,7 @@ import { AccountMenu } from '#/shared/components/account-menu'
 import { IconButton } from '#/shared/components/icon-button'
 import { localeChoice } from '#/shared/components/locale-switch'
 import { useModeChoice } from '#/shared/components/mode-switch'
-import { UserAvatar } from '#/shared/components/user-avatar'
+import { UserAvatar, userInitials } from '#/shared/components/user-avatar'
 
 import { useWorkspaceChoice } from './workspace-switch'
 
@@ -35,7 +35,7 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
     <AccountMenu
       trigger={
         <IconButton
-          label={m.platform_profile_menu()}
+          label={`${m.platform_profile_menu()}: ${userInitials(session.user.display_name)}`}
           icon={<UserAvatar name={session.user.display_name} avatarKey={session.user.avatar_key} />}
         />
       }
