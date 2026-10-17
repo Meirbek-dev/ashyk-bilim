@@ -16,6 +16,6 @@ function LinkAnchor({ variant = 'text', children, ...props }: LinkAnchorProps) {
 
 /**
  * A route link that is text, a tab, a sidebar item or a bottom-bar item. A link that looks like a button is the
- * router's own `Link` with `className={buttonVariants({ variant })}` from `#/shared/ui/button`.
+ * router's own `Link` with `className={buttonVariants({ variant })}` from `./button-variants`.
  */
 export const Link = createLink(LinkAnchor)

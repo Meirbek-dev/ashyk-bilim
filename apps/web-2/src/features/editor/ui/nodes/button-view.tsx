@@ -3,7 +3,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { safeUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { linkHref } from '../../model/link'
 import { justify, stringAttr } from './align'

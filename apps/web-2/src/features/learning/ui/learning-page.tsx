@@ -2,10 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch, Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/components/data-list'
 import { ListState } from '#/shared/components/list-state'
 import { ListPage } from '#/shared/components/templates/list-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { orderRuns, runState } from '../model/learning'
 import { trailOptions } from '../queries'
@@ -41,9 +40,13 @@ export function LearningPage() {
         onResetFilters={() => void navigate({ to: '/learning', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataList items={shown} getKey={run => run.id}>
-          {run => <RunItem run={run} />}
-        </DataList>
+        <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
+          {shown.map(run => (
+            <li key={run.id}>
+              <RunItem run={run} />
+            </li>
+          ))}
+        </ul>
       </ListState>
       <MyCertificates />
     </ListPage>

@@ -8,7 +8,7 @@ import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { formatDate } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { certificatesOptions } from '../queries'
 

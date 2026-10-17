@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 type NeighbourProps = { courseId: CourseId; prev: ActivityState | null; next: ActivityState | null }
 

@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 
 type DetailPageProps = {
+  /** A wide picture above the header: a course or collection cover. */
+  cover?: ReactNode
   title: string
   /** One line under the title: author, dates, counts. */
   meta?: ReactNode
@@ -16,14 +18,15 @@ type DetailPageProps = {
   children: ReactNode
 }
 
-/** An object's page (DESIGN 6): title, meta, status, primary action, tab links, then the tab's route. */
-export function DetailPage({ title, meta, status, primaryAction, tabs, children }: DetailPageProps) {
+/** An object's page (DESIGN 6): cover, title, meta, status, primary action, tab links, then the tab's route. */
+export function DetailPage({ cover, title, meta, status, primaryAction, tabs, children }: DetailPageProps) {
   return (
     <section className="@container flex flex-col gap-gutter">
+      {cover}
       <header className="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="min-w-0 text-2xl font-semibold wrap-anywhere">{title}</h1>
+            <h1 className={`min-w-0 font-semibold wrap-anywhere ${cover ? 'text-display' : 'text-2xl'}`}>{title}</h1>
             {status}
           </div>
           {meta ? <p className="text-sm text-muted-foreground">{meta}</p> : null}

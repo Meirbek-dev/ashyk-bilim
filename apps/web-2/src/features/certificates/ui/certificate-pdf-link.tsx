@@ -3,7 +3,7 @@ import { Download } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import { Anchor } from '#/shared/components/anchor'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { certificatePdfHref } from '../model/certificates'
 

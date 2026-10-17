@@ -13,7 +13,7 @@ export function AttentionSection({ items }: { items: ReturnType<typeof attention
   if (items.length === 0) return null
   return (
     <HomeSection title={m.home_attention_title()}>
-      <DataList items={items} getKey={item => item.id}>
+      <DataList variant="rows" items={items} getKey={item => item.id}>
         {item => {
           const kind = attentionKinds[item.kind]
           return (

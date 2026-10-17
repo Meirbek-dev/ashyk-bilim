@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/inter/wght-italic.css';
+@import '@fontsource-variable/geologica/wght.css';
 @import '@fontsource-variable/geist-mono/wght.css';
 @import './tokens.css';
 
@@ -50,5 +51,12 @@ body {
   [data-slot='toast'][data-starting-style],
   [data-slot='toast'][data-ending-style]:not([data-limited], [data-swipe-direction]) {
     transform: translateY(-150%);
+  }
+}
+
+/* A thicker bar for a page's main progress (home, course): the stock track is 4 px. */
+@utility progress-lg {
+  & [data-slot='progress-track'] {
+    height: 0.5rem;
   }
 }

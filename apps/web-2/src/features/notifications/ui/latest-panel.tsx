@@ -3,7 +3,8 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
-import { Button, buttonVariants } from '#/shared/ui/button'
+import { Button } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { PopoverHeader, PopoverTitle } from '#/shared/ui/popover'
 
 import { LATEST } from '../model/notifications'

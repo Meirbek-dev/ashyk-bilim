@@ -7,7 +7,7 @@ import type { SubmissionStatus, FileAttemptStatus, UserSummary } from '#/shared/
 import { StatusBadge } from '#/shared/components/status-badge'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import type { Work } from '../queries'
 import { scoreText, statusMeta } from './labels'

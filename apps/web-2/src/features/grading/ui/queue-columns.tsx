@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { Checkbox } from '#/shared/ui/checkbox'
 
 import type { QueueRow } from '../model/queue'

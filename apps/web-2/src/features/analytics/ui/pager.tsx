@@ -2,7 +2,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { pageCount } from '../model/analytics'
 import { PAGE_SIZE } from '../model/filters'

@@ -4,7 +4,7 @@ import { Download } from 'lucide-react'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { Anchor } from '#/shared/components/anchor'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 /** CSV downloads as plain links (the browser saves the file); only with the `analytics.export` capability. */
 export function ExportLinks({ links }: { links: readonly { href: string; label: string }[] }) {

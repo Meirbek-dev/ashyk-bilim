@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 import type { ActivityDetail, ActivityType } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { activityOptions } from '../curriculum-queries'
 import { PublishSwitch } from './publish-switch'

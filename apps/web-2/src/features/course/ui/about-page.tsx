@@ -12,7 +12,7 @@ import { ContributorApplication } from './contributor-application'
 import { GuestOutline } from './guest-outline'
 import { LearnerOutline } from './learner-outline'
 
-/** The `about` tab: cover, description (markdown), what you will learn, progress and syllabus, co-authorship. */
+/** The `about` tab: description (markdown), what you will learn, progress and syllabus, co-authorship. */
 export function AboutPage() {
   const { courseId } = useParams({ from: '/_public/courses/$courseId/about' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
@@ -21,13 +21,6 @@ export function AboutPage() {
   const description = course.description || course.about
   return (
     <div className="flex flex-col gap-8">
-      {course.thumbnail_key ? (
-        <img
-          src={`/content/${course.thumbnail_key}`}
-          alt=""
-          className="aspect-video w-full max-w-xl rounded-lg border object-cover"
-        />
-      ) : null}
       {description ? (
         <div className="max-w-prose">
           <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>

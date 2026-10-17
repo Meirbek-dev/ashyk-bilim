@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 /** An unknown, malformed or foreign activity id in the studio: the API answers 404 for all of them. */
 export function ActivityNotFound() {

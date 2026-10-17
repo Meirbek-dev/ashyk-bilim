@@ -19,8 +19,14 @@ export function AchievementsPage() {
       meta={m.achievements_summary({ level: profile.level, xp: formatNumber(profile.total_xp) })}
     >
       <ProgressSection />
-      <LeaderboardSection rank={data.user_rank} />
-      <ActivityFeed />
+      <div className="grid gap-12 pt-4 @4xl:grid-cols-5 @4xl:gap-8">
+        <div className="@4xl:col-span-3">
+          <LeaderboardSection rank={data.user_rank} />
+        </div>
+        <div className="@4xl:col-span-2">
+          <ActivityFeed />
+        </div>
+      </div>
     </DetailPage>
   )
 }

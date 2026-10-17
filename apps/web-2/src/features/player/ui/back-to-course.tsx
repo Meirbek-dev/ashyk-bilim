@@ -3,7 +3,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 /** The focus top bar's way out: the course page. */
 export function BackToCourse({ courseId }: { courseId: CourseId }) {

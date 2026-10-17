@@ -53,12 +53,15 @@ function render(learning_streak: number, last_learning_at_unix: number) {
   )
 }
 
-test('B-ACH-08 the /home line links a live learning streak to /achievements and is empty without one', async () => {
+test('B-ACH-08 the /home pills link the level and a live learning streak to /achievements', async () => {
   const now = Math.floor(Date.now() / 1000)
   const live = await render(3, now - 60)
   const text = m.achievements_streak_badge({ days: m.achievements_days({ count: 3 }) })
   await expect.element(live.getByRole('link', { name: text })).toHaveAttribute('href', '/achievements')
+  const level = m.achievements_summary({ level: 1, xp: '0' })
+  await expect.element(live.getByRole('link', { name: level })).toHaveAttribute('href', '/achievements')
 
   const broken = await render(3, now - 3 * 86_400)
-  await expect.element(broken.getByRole('link')).not.toBeInTheDocument()
+  await expect.element(broken.getByRole('link', { name: level })).toBeInTheDocument()
+  await expect.element(broken.getByRole('link', { name: text })).not.toBeInTheDocument()
 })

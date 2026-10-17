@@ -2,7 +2,7 @@ import { Link as RouterLink, useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, ItemAnswer } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { ATTEMPT_ROUTE } from './attempt-frame'
 import { ChoiceItem } from './choice-item'

@@ -4,11 +4,12 @@ import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
+import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { authorNames } from '../model/course'
 import { contributorsOptions, courseOptions } from '../queries'
@@ -21,7 +22,7 @@ const TABS = [
 ] as const
 
 /**
- * The course page (spec 5.4): title, authors, one primary action, then the about / updates / discussions tabs.
+ * The course page (spec 5.4): cover, title, authors, one primary action, then the about / updates / discussions tabs.
  * `ai` is the AI side-sheet button the route mounts next to the action (slice 6.3).
  */
 export function CoursePage({ ai }: { ai?: ReactNode }) {
@@ -36,6 +37,14 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
   ]
   return (
     <DetailPage
+      cover={
+        <CourseCover
+          seed={course.id}
+          imageKey={course.thumbnail_key}
+          shape="banner"
+          className="h-32 w-full rounded-xl border @2xl:h-48"
+        />
+      }
       title={course.name}
       meta={meta.filter(Boolean).join(' · ')}
       status={course.archived_at_unix ? <StatusBadge tone="warning">{m.course_archived()}</StatusBadge> : null}

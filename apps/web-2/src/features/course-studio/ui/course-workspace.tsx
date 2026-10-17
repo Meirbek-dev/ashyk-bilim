@@ -6,7 +6,7 @@ import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { can, courseStatus } from '../model/course'
 import { courseOptions } from '../queries'

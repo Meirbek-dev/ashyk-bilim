@@ -1,18 +1,21 @@
 # Design system (apps/web-2)
 
-Tokens: `apps/web-2/src/styles/tokens.css`. Themes:
-`apps/web-2/public/themes/<slug>.css` + `manifest.json`. Every rule below is meant to be checked by a gate, a lint
-rule or the reference slice; a rule nobody can check does not belong here.
+Tokens: `apps/web-2/src/styles/tokens.css`. Themes: `apps/web-2/public/themes/<slug>.css` + `manifest.json`. Every
+rule below is checked by a gate, a lint rule or the reference slice; a rule nobody can check does not belong here.
 
 ## 1. Principles
 
-1. A calm working tool for studying. The screen answers one question (5.1) and shows one next step.
-2. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
-3. Color carries meaning (status, activity type, action) and never decorates. The meaning always has a second
-   channel too: a label or an icon.
-4. Motion only shows what changed after a user action, and lasts at most 200 ms.
-5. One app shell plus one focus layout. Screens are built from the 6 templates (section 6) and nothing else.
-6. Works from 390 px. WCAG 2.2 AA in all 63 themes, both modes (G-15).
+1. A study tool people look forward to opening. A screen answers one question (5.1), shows one next step and the
+   learner's progress (rings, XP, streaks) where they act.
+2. Identity "Ashyq" (open): porcelain / steppe-night grounds, Yasawi turquoise for action, lapis, saffron, madder
+   and sage (Kazakh ceramics and felt) for data and covers. Its one loud element is the course ornament
+   (`CourseCover`: Truchet arcs from the course id, stitched like a syrmak rug) wherever a course has no picture.
+3. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
+4. Color carries meaning (status, activity type, action, reward) and never decorates, except the ornament. The
+   meaning always has a second channel too: a label or an icon.
+5. Motion only shows what changed after a user action, and lasts at most 200 ms.
+6. One app shell plus one focus layout. Screens are built from the 6 templates (section 6) and nothing else.
+7. Works from 390 px. WCAG 2.2 AA in all 63 themes, both modes (G-15).
 
 ## 2. Tokens
 
@@ -30,11 +33,12 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
 | `accent` / `accent-foreground`                  | interactive hover or highlight             | hovered or focused menu and list rows only                |
 | `destructive`                                   | danger, irreversible actions, errors       | delete buttons, field errors, failed status               |
 | `success` / `warning` / `info`                  | status (derived, never set by themes)      | graded/passed, due soon/late, neutral notices             |
+| `reward`                                        | XP, levels, streaks (derived)              | level ring, XP amounts, streak flame, top-3 ranks         |
 | `activity-<type>`                               | activity type (derived)                    | the type icon and type label (table in section 3)         |
 | `border`                                        | dividers                                   | table rows, separators, card outline                      |
 | `input`                                         | form control boundary, >= 3:1 on background | input, select, checkbox and switch outlines              |
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
-| `chart-1..5`                                    | data series                                | charts only, in slot order                                |
+| `chart-1..5`                                    | data series                                | charts in slot order; the course ornament's field and ink |
 | `sidebar-*`                                     | the shell's navigation column              | the app shell sidebar and bottom bar only                 |
 
 - A fill always comes with its own ink: `bg-X` goes with `text-X-foreground`. Status and activity tokens are
@@ -42,12 +46,10 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
   background, on card and on the `/10` tint).
 - Primary is never used as text color (`text-primary` is forbidden; it falls below 4.5:1 in about 40 themes). Links
   use the current text color with `underline underline-offset-4`.
-- Non-color tokens: `--radius`, `--shadow-x|y|blur|spread|color`, `--density-*`, `--focus-ring-*` and
-  `--duration-*`.
-- Themes override only the "theme" group in tokens.css: 31 colors, `--radius` and the shadow parameters.
-  Themes never set fonts, spacing or tracking, and never set the derived tokens. Mode comes from
-  `html[data-mode="light"|"dark"]`; with no attribute the system setting applies. Each color is a `light-dark()`
-  pair.
+- Non-color tokens: `--radius`, `--shadow-x|y|blur|spread|color`, `--density-*`, `--focus-ring-*`, `--duration-*`.
+- Themes override only the "theme" group in tokens.css: 31 colors, `--radius` and the shadow parameters; never
+  fonts, spacing, tracking or the derived tokens. Mode comes from `html[data-mode="light"|"dark"]`; with no
+  attribute the system setting applies. Each color is a `light-dark()` pair.
 - Hex, `oklch()` and `dark:` only in `src/styles/`, `public/themes/` and the stock kit (G-11); the kit's `dark:` is one
   `@custom-variant` in globals.css: `data-mode="dark"`, or the system setting when it is absent or `system`.
 
@@ -80,15 +82,16 @@ title, a row or a card background.
 
 - Sans: `@fontsource-variable/inter@5.3.0` (OFL-1.1), `wght.css` + `wght-italic.css`: 18/18 Kazakh letters
   (`cyrillic` + `cyrillic-ext`) in roman and italic, `tnum` present; Onest and Golos Text lack the italic.
-- Mono: `@fontsource-variable/geist-mono@5.3.0` (OFL-1.1), `wght.css`: 18/18 Kazakh letters. JetBrains Mono was
-  rejected because its fontsource subsets are missing 12 of the 18 Kazakh letters.
+- Heading (`font-heading`, every `h1`-`h3` by base style, big numbers): `@fontsource-variable/geologica@5.3.0`
+  (OFL-1.1), 18/18 Kazakh letters; Unbounded and Manrope were rejected (no қ, ң).
+- Mono: `@fontsource-variable/geist-mono@5.3.0` (OFL-1.1): 18/18 Kazakh letters (JetBrains Mono lacks 12).
 - Weights: `font-normal` (body), `font-medium` (labels, buttons, table headers), `font-semibold` (headings).
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
-- Text is never all-caps and never letter-spaced. Text width is at most `max-w-prose` for reading and 80ch for
-  forms.
+- Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.
 
 | Utility     | Size / line height | Use                                                              |
 | ----------- | ------------------ | ---------------------------------------------------------------- |
+| `text-display` | 32-48 / 1.08    | hero `h1` (home, landing, auth, a page with a cover), level number |
 | `text-2xl`  | 28 / 36            | page title (`h1`), one per page; content `h1`                    |
 | `text-xl`   | 22 / 28            | section title (`h2`); content `h2`                               |
 | `text-lg`   | 18 / 26            | focus-layout context title, dialog title; content `h3`           |
@@ -102,10 +105,9 @@ title, a row or a card background.
   `w-[...]`) are forbidden (G-11).
 - Rhythm: `gap-1`/`gap-2` inside a control group, `gap-4` between fields, `gap-gutter` between blocks, and
   `gap-8`/`gap-12` between page sections. Page padding is `px-4` up to `md` and `px-6` above it.
-- Radius: `rounded-sm` (badges, checkbox), `rounded-md` (inputs, buttons), `rounded-lg` (cards, popovers),
-  `rounded-xl` (dialogs, sheets) and `rounded-full` (avatars, pills). These are multiples of the theme's
-  `--radius`.
-- Shadow: none on in-flow content. Use `shadow-xs` for raised controls, `shadow-md` for menus and popovers, and
+- Radius (multiples of the theme's `--radius`): `rounded-sm` badges, checkbox; `rounded-md` inputs, buttons;
+  `rounded-lg` popovers, icon tiles; `rounded-xl` cards, panels, dialogs, sheets; `rounded-full` avatars, pills.
+- Shadow: `shadow-xs` on cards and raised controls (nothing else in flow), `shadow-md` for menus and popovers, and
   `shadow-lg` for dialogs and sheets. `shadow-sm` and `shadow-xl` exist only for kit primitives.
 - Density: comfortable (default) for learning and reading; compact for teacher and admin tables. The layout or
   template sets `data-density="compact"` on its region. Features never pass density classes. Our composites use
@@ -114,12 +116,12 @@ title, a row or a card background.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with the logo, space switcher (only
-when the user has more than one space), search / `Ctrl+K`, notifications and the profile menu. Below it, a
-sidebar `w-60` holding the current space's navigation, then the content. At 390 px: the top bar keeps the logo,
-search icon, notifications and profile, the space switcher moves into the profile menu, and the navigation
-becomes a bottom bar `h-14` with at most 5 items, each an icon plus a label. Guests get the same shell without
-the sidebar or bottom bar. Content sits in `mx-auto w-full max-w-6xl`.
+**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with `BrandMark` + name, space switcher
+(only with more than one space), a search field with its `Ctrl+K`, notifications and the profile menu. Below it, a
+sidebar `w-60` (current item: tint plus a primary bar) holding the current space's navigation, then the content. At
+390 px: mark only, search icon, notifications and profile; the space switcher moves into the profile menu, and the
+navigation becomes a bottom bar `h-14` of at most 5 icon + label items (current: a pill behind the icon). Guests
+get the same shell without navigation. Content sits in `mx-auto w-full max-w-6xl`.
 
 **Focus layout** (5.2): no navigation. Top bar: back button, context title (`text-lg`, truncated), save status,
 then actions on the right. Used by the activity player, attempt, activity editor and single-submission review.
@@ -141,12 +143,10 @@ then actions on the right. Used by the activity player, attempt, activity editor
 
 Every data region renders exactly one of the kit's four states:
 
-1. Loading: a skeleton of the final layout (`bg-muted`, static). Page loads show no spinner. `animate-spin` is
-   used only inside a pending button.
+1. Loading: a skeleton of the final layout (`bg-muted`, static); no page spinner, `animate-spin` only in a button.
 2. Empty: one sentence on what will appear here, plus the create action when the user is allowed to create.
 3. No matches: shown when a filter is in the URL. One sentence plus a "Reset filters" action.
-4. Error / no access: the `ApiError` message from the code map plus "Retry"; a 403 is shown in place on the
-   same URL.
+4. Error / no access: the `ApiError` message from the code map plus "Retry"; a 403 is shown in place, same URL.
 
 ## 8. Kit: shadcn base-nova + our composites
 
@@ -155,8 +155,9 @@ Every data region renders exactly one of the kit's four states:
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status
   tones, link looks, a dialog width) is a variant there; features pass layout classes only, never restyle.
-- Features use stock props (`variant`, `size`, `render`); a route link that looks like a button is the router
-  `Link` with `className={buttonVariants({ variant })}`. Pending: `disabled` + `<Spinner data-icon="inline-start" />`.
+- Features use stock props (`variant`, `size`, `render`); a route link that looks like a button is the router `Link`
+  with `className={buttonVariants({ variant })}` from `shared/components/button-variants` (merged by `cn`). Pending:
+  `disabled` + `<Spinner data-icon="inline-start" />`.
 
 ## 9. Component rules
 
@@ -167,9 +168,8 @@ Every data region renders exactly one of the kit's four states:
 - Create = `FormDialog`, then navigate to the entity's workspace. Edit = a page. Each object has one edit place
   and one review place.
 - Tabs are route links (`<Link>`); the label and the URL segment are the same word. No tabs in component state.
-- Icons are lucide named imports, `size-4` next to `text-sm` and `size-5` next to `text-base`. An icon appears
-  only when it carries meaning (type, status, a known action). Icon-only buttons have an `aria-label` and a
-  tooltip.
+- Icons are lucide named imports, `size-4` next to `text-sm`, `size-5` next to `text-base`, only when they carry
+  meaning (type, status, a known action). Icon-only buttons have an `aria-label` and a tooltip.
 - A toast appears only from a mutation's `onSuccess`, in the past tense of the button's verb. Errors stay on the
   page: inline, under the field or in the region.
 - Status badges come from an exhaustive `Record<Status, {label, token}>`, never from ad-hoc classes.
@@ -193,8 +193,8 @@ Every data region renders exactly one of the kit's four states:
 
 ## 12. Never
 
-- gradients, glass/blur surfaces, decorative icons (`Sparkles`, `Rocket`, `Flame`, `Zap`, `PartyPopper`, `Wand2`)
+- gradients, glass/blur, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
 - palette classes, `dark:`, hex, inline `style`, arbitrary values in our code (G-11); `text-primary` as text color
 - cards inside cards, a second primary button, a delete without confirmation; color as the only signal
-- all-caps labels, letter-spacing, `font-bold`, sizes outside the six above; animations > 200 ms, hover scale or lift
+- all-caps labels, letter-spacing, `font-bold`, sizes outside the seven above; animations > 200 ms, hover scale or lift
 - horizontal scroll at 390 px; "desktop only" outside the two editors; tabs in state; edit forms in dialogs

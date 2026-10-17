@@ -8,7 +8,7 @@ import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { gradebookCsvHref } from '../model/exports'
 import { gradebookColumns, gradebookRows } from '../model/gradebook'

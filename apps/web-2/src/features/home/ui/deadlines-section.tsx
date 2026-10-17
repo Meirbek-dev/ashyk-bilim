@@ -22,7 +22,7 @@ export function DeadlinesSection({ deadlines, nowUnix }: { deadlines: readonly A
       {days.map(day => (
         <div key={day.day} className="flex flex-col gap-2">
           <p className="text-sm font-medium text-muted-foreground">{dayTitle(day)}</p>
-          <DataList items={day.deadlines} getKey={deadline => deadline.activity_id}>
+          <DataList variant="rows" items={day.deadlines} getKey={deadline => deadline.activity_id}>
             {deadline => <DeadlineItem deadline={deadline} />}
           </DataList>
         </div>

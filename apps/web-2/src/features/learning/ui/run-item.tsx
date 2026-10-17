@@ -1,11 +1,12 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { CourseCover } from '#/shared/components/course-cover'
 import { Progress } from '#/shared/components/progress'
 import type { TrailRun } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { nextActivity, runState, type RunState } from '../model/learning'
 
@@ -15,51 +16,58 @@ export const runStateMeta = {
   completed: { label: m.learning_state_completed, tone: 'success', action: m.learning_action_open },
 } as const satisfies Record<RunState, { label: () => string; tone: string; action: () => string }>
 
-/** One started course: name, state, the server's progress and the way back in (the next activity, else the course). */
+/** One started course as a card: cover, state, name, the server's progress and the way back in (the next activity, else the course). */
 export function RunItem({ run }: { run: TrailRun }) {
   const state = runStateMeta[runState(run)]
   const next = nextActivity(run)
   const percent = Math.round(run.progress_pct ?? 0)
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="min-w-0 text-lg font-medium wrap-anywhere">
+    <article className="relative flex h-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
+      <CourseCover
+        seed={run.course_id}
+        imageKey={run.course.thumbnail_key}
+        className="aspect-3/1 w-full @xl:aspect-2/1"
+      />
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge tone={state.tone}>{state.label()}</StatusBadge>
+          {run.course.archived_at_unix ? <StatusBadge tone="neutral">{m.learning_archived()}</StatusBadge> : null}
+        </div>
+        <h2 className="min-w-0 text-lg font-semibold wrap-anywhere">
           <Link to="/courses/$courseId" params={{ courseId: run.course_id }}>
             {run.course.name}
           </Link>
         </h2>
-        <StatusBadge tone={state.tone}>{state.label()}</StatusBadge>
-        {run.course.archived_at_unix ? <StatusBadge tone="neutral">{m.learning_archived()}</StatusBadge> : null}
-      </div>
-      {run.course_total_steps === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.learning_no_activities()}</p>
-      ) : (
-        <div className="flex max-w-md items-center gap-3">
-          <Progress aria-hidden value={percent} className="flex-1" />
-          <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-            {m.learning_progress({ percent })}
-          </span>
-        </div>
-      )}
-      <div className="mt-2">
-        {next ? (
-          <RouterLink
-            to="/learn/$courseId/$activityId"
-            params={{ courseId: run.course_id, activityId: next }}
-            className={buttonVariants({ variant: 'outline' })}
-          >
-            {state.action()}
-          </RouterLink>
+        {run.course_total_steps === 0 ? (
+          <p className="text-sm text-muted-foreground">{m.learning_no_activities()}</p>
         ) : (
-          <RouterLink
-            to="/courses/$courseId"
-            params={{ courseId: run.course_id }}
-            className={buttonVariants({ variant: 'outline' })}
-          >
-            {state.action()}
-          </RouterLink>
+          <div className="flex items-center gap-3">
+            <Progress aria-hidden value={percent} className="flex-1" />
+            <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+              {m.learning_progress({ percent })}
+            </span>
+          </div>
         )}
+        <div className="mt-auto pt-2">
+          {next ? (
+            <RouterLink
+              to="/learn/$courseId/$activityId"
+              params={{ courseId: run.course_id, activityId: next }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              {state.action()}
+            </RouterLink>
+          ) : (
+            <RouterLink
+              to="/courses/$courseId"
+              params={{ courseId: run.course_id }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              {state.action()}
+            </RouterLink>
+          )}
+        </div>
       </div>
-    </>
+    </article>
   )
 }

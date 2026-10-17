@@ -32,15 +32,35 @@ export const collectionVisibility = (collection: { public: boolean }): Collectio
  * no row in DESIGN 3: it borrows the page token with its own icon.
  */
 export const activityTypeMeta = {
-  dynamic: { icon: NotebookText, label: m.activity_type_dynamic, ink: 'text-activity-page' },
-  video: { icon: Video, label: m.activity_type_video, ink: 'text-activity-video' },
-  document: { icon: FileText, label: m.activity_type_document, ink: 'text-activity-document' },
-  file_submission: { icon: FileUp, label: m.activity_type_file_submission, ink: 'text-activity-file-submission' },
-  quiz: { icon: ListChecks, label: m.activity_type_quiz, ink: 'text-activity-quiz' },
-  exam: { icon: ClipboardCheck, label: m.activity_type_exam, ink: 'text-activity-exam' },
-  code_challenge: { icon: CodeXml, label: m.activity_type_code_challenge, ink: 'text-activity-code' },
-  custom: { icon: Puzzle, label: m.activity_type_custom, ink: 'text-activity-page' },
-} satisfies Record<ActivityType, { icon: LucideIcon; label: () => string; ink: string }>
+  dynamic: {
+    icon: NotebookText,
+    label: m.activity_type_dynamic,
+    ink: 'text-activity-page',
+    tint: 'bg-activity-page/10',
+  },
+  video: { icon: Video, label: m.activity_type_video, ink: 'text-activity-video', tint: 'bg-activity-video/10' },
+  document: {
+    icon: FileText,
+    label: m.activity_type_document,
+    ink: 'text-activity-document',
+    tint: 'bg-activity-document/10',
+  },
+  file_submission: {
+    icon: FileUp,
+    label: m.activity_type_file_submission,
+    ink: 'text-activity-file-submission',
+    tint: 'bg-activity-file-submission/10',
+  },
+  quiz: { icon: ListChecks, label: m.activity_type_quiz, ink: 'text-activity-quiz', tint: 'bg-activity-quiz/10' },
+  exam: { icon: ClipboardCheck, label: m.activity_type_exam, ink: 'text-activity-exam', tint: 'bg-activity-exam/10' },
+  code_challenge: {
+    icon: CodeXml,
+    label: m.activity_type_code_challenge,
+    ink: 'text-activity-code',
+    tint: 'bg-activity-code/10',
+  },
+  custom: { icon: Puzzle, label: m.activity_type_custom, ink: 'text-activity-page', tint: 'bg-activity-page/10' },
+} satisfies Record<ActivityType, { icon: LucideIcon; label: () => string; ink: string; tint: string }>
 
 const isActivityType = (value: string): value is ActivityType => Object.hasOwn(activityTypeMeta, value)
 

@@ -3,7 +3,7 @@ import { useParams, useSearch, Link as RouterLink } from '@tanstack/react-router
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { Composer } from './composer'
 import { PostList } from './post-list'

@@ -2,7 +2,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { ATTEMPT_PATH } from './attempt-frame'
 

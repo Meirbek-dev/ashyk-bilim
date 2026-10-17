@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import type { AtRiskLearnerRow, CourseId, UserId } from '#/shared/api/gen/types.gen'
 import { SheetPanel } from '#/shared/components/sheet-panel'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/ui/button'
+import { buttonVariants } from '#/shared/components/button-variants'
 
 import { recommendedActionLabels, riskBreakdown, riskReasonLabels, whyNowLabels } from '../model/signals'
 import { interventionsOptions } from '../queries'
