@@ -1,6 +1,7 @@
 import { Placeholder } from '@tiptap/extensions'
 import { Markdown } from '@tiptap/markdown'
 import { EditorContent, useEditor } from '@tiptap/react'
+import katexCss from 'katex/dist/katex.min.css?url'
 import { useEffect } from 'react'
 
 import { markdownSchema } from '../model/schema'
@@ -42,6 +43,8 @@ export function MarkdownEditor({ value, onChange, label, placeholder = '' }: Mar
   return (
     <div className="flex flex-col gap-2">
       <link rel="stylesheet" href={proseCss} precedence="ab-prose" />
+      {/* Mathematics renders formulas with KaTeX inside the editor: without its stylesheet both copies show. */}
+      <link rel="stylesheet" href={katexCss} precedence="ab-katex" />
       {editor ? <MarkdownToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </div>

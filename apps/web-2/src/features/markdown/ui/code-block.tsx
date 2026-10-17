@@ -12,7 +12,7 @@ type CodeBlockProps = { code: string; language?: string | undefined }
 
 /**
  * A fenced code block: plain `<pre>` first, highlighted once its grammar has loaded (shiki, lazy).
- * Shiki's dual-theme colors are CSS variables; markdown.css picks the one of the current mode.
+ * Shiki's dual-theme colors are CSS variables; prose.css picks the one of the current mode (light-dark()).
  */
 export function CodeBlock({ code, language }: CodeBlockProps) {
   const grammar = grammarOf(language)
