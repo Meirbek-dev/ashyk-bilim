@@ -2,10 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useMatches } from '@tanstack/react-router'
 
 import { EmailBannerSlot } from '#/features/auth/route'
+import { m } from '#/paraglide/messages'
 import { useLiveEvents } from '#/features/notifications/route'
 import { useSessionExpired } from '#/shared/api/held-session'
 import { shellWorkspace } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
+import { Anchor } from '#/shared/components/anchor'
 
 import { BottomBar } from './bottom-bar'
 import { SidebarNav } from './sidebar-nav'
@@ -27,10 +29,19 @@ export function AppShell() {
   if (focus) return <Outlet />
   return (
     <div className="flex min-h-dvh flex-col">
+      {/* The first Tab stop: past the top bar and the sidebar straight to the page (WCAG 2.4.1). */}
+      <Anchor
+        href="#main"
+        className="fixed top-2 left-2 z-50 -translate-y-16 rounded-md border bg-popover px-3 py-2 text-sm font-medium text-popover-foreground shadow-md transition-transform duration-150 focus-visible:translate-y-0"
+      >
+        {m.platform_skip_to_content()}
+      </Anchor>
       <TopBar session={session} workspace={workspace.id} />
       <div className="flex flex-1">
         {session ? <SidebarNav session={session} workspace={workspace} /> : null}
         <main
+          id="main"
+          tabIndex={-1}
           data-density={workspace.id === 'learn' ? undefined : 'compact'}
           className={`mx-auto w-full max-w-6xl min-w-0 px-4 pt-gutter md:px-6 ${session ? 'pb-24 lg:pb-gutter' : 'pb-gutter'}`}
         >

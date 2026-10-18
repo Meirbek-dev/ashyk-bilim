@@ -139,3 +139,14 @@ for (const locale of ['kk', 'en'] as const) {
     })
   }
 }
+
+test('the first Tab offers a skip past the shell straight to the page', async ({ page }) => {
+  await page.goto('/courses')
+  await page.waitForFunction(() => !document.querySelector('[data-hydrating]'))
+  await page.keyboard.press('Tab')
+  const skip = page.getByRole('link', { name: m.platform_skip_to_content({}, ru) })
+  await expect(skip).toBeFocused()
+  await expect(skip).toBeInViewport()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('main')).toBeFocused()
+})
