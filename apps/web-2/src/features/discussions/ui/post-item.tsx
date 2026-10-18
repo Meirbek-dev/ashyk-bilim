@@ -11,7 +11,6 @@ import { presentError } from '#/shared/i18n/errors'
 import { formatDate } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
 import { buttonVariants } from '#/shared/components/button-variants'
-import { Skeleton } from '#/shared/ui/skeleton'
 import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
@@ -19,6 +18,7 @@ import { updatePostOptions } from '../queries'
 import { DeletePost } from './delete-post'
 import { PostForm } from './post-form'
 import { PostReactions } from './post-reactions'
+import { PostText } from './post-text'
 
 // No replies yet: the toggle opens the reply form, so it says "Reply".
 const toggleLabel = (open: boolean, count: number) =>
@@ -78,8 +78,9 @@ export function PostItem({ item, open = false }: PostItemProps) {
           focusOnMount
         />
       ) : removed ? null : (
-        <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
-          <BlockViewer content={item.content} discussion />
+        // The post's words while the viewer loads (and in the server document): never an empty card (B-DSC-17).
+        <Suspense fallback={<PostText content={item.content} />}>
+          <BlockViewer content={item.content} discussion fallback={<PostText content={item.content} />} />
         </Suspense>
       )}
       <div className="flex flex-wrap items-center gap-1">
