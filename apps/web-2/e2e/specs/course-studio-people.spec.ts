@@ -29,7 +29,7 @@ test('B-CST-35 learners lists who enrolled, found by a search; one is removed af
   await enroll({ client: studio.api, path: { course_id: course.id }, headers: student, throwOnError: true })
   await page.goto(tab(course.id, 'learners'))
   const learners = page.getByRole('region', { name: m.studio_learners_title({}, ru) })
-  const row = learners.getByRole('listitem').filter({ hasText: '@e2e-student1' })
+  const row = learners.getByRole('row').filter({ hasText: '@e2e-student1' })
   await expect(row).toContainText('0 %')
   await expect(row).toContainText('@e2e.test')
   const search = learners.getByRole('searchbox', { name: m.studio_learners_search({}, ru) })

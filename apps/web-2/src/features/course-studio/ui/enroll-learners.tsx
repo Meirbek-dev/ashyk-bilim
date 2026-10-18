@@ -30,7 +30,8 @@ const schema = v.object({
 
 /**
  * B-CST-39 Roster managers add people who already have an account: emails or usernames pasted or read from a CSV
- * into the field, one request; the report counts each outcome and names who was not added.
+ * into the field, one request; the report counts each outcome and names who was not added. It sits in the side
+ * panel of the learners table, whose title names it.
  */
 export function EnrollLearners({ courseId }: { courseId: string }) {
   const enroll = useMutation(enrollLearnersOptions(courseId))
@@ -69,10 +70,7 @@ export function EnrollLearners({ courseId }: { courseId: string }) {
         void form.handleSubmit()
       }}
     >
-      <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-semibold">{m.studio_roster_title()}</h2>
-        <p className="text-sm text-muted-foreground">{m.studio_roster_hint({ max: MAX_ROSTER })}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{m.studio_roster_hint({ max: MAX_ROSTER })}</p>
       <form.AppField name="list">{field => <field.TextareaField label={m.studio_roster_field()} />}</form.AppField>
       <div className="flex flex-wrap items-center gap-2">
         <FileButton
