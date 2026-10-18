@@ -8,7 +8,7 @@ import { ShowMore } from '#/shared/components/show-more'
 import { notificationsListOptions } from '../queries'
 import { NotificationItem } from './notification-item'
 
-/** Newest first, "Show more" by keyset cursor (B-NOT-03); each filter has its own empty text. */
+/** Newest first as one inbox panel (a row each), "Show more" by keyset cursor (B-NOT-03); each filter has its own empty text. */
 export function NotificationsList({ unread }: { unread: boolean }) {
   const query = useSuspenseInfiniteQuery(notificationsListOptions(unread))
   const notifications = query.data.pages.flatMap(page => page.items)
@@ -21,7 +21,7 @@ export function NotificationsList({ unread }: { unread: boolean }) {
       emptyText={unread ? m.notifications_empty_unread() : m.notifications_empty()}
       onRetry={() => void query.refetch()}
     >
-      <DataList items={notifications} getKey={notification => notification.id}>
+      <DataList variant="rows" items={notifications} getKey={notification => notification.id}>
         {notification => <NotificationItem notification={notification} />}
       </DataList>
       <ShowMore
