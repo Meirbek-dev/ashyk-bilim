@@ -137,9 +137,9 @@
   "ai_yes": "Yes",
   "ai_no": "No",
   "ai_features": "Features",
-  "ai_feature_source": "Source: {source}",
-  "ai_source_runtime": "switch",
-  "ai_source_environment": "environment",
+  "ai_feature_source": "Currently {source}",
+  "ai_source_runtime": "as chosen on this page",
+  "ai_source_environment": "as the server settings say",
   "ai_feature_locked": "Off in the server environment: it can't be turned on here.",
   "ai_feature_switched_on": "“{name}” is on",
   "ai_feature_switched_off": "“{name}” is off",
@@ -214,5 +214,5 @@
   "ai_usage_runs_label": "Runs",
   "ai_usage_input_label": "Input tokens",
   "ai_usage_output_label": "Output tokens",
-  "ai_features_source_all": "All features: source - {source}."
+  "ai_features_source_all": "All features are currently on or off {source}."
 }

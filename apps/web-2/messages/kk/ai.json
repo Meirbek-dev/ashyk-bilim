@@ -137,9 +137,9 @@
   "ai_yes": "Иә",
   "ai_no": "Жоқ",
   "ai_features": "Функциялар",
-  "ai_feature_source": "Дереккөзі: {source}",
-  "ai_source_runtime": "ауыстырғыш",
-  "ai_source_environment": "орта",
+  "ai_feature_source": "Қазір {source}",
+  "ai_source_runtime": "осы беттегі таңдау бойынша",
+  "ai_source_environment": "сервер баптаулары бойынша",
   "ai_feature_locked": "Сервер ортасында өшірілген: мұнда қосылмайды.",
   "ai_feature_switched_on": "«{name}» қосылды",
   "ai_feature_switched_off": "«{name}» өшірілді",
@@ -214,5 +214,5 @@
   "ai_usage_runs_label": "Іске қосулар",
   "ai_usage_input_label": "Кіріс токендер",
   "ai_usage_output_label": "Шығыс токендер",
-  "ai_features_source_all": "Барлық функциялар: дереккөз - {source}."
+  "ai_features_source_all": "Қазір барлық функциялар {source} қосылған немесе өшірілген."
 }
