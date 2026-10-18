@@ -115,3 +115,17 @@ export const vBuilderDocument: v.GenericSchema<ProfileSections> = v.object({
     ]),
   ),
 })
+
+// The old web saved a new section's title as a template around its type: «Раздел «Опыт»», «Опыт» бөлімі,
+// "Experience Section". On the public page the heading is the type's name the template wrapped.
+const LEGACY_TITLES = [/^Раздел «(.+)»$/u, /^«(.+)» бөлімі$/u, /^(.+) Section$/u]
+
+/** A section's heading on the public profile: its title, unwrapped from an old-web default template. */
+export const sectionHeading = (title: string): string => {
+  const trimmed = title.trim()
+  for (const pattern of LEGACY_TITLES) {
+    const inner = pattern.exec(trimmed)?.[1]
+    if (inner) return inner
+  }
+  return trimmed
+}

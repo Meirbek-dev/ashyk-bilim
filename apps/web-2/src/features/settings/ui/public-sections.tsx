@@ -5,6 +5,7 @@ import type { ProfileSection } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { formatDate } from '#/shared/i18n/format'
 
+import { sectionHeading } from '../model/profile-sections'
 import { skillLevelLabels } from './section-items'
 
 const day = (date: string) => formatDate(Date.parse(date) / 1000)
@@ -121,8 +122,8 @@ export function PublicSections({ sections }: { sections: ProfileSection[] }) {
   return sections
     .filter(section => section.type !== 'courses' && section.type !== 'gamification')
     .map(section => (
-      <section key={section.id} aria-label={section.title} className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold wrap-anywhere">{section.title}</h2>
+      <section key={section.id} aria-label={sectionHeading(section.title)} className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold wrap-anywhere">{sectionHeading(section.title)}</h2>
         {body(section)}
       </section>
     ))

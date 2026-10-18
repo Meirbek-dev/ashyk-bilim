@@ -3,7 +3,7 @@ import { expect, test } from 'vite-plus/test'
 
 import type { ProfileSections } from '#/shared/api/gen/types.gen'
 
-import { ADDABLE_SECTIONS, newSection, normalizeSections, vBuilderDocument } from './profile-sections'
+import { ADDABLE_SECTIONS, newSection, normalizeSections, sectionHeading, vBuilderDocument } from './profile-sections'
 
 const issues = (document: ProfileSections) =>
   v.safeParse(vBuilderDocument, document).issues?.map(issue => v.getDotPath(issue)) ?? []
@@ -99,4 +99,12 @@ test('B-SET-06 link, image and logo addresses must be http(s) before saving', ()
       ],
     }),
   ).toEqual(['sections.0.links.1.url', 'sections.1.images.0.url', 'sections.2.affiliations.1.logoUrl'])
+})
+
+test('B-SET-14 an old-web default section title reads as its type on the public profile', () => {
+  expect(sectionHeading('Раздел «Опыт»')).toBe('Опыт')
+  expect(sectionHeading('«Білім» бөлімі')).toBe('Білім')
+  expect(sectionHeading('Experience Section')).toBe('Experience')
+  expect(sectionHeading('Веб технологиялар')).toBe('Веб технологиялар')
+  expect(sectionHeading('Раздел «Опыт» и навыки')).toBe('Раздел «Опыт» и навыки')
 })
