@@ -32,15 +32,23 @@ export const runStateMeta = {
   },
 } as const satisfies Record<RunState, { label: () => string; icon: LucideIcon; ink: string; action: () => string }>
 
-/** One started course as a card: cover, state, name, the server's progress and the way back in (the next activity, else the course). */
+/**
+ * One started course: cover, state, name, the server's progress and the way back in (the next activity, else the
+ * course). A thumbnail row in one column (phone), a cover card in the grid (B-LRN-10).
+ */
 export function RunItem({ run }: { run: TrailRun }) {
   const state = runStateMeta[runState(run)]
   const next = nextActivity(run)
   const percent = Math.round(run.progress_pct ?? 0)
   return (
-    <article className="relative flex h-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
-      <CourseCover seed={run.course_id} imageKey={run.course.thumbnail_key} className="aspect-video w-full" />
-      <div className="flex flex-1 flex-col gap-3 p-4">
+    // A row with a thumbnail on a phone (33 full covers were a 14 000 px scroll), a cover card from two columns on.
+    <article className="relative flex h-full overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @xl:flex-col">
+      <CourseCover
+        seed={run.course_id}
+        imageKey={run.course.thumbnail_key}
+        className="m-3 aspect-video w-24 shrink-0 self-start rounded-md @xl:m-0 @xl:w-full @xl:rounded-none"
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-3 py-3 pr-3 @xl:p-4">
         <h2 className="min-w-0 font-semibold wrap-anywhere">
           <Link variant="title" to="/courses/$courseId" params={{ courseId: run.course_id }}>
             {run.course.name}
