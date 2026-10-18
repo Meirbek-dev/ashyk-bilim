@@ -18,7 +18,12 @@ export const Route = createFileRoute('/_guest/')({
     return platform
   },
   head: ({ loaderData }) => ({
-    meta: loaderData ? pageMeta(loaderData.name, landingDescription(loaderData), loaderData.name) : [],
+    meta: loaderData
+      ? pageMeta(loaderData.name, landingDescription(loaderData), {
+          title: loaderData.name,
+          imageKey: loaderData.thumbnail_key,
+        })
+      : [],
   }),
   component: LandingPage,
 })

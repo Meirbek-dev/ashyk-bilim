@@ -14,10 +14,12 @@ export const Route = createFileRoute('/_public/courses/$courseId')({
   validateSearch: aiSearchSchema,
   loader: async ({ context, params }) => {
     const course = await ensureCoursePage(context.queryClient, params.courseId, context.session)
-    return { name: course.name, summary: markdownSummary(course.description) }
+    return { name: course.name, summary: markdownSummary(course.description), image: course.thumbnail_key }
   },
   staticData: { title: m.platform_page_course },
-  head: ({ loaderData }) => ({ meta: loaderData ? pageMeta(loaderData.name, loaderData.summary) : [] }),
+  head: ({ loaderData }) => ({
+    meta: loaderData ? pageMeta(loaderData.name, loaderData.summary, { imageKey: loaderData.image }) : [],
+  }),
   component: function Course() {
     const ai = (
       <Suspense>
