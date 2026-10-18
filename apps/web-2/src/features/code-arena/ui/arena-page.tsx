@@ -1,16 +1,13 @@
 import { Link as RouterLink, useLoaderData, useParams } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
-import { PreviewNote } from '#/features/player'
+import { ActivityHeader, PreviewNote } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { activityTypeMeta } from '#/shared/i18n/labels'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { ARENA_ROUTE } from './arena-route'
 import { Challenge } from './challenge'
-
-const meta = activityTypeMeta.code_challenge
 
 /**
  * A code challenge (spec 5.3): focus layout, back to the activity in the player. The loader names the course and the
@@ -41,14 +38,8 @@ export function ArenaPage() {
   )
   return (
     <FocusPage back={back} title={courseTitle} wide>
-      <article className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-gutter">
-        <header className="flex flex-col gap-1">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <meta.icon aria-hidden className={`size-4 ${meta.ink}`} />
-            {meta.label()}
-          </p>
-          <h1 className="text-2xl font-semibold wrap-anywhere">{title}</h1>
-        </header>
+      <article className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-gutter">
+        <ActivityHeader type="code_challenge" title={title} />
         {preview ? <PreviewNote /> : null}
         {locked ? (
           <p className="text-muted-foreground">{m.code_locked()}</p>

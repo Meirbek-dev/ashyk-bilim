@@ -173,8 +173,8 @@ Every data region renders exactly one of the kit's four states:
   meaning (type, status, a known action). Icon-only buttons have an `aria-label` and a tooltip.
 - A toast appears only from a mutation's `onSuccess`, in the past tense of the button's verb. Errors stay on the
   page: inline, under the field or in the region.
-- Status badges come from an exhaustive `Record<Status, {label, token}>`, never from ad-hoc classes.
-- A card is one object. Sections are separated by headings and spacing, not by borders around them.
+- Status badges: an exhaustive `Record<Status, {label, token}>`; a list's usual state is quiet text, a badge the exception.
+- A card is one object; sections are split by headings and spacing. Dashboard numbers: `KpiStrip` of `KpiTile`s, not cards.
 
 ## 10. Motion and focus
 

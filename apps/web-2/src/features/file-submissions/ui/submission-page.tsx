@@ -1,14 +1,12 @@
 import { Link as RouterLink, useLoaderData, useParams } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
+import { ActivityHeader } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { activityTypeMeta } from '#/shared/i18n/labels'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { TaskView } from './task-view'
-
-const meta = activityTypeMeta.file_submission
 
 const ROUTE = '/_authed/learn/$courseId/$activityId_/submission'
 
@@ -32,13 +30,7 @@ export function SubmissionPage() {
   return (
     <FocusPage back={back} title={courseTitle}>
       <article className="flex flex-col gap-gutter">
-        <header className="flex flex-col gap-1">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <meta.icon aria-hidden className={`size-4 ${meta.ink}`} />
-            {meta.label()}
-          </p>
-          <h1 className="text-2xl font-semibold wrap-anywhere">{title}</h1>
-        </header>
+        <ActivityHeader type="file_submission" title={title} />
         {locked ? (
           <p className="text-muted-foreground">{m.submission_locked()}</p>
         ) : (

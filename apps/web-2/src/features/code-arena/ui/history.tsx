@@ -2,7 +2,6 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { StudentSubmission } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
 
@@ -10,6 +9,7 @@ import type { CodeItem } from '../model/arena'
 import { ARENA_PATH } from './arena-route'
 import { AttemptDetail } from './attempt-detail'
 import { attemptStatus } from './labels'
+import { Verdict } from './verdict'
 
 type HistoryProps = { attempts: StudentSubmission[]; code: CodeItem; selected: string | undefined }
 
@@ -24,7 +24,7 @@ export function History({ attempts, code, selected }: HistoryProps) {
       <h2 id="code-history" className="text-xl font-semibold">
         {m.code_history()}
       </h2>
-      <ul className="flex flex-col divide-y text-sm">
+      <ul className="flex flex-col divide-y border-y text-sm">
         {attempts.map(attempt => {
           const status = attemptStatus[attempt.status]
           const open = attempt.id === selected
@@ -37,9 +37,11 @@ export function History({ attempts, code, selected }: HistoryProps) {
                     ? m.code_not_submitted()
                     : formatDateTime(attempt.submitted_at_unix)}
                 </span>
-                <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+                <Verdict status={status} />
                 {attempt.final_score === null ? null : (
-                  <span className="tabular-nums">{formatPercent(attempt.final_score)}</span>
+                  <span className="font-heading text-lg font-semibold tabular-nums">
+                    {formatPercent(attempt.final_score)}
+                  </span>
                 )}
                 {attempt.status === 'draft' ? null : (
                   <RouterLink
@@ -48,7 +50,7 @@ export function History({ attempts, code, selected }: HistoryProps) {
                     search={previous => ({ ...previous, submission: open ? undefined : attempt.id })}
                     aria-current={open ? 'true' : undefined}
                     aria-label={m.code_attempt_code({ number: attempt.attempt_number })}
-                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
                   >
                     {m.code_show_code()}
                   </RouterLink>

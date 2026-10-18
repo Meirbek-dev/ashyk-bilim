@@ -7,7 +7,7 @@ import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
-import { StatusBadge } from '#/shared/components/status-badge'
+import { ScoreBar } from '#/shared/components/charts/score-bar'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { activeFilters, type Filters, learnerSort, type LearnerSort } from '../model/filters'
@@ -16,6 +16,8 @@ import { atRiskOptions } from '../queries'
 import { riskLevelBadges, riskTrendLabels } from './labels'
 import { Pager } from './pager'
 
+const riskInk = { destructive: 'text-destructive', warning: 'text-warning', neutral: 'text-muted-foreground' }
+
 const columns = (): DataColumn<AtRiskLearnerRow>[] => [
   {
     id: 'name',
@@ -23,17 +25,15 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     priority: 1,
     sortable: true,
     // The panel opens from the URL: this link is the shareable address of the learner in this course.
+    // The learner and, under the name, the course the risk is in: one cell, so long course names do not crowd the row.
     cell: row => (
-      <Link to="." search={prev => ({ ...prev, learnerId: row.user_id, courseId: row.course_id })}>
-        <span className="wrap-anywhere">{row.user_display_name}</span>
-      </Link>
+      <span className="flex flex-col">
+        <Link variant="title" to="." search={prev => ({ ...prev, learnerId: row.user_id, courseId: row.course_id })}>
+          <span className="font-medium wrap-anywhere">{row.user_display_name}</span>
+        </Link>
+        <span className="wrap-anywhere text-muted-foreground">{row.course_name}</span>
+      </span>
     ),
-  },
-  {
-    id: 'course',
-    header: m.analytics_col_course(),
-    priority: 2,
-    cell: row => <span className="wrap-anywhere">{row.course_name}</span>,
   },
   {
     id: 'risk',
@@ -41,12 +41,16 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     priority: 2,
     sortable: true,
     cell: row => {
-      const badge = riskLevelBadges[row.risk_level]
+      // The level in its color and words; the score beside it, quiet: a column of red pills read as one alarm.
+      const level = riskLevelBadges[row.risk_level]
       return (
-        <StatusBadge tone={badge.tone}>
-          {badge.label()} · {formatNumber(row.risk_score)}
-          {row.risk_score_delta ? ` (${formatNumber(row.risk_score_delta, { signed: true })})` : null}
-        </StatusBadge>
+        <span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
+          <span className={`font-medium ${riskInk[level.tone]}`}>{level.label()}</span>
+          <span className="text-muted-foreground tabular-nums">
+            {formatNumber(row.risk_score)}
+            {row.risk_score_delta ? ` (${formatNumber(row.risk_score_delta, { signed: true })})` : null}
+          </span>
+        </span>
       )
     },
   },
@@ -55,7 +59,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     header: m.analytics_col_progress(),
     priority: 2,
     sortable: true,
-    cell: row => <span className="tabular-nums">{formatPercent(row.progress_pct)}</span>,
+    cell: row => <ScoreBar value={row.progress_pct} text={formatPercent(row.progress_pct)} />,
   },
   {
     id: 'activity',
@@ -71,7 +75,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     ),
   },
   { id: 'trend', header: m.analytics_col_trend(), priority: 3, cell: row => riskTrendLabels[row.risk_trend]() },
-  { id: 'why', header: m.analytics_col_why_now(), priority: 3, cell: row => whyNowLabels[row.why_now]() },
+  { id: 'why', header: m.analytics_col_why_now(), priority: 3, wrap: true, cell: row => whyNowLabels[row.why_now]() },
   {
     id: 'interventions',
     header: m.analytics_col_interventions(),

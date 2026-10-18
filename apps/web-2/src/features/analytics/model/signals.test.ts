@@ -21,6 +21,7 @@ import {
   whyNowLabels,
   riskBreakdown,
   bottleneckLabel,
+  bySeverity,
 } from './signals'
 
 /** How many different non-empty texts the values get: equal to the number of values when each has its own. */
@@ -79,4 +80,16 @@ test('B-ANL-29 the risk breakdown names its parts, largest first, without the ze
 
 test('B-ANL-30 every bottleneck signal of the contract reads as words', () => {
   for (const signal of vContentBottleneckSignal.options) expect(bottleneckLabel(signal)).not.toBe(signal)
+})
+
+test('B-ANL-35 signals group by severity, most severe first, in server order within a group', () => {
+  const items = [
+    { id: 'a', severity: 'warning' },
+    { id: 'b', severity: 'critical' },
+    { id: 'c', severity: 'warning' },
+  ] as const
+  expect(bySeverity(items).map(([severity, group]) => [severity, group.map(item => item.id)])).toEqual([
+    ['critical', ['b']],
+    ['warning', ['a', 'c']],
+  ])
 })

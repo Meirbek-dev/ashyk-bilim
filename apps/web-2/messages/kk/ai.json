@@ -150,9 +150,6 @@
   "ai_feature_study_companion": "Оқу көмекшісі",
   "ai_feature_lecture_authoring": "Дәрістер сыны",
   "ai_feature_semantic_memory": "Семантикалық жады",
-  "ai_usage_runs": "Іске қосулар: {count}",
-  "ai_usage_input": "Кіріс токендері: {count}",
-  "ai_usage_output": "Шығыс токендері: {count}",
   "ai_budget": "Айлық бюджет: {total} ішінен {left} қалды",
   "ai_budget_used": "Жұмсалды",
   "ai_filter_days": "Кезең",
@@ -213,5 +210,9 @@
   "ai_filter_provider": "Провайдер немесе модель",
   "ai_col_course": "Курс сүзгісі",
   "ai_filter_this_course": "Тек осы курс",
-  "ai_filter_course_clear": "Барлық курстар"
+  "ai_filter_course_clear": "Барлық курстар",
+  "ai_usage_runs_label": "Іске қосулар",
+  "ai_usage_input_label": "Кіріс токендер",
+  "ai_usage_output_label": "Шығыс токендер",
+  "ai_features_source_all": "Барлық функциялар: дереккөз - {source}."
 }

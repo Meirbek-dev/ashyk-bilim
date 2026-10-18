@@ -17,14 +17,14 @@ type KpiTileProps = {
   action?: ReactNode
 }
 
-/** One key number of a dashboard (DESIGN 3: color with a label, numbers in tabular figures). */
+/**
+ * One key number of a dashboard (DESIGN 3: color with a label, numbers in tabular figures). Not a card: a rule above
+ * it, so a row of numbers reads as one strip (`KpiStrip`), not as a wall of boxes.
+ */
 export function KpiTile({ label, value, change, tone = 'neutral', action }: KpiTileProps) {
   const labelId = useId()
   return (
-    <section
-      aria-labelledby={labelId}
-      className="flex flex-col gap-1 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"
-    >
+    <section aria-labelledby={labelId} className="flex min-w-0 flex-col gap-1 border-t pt-3">
       <p id={labelId} className="text-sm text-muted-foreground">
         {label}
       </p>

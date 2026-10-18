@@ -169,5 +169,7 @@
   "admin_users_role_label": "Роль: {role}",
   "admin_users_filter_all": "все",
   "admin_user_field_roles": "Дополнительные роли",
-  "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда."
+  "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда.",
+  "admin_gamification_xp": "XP",
+  "admin_gamification_rewards": "Награды"
 }

@@ -2,6 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
+import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { Progress } from '#/shared/components/progress'
 
 import { budgetUsed } from '../model/ai'
@@ -14,11 +16,11 @@ export function AdminUsage() {
   return (
     <section id="usage" className="flex max-w-prose flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.ai_admin_usage()}</h2>
-      <ul className="flex flex-col gap-1 text-sm">
-        <li>{m.ai_usage_runs({ count: formatNumber(usage.total_runs) })}</li>
-        <li>{m.ai_usage_input({ count: formatNumber(usage.input_tokens) })}</li>
-        <li>{m.ai_usage_output({ count: formatNumber(usage.output_tokens) })}</li>
-      </ul>
+      <KpiStrip columns={3}>
+        <KpiTile label={m.ai_usage_runs_label()} value={formatNumber(usage.total_runs)} />
+        <KpiTile label={m.ai_usage_input_label()} value={formatNumber(usage.input_tokens)} />
+        <KpiTile label={m.ai_usage_output_label()} value={formatNumber(usage.output_tokens)} />
+      </KpiStrip>
       <div className="flex flex-col gap-2">
         <p className="text-sm">
           {m.ai_budget({ left: formatNumber(usage.remaining_budget), total: formatNumber(usage.monthly_budget) })}

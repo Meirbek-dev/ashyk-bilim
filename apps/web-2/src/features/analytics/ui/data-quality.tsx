@@ -1,6 +1,5 @@
 import { m } from '#/paraglide/messages'
 import type { AnalyticsDataQuality, Confidence, DataMode } from '#/shared/api/gen/types.gen'
-import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 
 import { SignalList } from './signal-list'
@@ -39,15 +38,19 @@ export function DataQuality({ quality }: { quality: AnalyticsDataQuality }) {
       <h2 id="analytics-data-quality" className="text-xl font-semibold">
         {m.analytics_dq_title()}
       </h2>
-      <div className="grid grid-cols-2 gap-4 @3xl:grid-cols-3">
+      {/* Facts, not key numbers: a definition list, so «Живые данные» is not set in a dashboard's display figures. */}
+      <dl className="grid grid-cols-1 gap-x-gutter gap-y-3 text-sm @md:grid-cols-2 @3xl:grid-cols-3">
         {tiles.map(tile => (
-          <KpiTile key={tile.label} label={tile.label} value={tile.value} />
+          <div key={tile.label} className="flex flex-col border-t pt-2">
+            <dt className="text-muted-foreground">{tile.label}</dt>
+            <dd className="font-medium tabular-nums">{tile.value}</dd>
+          </div>
         ))}
-      </div>
+      </dl>
       {quality.courses_without_enough_data.length > 0 ? (
         <div className="flex flex-col gap-1">
           <h3 className="text-lg font-semibold">{m.analytics_dq_thin()}</h3>
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="columns-1 gap-gutter text-sm @3xl:columns-2 [&>li]:break-inside-avoid [&>li]:py-0.5">
             {quality.courses_without_enough_data.map(gap => (
               <li key={gap.course_id} className="wrap-anywhere">
                 {m.analytics_dq_thin_course({ course: gap.course_name, count: formatNumber(gap.learner_count) })}

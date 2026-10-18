@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ImageOff } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen'
@@ -46,10 +47,23 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
     leaveGuard: true,
     onSubmit: body => write.save({ body, reset: () => form.reset() }),
   })
+  // Each image beside its picker, at its own shape: the logo square, the cover 16:9 like every course picture.
   const images = [
-    { key: platform.logo_key, label: m.admin_platform_logo() },
-    { key: platform.thumbnail_key, label: m.admin_platform_thumbnail() },
-  ]
+    {
+      key: platform.logo_key,
+      label: m.admin_platform_logo(),
+      name: 'logo_upload_id',
+      purpose: 'platform-logo',
+      shape: 'size-20',
+    },
+    {
+      key: platform.thumbnail_key,
+      label: m.admin_platform_thumbnail(),
+      name: 'thumbnail_upload_id',
+      purpose: 'platform-thumbnail',
+      shape: 'aspect-video w-36',
+    },
+  ] as const
   return (
     <>
       <SettingsSection
@@ -59,28 +73,29 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
         pending={update.isPending}
         error={isStale(update.error) ? null : update.error}
       >
-        <div className="flex flex-wrap gap-4">
-          {images.map(image => (
-            <figure key={image.label} className="flex flex-col gap-1">
-              {image.key ? (
-                <img
-                  src={contentUrl(image.key)}
-                  alt={image.label}
-                  className="h-20 w-auto rounded-md bg-muted object-contain"
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">{m.admin_platform_no_image()}</p>
-              )}
-              <figcaption className="text-sm text-muted-foreground">{image.label}</figcaption>
-            </figure>
-          ))}
-        </div>
-        <form.AppField name="logo_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>
-          {() => <FileField label={m.admin_platform_logo()} purpose="platform-logo" />}
-        </form.AppField>
-        <form.AppField name="thumbnail_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>
-          {() => <FileField label={m.admin_platform_thumbnail()} purpose="platform-thumbnail" />}
-        </form.AppField>
+        {images.map(image => (
+          <div key={image.name} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            {image.key ? (
+              <img
+                src={contentUrl(image.key)}
+                alt={image.label}
+                className={`${image.shape} shrink-0 rounded-lg border bg-muted object-contain`}
+              />
+            ) : (
+              <span
+                className={`${image.shape} grid shrink-0 place-items-center rounded-lg border border-dashed bg-muted text-muted-foreground`}
+              >
+                <ImageOff aria-hidden className="size-5" />
+                <span className="sr-only">{m.admin_platform_no_image()}</span>
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <form.AppField name={image.name} listeners={{ onChange: () => void form.handleSubmit() }}>
+                {() => <FileField label={image.label} purpose={image.purpose} />}
+              </form.AppField>
+            </div>
+          </div>
+        ))}
       </SettingsSection>
       <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>

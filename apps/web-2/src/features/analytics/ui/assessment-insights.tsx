@@ -5,6 +5,7 @@ import type {
   TeacherAssessmentDetailResponse,
 } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
@@ -100,12 +101,12 @@ export function AssessmentInsights({ data }: { data: TeacherAssessmentDetailResp
       {data.diagnostics.manual_grading_required ? (
         <section aria-label={m.analytics_slo_title()} className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold">{m.analytics_slo_title()}</h3>
-          <div className="grid grid-cols-2 gap-4 @3xl:grid-cols-4">
+          <KpiStrip columns={4}>
             <KpiTile label={m.analytics_slo_target()} value={score(slo.target_hours)} />
             <KpiTile label={m.analytics_slo_p90()} value={hours(slo.observed_p90_hours)} />
             <KpiTile label={m.analytics_col_backlog()} value={formatNumber(slo.backlog_count)} />
             <KpiTile label={m.analytics_slo_overdue()} value={formatNumber(slo.overdue_backlog_count)} />
-          </div>
+          </KpiStrip>
         </section>
       ) : null}
     </>

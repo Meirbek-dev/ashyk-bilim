@@ -10,13 +10,19 @@ const course: DataColumn<ContentBottleneckRow> = {
   id: 'course',
   header: m.analytics_col_course(),
   priority: 2,
+  wrap: true,
   cell: row => row.course_name,
 }
 
 const columns = (withCourse: boolean): DataColumn<ContentBottleneckRow>[] => [
-  { id: 'activity', header: m.analytics_col_activity(), priority: 1, cell: row => row.activity_name },
+  {
+    id: 'activity',
+    header: m.analytics_col_activity(),
+    priority: 1,
+    cell: row => <span className="font-medium">{row.activity_name}</span>,
+  },
   ...(withCourse ? [course] : []),
-  { id: 'signal', header: m.analytics_col_signal(), priority: 2, cell: row => bottleneckLabel(row.signal) },
+  { id: 'signal', header: m.analytics_col_signal(), priority: 2, wrap: true, cell: row => bottleneckLabel(row.signal) },
   {
     id: 'completion',
     header: m.analytics_col_completion(),

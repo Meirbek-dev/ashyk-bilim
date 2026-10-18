@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityDropoffRow, CourseId } from '#/shared/api/gen/types.gen'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { TimeSeries } from '#/shared/components/charts/time-series'
 import type { DataColumn } from '#/shared/components/data-columns'
@@ -65,11 +66,11 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
         <h2 className="text-xl font-semibold wrap-anywhere">{data.course.name}</h2>
         <AsOf at={data.generated_at_unix} />
       </div>
-      <section aria-label={m.analytics_kpis()} className="grid grid-cols-2 gap-4 @3xl:grid-cols-4">
+      <KpiStrip label={m.analytics_kpis()} columns={4}>
         {tiles.map(tile => (
           <KpiTile key={tile.label} label={tile.label} value={tile.value} />
         ))}
-      </section>
+      </KpiStrip>
       <TimeSeries
         title={m.analytics_engagement_trend()}
         data={data.engagement_trend.map(point => ({

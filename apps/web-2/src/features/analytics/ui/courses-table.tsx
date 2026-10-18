@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 import type { TeacherCourseRow } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { ScoreBar } from '#/shared/components/charts/score-bar'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
@@ -22,8 +23,8 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
     header: m.analytics_col_course(),
     priority: 1,
     cell: row => (
-      <Link to="." search={prev => ({ ...prev, courseId: row.course_id })}>
-        <span className="wrap-anywhere">{row.course_name}</span>
+      <Link variant="title" to="." search={prev => ({ ...prev, courseId: row.course_id })}>
+        <span className="font-medium wrap-anywhere">{row.course_name}</span>
       </Link>
     ),
   },
@@ -32,7 +33,7 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
     sortable: true,
     header: m.analytics_col_completion(),
     priority: 2,
-    cell: row => <span className="tabular-nums">{formatPercent(row.completion_rate)}</span>,
+    cell: row => <ScoreBar value={row.completion_rate} text={formatPercent(row.completion_rate)} />,
   },
   {
     id: 'active',

@@ -1,3 +1,4 @@
+import { CalendarClock, Files, FileType, HardDrive } from 'lucide-react'
 import { Suspense } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
@@ -34,10 +35,11 @@ export function TaskHeader({ task, now }: { task: FileSubmission; now: number })
       {task.due_at_unix === null ? null : (
         <div className="flex flex-col gap-1 text-sm">
           <p className="flex flex-wrap items-center gap-2">
+            <CalendarClock aria-hidden className="size-4" />
             <span className="font-medium">{m.submission_due({ date: formatDateTime(task.due_at_unix) })}</span>
             {pastDue(task, now) ? <StatusBadge tone="warning">{m.submission_past_due()}</StatusBadge> : null}
           </p>
-          {rule ? <p className="text-muted-foreground">{lateText(rule)}</p> : null}
+          {rule ? <p className="pl-6 text-muted-foreground">{lateText(rule)}</p> : null}
         </div>
       )}
       <section aria-labelledby="submission-instructions" className="flex flex-col gap-2">
@@ -52,23 +54,22 @@ export function TaskHeader({ task, now }: { task: FileSubmission; now: number })
         <h2 id="submission-requirements" className="text-xl font-semibold">
           {m.submission_requirements()}
         </h2>
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
-          <li>{m.submission_max_files({ count: task.max_files })}</li>
-          {task.max_file_size_mb === null ? null : <li>{m.submission_max_size({ mb: task.max_file_size_mb })}</li>}
-          {types.length === 0 ? (
-            <li>{m.submission_types_any()}</li>
-          ) : (
-            <li>
-              <span className="inline-flex flex-wrap items-center gap-1">
-                <span className="mr-1">{m.submission_field_types()}</span>
-                {types.map(name => (
-                  <StatusBadge key={name} tone="neutral">
-                    {name}
-                  </StatusBadge>
-                ))}
-              </span>
+        {/* Three facts on one line, each with its icon: how many, how big, what kind. */}
+        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
+          <li className="flex items-center gap-2">
+            <Files aria-hidden />
+            {m.submission_max_files({ count: task.max_files })}
+          </li>
+          {task.max_file_size_mb === null ? null : (
+            <li className="flex items-center gap-2">
+              <HardDrive aria-hidden />
+              {m.submission_max_size({ mb: task.max_file_size_mb })}
             </li>
           )}
+          <li className="flex items-center gap-2">
+            <FileType aria-hidden />
+            {types.length === 0 ? m.submission_types_any() : `${m.submission_field_types()}: ${types.join(', ')}`}
+          </li>
         </ul>
       </section>
     </>

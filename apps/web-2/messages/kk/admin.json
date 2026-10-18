@@ -165,5 +165,7 @@
   "admin_users_role_label": "Рөлі: {role}",
   "admin_users_filter_all": "барлығы",
   "admin_user_field_roles": "Қосымша рөлдер",
-  "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады."
+  "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады.",
+  "admin_gamification_xp": "XP",
+  "admin_gamification_rewards": "Марапаттар"
 }

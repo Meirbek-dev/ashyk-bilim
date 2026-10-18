@@ -25,9 +25,9 @@ export function CoursePulse({ courseId }: { courseId: CourseId }) {
       <CatchBoundary getResetKey={() => courseId} errorComponent={() => null}>
         <Suspense
           fallback={
-            <div className="grid grid-cols-2 gap-3 @3xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-gutter gap-y-6 @3xl:grid-cols-4">
               {[0, 1, 2, 3].map(key => (
-                <Skeleton key={key} className="h-28 rounded-xl" />
+                <Skeleton key={key} className="h-20" />
               ))}
             </div>
           }

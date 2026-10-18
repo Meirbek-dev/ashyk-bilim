@@ -144,12 +144,17 @@ test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', a
 test('B-ANL-15 operations: queue tiles, its age as a chart and text, the queue table', async ({ page }) => {
   await page.goto('/teach/analytics/operations')
   await expect(kpis(page).getByRole('region', { name: m.analytics_sla_breaches({}, ru) })).toBeVisible()
-  await expect(page.getByRole('figure', { name: m.analytics_aging_title({}, ru) })).toBeVisible()
-  await expect(page.getByRole('table', { name: m.analytics_aging_title({}, ru) })).toContainText(
-    m.analytics_age_older({}, ru),
-  )
-  await expect(page.getByRole('heading', { level: 2, name: m.analytics_backlog_table({}, ru) })).toBeVisible()
   const queue = kpis(page).getByRole('region', { name: m.analytics_kpi_ungraded_submissions({}, ru) })
+  // Other specs hand in work in parallel: the queue may be empty (one line) or not (its age and its table).
+  if ((await queue.getByText(/^\d+$/u).textContent()) === '0') {
+    await expect(page.getByText(m.analytics_backlog_empty({}, ru))).toBeVisible()
+    await expect(page.getByRole('figure', { name: m.analytics_aging_title({}, ru) })).toHaveCount(0)
+  } else {
+    await expect(page.getByRole('table', { name: m.analytics_aging_title({}, ru) })).toContainText(
+      m.analytics_age_older({}, ru),
+    )
+    await expect(page.getByRole('heading', { level: 2, name: m.analytics_backlog_table({}, ru) })).toBeVisible()
+  }
   await queue.getByRole('link', { name: m.analytics_show_rows({}, ru) }).click()
   await expect(page).toHaveURL(/metric=backlog/)
   await expect(

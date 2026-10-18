@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { Suspense, useRef } from 'react'
+
+import { BlockViewer } from '#/features/editor'
 
 import { m } from '#/paraglide/messages'
 import { deleteBlockMutation, listBlocksOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -7,10 +9,11 @@ import type { ActivityDetail, Block, FinalizedUpload } from '#/shared/api/gen/ty
 import { Anchor } from '#/shared/components/anchor'
 import { FileInput } from '#/shared/components/file-input'
 import { presentError } from '#/shared/i18n/errors'
+import { Skeleton } from '#/shared/ui/skeleton'
 import { toast } from '#/shared/ui/toast'
 
 import { activityOptions, claimOptions, updateActivityOptions } from '../curriculum-queries'
-import { fileContent, mediaBlock, mediaSource, replacedMediaBlockIds } from '../model/studio'
+import { fileContent, mediaBlock, mediaPreview, mediaSource, replacedMediaBlockIds } from '../model/studio'
 
 /**
  * An uploaded video or PDF: the current file, and a new one that replaces it. The upload is claimed for the
@@ -59,18 +62,26 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
     )
   }
   const error = claim.error ?? update.error ?? remove.error
+  const preview =
+    source.kind === 'file' ? { key: source.key, ...mediaPreview(video ? 'video' : 'document', source) } : null
   return (
-    <section aria-label={m.studio_media_title()} className="flex max-w-prose flex-col gap-4">
+    <section aria-label={m.studio_media_title()} className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-semibold">{m.studio_media_title()}</h2>
         <p className="text-sm text-muted-foreground">{m.studio_media_hint()}</p>
       </div>
-      {source.kind === 'file' ? (
-        <p className="wrap-anywhere">
-          <Anchor href={`/content/${source.key}`} target="_blank" rel="noreferrer">
-            {m.studio_media_current({ name: source.name })}
-          </Anchor>
-        </p>
+      {preview ? (
+        <>
+          {/* What the learner gets, played or framed the same way; the link opens the file itself. */}
+          <Suspense fallback={<Skeleton className="aspect-video w-full rounded-xl" />}>
+            <BlockViewer content={preview.content} />
+          </Suspense>
+          <p className="text-sm wrap-anywhere">
+            <Anchor href={`/content/${preview.key}`} target="_blank" rel="noreferrer">
+              {m.studio_media_current({ name: preview.name })}
+            </Anchor>
+          </p>
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">{m.studio_media_none()}</p>
       )}

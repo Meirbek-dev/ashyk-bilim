@@ -69,7 +69,12 @@ export function DataTable<T extends RowData>({ label, rows, columns, getKey, sor
             {table.getRowModel().rows.map(row => (
               <TableRow key={row.id}>
                 {columns.map(column => (
-                  <TableCell key={column.id}>{column.cell(row.original)}</TableCell>
+                  <TableCell
+                    key={column.id}
+                    className={column.priority === 1 || column.wrap ? 'min-w-40 whitespace-normal' : undefined}
+                  >
+                    {column.cell(row.original)}
+                  </TableCell>
                 ))}
               </TableRow>
             ))}

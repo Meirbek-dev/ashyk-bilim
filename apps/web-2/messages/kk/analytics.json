@@ -152,7 +152,7 @@
   "analytics_admin_courses": "Жай-күйі бойынша курстар",
   "analytics_admin_teachers": "Оқытушылардың жүктемесі",
   "analytics_admin_cohorts": "Топтарды ұстап қалу",
-  "analytics_admin_programs": "Бағдарламалар",
+  "analytics_admin_programs": "Авторлар бойынша курстар",
   "analytics_admin_empty": "Әзірге деректер жоқ.",
   "analytics_col_roi": "Контент қайтарымы",
   "analytics_col_teacher": "Оқытушы",
@@ -160,7 +160,7 @@
   "analytics_col_backlog": "Кезек",
   "analytics_col_learners": "Білім алушылар",
   "analytics_col_retention": "Ұстап қалу",
-  "analytics_col_program": "Бағдарлама",
+  "analytics_col_program": "Автор",
   "analytics_alerts_title": "Назар аударуды қажет етеді",
   "analytics_insights_title": "Байқаулар",
   "analytics_forecasts_title": "Болжамдар",
@@ -289,5 +289,6 @@
   "analytics_admin_course": "Курс сүзгісі: {course}",
   "analytics_admin_group": "Топ: {group}",
   "analytics_admin_all": "барлығы",
-  "analytics_admin_roi": "Мазмұн қайтарымы"
+  "analytics_admin_roi": "Мазмұн қайтарымы",
+  "analytics_program_unassigned": "Авторы жоқ"
 }

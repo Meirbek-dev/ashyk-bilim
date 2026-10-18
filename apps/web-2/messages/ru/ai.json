@@ -154,9 +154,6 @@
   "ai_feature_study_companion": "Помощник в учёбе",
   "ai_feature_lecture_authoring": "Критика лекций",
   "ai_feature_semantic_memory": "Семантическая память",
-  "ai_usage_runs": "Запусков: {count}",
-  "ai_usage_input": "Входящих токенов: {count}",
-  "ai_usage_output": "Исходящих токенов: {count}",
   "ai_budget": "Бюджет на месяц: осталось {left} из {total}",
   "ai_budget_used": "Израсходовано",
   "ai_filter_days": "Период",
@@ -219,5 +216,9 @@
   "ai_filter_provider": "Провайдер или модель",
   "ai_col_course": "Курс",
   "ai_filter_this_course": "Только этот курс",
-  "ai_filter_course_clear": "Все курсы"
+  "ai_filter_course_clear": "Все курсы",
+  "ai_usage_runs_label": "Запуски",
+  "ai_usage_input_label": "Входящие токены",
+  "ai_usage_output_label": "Исходящие токены",
+  "ai_features_source_all": "Все функции: источник - {source}."
 }

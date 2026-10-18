@@ -1,58 +1,73 @@
 import { useNavigate } from '@tanstack/react-router'
+import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 
 import type { AnalyticsCode, MessageParams, Severity } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
-import { StatusBadge } from '#/shared/components/status-badge'
+import { formatNumber } from '#/shared/i18n/format'
 
-import { severityBadges, signalHref, signalText } from '../model/signals'
+import { bySeverity, severityBadges, signalHref, signalText } from '../model/signals'
 
 type Signal = { id: string; code: AnalyticsCode; params: MessageParams; severity: Severity; href?: string | null }
 
+const severityLook = {
+  critical: { icon: CircleAlert, ink: 'text-destructive' },
+  warning: { icon: TriangleAlert, ink: 'text-warning' },
+  info: { icon: Info, ink: 'text-info' },
+} satisfies Record<Severity, { icon: LucideIcon; ink: string }>
+
 /**
- * One block of server-composed items (alerts, insights, forecasts, anomalies): severity in words, then the sentence,
- * a link into the tab it is about when the server gives one (B-ANL-25). Nothing when empty.
+ * One block of server-composed items (alerts, insights, forecasts, anomalies), grouped by severity: the severity is
+ * said once, as a small heading with its icon and count (B-ANL-35), then its sentences, each a link into the tab it is
+ * about when the server gives one (B-ANL-25). Nothing when empty.
  */
 export function SignalList({ title, items }: { title: string; items: readonly Signal[] }) {
   const id = useId()
   const navigate = useNavigate()
   if (items.length === 0) return null
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
       <h2 id={id} className="text-xl font-semibold">
         {title}
       </h2>
-      <ul className="flex flex-col divide-y">
-        {items.map(item => {
-          const badge = severityBadges[item.severity]
-          const text = signalText[item.code](item.params)
-          const href = signalHref(item.href)
-          return (
-            <li key={item.id} className="flex items-start gap-3 py-2.5">
-              <span className="w-24 shrink-0 pt-0.5">
-                <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
-              </span>
-              <span className="min-w-0 flex-1 wrap-anywhere">
-                {href ? (
-                  <Anchor
-                    href={href}
-                    onClick={event => {
-                      // The server's href is a built URL: a plain click stays in the app, a modified one is the browser's.
-                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-                      event.preventDefault()
-                      void navigate({ href })
-                    }}
-                  >
-                    {text}
-                  </Anchor>
-                ) : (
-                  text
-                )}
-              </span>
-            </li>
-          )
-        })}
-      </ul>
+      {bySeverity(items).map(([severity, group]) => {
+        const look = severityLook[severity]
+        return (
+          <div key={severity} className="flex flex-col gap-1">
+            <h3 className={`flex items-center gap-2 text-sm font-medium ${look.ink}`}>
+              <look.icon aria-hidden className="size-4" />
+              {severityBadges[severity].label()}
+              <span className="text-muted-foreground tabular-nums">{formatNumber(group.length)}</span>
+            </h3>
+            <ul className="flex flex-col divide-y border-l pl-4">
+              {group.map(item => {
+                const text = signalText[item.code](item.params)
+                const href = signalHref(item.href)
+                return (
+                  <li key={item.id} className="py-2 wrap-anywhere">
+                    {href ? (
+                      <Anchor
+                        href={href}
+                        onClick={event => {
+                          // The server's href is a built URL: a plain click stays in the app, a modified one is the browser's.
+                          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                            return
+                          event.preventDefault()
+                          void navigate({ href })
+                        }}
+                      >
+                        {text}
+                      </Anchor>
+                    ) : (
+                      text
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
     </section>
   )
 }

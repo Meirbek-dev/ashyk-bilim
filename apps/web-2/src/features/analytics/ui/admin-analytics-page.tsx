@@ -3,28 +3,38 @@ import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow } from '#/shared/api/gen/types.gen'
+import { ScoreBar } from '#/shared/components/charts/score-bar'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { ListPage } from '#/shared/components/templates/list-page'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
+import { programAuthor } from '../model/analytics'
 import { adminAnalyticsOptions } from '../queries'
 import { AdminTable } from './admin-table'
 import { AdminFilters } from './admin-filters'
 import { AsOf } from './as-of'
 import { hours, percent, score } from './kpi'
 
-const name = (text: string) => <span className="wrap-anywhere">{text}</span>
+const name = (text: string) => <span className="font-medium wrap-anywhere">{text}</span>
+/** A 0..100 value as a bar plus its number; a dash when the server has no sample. */
+const bar = (value: number | null | undefined, text: string) =>
+  value === null || value === undefined ? text : <ScoreBar value={value} text={text} />
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
 
 const courseColumns = (): DataColumn<AdminCourseRow>[] => [
   { id: 'course', header: m.analytics_col_course(), priority: 1, cell: row => name(row.course_name) },
-  { id: 'health', header: m.analytics_col_health(), priority: 2, cell: row => count(row.health_score) },
+  {
+    id: 'health',
+    header: m.analytics_col_health(),
+    priority: 2,
+    cell: row => bar(row.health_score, score(row.health_score)),
+  },
   { id: 'roi', header: m.analytics_col_roi(), priority: 2, cell: row => score(row.content_roi_score) },
   {
     id: 'completion',
     header: m.analytics_col_completion(),
     priority: 2,
-    cell: row => formatPercent(row.completion_rate),
+    cell: row => bar(row.completion_rate, formatPercent(row.completion_rate)),
   },
   { id: 'active', header: m.analytics_col_active(), priority: 3, cell: row => count(row.active_learners_7d) },
   { id: 'risk', header: m.analytics_kpi_at_risk_learners(), priority: 3, cell: row => count(row.at_risk_learners) },
@@ -47,16 +57,41 @@ const teacherColumns = (): DataColumn<AdminTeacherRow>[] => [
 const cohortColumns = (): DataColumn<AdminCohortRow>[] => [
   { id: 'cohort', header: m.analytics_filter_cohort(), priority: 1, cell: row => name(row.cohort_name) },
   { id: 'learners', header: m.analytics_col_learners(), priority: 2, cell: row => count(row.learners) },
-  { id: 'retention', header: m.analytics_col_retention(), priority: 2, cell: row => percent(row.retention_rate) },
-  { id: 'progress', header: m.analytics_avg_progress(), priority: 3, cell: row => percent(row.avg_progress_pct) },
+  {
+    id: 'retention',
+    header: m.analytics_col_retention(),
+    priority: 2,
+    cell: row => bar(row.retention_rate, percent(row.retention_rate)),
+  },
+  {
+    id: 'progress',
+    header: m.analytics_avg_progress(),
+    priority: 3,
+    cell: row => bar(row.avg_progress_pct, percent(row.avg_progress_pct)),
+  },
 ]
 
 const programColumns = (): DataColumn<AdminProgramRow>[] => [
-  { id: 'program', header: m.analytics_col_program(), priority: 1, cell: row => name(row.program_name) },
+  {
+    id: 'program',
+    header: m.analytics_col_program(),
+    priority: 1,
+    cell: row => name(programAuthor(row.program_name) ?? m.analytics_program_unassigned()),
+  },
   { id: 'courses', header: m.analytics_col_courses(), priority: 2, cell: row => count(row.course_count) },
   { id: 'learners', header: m.analytics_col_learners(), priority: 2, cell: row => count(row.learner_count) },
-  { id: 'completion', header: m.analytics_col_completion(), priority: 3, cell: row => percent(row.completion_rate) },
-  { id: 'health', header: m.analytics_col_health(), priority: 3, cell: row => score(row.health_score) },
+  {
+    id: 'completion',
+    header: m.analytics_col_completion(),
+    priority: 3,
+    cell: row => bar(row.completion_rate, percent(row.completion_rate)),
+  },
+  {
+    id: 'health',
+    header: m.analytics_col_health(),
+    priority: 3,
+    cell: row => bar(row.health_score, score(row.health_score)),
+  },
 ]
 
 /** /admin/analytics: the platform at a glance over a period, top 25 of each ranking (the server cuts them). */

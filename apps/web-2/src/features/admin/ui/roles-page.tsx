@@ -22,19 +22,25 @@ const columns: DataColumn<Role>[] = [
     header: m.admin_field_name(),
     priority: 1,
     cell: role => (
-      <span className="wrap-anywhere">
-        <Link to="/admin/roles/$roleSlug" params={{ roleSlug: role.slug }}>
-          {roleName(role)}
+      <span className="flex flex-col">
+        <Link variant="title" to="/admin/roles/$roleSlug" params={{ roleSlug: role.slug }}>
+          <span className="font-medium wrap-anywhere">{roleName(role)}</span>
         </Link>
+        <code className="wrap-anywhere text-muted-foreground">{role.slug}</code>
       </span>
     ),
   },
-  { id: 'slug', header: m.admin_role_slug(), priority: 2, cell: role => <code>{role.slug}</code> },
   {
     id: 'kind',
     header: m.admin_role_kind(),
     priority: 2,
-    cell: role => <StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>,
+    // Most roles are the system's: that is quiet text; a role made here is the exception and gets the badge.
+    cell: role =>
+      role.is_system ? (
+        <span className="text-muted-foreground">{roleKindLabels.system()}</span>
+      ) : (
+        <StatusBadge tone="info">{roleKindLabels.custom()}</StatusBadge>
+      ),
   },
   {
     id: 'permissions',

@@ -12,6 +12,7 @@ import {
   certificateFieldsSchema,
   createPlan,
   fileContent,
+  mediaPreview,
   mediaSource,
   readinessCode,
   readinessTarget,
@@ -182,6 +183,22 @@ describe('media', () => {
     expect(replacedMediaBlockIds(blocks, 'video', 'new')).toEqual(['old'])
     expect(replacedMediaBlockIds(blocks, 'pdf', 'pdf')).toEqual([])
   })
+  test('B-CST-29 the current media file shows in the learner player and links by its file name', () => {
+    const legacy = mediaPreview('video', {
+      key: 'platform/courses/c/activities/a/video/video.mp4',
+      name: 'platform/courses/c/activities/a/video/video.mp4',
+    })
+    expect(legacy.name).toBe('video.mp4')
+    expect(legacy.content.content[0]).toMatchObject({
+      type: 'blockVideo',
+      attrs: { blockObject: { content: { file_key: 'platform/courses/c/activities/a/video/video.mp4' } } },
+    })
+    expect(mediaPreview('document', { key: 'docs/a.pdf', name: 'Лекция 1.pdf' })).toMatchObject({
+      name: 'Лекция 1.pdf',
+      content: { content: [{ type: 'blockPDF' }] },
+    })
+  })
+
   test('B-CST-29 a YouTube link must be a video the player can embed, over https', () => {
     expect(v.safeParse(youtubeSchema, { uri: ' https://youtu.be/dQw4w9WgXcQ?si=x ' }).output).toEqual({
       uri: 'https://youtu.be/dQw4w9WgXcQ?si=x',

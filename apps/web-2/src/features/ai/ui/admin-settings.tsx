@@ -5,6 +5,7 @@ import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { formatNumber } from '#/shared/i18n/format'
 
+import { sourceLabel } from '../model/labels'
 import { settingsOptions } from '../queries'
 import { FeatureRow, flag } from './feature-row'
 
@@ -16,26 +17,39 @@ export function AdminSettings() {
   const { data: settings } = useSuspenseQuery(settingsOptions())
   const { data: session } = useSuspenseQuery(sessionOptions())
   const canSwitch = hasCapability(session, 'admin.platform')
+  const sources = new Set(settings.features.map(feature => feature.source))
+  const source = sources.size === 1 ? (settings.features[0]?.source ?? null) : null
   return (
     <section id="settings" className="flex max-w-prose flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.ai_admin_settings()}</h2>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-        <dt>{m.ai_enabled()}</dt>
-        <dd>{flag(settings.ai_enabled)}</dd>
-        <dt>{m.ai_provider_ready()}</dt>
-        <dd>{flag(settings.provider_ready)}</dd>
-        <dt>{m.ai_draft_mode()}</dt>
-        <dd>{flag(settings.draft_mode_enabled)}</dd>
+      <dl className="flex flex-col divide-y border-y text-sm">
+        {[
+          { label: m.ai_enabled(), value: flag(settings.ai_enabled) },
+          { label: m.ai_provider_ready(), value: flag(settings.provider_ready) },
+          { label: m.ai_draft_mode(), value: flag(settings.draft_mode_enabled) },
+        ].map(row => (
+          <div key={row.label} className="flex min-h-row items-center justify-between gap-4 py-1">
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
       </dl>
-      <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <li>{m.ai_model({ model: settings.model })}</li>
-        <li>{m.ai_max_request({ count: formatNumber(settings.max_tokens_per_request) })}</li>
-        <li>{m.ai_max_output({ count: formatNumber(settings.max_output_tokens) })}</li>
-      </ul>
-      <h3 className="font-medium">{m.ai_features()}</h3>
-      <ul className="flex flex-col gap-2 text-sm">
+      <p className="text-sm text-muted-foreground">
+        {[
+          m.ai_model({ model: settings.model }),
+          m.ai_max_request({ count: formatNumber(settings.max_tokens_per_request) }),
+          m.ai_max_output({ count: formatNumber(settings.max_output_tokens) }),
+        ].join(' · ')}
+      </p>
+      <div className="flex flex-col gap-1">
+        <h3 className="font-medium">{m.ai_features()}</h3>
+        {source ? (
+          <p className="text-sm text-muted-foreground">{m.ai_features_source_all({ source: sourceLabel(source) })}</p>
+        ) : null}
+      </div>
+      <ul className="flex flex-col divide-y border-y text-sm">
         {settings.features.map(feature => (
-          <FeatureRow key={feature.key} feature={feature} canSwitch={canSwitch} />
+          <FeatureRow key={feature.key} feature={feature} canSwitch={canSwitch} showSource={source === null} />
         ))}
       </ul>
     </section>

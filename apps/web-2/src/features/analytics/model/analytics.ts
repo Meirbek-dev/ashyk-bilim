@@ -93,3 +93,12 @@ export const drillRows = (items: readonly unknown[]): DrillRow[] =>
     const row = v.safeParse(drillRowSchema, item)
     return row.success ? [row.output] : []
   })
+
+/**
+ * The admin "programs" are the courses grouped by author: the server names a group `courses_by:<author>` or
+ * `unassigned_courses` (B-ANL-36). The author's name is what a person reads; anything else is shown as it came.
+ */
+export function programAuthor(name: string): string | null {
+  if (name === 'unassigned_courses') return null
+  return name.startsWith('courses_by:') ? name.slice('courses_by:'.length) : name
+}

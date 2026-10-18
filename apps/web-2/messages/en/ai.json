@@ -150,9 +150,6 @@
   "ai_feature_study_companion": "Study companion",
   "ai_feature_lecture_authoring": "Lecture critique",
   "ai_feature_semantic_memory": "Semantic memory",
-  "ai_usage_runs": "Runs: {count}",
-  "ai_usage_input": "Input tokens: {count}",
-  "ai_usage_output": "Output tokens: {count}",
   "ai_budget": "Monthly budget: {left} of {total} left",
   "ai_budget_used": "Used",
   "ai_filter_days": "Period",
@@ -213,5 +210,9 @@
   "ai_filter_provider": "Provider or model",
   "ai_col_course": "Course",
   "ai_filter_this_course": "This course only",
-  "ai_filter_course_clear": "All courses"
+  "ai_filter_course_clear": "All courses",
+  "ai_usage_runs_label": "Runs",
+  "ai_usage_input_label": "Input tokens",
+  "ai_usage_output_label": "Output tokens",
+  "ai_features_source_all": "All features: source - {source}."
 }

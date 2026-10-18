@@ -23,10 +23,11 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     priority: 1,
     cell: row => (
       <Link
+        variant="title"
         to="."
         search={prev => ({ ...prev, assessmentType: row.assessment_type, assessmentId: row.assessment_id, page: 1 })}
       >
-        <span className="wrap-anywhere">{row.title}</span>
+        <span className="font-medium wrap-anywhere">{row.title}</span>
       </Link>
     ),
   },
@@ -48,6 +49,7 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     id: 'course',
     header: m.analytics_col_course(),
     priority: 2,
+    wrap: true,
     cell: row => <span className="wrap-anywhere">{row.course_name}</span>,
   },
   {
@@ -70,6 +72,7 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     id: 'outliers',
     header: m.analytics_col_outliers(),
     priority: 3,
+    wrap: true,
     cell: row => row.outlier_reason_codes.map(code => outlierLabels[code]()).join(', '),
   },
 ]

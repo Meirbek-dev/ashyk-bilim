@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { AssessmentKind } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { formatNumber } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
@@ -40,11 +41,11 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
         </p>
         <AsOf at={data.generated_at_unix} />
       </div>
-      <section aria-label={m.analytics_kpis()} className="grid grid-cols-2 gap-4 @3xl:grid-cols-3">
+      <KpiStrip label={m.analytics_kpis()} columns={3}>
         {tiles.map(tile => (
           <KpiTile key={tile.label} label={tile.label} value={tile.value} />
         ))}
-      </section>
+      </KpiStrip>
       <Bars
         title={m.analytics_score_distribution()}
         data={data.score_distribution.map(bucket => ({ label: bucket.label, value: bucket.count }))}

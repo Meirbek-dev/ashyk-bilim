@@ -33,6 +33,14 @@ type Options = {
  * become canonical), external content changes are applied without an update event, and `onChange` gets the
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
+// A lesson page is written at the width the learner reads it, on the page's own sheet (BlockEditor draws the sheet);
+// a post is a field among fields.
+const surface = {
+  view: 'max-w-none',
+  authoring: 'mx-auto min-h-96 max-w-prose px-4 py-gutter',
+  input: 'max-w-none min-h-40 rounded-md border border-input bg-background p-4',
+}
+
 export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteImage, focusOnMount }: Options) {
   const readOnly = preset === 'view' || preset === 'discussion-view'
   // What this editor last emitted: a parent that passes it back as `content` must not reset the cursor.
@@ -56,7 +64,7 @@ export function useDocumentEditor({ preset, content, onChange, onSlash, onPasteI
       },
       attributes: {
         'aria-label': preset === 'discussion' ? m.editor_label_post() : m.editor_label(),
-        class: `ab-prose max-w-none ${readOnly ? '' : 'min-h-40 rounded-md border border-input bg-background p-4'}`,
+        class: `ab-prose ${surface[readOnly ? 'view' : preset === 'authoring' ? 'authoring' : 'input']}`,
         ...(readOnly ? { role: 'article' } : { role: 'textbox', 'aria-multiline': 'true' }),
       },
     },

@@ -128,5 +128,6 @@
   "code_cases_import": "Импорт примеров (JSON, CSV)",
   "code_cases_export_json": "Экспорт в JSON",
   "code_cases_export_csv": "Экспорт в CSV",
-  "code_cases_import_bad": "В файле нет примеров: нужен JSON-массив или CSV со столбцами input и expected_output."
+  "code_cases_import_bad": "В файле нет примеров: нужен JSON-массив или CSV со столбцами input и expected_output.",
+  "code_io_empty": "Пусто"
 }

@@ -2,22 +2,27 @@ import { Search } from 'lucide-react'
 import { type ChangeEvent, type ComponentProps, useId, useLayoutEffect, useRef } from 'react'
 
 import { Input } from '#/shared/ui/input'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '#/shared/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '#/shared/ui/input-group'
 
 import { errorText } from './field-errors'
 import { describedBy, FieldShell } from './field-shell'
 import { useFieldContext } from './form-context'
 
-type TextFieldProps = Pick<ComponentProps<'input'>, 'type' | 'autoComplete' | 'inputMode' | 'required'> & {
+type TextFieldProps = Pick<
+  ComponentProps<'input'>,
+  'type' | 'autoComplete' | 'inputMode' | 'required' | 'placeholder'
+> & {
   label: string
   description?: string
+  /** A unit after the value («XP», «МБ»), inside the box. */
+  suffix?: string
 }
 
 /**
  * `<form.AppField name="x">{f => <f.TextField label={...} />}</form.AppField>`: stock `Input` in a stock `Field`.
  * `type="search"` draws a search box: magnifier and the label as placeholder; the label itself is for screen readers.
  */
-export function TextField({ label, description, ...input }: TextFieldProps) {
+export function TextField({ label, description, suffix, ...input }: TextFieldProps) {
   const field = useFieldContext<string | null | undefined>()
   const id = useId()
   const error = errorText(field.state.meta.errors)
@@ -47,6 +52,13 @@ export function TextField({ label, description, ...input }: TextFieldProps) {
           <InputGroupInput placeholder={label} {...control} />
           <InputGroupAddon>
             <Search aria-hidden />
+          </InputGroupAddon>
+        </InputGroup>
+      ) : suffix ? (
+        <InputGroup className="h-control">
+          <InputGroupInput {...control} />
+          <InputGroupAddon align="inline-end">
+            <InputGroupText>{suffix}</InputGroupText>
           </InputGroupAddon>
         </InputGroup>
       ) : (

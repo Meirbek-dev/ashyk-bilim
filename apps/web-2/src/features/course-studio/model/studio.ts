@@ -257,3 +257,15 @@ export const mediaBlock = (activityType: string) =>
 /** Only the replaced media's claims: keep the new file and unrelated editor blocks. */
 export const replacedMediaBlockIds = (blocks: Block[], blockType: string, keptId: string) =>
   blocks.filter(block => block.block_type === blockType && block.id !== keptId).map(block => block.id)
+
+/**
+ * The current media file as the learner's player shows it (B-CST-29): a one-block document for the editor's viewer, and
+ * the name to link it by (legacy rows kept only the storage key: its last segment).
+ */
+export function mediaPreview(type: 'video' | 'document', source: { key: string; name: string }) {
+  const block = type === 'video' ? 'blockVideo' : 'blockPDF'
+  return {
+    content: { type: 'doc', content: [{ type: block, attrs: { blockObject: { content: { file_key: source.key } } } }] },
+    name: source.name.split('/').pop() || source.name,
+  }
+}

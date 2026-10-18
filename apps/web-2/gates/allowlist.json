@@ -45,6 +45,14 @@
     {
       "key": "platform_tab_profile",
       "reason": "Established kk term (legacy catalog uses Профиль), spelled like ru."
+    },
+    {
+      "key": "admin_gamification_xp",
+      "reason": "XP is the unit as the kk catalog already writes it (achievements: {xp} XP)."
+    },
+    {
+      "key": "analytics_col_program",
+      "reason": "Established kk term (Автор), spelled like ru."
     }
   ]
 }

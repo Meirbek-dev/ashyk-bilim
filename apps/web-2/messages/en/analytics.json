@@ -152,7 +152,7 @@
   "analytics_admin_courses": "Course health",
   "analytics_admin_teachers": "Teacher workload",
   "analytics_admin_cohorts": "Group retention",
-  "analytics_admin_programs": "Programs",
+  "analytics_admin_programs": "Courses by author",
   "analytics_admin_empty": "No data yet.",
   "analytics_col_roi": "Content payoff",
   "analytics_col_teacher": "Teacher",
@@ -160,7 +160,7 @@
   "analytics_col_backlog": "Queue",
   "analytics_col_learners": "Learners",
   "analytics_col_retention": "Retention",
-  "analytics_col_program": "Program",
+  "analytics_col_program": "Author",
   "analytics_alerts_title": "Needs attention",
   "analytics_insights_title": "Insights",
   "analytics_forecasts_title": "Forecasts",
@@ -289,5 +289,6 @@
   "analytics_admin_course": "Course: {course}",
   "analytics_admin_group": "Group: {group}",
   "analytics_admin_all": "all",
-  "analytics_admin_roi": "Content return"
+  "analytics_admin_roi": "Content return",
+  "analytics_program_unassigned": "No author"
 }

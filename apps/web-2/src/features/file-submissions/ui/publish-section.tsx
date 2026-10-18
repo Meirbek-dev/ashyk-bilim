@@ -37,7 +37,7 @@ export function PublishSection({ task }: { task: FileSubmission }) {
       { onSuccess: () => toast.add({ title: m.submission_published_toast() }) },
     )
   return (
-    <section aria-labelledby="submission-publishing" className="flex max-w-prose flex-col gap-2">
+    <section aria-labelledby="submission-publishing" className="flex max-w-prose flex-col items-start gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <h2 id="submission-publishing" className="text-xl font-semibold">
           {m.submission_publishing()}

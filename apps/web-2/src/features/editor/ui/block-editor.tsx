@@ -24,7 +24,8 @@ export function BlockEditor({ activityId, content, onChange }: BlockEditorProps)
   const editor = useDocumentEditor({ preset: 'authoring', content, onChange, onSlash: setMenu })
   return (
     <ActivityContext value={activityId}>
-      <div className="flex flex-col gap-2">
+      {/* One sheet: the toolbar is its top edge, the page is written inside it. */}
+      <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs [&>[role=toolbar]]:rounded-t-xl [&>[role=toolbar]]:bg-card [&>[role=toolbar]]:px-2">
         <ContentStyles />
         {editor ? <EditorToolbar editor={editor} onInsert={setMenu} /> : null}
         <EditorContent editor={editor} />

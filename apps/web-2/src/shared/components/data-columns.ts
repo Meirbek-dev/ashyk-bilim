@@ -7,6 +7,8 @@ export type DataColumn<T> = {
   /** Narrow width: 1 = the card's title, 2 = a labelled line on the card, 3 = table only. */
   priority: 1 | 2 | 3
   sortable?: boolean
+  /** Long text (a course name) wraps in the table instead of widening it; the title column (priority 1) always does. */
+  wrap?: boolean
 }
 
 export type Sort = { id: string; desc: boolean }

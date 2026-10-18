@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import { drillRows, exportHrefs, pageCount, trendOf, viewTarget } from './analytics'
+import { drillRows, exportHrefs, pageCount, programAuthor, trendOf, viewTarget } from './analytics'
 import { filtersSchema } from './filters'
 
 const COURSE = '01a0fe71-945c-760e-a11a-037490019fda'
@@ -58,5 +58,11 @@ describe('analytics model', () => {
     expect(pageCount(0, 25)).toBe(1)
     expect(pageCount(25, 25)).toBe(1)
     expect(pageCount(26, 25)).toBe(2)
+  })
+
+  test('B-ANL-36 an admin program reads as its author', () => {
+    expect(programAuthor('courses_by:Айжан Каирбаева')).toBe('Айжан Каирбаева')
+    expect(programAuthor('unassigned_courses')).toBeNull()
+    expect(programAuthor('Информатика')).toBe('Информатика')
   })
 })

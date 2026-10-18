@@ -5,6 +5,7 @@ import { RemediationGate } from '#/features/ai'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityId } from '#/shared/api/gen/types.gen'
+import { ActivityIcon } from '#/shared/components/activity-icon'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
@@ -26,10 +27,17 @@ export function Entry({ courseId, assessmentId, activityId }: EntryProps) {
   const { max_attempts: max, due_at_unix: due, time_limit_seconds: limit } = state.effective
   const used = state.attempts_used
   return (
-    <section aria-labelledby="code-entry" className="flex max-w-prose flex-col gap-4">
-      <h2 id="code-entry" className="text-xl font-semibold">
-        {m.code_solution()}
-      </h2>
+    // Where the editor will be: an empty desk in its place, so the page shows what "Start" opens.
+    <section
+      aria-labelledby="code-entry"
+      className="flex min-h-64 flex-col items-start justify-center gap-4 rounded-xl border border-dashed p-gutter"
+    >
+      <span className="flex items-center gap-3">
+        <ActivityIcon type="code_challenge" />
+        <h2 id="code-entry" className="text-xl font-semibold">
+          {m.code_solution()}
+        </h2>
+      </span>
       <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
         <li>{max === null ? m.code_attempts_unlimited({ used }) : m.code_attempts_used({ used, max })}</li>
         {due === null ? null : <li>{m.code_due({ date: formatDateTime(due) })}</li>}

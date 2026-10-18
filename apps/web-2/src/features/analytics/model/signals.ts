@@ -154,3 +154,12 @@ export const riskBreakdown = (components: Record<string, number>): string =>
     .toSorted(([, a], [, b]) => b - a)
     .map(([key, points]) => `${COMPONENTS[key]?.() ?? key} ${formatNumber(points)}`)
     .join(', ') || '—'
+
+const severityOrder: readonly Severity[] = ['critical', 'warning', 'info']
+
+/** Signals grouped by severity, most severe first, each group in the server's order; empty groups dropped (B-ANL-35). */
+export function bySeverity<T extends { severity: Severity }>(items: readonly T[]): [Severity, T[]][] {
+  return severityOrder
+    .map(severity => [severity, items.filter(item => item.severity === severity)] as [Severity, T[]])
+    .filter(([, group]) => group.length > 0)
+}

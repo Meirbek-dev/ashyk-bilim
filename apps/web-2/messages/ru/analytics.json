@@ -152,7 +152,7 @@
   "analytics_admin_courses": "Курсы по здоровью",
   "analytics_admin_teachers": "Нагрузка преподавателей",
   "analytics_admin_cohorts": "Удержание групп",
-  "analytics_admin_programs": "Программы",
+  "analytics_admin_programs": "Курсы по авторам",
   "analytics_admin_empty": "Данных пока нет.",
   "analytics_col_roi": "Отдача контента",
   "analytics_col_teacher": "Преподаватель",
@@ -160,7 +160,7 @@
   "analytics_col_backlog": "Очередь",
   "analytics_col_learners": "Учащихся",
   "analytics_col_retention": "Удержание",
-  "analytics_col_program": "Программа",
+  "analytics_col_program": "Автор",
   "analytics_alerts_title": "Требует внимания",
   "analytics_insights_title": "Наблюдения",
   "analytics_forecasts_title": "Прогнозы",
@@ -289,5 +289,6 @@
   "analytics_admin_course": "Курс: {course}",
   "analytics_admin_group": "Группа: {group}",
   "analytics_admin_all": "все",
-  "analytics_admin_roi": "Отдача контента"
+  "analytics_admin_roi": "Отдача контента",
+  "analytics_program_unassigned": "Без автора"
 }

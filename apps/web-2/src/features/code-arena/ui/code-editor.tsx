@@ -38,6 +38,9 @@ const chrome = EditorView.theme({
   '.cm-matchingBracket': { backgroundColor: 'color-mix(in oklab, var(--ring) 25%, transparent)' },
 })
 
+// The editor fills its box: a desk tall enough for a short program without scrolling.
+const HOST_CLASS = 'min-h-64 overflow-hidden rounded-md border border-input text-sm [&_.cm-editor]:min-h-64'
+
 /** A replacement that came in through `value` (a language switch): not an edit, so not reported back. */
 const fromProps = Annotation.define<boolean>()
 
@@ -130,5 +133,5 @@ export function CodeEditor({ value, mode, label, onChange, readOnly = false }: C
       })
   }, [value])
 
-  return <div ref={host} className="min-h-40 overflow-hidden rounded-md border border-input text-sm" />
+  return <div ref={host} className={HOST_CLASS} />
 }

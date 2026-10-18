@@ -26,11 +26,14 @@ export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps
   const full = files.length >= task.max_files
   return (
     <div className="flex flex-col gap-4">
-      <AttemptFiles
-        files={files}
-        disabled={pending}
-        onRemove={id => void run({ kind: 'files', change: { remove: id } })?.catch(() => null)}
-      />
+      {/* No "no files yet" line above an empty picker: the picker says it. */}
+      {files.length > 0 ? (
+        <AttemptFiles
+          files={files}
+          disabled={pending}
+          onRemove={id => void run({ kind: 'files', change: { remove: id } })?.catch(() => null)}
+        />
+      ) : null}
       <FileInput
         label={m.submission_file_field()}
         description={full ? m.submission_files_full() : undefined}

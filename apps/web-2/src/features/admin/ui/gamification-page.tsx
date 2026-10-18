@@ -66,23 +66,31 @@ export function GamificationPage() {
               <field.TextField
                 label={m.admin_gamification_daily_limit()}
                 inputMode="numeric"
+                placeholder={formatNumber(config.default_daily_xp_limit)}
+                suffix={m.admin_gamification_xp()}
                 description={m.admin_gamification_default({ value: formatNumber(config.default_daily_xp_limit) })}
               />
             )}
           </form.AppField>
-          {REWARD_SOURCES.map(source => (
-            <form.AppField key={source} name={`rewards.${source}`}>
-              {field => (
-                <field.TextField
-                  label={rewardLabels[source]()}
-                  inputMode="numeric"
-                  description={m.admin_gamification_default({
-                    value: formatNumber(config.default_rewards[source] ?? 0),
-                  })}
-                />
-              )}
-            </form.AppField>
-          ))}
+          {/* Nine small numbers: two to a row, each with its unit and the default shown in the empty box. */}
+          <fieldset className="grid gap-x-gutter gap-y-4 sm:grid-cols-2">
+            <legend className="mb-2 font-medium">{m.admin_gamification_rewards()}</legend>
+            {REWARD_SOURCES.map(source => (
+              <form.AppField key={source} name={`rewards.${source}`}>
+                {field => (
+                  <field.TextField
+                    label={rewardLabels[source]()}
+                    inputMode="numeric"
+                    placeholder={formatNumber(config.default_rewards[source] ?? 0)}
+                    suffix={m.admin_gamification_xp()}
+                    description={m.admin_gamification_default({
+                      value: formatNumber(config.default_rewards[source] ?? 0),
+                    })}
+                  />
+                )}
+              </form.AppField>
+            ))}
+          </fieldset>
         </SettingsSection>
         <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
       </div>

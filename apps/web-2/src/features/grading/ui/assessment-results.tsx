@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { ItemAnalytics, Stats } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
@@ -70,13 +71,13 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
   const { data: items } = useSuspenseQuery(itemStatsOptions(assessment.id))
   return (
     <div className="flex flex-col gap-8">
-      <section aria-label={m.platform_tab_results()} className="grid grid-cols-2 gap-4 @3xl:grid-cols-4">
+      <KpiStrip label={m.platform_tab_results()} columns={4}>
         {counts.map(({ key, label }) => (
           <KpiTile key={key} label={label()} value={formatNumber(stats[key])} />
         ))}
         <KpiTile label={m.grading_kpi_average()} value={share(stats.avg_score)} />
         <KpiTile label={m.grading_kpi_pass_rate()} value={share(stats.pass_rate)} />
-      </section>
+      </KpiStrip>
       <Bars
         title={m.grading_distribution()}
         data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}

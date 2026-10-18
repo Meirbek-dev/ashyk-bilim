@@ -3,6 +3,7 @@ import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { TeacherOverviewSummary, TeacherOverviewTrends } from '#/shared/api/gen/types.gen'
+import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { TimeSeries } from '#/shared/components/charts/time-series'
 import { formatDayMonth, formatNumber } from '#/shared/i18n/format'
 
@@ -39,11 +40,11 @@ export function OverviewTab() {
   return (
     <div className="flex flex-col gap-8">
       <AsOf at={data.generated_at_unix} />
-      <section aria-label={m.analytics_kpis()} className="grid grid-cols-1 gap-4 @md:grid-cols-2 @4xl:grid-cols-3">
+      <KpiStrip label={m.analytics_kpis()} columns={3}>
         {tiles.map(({ name, drill }) => (
           <MetricTile key={name} label={kpiLabels[name]()} card={data.summary[name]} drill={drill} />
         ))}
-      </section>
+      </KpiStrip>
       {search.metric ? (
         <DrillSection
           title={drillTitles[search.metric]()}
