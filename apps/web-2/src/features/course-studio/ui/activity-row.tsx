@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Activity, ActivityAction } from '#/shared/api/gen/types.gen'
+import { ActivityIcon } from '#/shared/components/activity-icon'
 import { IconButton } from '#/shared/components/icon-button'
 import { Link } from '#/shared/components/link'
 import { activityTypeMeta } from '#/shared/i18n/labels'
@@ -52,7 +53,6 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
     disabled: !allowed('move'),
   })
   const meta = activityTypeMeta[activity.activity_type]
-  const TypeIcon = meta.icon
   const { renaming, setRenaming, renameButton, rename, done, save } = useRename(courseId, activity)
   return (
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
@@ -70,8 +70,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
             icon={<GripVertical aria-hidden />}
           />
         ) : null}
-        <TypeIcon aria-hidden className={`size-4 shrink-0 ${meta.ink}`} />
-        <span className="text-sm text-muted-foreground">{meta.label()}</span>
+        <ActivityIcon type={activity.activity_type} size="sm" />
         {renaming ? (
           <RenameForm
             name={activity.name}
@@ -81,7 +80,8 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
             error={rename.error}
           />
         ) : (
-          <span className="min-w-0 flex-1 wrap-anywhere">
+          // The type is a line under the name, so a long name keeps the row's width on a phone.
+          <span className="flex min-w-0 flex-1 flex-col wrap-anywhere">
             <Link
               variant="title"
               to="/teach/courses/$courseId/activities/$activityId/edit"
@@ -89,6 +89,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
             >
               {activity.name}
             </Link>
+            <span className="text-xs text-muted-foreground">{meta.label()}</span>
           </span>
         )}
       </div>
