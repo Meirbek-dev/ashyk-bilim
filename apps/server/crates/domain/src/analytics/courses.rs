@@ -378,6 +378,7 @@ pub fn build_course_detail(
 
     let mut activity_dropoff = Vec::new();
     let mut previous: Option<usize> = None;
+
     for activity in ctx.ordered_activities(course_id) {
         let current = completion_by_activity
             .get(&activity.id)
@@ -386,11 +387,7 @@ pub fn build_course_detail(
             previous = Some(current);
             continue;
         };
-        let dropoff_pct = if prev == 0 {
-            0.0
-        } else {
-            round1((count(prev) - count(current)) / count(prev) * 100.0)
-        };
+        let dropoff_pct = step_dropoff(prev, current);
         activity_dropoff.push(ActivityDropoffRow {
             chapter_id: activity.chapter_id,
             activity_id: activity.id,
@@ -526,10 +523,30 @@ pub fn at_risk_count(rows: &[AtRiskLearnerRow]) -> i64 {
     )
 }
 
+/// The share of the previous step's finishers a step loses, 0..=100.
+///
+/// Learners skip optional steps (an exam few take), so a later step can have more completions than the one before:
+/// that is no drop, not a negative one ("-3 100 %" on the course drill-down).
+fn step_dropoff(prev: usize, current: usize) -> f64 {
+    if prev == 0 {
+        0.0
+    } else {
+        round1(((count(prev) - count(current)) / count(prev) * 100.0).max(0.0))
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::float_cmp)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn step_dropoff_never_goes_negative() {
+        assert_eq!(step_dropoff(10, 7), 30.0);
+        assert_eq!(step_dropoff(1, 32), 0.0);
+        assert_eq!(step_dropoff(0, 5), 0.0);
+        assert_eq!(step_dropoff(3, 3), 0.0);
+    }
 
     #[test]
     fn health_score_matches_legacy_formula() {
