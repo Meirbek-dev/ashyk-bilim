@@ -70,10 +70,11 @@ export function CoursesPage() {
       primaryAction={hasCapability(session, 'course.create') ? <CreateCourseDialog /> : null}
       // Keyed by the URL value: "back" to another search refills the box.
       search={
-        <div className="flex flex-wrap items-end gap-2">
+        // One row with the presets: a wrapper of its own put the order menu on a second line under the search box.
+        <>
           <CoursesSearchBox key={search.q ?? ''} search={search} />
           <CoursesSortMenu search={search} />
-        </div>
+        </>
       }
       filters={filters}
       activeFilters={search.preset ? 1 : 0}
