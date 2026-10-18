@@ -230,6 +230,7 @@ test('B-PLY-11 graded work shows an entry card whose action opens its own addres
   await page.goto(play(course, 1))
   await expect(page.getByRole('heading', { level: 1, name: 'Эссе' })).toBeVisible()
   await expect(page.getByText(m.player_state_not_started({}, ru))).toBeVisible()
+  await expect(page.getByText(m.player_hint_submission({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.player_mark({}, ru) })).toHaveCount(0)
   await page.getByRole('link', { name: m.player_entry_start({}, ru) }).click()
   await expect(page).toHaveURL(`${play(course, 1)}/submission`)
