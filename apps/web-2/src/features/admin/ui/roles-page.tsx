@@ -65,6 +65,7 @@ export function RolesPage() {
   return (
     <ListPage
       title={m.admin_roles_title()}
+      count={m.admin_roles_count({ count: query.data.length })}
       primaryAction={hasCapability(session, 'admin.roles.create') ? <CreateRoleDialog /> : null}
     >
       <ListState

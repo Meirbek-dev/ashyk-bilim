@@ -53,6 +53,16 @@
   "admin_award_submit": "Award",
   "admin_award_done": "Awarded. The user now has {total} XP",
   "admin_roles_title": "Roles",
+  "admin_roles_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} role",
+        "countPlural=other": "{count} roles"
+      }
+    }
+  ],
   "admin_roles_table": "Platform roles",
   "admin_roles_empty": "No roles yet.",
   "admin_roles_all": "All roles",

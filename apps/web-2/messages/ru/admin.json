@@ -53,6 +53,18 @@
   "admin_award_submit": "Начислить",
   "admin_award_done": "Начислено. Теперь у пользователя {total} XP",
   "admin_roles_title": "Роли",
+  "admin_roles_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} роль",
+        "countPlural=few": "{count} роли",
+        "countPlural=many": "{count} ролей",
+        "countPlural=other": "{count} роли"
+      }
+    }
+  ],
   "admin_roles_table": "Роли платформы",
   "admin_roles_empty": "Ролей пока нет.",
   "admin_roles_all": "Все роли",

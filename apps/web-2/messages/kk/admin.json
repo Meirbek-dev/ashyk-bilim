@@ -53,6 +53,16 @@
   "admin_award_submit": "Беру",
   "admin_award_done": "Берілді. Енді пайдаланушыда {total} XP",
   "admin_roles_title": "Рөлдер",
+  "admin_roles_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} рөл",
+        "countPlural=other": "{count} рөл"
+      }
+    }
+  ],
   "admin_roles_table": "Платформа рөлдері",
   "admin_roles_empty": "Әзірге рөлдер жоқ.",
   "admin_roles_all": "Барлық рөлдер",
