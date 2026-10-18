@@ -29,5 +29,5 @@
   "learning_certificates_empty": "Здесь появятся сертификаты завершённых курсов.",
   "learning_certificate_meta": "Выдан {date} · код {code}",
   "learning_certificate_instructor": "Преподаватель: {name}",
-  "learning_certificate_verify": "Подлинность"
+  "learning_certificate_verify": "Проверить подлинность"
 }

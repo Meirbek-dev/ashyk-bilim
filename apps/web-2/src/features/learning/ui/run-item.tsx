@@ -78,7 +78,8 @@ export function RunItem({ run }: { run: TrailRun }) {
               params={{ courseId: run.course_id }}
               className={buttonVariants({ variant: 'secondary' })}
             >
-              {state.action()}
+              {/* No next activity (none published yet): "Start" would promise what the course page cannot give. */}
+              {m.learning_action_open()}
             </RouterLink>
           )}
         </div>

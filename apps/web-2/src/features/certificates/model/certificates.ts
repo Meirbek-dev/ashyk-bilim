@@ -47,8 +47,10 @@ const typeLabels: Record<CertificationType, () => string> = {
 }
 
 /** The certificate as its PDF names it: the author's name and the type, each left out when unset. */
-export function certificateKind(config: CertificationConfig): string {
-  const name = config.certification_name?.trim()
+export function certificateKind(config: CertificationConfig, courseName?: string): string {
+  const own = config.certification_name?.trim()
+  // Next to its course a name that only repeats the course's is left out ("Python · Python course" reads twice).
+  const name = own && own.toLowerCase() === courseName?.trim().toLowerCase() ? '' : own
   const type = config.certification_type ? typeLabels[config.certification_type]() : ''
   return [name, type].filter(Boolean).join(' · ')
 }

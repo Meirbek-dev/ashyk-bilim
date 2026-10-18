@@ -36,8 +36,8 @@ export function MyCertificates() {
                   {course.name}
                 </Link>
               </h3>
-              {certificateKind(certification.config) ? (
-                <p className="text-sm wrap-anywhere">{certificateKind(certification.config)}</p>
+              {certificateKind(certification.config, course.name) ? (
+                <p className="text-sm wrap-anywhere">{certificateKind(certification.config, course.name)}</p>
               ) : null}
               <p className="text-sm wrap-anywhere text-muted-foreground">
                 {m.learning_certificate_meta({

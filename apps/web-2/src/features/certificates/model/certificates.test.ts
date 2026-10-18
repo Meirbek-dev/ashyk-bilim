@@ -27,6 +27,9 @@ test("B-CRT-01 the certificate is named as its PDF: the author's name and the ty
   )
   expect(certificateKind({ certification_name: '  ', certification_type: 'workshop' })).toBe('Семинар')
   expect(certificateKind({})).toBe('')
+  expect(certificateKind({ certification_name: 'Python', certification_type: 'completion' }, ' python ')).toBe(
+    'За завершение курса',
+  )
 })
 
 test('B-CRT-04 the PDF link is a relative API path in the interface language', () => {

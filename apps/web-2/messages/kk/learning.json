@@ -27,5 +27,5 @@
   "learning_certificates_empty": "Аяқталған курстардың сертификаттары осында пайда болады.",
   "learning_certificate_meta": "{date} берілген · коды {code}",
   "learning_certificate_instructor": "Оқытушы: {name}",
-  "learning_certificate_verify": "Түпнұсқалығы"
+  "learning_certificate_verify": "Түпнұсқалығын тексеру"
 }

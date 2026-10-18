@@ -67,6 +67,11 @@ describe('learning model', () => {
     expect(orderRuns(runs).map(item => item.id)).toEqual(['a', 'b', 'old', 'older'])
   })
 
+  test('B-LRN-09 courses in progress come first, then not started, then completed, each in the server order', () => {
+    const runs = [run('done', 100), run('fresh', 0), run('mid', 40), run('done2', 100), run('mid2', 5)]
+    expect(orderRuns(runs).map(item => item.id)).toEqual(['mid', 'mid2', 'fresh', 'done', 'done2'])
+  })
+
   test('B-LRN-04 the card goes to the next activity until the course is completed', () => {
     expect(nextActivity({ progress_pct: 40, next_activity_id: 'x' })).toBe('x')
     expect(nextActivity({ progress_pct: null, next_activity_id: 'x' })).toBe('x')

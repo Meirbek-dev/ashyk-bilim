@@ -14,9 +14,14 @@ export function runState(run: Pick<TrailRun, 'progress_pct'>): RunState {
   return percent > 0 ? 'in_progress' : 'not_started'
 }
 
-/** Archived courses stay (history, certificates) but go after the live ones; otherwise the server's order. */
-export const orderRuns = (runs: readonly TrailRun[]): TrailRun[] =>
-  runs.toSorted((a, b) => Number(Boolean(a.course.archived_at_unix)) - Number(Boolean(b.course.archived_at_unix)))
+const STATE_ORDER: Record<RunState, number> = { in_progress: 0, not_started: 1, completed: 2 }
+const rank = (run: TrailRun) => (run.course.archived_at_unix ? 3 : STATE_ORDER[runState(run)])
+
+/**
+ * What the learner is working on first (B-LRN-09): in progress, not started, completed; archived courses stay
+ * (history, certificates) but go last (B-LRN-06). Within a group, the server's order.
+ */
+export const orderRuns = (runs: readonly TrailRun[]): TrailRun[] => runs.toSorted((a, b) => rank(a) - rank(b))
 
 export const countByState = (runs: readonly TrailRun[]): Record<RunState, number> => {
   const counts = { in_progress: 0, not_started: 0, completed: 0 }
