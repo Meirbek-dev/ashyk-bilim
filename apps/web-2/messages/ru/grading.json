@@ -114,7 +114,6 @@
   "grading_criterion_score": "{label} (из {max})",
   "grading_rubric_total": "По рубрике: {percent}",
   "grading_final_score": "Оценка, %",
-  "grading_results_none": "Сводки по отправке файлов пока нет: смотрите очередь работ.",
   "grading_kpi_total": "Всего работ",
   "grading_kpi_needs_grading": "Ждут проверки",
   "grading_kpi_graded": "Не опубликованы",

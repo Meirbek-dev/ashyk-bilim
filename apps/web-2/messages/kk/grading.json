@@ -112,7 +112,6 @@
   "grading_criterion_score": "{label} ({max} ішінен)",
   "grading_rubric_total": "Критерийлер бойынша: {percent}",
   "grading_final_score": "Баға, %",
-  "grading_results_none": "Файл жіберу бойынша қорытынды әзірге жоқ: жұмыстар кезегін қараңыз.",
   "grading_kpi_total": "Барлық жұмыстар",
   "grading_kpi_needs_grading": "Тексеруді күтуде",
   "grading_kpi_graded": "Жарияланбаған",

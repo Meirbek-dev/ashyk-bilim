@@ -206,6 +206,7 @@ export async function ensureReview(
 
 export async function ensureResults(queryClient: QueryClient, activityId: ActivityId) {
   const work = await ensureWork(queryClient, activityId)
+  if (work?.kind === 'file') await queryClient.query({ ...fileStatsOptions(work.id, undefined), staleTime: 'static' })
   if (work?.kind !== 'assessment') return
   await Promise.all([
     queryClient.query({ ...statsOptionsOf(work.id), staleTime: 'static' }),

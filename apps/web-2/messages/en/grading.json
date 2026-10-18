@@ -112,7 +112,6 @@
   "grading_criterion_score": "{label} (of {max})",
   "grading_rubric_total": "From the rubric: {percent}",
   "grading_final_score": "Grade, %",
-  "grading_results_none": "There is no summary for file submissions yet: see the submission queue.",
   "grading_kpi_total": "All submissions",
   "grading_kpi_needs_grading": "Awaiting review",
   "grading_kpi_graded": "Not published",

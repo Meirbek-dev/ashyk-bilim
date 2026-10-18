@@ -220,7 +220,7 @@ test('B-GRD-16 B-GRD-26 a file attempt: download by a signed link, rubric points
   await expect(history).toContainText(m.grading_status_published({}, ru))
 })
 
-test('B-GRD-18 results summarize the assessment from the server; a file task says it has no summary', async ({
+test('B-GRD-18 results summarize the assessment from the server; a file task counts its hand-ins', async ({
   page,
   signInAs,
   graded,
@@ -233,7 +233,8 @@ test('B-GRD-18 results summarize the assessment from the server; a file task say
   await expect(page.getByText(m.grading_distribution({}, ru)).first()).toBeVisible()
   await expect(page.getByRole('row').filter({ hasText: 'Столица' })).toBeVisible()
   await page.goto(`/teach/courses/${fileTask.courseId}/activities/${fileTask.activityId}/results`)
-  await expect(page.getByText(m.grading_results_none({}, ru))).toBeVisible()
+  await expect(page.getByRole('region', { name: m.grading_kpi_total({}, ru) })).toBeVisible()
+  await expect(page.getByRole('region', { name: m.grading_kpi_late({}, ru) })).toBeVisible()
 })
 
 test('B-GRD-19 B-GRD-20 the gradebook leads each cell into its review; search and "to review" live in the URL', async ({
