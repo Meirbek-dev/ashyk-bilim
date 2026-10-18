@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { Course, UpdateCourseRequest } from '#/shared/api/gen/types.gen'
 import { vUpdateCourseRequest } from '#/shared/api/gen/valibot.gen'
+import { CourseCover } from '#/shared/components/course-cover'
 import { FileField } from '#/shared/components/form/file-field'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
@@ -16,7 +17,10 @@ import { useIfMatch } from './use-if-match'
 
 const defaultValues: UpdateCourseRequest = { thumbnail_upload_id: undefined }
 
-/** "Cover": the current image, a new one uploaded as `course-thumbnail` and claimed at once, or removed. */
+/**
+ * "Cover": the current image (none: the ornament learners see instead), a new one uploaded as `course-thumbnail` and
+ * claimed at once (no Save), or removed.
+ */
 export function ThumbnailSection({ course }: { course: Course }) {
   const queryClient = useQueryClient()
   const update = useMutation(updateCourseOptions(queryClient, course.id))
@@ -49,6 +53,7 @@ export function ThumbnailSection({ course }: { course: Course }) {
         onSubmit={() => form.handleSubmit()}
         pending={update.isPending}
         error={isStale(update.error) ? null : update.error}
+        saveButton={false}
       >
         {course.thumbnail_key ? (
           <div className="flex flex-col items-start gap-2">
@@ -62,7 +67,10 @@ export function ThumbnailSection({ course }: { course: Course }) {
             </Button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">{m.studio_thumbnail_none()}</p>
+          <div className="flex flex-col items-start gap-2">
+            <CourseCover seed={course.id} className="aspect-video w-full max-w-sm rounded-lg border" />
+            <p className="text-sm text-muted-foreground">{m.studio_thumbnail_none()}</p>
+          </div>
         )}
         {/* A picked image is the new cover at once: it was left unsaved when the teacher missed the Save. */}
         <form.AppField name="thumbnail_upload_id" listeners={{ onChange: () => void form.handleSubmit() }}>

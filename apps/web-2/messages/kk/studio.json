@@ -157,7 +157,7 @@
   "studio_thumbnail_field": "Жаңа мұқаба",
   "studio_thumbnail_types": "10 МБ-қа дейінгі JPEG, PNG, GIF, WebP немесе AVIF.",
   "studio_thumbnail_alt": "Курс мұқабасы",
-  "studio_thumbnail_none": "Әзірге мұқаба жоқ.",
+  "studio_thumbnail_none": "Әзірге мұқаба жоқ: курс карточкасында осы өрнек тұр.",
   "studio_thumbnail_remove": "Мұқабаны алып тастау",
   "studio_thumbnail_removed": "Мұқаба алынды",
   "studio_certificate_title": "Курс сертификаты",

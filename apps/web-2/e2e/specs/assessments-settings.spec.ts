@@ -217,14 +217,14 @@ test('B-ASM-28 a locked assessment (archived) keeps its name, basics and rules r
   const locked = (name: string) => page.getByRole('region', { name })
   const reason = m.assessments_lock_archived({}, ru)
   for (const name of [
-    m.platform_tab_settings({}, ru),
+    m.studio_field_name({}, ru),
     m.assessments_nav_details({}, ru),
     m.assessments_nav_rules({}, ru),
   ]) {
     await expect(locked(name).getByText(reason)).toBeVisible()
     await expect(locked(name).getByRole('button', { name: m.ui_save({}, ru) })).toHaveCount(0)
   }
-  await expect(locked(m.platform_tab_settings({}, ru)).getByLabel(m.studio_field_name({}, ru))).toBeDisabled()
+  await expect(locked(m.studio_field_name({}, ru)).getByLabel(m.studio_field_name({}, ru))).toBeDisabled()
   await expect(locked(m.assessments_nav_details({}, ru)).getByLabel(m.assessments_field_weight({}, ru))).toBeDisabled()
   const rules = locked(m.assessments_nav_rules({}, ru))
   await expect(rules.getByLabel(m.assessments_field_attempts({}, ru))).toBeDisabled()

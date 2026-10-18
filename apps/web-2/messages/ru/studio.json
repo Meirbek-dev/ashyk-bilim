@@ -167,7 +167,7 @@
   "studio_thumbnail_field": "Новая обложка",
   "studio_thumbnail_types": "JPEG, PNG, GIF, WebP или AVIF до 10 МБ.",
   "studio_thumbnail_alt": "Обложка курса",
-  "studio_thumbnail_none": "Обложки пока нет.",
+  "studio_thumbnail_none": "Обложки пока нет: на карточке курса - этот узор.",
   "studio_thumbnail_remove": "Убрать обложку",
   "studio_thumbnail_removed": "Обложка убрана",
   "studio_certificate_title": "Сертификат",

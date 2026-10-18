@@ -16,11 +16,21 @@ type SettingsSectionProps = {
   pending: boolean
   /** The mutation's error: field errors are under the fields, this is the region message. */
   error: unknown
+  /** `false` when the section saves by itself (a picked cover): no Save button. */
+  saveButton?: boolean
   children: ReactNode
 }
 
 /** One independent settings form: h2, a description, fields, and its own Save at the end. */
-export function SettingsSection({ title, description, onSubmit, pending, error, children }: SettingsSectionProps) {
+export function SettingsSection({
+  title,
+  description,
+  onSubmit,
+  pending,
+  error,
+  saveButton = true,
+  children,
+}: SettingsSectionProps) {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void onSubmit()
@@ -33,12 +43,14 @@ export function SettingsSection({ title, description, onSubmit, pending, error, 
       </div>
       {children}
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
-      <div>
-        <Button type="submit" variant="secondary" disabled={pending}>
-          {pending ? <Spinner data-icon="inline-start" /> : null}
-          {m.ui_save()}
-        </Button>
-      </div>
+      {saveButton ? (
+        <div>
+          <Button type="submit" variant="secondary" disabled={pending}>
+            {pending ? <Spinner data-icon="inline-start" /> : null}
+            {m.ui_save()}
+          </Button>
+        </div>
+      ) : null}
     </form>
   )
 }

@@ -157,7 +157,7 @@
   "studio_thumbnail_field": "New cover",
   "studio_thumbnail_types": "JPEG, PNG, GIF, WebP or AVIF up to 10 MB.",
   "studio_thumbnail_alt": "Course cover",
-  "studio_thumbnail_none": "No cover yet.",
+  "studio_thumbnail_none": "No cover yet: the course card shows this pattern.",
   "studio_thumbnail_remove": "Remove cover",
   "studio_thumbnail_removed": "Cover removed",
   "studio_certificate_title": "Certificate",

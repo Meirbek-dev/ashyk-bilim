@@ -56,7 +56,7 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
     <>
       <LockableSection
         lock={lock}
-        title={m.platform_tab_settings()}
+        title={m.studio_field_name()}
         description={m.studio_activity_settings_hint()}
         onSubmit={() => form.handleSubmit()}
         pending={update.isPending && !conflict}

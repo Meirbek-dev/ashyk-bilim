@@ -146,7 +146,7 @@ test('B-CST-30 the activity settings rename it with its own Save', async ({ page
   const made = await studio.course({ chapters: [{ pages: [{ name: 'Старое' }] }] })
   const activity = made.chapters[0]?.activities[0]
   await page.goto(studioUrl(made.course.id, activity?.id ?? '', 'settings'))
-  const form = page.getByRole('form', { name: m.platform_tab_settings({}, ru) })
+  const form = page.getByRole('form', { name: m.studio_field_name({}, ru) })
   await form.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill('Новое')
   await form.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
