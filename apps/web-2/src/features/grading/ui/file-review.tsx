@@ -35,7 +35,8 @@ export function FileReview({ courseId, activityId, submissionId, aside }: FileRe
         <h2 id="grading-files" className="text-xl font-semibold">
           {m.grading_files()}
         </h2>
-        <FilesList files={attempt.files} />
+        {/* Keyed: «Следующая работа» must not keep the previous learner's preview open. */}
+        <FilesList key={attempt.id} files={attempt.files} />
       </section>
       <FileGradeForm key={attempt.id} ids={ids} attempt={attempt} rubric={task.rubric} />
       <HistorySection key={`history-${attempt.id}`} work={ids.work} submissionId={attempt.id} />
