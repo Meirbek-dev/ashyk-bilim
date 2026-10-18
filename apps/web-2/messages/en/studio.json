@@ -133,7 +133,7 @@
   "studio_group_unlink_consequence": "Its members stop seeing the course while it is a draft.",
   "studio_group_unlinked": "Group unlinked",
   "studio_team_title": "Team",
-  "studio_team_hint": "The creator and co-authors edit the course; observers only view it.",
+  "studio_team_hint": "The creator, maintainers and co-authors edit the course. An observer sees the course, even a draft, on its page but changes nothing.",
   "studio_role_creator": "Creator",
   "studio_role_maintainer": "Maintainer",
   "studio_role_contributor": "Co-author",
