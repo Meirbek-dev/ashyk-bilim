@@ -14,11 +14,12 @@ const looks = {
  * A verdict or attempt state as an icon and its word in the status color (DESIGN 3: the word is the second channel).
  * Quieter than a badge: a run list is a column of verdicts, not a column of pills.
  */
-export function Verdict({ status }: { status: { label: () => string; tone: StatusTone } }) {
+export function Verdict({ status }: { status: { label: () => string; tone: StatusTone; icon?: LucideIcon } }) {
   const look = looks[status.tone]
+  const Icon = status.icon ?? look.icon
   return (
     <span className={`inline-flex items-center gap-1.5 font-medium ${look.ink}`}>
-      <look.icon aria-hidden className="size-4 shrink-0" />
+      <Icon aria-hidden className="size-4 shrink-0" />
       {status.label()}
     </span>
   )

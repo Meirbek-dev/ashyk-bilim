@@ -9,7 +9,7 @@ import { m } from '#/paraglide/messages'
 import { publicProfileByIdQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { renderInRouter } from '#/shared/components/testing'
 
-import { BlockViewer } from '../index'
+import { AuthorViewContext, BlockViewer } from '../index'
 import type { EditorDocument } from '../model/document'
 import { FIXTURES, LEGACY_EMBED } from '../model/fixtures'
 import { findLosses } from '../model/round-trip'
@@ -169,6 +169,15 @@ describe('B-EDT-19 media', () => {
     const screen = await render(<BlockViewer content={doc('video')} />)
     await expect.element(screen.getByRole('alert')).toHaveTextContent(m.editor_video_failed())
     expect(screen.getByRole('button', { name: m.editor_video_play() }).query()).toBeNull()
+  })
+
+  test('B-EDT-19 its author is asked to upload the file again, not to tell a teacher', async () => {
+    const screen = await render(
+      <AuthorViewContext value>
+        <BlockViewer content={doc('video')} />
+      </AuthorViewContext>,
+    )
+    await expect.element(screen.getByRole('alert')).toHaveTextContent(m.editor_video_failed_author())
   })
 
   afterEach(() => vi.restoreAllMocks())

@@ -123,9 +123,8 @@ test('B-FSB-03 B-FSB-04 B-FSB-05 B-FSB-06 B-FSB-11 a learner attaches files and 
   await expect(work.getByText(m.submission_awaiting_review({}, ru))).toBeVisible()
   await expect(work.getByRole('button', { name: 'essay.pdf', exact: true })).toBeVisible()
   await expect(work.getByRole('button', { name: m.submission_remove_file({ name: 'essay.pdf' }, ru) })).toHaveCount(0)
-  const history = region(page, m.submission_history({}, ru))
-  await expect(history.getByText(m.submission_attempt({ number: 1 }, ru))).toBeVisible()
-  await expect(history.getByText(m.submission_status_submitted({}, ru))).toBeVisible()
+  // One attempt is all in the work area above: no history repeating it (B-FSB-11).
+  await expect(region(page, m.submission_history({}, ru))).toHaveCount(0)
 
   const learnerHeaders = await tasks.headersOf(context)
   const path = { file_submission_id: task.id }
@@ -167,7 +166,9 @@ test('B-FSB-07 B-FSB-10 B-FSB-11 a released grade with feedback and criteria; ow
   await expect(fileField(page)).toBeEnabled()
   const history = region(page, m.submission_history({}, ru))
   await expect(history.getByRole('listitem')).toHaveCount(2)
-  await expect(history.getByText(m.submission_not_submitted({}, ru))).toBeVisible()
+  // The new draft: its state instead of a date, and the handed-in one with the same words as the work area.
+  await expect(history.getByText(m.submission_status_draft({}, ru))).toBeVisible()
+  await expect(history.getByText(m.submission_status_published({}, ru))).toBeVisible()
 })
 
 test('B-FSB-07 no new attempt once the cap is spent', async ({ page, context, learner, makeCourse, tasks }) => {

@@ -9,9 +9,11 @@
 
 export function verdict(command: string): string | null {
   if (!command.includes('<<')) {
-    for (const match of command.matchAll(/(^|[\s;&(])(python3?|py)(\.exe)?(\s+-)?(?=\s*($|[;&)\n|]|\d?>))/g)) {
-      const before = command.slice(0, match.index + (match[1]?.length ?? 0)).trimEnd()
-      if (!before.endsWith('|'))
+    // Only in command position (start, after ; & | ( or a newline): `echo py` or `grep python3 x` is an argument.
+    for (const match of command.matchAll(/(^|[;&|(\n])\s*(python3?|py)(\.exe)?(\s+-)?(?=\s*($|[;&)\n|]|\d?>))/g)) {
+      // After a single `|` the REPL reads the pipe, not the terminal: it ends.
+      const piped = match[1] === '|' && command[match.index - 1] !== '|'
+      if (!piped)
         return 'agent-guard: a bare python/python3 opens an interactive REPL here and never returns. Give it a script file, `-c "..."`, or a quoted heredoc (`python3 - <<\'EOF\'`).'
     }
   }

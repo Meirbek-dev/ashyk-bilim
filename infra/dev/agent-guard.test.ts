@@ -3,7 +3,14 @@ import { expect, test } from 'bun:test'
 import { verdict } from './agent-guard.ts'
 
 test('a bare python REPL is refused; scripts, -c, heredocs and pipes pass', () => {
-  for (const command of ['python3', 'python3 -', 'cd x && python', 'python3 - 2>&1 || echo no', 'py'])
+  for (const command of [
+    'python3',
+    'python3 -',
+    'cd x && python',
+    'python3 - 2>&1 || echo no',
+    'py',
+    'false || python',
+  ])
     expect(verdict(command)).toContain('REPL')
   for (const command of [
     'python3 script.py',
@@ -12,6 +19,8 @@ test('a bare python REPL is refused; scripts, -c, heredocs and pipes pass', () =
     'cat x | python3 -',
     'bun run build',
     'grep -n python3 file',
+    'echo py',
+    'ls x && echo python3',
   ])
     expect(verdict(command)).toBeNull()
 })

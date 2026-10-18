@@ -70,7 +70,6 @@
   "editor_embed_own_origin": "Осы сайттың беттерін ендіруге болмайды. Сыртқы сервистің мекенжайын қойыңыз (YouTube, Google Docs…).",
   "editor_code_language": "Код тілі",
   "editor_code_plain": "Қарапайым мәтін",
-  "editor_table": "Кесте",
   "editor_table_row_before": "Жоғарыға жол қосу",
   "editor_table_row_after": "Төменге жол қосу",
   "editor_table_column_before": "Сол жаққа баған қосу",
@@ -97,5 +96,6 @@
   "editor_math_quadratic": "Квадрат теңдеудің түбірлері",
   "editor_math_vector": "Баған-вектор",
   "editor_math_system": "Теңдеулер жүйесі",
-  "editor_image_expand": "Суретті толық көлемде ашу"
+  "editor_image_expand": "Суретті толық көлемде ашу",
+  "editor_video_failed_author": "Бейне ойнатылмайды: файл бүлінген немесе браузер қолдамайтын форматта. Оны MP4 (H.264) форматында қайта жүктеңіз."
 }

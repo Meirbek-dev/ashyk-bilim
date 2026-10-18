@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { Attempt } from '#/shared/api/gen/types.gen'
+import { ProgressRing } from '#/shared/components/progress-ring'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -16,13 +17,19 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
   return (
     <div className="flex flex-col gap-4">
       {score === null ? null : (
-        <div className="flex flex-col gap-1">
-          <p className="text-xl font-semibold tabular-nums">{m.submission_score({ score: formatPercent(score) })}</p>
-          {penalty > 0 && raw !== null ? (
-            <p className="text-sm text-muted-foreground tabular-nums">
-              {m.submission_penalty({ raw: formatPercent(raw), percent: formatPercent(penalty) })}
-            </p>
-          ) : null}
+        // The score as the ring the rest of the app uses for a result, its words beside it.
+        <div className="flex items-center gap-4">
+          <ProgressRing value={score} tone="stroke-reward" className="size-16">
+            <span className="font-heading text-sm font-semibold tabular-nums">{formatPercent(score)}</span>
+          </ProgressRing>
+          <div className="flex flex-col gap-1">
+            <p className="text-xl font-semibold tabular-nums">{m.submission_score({ score: formatPercent(score) })}</p>
+            {penalty > 0 && raw !== null ? (
+              <p className="text-sm text-muted-foreground tabular-nums">
+                {m.submission_penalty({ raw: formatPercent(raw), percent: formatPercent(penalty) })}
+              </p>
+            ) : null}
+          </div>
         </div>
       )}
       {feedback ? (
@@ -30,9 +37,11 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
           <h3 id="submission-feedback" className="text-lg font-semibold">
             {m.submission_feedback()}
           </h3>
-          <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
-            <MarkdownView content={feedback} />
-          </Suspense>
+          <div className="border-l-2 pl-4">
+            <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
+              <MarkdownView content={feedback} />
+            </Suspense>
+          </div>
         </section>
       ) : null}
       {criteria.length > 0 ? (

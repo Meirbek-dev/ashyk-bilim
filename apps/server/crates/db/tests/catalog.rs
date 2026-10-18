@@ -241,3 +241,64 @@ async fn full_text_search_matches_course_names(pool: PgPool) {
     .unwrap();
     assert_eq!(hits, 1);
 }
+
+/// One code challenge as the ETL left it: the statement on the activity, an empty item prompt.
+async fn seed_code_challenge(pool: &PgPool, description: &str, prompt: &str) -> uuid::Uuid {
+    let (course, chapter, _) = seed_course(pool).await;
+    let activity: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, content)
+         VALUES ($1, $2, 'Hello', 'code_challenge', 'code_general', jsonb_build_object('description', $3::text))
+         RETURNING id",
+    )
+    .bind(chapter)
+    .bind(course)
+    .bind(description)
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    let assessment: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO assessments (activity_id, course_id, kind, title, grading_mode, grade_release_mode, completion_rule)
+         VALUES ($1, $2, 'code_challenge', 'Hello', 'auto', 'immediate', 'submitted') RETURNING id",
+    )
+    .bind(activity)
+    .bind(course)
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, body)
+         VALUES ($1, 'code', jsonb_build_object('kind', 'code', 'prompt', $2::text)) RETURNING id",
+    )
+    .bind(assessment)
+    .bind(prompt)
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+async fn prompt_of(pool: &PgPool, item: uuid::Uuid) -> String {
+    sqlx::query_scalar("SELECT body ->> 'prompt' FROM assessment_items WHERE id = $1")
+        .bind(item)
+        .fetch_one(pool)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn legacy_code_statement_moves_into_an_empty_prompt_only(pool: PgPool) {
+    let legacy = seed_code_challenge(&pool, "Print \"Hello\".", "").await;
+    let written = seed_code_challenge(&pool, "Old text", "The teacher's statement").await;
+    let bare = seed_code_challenge(&pool, "  ", "").await;
+    // The migration already ran on the empty schema; run it again over these rows (it must also be idempotent).
+    for _ in 0..2 {
+        sqlx::raw_sql(include_str!(
+            "../../../migrations/20261018000000_code_prompt_from_activity.sql"
+        ))
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    assert_eq!(prompt_of(&pool, legacy).await, "Print \"Hello\".");
+    assert_eq!(prompt_of(&pool, written).await, "The teacher's statement");
+    assert_eq!(prompt_of(&pool, bare).await, "");
+}

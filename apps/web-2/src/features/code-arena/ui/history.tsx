@@ -32,11 +32,14 @@ export function History({ attempts, code, selected }: HistoryProps) {
             <li key={attempt.id} className="flex min-w-0 flex-col gap-4 py-2">
               <div className="flex min-h-row flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-medium">{m.code_attempt({ number: attempt.attempt_number })}</span>
-                <span className="text-muted-foreground">
-                  {attempt.submitted_at_unix === null
-                    ? m.code_not_submitted()
-                    : formatDateTime(attempt.submitted_at_unix)}
-                </span>
+                {/* A draft says so in its state; «not handed in» beside «Draft» only repeats it. */}
+                {attempt.submitted_at_unix === null && attempt.status === 'draft' ? null : (
+                  <span className="text-muted-foreground">
+                    {attempt.submitted_at_unix === null
+                      ? m.code_not_submitted()
+                      : formatDateTime(attempt.submitted_at_unix)}
+                  </span>
+                )}
                 <Verdict status={status} />
                 {attempt.final_score === null ? null : (
                   <span className="font-heading text-lg font-semibold tabular-nums">

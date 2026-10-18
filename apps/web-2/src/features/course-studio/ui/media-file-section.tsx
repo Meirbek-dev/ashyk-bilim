@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useRef } from 'react'
 
-import { BlockViewer } from '#/features/editor'
+import { AuthorViewContext, BlockViewer } from '#/features/editor'
 
 import { m } from '#/paraglide/messages'
 import { deleteBlockMutation, listBlocksOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -74,7 +74,9 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
         <>
           {/* What the learner gets, played or framed the same way; the link opens the file itself. */}
           <Suspense fallback={<Skeleton className="aspect-video w-full rounded-xl" />}>
-            <BlockViewer content={preview.content} />
+            <AuthorViewContext value>
+              <BlockViewer content={preview.content} />
+            </AuthorViewContext>
           </Suspense>
           <p className="text-sm wrap-anywhere">
             <Anchor href={`/content/${preview.key}`} target="_blank" rel="noreferrer">

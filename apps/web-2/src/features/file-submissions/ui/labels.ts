@@ -14,7 +14,8 @@ type Status = { label: () => string; tone: StatusTone }
 
 export const attemptStatus = {
   draft: { label: m.submission_status_draft, tone: 'warning' },
-  submitted: { label: m.submission_status_submitted, tone: 'info' },
+  // The work area's words for the same state (Receipt): one attempt, one name.
+  submitted: { label: m.submission_awaiting_review, tone: 'info' },
   graded: { label: m.submission_status_graded, tone: 'info' },
   published: { label: m.submission_status_published, tone: 'success' },
   returned: { label: m.submission_status_returned, tone: 'warning' },

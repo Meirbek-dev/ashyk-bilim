@@ -1,10 +1,13 @@
+import { Clock, PencilLine, Undo2, type LucideIcon } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 import type { CodeRunStatus, Difficulty, DisabledReason, SubmissionStatus } from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
 
 import type { CaseVerdict } from '../model/verdict'
 
-type Status = { label: () => string; tone: StatusTone }
+/** `icon`: a state that is not a verdict (a draft, waiting for review) gets its own, not the tone's alarm sign. */
+type Status = { label: () => string; tone: StatusTone; icon?: LucideIcon }
 
 /** A run's verdict (B-COD-07): the server's enum, never its text. */
 export const runStatus = {
@@ -40,11 +43,11 @@ export const caseStatus = {
 } satisfies Record<CaseVerdict, Status>
 
 export const attemptStatus = {
-  draft: { label: m.code_attempt_draft, tone: 'warning' },
-  pending: { label: m.code_attempt_pending, tone: 'info' },
-  graded: { label: m.code_attempt_graded, tone: 'info' },
+  draft: { label: m.code_attempt_draft, tone: 'warning', icon: PencilLine },
+  pending: { label: m.code_attempt_pending, tone: 'info', icon: Clock },
+  graded: { label: m.code_attempt_graded, tone: 'info', icon: Clock },
   published: { label: m.code_attempt_published, tone: 'success' },
-  returned: { label: m.code_attempt_returned, tone: 'warning' },
+  returned: { label: m.code_attempt_returned, tone: 'warning', icon: Undo2 },
 } satisfies Record<SubmissionStatus, Status>
 
 export const reasonLabels = {

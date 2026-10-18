@@ -42,8 +42,11 @@ function parse(argv: string[]) {
     if (arg === '--slot') o.slot = Number(value())
     else if (arg === '--pages') o.pages.push(...(JSON.parse(readFileSync(value(), 'utf8')) as Page[]))
     else if (arg === '--page') {
-      const [name, raw] = value().split('=')
-      if (!name || !raw) die('--page takes name=/path')
+      // Split at the first `=` only: a path's query has its own (`?run=...`).
+      const spec = value()
+      const name = spec.slice(0, spec.indexOf('='))
+      const raw = spec.slice(spec.indexOf('=') + 1)
+      if (!spec.includes('=') || !name || !raw) die('--page takes name=/path')
       // Git Bash rewrites `x=/admin` into `x=C:/Program Files/Git/admin` on the way to a Windows program.
       const path = raw.replace(/^[A-Za-z]:[\\/].*?[\\/]Git(?=[\\/])/, '').replaceAll('\\', '/')
       o.pages.push({ name, path: path.startsWith('/') ? path : `/${path}` })
@@ -109,7 +112,7 @@ async function main(): Promise<void> {
   const pages = o.pages.map(page => ({ ...page, as: page.as ?? o.as })).filter(page => o.filter.test(page.name))
   const cookies = new Map<string, string>()
   for (const login of new Set(pages.map(page => page.as).filter(Boolean)))
-    cookies.set(login, (await devLogin(login, o.slot)).cookie.split('=')[1] ?? '')
+    cookies.set(login, (await devLogin(login, o.slot)).cookie.replace(/^ab_session=/, ''))
   const server = o.ref ? await serveRef(o.ref, o.slot) : null
   const base = server?.base ?? `http://localhost:${slotPorts(o.slot).web2}`
   const out = join(root, 'tmp/shots', o.label)

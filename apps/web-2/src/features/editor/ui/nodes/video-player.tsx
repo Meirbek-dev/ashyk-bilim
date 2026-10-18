@@ -6,7 +6,7 @@ import { IconButton } from '#/shared/components/icon-button'
 import { Slider } from '#/shared/ui/slider'
 
 import { clock } from '../../model/file-blocks'
-import { VideoEndedContext } from '../../model/video-ended'
+import { AuthorViewContext, VideoEndedContext } from '../../model/video-ended'
 
 /** The player full screen; iPhone Safari has no element full screen, only the video's own. */
 function fullscreen(
@@ -20,6 +20,9 @@ function fullscreen(
     else void video.play().catch(() => null)
   }
 }
+
+/** Why the frame is empty, and what to do: a learner tells the teacher, the author uploads again (B-EDT-19). */
+const failedText = (author: boolean) => (author ? m.editor_video_failed_author() : m.editor_video_failed())
 
 /**
  * A hosted video file: the native `<video>` with kit controls (play, position, time, sound, full screen). A file
@@ -63,7 +66,7 @@ export function VideoPlayer({ src }: { src: string }) {
       </video>
       {failed ? (
         <p role="alert" className="p-4 text-sm text-muted-foreground">
-          {m.editor_video_failed()}
+          {failedText(use(AuthorViewContext))}
         </p>
       ) : null}
       <div hidden={failed} className="flex items-center gap-2 px-2 py-1">

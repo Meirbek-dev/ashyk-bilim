@@ -10,7 +10,7 @@ export const DiscussionEditor = lazy(() =>
 // Pure helpers: no Tiptap at runtime.
 export { EMPTY_DOCUMENT, stripEmptyFileBlocks, type EditorDocument } from './model/document'
 export { youTubeId } from './model/embed'
-export { VideoEndedContext } from './model/video-ended'
+export { AuthorViewContext, VideoEndedContext } from './model/video-ended'
 export { normalizeDocument } from './model/normalize'
 export { extractPlainText } from './model/plain-text'
 export { withOutline, type OutlineEntry } from './model/outline'
