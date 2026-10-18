@@ -12,6 +12,7 @@ import { attemptOptions } from '../queries'
 import { GradeActions } from './grade-actions'
 import { LatePenaltyNote } from './late-penalty-note'
 import { RubricTotal } from './rubric-total'
+import { useAdvance } from './review-nav'
 import { useGradeSave } from './use-grade-save'
 import { useFeedbackDraft } from './feedback-draft'
 
@@ -26,11 +27,13 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
   const mutation = useMutation(gradeAttemptOptions(queryClient, ids))
   const [initial] = useState(() => fileGradeForm(attempt, rubric))
   const action = useRef<GradeAction>('save')
+  const advance = useAdvance(ids.work)
   const grade = useGradeSave(
     (body: FileGradeRequest, version) =>
       mutation.mutateAsync({ path: { attempt_id: attempt.id }, body, headers: { 'If-Match': version } }),
     async () => (await queryClient.query({ ...attemptOptions(attempt.id), staleTime: 0 })).version,
     attempt.version,
+    advance,
   )
   const form = useAppForm(fileGradeSchema, {
     defaultValues: initial,

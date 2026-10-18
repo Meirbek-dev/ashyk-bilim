@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import type { Work } from '../queries'
+import { Fold } from './fold'
 import { HistoryList } from './history-list'
 
 /**
@@ -13,13 +14,12 @@ import { HistoryList } from './history-list'
 export function HistorySection({ work, submissionId }: { work: Work; submissionId: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <details className="flex flex-col gap-2" onToggle={event => setOpen(event.currentTarget.open)}>
-      <summary className="cursor-pointer text-xl font-semibold">{m.grading_history()}</summary>
+    <Fold title={m.grading_history()} onToggle={setOpen}>
       {open ? (
         <Suspense fallback={<Skeleton className="h-16 w-full" />}>
           <HistoryList work={work} id={submissionId} />
         </Suspense>
       ) : null}
-    </details>
+    </Fold>
   )
 }

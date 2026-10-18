@@ -82,6 +82,16 @@ export function neighbours(ids: readonly string[], id: string): { prev?: string;
   return { ...(prev ? { prev } : {}), ...(next ? { next } : {}) }
 }
 
+/**
+ * The work to open after a publish or a return (B-GRD-34): the next row of the loaded queue that still waits for
+ * grading, wrapping around to the top; none when `id` was the last one.
+ */
+export function nextToGrade(rows: readonly QueueRow[], id: string): string | undefined {
+  const at = rows.findIndex(row => row.id === id)
+  const ordered = at < 0 ? rows : [...rows.slice(at + 1), ...rows.slice(0, at)]
+  return ordered.find(row => row.id !== id && (row.status === 'pending' || row.status === 'submitted'))?.id
+}
+
 /** Rows the server lets the caller return (B-GRD-08). */
 export const returnable = (rows: readonly QueueRow[]): QueueRow[] =>
   rows.filter(row => row.allowed_actions.includes('return'))

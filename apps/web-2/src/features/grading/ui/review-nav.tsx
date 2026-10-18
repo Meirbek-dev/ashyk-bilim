@@ -1,11 +1,11 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useParams, useSearch } from '@tanstack/react-router'
+import { Link as RouterLink, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/components/button-variants'
 
-import { neighbours } from '../model/queue'
+import { neighbours, nextToGrade } from '../model/queue'
 import { queueOptions, type Work } from '../queries'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
@@ -38,4 +38,22 @@ export function ReviewNav({ work }: { work: Work }) {
       ) : null}
     </nav>
   )
+}
+
+/**
+ * After a publish or a return: the next work of the same queue that waits for grading opens (B-GRD-34), so a teacher
+ * grades a pile without going back to the list; on the last one the page stays.
+ */
+export function useAdvance(work: Work): () => void {
+  const params = useParams({ from: ROUTE })
+  const search = useSearch({ from: ROUTE })
+  const navigate = useNavigate()
+  const { data } = useSuspenseInfiniteQuery(queueOptions(work, search))
+  const next = nextToGrade(
+    data.pages.flatMap(page => page.items),
+    params.submissionId,
+  )
+  return () => {
+    if (next) void navigate({ to: TO, params: { ...params, submissionId: next }, search })
+  }
 }

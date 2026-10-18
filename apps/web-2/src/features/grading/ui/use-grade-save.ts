@@ -22,12 +22,13 @@ type GradeSave<Body> = {
  * A grade write of either kind (B-GRD-14, B-GRD-15): `send` writes the body with `If-Match` = the version the input
  * is based on (the one loaded, then each own save's answer; a live refetch must not move it, or a colleague's save is
  * overwritten unseen); a past-tense toast after; a 412 opens the conflict dialog, whose retry reloads the version and
- * sends the same body again.
+ * sends the same body again. `onDone` runs after a publish or a return (the next work opens, B-GRD-34).
  */
 export function useGradeSave<Body extends { action: GradeAction }>(
   send: (body: Body, version: number) => Promise<{ version: number }>,
   reload: () => Promise<number>,
   version: number,
+  onDone?: () => void,
 ): GradeSave<Body> {
   const [pending, setPending] = useState<GradeAction | null>(null)
   const base = useRef(version)
@@ -36,6 +37,7 @@ export function useGradeSave<Body extends { action: GradeAction }>(
     try {
       base.current = (await send(body, current)).version
       toast.add({ title: done[body.action]() })
+      if (body.action !== 'save') onDone?.()
     } finally {
       setPending(null)
     }

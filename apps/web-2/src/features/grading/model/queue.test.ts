@@ -10,6 +10,7 @@ import {
   extensionTargets,
   fileQuery,
   neighbours,
+  nextToGrade,
   nextQueueCursor,
   returnable,
   sortSearch,
@@ -163,5 +164,14 @@ describe('bulk and walking', () => {
     expect(neighbours(['a', 'b'], 'a')).toEqual({ next: 'b' })
     expect(neighbours(['a'], 'a')).toEqual({})
     expect(neighbours(['a'], 'zz')).toEqual({})
+  })
+
+  test('B-GRD-34 after a publish the next work waiting for grading opens, wrapping to the top', () => {
+    const rows = [row('a'), row('b', { status: 'published' }), row('c'), row('d', { status: 'graded' })]
+    expect(nextToGrade(rows, 'a')).toBe('c')
+    expect(nextToGrade(rows, 'c')).toBe('a')
+    expect(nextToGrade([row('a'), row('b', { status: 'published' })], 'a')).toBeUndefined()
+    expect(nextToGrade([fileRow('x'), fileRow('y')], 'x')).toBe('y')
+    expect(nextToGrade([row('a')], 'gone')).toBe('a')
   })
 })

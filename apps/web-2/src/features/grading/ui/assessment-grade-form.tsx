@@ -13,6 +13,7 @@ import { reviewOptions } from '../queries'
 import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
 import { scoreText } from './labels'
+import { useAdvance } from './review-nav'
 import { useGradeSave } from './use-grade-save'
 import { useFeedbackDraft } from './feedback-draft'
 
@@ -24,12 +25,14 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
   const mutation = useMutation(saveGradeOptions(queryClient, ids))
   const [initial] = useState(() => gradeForm(submission, items))
   const action = useRef<GradeAction>('save')
+  const advance = useAdvance(ids.work)
   const graded = new Map((submission.grading.items ?? []).map(item => [item.item_id, item]))
   const grade = useGradeSave(
     (body: GradeRequest, version) =>
       mutation.mutateAsync({ path: { submission_id: submission.id }, body, headers: { 'If-Match': version } }),
     async () => (await queryClient.query({ ...reviewOptions(submission.id), staleTime: 0 })).version,
     submission.version,
+    advance,
   )
   // The diff base is the work as last saved (the cache holds every answer), so only what changed since goes out.
   const form = useAppForm(gradeFormSchema, {
