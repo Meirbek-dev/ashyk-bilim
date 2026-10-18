@@ -3,19 +3,26 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDateTime } from '#/shared/i18n/format'
 
 import { deviceLabel, orderSessions } from '../model/settings'
 import { sessionsOptions } from '../queries'
 import { PlainSection } from './plain-section'
+import { RevokeOtherSessions } from './revoke-other-sessions'
 import { RevokeSession } from './revoke-session'
 
-/** Every live session of the user: this device first; any other can be ended. */
+/** Every live session of the user: this device first; any other can be ended, or all of them at once. */
 export function SessionsSection() {
   const { data } = useSuspenseQuery(sessionsOptions())
+  const others = data.filter(session => !session.current).map(session => session.handle)
   return (
     <PlainSection title={m.settings_sessions_title()} description={m.settings_sessions_hint()}>
-      <DataList items={orderSessions(data)} getKey={session => session.handle}>
+      {others.length > 1 ? (
+        <div>
+          <RevokeOtherSessions handles={others} />
+        </div>
+      ) : null}
+      <DataList items={orderSessions(data)} getKey={session => session.handle} variant="rows">
         {session => {
           const device = deviceLabel(session.user_agent) ?? m.settings_session_unknown_device()
           return (
@@ -26,11 +33,9 @@ export function SessionsSection() {
                   {session.current ? <StatusBadge tone="info">{m.settings_session_current()}</StatusBadge> : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {m.settings_session_seen({ date: formatDate(session.last_seen_unix) })}
+                  {m.settings_session_seen({ date: formatDateTime(session.last_seen_unix) })}
+                  {session.ip ? ` · ${m.settings_session_ip({ ip: session.ip })}` : null}
                 </p>
-                {session.ip ? (
-                  <p className="text-sm text-muted-foreground">{m.settings_session_ip({ ip: session.ip })}</p>
-                ) : null}
               </div>
               {session.current ? null : <RevokeSession handle={session.handle} device={device} />}
             </div>

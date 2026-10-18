@@ -19,7 +19,7 @@ import {
   updatePreferencesMutation,
   userCoursesInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
+import { revokeSession, updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
 import type {
   CourseId,
   CoursePage,
@@ -96,6 +96,31 @@ export const revokeSessionOptions = (queryClient: QueryClient) => {
     },
   }
 }
+
+/**
+ * Ends every session but this one (the API ends one at a time): each that ended, or had already (404), leaves the
+ * cached list; the first other failure is the error, the rest stay listed.
+ */
+export const revokeOtherSessionsOptions = (queryClient: QueryClient) => ({
+  mutationFn: async (handles: readonly string[]) => {
+    const results = await Promise.allSettled(
+      handles.map(handle => revokeSession({ path: { handle }, throwOnError: true })),
+    )
+    const ended = new Set(
+      handles.filter((_, i) => {
+        const result = results[i]
+        return result?.status === 'fulfilled' || (result?.reason instanceof ApiError && result.reason.status === 404)
+      }),
+    )
+    queryClient.setQueryData(listSessionsQueryKey(), (list: SessionSummary[] | undefined) =>
+      list?.filter(session => !ended.has(session.handle)),
+    )
+    const failed = results.find(
+      result => result.status === 'rejected' && !(result.reason instanceof ApiError && result.reason.status === 404),
+    )
+    if (failed?.status === 'rejected') throw failed.reason
+  },
+})
 
 const setMfa = (queryClient: QueryClient, enabled: boolean) => {
   queryClient.setQueryData(myProfileQueryKey(), (profile: UserProfile | undefined) =>
