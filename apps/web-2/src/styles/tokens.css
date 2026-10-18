@@ -135,7 +135,7 @@
   --card-foreground: var(--foreground);
   --popover: light-dark(oklch(1 0 0), oklch(0.225 0.03 250));
   --popover-foreground: var(--foreground);
-  --primary: light-dark(oklch(0.6 0.188 259.8145), oklch(0.76 0.13 258));
+  --primary: light-dark(oklch(0.54 0.188 259.8145), oklch(0.76 0.13 258));
   --primary-foreground: light-dark(oklch(1 0 0), oklch(0.2 0.04 258));
   --secondary: light-dark(oklch(0.967 0.003 264), oklch(0.27 0.025 258));
   --secondary-foreground: light-dark(oklch(0.38 0.035 258), oklch(0.93 0.01 255));
