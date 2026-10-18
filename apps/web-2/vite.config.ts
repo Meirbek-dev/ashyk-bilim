@@ -30,7 +30,11 @@ const plugins = lazyPlugins(() => [
   tailwindcss(),
   tanstackStart({ router: { codeSplittingOptions: { defaultBehavior: ROUTE_SPLIT } } }),
   viteReact(),
-  babel({ presets: [reactCompilerPreset()], exclude: [/[/\\](node_modules|paraglide|gen)[/\\]/] }),
+  // `exclude` replaces the plugin's default, which also skips Rolldown's runtime helper module (its README).
+  babel({
+    presets: [reactCompilerPreset()],
+    exclude: [/[/\\](node_modules|paraglide|gen)[/\\]|^\0rolldown\/runtime\.js$/],
+  }),
   stripResponseValidators,
 ])
 
@@ -117,7 +121,8 @@ const paths = [
   {
     name: '@tanstack/react-query',
     importNames: ['useQuery', 'useInfiniteQuery'],
-    message: 'Read with loader ensureQueryData(xOptions()) + useSuspenseQuery / useSuspenseInfiniteQuery.',
+    message:
+      "Read with loader query({ ...xOptions(), staleTime: 'static' }) + useSuspenseQuery / useSuspenseInfiniteQuery.",
   },
   { name: 'zod', message: 'Schemas are Valibot, generated from the contract: #/shared/api/gen/valibot.gen.ts.' },
   { name: 'date-fns', message: FORMAT },

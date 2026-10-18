@@ -33,6 +33,8 @@ type AppFormOptions<T> = {
    * worth keeping (an editor typed into and emptied again holds nothing to lose).
    */
   leaveGuard?: boolean | ((value: T) => boolean)
+  /** After each edit of a field, with the values then (the form's `listeners.onChange`): an autosave submits here. */
+  onChange?: (value: T) => unknown
 }
 
 /**
@@ -41,7 +43,7 @@ type AppFormOptions<T> = {
  */
 export function useAppForm<T>(
   schema: GenericSchema<T>,
-  { defaultValues, onSubmit, leaveGuard = false }: AppFormOptions<T>,
+  { defaultValues, onSubmit, leaveGuard = false, onChange }: AppFormOptions<T>,
 ) {
   // Every Valibot issue text comes from the Paraglide map (spec 7.8). Set here, not at import time, so the
   // module has no side effect and stays out of bundles that only import a feature's index. A named import: the
@@ -55,6 +57,7 @@ export function useAppForm<T>(
   const form = useKitForm({
     defaultValues,
     validators: { onSubmit: schema },
+    listeners: { onChange: ({ formApi }) => void onChange?.(formApi.state.values) },
     onSubmit: async ({ value }) => {
       if (submitting.current) return
       submitting.current = true

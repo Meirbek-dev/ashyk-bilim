@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, AssessmentItem } from '#/shared/api/gen/types.gen'
@@ -29,21 +29,12 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
     defaultValues,
     onSubmit: values => autosave.change(itemPatch(values)),
     leaveGuard: true,
-  })
-  // Each edit is a submit: the schema runs, a valid form reaches onSubmit. Meta changes (submitting) are not edits.
-  useEffect(() => {
-    const submit = async () => {
+    // Each edit is a submit: the schema runs, a valid form reaches onSubmit.
+    onChange: async () => {
       await form.handleSubmit()
       if (!form.state.isValid) autosave.invalid()
-    }
-    let last = form.state.values
-    const subscription = form.store.subscribe(() => {
-      if (form.state.values === last) return
-      last = form.state.values
-      void submit()
-    })
-    return () => subscription.unsubscribe()
-  }, [form, autosave])
+    },
+  })
 
   return (
     <section aria-labelledby={`item-${item.id}`} className="flex min-w-0 flex-col gap-4">

@@ -72,6 +72,13 @@ describe('B-EDT-01 the real editor keeps every node', () => {
   })
 })
 
+/** The computed colour of the first shiki token and of its code block: null until a grammar has decorated one. */
+function tokenColours(): [string, string] | null {
+  const token = document.querySelector('pre span[style*="--shiki-light"]')
+  const block = token?.closest('pre')
+  return token && block ? [getComputedStyle(token).color, getComputedStyle(block).color] : null
+}
+
 describe('B-EDT-09 view preset', () => {
   test('B-EDT-09 renders callouts, badge, button, table, code and image with their tokens', async () => {
     const screen = await render(
@@ -134,7 +141,9 @@ describe('B-EDT-09 view preset', () => {
     const screen = await render(<BlockViewer content={doc('codeBlock', 'math')} />)
     // Grammars and KaTeX load lazily (compiled on first request under a dev server): allow a cold start.
     const cold = { timeout: 15_000 }
-    await expect.poll(() => document.querySelector('pre span[style*="--shiki-light"]'), cold).not.toBeNull()
+    await expect.poll(tokenColours, cold).not.toBeNull()
+    // Coloured, not only annotated: shiki's `light-dark()` color applies without a `.shiki` root.
+    expect(tokenColours()?.[0]).not.toBe(tokenColours()?.[1])
     await expect.poll(() => document.querySelector('.katex'), cold).not.toBeNull()
     await expect.element(screen.getByText(m.editor_math_invalid())).not.toBeInTheDocument()
   })

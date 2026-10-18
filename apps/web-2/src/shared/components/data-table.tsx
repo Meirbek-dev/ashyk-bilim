@@ -38,7 +38,8 @@ const ariaSort = (sort: Sort | undefined, id: string) =>
 export function DataTable<T extends RowData>({ label, rows, columns, getKey, sort, onSortChange }: DataTableProps<T>) {
   const table = useTable({
     features,
-    data: [...rows],
+    // The caller's array as is (`data` is a ReadonlyArray): a copy per render would rebuild the row model each time.
+    data: rows,
     columns: columns.map(column => ({ id: column.id, header: column.header })),
     getRowId: row => getKey(row),
     manualSorting: true,

@@ -13,9 +13,14 @@ const text = { name: 'Name', save: 'Save', leave: 'Leave' }
 // Each click leaves for a new address: a link to the current one is no navigation at all.
 let hops = 0
 
-function GuardedForm({ save }: { save: () => Promise<void> }) {
+function GuardedForm({ save, onChange }: { save: () => Promise<void>; onChange?: (name: string) => void }) {
   const navigate = useNavigate()
-  const form = useAppForm(schema, { defaultValues: { name: 'Algebra' }, onSubmit: save, leaveGuard: true })
+  const form = useAppForm(schema, {
+    defaultValues: { name: 'Algebra' },
+    onSubmit: save,
+    leaveGuard: true,
+    onChange: value => onChange?.(value.name),
+  })
   return (
     <form
       onSubmit={event => {
@@ -49,4 +54,17 @@ test('a guarded form asks before a link drops an unsaved edit, and not once it i
   await vi.waitFor(() => expect(save).toHaveBeenCalled())
   await screen.getByRole('button', { name: text.leave }).click()
   expect(confirm).not.toHaveBeenCalled()
+})
+
+test('onChange sees the values after each edit of a field, and not a submit', async () => {
+  const onChange = vi.fn<(name: string) => void>()
+  const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
+  const screen = await renderInRouter(<GuardedForm save={save} onChange={onChange} />)
+  await screen.getByLabelText(text.name).fill('Geometry')
+  await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('Geometry'))
+
+  onChange.mockClear()
+  await screen.getByRole('button', { name: text.save }).click()
+  await vi.waitFor(() => expect(save).toHaveBeenCalled())
+  expect(onChange).not.toHaveBeenCalled()
 })

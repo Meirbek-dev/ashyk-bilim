@@ -1,7 +1,14 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, HighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language'
 import { Annotation, Compartment, EditorState } from '@codemirror/state'
-import { drawSelection, EditorView, highlightActiveLine, keymap, lineNumbers } from '@codemirror/view'
+import {
+  drawSelection,
+  EditorView,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  keymap,
+  lineNumbers,
+} from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { useEffect, useEffectEvent, useRef } from 'react'
 
@@ -72,6 +79,7 @@ export function CodeEditor({ value, mode, label, onChange, readOnly = false }: C
           indentOnInput(),
           bracketMatching(),
           highlightActiveLine(),
+          highlightActiveLineGutter(),
           syntaxHighlighting(highlight),
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           chrome,

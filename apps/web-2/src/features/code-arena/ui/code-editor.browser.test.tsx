@@ -46,6 +46,9 @@ test('B-COD-05 B-COD-15 changing the label and read-only state preserves the lan
   await input.click()
   await userEvent.keyboard('{End}0')
   expect(view.state.doc.toString()).toBe('answer = 10')
+  // The cursor's line is marked in the text and in the gutter (the theme styles both).
+  expect(editor.querySelector('.cm-activeLine')).not.toBeNull()
+  expect(editor.querySelector('.cm-activeLineGutter')).not.toBeNull()
   const selection = view.state.selection.toJSON()
   await screen.getByRole('button', { name: labels.toggle }).click()
   await expect.element(screen.getByLabelText(labels.locked)).toHaveAttribute('contenteditable', 'false')

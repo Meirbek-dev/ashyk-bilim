@@ -18,8 +18,9 @@ function decorate(doc: PMNode, shiki: Shiki | null, core: Core | null): Decorati
     const lang = shiki.grammarOf(String(node.attrs['language'] ?? ''))
     if (!lang || !core.getLoadedLanguages().includes(lang)) return false
     let from = pos + 1
-    for (const line of core.codeToTokens(node.textContent, { lang, themes: shiki.THEMES, defaultColor: false })
-      .tokens) {
+    // `light-dark()`: shiki writes `color: light-dark(light, dark)` itself (no `.shiki` root here for prose.css).
+    const options = { lang, themes: shiki.THEMES, defaultColor: 'light-dark()' } as const
+    for (const line of core.codeToTokens(node.textContent, options).tokens) {
       for (const token of line) {
         const style = Object.entries(token.htmlStyle ?? {})
           .map(([name, value]) => `${name}:${value}`)
