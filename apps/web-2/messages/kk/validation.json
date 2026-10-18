@@ -6,6 +6,7 @@
   "validation_max_value": "Мән {max} мәнінен аспауы керек.",
   "validation_integer": "Бүтін сан енгізіңіз.",
   "validation_format": "Мәннің пішімін тексеріңіз.",
+  "validation_email": "Пошта мекенжайын енгізіңіз, мысалы name@example.com.",
   "validation_duplicate": "Мұндай мән бұрыннан бар.",
   "validation_invalid": "Бұл мәнді тексеріңіз.",
   "validation_too_long": "Мән тым ұзын.",

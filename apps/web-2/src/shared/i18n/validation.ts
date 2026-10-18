@@ -29,6 +29,7 @@ export function validationMessage(issue: Issue): string {
     case 'integer':
       return m.validation_integer()
     case 'email':
+      return m.validation_email()
     case 'url':
     case 'uuid':
     case 'regex':
@@ -50,4 +51,8 @@ const serverCodes: Partial<Record<string, () => string>> = {
   unsafe: m.validation_unsafe_url,
 }
 
-export const serverFieldMessage = (code: string): string => (serverCodes[code] ?? m.validation_invalid)()
+/** A field's server error as text; an `invalid` email (empty or without @) says what an address looks like. */
+export const serverFieldMessage = (code: string, field = ''): string =>
+  code === 'invalid' && /(^|[._])email$/.test(field)
+    ? m.validation_email()
+    : (serverCodes[code] ?? m.validation_invalid)()

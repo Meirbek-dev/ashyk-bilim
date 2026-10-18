@@ -20,7 +20,7 @@ export function splitFieldErrors(errors: readonly FieldError[], fields: readonly
   const rest: FieldError[] = []
   for (const error of errors) {
     if (!fields.includes(error.field)) rest.push(error)
-    else if (!byField.has(error.field)) byField.set(error.field, serverFieldMessage(error.code))
+    else if (!byField.has(error.field)) byField.set(error.field, serverFieldMessage(error.code, error.field))
   }
   return { byField, rest }
 }

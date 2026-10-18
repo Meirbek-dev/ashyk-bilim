@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import { m } from '#/paraglide/messages'
 
-import { validationMessage } from './validation'
+import { serverFieldMessage, validationMessage } from './validation'
 
 const firstMessage = (schema: v.GenericSchema, value: unknown) => {
   const result = v.safeParse(schema, value)
@@ -20,5 +20,13 @@ describe('validationMessage', () => {
     expect(firstMessage(v.pipe(v.number(), v.maxValue(10)), 11)).toBe(m.validation_max_value({ max: '10' }))
     expect(firstMessage(v.pipe(v.string(), v.uuid()), 'x')).toBe(m.validation_format())
     expect(firstMessage(v.string(), 42)).toBe(m.validation_invalid())
+    expect(firstMessage(v.pipe(v.string(), v.email()), 'x')).toBe(m.validation_email())
+  })
+
+  test('a server "invalid" on an email field says what an address looks like; elsewhere it stays generic', () => {
+    expect(serverFieldMessage('invalid', 'email')).toBe(m.validation_email())
+    expect(serverFieldMessage('invalid', 'contact_email')).toBe(m.validation_email())
+    expect(serverFieldMessage('invalid', 'username')).toBe(m.validation_invalid())
+    expect(serverFieldMessage('required', 'email')).toBe(m.validation_required())
   })
 })
