@@ -15,7 +15,7 @@
   "home_kind_returned": "Возвращено на исправление",
   "home_due_date": "Срок: {date}",
   "home_results_title": "Новые результаты",
-  "home_result_published": "Оценка опубликована",
+  "home_result_published": "Оценено",
   "home_result_returned": "Возвращено на исправление",
   "home_score": "Оценка: {score}",
   "home_score_label": "Оценка",
