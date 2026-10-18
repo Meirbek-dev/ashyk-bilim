@@ -1,3 +1,5 @@
+import { Check } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 import type { LearnerCourseState } from '#/shared/api/gen/types.gen'
 import { Progress } from '#/shared/components/progress'
@@ -13,9 +15,14 @@ export function Contents({ state, onPick }: { state: LearnerCourseState; onPick:
     <div className="flex flex-col gap-gutter">
       <div className="flex items-center gap-3">
         <ProgressRing value={percent} className="size-14">
-          <span aria-hidden className="font-heading text-sm font-semibold tabular-nums">
-            {formatPercent(Math.round(percent))}
-          </span>
+          {/* "100 %" is wider than the ring: a finished course shows a check (the count is in the text beside). */}
+          {percent >= 100 ? (
+            <Check aria-hidden className="size-6" />
+          ) : (
+            <span aria-hidden className="font-heading text-sm font-semibold tabular-nums">
+              {formatPercent(Math.round(percent))}
+            </span>
+          )}
         </ProgressRing>
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className="font-heading font-semibold wrap-anywhere">{state.title}</p>
