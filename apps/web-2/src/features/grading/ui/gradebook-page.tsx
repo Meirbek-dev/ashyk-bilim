@@ -1,11 +1,11 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { Link as RouterLink, useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { Check } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Anchor } from '#/shared/components/anchor'
 import { DataTable } from '#/shared/components/data-table'
-import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -37,15 +37,16 @@ export function GradebookPage(): ReactElement {
       </h2>
       <div className="flex flex-wrap items-end gap-2">
         <LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />
-        <Link
+        <RouterLink
           to="/teach/courses/$courseId/gradebook"
           params={{ courseId }}
           search={{ ...search, pending: search.pending ? undefined : true }}
-          activeOptions={{ exact: true, includeSearch: true }}
-          variant="tab"
+          aria-pressed={Boolean(search.pending)}
+          className={buttonVariants({ variant: search.pending ? 'secondary' : 'outline' })}
         >
+          {search.pending ? <Check aria-hidden data-icon="inline-start" /> : null}
           {m.grading_pending_only()}
-        </Link>
+        </RouterLink>
         <GroupFilter
           courseId={courseId}
           group={search.group}

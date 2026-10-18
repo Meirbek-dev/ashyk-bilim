@@ -5,6 +5,7 @@ import type { GradebookCell as Cell } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { linkVariants } from '#/shared/components/link-variants'
 import { formatNumber } from '#/shared/i18n/format'
+import { cn } from '#/shared/lib/utils'
 
 import { reviewTarget, waitingNote } from '../model/gradebook'
 import { scoreText, statusMeta } from './labels'
@@ -12,8 +13,8 @@ import { scoreText, statusMeta } from './labels'
 type GradebookCellProps = { courseId: string; cell: Cell | undefined; learner: string; activity: string }
 
 /**
- * One learner x activity: status and grade, late and the number of attempts (B-GRD-33), a link into the review of the
- * work waiting first (B-GRD-19).
+ * One learner x activity: grade and status, late and the number of attempts (B-GRD-33), a link into the review of the
+ * work waiting first (B-GRD-19). A published grade is the usual state: the grade alone, a badge only for the rest.
  */
 export function GradebookCell({ courseId, cell, learner, activity }: GradebookCellProps) {
   if (!cell)
@@ -26,10 +27,14 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
   const target = reviewTarget(cell)
   const status = statusMeta[cell.status]
   const note = waitingNote(cell)
-  const content = (
+  const content = (link: boolean) => (
     <span className="flex flex-wrap items-center gap-2">
-      <span className="tabular-nums">{scoreText(cell.final_score)}</span>
-      <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+      <span className={cn('tabular-nums', link && linkVariants.text)}>{scoreText(cell.final_score)}</span>
+      {cell.status === 'published' ? (
+        <span className="sr-only">{status.label()}</span>
+      ) : (
+        <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+      )}
       {cell.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
       {cell.attempts > 1 ? (
         <span className="text-xs text-muted-foreground tabular-nums">
@@ -43,15 +48,15 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
       ) : null}
     </span>
   )
-  if (!target) return content
+  if (!target) return content(false)
   return (
     <RouterLink
       to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
       params={{ courseId, activityId: cell.activity_id, submissionId: target }}
-      className={linkVariants.text}
+      className="rounded-sm"
     >
       <span className="sr-only">{m.grading_cell_link({ learner, activity })} </span>
-      {content}
+      {content(true)}
     </RouterLink>
   )
 }

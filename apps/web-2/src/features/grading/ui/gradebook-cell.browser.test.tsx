@@ -32,4 +32,13 @@ describe('GradebookCell', () => {
     await expect.element(screen.getByText(m.grading_late())).toBeVisible()
     await expect.element(screen.getByText(m.grading_cell_attempts({ count: '3' }))).toBeVisible()
   })
+
+  test('B-GRD-19 a published grade shows without a badge; a grade not yet released keeps its badge', async () => {
+    const published = await renderInRouter(<GradebookCell courseId="c" cell={cell} learner="A" activity="Тест" />)
+    await expect.element(published.getByText(m.grading_status_published())).toHaveClass('sr-only')
+    const held = await renderInRouter(
+      <GradebookCell courseId="c" cell={{ ...cell, status: 'graded' }} learner="A" activity="Тест" />,
+    )
+    await expect.element(held.getByText(m.grading_status_graded())).toHaveAttribute('data-slot', 'badge')
+  })
 })
