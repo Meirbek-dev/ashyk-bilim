@@ -263,6 +263,7 @@
   "analytics_slo_p90": "90-й процентиль",
   "analytics_slo_overdue": "Просрочено",
   "analytics_learner_components": "Из чего риск",
+  "analytics_learner_in_course": "Открыть в учащихся курса",
   "analytics_component_inactivity": "неактивность",
   "analytics_component_progress": "отставание",
   "analytics_component_failures": "несданные задания",

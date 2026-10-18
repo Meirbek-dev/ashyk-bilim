@@ -263,6 +263,7 @@
   "analytics_slo_p90": "90-шы процентиль",
   "analytics_slo_overdue": "Мерзімі өткен",
   "analytics_learner_components": "Тәуекел неден құралады",
+  "analytics_learner_in_course": "Курстың білім алушыларында ашу",
   "analytics_component_inactivity": "белсенділіктің болмауы",
   "analytics_component_progress": "артта қалу",
   "analytics_component_failures": "өтпеген тапсырмалар",

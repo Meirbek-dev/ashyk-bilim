@@ -1,15 +1,15 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AtRiskLearnerRow, CourseId, UserId } from '#/shared/api/gen/types.gen'
 import { SheetPanel } from '#/shared/components/sheet-panel'
-import { formatDate, formatNumber } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/components/button-variants'
+import { formatDate } from '#/shared/i18n/format'
 
 import { recommendedActionLabels, riskBreakdown, riskReasonLabels, whyNowLabels } from '../model/signals'
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
+import { LearnerLinks } from './learner-links'
 import { InterventionEditDialog } from './intervention-edit-dialog'
 import { interventionOutcomeLabels, interventionStatusLabels, interventionTypeLabels } from './labels'
 
@@ -62,13 +62,9 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
           ) : null}
         </dl>
       ) : null}
-      {row && row.open_grading_blocks > 0 ? (
-        <RouterLink to="/teach" search={{ course: row.course_id }} className={buttonVariants({ variant: 'outline' })}>
-          {m.analytics_grade_blocks({ count: formatNumber(row.open_grading_blocks) })}
-        </RouterLink>
-      ) : null}
-      <div>
+      <div className="flex flex-wrap gap-2">
         <InterventionDialog learnerId={learnerId} courseId={courseId} />
+        {row ? <LearnerLinks row={row} /> : null}
       </div>
       <h3 className="font-medium">{m.analytics_interventions_title()}</h3>
       {data.items.length === 0 ? (
