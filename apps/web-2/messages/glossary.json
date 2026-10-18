@@ -41,6 +41,6 @@
     { "ru": "вопрос", "kk": "сұра", "en": "question" },
     { "ru": "наблюдател", "kk": "бақылаушы", "en": "observer" },
     { "ru": "объявлени", "kk": "хабарландыру", "en": "announcement" },
-    { "ru": "тред", "kk": "сұхбат", "en": "conversation" }
+    { "ru": "диалог", "kk": "сұхбат", "en": "conversation" }
   ]
 }

@@ -47,9 +47,9 @@
   "ai_reconnecting": "Связь прервалась, переподключаюсь",
   "ai_run_failed": "Запуск ИИ не удался.",
   "ai_stream_lost": "Связь с запуском потеряна. Результат появится здесь, когда запуск закончится.",
-  "ai_threads": "Треды",
-  "ai_new_thread": "Новый тред",
-  "ai_threads_empty": "Тредов пока нет.",
+  "ai_threads": "Диалоги",
+  "ai_new_thread": "Новый диалог",
+  "ai_threads_empty": "Диалогов пока нет.",
   "ai_thread_messages": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -63,10 +63,10 @@
     }
   ],
   "ai_thread_untitled": "Без названия",
-  "ai_delete_thread": "Удалить тред",
-  "ai_delete_thread_title": "Удалить тред «{title}»?",
-  "ai_delete_thread_consequence": "Вопросы и ответы этого треда исчезнут.",
-  "ai_thread_deleted": "Тред удалён",
+  "ai_delete_thread": "Удалить диалог",
+  "ai_delete_thread_title": "Удалить диалог «{title}»?",
+  "ai_delete_thread_consequence": "Вопросы и ответы этого диалога исчезнут.",
+  "ai_thread_deleted": "Диалог удалён",
   "ai_incomplete": "Ответ не завершён",
   "ai_writing": "Пишу ответ",
   "ai_you": "Вы",
