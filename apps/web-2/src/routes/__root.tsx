@@ -1,6 +1,6 @@
 import { createRootRouteWithContext, isNotFound } from '@tanstack/react-router'
 
-import { AppShell, ErrorView, NotFoundView, RootDocument } from '#/features/platform'
+import { AppShell, NotFoundView, RootDocument, RootErrorView } from '#/features/platform'
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { RouterContext } from '#/shared/api/query-client'
@@ -52,6 +52,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   headers: ssrStatusHeaders,
   shellComponent: RootDocument,
   component: AppShell,
-  errorComponent: ErrorView,
+  errorComponent: RootErrorView,
   notFoundComponent: NotFoundView,
 })
