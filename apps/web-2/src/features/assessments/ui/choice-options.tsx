@@ -6,7 +6,7 @@ import type { ChoiceOption, ChoiceVariant } from '#/shared/api/gen/types.gen'
 import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
-import { Field, FieldLabel, FieldLegend, FieldSet } from '#/shared/ui/field'
+import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from '#/shared/ui/field'
 import { Input } from '#/shared/ui/input'
 import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
@@ -38,6 +38,7 @@ export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOp
       {mark}
       <Input
         aria-label={m.assessments_option_text({ number: at + 1 })}
+        placeholder={m.assessments_option_text({ number: at + 1 })}
         value={option.text ?? ''}
         disabled={!editable}
         onChange={event => patch(at, { text: event.target.value })}
@@ -70,8 +71,13 @@ export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOp
   return (
     <FieldSet>
       <FieldLegend id={`${id}-legend`} variant="label">
-        {m.assessments_correct_legend()}
+        {variant === 'true_false' ? m.assessments_correct_legend() : m.assessments_options_legend()}
       </FieldLegend>
+      {variant === 'true_false' || !editable ? null : (
+        <FieldDescription>
+          {variant === 'multiple_choice' ? m.assessments_options_hint_multiple() : m.assessments_options_hint_single()}
+        </FieldDescription>
+      )}
       {variant === 'multiple_choice' ? (
         <div className="flex flex-col gap-2">{options.map((option, at) => row(option, at, checkbox(option, at)))}</div>
       ) : (
