@@ -20,12 +20,16 @@ export const notificationsSearchSchema = v.object({
 
 const Bell = lazy(() => import('./ui/notification-bell').then(module => ({ default: module.NotificationBell })))
 
-/** The shell's `notifications` slot: the bell reads its count in the browser, after hydration (no SSR request). */
+/**
+ * The shell's `notifications` slot: the bell reads its count in the browser, after hydration (no SSR request). Until
+ * then its place is kept (an icon button's size), so the search and the profile menu do not jump when it arrives.
+ */
 export function NotificationsSlot() {
   const hydrated = useHydrated()
-  if (!hydrated) return null
+  const place = <span aria-hidden className="size-8 shrink-0" />
+  if (!hydrated) return place
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={place}>
       <Bell />
     </Suspense>
   )
