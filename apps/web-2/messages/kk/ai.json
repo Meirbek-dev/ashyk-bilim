@@ -9,7 +9,7 @@
   "ai_unavailable_restricted": "Бұл белсенділікте ЖИ қолжетімсіз.",
   "ai_unavailable_other": "Мұнда ЖИ функциялары жоқ.",
   "ai_panel_error": "ЖИ панелін жүктеу мүмкін болмады.",
-  "ai_context": "Мәнмәтін: {label}",
+  "ai_context": "Мына материалдар бойынша жауап береді: {label}",
   "ai_sources": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

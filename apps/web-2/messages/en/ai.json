@@ -9,7 +9,7 @@
   "ai_unavailable_restricted": "AI is not available on this activity.",
   "ai_unavailable_other": "No AI features are available here.",
   "ai_panel_error": "Could not load the AI panel.",
-  "ai_context": "Context: {label}",
+  "ai_context": "Answers from: {label}",
   "ai_sources": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
