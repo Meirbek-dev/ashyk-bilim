@@ -29,6 +29,12 @@ const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens)
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicConfig().siteUrl),
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48 64x64 128x128 256x256' },
+      { url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' },
+    ],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
