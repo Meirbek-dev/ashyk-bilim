@@ -11,22 +11,20 @@ import { ReadinessList } from './readiness-list'
 
 /**
  * `overview`: the course pulse (B-CST-47), then what is missing before publishing, from the server, with the next step;
- * a live course shows only what is still worth improving (its warnings), or nothing (B-CST-05).
+ * a live course shows only what is still worth improving (its warnings), or nothing (B-CST-05). A draft puts its
+ * readiness first: before learners come, what is missing is the next step, the pulse is all zeros.
  */
 export function OverviewPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/overview' })
   const { data: readiness } = useSuspenseQuery(readinessOptions(courseId))
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
   const live = courseStatus(course) !== 'draft'
+  const pulse = <CoursePulse courseId={courseId} />
   if (live && readiness.blockers.length + readiness.warnings.length === 0)
-    return (
-      <div className="@container flex flex-col gap-8">
-        <CoursePulse courseId={courseId} />
-      </div>
-    )
+    return <div className="@container flex flex-col gap-8">{pulse}</div>
   return (
     <div className="@container flex flex-col gap-8">
-      <CoursePulse courseId={courseId} />
+      {live ? pulse : null}
       <section className="flex max-w-prose flex-col gap-4">
         <h2 className="text-xl font-semibold">{live ? m.studio_readiness_improve() : m.studio_readiness_title()}</h2>
         <ReadinessList courseId={courseId} live={live} />
@@ -50,6 +48,7 @@ export function OverviewPage() {
           )}
         </div>
       </section>
+      {live ? null : pulse}
     </div>
   )
 }

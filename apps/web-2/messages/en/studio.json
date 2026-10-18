@@ -82,6 +82,7 @@
   "studio_go_publish": "Go to publishing",
   "studio_content_label": "Course content",
   "studio_content_empty": "The course has no chapters yet",
+  "studio_content_empty_hint": "A chapter groups the lessons, quizzes and tasks of one topic. Add the first chapter, then fill it with activities.",
   "studio_chapter_new": "New chapter",
   "studio_chapter_created": "Chapter added",
   "studio_chapter_empty": "This chapter has no activities yet",

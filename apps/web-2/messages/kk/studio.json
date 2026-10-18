@@ -82,6 +82,7 @@
   "studio_go_publish": "Жариялауға өту",
   "studio_content_label": "Курс бағдарламасы",
   "studio_content_empty": "Курста әзірге тарау жоқ",
+  "studio_content_empty_hint": "Тарау бір тақырыптың сабақтарын, тесттері мен тапсырмаларын біріктіреді. Алғашқы тарауды қосып, оны белсенділіктермен толтырыңыз.",
   "studio_chapter_new": "Жаңа тарау",
   "studio_chapter_created": "Тарау қосылды",
   "studio_chapter_empty": "Тарауда әзірге белсенділік жоқ",

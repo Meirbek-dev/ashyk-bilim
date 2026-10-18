@@ -15,6 +15,7 @@ import { can } from '../model/course'
 import { courseOptions } from '../queries'
 import { ChapterSection } from './chapter-section'
 import { CreateChapterDialog } from './create-chapter-dialog'
+import { EmptyProgram } from './empty-program'
 
 /**
  * `content`: chapters and their activities in order. Dragging (pointer or keyboard on a handle) rearranges a
@@ -76,10 +77,10 @@ export function ContentPage() {
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
     <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
-      <div className="flex justify-end">{create}</div>
+      {shown.chapters.length > 0 ? <div className="flex justify-end">{create}</div> : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
       {shown.chapters.length === 0 ? (
-        <p className="py-8 text-muted-foreground">{m.studio_content_empty()}</p>
+        <EmptyProgram create={create} />
       ) : (
         <DragDropProvider
           plugins={plugins}

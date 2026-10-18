@@ -90,6 +90,7 @@
   "studio_go_publish": "Перейти к публикации",
   "studio_content_label": "Программа курса",
   "studio_content_empty": "В курсе пока нет глав",
+  "studio_content_empty_hint": "Глава собирает уроки, тесты и задания одной темы. Добавьте первую главу, затем наполните её активностями.",
   "studio_chapter_new": "Новая глава",
   "studio_chapter_created": "Глава добавлена",
   "studio_chapter_empty": "В главе пока нет активностей",
