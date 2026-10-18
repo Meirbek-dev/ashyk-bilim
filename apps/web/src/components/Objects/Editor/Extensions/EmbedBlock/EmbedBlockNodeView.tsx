@@ -11,6 +11,7 @@ import ExcalidrawNodeView from './ExcalidrawNodeView'
 import TldrawNodeView from './TldrawNodeView'
 import GenericEmbedNodeView from './GenericEmbedNodeView'
 import { getEmbedProvider } from './embed-options'
+import { resolveEmbedType } from './embed-validators'
 
 // ============================================================================
 // Error Boundary
@@ -65,8 +66,8 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
 // ============================================================================
 
 function EmbedBlockNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
-  const { type } = props.node.attrs
-  const provider = getEmbedProvider(type)
+  const { type, url } = props.node.attrs
+  const provider = getEmbedProvider(resolveEmbedType(type, url))
   const t = useTranslations('DashPage.Editor.EmbedObjects')
 
   const renderSubView = () => {

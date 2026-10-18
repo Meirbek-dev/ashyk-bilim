@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import * as v from 'valibot'
 
 import { useLogout } from '#/features/auth'
 import { updateProfileOptions } from '#/features/settings'
@@ -12,10 +13,17 @@ import { IconButton } from '#/shared/components/icon-button'
 import { localeChoice } from '#/shared/components/locale-switch'
 import { useModeChoice } from '#/shared/components/mode-switch'
 import { UserAvatar, userInitials } from '#/shared/components/user-avatar'
+import { cookieItem } from '#/shared/lib/storage'
 
 import { useWorkspaceChoice } from './workspace-switch'
 
-/** The profile menu: the public profile, settings, appearance, language, the workspace (phones) and sign out. */
+// Set by the edge while both webs run on this origin (docs/INFRA.md "Dual web"); /ui/classic is the edge's too.
+const dualWeb = cookieItem('ab_dual', v.literal('1'))
+
+/**
+ * The profile menu: the public profile, settings, the way back to the old web while both run, appearance, language, the
+ * workspace (phones) and sign out.
+ */
 export function ProfileMenu({ session, current }: { session: SessionInfo; current: WorkspaceId }) {
   const navigate = useNavigate()
   const logout = useLogout()
@@ -48,6 +56,14 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
           onSelect: () => void navigate({ to: '/users/$username', params: { username: session.user.username } }),
         },
         { label: m.platform_page_settings(), onSelect: () => void navigate({ to: '/settings' }) },
+        ...(dualWeb.get()
+          ? [
+              {
+                label: m.platform_classic_ui(),
+                onSelect: () => void navigate({ href: '/ui/classic', reloadDocument: true }),
+              },
+            ]
+          : []),
       ]}
       submenus={[mode, language]}
       final={{ label: m.auth_logout(), onSelect: logout }}

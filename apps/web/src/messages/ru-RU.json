@@ -8711,7 +8711,8 @@
       },
       "signOut": "Выйти",
       "userSettings": "Настройки пользователя",
-      "publicProfile": "Мой профиль"
+      "publicProfile": "Мой профиль",
+      "newInterface": "Новый интерфейс"
     },
     "signUp": "Зарегистрироваться",
     "tooltips": {

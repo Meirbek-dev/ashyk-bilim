@@ -1,5 +1,5 @@
 # Edge. The nginx image renders this file with envsubst into conf.d/default.conf.
-# Env (compose.prod.yaml): NGINX_SERVER_NAME, FORCE_HTTPS (1|0), TRUSTED_PROXY_CIDR,
+# Env (compose.prod.yaml): NGINX_SERVER_NAME, FORCE_HTTPS (1|0), TRUSTED_PROXY_CIDR, COMPOSE_PROFILES,
 # NGINX_LOCAL_RESOLVERS (set by the image when NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1).
 # Routes: snippets/routes.conf. Headers: snippets/security-headers.conf.
 
@@ -85,6 +85,46 @@ upstream web_backend {
   server web:3000 resolve;
   keepalive 32;
   keepalive_timeout 60s;
+}
+
+# Dual web (docs/INFRA.md "Dual web"): with `dual-web` in COMPOSE_PROFILES the new web (`web2`) runs beside the
+# old one on this origin. A page goes to the new web when only it has that path, or when the `ab_ui=v2` cookie
+# (set by /ui/new) says so; the old web keeps its own paths and stays the default. Off: everything is `web`.
+upstream web2_backend {
+  zone web2_backend 64k;
+  server web2:3000 resolve;
+  keepalive 32;
+  keepalive_timeout 60s;
+}
+
+map "${COMPOSE_PROFILES}" $dual_web {
+  ~(^|,)dual-web(,|$) 1;
+  default 0;
+}
+
+# Paths only one web serves. Old web: Next.js assets, its /api/* routes, root images; everything else of its own
+# is locale-prefixed (/ru, /kz, /en), which the new web answers with a 301 to its page.
+map $uri $web_pin {
+  ~^/(_next|api)/ legacy;
+  ~^/(app_logo|empty_)[^/]*$ legacy;
+  ~^/(home|learning|achievements|notifications|login|signup|reset-password|verify-email|_client-error)/?$ v2;
+  ~^/(learn|teach|admin|settings|assets|themes)(/|$) v2;
+  # Detail pages: the old web's are /<locale>/course|collection|user/...; its lists (/courses, /collections) stay shared.
+  ~^/(courses|collections|users)/[^/]+ v2;
+  default "";
+}
+
+map "$dual_web:$web_pin:$cookie_ab_ui" $web_upstream {
+  ~^1:legacy: web_backend;
+  ~^1:v2: web2_backend;
+  ~^1::v2$ web2_backend;
+  default web_backend;
+}
+
+# Tells both webs to offer the switch (they read it in the browser); no header at all when off.
+map $dual_web $dual_web_cookie {
+  1 "ab_dual=1; Path=/; Max-Age=86400; SameSite=Lax";
+  default "";
 }
 
 upstream api_backend {

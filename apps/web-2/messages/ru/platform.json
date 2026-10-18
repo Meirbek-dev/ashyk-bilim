@@ -64,5 +64,6 @@
   "platform_tab_appearance": "Оформление",
   "platform_back": "Назад",
   "platform_not_found_search": "Найти через поиск",
-  "platform_my_profile": "Мой профиль"
+  "platform_my_profile": "Мой профиль",
+  "platform_classic_ui": "Классический интерфейс"
 }

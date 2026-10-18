@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@components/ui/dropdown-menu'
-import { ChevronDown, CircleUser, Crown, LogOut, Shield, User as UserIcon, Users } from 'lucide-react'
+import { ChevronDown, CircleUser, Crown, LogOut, PanelsTopLeft, Shield, User as UserIcon, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
@@ -45,6 +45,9 @@ const SYSTEM_ROLE_PRIORITY: string[] = [
   RoleSlugs.USER,
 ]
 const SYSTEM_ROLE_SLUGS = new Set<string>(SYSTEM_ROLE_PRIORITY)
+
+/** The edge sets `ab_dual=1` while the new web runs beside this one (docs/INFRA.md "Dual web"). Read when the menu opens. */
+const dualWeb = () => typeof document !== 'undefined' && document.cookie.split('; ').includes('ab_dual=1')
 
 /** `showName`: always show name + email (the phone menu); the top bar shows them from xl up only. */
 export function HeaderProfileBox({ showName = false }: { showName?: boolean }) {
@@ -191,6 +194,13 @@ export function HeaderProfileBox({ showName = false }: { showName?: boolean }) {
                     <UserIcon data-icon="inline-start" />
                     <span>{t('profile.userSettings')}</span>
                   </DropdownMenuItem>
+                  {dualWeb() ? (
+                    // A full page load: /ui/new is the edge's, not a route of this app.
+                    <DropdownMenuItem nativeButton={false} render={<a href="/ui/new" />}>
+                      <PanelsTopLeft data-icon="inline-start" />
+                      <span>{t('profile.newInterface')}</span>
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onClick={handleLogout} disabled={isLoggingOut}>

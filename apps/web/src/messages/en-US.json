@@ -8587,7 +8587,8 @@
       },
       "signOut": "Sign Out",
       "userSettings": "User Settings",
-      "publicProfile": "My profile"
+      "publicProfile": "My profile",
+      "newInterface": "New interface"
     },
     "signUp": "Sign Up",
     "tooltips": {

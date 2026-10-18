@@ -481,6 +481,27 @@ builds `ashyq-web-2:ci-<sha>` under the same condition; three shards, 30 min eac
 failure the HTML report, traces and server log as an artifact. Gates only the
 `ashyq-web-2` retag (`publish-web2`).
 
+## Dual web
+
+Both webs on one origin while the new one is opt-in (RUNBOOK 3.12). `dual-web` in `COMPOSE_PROFILES` starts
+`web2` (`ashyq-web-2:${IMAGE_TAG}`, `WEB2_IMAGE` overrides, 512m) and switches the edge's routing on; without it
+everything goes to `web` and the cookies below mean nothing.
+
+| Request | Goes to |
+| --- | --- |
+| `/_next/*`, `/api/*` (not `/api/v2`), `/app_logo*`, `/empty_*` | `web` (old) |
+| `/home`, `/learning`, `/achievements`, `/notifications`, `/login`, `/signup`, `/reset-password`, `/verify-email`, `/learn/*`, `/teach/*`, `/admin/*`, `/settings/*`, `/assets/*`, `/themes/*`, `/courses/<id>`, `/collections/<id>`, `/users/<name>` | `web2` (new): only it has them, so a link someone copied in the new web always opens |
+| everything else (`/`, `/courses`, `/search`, `/<locale>/...`, `/certificates/...`) | `web2` with cookie `ab_ui=v2`, else `web` |
+
+- `/ui/new` sets `ab_ui=v2` (a year), `/ui/classic` clears it; both answer `302 /` (relative). Each web's profile
+  menu links the other while the edge sets `ab_dual=1` (readable, 1 day) on web responses.
+- One session for both: same origin, same `ab_session`, same `/api/v2`. Emails keep `WEB_LINKS=legacy`; the new
+  web answers those addresses with a 301 to its pages.
+- Documents: the old web renders the new web's `embedBlock {type: 'url'}` by host (its embed catalog); an
+  address off that catalog shows "unknown embed" there. Step 2.8 of the cutover still waits for the end.
+- Old-web answers kept only in the browser do not move across a switch (server drafts do): switch outside an attempt.
+- Gate: `infra/tests/dual-web.sh` (in `just ci-infra`) checks this table against stub webs, on and off.
+
 ## Known gaps
 
 - **The proxy in front of prod limits response headers to 4k.** A larger response

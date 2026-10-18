@@ -1,4 +1,4 @@
-import { getEmbedProvider, isEmbedType } from './embed-options'
+import { EMBED_PROVIDERS, getEmbedProvider, isEmbedType } from './embed-options'
 import type { EmbedType } from './embed-options'
 
 export type EmbedValidationError = 'errorEmpty' | 'errorInvalid'
@@ -302,6 +302,15 @@ function buildGenericEmbeddableSrc(type: EmbedType, url: string): string {
       return url
     }
   }
+}
+
+/**
+ * The type to render an embed as. The new web stores a page of a catalog service as type `url` (STAGE-2-CUTOVER 2.8);
+ * this web shows it as the provider whose hosts the address is on, and an address off the catalog stays unknown.
+ */
+export function resolveEmbedType(type: string | null | undefined, url: string | null | undefined): string | null {
+  if (type !== 'url' || !url) return type ?? null
+  return EMBED_PROVIDERS.find(provider => validateProviderUrl(provider.type, url) === null)?.type ?? type
 }
 
 export function buildEmbedSrc(type: EmbedType | string | null | undefined, url: string): string {

@@ -323,6 +323,25 @@ keeps 5 releases); `docker builder prune`. Not: `docker volume prune` (legacy
 grow with `rustfs_data` (a full copy each night); beyond ~20 GB switch the
 backup to an incremental `rclone sync` (compose.prod.yaml comment).
 
+### 3.12 Dual web (both frontends on one origin)
+
+INFRA "Dual web". The new web is opt-in per user (`/ui/new`); the old one stays the default. On:
+
+```bash
+env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
+env_set COMPOSE_PROFILES judge0,dual-web        # keep the profiles already there
+docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:$(sed -n 's/^IMAGE_TAG=//p' .env) >/dev/null
+dc up -d --no-build --wait                      # starts web2, recreates nginx (its env changed)
+curl -sI https://cs-mooc.tou.edu.kz/ | grep -i 'set-cookie: ab_dual'
+curl -s -o /dev/null -w '%{http_code}
+' -b ab_ui=v2 https://cs-mooc.tou.edu.kz/home   # 200 from web2
+```
+
+Watch `docker stats --no-stream | grep web` (both webs) and the 3.10 logs of `web2`. Off: remove `dual-web` from
+`COMPOSE_PROFILES`, `dc rm -sf web2 && dc up -d --no-build --wait`. Users who chose the new web land on the old
+one; their `ab_ui` cookie does nothing until it is on again. Later deploys need `ashyq-web-2:<sha>` too
+(deploy.sh checks it while `web2` is in the stack).
+
 ## 4. Troubleshooting
 
 ### deploy / rollback

@@ -68,9 +68,11 @@ migrations land first under the old web; the only old-web-breaking step comes la
    A migrate-editor-docs --dry-run                         # counts only; NOT run for real here
    ```
    `migrate-editor-docs` without `--after-cutover` refuses while any embed would become type
-   `url` (1 on prod data); with it, that node is unreadable for the old web. So D-01 waits for
-   2.8. The new web normalizes `blockEmbed` on read (G-14 148/148 before D-01).
-4. **Switch the web** (downtime = web container restart, about 15 s):
+   `url` (1 on prod data); with it, the old web shows that node by host when its embed catalog has the host
+   (else "unknown embed"). So D-01 waits for 2.8. The new web normalizes `blockEmbed` on read (G-14 148/148
+   before D-01).
+4. **Switch the web** (downtime = web container restart, about 15 s). If dual web runs (RUNBOOK 3.12), turn it
+   off first: after this step `web` itself is the new web.
    ```bash
    env_set WEB_IMAGE_NAME ashyq-web-2; env_set WEB_LINKS v2; env_set WEB_MEMORY 512m
    dc up -d --no-build --wait            # recreates web, server, worker (env changed)
@@ -121,9 +123,10 @@ Not reversible by a web switch:
 - **2.8 `migrate-editor-docs --after-cutover`**: the `url` embed it writes cannot be rendered by
   the old web. Hence it runs only after the window.
 - **Documents saved by the new web** during the window are already `embedBlock` (the old web
-  reads it); a new embed of type `url` is not. Before a rollback count them, expect 0:
+  reads it); a new embed of type `url` it shows by host, unless its embed catalog lacks the host. Before a
+  rollback count them:
   `Q "select count(*) from activities where jsonb_path_exists(content, '\$.** ? (@.type == \"embedBlock\" && @.attrs.type == \"url\")')"`.
-  Non-zero: tell the owner which activities; the old web shows those blocks broken.
+  Non-zero: check their hosts against the old catalog; tell the owner which activities show "unknown embed".
 - **Emails already sent** with v2 links (reset, verification): they 404 on the old web.
 - **New-web-only data** (notifications, groups renamed in UI) stays; the old web ignores it.
 - **Server rollback** is not a web rollback. Compare the target's migrations and locale

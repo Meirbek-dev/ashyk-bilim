@@ -1,0 +1,30 @@
+# Dual-web routing check (infra/tests/dual-web.sh, run by `just ci-infra`): the real edge in front of two stub webs
+# that answer "<name> <uri>", on top of the smoke stack. Only nginx, web and web2 are started (--no-deps).
+x-stub: &stub
+  image: docker.io/library/nginx:1.31.6-alpine
+  cap_drop: !reset []
+  security_opt: !reset []
+  healthcheck:
+    disable: true
+  deploy:
+    resources: !reset {}
+
+services:
+  nginx:
+    depends_on: !reset {}
+    deploy:
+      resources: !reset {}
+
+  web:
+    <<: *stub
+    command:
+      - sh
+      - -c
+      - printf 'server { listen 3000; location / { return 200 "classic $$uri"; } }' >/etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'
+
+  web2:
+    <<: *stub
+    command:
+      - sh
+      - -c
+      - printf 'server { listen 3000; location / { return 200 "new $$uri"; } }' >/etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'

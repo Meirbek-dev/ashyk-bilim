@@ -6,7 +6,7 @@ import { NodeViewWrapper } from '@tiptap/react'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core/nodeview-types'
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore'
 import type { EmbedBlockAttrs } from './EmbedBlock'
-import { buildEmbedSrc } from './embed-validators'
+import { buildEmbedSrc, resolveEmbedType } from './embed-validators'
 import { getEmbedProvider } from './embed-options'
 import type { EmbedType } from './embed-options'
 import { useTranslations } from 'next-intl'
@@ -21,7 +21,7 @@ function clampHeight(value: number): number {
 export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBlockAttrs>) {
   const { node, editor, updateAttributes, deleteNode, getPos } = props
   const { type, url, height: attrHeight } = node.attrs
-  const provider = getEmbedProvider(type)
+  const provider = getEmbedProvider(resolveEmbedType(type, url))
   const t = useTranslations('DashPage.Editor.EmbedPanel')
   const { isEditable } = editor
   const [mounted, setMounted] = useState(false)

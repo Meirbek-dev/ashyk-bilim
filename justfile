@@ -204,7 +204,7 @@ web2-e2e *args:
 web2-stand-down:
     {{ lib }} && use_web2 && compose down -v --remove-orphans && rm -rf tmp/web2
 
-# What the infra-gates CI job runs: compose config for every stack, bash -n, nginx -t.
+# What the infra-gates CI job runs: compose config for every stack, bash -n, nginx -t, dual-web routing.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -214,7 +214,7 @@ ci-infra:
     (use_smoke; IMAGE_TAG=ci compose config -q)
     (use_web2; IMAGE_TAG=ci compose config -q)
     log "compose config ok: dev, prod, smoke, web2"
-    for f in infra/scripts/*.sh infra/storage/*.sh; do {{ bash_bin }} -n "$f"; done
+    for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
     {{ smoke_cert }}
@@ -228,6 +228,7 @@ ci-infra:
     "$CTR" logs "$check_id"
     "$CTR" rm "$check_id" >/dev/null
     [[ $status == 0 ]]
+    {{ bash_bin }} infra/tests/dual-web.sh
 
 preflight *args:
     {{ bash_bin }} infra/scripts/preflight.sh "$@"

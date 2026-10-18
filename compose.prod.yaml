@@ -65,6 +65,8 @@ services:
       FORCE_HTTPS: ${FORCE_HTTPS:-1}
       # Default = trust nobody (loopback never forwards for clients).
       TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-127.0.0.1/32}
+      # `dual-web` here also routes pages to web2 (infra/nginx/nginx.conf.template).
+      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
       NGINX_ENTRYPOINT_LOCAL_RESOLVERS: '1'
     volumes:
       - ./infra/nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
@@ -124,6 +126,30 @@ services:
         limits:
           # stage-2: 512m for the new web (spec 10.3), 2g for the old one.
           memory: ${WEB_MEMORY:-2g}
+          cpus: '2.0'
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # Dual web (docs/INFRA.md "Dual web"): the new web beside the old one on the same origin, while both run.
+  # On with `dual-web` in COMPOSE_PROFILES; nginx then sends a page here by path or the `ab_ui` cookie.
+  # stage-2: removed in Ф9 together with the old web.
+  # ---------------------------------------------------------------------------
+  web2:
+    profiles: [dual-web]
+    image: ${WEB2_IMAGE:-${IMAGE_REPO:-ghcr.io/meirbek-dev}/ashyq-web-2:${IMAGE_TAG:?}}
+    restart: unless-stopped
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_SCHEME:-https}://${NGINX_SERVER_NAME:?}
+      INTERNAL_API_URL: http://server:8000
+    networks: [edge-net]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512m
           cpus: '2.0'
     logging: *logging
 
