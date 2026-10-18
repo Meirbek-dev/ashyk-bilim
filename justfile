@@ -49,6 +49,10 @@ eol:
 fmt +files:
     bun infra/dev/hooks.ts fmt "$@"
 
+# Rebuild phone icons, sharing artwork and PNG wordmarks from the existing SVG brand.
+brand-assets:
+    node apps/web/scripts/generate-brand-assets.mjs
+
 # Parallel work in ../ashyq-wt/<name> (own bun install and cargo target dir): `just wt new|ls|land|rm <name>`.
 wt *args:
     bun infra/dev/wt.ts "$@"

@@ -2,7 +2,7 @@ import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrappe
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getCollectionById } from '@services/courses/collections'
 import { getAbsoluteUrl } from '@services/config/config'
-import { APP_NAME } from '@/lib/constants'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { getTranslations } from 'next-intl/server'
 import AppLink from '@/components/ui/AppLink'
 import CoursePlaceholder from '@components/Objects/Thumbnails/CoursePlaceholder'
@@ -45,6 +45,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
+      siteName: APP_NAME,
+      images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: 'Ashyq Bilim' }],
       title: `${t('collection')}: ${col.name} - ${APP_NAME}`,
       description: `${col.description}`,
       type: 'website',

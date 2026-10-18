@@ -8,12 +8,31 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 
 import { Suspense } from 'react'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
   params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: LocaleLayoutProps): Promise<Metadata> {
+  const { locale } = await params
+  const description = getStaticMetadataMessages(locale).General.appDescription
+  return {
+    description,
+    openGraph: {
+      type: 'website',
+      title: APP_NAME,
+      siteName: APP_NAME,
+      description,
+      locale: locale.replace('-', '_'),
+      images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: APP_NAME }],
+    },
+  }
 }
 
 export function generateStaticParams() {

@@ -41,7 +41,7 @@ describe('public media URL resolution (v2 storage keys)', () => {
   })
 
   it('falls back to the bundled platform thumbnail without a key', () => {
-    expect(getPlatformThumbnailImage(null)).toMatch(/^https:\/\/app\.test\//u)
+    expect(getPlatformThumbnailImage(null)).toBe('https://app.test/brand/share-card.png')
     expect(getPlatformThumbnailImage('platform/thumb.webp')).toBe(
       'https://media.test/static/content/platform/thumb.webp',
     )

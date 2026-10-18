@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { isApiError } from '@/lib/api/assertSuccess'
-import { APP_NAME } from '@/lib/constants'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 
 interface CertificateVerifyPageProps {
   params: Promise<{
@@ -43,6 +43,7 @@ export async function generateMetadata(props: CertificateVerifyPageProps): Promi
           },
         },
         openGraph: {
+          images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: 'Ashyq Bilim' }],
           title: single ?? t('openGraph.title', { certificationName, courseName }),
           description: t('openGraph.description', {
             certificationName,

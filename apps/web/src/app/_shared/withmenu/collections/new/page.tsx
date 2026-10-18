@@ -21,14 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
+      siteName: APP_NAME,
       title: `${t('metaTitle')} - ${APP_NAME}`,
       description: t('metaDescription', { platformName: APP_NAME }),
       type: 'website',
       images: [
         {
           url: getPlatformThumbnailImage(),
-          width: 800,
-          height: 600,
+          width: 1200,
+          height: 630,
           alt: APP_NAME,
         },
       ],

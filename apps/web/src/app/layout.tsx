@@ -9,7 +9,9 @@ import {
   getThemeFontStylesheetHref,
   resolveThemeFontFamilies,
 } from '@/lib/theme-fonts'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
+import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import type { CSSProperties } from 'react'
 import { Suspense } from 'react'
 
@@ -29,13 +31,32 @@ const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens)
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicConfig().siteUrl),
+  title: APP_NAME,
+  description: getStaticMetadataMessages(defaultLocale).General.appDescription,
+  applicationName: APP_NAME,
+  manifest: '/site.webmanifest',
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: 'default' },
+  other: { 'mobile-web-app-capable': 'yes' },
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: 'website',
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: getStaticMetadataMessages(defaultLocale).General.appDescription,
+    images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: APP_NAME }],
+  },
+  // Next derives the title, description and image from each page's Open Graph metadata.
+  twitter: { card: 'summary_large_image' },
   icons: {
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     icon: [
       { url: '/favicon.ico', sizes: '16x16 32x32 48x48 64x64 128x128 256x256' },
       { url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' },
     ],
   },
 }
+
+export const viewport: Viewport = { themeColor: '#162c4a' }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -64,14 +64,16 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
       },
     },
     openGraph: {
+      siteName: APP_NAME,
+      locale: locale.replace('-', '_'),
       title: `${General.home} - ${APP_NAME}`,
       description: General.appDescription,
       type: 'website',
       images: [
         {
           url: getPlatformThumbnailImage(),
-          width: 800,
-          height: 600,
+          width: 1200,
+          height: 630,
           alt: APP_NAME,
         },
       ],

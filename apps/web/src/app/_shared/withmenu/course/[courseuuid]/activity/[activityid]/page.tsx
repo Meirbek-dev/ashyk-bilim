@@ -1,3 +1,4 @@
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { getActivity } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
 import { getTranslations } from 'next-intl/server'
@@ -60,6 +61,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
+      siteName: APP_NAME,
+      images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: 'Ashyq Bilim' }],
       title: pageTitle,
       description: course_meta.description ?? '',
       publishedTime: course_meta.creation_date,

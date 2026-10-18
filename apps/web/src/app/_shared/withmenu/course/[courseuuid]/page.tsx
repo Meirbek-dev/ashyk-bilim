@@ -1,7 +1,7 @@
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { getCourseMetadata } from '@services/courses/courses'
 import { getSession } from '@/lib/auth/session'
-import { APP_NAME } from '@/lib/constants'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query'
@@ -45,6 +45,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
+      siteName: APP_NAME,
       title: `${courseName} - ${APP_NAME}`,
       description: courseDescription,
       images: thumbnailUrl
@@ -56,7 +57,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
               alt: courseName,
             },
           ]
-        : [],
+        : [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: APP_NAME }],
       type: 'article',
       publishedTime: course_meta?.creation_date || '',
       tags: courseKeywords,

@@ -1,4 +1,4 @@
-import { APP_NAME } from '@/lib/constants'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
 import { getEditableCourses } from '@services/courses/editable'
 import { parsePreset } from '@/lib/course-management'
@@ -54,6 +54,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       },
     },
     openGraph: {
+      siteName: APP_NAME,
+      locale: locale.replace('-', '_'),
+      images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: 'Ashyq Bilim' }],
       title: General.courses,
       description: General.appDescription,
       type: 'website',

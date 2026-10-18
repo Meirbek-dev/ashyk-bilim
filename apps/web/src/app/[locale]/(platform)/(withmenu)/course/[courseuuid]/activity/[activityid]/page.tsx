@@ -7,7 +7,7 @@ import { cache, Suspense } from 'react'
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime'
 import { redirect } from '@/i18n/navigation'
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
-import { APP_NAME } from '@/lib/constants'
+import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import AccessDenied from '@/components/Errors/AccessDenied'
 import ResourceNotFound from '@/components/Errors/ResourceNotFound'
 import ScheduledActivity from '@/components/Errors/ScheduledActivity'
@@ -79,6 +79,8 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         },
       },
       openGraph: {
+        siteName: APP_NAME,
+        images: [{ url: APP_THUMBNAIL_IMAGE_PATH, width: 1200, height: 630, alt: 'Ashyq Bilim' }],
         title: pageTitle,
         description: courseDescription,
         publishedTime: course_meta.creation_date,
