@@ -53,12 +53,14 @@ export const orderSessions = (sessions: readonly SessionSummary[]): SessionSumma
   sessions.toSorted((a, b) => Number(b.current) - Number(a.current) || b.last_seen_unix - a.last_seen_unix)
 
 // Order matters: Edge and Opera also say "Chrome", Chrome also says "Safari", Android also says "Linux".
+// On iOS every browser is Safari underneath and names itself CriOS / FxiOS / EdgiOS.
 const BROWSERS: [RegExp, string][] = [
-  [/Edg\//, 'Edge'],
+  [/Edg\/|EdgA\/|EdgiOS\//, 'Edge'],
   [/OPR\/|Opera/, 'Opera'],
   [/YaBrowser\//, 'Yandex Browser'],
-  [/Firefox\//, 'Firefox'],
-  [/Chrome\//, 'Chrome'],
+  [/SamsungBrowser\//, 'Samsung Internet'],
+  [/Firefox\/|FxiOS\//, 'Firefox'],
+  [/Chrome\/|CriOS\//, 'Chrome'],
   [/Safari\//, 'Safari'],
 ]
 const SYSTEMS: [RegExp, string][] = [

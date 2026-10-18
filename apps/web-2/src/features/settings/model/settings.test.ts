@@ -46,6 +46,17 @@ describe('settings model', () => {
         'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Safari/604.1',
       ),
     ).toBe('Safari, iOS')
+    // Chrome on an iPhone is Safari underneath: it names itself CriOS.
+    expect(
+      deviceLabel(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/140.0 Mobile/15E148 Safari/604.1',
+      ),
+    ).toBe('Chrome, iOS')
+    expect(
+      deviceLabel(
+        'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 SamsungBrowser/27.0 Chrome/125.0 Mobile Safari/537.36',
+      ),
+    ).toBe('Samsung Internet, Android')
     expect(deviceLabel('Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36')).toBe(
       'Chrome, Android',
     )
