@@ -5,20 +5,37 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Chapter } from '#/shared/api/gen/types.gen'
+import { ActivityIcon } from '#/shared/components/activity-icon'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { IconButton } from '#/shared/components/icon-button'
 import { FormDialog } from '#/shared/components/templates/form-dialog'
 import { activityTypeMeta } from '#/shared/i18n/labels'
+import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { createActivityOptions, createAssessmentOptions, createFileSubmissionOptions } from '../curriculum-queries'
-import { CREATABLE_TYPES, createPlan, newActivitySchema, type NewActivity } from '../model/studio'
+import { CREATABLE_TYPES, type CreatableType, createPlan, newActivitySchema, type NewActivity } from '../model/studio'
 
 const defaultValues: NewActivity = { name: '', type: 'dynamic', source: 'youtube' }
-const typeOptions = CREATABLE_TYPES.map(type => ({ value: type, label: activityTypeMeta[type].label() }))
+const typeHints: Record<CreatableType, () => string> = {
+  dynamic: m.studio_type_hint_dynamic,
+  video: m.studio_type_hint_video,
+  document: m.studio_type_hint_document,
+  file_submission: m.studio_type_hint_file_submission,
+  quiz: m.studio_type_hint_quiz,
+  exam: m.studio_type_hint_exam,
+  code_challenge: m.studio_type_hint_code_challenge,
+}
+const typeOptions = () =>
+  CREATABLE_TYPES.map(type => ({
+    value: type,
+    label: activityTypeMeta[type].label(),
+    description: typeHints[type](),
+    icon: <ActivityIcon type={type} size="sm" />,
+  }))
 
 /**
- * "Add activity": one dialog for every type. Quiz, exam and code go through the assessment door, file submission
+ * "Add activity" (a labelled button under the chapter's activities): one dialog for every type, each a card with its
+ * icon and what it is for. Quiz, exam and code go through the assessment door, file submission
  * through its config, the rest through the activity door; then the new activity's studio opens.
  */
 export function CreateActivityDialog({ courseId, chapter }: { courseId: string; chapter: Chapter }) {
@@ -61,7 +78,12 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
     <FormDialog
       open={open}
       onOpenChange={changeOpen}
-      trigger={<IconButton label={m.studio_activity_new_in({ name: chapter.name })} icon={<Plus aria-hidden />} />}
+      trigger={
+        <Button variant="ghost" aria-label={m.studio_activity_new_in({ name: chapter.name })}>
+          <Plus aria-hidden data-icon="inline-start" />
+          {m.studio_activity_new()}
+        </Button>
+      }
       title={m.studio_activity_new()}
       submitLabel={m.studio_create_submit()}
       onSubmit={() => form.handleSubmit()}
@@ -69,7 +91,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
       error={doors.find(door => door.error)?.error ?? null}
     >
       <form.AppField name="type">
-        {field => <field.RadioGroupField label={m.studio_field_type()} options={typeOptions} />}
+        {field => <field.RadioGroupField label={m.studio_field_type()} options={typeOptions()} />}
       </form.AppField>
       <form.Subscribe selector={state => state.values.type}>
         {type =>

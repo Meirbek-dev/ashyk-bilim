@@ -96,7 +96,6 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
         <ConflictDialog {...dialog} />
         {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
         {allowed('delete') || allowed('update') ? <DeleteChapter courseId={courseId} chapter={chapter} /> : null}
-        {allowed('add_activity') ? <CreateActivityDialog courseId={courseId} chapter={chapter} /> : null}
       </div>
       {chapter.activities.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.studio_chapter_empty()}</p>
@@ -107,6 +106,11 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
           ))}
         </ol>
       )}
+      {allowed('add_activity') ? (
+        <div>
+          <CreateActivityDialog courseId={courseId} chapter={chapter} />
+        </div>
+      ) : null}
     </li>
   )
 }
