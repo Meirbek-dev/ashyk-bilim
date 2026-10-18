@@ -2,7 +2,8 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { FileText } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { Anchor } from '#/shared/components/anchor'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { PdfFrame } from '#/shared/components/pdf-frame'
 
 import { blockFileUrl, isRecord, numberAttr } from '../../model/document'
@@ -29,10 +30,16 @@ export function FileView(props: ReactNodeViewProps) {
     return (
       <NodeViewWrapper className="my-4 flex flex-col gap-2">
         <PdfFrame src={url} title={m.editor_pdf_title()} height={height(node.attrs['size'])} fallback={null} />
-        <Link to={url} target="_blank" rel="noopener noreferrer">
-          <FileText aria-hidden className="mr-1 inline size-4" />
+        {/* A button, not a bare link: on a phone (no PDF viewer in a page) it is the lesson's one way in. */}
+        <Anchor
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({ variant: 'outline', className: 'self-start no-underline' })}
+        >
+          <FileText aria-hidden data-icon="inline-start" />
           {m.editor_pdf_open()}
-        </Link>
+        </Anchor>
       </NodeViewWrapper>
     )
   return (
