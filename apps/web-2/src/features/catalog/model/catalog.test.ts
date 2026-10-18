@@ -99,5 +99,14 @@ describe('catalog model', () => {
     expect(landingLead({ name: 'Ashyq Bilim', description: 'Ashyq Bilim', about: 'Платформа' })).toBe('Платформа')
     expect(landingLead({ name: 'A', description: 'Курсы', about: 'Платформа' })).toBe('Курсы')
     expect(landingLead({ name: 'A', description: ' a ', about: '' })).toBeUndefined()
+    // prod: "about" opens with the name the heading already shows
+    expect(
+      landingLead({
+        name: 'Ashyq Bilim',
+        description: 'Ashyq Bilim',
+        about: 'Ashyq Bilim - образовательная платформа',
+      }),
+    ).toBe('Образовательная платформа')
+    expect(landingLead({ name: 'Ashyq', description: 'Ashyqtau курсы', about: '' })).toBe('Ashyqtau курсы')
   })
 })

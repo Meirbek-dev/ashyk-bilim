@@ -69,11 +69,17 @@ export function paletteSections(
 
 /**
  * The line under the platform's name on the landing: its description, else its about text, skipping one that only
- * repeats the name (prod has description = name); `undefined` lets the page say what the platform is itself.
+ * repeats the name (prod has description = name) and the name it opens with («Ashyq Bilim - Образовательная
+ * платформа...»: the heading above already says it); `undefined` lets the page say what the platform is itself.
  */
 export function landingLead(platform: { name: string; description: string; about: string }): string | undefined {
   const name = platform.name.trim().toLowerCase()
-  return [platform.description, platform.about]
-    .map(text => text.trim())
-    .find(text => text && text.toLowerCase() !== name)
+  // The name alone, or the name and a separator before the rest; "Ashyqtau" is another word and stays.
+  const withoutName = (text: string) => {
+    if (!name || !text.toLowerCase().startsWith(name)) return text
+    const rest = text.slice(name.length)
+    return rest === '' ? '' : /^\s*[-–—:,]\s*/.test(rest) ? rest.replace(/^\s*[-–—:,]\s*/, '') : text
+  }
+  const lead = [platform.description, platform.about].map(text => withoutName(text.trim()).trim()).find(Boolean)
+  return lead ? lead.charAt(0).toLocaleUpperCase() + lead.slice(1) : undefined
 }
