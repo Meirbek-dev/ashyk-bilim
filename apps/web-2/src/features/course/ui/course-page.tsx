@@ -48,7 +48,8 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
       meta={meta.filter(Boolean).join(' · ')}
       status={course.archived_at_unix ? <StatusBadge tone="warning">{m.course_archived()}</StatusBadge> : null}
       primaryAction={
-        <div className="flex flex-wrap gap-2">
+        // Full width and stacked on a phone (DESIGN 6: the primary action under the title), in a row from @2xl.
+        <div className="flex flex-col gap-2 @2xl:flex-row @2xl:flex-wrap">
           {session ? (
             <LearnerAction course={course} />
           ) : (
