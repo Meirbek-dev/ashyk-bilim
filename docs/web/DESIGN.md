@@ -7,10 +7,9 @@ rule below is checked by a gate, a lint rule or the reference slice; a rule nobo
 
 1. A study tool people look forward to opening. A screen answers one question (5.1), shows one next step and the
    learner's progress (rings, XP, streaks) where they act.
-2. Identity "Ashyq" (open): porcelain / steppe-night grounds, Yasawi turquoise for action; lapis, saffron, madder,
-   sage (ceramics, felt) for data and covers. Loud: the course ornament (`CourseCover`, Truchet arcs from the id) for a
-   course without a picture and under its result. Quiet: the seam, a course's order as one line, solid to where the
-   learner is, dashed ahead. Course pictures are 16:9 everywhere (uploaded thumbnails carry lettering).
+2. Identity: official navy / white `public/app_logo*.svg`, original web blue actions, cool neutral / navy grounds.
+   Blue, teal, saffron, madder, sage for data. `CourseCover` Truchet arcs fill missing pictures and results; the seam
+   shows progress (solid completed, dashed ahead). Course pictures are always 16:9 (uploaded thumbnails carry text).
 3. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
 4. Color carries meaning (status, activity type, action, reward) and never decorates, except the ornament. The
    meaning always has a second channel too: a label or an icon.
@@ -117,12 +116,13 @@ title, a row or a card background.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with `BrandMark` + name, space switcher
+**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark, space switcher
 (only with more than one space), a search field with its `Ctrl+K`, notifications and the profile menu. Below it, a
 sidebar `w-60` (current item: tint plus a primary bar) holding the current space's navigation, then the content. At
 390 px: mark only, search icon, notifications and profile; the space switcher moves into the profile menu, and the
 navigation becomes a bottom bar `h-14` of at most 5 icon + label items (current: a pill behind the icon). Guests
-get the same shell without navigation. Content sits in `mx-auto w-full max-w-6xl`.
+get the same shell without navigation. Auth pages use the full wordmark. Navy artwork switches to white in dark mode,
+including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
 **Focus layout** (5.2): no navigation. Top bar: back button, context title (`text-lg`, truncated), save status,
 then actions on the right. Used by the activity player, attempt, activity editor and single-submission review.

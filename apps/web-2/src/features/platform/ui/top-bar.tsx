@@ -25,8 +25,9 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
         to="/"
         className="flex items-center gap-2 rounded-md px-2 py-1 font-heading text-lg font-semibold whitespace-nowrap"
       >
-        <BrandMark />
-        <span className="sr-only sm:not-sr-only">{m.platform_brand()}</span>
+        <BrandMark className="h-8 w-auto sm:hidden" />
+        <BrandMark full className="hidden h-8 w-auto sm:inline-flex" />
+        <span className="sr-only">{m.platform_brand()}</span>
       </RouterLink>
       {session ? (
         <div className="hidden lg:block">

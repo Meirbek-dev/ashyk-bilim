@@ -1,15 +1,24 @@
-/** The logomark: two ornament curls around a centre stud (the cover ornament's tile), on primary. */
-export function BrandMark({ className = 'size-7' }: { className?: string }) {
+import { cn } from 'cn'
+
+/** Official artwork; CSS follows the page's explicit or system color mode before hydration. */
+export function BrandMark({ full = false, className = 'h-8 w-auto' }: { full?: boolean; className?: string }) {
+  const suffix = full ? '_full' : ''
   return (
-    <svg aria-hidden viewBox="0 0 32 32" className={`shrink-0 ${className}`}>
-      <rect width="32" height="32" rx="9" className="fill-primary" />
-      <path
-        d="M16 5A11 11 0 0 1 5 16M27 16A11 11 0 0 0 16 27"
-        className="fill-none stroke-primary-foreground"
-        strokeWidth="3.4"
-        strokeLinecap="round"
+    <span aria-hidden className={cn('brand-mark inline-flex shrink-0', className)}>
+      <img
+        src={`/app_logo${suffix}.svg`}
+        alt=""
+        width={full ? 327.34 : 139.01}
+        height={119.28}
+        className="brand-mark-day h-full w-auto"
       />
-      <circle cx="16" cy="16" r="2.2" className="fill-primary-foreground" />
-    </svg>
+      <img
+        src={`/app_logo_light${suffix}.svg`}
+        alt=""
+        width={full ? 327.34 : 139.01}
+        height={119.28}
+        className="brand-mark-night h-full w-auto"
+      />
+    </span>
   )
 }

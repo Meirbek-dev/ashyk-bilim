@@ -23,7 +23,10 @@ export function AuthPage({ title, children }: { title: string; children: ReactNo
     <FocusPage back={back} title={title} wide>
       <div className="mx-auto grid w-full max-w-5xl items-center gap-16 lg:grid-cols-2 lg:py-8">
         <section className="mx-auto flex w-full max-w-sm flex-col gap-6">
-          <BrandMark className="size-10" />
+          <div>
+            <BrandMark full className="h-14 w-auto" />
+            <span className="sr-only">{m.platform_brand()}</span>
+          </div>
           <h1 className="text-display font-semibold">{title}</h1>
           {children}
         </section>

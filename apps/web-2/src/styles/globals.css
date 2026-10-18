@@ -29,6 +29,28 @@ body {
   @apply bg-background text-foreground antialiased;
 }
 
+.brand-mark-night {
+  display: none;
+}
+
+:root[data-mode='dark'] .brand-mark-day {
+  display: none;
+}
+
+:root[data-mode='dark'] .brand-mark-night {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode='light'], [data-mode='dark']) .brand-mark-day {
+    display: none;
+  }
+
+  :root:not([data-mode='light'], [data-mode='dark']) .brand-mark-night {
+    display: block;
+  }
+}
+
 /* Phones: toasts come in at the top, clear of the bottom bar and the player's «Продолжить» row (the stock kit
    stacks them at the bottom). Unlayered, so it wins over the kit's utilities; the stack mirrors the kit's: older
    toasts peek below the front one. */

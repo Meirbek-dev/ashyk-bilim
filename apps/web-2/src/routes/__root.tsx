@@ -20,7 +20,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { title: title ? `${title} · ${m.platform_brand()}` : m.platform_brand() },
       ],
-      links: [{ rel: 'stylesheet', href: appCss }],
+      links: [
+        { rel: 'stylesheet', href: appCss },
+        { rel: 'icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48 64x64 128x128 256x256' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg', sizes: 'any' },
+      ],
     }
   },
   headers: ssrStatusHeaders,
