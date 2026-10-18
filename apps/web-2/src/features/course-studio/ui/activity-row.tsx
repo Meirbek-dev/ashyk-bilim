@@ -58,7 +58,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
     <li
       ref={allowed('move') ? ref : undefined}
-      className={`flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2 text-card-foreground ${isDragging ? 'opacity-60' : ''}`}
+      className={`flex flex-wrap items-center gap-2 bg-card px-2 py-1.5 text-card-foreground first:rounded-t-xl last:rounded-b-xl ${isDragging ? 'relative z-10 rounded-lg border opacity-60' : ''}`}
     >
       {/* Two groups: on a phone the status and actions wrap under the name instead of crushing it to letters. */}
       <div className="flex min-w-0 grow basis-56 flex-wrap items-center gap-2">
@@ -83,6 +83,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
         ) : (
           <span className="min-w-0 flex-1 wrap-anywhere">
             <Link
+              variant="title"
               to="/teach/courses/$courseId/activities/$activityId/edit"
               params={{ courseId, activityId: activity.id }}
             >

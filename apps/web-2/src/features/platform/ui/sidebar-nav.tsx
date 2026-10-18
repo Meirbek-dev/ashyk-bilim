@@ -27,12 +27,7 @@ export function SidebarNav({ session, workspace }: { session: SessionInfo; works
       aria-label={m.platform_nav_label()}
       className={`hidden shrink-0 border-r bg-sidebar text-sidebar-foreground lg:block ${collapsed ? 'w-14' : 'w-60'}`}
     >
-      <div className="sticky top-14 flex flex-col gap-1 p-2">
-        <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
-          <Suspense fallback={<span className="h-control w-control" />}>
-            <SidebarToggle collapsed={collapsed} onToggle={toggle} />
-          </Suspense>
-        </div>
+      <div className="sticky top-14 flex flex-col gap-1 p-2 pt-4">
         <NavSections
           session={session}
           workspace={workspace}
@@ -51,6 +46,13 @@ export function SidebarNav({ session, workspace }: { session: SessionInfo; works
             ))
           }
         />
+        <div
+          className={`mt-2 flex border-t border-sidebar-border pt-2 ${collapsed ? 'justify-center' : 'justify-start'}`}
+        >
+          <Suspense fallback={<span className="h-control w-control" />}>
+            <SidebarToggle collapsed={collapsed} onToggle={toggle} />
+          </Suspense>
+        </div>
       </div>
     </nav>
   )

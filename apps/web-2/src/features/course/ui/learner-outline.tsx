@@ -20,23 +20,22 @@ export function LearnerOutline({ course }: { course: Course }) {
   return (
     <>
       {state.enrolled ? (
-        <section
-          aria-labelledby="course-progress"
-          className="flex flex-col gap-3 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs"
-        >
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="course-progress" className="text-xl font-semibold">
-              {m.course_progress_title()}
-            </h2>
-            <p aria-hidden className="font-heading text-2xl font-semibold tabular-nums">
-              {formatPercent(Math.round(percent))}
-            </p>
-          </div>
-          <Progress value={percent} aria-labelledby="course-progress" className="progress-lg" />
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground tabular-nums">{m.course_progress_count({ done, total })}</p>
+        <section aria-labelledby="course-progress" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <div className="flex items-baseline gap-4">
+              <p aria-hidden className="font-heading text-display font-semibold tabular-nums">
+                {formatPercent(Math.round(percent))}
+              </p>
+              <div className="flex flex-col">
+                <h2 id="course-progress" className="text-xl font-semibold">
+                  {m.course_progress_title()}
+                </h2>
+                <p className="text-sm text-muted-foreground tabular-nums">{m.course_progress_count({ done, total })}</p>
+              </div>
+            </div>
             <LeaveCourse course={course} />
           </div>
+          <Progress value={percent} aria-labelledby="course-progress" className="progress-lg" />
         </section>
       ) : null}
       <Syllabus courseId={course.id} chapters={outlineSyllabus(state)} />

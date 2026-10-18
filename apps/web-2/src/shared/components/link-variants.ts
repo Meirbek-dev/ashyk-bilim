@@ -2,6 +2,8 @@
 export const linkVariants = {
   /** Inline text link: current text color, underlined (primary is never a text color). */
   text: 'underline underline-offset-4 hover:text-muted-foreground',
+  /** A title in a card or row that holds other links too: the name reads as a heading, underlined on hover. */
+  title: 'underline-offset-4 hover:underline',
   /** A card's title whose hit area covers the whole card (the card is `relative`); underlined on hover. */
   stretched: 'underline-offset-4 after:absolute after:inset-0 hover:underline',
   /** A rounded chip that opens a page: the home level and streak pills. */

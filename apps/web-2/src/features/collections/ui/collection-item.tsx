@@ -14,7 +14,7 @@ export function CollectionItem({ collection }: { collection: Collection | Collec
   const full = 'courses' in collection ? collection : null
   return (
     <article className="relative flex h-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs transition-colors hover:border-input">
-      <CourseCover seed={collection.id} imageKey={full?.cover_key} className="aspect-3/1 w-full @xl:aspect-2/1" />
+      <CourseCover seed={collection.id} imageKey={full?.cover_key} className="aspect-video w-full" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="min-w-0 text-lg font-semibold wrap-anywhere">

@@ -22,15 +22,17 @@ export function SignalList({ title, items }: { title: string; items: readonly Si
       <h2 id={id} className="text-xl font-semibold">
         {title}
       </h2>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col divide-y">
         {items.map(item => {
           const badge = severityBadges[item.severity]
           const text = signalText[item.code](item.params)
           const href = signalHref(item.href)
           return (
-            <li key={item.id} className="flex flex-wrap items-baseline gap-2">
-              <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
-              <span className="min-w-0 wrap-anywhere">
+            <li key={item.id} className="flex items-start gap-3 py-2.5">
+              <span className="w-24 shrink-0 pt-0.5">
+                <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
+              </span>
+              <span className="min-w-0 flex-1 wrap-anywhere">
                 {href ? (
                   <Anchor
                     href={href}

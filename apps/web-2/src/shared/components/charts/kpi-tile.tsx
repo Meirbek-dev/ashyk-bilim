@@ -23,14 +23,14 @@ export function KpiTile({ label, value, change, tone = 'neutral', action }: KpiT
   return (
     <section
       aria-labelledby={labelId}
-      className="flex flex-col gap-1 rounded-lg border bg-card p-4 text-card-foreground"
+      className="flex flex-col gap-1 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"
     >
       <p id={labelId} className="text-sm text-muted-foreground">
         {label}
       </p>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
+      <p className="font-heading text-2xl font-semibold tabular-nums">{value}</p>
       {change ? <p className={`text-xs tabular-nums ${tones[tone]}`}>{change}</p> : null}
-      {action ? <div className="text-sm">{action}</div> : null}
+      {action ? <div className="mt-auto pt-1 text-sm">{action}</div> : null}
     </section>
   )
 }

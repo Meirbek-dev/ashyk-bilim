@@ -3,6 +3,7 @@ import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
 import { CertificatePdfLink } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
+import { CourseCover } from '#/shared/components/course-cover'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatNumber } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -28,39 +29,47 @@ export function CompletionPage() {
   const code = certificates[0]?.certificate.verify_code ?? null
   return (
     <FocusPage back={<BackToCourse courseId={courseId} />} title={state.title}>
-      <section className="flex flex-col items-start gap-gutter">
-        <CompletionHeader progress={progress} completed={completed} />
-        <ul className="flex flex-col gap-1 text-sm text-muted-foreground empty:hidden">
-          {typeof progress.grade_average === 'number' ? (
-            <li className="tabular-nums">{m.player_grade_average({ value: formatNumber(progress.grade_average) })}</li>
-          ) : null}
-          {progress.needs_grading_count > 0 ? (
-            <li>{m.player_needs_grading({ count: progress.needs_grading_count })}</li>
-          ) : null}
-          {certificate.configured && !code ? <li>{m.player_certificate_pending()}</li> : null}
-        </ul>
-        <div className="flex flex-wrap gap-2 empty:hidden">
-          {!completed && nextId ? (
-            <RouterLink
-              to="/learn/$courseId/$activityId"
-              params={{ courseId, activityId: nextId }}
-              className={buttonVariants()}
-            >
-              {m.player_continue()}
-            </RouterLink>
-          ) : null}
-          {code ? (
-            <RouterLink
-              to="/certificates/$certificateId/verify"
-              params={{ certificateId: code }}
-              className={buttonVariants({ variant: completed ? 'default' : 'outline' })}
-            >
-              {m.player_certificate_view()}
-            </RouterLink>
-          ) : null}
-          {code ? <CertificatePdfLink code={code} /> : null}
+      <section className="flex flex-col gap-gutter">
+        {/* The course's own ornament as the felt the result is laid on: the one loud moment of the course. */}
+        <div className="relative isolate overflow-hidden rounded-2xl border px-4 py-10 sm:px-10 sm:py-14">
+          <CourseCover seed={courseId} className="absolute inset-0 -z-10 size-full" />
+          <div className="mx-auto flex max-w-md flex-col items-center gap-gutter rounded-xl border bg-card p-gutter text-center text-card-foreground shadow-xs sm:p-8">
+            <CompletionHeader progress={progress} completed={completed} />
+            <ul className="flex flex-col items-center gap-1 text-sm text-muted-foreground empty:hidden">
+              {typeof progress.grade_average === 'number' ? (
+                <li className="tabular-nums">
+                  {m.player_grade_average({ value: formatNumber(progress.grade_average) })}
+                </li>
+              ) : null}
+              {progress.needs_grading_count > 0 ? (
+                <li>{m.player_needs_grading({ count: progress.needs_grading_count })}</li>
+              ) : null}
+              {certificate.configured && !code ? <li>{m.player_certificate_pending()}</li> : null}
+            </ul>
+            <div className="flex flex-wrap justify-center gap-2 empty:hidden">
+              {!completed && nextId ? (
+                <RouterLink
+                  to="/learn/$courseId/$activityId"
+                  params={{ courseId, activityId: nextId }}
+                  className={buttonVariants()}
+                >
+                  {m.player_continue()}
+                </RouterLink>
+              ) : null}
+              {code ? (
+                <RouterLink
+                  to="/certificates/$certificateId/verify"
+                  params={{ certificateId: code }}
+                  className={buttonVariants({ variant: completed ? 'default' : 'outline' })}
+                >
+                  {m.player_certificate_view()}
+                </RouterLink>
+              ) : null}
+              {code ? <CertificatePdfLink code={code} /> : null}
+            </div>
+          </div>
         </div>
-        <p className="flex flex-wrap gap-x-4 gap-y-2 self-stretch border-t pt-4 text-sm">
+        <p className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
           <Link to="/learning">{m.player_my_courses()}</Link>
           <Link to="/courses">{m.player_catalog()}</Link>
         </p>

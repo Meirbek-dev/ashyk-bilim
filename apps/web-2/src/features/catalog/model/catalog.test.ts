@@ -7,6 +7,7 @@ import {
   authorNames,
   coursesFilter,
   courseState,
+  landingLead,
   nextCoursesCursor,
   paletteSections,
   resolveSort,
@@ -92,5 +93,11 @@ describe('catalog model', () => {
     const filtered = paletteSections(session(['teach']), '  ' + (teacher[0]?.sections[0]?.label() ?? '').slice(0, 3))
     expect(filtered.flatMap(group => group.sections).length).toBeGreaterThan(0)
     expect(paletteSections(session([]), 'zzzz-no-such-section')).toEqual([])
+  })
+
+  test('B-CAT-01 the landing lead skips a description that only repeats the name', () => {
+    expect(landingLead({ name: 'Ashyq Bilim', description: 'Ashyq Bilim', about: 'Платформа' })).toBe('Платформа')
+    expect(landingLead({ name: 'A', description: 'Курсы', about: 'Платформа' })).toBe('Курсы')
+    expect(landingLead({ name: 'A', description: ' a ', about: '' })).toBeUndefined()
   })
 })

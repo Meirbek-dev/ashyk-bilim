@@ -47,7 +47,7 @@ export function primaryAction(
 }
 
 /** One syllabus row: the same shape from the guest's curriculum and from the learner's outline. */
-type SyllabusActivity = {
+export type SyllabusActivity = {
   id: ActivityId
   title: string
   type: string

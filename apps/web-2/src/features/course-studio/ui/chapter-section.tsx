@@ -64,7 +64,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
   return (
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
     <li ref={allowed('move') ? ref : undefined} className={`flex flex-col gap-3 ${isDragging ? 'opacity-60' : ''}`}>
-      <div className="flex flex-wrap items-center gap-2 border-b pb-2">
+      <div className="flex flex-wrap items-center gap-2">
         {allowed('move') ? (
           <IconButton
             ref={handleRef}
@@ -101,7 +101,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
       {chapter.activities.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.studio_chapter_empty()}</p>
       ) : (
-        <ol className="flex flex-col gap-2">
+        <ol className="flex flex-col divide-y rounded-xl border bg-card shadow-xs">
           {chapter.activities.map((activity, at) => (
             <ActivityRow key={activity.id} courseId={courseId} activity={activity} index={at} />
           ))}

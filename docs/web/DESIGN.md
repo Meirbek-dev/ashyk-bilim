@@ -7,9 +7,10 @@ rule below is checked by a gate, a lint rule or the reference slice; a rule nobo
 
 1. A study tool people look forward to opening. A screen answers one question (5.1), shows one next step and the
    learner's progress (rings, XP, streaks) where they act.
-2. Identity "Ashyq" (open): porcelain / steppe-night grounds, Yasawi turquoise for action, lapis, saffron, madder
-   and sage (Kazakh ceramics and felt) for data and covers. Its one loud element is the course ornament
-   (`CourseCover`: Truchet arcs from the course id, stitched like a syrmak rug) wherever a course has no picture.
+2. Identity "Ashyq" (open): porcelain / steppe-night grounds, Yasawi turquoise for action; lapis, saffron, madder,
+   sage (ceramics, felt) for data and covers. Loud: the course ornament (`CourseCover`, Truchet arcs from the id) for a
+   course without a picture and under its result. Quiet: the seam, a course's order as one line, solid to where the
+   learner is, dashed ahead. Course pictures are 16:9 everywhere (uploaded thumbnails carry lettering).
 3. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
 4. Color carries meaning (status, activity type, action, reward) and never decorates, except the ornament. The
    meaning always has a second channel too: a label or an icon.
@@ -129,7 +130,7 @@ then actions on the right. Used by the activity player, attempt, activity editor
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
 | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | `ListPage`      | `h1` + count / actions right; filter row (search + filters, all in the URL); `DataTable`; "Show more" | actions: primary stays, rest in a menu; filters behind a "Filters (n)" sheet; `DataList` cards with priority columns |
-| `DetailPage`    | object title + meta line (`text-sm text-muted-foreground`) + status + primary action right; tab links; `Outlet` | primary action full-width under the title; the tab row scrolls inside itself |
+| `DetailPage`    | title + meta line (`text-sm text-muted-foreground`) + status + primary action; tab links; `Outlet`. `cover` hero: the 16:9 picture takes the right two fifths, title `text-display`, action under it; `coverSize="thumb"` (workspaces): a small picture before the title, action right | cover above the title; primary action full-width under it; the tab row scrolls inside itself |
 | `FocusPage`     | focus top bar; left panel (contents) `w-72`; main column `max-w-prose` or full width for editors; right panel (AI, rubric) `w-96` | panels become sheets opened from top-bar buttons; main column full width |
 | `SettingsPage`  | section nav (route links) left; stacked sections: `h2` + one-line description + fields + its own Save at the section's end | section nav becomes the tab row; sections stack |
 | `FormDialog`    | title, minimum fields, footer: Cancel (ghost) + Create (primary); on success, navigate to the new entity | the stock dialog at full width minus the gutter; scrolls inside |
@@ -194,7 +195,6 @@ Every data region renders exactly one of the kit's four states:
 ## 12. Never
 
 - gradients, glass/blur, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
-- palette classes, `dark:`, hex, inline `style`, arbitrary values in our code (G-11); `text-primary` as text color
 - cards inside cards, a second primary button, a delete without confirmation; color as the only signal
 - all-caps labels, letter-spacing, `font-bold`, sizes outside the seven above; animations > 200 ms, hover scale or lift
 - horizontal scroll at 390 px; "desktop only" outside the two editors; tabs in state; edit forms in dialogs

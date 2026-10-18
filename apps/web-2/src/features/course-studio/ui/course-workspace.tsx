@@ -33,10 +33,11 @@ export function CourseWorkspace() {
         <CourseCover
           seed={course.id}
           imageKey={course.thumbnail_key}
-          shape="banner"
-          className="h-20 w-full rounded-xl border @2xl:h-28"
+          shape="thumb"
+          className="aspect-video w-full rounded-lg border"
         />
       }
+      coverSize="thumb"
       title={course.name}
       status={<CourseStatusBadge status={courseStatus(course)} />}
       meta={

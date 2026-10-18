@@ -22,7 +22,7 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
         seed={course.id}
         imageKey={course.thumbnail_key}
         shape="thumb"
-        className="h-10 w-20 shrink-0 rounded-md border @sm:h-12 @sm:w-24"
+        className="aspect-video w-20 shrink-0 rounded-md border @sm:w-24"
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">

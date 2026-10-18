@@ -41,8 +41,7 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
         <CourseCover
           seed={course.id}
           imageKey={course.thumbnail_key}
-          shape="banner"
-          className="h-32 w-full rounded-xl border @2xl:h-48"
+          className="aspect-video w-full rounded-xl border"
         />
       }
       title={course.name}

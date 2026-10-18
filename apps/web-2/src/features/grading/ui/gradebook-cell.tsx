@@ -16,7 +16,13 @@ type GradebookCellProps = { courseId: string; cell: Cell | undefined; learner: s
  * work waiting first (B-GRD-19).
  */
 export function GradebookCell({ courseId, cell, learner, activity }: GradebookCellProps) {
-  if (!cell) return <span className="text-muted-foreground">{m.grading_cell_none()}</span>
+  if (!cell)
+    return (
+      <span className="text-muted-foreground">
+        <span aria-hidden>—</span>
+        <span className="sr-only">{m.grading_cell_none()}</span>
+      </span>
+    )
   const target = reviewTarget(cell)
   const status = statusMeta[cell.status]
   const note = waitingNote(cell)

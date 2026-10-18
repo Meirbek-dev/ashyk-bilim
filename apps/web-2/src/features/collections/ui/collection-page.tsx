@@ -36,8 +36,7 @@ export function CollectionPage() {
         <CourseCover
           seed={collection.id}
           imageKey={collection.cover_key}
-          shape="banner"
-          className="h-32 w-full rounded-xl border @2xl:h-48"
+          className="aspect-video w-full rounded-xl border"
         />
       }
       title={collection.name}

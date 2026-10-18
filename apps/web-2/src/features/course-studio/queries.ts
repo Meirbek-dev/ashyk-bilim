@@ -5,6 +5,7 @@ import { contributorsOptions, setUpdates, updatesOptions } from '#/features/cour
 import { ApiError } from '#/shared/api/errors'
 import {
   courseArchivePreviewOptions,
+  courseDetailOptions,
   courseLifecycleMutation,
   courseReadinessOptions,
   courseReadinessQueryKey,
@@ -75,6 +76,8 @@ const lists = () => listCoursesInfiniteQueryKey()
 
 export const courseOptions = (id: CourseId) => getCourseOptions(byId(id))
 export const readinessOptions = (id: CourseId) => courseReadinessOptions(byId(id))
+/** The course's analytics summary (default 28-day window): the `overview` pulse, for callers with analytics. */
+export const pulseOptions = (id: CourseId) => courseDetailOptions(byId(id))
 export const archivePreviewOptions = (id: CourseId) => courseArchivePreviewOptions(byId(id))
 export const courseGroupsOptions = (id: CourseId) => groupsForCourseOptions(byId(id))
 export const certificationsOptions = (id: CourseId) => listCourseCertificationsOptions(byId(id))

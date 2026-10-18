@@ -9,7 +9,7 @@ import { formatNumber } from '#/shared/i18n/format'
 export function LeaderboardRow({ entry, mine }: { entry: LeaderboardEntry; mine: boolean }) {
   return (
     <li
-      className={`flex min-h-row items-center gap-3 py-2 pr-4 ${mine ? 'border-l-4 border-l-primary pl-3' : 'pl-4'}`}
+      className={`relative flex min-h-row items-center gap-3 py-2 pr-4 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground ${mine ? 'border-l-4 border-l-primary pl-3' : 'pl-4'}`}
       aria-current={mine ? 'true' : undefined}
     >
       <span
@@ -20,7 +20,7 @@ export function LeaderboardRow({ entry, mine }: { entry: LeaderboardEntry; mine:
       <UserAvatar name={entry.display_name} avatarKey={entry.avatar_key} />
       <div className="flex min-w-0 flex-1 flex-col">
         <p className="flex flex-wrap items-center gap-2">
-          <Link to="/users/$username" params={{ username: entry.username }}>
+          <Link variant="stretched" to="/users/$username" params={{ username: entry.username }}>
             <span className="wrap-anywhere">{entry.display_name}</span>
           </Link>
           {mine ? <StatusBadge tone="info">{m.achievements_you()}</StatusBadge> : null}

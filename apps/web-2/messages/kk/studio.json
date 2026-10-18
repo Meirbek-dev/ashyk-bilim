@@ -294,5 +294,12 @@
   "studio_bulk_done": "Дайын: {done}, сәтсіз: {failed}",
   "studio_bulk_select": "«{name}» таңдау",
   "studio_roster_check": "Тізімді тексеру",
-  "studio_roster_preview": "Тізімді тексеру: тіркелгеннен кейін осылай болады (әзірге ешкім тіркелмеді)"
+  "studio_roster_preview": "Тізімді тексеру: тіркелгеннен кейін осылай болады (әзірге ешкім тіркелмеді)",
+  "studio_pulse_title": "Курс қазір",
+  "studio_pulse_enrolled": "Білім алушылар",
+  "studio_pulse_active": "7 күнде белсенді",
+  "studio_pulse_progress": "Орташа прогресс",
+  "studio_pulse_ungraded": "Тексеруді күтуде",
+  "studio_pulse_learners": "Білім алушылар тізімі",
+  "studio_pulse_inbox": "Кіріс жәшігіне"
 }

@@ -294,5 +294,12 @@
   "studio_bulk_done": "Done: {done}, failed: {failed}",
   "studio_bulk_select": "Select “{name}”",
   "studio_roster_check": "Check the list",
-  "studio_roster_preview": "List review: what enrolling would do (nobody is enrolled yet)"
+  "studio_roster_preview": "List review: what enrolling would do (nobody is enrolled yet)",
+  "studio_pulse_title": "Course right now",
+  "studio_pulse_enrolled": "Learners",
+  "studio_pulse_active": "Active in 7 days",
+  "studio_pulse_progress": "Average progress",
+  "studio_pulse_ungraded": "Awaiting review",
+  "studio_pulse_learners": "Learner list",
+  "studio_pulse_inbox": "Open inbox"
 }

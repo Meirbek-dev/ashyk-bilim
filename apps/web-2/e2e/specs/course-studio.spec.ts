@@ -87,6 +87,18 @@ test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacherâ€
   await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
 })
 
+test('B-CST-47 overview opens with the course pulse from the server', async ({ page, studio }) => {
+  const made = await studio.course({ chapters: [{ pages: [{ published: true }] }] })
+  await page.goto(tab(made.course.id, 'overview'))
+  const pulse = page.getByRole('region', { name: m.studio_pulse_title({}, ru) })
+  await expect(pulse.getByText(m.studio_pulse_enrolled({}, ru))).toBeVisible()
+  await expect(pulse.getByText(m.studio_pulse_progress({}, ru))).toBeVisible()
+  await expect(pulse.getByRole('link', { name: m.studio_pulse_learners({}, ru) })).toHaveAttribute(
+    'href',
+    tab(made.course.id, 'learners'),
+  )
+})
+
 test('B-CST-05 overview lists blockers and warnings with links to fix them, or says it is ready', async ({
   page,
   studio,

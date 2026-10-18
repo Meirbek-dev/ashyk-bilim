@@ -10,6 +10,8 @@ type FieldShellProps = {
   error?: string | undefined
   /** Checkbox and switch: the control sits before its label on one line. */
   inline?: boolean
+  /** A search box: the control shows its purpose (icon, placeholder), the label stays for screen readers. */
+  labelHidden?: boolean
   /** One stock control with `id`, `aria-invalid` and `aria-describedby={describedBy(...)}`. */
   children: ReactNode
 }
@@ -19,7 +21,8 @@ export const describedBy = (id: string, description: string | undefined, error: 
   [description ? `${id}-description` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined
 
 /** Label, control, description and the error under the field on the stock `Field` (DESIGN 3, 8). */
-export function FieldShell({ id, label, description, error, inline = false, children }: FieldShellProps) {
+export function FieldShell(props: FieldShellProps) {
+  const { id, label, description, error, inline = false, labelHidden = false, children } = props
   const messages = (
     <>
       {description ? <FieldDescription id={`${id}-description`}>{description}</FieldDescription> : null}
@@ -38,7 +41,9 @@ export function FieldShell({ id, label, description, error, inline = false, chil
     )
   return (
     <Field data-invalid={error !== undefined || undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className={labelHidden ? 'sr-only' : undefined}>
+        {label}
+      </FieldLabel>
       {children}
       {messages}
     </Field>

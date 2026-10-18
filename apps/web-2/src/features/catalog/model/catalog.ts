@@ -66,3 +66,14 @@ export function paletteSections(
     }))
     .filter(group => group.sections.length > 0)
 }
+
+/**
+ * The line under the platform's name on the landing: its description, else its about text, skipping one that only
+ * repeats the name (prod has description = name); `undefined` lets the page say what the platform is itself.
+ */
+export function landingLead(platform: { name: string; description: string; about: string }): string | undefined {
+  const name = platform.name.trim().toLowerCase()
+  return [platform.description, platform.about]
+    .map(text => text.trim())
+    .find(text => text && text.toLowerCase() !== name)
+}
