@@ -94,6 +94,8 @@ test('B-CRS-01 a guest gets the course in the server-rendered document; an unkno
   const document = await (await page.request.get(about(made))).text()
   expect(document).toContain(made.course.name)
   expect(document).toContain('Глава первая')
+  // A shared link previews the course by its name (messengers, social).
+  expect(document).toContain(`property="og:title" content="${made.course.name}"`)
   await page.goto(`/courses/${randomUUID()}/about`)
   await expect(page.getByRole('heading', { name: m.course_not_found({}, ru) })).toBeVisible()
 })
