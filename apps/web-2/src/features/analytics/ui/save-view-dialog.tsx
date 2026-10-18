@@ -41,7 +41,7 @@ export function SaveViewDialog({ tab, filters }: { tab: Tab; filters: Filters })
     <FormDialog
       open={open}
       onOpenChange={changeOpen}
-      trigger={<Button>{m.analytics_view_save()}</Button>}
+      trigger={<Button variant="outline">{m.analytics_view_save()}</Button>}
       title={m.analytics_view_save()}
       submitLabel={m.ui_save()}
       onSubmit={() => form.handleSubmit()}
