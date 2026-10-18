@@ -102,7 +102,7 @@ export function AssessmentInsights({ data }: { data: TeacherAssessmentDetailResp
         <section aria-label={m.analytics_slo_title()} className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold">{m.analytics_slo_title()}</h3>
           <KpiStrip columns={4}>
-            <KpiTile label={m.analytics_slo_target()} value={score(slo.target_hours)} />
+            <KpiTile label={m.analytics_slo_target()} value={hours(slo.target_hours)} />
             <KpiTile label={m.analytics_slo_p90()} value={hours(slo.observed_p90_hours)} />
             <KpiTile label={m.analytics_col_backlog()} value={formatNumber(slo.backlog_count)} />
             <KpiTile label={m.analytics_slo_overdue()} value={formatNumber(slo.overdue_backlog_count)} />
