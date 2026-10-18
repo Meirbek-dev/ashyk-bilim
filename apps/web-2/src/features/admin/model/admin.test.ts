@@ -10,8 +10,10 @@ import {
   permissionsByResource,
   refusedLines,
   refusesGrants,
+  awardFormSchema,
   rulesBody,
   rulesForm,
+  rulesFormSchema,
   takenField,
 } from './admin'
 import { usersSearchSchema } from '../route'
@@ -118,5 +120,14 @@ test('B-ADM-26 order, status and role live in the URL; an unknown order or statu
     sort: undefined,
     status: undefined,
     role: undefined,
+  })
+})
+
+describe('XP fields', () => {
+  test('B-ADM-15 B-ADM-16 a negative or non-numeric XP says what number is wanted', () => {
+    const daily = v.safeParse(rulesFormSchema.entries.daily_xp_limit, '-5')
+    expect(daily.success ? null : daily.issues[0]?.message).toBe(m.admin_xp_whole())
+    const award = v.safeParse(awardFormSchema, { amount: '0', reason: '' })
+    expect(award.success ? null : award.issues[0]?.message).toBe(m.admin_xp_positive())
   })
 })

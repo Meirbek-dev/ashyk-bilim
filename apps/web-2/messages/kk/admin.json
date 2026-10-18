@@ -175,6 +175,8 @@
   "admin_users_role_label": "Рөлі: {role}",
   "admin_users_filter_all": "барлығы",
   "admin_users_filter_any": "Барлығы",
+  "admin_xp_whole": "0-ден бастап бүтін сан; бос болса - әдепкі мән.",
+  "admin_xp_positive": "0-ден үлкен бүтін сан.",
   "admin_user_field_roles": "Қосымша рөлдер",
   "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады.",
   "admin_gamification_xp": "XP",

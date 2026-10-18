@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 
+import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type {
   AdminUser,
@@ -84,7 +85,11 @@ export const roleEditSchema = v.omit(roleFormSchema, ['slug'])
 
 /** `vAdminAwardRequest` without the user (the panel's) and the key (the action's), amount as typed text. */
 export const awardFormSchema = v.object({
-  amount: v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d*$/)),
+  amount: v.pipe(
+    v.string(),
+    v.trim(),
+    v.regex(/^[1-9]\d*$/, () => m.admin_xp_positive()),
+  ),
   reason: v.string(),
 })
 
@@ -112,7 +117,11 @@ export function refusedLines(text: string, error: unknown): number[] {
 export const permissionsFormSchema = v.object({ permissions: v.string() })
 
 /** A whole number or blank (blank = the platform's default). */
-const amountText = v.pipe(v.string(), v.trim(), v.regex(/^\d*$/))
+const amountText = v.pipe(
+  v.string(),
+  v.trim(),
+  v.regex(/^\d*$/, () => m.admin_xp_whole()),
+)
 
 /** The rules form: numbers as typed text, so a blank field can mean "default". */
 export const rulesFormSchema = v.object({

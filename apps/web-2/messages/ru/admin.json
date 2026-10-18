@@ -181,6 +181,8 @@
   "admin_users_role_label": "Роль: {role}",
   "admin_users_filter_all": "все",
   "admin_users_filter_any": "Все",
+  "admin_xp_whole": "Целое число от 0; пусто - по умолчанию.",
+  "admin_xp_positive": "Целое число больше 0.",
   "admin_user_field_roles": "Дополнительные роли",
   "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда.",
   "admin_gamification_xp": "XP",
