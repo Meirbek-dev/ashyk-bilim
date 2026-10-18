@@ -89,6 +89,8 @@ test('B-ADM-14 a logo uploads with its purpose and becomes the logo at once', as
   await signInAs('admin')
   await page.goto('/admin/platform')
   const branding = page.getByRole('form', { name: m.admin_platform_branding({}, ru) })
+  // The section saves itself: it has no Save button of its own.
+  await expect(branding.getByRole('button', { name: m.ui_save({}, ru) })).toHaveCount(0)
   const created = page.waitForRequest(sent => sent.method() === 'POST' && sent.url().endsWith('/api/v2/uploads'))
   const finalized = page.waitForResponse(answer => /\/api\/v2\/uploads\/[^/]+\/finalize$/.test(answer.url()))
   // No «Сохранить»: the picked image is claimed as soon as it is uploaded.

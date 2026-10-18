@@ -72,6 +72,7 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
         onSubmit={() => form.handleSubmit()}
         pending={update.isPending}
         error={isStale(update.error) ? null : update.error}
+        saveButton={false}
       >
         {images.map(image => (
           <div key={image.name} className="flex flex-col gap-3 sm:flex-row sm:items-end">
