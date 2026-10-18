@@ -1,15 +1,16 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useParams } from '@tanstack/react-router'
 import { Suspense } from 'react'
 
 import { RemediationGate } from '#/features/ai'
 import { MarkdownView } from '#/features/markdown'
-import { ActivityHeader } from '#/features/player'
+import { ActivityHeader, NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 
 import { needsRemediation } from '../model/attempt'
 import { attemptsOptions, stateOptions } from '../queries'
-import { AttemptFrame } from './attempt-frame'
+import { ATTEMPT_ROUTE, AttemptFrame } from './attempt-frame'
 import { AttemptsList } from './attempts-list'
 import { EntryAction } from './entry-action'
 import { PolicySummary } from './policy-summary'
@@ -18,6 +19,9 @@ import { PolicySummary } from './policy-summary'
 export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
   const { data: state } = useSuspenseQuery(stateOptions(assessment.id))
   const { data: attempts } = useSuspenseQuery(attemptsOptions(assessment.id))
+  const params = useParams({ from: ATTEMPT_ROUTE })
+  // After a hand-in the learner may as well move on: the next activity beside another attempt (B-PLY-18).
+  const handedIn = attempts.some(attempt => attempt.status !== 'draft')
   return (
     <AttemptFrame title={assessment.title}>
       <article className="flex flex-col gap-gutter">
@@ -29,6 +33,13 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
         ) : null}
         <PolicySummary assessment={assessment} state={state} />
         <EntryAction assessment={assessment} state={state} />
+        {handedIn ? (
+          <div>
+            <Suspense fallback={null}>
+              <NextStepLink courseId={params.courseId} activityId={params.activityId} variant="outline" />
+            </Suspense>
+          </div>
+        ) : null}
         {needsRemediation(state) ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{m.attempt_remediation_heading()}</h2>
