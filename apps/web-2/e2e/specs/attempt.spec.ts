@@ -37,7 +37,7 @@ test('B-ATT-01 a guest signs in first; the course staff open a preview', async (
   await expect(page.getByRole('button', { name: m.attempt_start({}, ru) })).toBeVisible()
 })
 
-test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 a whole attempt, start to result', async ({
+test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 B-ATT-24 a whole attempt, start to result', async ({
   page,
   learner,
   makeQuiz,
@@ -61,8 +61,8 @@ test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 a 
   await page.reload()
   await expect(page.getByLabel('Собака')).toHaveValue('Гав')
   await expect(status(page)).toHaveText(m.attempt_saved({}, ru), { timeout: 20_000 })
-  // The second question is left out: the confirmation lists it and leads to it.
-  await page.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
+  // The second question is left out: the last question's "Finish attempt" asks, listing it and leading to it.
+  await page.getByRole('button', { name: m.attempt_finish({}, ru) }).click()
   await expect(dialog(page).getByText(m.attempt_unanswered({ count: 1 }, ru))).toBeVisible()
   await dialog(page)
     .getByRole('link', { name: m.attempt_question_number({ number: 2 }, ru) })

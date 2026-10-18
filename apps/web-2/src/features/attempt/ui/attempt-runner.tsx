@@ -24,7 +24,8 @@ type RunnerProps = { assessment: AssessmentDetail; attempt: StudentSubmission; r
 /**
  * An open draft (B-ATT-06..17, B-ATT-21): one question at a time from `?item`, the list of questions left, the save
  * indicator and the server's clock in the top bar: the time limit or a strict due date, whichever comes first. At zero
- * the attempt is handed in with what the queue holds.
+ * the attempt is handed in with what the queue holds. The top bar's «Сдать» and the last question's «Завершить попытку»
+ * (B-ATT-24) open the same confirmation, which rereads the draft (B-ATT-16).
  */
 export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) {
   const { courseId } = useParams({ from: ATTEMPT_ROUTE })
@@ -44,6 +45,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const due = runsToDueDate(attempt.time_remaining_reason)
   // Handed in, or reopened on a changed test («Тест изменился»): the confirmation closes either way.
   const handIn = () => submit.handIn(() => setConfirming(false))
+  const askToSubmit = () => (setConfirming(true), void reread())
   const timeUp = useEffectEvent(handIn)
   useEffect(() => {
     if (expired) timeUp()
@@ -58,8 +60,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
           attempt={attempt}
           receivedAt={receivedAt}
           pending={submit.pending}
-          onSubmit={() => setConfirming(true)}
-          refresh={reread}
+          onSubmit={askToSubmit}
         />
       }
       contents={
@@ -87,7 +88,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
             disabled={draft.closed !== null || expired || submit.pending}
           />
         ) : null}
-        <ItemPager current={current} total={items.length} />
+        <ItemPager current={current} total={items.length} disabled={submit.pending} onFinish={askToSubmit} />
       </article>
       <SubmitDialog
         open={confirming}
