@@ -122,6 +122,8 @@
   "settings_user_about": "About",
   "settings_user_courses": "Courses",
   "settings_user_courses_empty": "No courses yet.",
+  "settings_user_edit": "Edit profile",
+  "settings_user_empty": "This profile is empty for now.",
   "settings_user_present": "present",
   "settings_user_period": "{start} – {end}"
 }

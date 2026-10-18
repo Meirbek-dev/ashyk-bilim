@@ -14,11 +14,19 @@ export const userInitials = (name: string) =>
  * A person's photo (public `avatar_key`, see `contentUrl`), else the initials, on the stock Avatar: the
  * profile menu trigger, people in lists. Decorative next to the name.
  */
-export function UserAvatar({ name, avatarKey }: { name: string; avatarKey?: string | null | undefined }) {
+type UserAvatarProps = {
+  name: string
+  avatarKey?: string | null | undefined
+  /** `profile`: the large one of a profile page. */
+  size?: 'default' | 'profile'
+}
+
+export function UserAvatar({ name, avatarKey, size = 'default' }: UserAvatarProps) {
+  const large = size === 'profile'
   return (
-    <Avatar aria-hidden>
+    <Avatar aria-hidden className={large ? 'size-24' : undefined}>
       {avatarKey ? <AvatarImage src={contentUrl(avatarKey)} alt="" referrerPolicy="no-referrer" /> : null}
-      <AvatarFallback>{userInitials(name)}</AvatarFallback>
+      <AvatarFallback className={large ? 'font-heading text-2xl' : undefined}>{userInitials(name)}</AvatarFallback>
     </Avatar>
   )
 }

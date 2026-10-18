@@ -122,6 +122,8 @@
   "settings_user_about": "О себе",
   "settings_user_courses": "Курсы",
   "settings_user_courses_empty": "Курсов пока нет.",
+  "settings_user_edit": "Редактировать профиль",
+  "settings_user_empty": "В профиле пока пусто.",
   "settings_user_present": "настоящее время",
   "settings_user_period": "с {start} по {end}"
 }
