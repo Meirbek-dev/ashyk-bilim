@@ -1,17 +1,20 @@
+import { useSearch } from '@tanstack/react-router'
+
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
-import { Link } from '#/shared/components/link'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
 import { AuthForm } from './auth-form'
+import { AuthSwitch } from './auth-switch'
 import { AuthPage } from './auth-page'
 import { useSignupForm } from './use-signup-form'
 
-/** Self-registration; the account works right away, the email is confirmed on the next page. */
+/** Self-registration; the new account is signed in at once, the email is confirmed from the shell's banner. */
 export function SignupPage() {
   const { form, pending, formError } = useSignupForm()
+  const { redirect } = useSearch({ from: '/_guest/signup' })
   return (
     <AuthPage title={m.auth_signup_title()}>
       <AuthForm onSubmit={() => form.handleSubmit()}>
@@ -61,9 +64,7 @@ export function SignupPage() {
           {m.auth_signup_submit()}
         </Button>
       </AuthForm>
-      <p className="text-sm text-muted-foreground">
-        {m.auth_signup_have_account()} <Link to="/login">{m.auth_login_submit()}</Link>
-      </p>
+      <AuthSwitch to="/login" redirect={redirect} />
     </AuthPage>
   )
 }

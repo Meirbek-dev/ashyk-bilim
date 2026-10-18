@@ -100,10 +100,16 @@ test('B-AUTH-05 the Google button links to the API with the checked return path'
   await expect(page.getByRole('alert')).toHaveText(m.errors_google_oauth_expired({}, ru))
 })
 
-test('B-AUTH-06 B-AUTH-07 a guest signs up and, without email delivery, lands on sign-in', async ({ page }) => {
+test('B-AUTH-06 B-AUTH-07 a guest signs up, is signed in at once and goes where they were headed', async ({ page }) => {
   const account = newAccount()
   await page.setExtraHTTPHeaders({ 'x-real-ip': randomIp() })
-  await page.goto('/signup')
+  // From the sign-in page of a link the guest followed: the place goes along to sign-up.
+  await page.goto(`/login?redirect=${encodeURIComponent('/collections')}`)
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: m.platform_nav_signup({}, ru) })
+    .click()
+  await expect(page).toHaveURL(/\/signup\?redirect=%2Fcollections$/)
   const field = (label: string) => page.getByLabel(label, { exact: true })
   await page.getByRole('button', { name: m.auth_signup_submit({}, ru) }).click()
   await expect(field(m.auth_signup_field_first_name({}, ru))).toHaveAttribute('aria-invalid', 'true')
@@ -125,9 +131,10 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up and, without email delivery, lands on
 
   await field(m.auth_signup_field_username({}, ru)).fill(account.username)
   await submit.click()
-  // The stand has no mailer: the address counts as confirmed, so no code step.
-  await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByText(m.auth_signup_done_signin({}, ru))).toBeVisible()
+  // Signed in at once, back where the guest was headed. The stand has no mailer: the address counts as confirmed.
+  await expect(page).toHaveURL(/\/collections$/)
+  await expect(page.getByText(m.auth_signup_welcome({}, ru))).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('link', { name: m.platform_nav_login({}, ru) })).toHaveCount(0)
 })
 
 test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the input', async ({ page, baseURL }) => {

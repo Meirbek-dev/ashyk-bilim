@@ -14,6 +14,7 @@ import { Spinner } from '#/shared/ui/spinner'
 
 import { loginOptions } from '../queries'
 import { AuthForm } from './auth-form'
+import { AuthSwitch } from './auth-switch'
 import { AuthPage } from './auth-page'
 import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
@@ -94,9 +95,7 @@ export function LoginPage() {
           </Button>
         ) : null}
       </AuthForm>
-      <p className="text-sm text-muted-foreground">
-        {m.auth_login_no_account()} <Link to="/signup">{m.platform_nav_signup()}</Link>
-      </p>
+      <AuthSwitch to="/signup" redirect={search.redirect} />
     </AuthPage>
   )
 }

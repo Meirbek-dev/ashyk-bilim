@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
@@ -11,7 +11,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { toast } from '#/shared/ui/toast'
 
 import { signupFieldOf } from '../model/account-search'
-import { registerOptions } from '../queries'
+import { loginOptions, registerOptions } from '../queries'
 
 const defaultValues: RegisterRequest = {
   first_name: '',
@@ -22,10 +22,16 @@ const defaultValues: RegisterRequest = {
   password: '',
 }
 
-/** Sign-up: the generated body schema; a taken username or email lands under its field; then the email check. */
+/**
+ * Sign-up: the generated body schema; a taken username or email lands under its field. The new account is signed in
+ * at once and goes where the guest was headed (`redirect`, else /home; an unconfirmed address gets the shell's banner).
+ * Only if that sign-in fails: the code step (unconfirmed) or the sign-in page.
+ */
 export function useSignupForm() {
   const navigate = useNavigate()
+  const { redirect } = useSearch({ from: '/_guest/signup' })
   const register = useMutation(registerOptions())
+  const login = useMutation(loginOptions())
   const idempotency = useIdempotencyKey()
   const form = useAppForm(vRegisterRequest, {
     defaultValues,
@@ -37,6 +43,15 @@ export function useSignupForm() {
           {
             onSuccess: async profile => {
               idempotency.settle()
+              const signedIn = await login
+                .mutateAsync({ body: { login: body.username, password: body.password } })
+                .then(() => true)
+                .catch(() => false)
+              if (signedIn) {
+                toast.add({ title: profile.email_verified ? m.auth_signup_welcome() : m.auth_signup_done() })
+                await navigate({ href: redirect ?? '/home' })
+                return
+              }
               // Without email delivery the server reports the address as confirmed: straight to sign-in.
               if (profile.email_verified) {
                 toast.add({ title: m.auth_signup_done_signin() })
@@ -57,5 +72,5 @@ export function useSignupForm() {
   })
   // A code placed under its field is not repeated as the form's message.
   const formError = signupFieldOf(register.error) ? null : register.error
-  return { form, pending: register.isPending, formError }
+  return { form, pending: register.isPending || login.isPending, formError }
 }
