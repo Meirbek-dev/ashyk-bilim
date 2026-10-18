@@ -23,6 +23,9 @@ const TotpQr = lazy(() => import('./totp-qr').then(module => ({ default: module.
 
 const defaultValues: TotpVerifyRequest = { code: '' }
 
+/** The key line, the key in groups of four as authenticator apps show and accept it: easier to type without a slip. */
+const keyLine = (key: string) => m.settings_totp_secret({ secret: key.match(/.{1,4}/g)?.join(' ') ?? key })
+
 /** Off -> "Turn on" shows the QR, the key and a code field -> on; on -> "Turn off" through a confirmation. */
 export function TotpSection({ profile }: { profile: UserProfile }) {
   const queryClient = useQueryClient()
@@ -73,7 +76,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
           <Suspense fallback={<div aria-hidden className="size-48 rounded-md bg-muted" />}>
             <TotpQr uri={pending.uri} />
           </Suspense>
-          <p className="font-mono text-sm wrap-anywhere">{m.settings_totp_secret({ secret: pending.secret })}</p>
+          <p className="font-mono text-sm wrap-anywhere">{keyLine(pending.secret)}</p>
           <p className="text-sm">
             <Anchor href={pending.uri}>{m.settings_totp_open_app()}</Anchor>
           </p>

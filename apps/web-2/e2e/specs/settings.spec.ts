@@ -190,7 +190,7 @@ test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off
     /^otpauth:\/\//,
   )
   const keyLine = await section.getByText(m.settings_totp_secret({ secret: '' }, ru).trim()).textContent()
-  const secret = /([A-Z2-7]{16,})/.exec(keyLine ?? '')?.[1] ?? ''
+  const secret = /([A-Z2-7]{16,})/.exec((keyLine ?? '').replaceAll(' ', ''))?.[1] ?? ''
   const code = section.getByLabel(m.settings_totp_code({}, ru))
   await code.fill(totp(secret) === '000000' ? '111111' : '000000')
   await section.getByRole('button', { name: m.settings_totp_confirm({}, ru) }).click()
