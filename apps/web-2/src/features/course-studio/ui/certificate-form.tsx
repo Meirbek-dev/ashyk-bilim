@@ -73,21 +73,24 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
             <field.TextField label={m.studio_certificate_name()} description={m.studio_certificate_name_hint()} />
           )}
         </form.AppField>
-        <form.AppField name="course_start">
-          {field => <field.TextField type="date" label={m.studio_certificate_start()} />}
-        </form.AppField>
-        <form.AppField name="course_end">
-          {field => <field.TextField type="date" label={m.studio_certificate_end()} />}
-        </form.AppField>
-        <form.AppField name="training_hours">
-          {field => (
-            <field.TextField
-              inputMode="numeric"
-              label={m.studio_certificate_hours()}
-              description={m.studio_certificate_optional_hint()}
-            />
-          )}
-        </form.AppField>
+        {/* Dates and hours side by side: three short values, not three page-wide inputs. */}
+        <div className="grid items-start gap-4 sm:grid-cols-3">
+          <form.AppField name="course_start">
+            {field => <field.TextField type="date" label={m.studio_certificate_start()} />}
+          </form.AppField>
+          <form.AppField name="course_end">
+            {field => <field.TextField type="date" label={m.studio_certificate_end()} />}
+          </form.AppField>
+          <form.AppField name="training_hours">
+            {field => (
+              <field.TextField
+                inputMode="numeric"
+                label={m.studio_certificate_hours()}
+                description={m.studio_certificate_optional_hint()}
+              />
+            )}
+          </form.AppField>
+        </div>
         <form.AppField name="certification_type">
           {field => <field.SelectField label={m.studio_certificate_type()} options={typeOptions} />}
         </form.AppField>
