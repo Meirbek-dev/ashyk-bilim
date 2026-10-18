@@ -47,7 +47,7 @@ test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 a 
   await learner.signIn()
   await page.goto(quiz.url)
   await expect(page.getByText(m.attempt_questions({ count: '3' }, ru))).toBeVisible()
-  await expect(page.getByText(m.attempt_attempts_unlimited({ used: '0' }, ru))).toBeVisible()
+  await expect(page.getByText(m.attempt_attempts_unlimited_fresh({}, ru))).toBeVisible()
   await expect(page.getByText(m.attempt_review_full({}, ru))).toBeVisible()
   await start(page, quiz)
   await expect(page.getByRole('heading', { level: 1, name: items.single.title })).toBeVisible()
@@ -71,7 +71,9 @@ test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 a 
   await page.getByRole('checkbox', { name: 'Два' }).check()
   await page.getByRole('checkbox', { name: 'Четыре' }).check()
   await handIn(page)
-  await expect(page.getByText(m.attempt_score({ score: formatPercent(100, 'ru') }, ru))).toBeVisible()
+  await expect(page.getByRole('region', { name: m.attempt_score_label({}, ru) })).toContainText(
+    formatPercent(100, 'ru'),
+  )
   await expect(page.getByText(m.attempt_correct({}, ru)).first()).toBeVisible()
   await expect(page.getByText(`${m.attempt_correct_answer({}, ru)}: Астана`)).toBeVisible()
   // Points on the item's own scale (1 point each), not its share of 100 («33,33 из 33,33»).
@@ -166,7 +168,9 @@ test('B-ATT-14 at zero the attempt is handed in by itself with the answers given
   await expect(page.getByRole('heading', { level: 1, name: m.attempt_number({ number: 1 }, ru) })).toBeVisible({
     timeout: 30_000,
   })
-  await expect(page.getByText(m.attempt_score({ score: formatPercent(100, 'ru') }, ru))).toBeVisible()
+  await expect(page.getByRole('region', { name: m.attempt_score_label({}, ru) })).toContainText(
+    formatPercent(100, 'ru'),
+  )
 })
 
 test('B-ATT-14 a strict due date reads «Сдать до» until its last day, then counts down', async ({

@@ -13,7 +13,10 @@ type ChoiceProps = {
   disabled: boolean
 }
 
-/** Single choice and true / false: radios; multiple choice: checkboxes (B-ATT-07). Options in the server's order. */
+/**
+ * Single choice and true / false: radios; multiple choice: checkboxes (B-ATT-07). Options in the server's order, each a
+ * whole-row choice card (the kit's FieldLabel around a Field): a large target on a phone, the pick tinted.
+ */
 export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
   const id = useId()
   const selected = answer?.kind === 'choice' ? (answer.selected ?? []) : []
@@ -36,12 +39,12 @@ export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
           disabled={disabled}
         >
           {options.map(option => (
-            <Field key={option.id} orientation="horizontal">
-              <RadioGroupItem id={`${id}-${option.id}`} value={option.id} />
-              <FieldLabel htmlFor={`${id}-${option.id}`} className="font-normal wrap-anywhere">
-                {option.text}
-              </FieldLabel>
-            </Field>
+            <FieldLabel key={option.id} htmlFor={`${id}-${option.id}`} className="font-normal">
+              <Field orientation="horizontal" className="min-h-row items-center">
+                <RadioGroupItem id={`${id}-${option.id}`} value={option.id} />
+                <span className="wrap-anywhere">{option.text}</span>
+              </Field>
+            </FieldLabel>
           ))}
         </RadioGroup>
       </FieldSet>
@@ -50,19 +53,19 @@ export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
     <FieldSet>
       {legend}
       {options.map(option => (
-        <Field key={option.id} orientation="horizontal">
-          <Checkbox
-            id={`${id}-${option.id}`}
-            checked={selected.includes(option.id)}
-            disabled={disabled}
-            onCheckedChange={checked =>
-              pick(checked ? [...selected, option.id] : selected.filter(value => value !== option.id))
-            }
-          />
-          <FieldLabel htmlFor={`${id}-${option.id}`} className="font-normal wrap-anywhere">
-            {option.text}
-          </FieldLabel>
-        </Field>
+        <FieldLabel key={option.id} htmlFor={`${id}-${option.id}`} className="font-normal">
+          <Field orientation="horizontal" className="min-h-row items-center">
+            <Checkbox
+              id={`${id}-${option.id}`}
+              checked={selected.includes(option.id)}
+              disabled={disabled}
+              onCheckedChange={checked =>
+                pick(checked ? [...selected, option.id] : selected.filter(value => value !== option.id))
+              }
+            />
+            <span className="wrap-anywhere">{option.text}</span>
+          </Field>
+        </FieldLabel>
       ))}
     </FieldSet>
   )

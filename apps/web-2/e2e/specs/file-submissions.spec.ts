@@ -103,7 +103,8 @@ test('B-FSB-03 B-FSB-04 B-FSB-05 B-FSB-06 B-FSB-11 a learner attaches files and 
   await expect(page.getByRole('button', { name: 'essay.pdf', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'figure.png', exact: true })).toBeVisible()
   await expect(page.getByText(m.submission_files_full({}, ru))).toBeVisible()
-  await expect(fileField(page)).toBeDisabled()
+  // At the file count the picker is replaced by the reason.
+  await expect(fileField(page)).toHaveCount(0)
   await page.getByRole('button', { name: m.submission_remove_file({ name: 'figure.png' }, ru) }).click()
   await expect(page.getByText(m.submission_file_removed({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: 'figure.png', exact: true })).toHaveCount(0)
