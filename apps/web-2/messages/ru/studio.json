@@ -210,6 +210,8 @@
   "studio_publish_title": "Публикация",
   "studio_publish": "Опубликовать",
   "studio_published": "Курс опубликован",
+  "studio_publish_live": "Курс виден учащимся в каталоге.",
+  "studio_publish_open_page": "Открыть страницу курса",
   "studio_publish_blocked": "Сначала исправьте то, что мешает публикации.",
   "studio_unpublish": "Снять с публикации",
   "studio_unpublish_title": "Снять курс «{name}» с публикации?",

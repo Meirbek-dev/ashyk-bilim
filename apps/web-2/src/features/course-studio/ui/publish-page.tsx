@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { Link } from '#/shared/components/link'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
@@ -21,6 +22,7 @@ export function PublishPage() {
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
   const { data: readiness } = useSuspenseQuery(readinessOptions(courseId))
   const publish = useMutation(lifecycleOptions(useQueryClient(), courseId))
+  const status = courseStatus(course)
   const go = () =>
     publish.mutate(
       { path: { course_id: courseId }, body: { action: 'publish' } },
@@ -31,9 +33,18 @@ export function PublishPage() {
       <section aria-label={m.studio_publish_title()} className="flex flex-col items-start gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-xl font-semibold">{m.studio_publish_title()}</h2>
-          <CourseStatusBadge status={courseStatus(course)} />
+          <CourseStatusBadge status={status} />
         </div>
-        <ReadinessList courseId={courseId} />
+        {/* A live course says where learners find it, not that it is "ready to publish" (B-CST-05). */}
+        {status === 'published' ? (
+          <p className="flex flex-wrap gap-x-2">
+            <span>{m.studio_publish_live()}</span>
+            <Link to="/courses/$courseId" params={{ courseId }}>
+              {m.studio_publish_open_page()}
+            </Link>
+          </p>
+        ) : null}
+        <ReadinessList courseId={courseId} live={status !== 'draft'} />
         {can(course, 'publish') ? (
           <>
             {readiness.ready ? null : <p className="text-sm text-muted-foreground">{m.studio_publish_blocked()}</p>}

@@ -200,6 +200,8 @@
   "studio_publish_title": "Publishing",
   "studio_publish": "Publish",
   "studio_published": "Course published",
+  "studio_publish_live": "Learners see the course in the catalog.",
+  "studio_publish_open_page": "Open the course page",
   "studio_publish_blocked": "First fix what blocks publishing.",
   "studio_unpublish": "Unpublish",
   "studio_unpublish_title": "Unpublish the course “{name}”?",

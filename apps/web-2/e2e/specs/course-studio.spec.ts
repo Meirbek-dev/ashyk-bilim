@@ -142,6 +142,13 @@ test('B-CST-23 publish is offered only without blockers and marks the course pub
   await expect(page.getByText(m.studio_published({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_published({}, ru)).first()).toBeVisible()
   await expect(page.getByRole('button', { name: m.studio_publish({}, ru) })).toHaveCount(0)
+  // Live now: where learners find it, no "ready to publish" (B-CST-05).
+  await expect(page.getByText(m.studio_publish_live({}, ru))).toBeVisible()
+  await expect(page.getByRole('link', { name: m.studio_publish_open_page({}, ru) })).toHaveAttribute(
+    'href',
+    `/courses/${ready.course.id}`,
+  )
+  await expect(page.getByText(m.studio_readiness_ready({}, ru))).toBeHidden()
 })
 
 test('B-CST-24 unpublishing asks first (learners lose access) and returns the course to draft', async ({
