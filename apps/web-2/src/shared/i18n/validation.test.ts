@@ -14,6 +14,8 @@ describe('validationMessage', () => {
   test('maps contract constraints to catalog texts with their limits', () => {
     expect(firstMessage(v.pipe(v.string(), v.minLength(1)), '')).toBe(m.validation_required())
     expect(firstMessage(v.pipe(v.string(), v.minLength(3)), 'ab')).toBe(m.validation_min_length({ min: '3' }))
+    // Blank is "required", not "at least 3".
+    expect(firstMessage(v.pipe(v.string(), v.minLength(3)), '')).toBe(m.validation_required())
     expect(firstMessage(v.pipe(v.string(), v.maxLength(5)), 'abcdef')).toBe(m.validation_max_length({ max: '5' }))
     expect(firstMessage(v.pipe(v.number(), v.maxValue(10)), 11)).toBe(m.validation_max_value({ max: '10' }))
     expect(firstMessage(v.pipe(v.string(), v.uuid()), 'x')).toBe(m.validation_format())

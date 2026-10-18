@@ -16,7 +16,8 @@ export function validationMessage(issue: Issue): string {
   switch (issue.type) {
     case 'min_length':
     case 'non_empty':
-      return issue.requirement === 1 || issue.type === 'non_empty'
+      // An empty field is "fill it in", whatever its minimum: «Минимум символов: 3» under a blank username misleads.
+      return issue.requirement === 1 || issue.type === 'non_empty' || issue.input === ''
         ? m.validation_required()
         : m.validation_min_length({ min: requirement(issue) })
     case 'max_length':
