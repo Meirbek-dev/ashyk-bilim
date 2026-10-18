@@ -28,7 +28,13 @@ export function CoursePulseTiles({ courseId }: { courseId: CourseId }) {
       <KpiTile
         label={m.studio_pulse_ungraded()}
         value={formatNumber(summary.ungraded_submissions)}
-        action={summary.ungraded_submissions > 0 ? <Link to="/teach">{m.studio_pulse_inbox()}</Link> : null}
+        action={
+          summary.ungraded_submissions > 0 ? (
+            <Link to="/teach" search={{ course: courseId }}>
+              {m.studio_pulse_inbox()}
+            </Link>
+          ) : null
+        }
       />
     </KpiStrip>
   )

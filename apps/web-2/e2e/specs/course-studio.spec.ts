@@ -99,7 +99,7 @@ test('B-CST-47 overview opens with the course pulse from the server', async ({ p
   )
 })
 
-test('B-CST-05 overview lists blockers and warnings with links to fix them, or says it is ready', async ({
+test('B-CST-05 overview lists blockers and warnings with links to fix them, or says it is ready (a live course: only what to improve)', async ({
   page,
   studio,
 }) => {
@@ -125,6 +125,10 @@ test('B-CST-05 overview lists blockers and warnings with links to fix them, or s
   await page.goto(tab(ready.course.id, 'overview'))
   await expect(page.getByText(m.studio_readiness_ready({}, ru))).toBeVisible()
   await expect(page.getByRole('link', { name: m.studio_go_publish({}, ru) })).toBeVisible()
+  const live = await studio.course({ chapters: [{ pages: [{ published: true }] }], publish: true })
+  await page.goto(tab(live.course.id, 'overview'))
+  await expect(page.getByRole('heading', { name: m.studio_readiness_improve({}, ru) })).toBeVisible()
+  await expect(page.getByText(m.studio_readiness_ready({}, ru))).toBeHidden()
 })
 
 test('B-CST-23 publish is offered only without blockers and marks the course published', async ({ page, studio }) => {

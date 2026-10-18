@@ -47,8 +47,11 @@ function where(courseId: string, item: ReadinessItem) {
   )
 }
 
-/** The server's readiness (blockers, then warnings), each with its fix link; "ready" when there are no blockers. */
-export function ReadinessList({ courseId }: { courseId: string }) {
+/**
+ * The server's readiness (blockers, then warnings), each with its fix link; "ready" when there are no blockers, unless
+ * the course is `live` already (published or archived: "ready to publish" would be news from the past).
+ */
+export function ReadinessList({ courseId, live = false }: { courseId: string; live?: boolean }) {
   const { data: readiness } = useSuspenseQuery(readinessOptions(courseId))
   const groups = [
     { title: m.studio_readiness_blockers(), items: readiness.blockers },
@@ -56,7 +59,7 @@ export function ReadinessList({ courseId }: { courseId: string }) {
   ].filter(group => group.items.length > 0)
   return (
     <div className="flex flex-col gap-4">
-      {readiness.ready ? <p className="text-success">{m.studio_readiness_ready()}</p> : null}
+      {readiness.ready && !live ? <p className="text-success">{m.studio_readiness_ready()}</p> : null}
       {groups.map(group => (
         <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
           <h3 className="text-base font-medium">{group.title}</h3>
