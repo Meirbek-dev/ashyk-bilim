@@ -83,12 +83,19 @@ const experience: Editor = (form, s) => (
             <form.AppField name={`sections[${s}].experiences[${i}].startDate`}>
               {field => <field.TextField label={m.settings_item_start()} type="date" />}
             </form.AppField>
-            <form.AppField name={`sections[${s}].experiences[${i}].endDate`}>
-              {field => <field.TextField label={m.settings_item_end()} type="date" />}
-            </form.AppField>
             <form.AppField name={`sections[${s}].experiences[${i}].current`}>
               {field => <field.CheckboxField label={m.settings_item_current()} />}
             </form.AppField>
+            {/* «По настоящее время» has no end: the field goes, the saved document drops it (model). */}
+            <form.Subscribe selector={state => state.values.sections[s]}>
+              {() =>
+                form.getFieldValue(`sections[${s}].experiences[${i}].current`) ? null : (
+                  <form.AppField name={`sections[${s}].experiences[${i}].endDate`}>
+                    {field => <field.TextField label={m.settings_item_end()} type="date" />}
+                  </form.AppField>
+                )
+              }
+            </form.Subscribe>
             <form.AppField name={`sections[${s}].experiences[${i}].description`}>
               {field => <field.TextareaField label={m.settings_item_description()} />}
             </form.AppField>
@@ -120,12 +127,19 @@ const education: Editor = (form, s) => (
             <form.AppField name={`sections[${s}].education[${i}].startDate`}>
               {field => <field.TextField label={m.settings_item_start()} type="date" />}
             </form.AppField>
-            <form.AppField name={`sections[${s}].education[${i}].endDate`}>
-              {field => <field.TextField label={m.settings_item_end()} type="date" />}
-            </form.AppField>
             <form.AppField name={`sections[${s}].education[${i}].current`}>
               {field => <field.CheckboxField label={m.settings_item_current()} />}
             </form.AppField>
+            {/* «По настоящее время» has no end: the field goes, the saved document drops it (model). */}
+            <form.Subscribe selector={state => state.values.sections[s]}>
+              {() =>
+                form.getFieldValue(`sections[${s}].education[${i}].current`) ? null : (
+                  <form.AppField name={`sections[${s}].education[${i}].endDate`}>
+                    {field => <field.TextField label={m.settings_item_end()} type="date" />}
+                  </form.AppField>
+                )
+              }
+            </form.Subscribe>
             <form.AppField name={`sections[${s}].education[${i}].description`}>
               {field => <field.TextareaField label={m.settings_item_description()} />}
             </form.AppField>
