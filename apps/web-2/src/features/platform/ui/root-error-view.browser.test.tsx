@@ -11,9 +11,17 @@ describe('RootErrorView', () => {
       <RootErrorView error={new TypeError('fetch failed')} reset={() => undefined} info={{ componentStack: '' }} />,
     )
     await expect.element(screen.getByRole('heading', { level: 1, name: m.platform_error_title() })).toBeVisible()
-    await expect.element(screen.getByText(m.platform_error_text())).toBeVisible()
+    // No answer from the API reads as no connection, not as an unknown error.
+    await expect.element(screen.getByText(m.errors_network())).toBeVisible()
     await expect.element(screen.getByRole('button', { name: m.platform_error_retry() })).toBeVisible()
     await expect.element(screen.getByRole('link', { name: m.platform_brand() })).toHaveAttribute('href', '/')
     expect(document.querySelector('[data-slot=skeleton]')).toBeNull()
+  })
+
+  test('an error that is not about the network stays generic', async () => {
+    const screen = await renderInRouter(
+      <RootErrorView error={new Error('boom')} reset={() => undefined} info={{ componentStack: '' }} />,
+    )
+    await expect.element(screen.getByText(m.platform_error_text())).toBeVisible()
   })
 })
