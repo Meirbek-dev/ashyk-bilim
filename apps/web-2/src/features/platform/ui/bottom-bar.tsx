@@ -36,7 +36,7 @@ function barItems(sections: Section[]) {
         </Link>
       ))}
       {rest.length > 0 ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-auto">
           <Suspense fallback={null}>
             <MoreMenu sections={rest} />
           </Suspense>

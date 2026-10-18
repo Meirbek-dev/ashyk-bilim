@@ -5,7 +5,6 @@ import { m } from '#/paraglide/messages'
 import type { UpdateGamificationConfigRequest } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
-import { Link } from '#/shared/components/link'
 import { SettingsPage } from '#/shared/components/templates/settings-page'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { formatNumber } from '#/shared/i18n/format'
@@ -45,14 +44,7 @@ export function GamificationPage() {
     onSubmit: values => write.save(rulesBody(values, queryClient.getQueryData(configOptions().queryKey) ?? config)),
   })
   return (
-    <SettingsPage
-      title={m.admin_gamification_title()}
-      nav={
-        <Link to="/admin/gamification" hash="rules" variant="tab" activeOptions={{ includeHash: true }}>
-          {m.admin_gamification_rules()}
-        </Link>
-      }
-    >
+    <SettingsPage title={m.admin_gamification_title()}>
       <div id="rules">
         <SettingsSection
           title={m.admin_gamification_rules()}

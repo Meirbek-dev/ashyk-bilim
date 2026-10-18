@@ -150,3 +150,14 @@ test('the first Tab offers a skip past the shell straight to the page', async ({
   await page.keyboard.press('Enter')
   await expect(page.getByRole('main')).toBeFocused()
 })
+
+test('on a phone the bottom bar marks «Ещё» while a section behind it is open', async ({ page, signInAs }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signInAs('admin')
+  await page.goto('/admin/gamification')
+  const bar = page.getByRole('navigation', { name: m.platform_nav_label({}, ru) })
+  const more = bar.getByRole('button', { name: m.platform_nav_more({}, ru) })
+  await expect(more).toHaveAttribute('aria-current', 'page')
+  await page.goto('/admin/users')
+  await expect(more).not.toHaveAttribute('aria-current', 'page')
+})
