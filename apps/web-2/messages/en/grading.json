@@ -68,6 +68,7 @@
   "grading_task": "Task instructions",
   "grading_prev": "Previous submission",
   "grading_next": "Next submission",
+  "grading_position": "Submission {at} of {total}",
   "grading_submitted_at": "Submitted {date}",
   "grading_penalty": "Late penalty: {percent}",
   "grading_answers": "Answers",

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { formatNumber } from '#/shared/i18n/format'
 
 import { neighbours, nextToGrade } from '../model/queue'
 import { queueOptions, type Work } from '../queries'
@@ -16,14 +17,19 @@ const TO = '/teach/courses/$courseId/activities/$activityId/submissions/$submiss
 export function ReviewNav({ work }: { work: Work }) {
   const params = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
-  const { data } = useSuspenseInfiniteQuery(queueOptions(work, search))
-  const { prev, next } = neighbours(
-    data.pages.flatMap(page => page.items.map(row => row.id)),
-    params.submissionId,
-  )
+  const { data, hasNextPage } = useSuspenseInfiniteQuery(queueOptions(work, search))
+  const ids = data.pages.flatMap(page => page.items.map(row => row.id))
+  const { prev, next } = neighbours(ids, params.submissionId)
+  const at = ids.indexOf(params.submissionId)
   const className = buttonVariants({ variant: 'outline' })
   return (
-    <nav aria-label={m.platform_tab_submissions()} className="flex flex-wrap gap-2">
+    <nav aria-label={m.platform_tab_submissions()} className="flex flex-wrap items-center gap-2">
+      {/* Where in the pile: only when the whole queue is loaded, else the total is not known here. */}
+      {at >= 0 && !hasNextPage && ids.length > 1 ? (
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {m.grading_position({ at: formatNumber(at + 1), total: formatNumber(ids.length) })}
+        </span>
+      ) : null}
       {prev ? (
         <RouterLink className={className} to={TO} params={{ ...params, submissionId: prev }} search={search}>
           <ChevronLeft aria-hidden data-icon="inline-start" />

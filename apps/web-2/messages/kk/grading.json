@@ -68,6 +68,7 @@
   "grading_task": "Тапсырма шарты",
   "grading_prev": "Алдыңғы жұмыс",
   "grading_next": "Келесі жұмыс",
+  "grading_position": "{total} жұмыстың {at}-сі",
   "grading_submitted_at": "Тапсырылды: {date}",
   "grading_penalty": "Кешігу айыппұлы: {percent}",
   "grading_answers": "Жауаптар",

@@ -70,6 +70,7 @@
   "grading_task": "Условие задания",
   "grading_prev": "Предыдущая работа",
   "grading_next": "Следующая работа",
+  "grading_position": "Работа {at} из {total}",
   "grading_submitted_at": "Сдана {date}",
   "grading_penalty": "Штраф за опоздание: {percent}",
   "grading_answers": "Ответы",
