@@ -54,3 +54,27 @@ test('B-SET-17 every other session ends at once after one confirmation', async (
   await page.reload()
   await expect(sessions.getByRole('listitem')).toHaveCount(1)
 })
+
+test('B-SET-18 a picked theme and mode show at once; leaving without Save puts back the saved ones', async ({
+  page,
+  me,
+}) => {
+  await page.goto('/settings/appearance')
+  const html = page.locator('html')
+  const before = await html.getAttribute('data-theme')
+  await page.getByText('T3 Chat', { exact: true }).click()
+  await page.getByText(m.ui_mode_dark({}, ru), { exact: true }).click()
+  await expect(html).toHaveAttribute('data-theme', 't3-chat')
+  await expect(html).toHaveAttribute('data-mode', 'dark')
+  await expect(page.locator('link[href="/themes/t3-chat.css"]')).toHaveCount(1)
+  page.once('dialog', dialog => void dialog.accept())
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: m.platform_nav_home({}, ru) })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/\/home$/)
+  await expect(html).toHaveAttribute('data-theme', String(before))
+  await expect(html).not.toHaveAttribute('data-mode', 'dark')
+  expect(me.account.username).toBeTruthy()
+})
