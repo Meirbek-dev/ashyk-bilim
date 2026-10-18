@@ -1750,11 +1750,13 @@ impl GradingService {
             None
         };
         let rows = ab_db::submissions::gradebook_cells(&self.pool, course_id, &ids).await?;
-        let users = ab_db::identity::list_user_summaries(&self.pool, &ids)
+        // The members' name order (`list_user_summaries` answers in no order).
+        let mut users: Vec<_> = ab_db::identity::list_user_summaries(&self.pool, &ids)
             .await?
             .into_iter()
             .map(summary)
             .collect();
+        users.sort_by_key(|u: &UserSummary| ids.iter().position(|id| *id == u.id));
         let assessments = ab_db::assessments::gradebook_columns(&self.pool, course_id)
             .await?
             .into_iter()

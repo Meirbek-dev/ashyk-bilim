@@ -4295,7 +4295,8 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
         quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await,
         quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await,
     ];
-    for name in ["alice", "bob", "carol"] {
+    // Created out of name order: the gradebook lists by name, not by id.
+    for name in ["carol", "alice", "bob"] {
         let who = learner(&app, name).await;
         for (id, choice_id, essay_id) in &quizzes {
             submit_attempt(&app, &who, id, choice_id, essay_id).await;
@@ -4303,6 +4304,7 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
     }
     let mut cursor: Option<String> = None;
     let mut users = Vec::new();
+    let mut names = Vec::new();
     let mut pages = 0;
     loop {
         let query = cursor
@@ -4318,6 +4320,7 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
         pages += 1;
         let page = page.json();
         let user = page["users"][0]["id"].as_str().unwrap().to_owned();
+        names.push(page["users"][0]["username"].as_str().unwrap().to_owned());
         assert_eq!(page["users"].as_array().unwrap().len(), 1);
         let cells = page["cells"].as_array().unwrap();
         assert_eq!(cells.len(), 2, "a page carries the whole row: {cells:?}");
@@ -4333,6 +4336,7 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
         }
     }
     assert_eq!(pages, 3);
+    assert_eq!(names, ["alice", "bob", "carol"]);
     users.dedup();
     assert_eq!(users.len(), 3);
 }

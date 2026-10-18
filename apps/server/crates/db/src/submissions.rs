@@ -662,6 +662,7 @@ pub struct GradebookFilter<'a> {
     pub needs_grading: bool,
 }
 
+/// Members in name order (display name, else username; case-insensitive), keyset after the learner `after`.
 pub async fn gradebook_members(
     pool: &PgPool,
     course_id: CourseId,
@@ -673,9 +674,13 @@ pub async fn gradebook_members(
         .search
         .map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_scalar!(
-        r#"SELECT DISTINCT t.user_id AS "user_id!: UserId"
-           FROM trail_runs t JOIN users u ON u.id = t.user_id
-           WHERE t.course_id = $1 AND ($2::uuid IS NULL OR t.user_id > $2)
+        r#"SELECT u.id AS "user_id!: UserId"
+           FROM (SELECT DISTINCT course_id, user_id FROM trail_runs WHERE course_id = $1) t
+           JOIN users u ON u.id = t.user_id
+           WHERE ($2::uuid IS NULL
+                  OR (lower(COALESCE(NULLIF(u.display_name, ''), u.username)), u.id)
+                     > (SELECT lower(COALESCE(NULLIF(c.display_name, ''), c.username)), c.id
+                        FROM users c WHERE c.id = $2))
              AND NOT is_course_staff(t.course_id, t.user_id)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\'
                   OR u.email ILIKE $4 ESCAPE '\')
@@ -688,7 +693,7 @@ pub async fn gradebook_members(
                   OR EXISTS (SELECT 1 FROM file_submission_attempts fa
                              WHERE fa.course_id = $1 AND fa.user_id = t.user_id AND NOT fa.preview
                                AND fa.status IN ('submitted', 'graded')))
-           ORDER BY 1
+           ORDER BY lower(COALESCE(NULLIF(u.display_name, ''), u.username)), u.id
            LIMIT $3"#,
         course_id.0,
         after.map(|u| u.0),
