@@ -5,7 +5,7 @@ import { CertificatePdfLink } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { CourseCover } from '#/shared/components/course-cover'
 import { FocusPage } from '#/shared/components/templates/focus-page'
-import { formatNumber } from '#/shared/i18n/format'
+import { formatPercent } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { Link } from '#/shared/components/link'
 
@@ -38,7 +38,7 @@ export function CompletionPage() {
             <ul className="flex flex-col items-center gap-1 text-sm text-muted-foreground empty:hidden">
               {typeof progress.grade_average === 'number' ? (
                 <li className="tabular-nums">
-                  {m.player_grade_average({ value: formatNumber(progress.grade_average) })}
+                  {m.player_grade_average({ value: formatPercent(progress.grade_average) })}
                 </li>
               ) : null}
               {progress.needs_grading_count > 0 ? (
