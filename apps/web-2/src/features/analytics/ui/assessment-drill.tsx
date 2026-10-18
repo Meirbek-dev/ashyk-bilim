@@ -5,7 +5,7 @@ import type { AssessmentKind } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
-import { formatNumber } from '#/shared/i18n/format'
+import { formatNumber, formatPercent } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 
 import type { Filters } from '../model/filters'
@@ -37,7 +37,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
         <h2 className="text-xl font-semibold wrap-anywhere">{data.title}</h2>
         <p className="text-sm text-muted-foreground">
           {activityTypeMeta[data.assessment_type].label()} ·{' '}
-          {m.analytics_pass_threshold({ value: formatNumber(data.pass_threshold) })}
+          {m.analytics_pass_threshold({ value: formatPercent(data.pass_threshold) })}
         </p>
         <AsOf at={data.generated_at_unix} />
       </div>
