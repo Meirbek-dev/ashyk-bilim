@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
@@ -8,6 +8,7 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ListPage } from '#/shared/components/templates/list-page'
 
 import { searchBoxSchema } from '../model/admin'
+import { usersListOptions } from '../queries'
 import { CreateUserDialog } from './create-user-dialog'
 import { UserSheet } from './user-sheet'
 import { UsersFilters } from './users-filters'
@@ -22,6 +23,8 @@ export function UsersPage() {
   const { q, user } = search
   const { data: session } = useSuspenseQuery(sessionOptions())
   const navigate = useNavigate()
+  // The same read as the table (cached): every page carries the total for the current filter.
+  const total = useSuspenseInfiniteQuery(usersListOptions(search)).data.pages[0]?.total
   const form = useAppForm(searchBoxSchema, {
     defaultValues: { q: q ?? '' },
     onSubmit: ({ q: text }) =>
@@ -30,6 +33,7 @@ export function UsersPage() {
   return (
     <ListPage
       title={m.admin_users_title()}
+      count={total === undefined ? undefined : m.admin_users_count({ count: total })}
       primaryAction={
         hasCapability(session, 'admin.users.create') ? (
           <CreateUserDialog withRoles={hasCapability(session, 'admin.roles')} />

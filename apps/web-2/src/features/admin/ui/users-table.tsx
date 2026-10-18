@@ -24,7 +24,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     // The panel opens from the URL (R-07): this link is the shareable address of the user.
     cell: user => (
       <span className="flex items-center gap-3">
-        <UserAvatar name={user.display_name || user.username} />
+        <UserAvatar name={user.display_name || user.username} avatarKey={user.avatar_key} />
         <span className="flex min-w-0 flex-col">
           <Link variant="title" from="/admin/users" to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
             <span className="font-medium wrap-anywhere">{user.display_name || user.username}</span>

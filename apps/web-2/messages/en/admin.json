@@ -6,6 +6,16 @@
   "admin_saved": "Saved",
   "admin_search_placeholder": "Name or username",
   "admin_users_title": "Users",
+  "admin_users_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} user",
+        "countPlural=other": "{count} users"
+      }
+    }
+  ],
   "admin_users_search": "Search by name, username or email",
   "admin_users_empty": "No users yet.",
   "admin_users_table": "Platform users",

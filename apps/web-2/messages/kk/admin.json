@@ -6,6 +6,16 @@
   "admin_saved": "Сақталды",
   "admin_search_placeholder": "Аты немесе пайдаланушы аты",
   "admin_users_title": "Пайдаланушылар",
+  "admin_users_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} пайдаланушы",
+        "countPlural=other": "{count} пайдаланушы"
+      }
+    }
+  ],
   "admin_users_search": "Аты, пайдаланушы аты немесе пошта бойынша іздеу",
   "admin_users_empty": "Әзірге пайдаланушылар жоқ.",
   "admin_users_table": "Платформа пайдаланушылары",

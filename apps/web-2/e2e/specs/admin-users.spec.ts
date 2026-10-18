@@ -34,10 +34,13 @@ async function openPanel(page: Page, username: string) {
 }
 const userParam = /[?&]user=[0-9a-f-]{36}(&|$)/
 
-test('B-ADM-01 one directory with "Show more", cards at 390 px', async ({ page, signInAs }) => {
+test('B-ADM-01 one directory with its total, "Show more", cards at 390 px', async ({ page, signInAs }) => {
   await signInAs('admin')
   await page.goto('/admin/users')
   await expect(page.getByRole('heading', { level: 1, name: m.admin_users_title({}, ru) })).toBeVisible()
+  // The whole directory's size beside the title, not the 20 of the first page.
+  const total = Number((await page.getByText(/^\d+ пользовател/).textContent())?.match(/\d+/)?.[0])
+  expect(total).toBeGreaterThan(20)
   const table = page.getByRole('table', { name: m.admin_users_table({}, ru) })
   await expect(table.getByRole('row')).toHaveCount(21)
   await page.getByRole('button', { name: m.ui_show_more({}, ru) }).click()
@@ -163,7 +166,7 @@ test('B-ADM-16 "Award XP" sends its idempotency key in the body', async ({ page,
   const sheet = await openPanel(page, account.username)
   const award = sheet.getByRole('button', { name: m.admin_award_submit({}, ru) })
   await award.click()
-  await expect(sheet.getByText(m.validation_format({}, ru))).toBeVisible()
+  await expect(sheet.getByText(m.admin_xp_positive({}, ru))).toBeVisible()
   await sheet.getByLabel(m.admin_award_amount({}, ru)).fill('15')
   await sheet.getByLabel(m.admin_award_reason({}, ru)).fill('e2e')
   const request = page.waitForRequest(sent => sent.method() === 'POST' && sent.url().endsWith('/gamification/xp'))

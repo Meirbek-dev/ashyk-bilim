@@ -6,6 +6,18 @@
   "admin_saved": "Сохранено",
   "admin_search_placeholder": "Имя или имя пользователя",
   "admin_users_title": "Пользователи",
+  "admin_users_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} пользователь",
+        "countPlural=few": "{count} пользователя",
+        "countPlural=many": "{count} пользователей",
+        "countPlural=other": "{count} пользователя"
+      }
+    }
+  ],
   "admin_users_search": "Поиск по имени, имени пользователя или почте",
   "admin_users_empty": "Пользователей пока нет.",
   "admin_users_table": "Пользователи платформы",

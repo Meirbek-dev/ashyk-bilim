@@ -42,7 +42,7 @@ export function UserSheet({ id }: { id: string }) {
       {user && badge ? (
         <>
           <div className="flex items-center gap-3">
-            <UserAvatar name={user.display_name || user.username} />
+            <UserAvatar name={user.display_name || user.username} avatarKey={user.avatar_key} />
             <div className="flex min-w-0 flex-col text-sm">
               <span className="wrap-anywhere">@{user.username}</span>
               <Link to="/users/$username" params={{ username: user.username }}>
