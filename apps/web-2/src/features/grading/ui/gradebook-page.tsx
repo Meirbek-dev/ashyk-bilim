@@ -41,7 +41,7 @@ export function GradebookPage(): ReactElement {
           to="/teach/courses/$courseId/gradebook"
           params={{ courseId }}
           search={{ ...search, pending: search.pending ? undefined : true }}
-          aria-pressed={Boolean(search.pending)}
+          aria-current={search.pending ? 'true' : undefined}
           className={buttonVariants({ variant: search.pending ? 'secondary' : 'outline' })}
         >
           {search.pending ? <Check aria-hidden data-icon="inline-start" /> : null}

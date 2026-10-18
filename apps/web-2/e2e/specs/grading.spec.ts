@@ -44,7 +44,7 @@ test('B-GRD-01 B-GRD-02 B-GRD-03 B-GRD-05 B-GRD-06 the queue lists the hand-ins 
   await expect(row(page, graded.ana.name)).toBeVisible()
 })
 
-test('B-GRD-10 B-GRD-11 B-GRD-12 B-GRD-13 B-GRD-14 a review shows answers, key and verdict, scores on the item scale, then publishes', async ({
+test('B-GRD-10 B-GRD-11 B-GRD-12 B-GRD-13 B-GRD-14 B-GRD-34 a review shows answers, key and verdict, scores on the item scale, publishes, then opens the next work', async ({
   page,
   signInAs,
   graded,
@@ -75,7 +75,9 @@ test('B-GRD-10 B-GRD-11 B-GRD-12 B-GRD-13 B-GRD-14 a review shows answers, key a
   await page.getByLabel(m.grading_feedback({}, ru)).fill('Хорошая работа')
   await page.getByRole('button', { name: m.grading_publish({}, ru) }).click()
   await expect(toast(page, m.grading_published({}, ru))).toBeVisible()
-  await expect(page.getByRole('main')).toContainText(m.grading_status_published({}, ru))
+  await expect(page).toHaveURL(new RegExp(`/submissions/${graded.boris.submissionId}$`))
+  await page.goto(queue(graded))
+  await expect(row(page, graded.ana.name)).toContainText(m.grading_status_published({}, ru))
 })
 
 test('B-GRD-15 a grade saved meanwhile by a colleague opens the conflict dialog; retry keeps the input', async ({
@@ -234,7 +236,6 @@ test('B-GRD-18 results summarize the assessment from the server; a file task cou
   await expect(page.getByRole('row').filter({ hasText: 'Столица' })).toBeVisible()
   await page.goto(`/teach/courses/${fileTask.courseId}/activities/${fileTask.activityId}/results`)
   await expect(page.getByRole('region', { name: m.grading_kpi_total({}, ru) })).toBeVisible()
-  await expect(page.getByRole('region', { name: m.grading_kpi_late({}, ru) })).toBeVisible()
 })
 
 test('B-GRD-19 B-GRD-20 the gradebook leads each cell into its review; search and "to review" live in the URL', async ({

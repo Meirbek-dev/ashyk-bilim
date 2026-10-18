@@ -46,10 +46,18 @@ export function RadioGroupField({ label, options }: RadioGroupFieldProps) {
               <Field orientation="horizontal">
                 {option.icon}
                 <FieldContent>
-                  <FieldTitle>{option.label}</FieldTitle>
-                  {option.description ? <FieldDescription>{option.description}</FieldDescription> : null}
+                  <FieldTitle id={`${id}-${option.value}-title`}>{option.label}</FieldTitle>
+                  {option.description ? (
+                    <FieldDescription id={`${id}-${option.value}-hint`}>{option.description}</FieldDescription>
+                  ) : null}
                 </FieldContent>
-                <RadioGroupItem id={`${id}-${option.value}`} value={option.value} />
+                {/* Named by the title alone; the purpose line is its description. */}
+                <RadioGroupItem
+                  id={`${id}-${option.value}`}
+                  value={option.value}
+                  aria-labelledby={`${id}-${option.value}-title`}
+                  aria-describedby={option.description ? `${id}-${option.value}-hint` : undefined}
+                />
               </Field>
             </FieldLabel>
           ) : (
