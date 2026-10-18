@@ -51,7 +51,15 @@ export function InboxPage() {
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable label={m.inbox_table()} rows={items} columns={inboxColumns} getKey={item => item.id} />
+        <DataTable
+          label={m.inbox_table()}
+          rows={items}
+          // No row with a due date: the empty «Срок» column goes.
+          columns={
+            items.some(item => item.due_at_unix !== null) ? inboxColumns : inboxColumns.filter(c => c.id !== 'due')
+          }
+          getKey={item => item.id}
+        />
       </ListState>
       <ShowMore
         hasMore={query.hasNextPage}
