@@ -18,6 +18,9 @@ import { ReviewNav } from './review-nav'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
 
+const scoreLine = (score: number | null) =>
+  score === null ? scoreText(null) : m.grading_score_label({ score: scoreText(score) })
+
 type ReviewFrameProps = {
   work: Work
   /** The work under review, as either kind answers it. */
@@ -76,6 +79,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
                 content: (
                   <Suspense>
                     <aside.Panel
+                      key={submissionId}
                       kind={work.kind}
                       submissionId={submissionId}
                       onFeedbackDraft={text => draftTarget.current?.(text)}
@@ -106,11 +110,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
               {head.late_penalty_pct ? (
                 <span>{m.grading_penalty({ percent: scoreText(head.late_penalty_pct) })}</span>
               ) : null}
-              <span className="tabular-nums">
-                {head.final_score === null
-                  ? scoreText(null)
-                  : m.grading_score_label({ score: scoreText(head.final_score) })}
-              </span>
+              <span className="tabular-nums">{scoreLine(head.final_score)}</span>
             </div>
             <ReviewNav work={work} />
           </header>
