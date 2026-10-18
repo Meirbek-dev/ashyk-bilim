@@ -20,7 +20,7 @@ export function RoleFilter({ role, onPick }: { role: string | undefined; onPick:
         }),
         value: role ?? ALL,
         options: [
-          { value: ALL, label: m.admin_users_filter_all() },
+          { value: ALL, label: m.admin_users_filter_any() },
           ...roles.map(item => ({ value: item.slug, label: roleName(item) })),
         ],
         onValueChange: value => onPick(value === ALL ? undefined : value),

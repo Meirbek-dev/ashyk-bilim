@@ -83,3 +83,12 @@ body {
     height: 0.5rem;
   }
 }
+
+/* Menus fit their longest item: the stock popup is exactly as wide as its trigger (`w-(--anchor-width)`) and clips
+   the rest («Администрирова» under a narrow switch, long role names under a filter). Never narrower than the
+   trigger; the kit's own max-width (`--available-width`, a caller's `max-w-*`) still caps it. Unlayered, so it wins
+   over the kit's utilities. */
+[data-slot='dropdown-menu-content'] {
+  width: max-content;
+  min-width: max(8rem, var(--anchor-width));
+}

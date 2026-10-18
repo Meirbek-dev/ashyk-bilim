@@ -33,7 +33,7 @@ export function UsersFilters({ search, namedRoles }: { search: UsersSearch; name
           }),
           value: search.status ?? ALL,
           options: [
-            { value: ALL, label: m.admin_users_filter_all() },
+            { value: ALL, label: m.admin_users_filter_any() },
             ...(['active', 'disabled'] as const).map(value => ({ value, label: userStatusBadges[value].label() })),
           ],
           onValueChange: value => go({ status: value === 'active' || value === 'disabled' ? value : undefined }),

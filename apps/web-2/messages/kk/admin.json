@@ -164,6 +164,7 @@
   "admin_users_status_label": "Күйі: {status}",
   "admin_users_role_label": "Рөлі: {role}",
   "admin_users_filter_all": "барлығы",
+  "admin_users_filter_any": "Барлығы",
   "admin_user_field_roles": "Қосымша рөлдер",
   "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады.",
   "admin_gamification_xp": "XP",

@@ -164,6 +164,7 @@
   "admin_users_status_label": "Status: {status}",
   "admin_users_role_label": "Role: {role}",
   "admin_users_filter_all": "all",
+  "admin_users_filter_any": "All",
   "admin_user_field_roles": "Extra roles",
   "admin_user_field_roles_hint": "The User role is always assigned.",
   "admin_gamification_xp": "XP",
