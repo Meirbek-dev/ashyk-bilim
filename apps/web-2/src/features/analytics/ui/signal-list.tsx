@@ -2,13 +2,21 @@ import { useNavigate } from '@tanstack/react-router'
 import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 
-import type { AnalyticsCode, MessageParams, Severity } from '#/shared/api/gen/types.gen'
+import type { AnalyticsCode, FilterOption, MessageParams, Severity } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { bySeverity, severityBadges, signalHref, signalText } from '../model/signals'
+import { bySeverity, courseOf, severityBadges, signalHref, signalText } from '../model/signals'
 
-type Signal = { id: string; code: AnalyticsCode; params: MessageParams; severity: Severity; href?: string | null }
+type Signal = {
+  id: string
+  code: AnalyticsCode
+  params: MessageParams
+  severity: Severity
+  href?: string | null
+  course_id?: string | null
+  course_name?: string | null
+}
 
 const severityLook = {
   critical: { icon: CircleAlert, ink: 'text-destructive' },
@@ -19,9 +27,18 @@ const severityLook = {
 /**
  * One block of server-composed items (alerts, insights, forecasts, anomalies), grouped by severity: the severity is
  * said once, as a small heading with its icon and count (B-ANL-35), then its sentences, each a link into the tab it is
- * about when the server gives one (B-ANL-25). Nothing when empty.
+ * about when the server gives one (B-ANL-25), with the course it is about (from `courses`, the overview's options)
+ * when the sentence does not say it. Nothing when empty.
  */
-export function SignalList({ title, items }: { title: string; items: readonly Signal[] }) {
+export function SignalList({
+  title,
+  items,
+  courses = [],
+}: {
+  title: string
+  items: readonly Signal[]
+  courses?: readonly FilterOption[]
+}) {
   const id = useId()
   const navigate = useNavigate()
   if (items.length === 0) return null
@@ -43,6 +60,7 @@ export function SignalList({ title, items }: { title: string; items: readonly Si
               {group.map(item => {
                 const text = signalText[item.code](item.params)
                 const href = signalHref(item.href)
+                const course = courseOf(item, courses)
                 return (
                   <li key={item.id} className="py-2 wrap-anywhere">
                     {href ? (
@@ -61,6 +79,7 @@ export function SignalList({ title, items }: { title: string; items: readonly Si
                     ) : (
                       text
                     )}
+                    {course ? <span className="text-sm text-muted-foreground"> · {course}</span> : null}
                   </li>
                 )
               })}

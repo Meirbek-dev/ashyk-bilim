@@ -31,8 +31,8 @@ export function PerformanceTab() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-gutter @3xl:grid-cols-2">
-        <SignalList title={m.analytics_forecasts_title()} items={data.forecasts} />
-        <SignalList title={m.analytics_anomalies_title()} items={data.anomalies} />
+        <SignalList title={m.analytics_forecasts_title()} items={data.forecasts} courses={data.course_options} />
+        <SignalList title={m.analytics_anomalies_title()} items={data.anomalies} courses={data.course_options} />
       </div>
       <CoursesTable
         filters={filters}

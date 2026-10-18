@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import type {
   AnalyticsCode,
   ContentBottleneckSignal,
+  FilterOption,
   MessageParams,
   OutlierReasonCode,
   RecommendedAction,
@@ -136,6 +137,15 @@ export const signalText = {
  * The tab a signal is about (`href` from the server's link map): only a route of this web (`/teach/analytics...`);
  * the old web's `/dash/...` (`AB__SERVER__WEB_LINKS=legacy`) and no link are plain text.
  */
+/** The course a signal is about, when its sentence does not name it already (same-titled tests of many courses). */
+export const courseOf = (
+  item: { params: MessageParams; course_id?: string | null; course_name?: string | null },
+  courses: readonly FilterOption[],
+): string | undefined =>
+  'course_name' in item.params
+    ? undefined
+    : (item.course_name ?? courses.find(course => course.value === item.course_id)?.label)
+
 export const signalHref = (href: string | null | undefined): string | undefined =>
   href?.startsWith('/teach/analytics') ? href : undefined
 

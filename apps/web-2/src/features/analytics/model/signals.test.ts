@@ -22,6 +22,7 @@ import {
   riskBreakdown,
   bottleneckLabel,
   bySeverity,
+  courseOf,
 } from './signals'
 
 /** How many different non-empty texts the values get: equal to the number of values when each has its own. */
@@ -62,6 +63,16 @@ describe('analytics signals', () => {
     expect(distinctTexts(recommendedActionLabels, vRecommendedAction.options)).toBe(vRecommendedAction.options.length)
     expect(distinctTexts(riskReasonLabels, vRiskReasonCode.options)).toBe(vRiskReasonCode.options.length)
     expect(distinctTexts(outlierLabels, vOutlierReasonCode.options)).toBe(vOutlierReasonCode.options.length)
+  })
+
+  test('B-ANL-37 a signal names its course unless its sentence already does', () => {
+    const courses = [{ value: 'c1', label: 'Алгебра' }]
+    expect(courseOf({ params: { assessment_title: 'Тест' }, course_id: 'c1' }, courses)).toBe('Алгебра')
+    expect(courseOf({ params: { assessment_title: 'Тест' }, course_id: 'c1', course_name: 'Свой' }, courses)).toBe(
+      'Свой',
+    )
+    expect(courseOf({ params: { course_name: 'Алгебра' }, course_id: 'c1' }, courses)).toBeUndefined()
+    expect(courseOf({ params: {}, course_id: null }, courses)).toBeUndefined()
   })
 
   test('B-ANL-25 a signal links only into the analytics tabs of this web', () => {

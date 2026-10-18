@@ -55,8 +55,8 @@ export function OverviewTab() {
         />
       ) : null}
       <div className="grid gap-gutter @3xl:grid-cols-2">
-        <SignalList title={m.analytics_alerts_title()} items={data.alerts} />
-        <SignalList title={m.analytics_insights_title()} items={data.insights} />
+        <SignalList title={m.analytics_alerts_title()} items={data.alerts} courses={data.course_options} />
+        <SignalList title={m.analytics_insights_title()} items={data.insights} courses={data.course_options} />
       </div>
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">{m.analytics_trends_title()}</h2>
