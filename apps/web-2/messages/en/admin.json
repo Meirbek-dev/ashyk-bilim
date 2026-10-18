@@ -112,7 +112,7 @@
   "admin_platform_about": "About",
   "admin_platform_email": "Support email",
   "admin_platform_branding": "Logo and cover",
-  "admin_platform_branding_hint": "Images up to 10 MB: JPEG, PNG, GIF, WebP or AVIF.",
+  "admin_platform_branding_hint": "The cover is the picture of a link to the platform in messengers and social networks. Images up to 10 MB: JPEG, PNG, GIF, WebP or AVIF.",
   "admin_platform_logo": "Logo",
   "admin_platform_thumbnail": "Cover",
   "admin_platform_no_image": "No image.",

@@ -114,7 +114,7 @@
   "admin_platform_about": "О платформе",
   "admin_platform_email": "Почта поддержки",
   "admin_platform_branding": "Логотип и обложка",
-  "admin_platform_branding_hint": "Изображения до 10 МБ: JPEG, PNG, GIF, WebP или AVIF.",
+  "admin_platform_branding_hint": "Обложка - картинка ссылки на платформу в мессенджерах и соцсетях. Изображения до 10 МБ: JPEG, PNG, GIF, WebP или AVIF.",
   "admin_platform_logo": "Логотип",
   "admin_platform_thumbnail": "Обложка",
   "admin_platform_no_image": "Изображения нет.",

@@ -112,7 +112,7 @@
   "admin_platform_about": "Платформа туралы",
   "admin_platform_email": "Қолдау поштасы",
   "admin_platform_branding": "Логотип пен мұқаба",
-  "admin_platform_branding_hint": "10 МБ-қа дейінгі суреттер: JPEG, PNG, GIF, WebP немесе AVIF.",
+  "admin_platform_branding_hint": "Мұқаба - мессенджерлер мен әлеуметтік желілердегі платформа сілтемесінің суреті. 10 МБ-қа дейінгі суреттер: JPEG, PNG, GIF, WebP немесе AVIF.",
   "admin_platform_logo": "Платформа логотипі",
   "admin_platform_thumbnail": "Мұқаба",
   "admin_platform_no_image": "Сурет жоқ.",
