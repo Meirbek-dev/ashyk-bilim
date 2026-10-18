@@ -149,7 +149,7 @@
   "analytics_prev": "Previous",
   "analytics_next": "Next",
   "analytics_admin_title": "Platform analytics",
-  "analytics_admin_courses": "Course health",
+  "analytics_admin_courses": "Course health, weakest first",
   "analytics_admin_teachers": "Teacher workload",
   "analytics_admin_cohorts": "Group retention",
   "analytics_admin_programs": "Courses by author",
