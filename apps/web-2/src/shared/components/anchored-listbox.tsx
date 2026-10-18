@@ -60,7 +60,7 @@ export function AnchoredListbox({
       autoHighlight
     >
       <ComboboxContent anchor={anchor} aria-label={label} className="w-72">
-        <ComboboxInput aria-label={label} showTrigger={false} />
+        <ComboboxInput aria-label={label} placeholder={label} showTrigger={false} />
         <ComboboxEmpty>{m.ui_options_empty()}</ComboboxEmpty>
         <ComboboxList>
           {(option: ListboxOption) => (
