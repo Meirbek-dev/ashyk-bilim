@@ -1,12 +1,13 @@
 import { useDebouncedValue } from '@tanstack/react-pacer'
-import { useDeferredValue, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Combobox, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxLabel, ComboboxList } from '#/shared/ui/combobox'
+import { Combobox, ComboboxInput, ComboboxList } from '#/shared/ui/combobox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '#/shared/ui/dialog'
 
 import { ShortcutHelp } from './shortcut-help'
-import { type PaletteEntry, usePaletteGroups } from './use-palette-groups'
+import { PaletteEntries } from './palette-entries'
+import type { PaletteEntry } from './use-palette-groups'
 
 export type PaletteMode = 'palette' | 'help'
 
@@ -29,8 +30,6 @@ export function PaletteDialog({ mode, onModeChange }: PaletteDialogProps) {
     setText('')
     onModeChange(null)
   }
-  const groups = usePaletteGroups(text, q, { close, showHelp: () => onModeChange('help') })
-  const searching = text.trim() !== q
   return (
     <Dialog
       open={mode !== null}
@@ -70,25 +69,17 @@ export function PaletteDialog({ mode, onModeChange }: PaletteDialogProps) {
               showTrigger={false}
             />
             <ComboboxList aria-label={m.catalog_palette_title()} className="max-h-80">
-              {searching ? (
-                <output className="block px-2 py-2 text-sm text-muted-foreground">
-                  {m.catalog_palette_searching()}
-                </output>
-              ) : groups.length === 0 ? (
-                <p className="py-2 text-center text-sm text-muted-foreground">{m.catalog_palette_empty()}</p>
-              ) : null}
-              {groups.map(group => (
-                <ComboboxGroup key={group.heading}>
-                  <ComboboxLabel>{group.heading}</ComboboxLabel>
-                  {group.entries.map(entry => (
-                    <ComboboxItem key={entry.id} value={entry}>
-                      {entry.icon}
-                      <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                      {entry.hint ? <span className="text-xs text-muted-foreground">{entry.hint}</span> : null}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxGroup>
-              ))}
+              {/* The entries suspend on their first reads (dashboard, search): only they wait, the input and what was
+                  typed into it stay (a suspended dialog came back empty: "python" typed at once arrived as "n"). */}
+              <Suspense
+                fallback={
+                  <output className="block px-2 py-2 text-sm text-muted-foreground">
+                    {m.catalog_palette_searching()}
+                  </output>
+                }
+              >
+                <PaletteEntries text={text} q={q} actions={{ close, showHelp: () => onModeChange('help') }} />
+              </Suspense>
             </ComboboxList>
           </Combobox>
         )}

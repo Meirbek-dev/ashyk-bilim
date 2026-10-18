@@ -213,6 +213,15 @@ test('B-CAT-10 Ctrl+K and the top-bar button open the palette; Escape closes it'
   await expect(dialog).toBeVisible()
 })
 
+test('B-CAT-16 keys typed right after Ctrl+K all land in the palette input', async ({ page }) => {
+  await page.goto('/courses')
+  // A guest page has no event stream: idle network means the palette chunk is in, as for a user who looked around.
+  await page.waitForLoadState('networkidle')
+  await page.keyboard.press('Control+k')
+  await page.keyboard.type('python')
+  await expect(palette(page).getByRole('combobox')).toHaveValue('python')
+})
+
 test('B-CAT-11 the palette offers only the sections the user may open', async ({ page, signInAs }) => {
   await signInAs('student')
   await page.goto('/home')

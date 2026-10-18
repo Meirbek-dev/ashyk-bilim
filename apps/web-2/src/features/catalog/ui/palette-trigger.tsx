@@ -1,7 +1,7 @@
 import { formatForDisplay, useHotkey } from '@tanstack/react-hotkeys'
 import { useHydrated } from '@tanstack/react-router'
 import { Search } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
@@ -10,8 +10,10 @@ import { Button } from '#/shared/ui/button'
 import { shortcuts } from '../model/shortcuts'
 import type { PaletteMode } from './palette-dialog'
 
-// The combobox and the dialog load on the first open.
-const PaletteDialog = lazy(() => import('./palette-dialog').then(module => ({ default: module.PaletteDialog })))
+// The combobox and the dialog load once the page is idle after hydration, so Mod+K and the first keys typed at once
+// land in an open input (on the first open a chunk still loading swallowed them: "python" arrived as "n").
+const loadDialog = () => import('./palette-dialog')
+const PaletteDialog = lazy(() => loadDialog().then(module => ({ default: module.PaletteDialog })))
 
 /**
  * The palette button, `Mod+K` for the palette and `?` for the shortcut help. From md it looks like a search field
@@ -19,13 +21,21 @@ const PaletteDialog = lazy(() => import('./palette-dialog').then(module => ({ de
  */
 export function PaletteTrigger() {
   const [mode, setMode] = useState<PaletteMode | null>(null)
-  // Stays mounted after the first open, so the dialog can animate out and return focus.
+  // Mounted (closed) once its chunk is in, so opening is one render and the first keys land in the input; stays
+  // mounted after the first open, so the dialog can animate out and return focus.
   const [loaded, setLoaded] = useState(false)
   const hydrated = useHydrated()
   const open = (next: PaletteMode) => {
     setLoaded(true)
     setMode(next)
   }
+  useEffect(() => {
+    const preload = () => void loadDialog().then(() => setLoaded(true))
+    // Safari has no idle callback: it loads right after hydration.
+    if (typeof requestIdleCallback !== 'function') return preload()
+    const id = requestIdleCallback(preload, { timeout: 5000 })
+    return () => cancelIdleCallback(id)
+  }, [])
   useHotkey(shortcuts.palette.hotkey, () => open('palette'))
   useHotkey(shortcuts.help.hotkey, () => open('help'))
   return (
