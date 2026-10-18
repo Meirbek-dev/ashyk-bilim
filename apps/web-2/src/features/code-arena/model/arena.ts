@@ -27,6 +27,8 @@ export function codeItemOf(assessment: Pick<AssessmentDetail, 'items'> | null): 
 
 /** The open attempt: the list holds at most one draft. */
 export const draftOf = (attempts: StudentSubmission[]) => attempts.find(attempt => attempt.status === 'draft')
+/** The newest handed-in attempt (the history is newest first): its outcome heads the entry (B-COD-26). */
+export const lastHandedIn = (attempts: StudentSubmission[]) => attempts.find(attempt => attempt.status !== 'draft')
 
 export function answerOf(attempt: StudentSubmission | undefined, itemId: string): CodeAnswer | null {
   const answer = attempt?.answers[itemId]
@@ -73,7 +75,7 @@ export function testsPassed(attempt: StudentSubmission): { correct: number; tota
 export const languageOf = (languages: LanguageInfo[] | null, id: number) =>
   languages?.find(language => language.id === id) ?? null
 
-/** The runner as the pages see it: its languages, not configured (B-COD-09), or configured and down (B-COD-23). */
+/** The runner as the pages see it: its languages, not configured (B-COD-09), or configured and down (B-COD-26). */
 export type Runner = { state: 'ready'; languages: LanguageInfo[] } | { state: 'off' } | { state: 'down' }
 
 export const runnerOf = (info: CodeRunnerInfo): Runner =>

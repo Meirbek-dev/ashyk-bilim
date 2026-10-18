@@ -3,7 +3,7 @@ import { useSearch } from '@tanstack/react-router'
 
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 
-import { draftOf, type CodeItem } from '../model/arena'
+import { draftOf, lastHandedIn, type CodeItem } from '../model/arena'
 import { attemptsOptions } from '../queries'
 import { ARENA_ROUTE } from './arena-route'
 import { Entry } from './entry'
@@ -34,7 +34,12 @@ export function AttemptArea({ courseId, challenge, code }: AttemptAreaProps) {
           receivedAt={dataUpdatedAt}
         />
       ) : (
-        <Entry courseId={courseId} assessmentId={challenge.id} activityId={challenge.activity_id} />
+        <Entry
+          courseId={courseId}
+          assessmentId={challenge.id}
+          activityId={challenge.activity_id}
+          last={lastHandedIn(attempts)}
+        />
       )}
       {run ? <RunResult runId={run} /> : null}
       <RunList itemId={code.item.id} selected={run} />

@@ -7,6 +7,7 @@ import {
   answerOf,
   codeItemOf,
   draftOf,
+  lastHandedIn,
   initialAnswer,
   isRunnerDown,
   languagesIn,
@@ -165,4 +166,14 @@ test('B-COD-24 the starter is offered back only when there is one and the text d
   expect(starterReset(withStarter, { language: 71, source: 'x = 1' })).toEqual({ language: 71, source: 'print()' })
   expect(starterReset(withStarter, { language: 71, source: 'print()' })).toBeNull()
   expect(starterReset({}, { language: 71, source: 'x' })).toBeNull()
+})
+
+describe('code arena entry', () => {
+  test('B-COD-26 the newest handed-in attempt heads the entry; drafts do not count', () => {
+    const draft = attempt({ id: 's3' })
+    const sent = attempt({ id: 's2', status: 'pending' })
+    const graded = attempt({ id: 's1', status: 'published' })
+    expect(lastHandedIn([draft, sent, graded])?.id).toBe('s2')
+    expect(lastHandedIn([draft])).toBeUndefined()
+  })
 })

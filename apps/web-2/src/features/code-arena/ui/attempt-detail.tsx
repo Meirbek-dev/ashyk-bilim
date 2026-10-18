@@ -12,7 +12,7 @@ import { FinalRun } from './final-run'
 import { CodeEditor } from './lazy-editor'
 
 /** What the attempt came to (B-COD-10): the grade once released, else why it is not shown yet. */
-function outcome(attempt: StudentSubmission): string[] {
+export function outcome(attempt: StudentSubmission): string[] {
   if (attempt.release_state === 'returned_for_revision') return [m.code_result_returned()]
   if (attempt.status === 'pending') return [m.code_result_pending()]
   if (attempt.release_state !== 'visible') return [m.code_result_later()]

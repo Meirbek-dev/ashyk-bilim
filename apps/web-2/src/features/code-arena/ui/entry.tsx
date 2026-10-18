@@ -2,9 +2,9 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { Suspense } from 'react'
 
 import { RemediationGate } from '#/features/ai'
-
+import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
-import type { ActivityId } from '#/shared/api/gen/types.gen'
+import type { ActivityId, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
@@ -14,18 +14,35 @@ import { Spinner } from '#/shared/ui/spinner'
 
 import { startOptions, stateOptions } from '../queries'
 import { reasonLabels } from './labels'
+import { LastAttempt } from './last-attempt'
+
+type EntryProps = {
+  courseId: string
+  assessmentId: string
+  activityId: ActivityId
+  /** The newest handed-in attempt, if any: its outcome heads the entry (B-COD-26). */
+  last: StudentSubmission | undefined
+}
 
 /**
  * No open attempt (B-COD-04): what the learner may still do, from the server's attempt state. "Start" opens a draft;
  * its answer joins the history, which turns this into the editor. A remediation gate shows its session in place.
+ * After a hand-in (B-COD-26): its outcome first, then the way on: the next activity (B-PLY-18) leads once it passed,
+ * a new attempt leads while it did not.
  */
-type EntryProps = { courseId: string; assessmentId: string; activityId: ActivityId }
-
-export function Entry({ courseId, assessmentId, activityId }: EntryProps) {
+export function Entry({ courseId, assessmentId, activityId, last }: EntryProps) {
   const { data: state } = useSuspenseQuery(stateOptions(assessmentId))
   const start = useMutation(startOptions(useQueryClient(), courseId, assessmentId))
-  const { max_attempts: max, due_at_unix: due, time_limit_seconds: limit } = state.effective
+  const { max_attempts: max, due_at_unix: due, time_limit_seconds: limit, passing_score } = state.effective
   const used = state.attempts_used
+  const passed =
+    last && last.release_state === 'visible' && last.final_score !== null ? last.final_score >= passing_score : null
+  const nextLeads = !state.can_start || passed === true
+  const next = last ? (
+    <Suspense fallback={null}>
+      <NextStepLink courseId={courseId} activityId={activityId} variant={nextLeads ? 'default' : 'outline'} />
+    </Suspense>
+  ) : null
   return (
     // Where the editor will be: an empty desk in its place, so the page shows what "Start" opens.
     <section
@@ -38,24 +55,34 @@ export function Entry({ courseId, assessmentId, activityId }: EntryProps) {
           {m.code_solution()}
         </h2>
       </span>
+      {last ? <LastAttempt attempt={last} passed={passed} /> : null}
       <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
         <li>{max === null ? m.code_attempts_unlimited({ used }) : m.code_attempts_used({ used, max })}</li>
         {due === null ? null : <li>{m.code_due({ date: formatDateTime(due) })}</li>}
         {limit === null ? null : <li>{m.code_attempt_time({ minutes: formatNumber(Math.ceil(limit / 60)) })}</li>}
       </ul>
       {state.can_start ? (
-        <div>
-          <Button disabled={start.isPending} onClick={() => start.mutate({ path: { assessment_id: assessmentId } })}>
+        <div className="flex flex-wrap items-center gap-2">
+          {nextLeads ? next : null}
+          <Button
+            variant={nextLeads && last ? 'secondary' : 'default'}
+            disabled={start.isPending}
+            onClick={() => start.mutate({ path: { assessment_id: assessmentId } })}
+          >
             {start.isPending ? <Spinner data-icon="inline-start" /> : null}
             {used === 0 ? m.code_start() : m.code_start_again()}
           </Button>
+          {nextLeads ? null : next}
         </div>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {state.disabled_reasons.map(reason => (
-            <li key={reason}>{reasonLabels[reason]()}</li>
-          ))}
-        </ul>
+        <>
+          <ul className="flex flex-col gap-1">
+            {state.disabled_reasons.map(reason => (
+              <li key={reason}>{reasonLabels[reason]()}</li>
+            ))}
+          </ul>
+          {next}
+        </>
       )}
       {state.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
         <Suspense fallback={null}>
