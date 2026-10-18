@@ -18,6 +18,7 @@ import {
   getActivityFileSubmissionOptions,
   getActivityOptions,
   getAttemptOptions,
+  getCurriculumOptions,
   gradebookInfiniteQueryKey,
   gradingHistoryQueryKey,
   groupsForCourseQueryKey,
@@ -235,8 +236,12 @@ export const gradebookOptions = (courseId: CourseId, search: GradebookSearch) =>
   })
 }
 
+/** The course program: the gradebook's columns follow its order (B-GRD-19). */
+export const curriculumOptions = (courseId: CourseId) => getCurriculumOptions({ path: { course_id: courseId } })
+
 export const ensureGradebook = (queryClient: QueryClient, courseId: CourseId, search: GradebookSearch) =>
   Promise.all([
+    queryClient.query({ ...curriculumOptions(courseId), staleTime: 'static' }),
     queryClient.infiniteQuery({ ...gradebookOptions(courseId, search), staleTime: 'static' }),
     queryClient.query({ ...groupsOptions(courseId), staleTime: 'static' }),
   ])

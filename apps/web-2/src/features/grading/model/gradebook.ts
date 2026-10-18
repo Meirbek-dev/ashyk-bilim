@@ -1,4 +1,11 @@
-import type { ActivityId, GradebookCell, GradebookData, GradebookPage, UserSummary } from '#/shared/api/gen/types.gen'
+import type {
+  ActivityId,
+  Curriculum,
+  GradebookCell,
+  GradebookData,
+  GradebookPage,
+  UserSummary,
+} from '#/shared/api/gen/types.gen'
 
 import type { GradebookSearch } from '../route'
 
@@ -16,14 +23,21 @@ export const gradebookQuery = (search: GradebookSearch): NonNullable<GradebookDa
 /** A graded activity as a column: an assessment or a file submission. */
 export type GradebookColumn = { activityId: ActivityId; title: string }
 
-/** The columns of every loaded page, first appearance first (each page repeats the course's columns). */
-export function gradebookColumns(pages: readonly GradebookPage[]): GradebookColumn[] {
+/**
+ * The columns of every loaded page, once each, in the course program's order (the server lists tests, then hand-ins);
+ * an activity the program no longer lists keeps its place after the rest.
+ */
+export function gradebookColumns(pages: readonly GradebookPage[], curriculum?: Curriculum): GradebookColumn[] {
   const columns = new Map<ActivityId, GradebookColumn>()
   for (const page of pages)
     for (const column of [...page.assessments, ...page.file_submissions])
       if (!columns.has(column.activity_id))
         columns.set(column.activity_id, { activityId: column.activity_id, title: column.title })
-  return [...columns.values()]
+  const order = new Map(
+    (curriculum?.chapters ?? []).flatMap(chapter => chapter.activities).map((activity, index) => [activity.id, index]),
+  )
+  const place = (column: GradebookColumn) => order.get(column.activityId) ?? order.size
+  return [...columns.values()].toSorted((a, b) => place(a) - place(b))
 }
 
 /** One learner's row: the cell of each activity they handed in. */

@@ -1,4 +1,4 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
 import type { ReactElement } from 'react'
@@ -12,7 +12,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 
 import { gradebookCsvHref } from '../model/exports'
 import { gradebookColumns, gradebookRows } from '../model/gradebook'
-import { gradebookOptions } from '../queries'
+import { curriculumOptions, gradebookOptions } from '../queries'
 import { gradebookTableColumns } from './gradebook-columns'
 import { GroupFilter } from './group-filter'
 import { LearnerSearch } from './learner-search'
@@ -28,7 +28,8 @@ export function GradebookPage(): ReactElement {
   const navigate = useNavigate({ from: '/teach/courses/$courseId/gradebook' })
   const query = useSuspenseInfiniteQuery(gradebookOptions(courseId, search))
   const rows = gradebookRows(query.data.pages)
-  const columns = gradebookTableColumns(courseId, gradebookColumns(query.data.pages))
+  const { data: curriculum } = useSuspenseQuery(curriculumOptions(courseId))
+  const columns = gradebookTableColumns(courseId, gradebookColumns(query.data.pages, curriculum))
   const active = [search.q, search.pending, search.group].filter(Boolean).length
   return (
     <section aria-labelledby="grading-gradebook" className="@container flex flex-col gap-gutter">

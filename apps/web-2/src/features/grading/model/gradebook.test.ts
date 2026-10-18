@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { GradebookCell, GradebookPage } from '#/shared/api/gen/types.gen'
+import type { Activity, Curriculum, CurriculumChapter, GradebookCell, GradebookPage } from '#/shared/api/gen/types.gen'
 
 import { gradebookColumns, gradebookQuery, gradebookRows, reviewTarget, waitingNote } from './gradebook'
 import { gradebookSearchSchema } from '../route'
@@ -37,12 +37,45 @@ const page = (names: string[], cells: GradebookCell[]): GradebookPage => ({
   next_cursor: null,
 })
 
+const activity = (id: string, position: number): Activity => ({
+  id,
+  course_id: 'c',
+  chapter_id: 'ch',
+  name: id,
+  activity_type: 'quiz',
+  activity_sub_type: 'quiz_standard',
+  allowed_actions: [],
+  position,
+  published: true,
+  version: 1,
+})
+const chapter = (ids: string[]): CurriculumChapter => ({
+  id: ids.join(),
+  course_id: 'c',
+  name: 'Chapter',
+  description: '',
+  position: 1,
+  version: 1,
+  allowed_actions: [],
+  activities: ids.map(activity),
+})
+
 describe('gradebook', () => {
   test('B-GRD-19 columns are the graded activities of all loaded pages, once each', () => {
     const pages = [page(['a'], []), page(['b'], [])]
     expect(gradebookColumns(pages)).toEqual([
       { activityId: 'act-q', title: 'Quiz' },
       { activityId: 'act-f', title: 'Essay' },
+    ])
+  })
+
+  test('B-GRD-19 columns follow the course program, not tests first and hand-ins after', () => {
+    const curriculum: Curriculum = { chapters: [chapter(['act-page', 'act-f']), chapter(['act-q'])] }
+    expect(gradebookColumns([page(['a'], [])], curriculum).map(column => column.activityId)).toEqual(['act-f', 'act-q'])
+    // An activity the program no longer lists stays, after the rest.
+    expect(gradebookColumns([page(['a'], [])], { chapters: [chapter(['act-q'])] }).map(c => c.activityId)).toEqual([
+      'act-q',
+      'act-f',
     ])
   })
 
