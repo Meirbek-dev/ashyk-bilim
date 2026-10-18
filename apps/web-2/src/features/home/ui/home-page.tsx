@@ -1,17 +1,16 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { Link as RouterLink } from '@tanstack/react-router'
 
 import { StreakBadge, useLoginStreak } from '#/features/achievements'
 import { learnerWorkOptions } from '#/features/teach-inbox'
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
-import { buttonVariants } from '#/shared/components/button-variants'
 
 import { attentionWork, isEmptyToday } from '../model/agenda'
 import { homeAgendaOptions } from '../queries'
 import { AttentionSection } from './attention-section'
 import { ContinueSection } from './continue-section'
 import { DeadlinesSection } from './deadlines-section'
+import { HomeWelcome } from './home-welcome'
 import { ResultsSection } from './results-section'
 import { UpdatesSection } from './updates-section'
 
@@ -42,11 +41,7 @@ export function HomePage() {
           count={empty ? 0 : 1}
           filtered={false}
           emptyText={m.home_empty()}
-          emptyAction={
-            <RouterLink to="/courses" className={buttonVariants()}>
-              {m.home_find_course()}
-            </RouterLink>
-          }
+          emptyAction={<HomeWelcome />}
           onRetry={() => void agenda.refetch()}
         >
           <ContinueSection items={continue_learning} />
