@@ -207,7 +207,7 @@ pub struct AiConfig {
 
 impl AiConfig {
     fn default_claude_model() -> String {
-        "claude-haiku-5-5".into()
+        "claude-sonnet-5-5".into()
     }
     fn default_claude_base_url() -> String {
         "https://api.anthropic.com/v1".into()

@@ -518,7 +518,7 @@ impl LlmClient {
     /// The Messages API body. System messages join into `system`; the
     /// schema goes there as an instruction (the agents' schemas are not
     /// strict-mode schemas), the reply is parsed leniently and repaired once.
-    /// No `temperature`: Claude Haiku 5.5 rejects non-default sampling.
+    /// No `temperature`: Claude Sonnet 5.5 rejects non-default sampling.
     /// Effort `low` keeps adaptive thinking short for interactive calls.
     fn messages_body(
         &self,
