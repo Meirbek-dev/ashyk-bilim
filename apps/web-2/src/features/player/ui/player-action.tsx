@@ -49,8 +49,8 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   const error = mark.error ?? unmark.error
   const unmarkable = entry.complete && !entry.blocked_reason && activityKind(entry.activity_type) === 'lesson'
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="flex flex-col items-start gap-2 empty:hidden">
+      <div className="flex flex-wrap items-center gap-2 empty:hidden">
         {action?.kind === 'mark' ? (
           <Button onClick={submit} disabled={mark.isPending}>
             {mark.isPending ? <Spinner data-icon="inline-start" /> : null}
@@ -83,7 +83,6 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
         {unmarkable ? (
           <Button
             variant="ghost"
-
             disabled={pending || unmark.isPending}
             onClick={() => unmark.mutate(path, { onSuccess: () => toast.add({ title: m.player_unmarked() }) })}
           >

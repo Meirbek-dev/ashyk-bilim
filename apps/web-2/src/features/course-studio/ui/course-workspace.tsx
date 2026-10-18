@@ -3,6 +3,7 @@ import { Outlet, Link as RouterLink, useMatch, useParams } from '@tanstack/react
 import { Eye } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
@@ -28,6 +29,14 @@ export function CourseWorkspace() {
   ))
   return (
     <DetailPage
+      cover={
+        <CourseCover
+          seed={course.id}
+          imageKey={course.thumbnail_key}
+          shape="banner"
+          className="h-20 w-full rounded-xl border @2xl:h-28"
+        />
+      }
       title={course.name}
       status={<CourseStatusBadge status={courseStatus(course)} />}
       meta={

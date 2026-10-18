@@ -21,8 +21,9 @@
   }
 }
 
-/* TanStack Router marks the link of the current route with aria-current="page" (tab links, nav). */
-@custom-variant current (&[aria-current='page']);
+/* TanStack Router marks the link of the current route with aria-current="page" (tab links, nav); the attempt's
+   question list marks its current question "step". */
+@custom-variant current (&:is([aria-current='page'], [aria-current='step']));
 
 body {
   @apply bg-background text-foreground antialiased;

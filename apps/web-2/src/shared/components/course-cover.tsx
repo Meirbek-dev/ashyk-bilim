@@ -7,13 +7,14 @@ type CourseCoverProps = {
   imageKey?: string | null
   /** A fixed chart slot (0..4) instead of the seed's: neighbours that must differ. */
   tone?: number
-  /** The box it fills: a card picture (2:1), a page-wide strip (5:1) or an upright panel (4:5). */
+  /** The box it fills: a card picture (2:1), a list thumbnail (2:1, coarser), a page-wide strip (5:1) or an upright
+   * panel (4:5). */
   shape?: keyof typeof shapes
   className?: string
 }
 
 // Width:height of the grid and its short side in tiles: a big panel takes more, smaller tiles.
-const shapes = { card: [2, 6], banner: [5, 6], panel: [0.8, 10] } as const
+const shapes = { card: [2, 6], thumb: [2, 3], banner: [5, 6], panel: [0.8, 10] } as const
 
 // Full class names per chart slot (Tailwind reads them literally): the field tint and the ornament ink.
 const inks = [

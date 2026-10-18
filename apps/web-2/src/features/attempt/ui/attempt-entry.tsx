@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 
 import { RemediationGate } from '#/features/ai'
 import { MarkdownView } from '#/features/markdown'
+import { ActivityHeader } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 
@@ -20,7 +21,7 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
   return (
     <AttemptFrame title={assessment.title}>
       <article className="flex flex-col gap-gutter">
-        <h1 className="text-2xl font-semibold wrap-anywhere">{assessment.title}</h1>
+        <ActivityHeader type={assessment.kind} title={assessment.title} />
         {assessment.description ? (
           <Suspense fallback={null}>
             <MarkdownView content={assessment.description} />

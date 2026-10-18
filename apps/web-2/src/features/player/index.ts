@@ -1,5 +1,6 @@
 export { staffPreview } from './model/player'
 export { ensureCompletion, ensureEntry, ensureLearner, ensurePlayer, learnerStateOptions } from './queries'
+export { ActivityHeader } from './ui/activity-header'
 export { CompletionPage } from './ui/completion-page'
 export { PlayerError } from './ui/player-error'
 export { PlayerNotFound } from './ui/player-not-found'

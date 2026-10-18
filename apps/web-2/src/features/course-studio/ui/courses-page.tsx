@@ -91,7 +91,7 @@ export function CoursesPage() {
           selected={courses.filter(course => selected.has(course.id))}
           onDone={() => setSelected(new Set())}
         />
-        <DataList items={courses} getKey={course => course.id}>
+        <DataList items={courses} getKey={course => course.id} variant="rows">
           {course => (
             <CourseListItem course={course} checked={selected.has(course.id)} onToggle={() => toggle(course.id)} />
           )}

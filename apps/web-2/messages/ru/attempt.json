@@ -52,6 +52,7 @@
   "attempt_next": "Далее",
   "attempt_questions_nav": "Вопросы",
   "attempt_answered": "Отвечен",
+  "attempt_answered_count": "Отвечено {done} из {total}",
   "attempt_submit": "Сдать",
   "attempt_time_left": "Осталось времени",
   "attempt_late_cutoff_left": "До закрытия поздней сдачи",

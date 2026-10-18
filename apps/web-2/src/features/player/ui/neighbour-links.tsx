@@ -18,7 +18,7 @@ export function NeighbourLinks({ courseId, prev, next }: NeighbourProps) {
   useHotkey(shortcuts.prev.hotkey, () => go(prev))
   useHotkey(shortcuts.next.hotkey, () => go(next))
   return (
-    <nav aria-label={m.player_neighbours()} className="flex items-center justify-between gap-2">
+    <nav aria-label={m.player_neighbours()} className="ms-auto flex items-center gap-2">
       {prev ? (
         <RouterLink
           to="/learn/$courseId/$activityId"
@@ -29,9 +29,7 @@ export function NeighbourLinks({ courseId, prev, next }: NeighbourProps) {
           <ChevronLeft aria-hidden />
           {m.player_prev()}
         </RouterLink>
-      ) : (
-        <span />
-      )}
+      ) : null}
       {next ? (
         <RouterLink
           to="/learn/$courseId/$activityId"
