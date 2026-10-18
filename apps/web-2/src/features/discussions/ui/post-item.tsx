@@ -20,6 +20,10 @@ import { DeletePost } from './delete-post'
 import { PostForm } from './post-form'
 import { PostReactions } from './post-reactions'
 
+// No replies yet: the toggle opens the reply form, so it says "Reply".
+const toggleLabel = (open: boolean, count: number) =>
+  open ? m.discussions_hide_replies() : count ? m.discussions_replies({ count }) : m.discussions_reply()
+
 type PostItemProps = {
   item: Discussion
   /** A top-level post whose replies are open below it (`?thread=` is its id): the toggle then hides them. */
@@ -87,7 +91,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
             search={{ thread: open ? undefined : item.id }}
             className={buttonVariants({ variant: 'ghost' })}
           >
-            {open ? m.discussions_hide_replies() : m.discussions_replies({ count: item.replies_count })}
+            {toggleLabel(open, item.replies_count)}
           </RouterLink>
         ) : null}
         {can('update') && !editing ? (
