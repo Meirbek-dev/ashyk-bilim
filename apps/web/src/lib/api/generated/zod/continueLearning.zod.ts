@@ -11,9 +11,16 @@ export const ContinueLearning = zod
   .object({
     activity_id: zod.uuid().describe('The first activity not done yet (course order).'),
     activity_name: zod.string(),
+    activity_type: zod
+      .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+      .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
     course_id: zod.uuid(),
     course_name: zod.string(),
     progress_pct: zod.number().nullable().describe("Null before the projection wrote the course's progress."),
+    thumbnail_key: zod
+      .string()
+      .nullable()
+      .describe("The course's uploaded thumbnail (storage key); null shows the web's ornament."),
   })
   .describe('Where to pick a course up.')
 

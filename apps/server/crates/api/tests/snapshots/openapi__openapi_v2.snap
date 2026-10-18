@@ -4838,6 +4838,9 @@ expression: json
           "activity_name": {
             "type": "string"
           },
+          "activity_type": {
+            "$ref": "#/components/schemas/ActivityType"
+          },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
           },
@@ -4851,6 +4854,13 @@ expression: json
               "number",
               "null"
             ]
+          },
+          "thumbnail_key": {
+            "description": "The course's uploaded thumbnail (storage key); null shows the web's ornament.",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -4858,7 +4868,9 @@ expression: json
           "course_name",
           "activity_id",
           "activity_name",
-          "progress_pct"
+          "activity_type",
+          "progress_pct",
+          "thumbnail_key"
         ],
         "type": "object"
       },

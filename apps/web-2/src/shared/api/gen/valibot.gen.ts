@@ -902,9 +902,11 @@ export const vChapter = v.object({
 export const vContinueLearning = v.object({
     activity_id: vActivityId,
     activity_name: v.string(),
+    activity_type: vActivityType,
     course_id: vCourseId,
     course_name: v.string(),
-    progress_pct: v.nullable(v.number())
+    progress_pct: v.nullable(v.number()),
+    thumbnail_key: v.nullable(v.string())
 });
 
 /**

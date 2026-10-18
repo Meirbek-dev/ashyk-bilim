@@ -63,9 +63,13 @@ pub struct AgendaDeadline {
 pub struct ContinueLearning {
     pub course_id: CourseId,
     pub course_name: String,
+    /// The course's uploaded thumbnail (storage key); null shows the web's ornament.
+    pub thumbnail_key: Option<String>,
     /// The first activity not done yet (course order).
     pub activity_id: ActivityId,
     pub activity_name: String,
+    #[schema(value_type = crate::wire::ActivityType)]
+    pub activity_type: String,
     /// Null before the projection wrote the course's progress.
     pub progress_pct: Option<f64>,
 }
@@ -218,16 +222,16 @@ impl AgendaService {
         runs.sort_by_key(|(r, _)| std::cmp::Reverse(r.row.updated_at));
         let mut out = Vec::new();
         for (run, next) in runs.into_iter().take(CONTINUE_LIMIT) {
-            let Some((_, _, activity_name)) =
-                ab_db::notifications::activity_names(&self.pool, next).await?
-            else {
+            let Some(activity) = ab_db::catalog::get_activity(&self.pool, next).await? else {
                 continue;
             };
             out.push(ContinueLearning {
                 course_id: run.course.id,
                 course_name: run.course.name.clone(),
+                thumbnail_key: run.course.thumbnail_key.clone(),
                 activity_id: next,
-                activity_name,
+                activity_name: activity.name,
+                activity_type: activity.activity_type,
                 progress_pct: run.progress_pct,
             });
         }

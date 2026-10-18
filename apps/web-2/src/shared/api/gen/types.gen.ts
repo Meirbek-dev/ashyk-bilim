@@ -1575,12 +1575,17 @@ export type ContinueLearning = {
      */
     activity_id: ActivityId;
     activity_name: string;
+    activity_type: ActivityType;
     course_id: CourseId;
     course_name: string;
     /**
      * Null before the projection wrote the course's progress.
      */
     progress_pct: number | null;
+    /**
+     * The course's uploaded thumbnail (storage key); null shows the web's ornament.
+     */
+    thumbnail_key: string | null;
 };
 
 /**
