@@ -61,6 +61,8 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
     setAnswer(next)
     saver.change(next)
   }
+  // Nothing to run or hand in until there is code (an empty hand-in only spends an attempt).
+  const empty = answer.source.trim() === ''
   const handIn = () => {
     saver.drop()
     actions.handIn(answer)
@@ -100,7 +102,7 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
       <div className="flex flex-wrap gap-2">
         <Button
           variant="secondary"
-          disabled={runner.state !== 'ready' || actions.running}
+          disabled={empty || runner.state !== 'ready' || actions.running}
           onClick={() => actions.runCode(answer)}
         >
           {actions.running ? <Spinner data-icon="inline-start" /> : <Play aria-hidden data-icon="inline-start" />}
@@ -109,7 +111,7 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
         <SubmitDialog
           number={draft.attempt_number}
           max={challenge.policy.max_attempts}
-          disabled={runner.state === 'down' || actions.submitting}
+          disabled={empty || runner.state === 'down' || actions.submitting}
           onConfirm={handIn}
           trigger={
             <>
