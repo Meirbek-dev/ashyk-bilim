@@ -6,6 +6,11 @@
 //   drop <name>             drop <name>
 //   test-reset [--force]    recreate ashyq_test migrated; drop leftover _sqlx_test_* (refuses while tests run)
 //   ls                      list databases with their size
+//   sql [--slot N | --db NAME] "<sql>" | -f <file>
+//                           run SQL (several statements too) on a slot's database (default slot 0; no slot running:
+//                           DEV_DB): a header and rows, `|`-separated, json as text; `UPDATE 3` for a write.
+//                           Unicode-safe (no psql code page), 127.0.0.1 (localhost costs 2 s per connection here).
+//                           Table map and ready queries: docs/agents/DATA.md.
 //
 // Connection and secrets: infra/env/dev.env + dev.local.env (infra/dev/lib.ts; AB__ZITADEL__PAT, E2E_PASSWORD).
 // Zitadel is shared by every database, so the template copies the e2e accounts' rows (`e2e-%`, with their roles)
@@ -14,10 +19,10 @@
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { SQL } from 'bun'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { databaseUrl, devEnv, root } from './lib.ts'
+import { databaseUrl, devEnv, readManifest, root } from './lib.ts'
 
 const TEMPLATE = 'ashyq_seed'
 const TEST_DB = 'ashyq_test'
@@ -112,6 +117,54 @@ async function template(from: string): Promise<void> {
   )
 }
 
+const cell = (value: unknown): string =>
+  value === null || value === undefined
+    ? ''
+    : value instanceof Date
+      ? value.toISOString()
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value)
+
+/** `just db sql`: one result set per statement, printed for reading (and for grep). */
+async function runSql(args: string[]): Promise<void> {
+  let db = ''
+  let slot = '0'
+  let query = ''
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    if (arg === '--db') db = args[++i] ?? die('--db needs a name')
+    else if (arg === '--slot') slot = args[++i] ?? die('--slot needs a number')
+    else if (arg === '-f') query = readFileSync(args[++i] ?? die('-f needs a file'), 'utf8')
+    else query = arg ?? ''
+  }
+  if (!query.trim()) die('usage: just db sql [--slot N | --db NAME] "<sql>" | -f <file>')
+  db ||= readManifest(slot)?.db ?? env['DEV_DB'] ?? 'ashyq_dev'
+  // One connection: a script's BEGIN ... ROLLBACK must run on the same session (Bun refuses BEGIN on a pool).
+  const sql = new SQL(urlFor(db).replace('@localhost:', '@127.0.0.1:'), { max: 1 })
+  try {
+    const result = (await sql.unsafe(query)) as unknown as Record<string, unknown>[] & {
+      command?: string
+      count?: number
+    }
+    // Several statements: one array per statement.
+    const sets = Array.isArray(result[0]) ? (result as unknown as (typeof result)[]) : [result]
+    for (const rows of sets) {
+      if (rows.length === 0) {
+        console.log(rows.command && rows.command !== 'SELECT' ? `${rows.command} ${rows.count ?? 0}` : '(0 rows)')
+        continue
+      }
+      const columns = Object.keys(rows[0] ?? {})
+      console.log(columns.join('|'))
+      for (const row of rows) console.log(columns.map(column => cell(row[column])).join('|'))
+    }
+  } catch (error) {
+    die(`${db}: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    await sql.close()
+  }
+}
+
 /** Bun.SQL hands json columns back parsed (an array), older drivers as text: either way, JSON text for a bind. */
 const text = (value: unknown): string => (typeof value === 'string' ? value : JSON.stringify(value))
 
@@ -202,6 +255,9 @@ switch (command) {
   case 'ls':
     await list()
     break
+  case 'sql':
+    await runSql(process.argv.slice(3))
+    break
   default:
-    die('usage: just db template [--from <db>] | fresh <name> | drop <name> | test-reset | ls')
+    die('usage: just db template [--from <db>] | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] "<sql>"')
 }

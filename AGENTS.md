@@ -17,7 +17,8 @@
 - `docs/RUNBOOK.md` - deploy, rollback, backup, restore, certificates, incidents.
 - `docs/FINDINGS.md` - open production and infra issues.
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
-- `docs/web/DESIGN.md` - replacement frontend design system.
+- `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
+- `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
 - `docs/MODERNIZATION-STAGE-2.md`, `docs/STAGE-2-CUTOVER.md`, `docs/web/ACCEPTANCE.md` -
   remaining frontend rollout scope, procedure and acceptance; `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
@@ -53,4 +54,7 @@
   `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
 - One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
-  `just db fresh <name>`, `just check [--all]`, `just contract`, `just e2e`, `just fmt <files>`.
+  `just db fresh <name>`, `just db sql "<sql>"`, `just check [--wip|--all]`, `just contract`,
+  `just e2e [web2 --changed]`, `just shoot` (screenshots as real accounts), `just restore-media`, `just fmt <files>`.
+- `.claude/settings.json` runs `infra/dev/agent-guard.ts` before every shell command: it refuses a bare `python`
+  (an endless REPL in Git Bash) and backticks inside `node -e "..."` (bash runs them first).

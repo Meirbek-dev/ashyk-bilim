@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
-// `just check [--all] [--staged] [--base <ref>]`: the gates for what changed, one line each; full logs in tmp/check/.
+// `just check [--all] [--staged] [--wip] [--base <ref>]`: the gates for what changed, one line each (logs: tmp/check/).
 //
 // Changed = files that differ from --base (default: where HEAD left origin/main; on main, the unpushed commits) plus
-// the working tree (staged, unstaged, untracked), or only the index with --staged. --all runs every gate. The gates
-// read the working tree, so run it on the snapshot you mean to push. Areas run in parallel, gates within one in order.
+// the working tree (staged, unstaged, untracked), or only the index with --staged. --wip = --base HEAD: only the
+// uncommitted batch, the check to run while editing. --all runs every gate. The gates read the working tree, so run
+// it on the snapshot you mean to push. Areas run in parallel, gates within one in order.
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -166,7 +167,7 @@ function git(args: string[]): string {
   return result.status === 0 ? result.stdout : ''
 }
 
-function changedFiles(staged: boolean, base?: string): string[] {
+export function changedFiles(staged: boolean, base?: string): string[] {
   const lines = (out: string) =>
     out
       .split('\n')
@@ -209,7 +210,8 @@ async function main(): Promise<void> {
   const all = args.includes('--all')
   const staged = args.includes('--staged')
   const baseAt = args.indexOf('--base')
-  const base = baseAt >= 0 ? args[baseAt + 1] : process.env['CHECK_BASE'] || undefined
+  // --wip: only the uncommitted work (the edit batch in progress), whatever is still unpushed.
+  const base = args.includes('--wip') ? 'HEAD' : baseAt >= 0 ? args[baseAt + 1] : process.env['CHECK_BASE'] || undefined
   mkdirSync(logDir, { recursive: true })
 
   const files = all ? [] : changedFiles(staged, base)

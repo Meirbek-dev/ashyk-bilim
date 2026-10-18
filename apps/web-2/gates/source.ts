@@ -105,6 +105,13 @@ export function trace(): Finding[] {
     const feature = spec.split('/')[2] ?? ''
     for (const { text: id, line } of matches(text, /^- (B-[A-Z]+-\d+)/m)) {
       const behavior = id.slice(2)
+      if (specified.has(behavior))
+        findings.push({
+          file: spec,
+          line,
+          rule: 'trace-duplicate-id',
+          fix: `${behavior} is listed twice: give one the next free id (bun gates/gates.ts next-id ${feature})`,
+        })
       specified.add(behavior)
       if (!tested.has(behavior))
         findings.push({ file: spec, line, rule: 'trace-untested', fix: `add a test titled "${behavior} ..."` })
@@ -132,6 +139,15 @@ export function trace(): Finding[] {
       })
   }
   return findings
+}
+
+/** The next free behavior id of a feature's SPEC.md (`bun gates/gates.ts next-id <feature>`): B-ANL-35 after B-ANL-34. */
+export function nextBehaviorId(specText: string): string {
+  const ids = [...specText.matchAll(/^- B-([A-Z]+)-(\d+)/gm)]
+  const prefix = ids[0]?.[1]
+  if (!prefix) throw new Error('no B-<FEAT>-NN line in this SPEC.md')
+  const next = Math.max(...ids.map(id => Number(id[2]))) + 1
+  return `B-${prefix}-${String(next).padStart(2, '0')}`
 }
 
 const PALETTE =
@@ -204,6 +220,7 @@ export function suppressions(): Finding[] {
 const DOC_LIMITS: [string, number][] = [
   ['AGENTS.md', 120],
   ['../../docs/web/DESIGN.md', 200],
+  ['../../docs/web/ROUTES.md', 60],
 ]
 
 export function docs(): Finding[] {

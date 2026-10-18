@@ -17,7 +17,7 @@ const entry = (over: Partial<FileGradingEntry>): FileGradingEntry => ({
 })
 
 describe('review history', () => {
-  test('B-FSB-21 a return comment stays listed after a resubmission; the one the result shows is not repeated', () => {
+  test('B-FSB-22 a return comment stays listed after a resubmission; the one the result shows is not repeated', () => {
     const returned = entry({ id: 'r1', feedback: 'Add references' })
     expect(earlierNotes({ status: 'submitted' }, [returned])).toEqual([returned])
     expect(earlierNotes({ status: 'returned' }, [returned])).toEqual([])

@@ -1,10 +1,12 @@
-// Every check that lint cannot express (spec 9). `bun gates/gates.ts <gate|all> [--phase N]`.
+// Every check that lint cannot express (spec 9). `bun gates/gates.ts <gate|all> [--phase N]`; `next-id <feature>`.
 // Output is errors only: `file:line rule - what to do`, at most 30 lines per gate plus a count (8.4).
+import { readFileSync } from 'node:fs'
+
 import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
 import { allowlist, type Finding } from './lib.ts'
 import { codegenDrift, freeze, knip } from './repo.ts'
-import { apiCoverage, docs, suppressions, tokens, trace, underConstruction } from './source.ts'
+import { apiCoverage, docs, nextBehaviorId, suppressions, tokens, trace, underConstruction } from './source.ts'
 
 const MAX_LINES = 30
 const phaseFlag = process.argv.indexOf('--phase')
@@ -63,6 +65,13 @@ function print(gate: string, findings: Finding[]): void {
   const shown = lines.slice(0, MAX_LINES)
   if (lines.length > MAX_LINES) shown.push(`... and ${lines.length - MAX_LINES} more`)
   process.stdout.write(`\n${gate}: ${findings.length} error(s)\n${shown.join('\n')}\n`)
+}
+
+// Not a gate: the id a new behavior of a feature gets (`bun gates/gates.ts next-id analytics` -> B-ANL-35).
+if (process.argv[2] === 'next-id') {
+  const feature = process.argv[3] ?? ''
+  process.stdout.write(`${nextBehaviorId(readFileSync(`src/features/${feature}/SPEC.md`, 'utf8'))}\n`)
+  process.exit(0)
 }
 
 const requested = process.argv[2] ?? 'all'

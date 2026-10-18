@@ -67,6 +67,24 @@ export function slotPorts(slot: number) {
   return { api: 8000 + offset, web2: 3100 + offset, web: 3200 + offset, redisDb: 4 + slot }
 }
 
+/** `ab_session=...` for an existing account on a running slot (dev-only `/auth/dev-login`, no password). */
+export async function devLogin(
+  user: string,
+  slot: number,
+): Promise<{ cookie: string; username: string; roles: string[] }> {
+  const port = slotPorts(slot).api
+  const response = await fetch(`http://127.0.0.1:${port}/api/v2/auth/dev-login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ login: user }),
+  })
+  if (!response.ok) throw new Error(`dev-login ${user}: ${response.status} ${await response.text()}`)
+  const cookie = /ab_session=[^;]+/.exec(response.headers.get('set-cookie') ?? '')?.[0]
+  if (!cookie) throw new Error(`dev-login ${user}: no ab_session cookie`)
+  const info = (await response.json()) as { user?: { username?: string }; roles?: string[] }
+  return { cookie, username: info.user?.username ?? user, roles: info.roles ?? [] }
+}
+
 export function webOrigins(ports: { web2: number; web: number }): string[] {
   return [ports.web2, ports.web].flatMap(port => [`http://localhost:${port}`, `http://127.0.0.1:${port}`])
 }

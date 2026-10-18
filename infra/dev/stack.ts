@@ -11,6 +11,7 @@ import {
   type ServiceSpec,
   alive,
   databaseUrl,
+  devLogin,
   devEnv,
   exe,
   httpUp,
@@ -430,17 +431,11 @@ async function restart(service: string, slot: string): Promise<void> {
 }
 
 async function loginAs(user: string, slot: string): Promise<void> {
-  const port = slotPorts(Number(slot)).api
-  const response = await fetch(`http://127.0.0.1:${port}/api/v2/auth/dev-login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ login: user }),
-  })
-  if (!response.ok) throw new Error(`dev-login ${user}: ${response.status} ${await response.text()}`)
-  const cookie = /ab_session=[^;]+/.exec(response.headers.get('set-cookie') ?? '')?.[0]
-  const info = (await response.json()) as { user?: { username?: string }; roles?: string[] }
-  process.stdout.write(`${cookie}\n`)
-  process.stderr.write(`# ${info.user?.username} (${info.roles?.join(', ')}) on :${port}; cookie domain localhost\n`)
+  const { cookie, username, roles } = await devLogin(user, Number(slot))
+  process.stdout.write(`${cookie}
+`)
+  process.stderr.write(`# ${username} (${roles.join(', ')}) on :${slotPorts(Number(slot)).api}; cookie domain localhost
+`)
 }
 
 // --- cli -----------------------------------------------------------------------------------------------------------

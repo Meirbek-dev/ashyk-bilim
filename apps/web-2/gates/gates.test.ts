@@ -6,7 +6,7 @@ import { expect, test } from 'vite-plus/test'
 
 import { usesOperation } from './lib.ts'
 import { driftedFiles } from './repo.ts'
-import { SUPPRESSIONS, titleIds } from './source.ts'
+import { nextBehaviorId, SUPPRESSIONS, titleIds } from './source.ts'
 
 test('an operation counts only when imported from the generated client and used', () => {
   const imported = `import { listCoursesOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -82,4 +82,10 @@ test('codegen drift catches modified, deleted and new generated files', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('next-id is one past the highest behavior id of a SPEC, whatever the order', () => {
+  expect(nextBehaviorId('- B-ANL-01 a\n- B-ANL-34 b\n- B-ANL-09 c\n')).toBe('B-ANL-35')
+  expect(nextBehaviorId('- B-FSB-08 x\n')).toBe('B-FSB-09')
+  expect(() => nextBehaviorId('no behaviors yet')).toThrow('no B-<FEAT>-NN line')
 })

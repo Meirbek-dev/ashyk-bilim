@@ -13,7 +13,7 @@ import { reviewNotesOptions } from '../queries'
 import { attemptStatus } from './labels'
 
 /**
- * Every released review of the attempt under the work (B-FSB-21): a return comment stays readable after the learner
+ * Every released review of the attempt under the work (B-FSB-22): a return comment stays readable after the learner
  * resubmits. The newest one is left out while `GradeDetails` already shows it.
  */
 export function ReviewNotes({ attempt }: { attempt: Attempt }) {

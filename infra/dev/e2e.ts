@@ -1,4 +1,4 @@
-// `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`: Playwright against a PRODUCTION build
+// `just e2e [web2|web] [--slot N] [--keep] [--no-build] [--changed] [playwright args]`: Playwright against a PRODUCTION build
 // (web-2: `vp build` + serve.ts behind e2e/prod-stand.ts; legacy: `next build` + `next start`, beside slot 0's
 // `next dev`, which writes .next/dev) and its own API +
 // worker on a fresh database cloned from ashyq_seed (infra/dev/db.ts). Builds only when sources changed.
@@ -10,6 +10,8 @@ import { type Subprocess } from 'bun'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { changedFiles } from './check.ts'
+import { selectSpecs, web2Tree } from './e2e-select.ts'
 import { applyBucketCors, buildServer, builtServer, ensureLocalEnv } from './stack.ts'
 import {
   alive,
@@ -36,10 +38,19 @@ type App = 'web2' | 'web'
 const children: Subprocess[] = []
 
 function parse(argv: string[]) {
-  const o = { dev: false, app: 'web2' as App, slot: '0', keep: false, build: true, args: [] as string[] }
+  const o = {
+    dev: false,
+    app: 'web2' as App,
+    slot: '0',
+    keep: false,
+    build: true,
+    changed: false,
+    args: [] as string[],
+  }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? ''
     if (arg === '--dev') o.dev = true
+    else if (arg === '--changed') o.changed = true
     else if (arg === '--keep') o.keep = true
     else if (arg === '--no-build') o.build = false
     else if (arg === '--slot') o.slot = argv[++i] ?? '0'
@@ -47,6 +58,18 @@ function parse(argv: string[]) {
     else o.args.push(arg)
   }
   if (!/^\d$/.test(o.slot)) throw new Error(`--slot must be 0-9 (got ${o.slot})`)
+  if (o.changed) {
+    if (o.app !== 'web2') throw new Error('--changed picks web-2 specs only')
+    const selection = selectSpecs(changedFiles(false, process.env['CHECK_BASE'] || undefined), web2Tree(root))
+    if (selection.all) say(`e2e --changed: ${selection.why} reaches every screen: the whole suite`)
+    else if (selection.specs.length === 0) {
+      say('e2e --changed: no web-2 spec reaches the changed files')
+      process.exit(0)
+    } else {
+      say(`e2e --changed: ${selection.specs.join(' ')}`)
+      o.args.push(...selection.specs.map(spec => `e2e/specs/${spec}`))
+    }
+  }
   return o
 }
 

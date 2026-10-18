@@ -94,7 +94,7 @@ export function lateRule(task: FileSubmission): LateRule | null {
 }
 
 /**
- * The reviews to list under the work (B-FSB-21): released entries with a comment or a score, newest first, without the
+ * The reviews to list under the work (B-FSB-22): released entries with a comment or a score, newest first, without the
  * newest one while the attempt itself still shows it (returned or published: `GradeDetails`).
  */
 export function earlierNotes(attempt: Pick<Attempt, 'status'>, entries: FileGradingEntry[]): FileGradingEntry[] {

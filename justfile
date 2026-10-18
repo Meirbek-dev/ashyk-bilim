@@ -61,8 +61,9 @@ skills-sync:
 doctor:
     {{ bash_bin }} infra/scripts/doctor.sh {{ just_bin }}
 
-# The gates for what changed vs origin/main plus the working tree (`--staged`: the index; `--base <ref>`;
-# `--all`: every gate). One line per gate; logs in tmp/check/. The pre-push hook runs it.
+# The gates for what changed vs origin/main plus the working tree (`--staged`: the index; `--wip`: only the
+# uncommitted batch, mid-edit; `--base <ref>`; `--all`: every gate). One line per gate; logs in tmp/check/.
+# The pre-push hook runs it.
 check *args:
     @bun infra/dev/check.ts "$@"
 
@@ -70,7 +71,7 @@ check *args:
 contract:
     @bun infra/dev/contract.ts
 
-# Throwaway databases: `just db template | fresh <name> | drop <name> | test-reset | ls` (infra/dev/db.ts).
+# Throwaway databases and SQL: `just db template | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] "<sql>"`.
 db *args:
     @bun infra/dev/db.ts "$@"
 
@@ -122,8 +123,19 @@ stack *args:
 login-as user slot="0":
     @bun infra/dev/stack.ts login-as "$@"
 
+# Public media a restored database points at but local storage lacks, copied from production's /content/
+# (read-only GETs): `just restore-media [--slot N] [--sample 20] [--max-mb 50] [--activity <id>]`.
+restore-media *args:
+    @bun infra/dev/media.ts "$@"
+
+# Screenshots of web-2 pages on a running slot as real accounts (`--ref HEAD`: that commit's web-2, the "before"):
+# `just shoot [--slot N] --pages p.json | --page name=/path [--as login] [--filter re] [--widths] [--modes] [--label]`.
+shoot *args:
+    @bun infra/dev/shoot.ts "$@"
+
 # Playwright against a production build + own API on a fresh database (cloned from ashyq_seed):
-# `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`. Logs: tmp/e2e/<app>-<slot>/.
+# `just e2e [web2|web] [--slot N] [--keep] [--no-build] [--changed] [playwright args]` (`--changed`: the web-2 specs the
+# diff reaches). Logs: tmp/e2e/<app>-<slot>/
 e2e *args:
     @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts "$@"
 
