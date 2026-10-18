@@ -63,7 +63,7 @@
   "admin_role_kind": "Түрі",
   "admin_role_kind_system": "Жүйелік",
   "admin_role_kind_custom": "Өзіндік",
-  "admin_role_permissions": "Рұқсаттар",
+  "admin_role_permissions": "Құқықтар",
   "admin_role_permission_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -76,7 +76,7 @@
   ],
   "admin_role_permissions_empty": "Рөлдің құқықтары жоқ.",
   "admin_role_permissions_hint": "Әр жолға бір құқық: ресурс:әрекет:аумақ, мысалы course:read:all.",
-  "admin_role_permissions_refused": "Мұндай құқықтар жоқ, жолдар: {lines}. Ресурсты, әрекетті және аймақты тексеріңіз.",
+  "admin_role_permissions_refused": "Мұндай құқықтар жоқ, жолдар: {lines}. Ресурсты, әрекетті және аумақты тексеріңіз.",
   "admin_role_new": "Жаңа рөл",
   "admin_role_created": "Рөл жасалды",
   "admin_role_not_found": "Рөл табылмады",
