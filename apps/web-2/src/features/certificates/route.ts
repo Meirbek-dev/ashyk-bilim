@@ -3,13 +3,14 @@
 import { m } from '#/paraglide/messages'
 import type { VerifiedCertificate } from '#/shared/api/gen/types.gen'
 import { formatDate } from '#/shared/i18n/format'
+import { documentTitle } from '#/shared/lib/document-title'
 
 /** The verify page's document head: what a messenger shows for the link printed on the PDF. */
 export function certificateHead({ holder, course, certificate }: VerifiedCertificate) {
   const title = m.certificates_og_title({ holder: holder.display_name, course: course.name })
   const description = m.certificates_summary({ date: formatDate(certificate.issued_at_unix) })
   return [
-    { title },
+    { title: documentTitle(title) },
     { name: 'description', content: description },
     { property: 'og:type', content: 'website' },
     { property: 'og:title', content: title },

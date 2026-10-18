@@ -7,6 +7,7 @@ import { assessmentPublishControl, ensureAssessment } from '#/features/assessmen
 import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
 import { ensureTaskStudio, fileSubmissionPublishControl } from '#/features/file-submissions'
 import { m } from '#/paraglide/messages'
+import { documentTitle } from '#/shared/lib/document-title'
 
 // The activity studio (spec 5.4): focus layout, 4 tabs; draft/published is a header switch, not a tab. The AI
 // panel (slice 6.3: Q&A, lecture critique) is its right slot.
@@ -33,7 +34,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
       { to: '/teach/courses/$courseId/activities/$activityId/results', label: m.platform_tab_results },
     ],
   },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.name }] : [] }),
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.name) }] : [] }),
   component: StudioLayout,
   notFoundComponent: ActivityNotFound,
 })

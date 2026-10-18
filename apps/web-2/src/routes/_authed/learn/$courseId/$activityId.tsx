@@ -5,6 +5,7 @@ import { AiPanel, prefetchPanel } from '#/features/ai'
 import { aiSearchSchema } from '#/features/ai/route'
 import { ensurePlayer, PlayerError, PlayerNotFound, PlayerPage } from '#/features/player'
 import { m } from '#/paraglide/messages'
+import { documentTitle } from '#/shared/lib/document-title'
 
 // The activity player (spec 5.4): an enrolled learner only, anyone else gets a 403 in place. The AI panel is its
 // right slot (slice 6.3); its tab and thread live in the search params.
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId')({
     await prefetchPanel(context.queryClient, { ...params, surface: 'student-activity' })
     return player
   },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: loaderData.title }] : [] }),
+  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
   staticData: { title: m.platform_page_activity, layout: 'focus' },
   component: function Player() {
     const params = Route.useParams()

@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { RouterContext } from '#/shared/api/query-client'
 import { sessionOptions } from '#/shared/auth/session'
+import { documentTitle } from '#/shared/lib/document-title'
 import { ssrStatusHeaders } from '#/shared/lib/ssr-status'
 import appCss from '#/styles/globals.css?url'
 import brandPalette from '../../public/brand/palette.json'
@@ -37,7 +38,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-title', content: m.platform_brand() },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { title: title ? `${title} · ${m.platform_brand()}` : m.platform_brand() },
+        { title: documentTitle(title) },
       ],
       links: [
         { rel: 'stylesheet', href: appCss },
