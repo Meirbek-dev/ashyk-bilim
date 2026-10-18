@@ -7,6 +7,7 @@ import { sessionOptions } from '#/shared/auth/session'
 import { Link } from '#/shared/components/link'
 import { SheetPanel } from '#/shared/components/sheet-panel'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { UserAvatar } from '#/shared/components/user-avatar'
 import { formatDate } from '#/shared/i18n/format'
 
 import { canUser } from '../model/admin'
@@ -40,11 +41,16 @@ export function UserSheet({ id }: { id: string }) {
     >
       {user && badge ? (
         <>
-          <dl className="flex flex-col gap-2 text-sm">
-            <div>
-              <dt className="text-muted-foreground">{m.admin_user_username()}</dt>
-              <dd className="wrap-anywhere">@{user.username}</dd>
+          <div className="flex items-center gap-3">
+            <UserAvatar name={user.display_name || user.username} />
+            <div className="flex min-w-0 flex-col text-sm">
+              <span className="wrap-anywhere">@{user.username}</span>
+              <Link to="/users/$username" params={{ username: user.username }}>
+                {m.admin_user_profile()}
+              </Link>
             </div>
+          </div>
+          <dl className="flex flex-col gap-2 text-sm *:flex *:flex-wrap *:items-center *:gap-x-2">
             <div>
               <dt className="text-muted-foreground">{m.admin_users_col_email()}</dt>
               <dd className="wrap-anywhere">{user.email}</dd>
@@ -72,9 +78,6 @@ export function UserSheet({ id }: { id: string }) {
               </div>
             )}
           </dl>
-          <Link to="/users/$username" params={{ username: user.username }}>
-            {m.admin_user_profile()}
-          </Link>
           {namedRoles && canUser(user, 'manage_roles') ? <UserRoles user={user} /> : null}
           {canUser(user, 'disable') || canUser(user, 'enable') ? <UserStatus user={user} /> : null}
           {hasCapability(session, 'groups.manage') ? <UserGroup user={user} /> : null}

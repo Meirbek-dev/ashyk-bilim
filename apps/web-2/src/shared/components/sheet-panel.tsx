@@ -23,7 +23,8 @@ export function SheetPanel({ trigger, open, onOpenChange, title, side, children 
         <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       ) : null}
       <SheetContent side={side}>
-        <SheetHeader>
+        {/* Clear of the stock close button (absolute, top right): a long name wraps before it. */}
+        <SheetHeader className="pr-12">
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-4">{children}</div>
