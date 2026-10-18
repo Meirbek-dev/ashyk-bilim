@@ -10,7 +10,9 @@ import { Spinner } from '#/shared/ui/spinner'
 import { isRunnerDown, languagesIn, type CodeItem } from '../model/arena'
 import { runnerStateOptions } from '../queries'
 import { CaseFields } from './case-fields'
+import { TestFilesBar } from './test-files-bar'
 import { LanguageFields } from './language-fields'
+import { LimitFields } from './limit-fields'
 import { ReferenceResults } from './reference-results'
 import { RunnerDown } from './runner-down'
 import { StatementFields } from './statement-fields'
@@ -58,25 +60,15 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
       <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
         <StatementFields form={form} />
         <LanguageFields form={form} runner={runner} readOnly={!editable} />
-        <CaseFields form={form} />
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">{m.code_limits()}</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="w-40">
-              <form.AppField name="time">
-                {field => (
-                  <field.TextField label={m.code_field_time()} description={m.code_limits_hint()} inputMode="numeric" />
-                )}
-              </form.AppField>
-            </div>
-            <div className="w-40">
-              <form.AppField name="memory">
-                {field => <field.TextField label={m.code_field_memory()} inputMode="numeric" />}
-              </form.AppField>
-            </div>
-          </div>
-        </div>
+        <CaseFields form={form} editable={editable} />
+        <LimitFields form={form} />
       </fieldset>
+      {editable ? null : (
+        // A locked challenge's cases still download (the fieldset would disable the buttons).
+        <form.Subscribe selector={state => state.values.tests}>
+          {tests => <TestFilesBar tests={tests} />}
+        </form.Subscribe>
+      )}
       {update.error ? <ErrorAlert>{presentError(update.error)}</ErrorAlert> : null}
       {runner.state === 'down' || isRunnerDown(check.error) ? (
         <RunnerDown

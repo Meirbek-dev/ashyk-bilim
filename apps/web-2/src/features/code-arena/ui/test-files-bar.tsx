@@ -17,25 +17,30 @@ const save = (text: string, type: string, name: string) => {
   URL.revokeObjectURL(url)
 }
 
-type TestFilesBarProps = { tests: readonly TestForm[]; onImport: (tests: TestForm[]) => void }
+type TestFilesBarProps = { tests: readonly TestForm[]; onImport?: (tests: TestForm[]) => void }
 
-/** The cases to a JSON or CSV file and back (B-COD-25): imported cases join the list, saved with the item. */
+/**
+ * The cases to a JSON or CSV file and back (B-COD-25): imported cases join the list, saved with the item. Without
+ * `onImport` (a locked challenge) only the exports.
+ */
 export function TestFilesBar({ tests, onImport }: TestFilesBarProps) {
   const [error, setError] = useState<string | null>(null)
   const read = async (file: File) => {
     const imported = parseTestsFile(file.name, await file.text())
     if (!imported?.length) return setError(m.code_cases_import_bad())
     setError(null)
-    onImport(imported)
+    onImport?.(imported)
   }
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap gap-2">
-        <FileButton
-          label={m.code_cases_import()}
-          accept=".json,.csv,application/json,text/csv"
-          onFile={file => void read(file)}
-        />
+        {onImport ? (
+          <FileButton
+            label={m.code_cases_import()}
+            accept=".json,.csv,application/json,text/csv"
+            onFile={file => void read(file)}
+          />
+        ) : null}
         {tests.length > 0 ? (
           <>
             <Button

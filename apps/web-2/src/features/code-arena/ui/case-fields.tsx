@@ -12,7 +12,7 @@ import type { CodeFormApi } from './use-code-item-form'
  * The test builder (B-COD-16): each test case has a description, input, expected output, visible or hidden, and a
  * weight; added and removed here, read from or written to a JSON/CSV file (B-COD-25), saved with the item.
  */
-export function CaseFields({ form }: { form: CodeFormApi }) {
+export function CaseFields({ form, editable }: { form: CodeFormApi; editable: boolean }) {
   return (
     <form.AppField name="tests" mode="array">
       {list => {
@@ -61,18 +61,23 @@ export function CaseFields({ form }: { form: CodeFormApi }) {
                 </li>
               ))}
             </ol>
-            <div>
-              <Button type="button" variant="outline" onClick={() => list.pushValue(newTest())}>
-                <Plus data-icon="inline-start" aria-hidden />
-                {m.code_case_add()}
-              </Button>
-            </div>
-            <TestFilesBar
-              tests={list.state.value}
-              onImport={imported => {
-                for (const test of imported) list.pushValue(test)
-              }}
-            />
+            {/* Read-only: no adding; the export bar sits outside the disabled fieldset (code-item-form). */}
+            {editable ? (
+              <>
+                <div>
+                  <Button type="button" variant="outline" onClick={() => list.pushValue(newTest())}>
+                    <Plus data-icon="inline-start" aria-hidden />
+                    {m.code_case_add()}
+                  </Button>
+                </div>
+                <TestFilesBar
+                  tests={list.state.value}
+                  onImport={imported => {
+                    for (const test of imported) list.pushValue(test)
+                  }}
+                />
+              </>
+            ) : null}
           </fieldset>
         )
       }}
