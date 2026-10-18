@@ -47,7 +47,8 @@ export function LandingPage() {
         </div>
         <CoverWall tiles={wall} />
       </header>
-      {platform.about.trim() && platform.about.trim() !== lead ? (
+      {/* «О платформе» once: not when it is the lead above (with or without the name it opens with). */}
+      {platform.about.trim() && landingLead({ ...platform, description: '' }) !== lead ? (
         <p className="max-w-prose text-lg wrap-anywhere whitespace-pre-line">{platform.about}</p>
       ) : null}
       <LandingInside />
