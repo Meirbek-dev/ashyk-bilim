@@ -9,7 +9,8 @@
       }
     }
   ],
-  "inbox_empty": "Nothing is waiting for you.",
+  "inbox_empty": "All caught up: no new submissions and no grades waiting to be published.",
+  "inbox_empty_action": "Open my courses",
   "inbox_table": "Submissions waiting for you",
   "inbox_state": "State",
   "inbox_filter_all": "All",

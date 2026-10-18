@@ -1,7 +1,8 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Link as RouterLink, useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
@@ -42,6 +43,11 @@ export function InboxPage() {
         count={items.length}
         filtered={active > 0}
         emptyText={m.inbox_empty()}
+        emptyAction={
+          <RouterLink to="/teach/courses" className={buttonVariants({ variant: 'outline' })}>
+            {m.inbox_empty_action()}
+          </RouterLink>
+        }
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
