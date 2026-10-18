@@ -565,6 +565,59 @@ impl CitationValidation {
     }
 }
 
+/// The labels of the context lines the model is fed (`Activity: name (type)`...): English and raw enums that must
+/// not reach a learner when a citation quotes them.
+const CONTEXT_LABELS: &[&str] = &[
+    "Course:",
+    "Chapter:",
+    "Activity:",
+    "Published:",
+    "Details:",
+    "Tags:",
+    "Description:",
+    "About:",
+    "Learnings:",
+    "Submission UUID:",
+    "Assessment type:",
+    "Final score:",
+    "Auto score:",
+    "Status:",
+    "Grading:",
+];
+
+/// A citation's excerpt without the context headers it may quote.
+///
+/// The text after a `Content: ` label when there is one, else every line that is not a header (a header joined to
+/// the quote with " ... " keeps the quote).
+#[must_use]
+pub fn clean_excerpt(raw: &str) -> String {
+    if let Some(at) = raw.rfind("Content: ") {
+        let content = raw[at + "Content: ".len()..].trim();
+        if !content.is_empty() {
+            return content.to_owned();
+        }
+    }
+    let kept: Vec<&str> = raw
+        .lines()
+        .map(str::trim)
+        .filter_map(|line| {
+            if CONTEXT_LABELS.iter().any(|label| line.starts_with(label)) {
+                line.split_once(" ... ")
+                    .or_else(|| line.split_once(" … "))
+                    .map(|(_, quote)| quote.trim())
+            } else {
+                Some(line)
+            }
+        })
+        .filter(|line| !line.is_empty())
+        .collect();
+    if kept.is_empty() {
+        raw.trim().to_owned()
+    } else {
+        kept.join("\n")
+    }
+}
+
 #[must_use]
 pub fn validate_citations(
     citations: &[serde_json::Value],
@@ -586,7 +639,11 @@ pub fn validate_citations(
                 || (source_ref.is_some() && source_ref == s.source_ref.as_deref())
         });
         if known {
-            result.valid.push(citation.clone());
+            let mut trusted = citation.clone();
+            if let Some(excerpt) = trusted.get_mut("excerpt").filter(|e| e.is_string()) {
+                *excerpt = clean_excerpt(excerpt.as_str().unwrap_or_default()).into();
+            }
+            result.valid.push(trusted);
         } else {
             let mut flagged = citation.clone();
             if let Some(map) = flagged.as_object_mut() {
@@ -602,6 +659,37 @@ pub fn validate_citations(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn citation_excerpts_drop_the_context_headers() {
+        assert_eq!(
+            clean_excerpt("Activity: Dynamic page (dynamic) ... «Welcome to the course.»"),
+            "«Welcome to the course.»"
+        );
+        assert_eq!(
+            clean_excerpt(
+                "Chapter: Intro\nActivity: Page (dynamic)\nContent: Welcome to the course."
+            ),
+            "Welcome to the course."
+        );
+        assert_eq!(
+            clean_excerpt("Activity: Page (dynamic)\nВведение в курс"),
+            "Введение в курс"
+        );
+        assert_eq!(clean_excerpt("Plain quote"), "Plain quote");
+        // Nothing but a header: kept rather than an empty quote.
+        assert_eq!(
+            clean_excerpt("Activity: Page (dynamic)"),
+            "Activity: Page (dynamic)"
+        );
+        let valid = validate_citations(
+            &[
+                serde_json::json!({ "citation_id": "a", "excerpt": "Activity: P (dynamic) ... «Hi»" }),
+            ],
+            &[src("a", None)],
+        );
+        assert_eq!(valid.valid[0]["excerpt"], "«Hi»");
+    }
 
     fn src(id: &str, source_ref: Option<&str>) -> ContextSource {
         ContextSource {
