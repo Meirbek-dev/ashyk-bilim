@@ -36,7 +36,7 @@ export function UsersPage() {
         ) : null
       }
       search={
-        <search className="w-full max-w-sm">
+        <search className="w-full max-w-md">
           <form
             onSubmit={event => {
               event.preventDefault()
