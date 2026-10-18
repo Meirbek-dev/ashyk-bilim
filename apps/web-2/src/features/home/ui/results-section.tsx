@@ -2,7 +2,7 @@ import { m } from '#/paraglide/messages'
 import type { RecentResult } from '#/shared/api/gen/types.gen'
 import { DataList } from '#/shared/components/data-list'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate, formatNumber } from '#/shared/i18n/format'
+import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { HomeSection } from './home-section'
 import { resultKinds } from './labels'
@@ -35,12 +35,12 @@ export function ResultsSection({ results }: { results: readonly RecentResult[] }
               </div>
               {result.score === null ? null : (
                 <p className="flex shrink-0 flex-col items-end">
-                  <span className="sr-only">{m.home_score({ score: formatNumber(result.score) })}</span>
+                  <span className="sr-only">{m.home_score({ score: formatPercent(result.score) })}</span>
                   <span aria-hidden className="text-xs text-muted-foreground">
                     {m.home_score_label()}
                   </span>
                   <span aria-hidden className="font-heading text-2xl font-semibold tabular-nums">
-                    {formatNumber(result.score)}
+                    {formatPercent(result.score)}
                   </span>
                 </p>
               )}

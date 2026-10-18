@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import { createCourseUpdate } from '#/shared/api/gen/sdk.gen'
-import { formatDate, formatNumber } from '#/shared/i18n/format'
+import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { expect, ru, test } from './file-submissions-fixture'
 
@@ -70,7 +70,7 @@ test('B-HOME-01 B-HOME-02 B-HOME-03 B-HOME-04 B-HOME-05 B-HOME-06 one page answe
   const results = region(page, m.home_results_title({}, ru))
   await expect(results.getByText(m.home_result_published({}, ru))).toBeVisible()
   await expect(results.getByRole('link', { name: 'Оценено' })).toBeVisible()
-  await expect(results.getByText(m.home_score({ score: formatNumber(85, {}, 'ru') }, ru))).toBeVisible()
+  await expect(results.getByText(m.home_score({ score: formatPercent(85, 'ru') }, ru))).toBeVisible()
   await expect(results.getByText(m.home_result_returned({}, ru))).toBeVisible()
   // Returned work is a result here, and not repeated under "Needs attention".
   await expect(page.getByRole('link', { name: 'Возвращено', exact: true })).toHaveCount(1)
