@@ -39,6 +39,7 @@
   "catalog_palette_title": "Іздеу және өту",
   "catalog_palette_input": "Қайда өту немесе не іздеу керек",
   "catalog_palette_empty": "Ештеңе табылмады.",
+  "catalog_search_none": "«{q}» сұрауы бойынша ештеңе табылмады. Басқа сөздерді қолданып көріңіз немесе бүкіл каталогты қараңыз.",
   "catalog_palette_searching": "Іздеп жатырмыз…",
   "catalog_palette_all_results": "«{q}» сұрауы бойынша барлық нәтижелер",
   "catalog_shortcut_palette": "Іздеу мен өтуді ашу",

@@ -39,6 +39,7 @@
   "catalog_palette_title": "Поиск и переходы",
   "catalog_palette_input": "Куда перейти или что найти",
   "catalog_palette_empty": "Ничего не найдено.",
+  "catalog_search_none": "По запросу «{q}» ничего не найдено. Попробуйте другие слова или посмотрите весь каталог.",
   "catalog_palette_searching": "Ищем…",
   "catalog_palette_all_results": "Все результаты по запросу «{q}»",
   "catalog_shortcut_palette": "Открыть поиск и переходы",

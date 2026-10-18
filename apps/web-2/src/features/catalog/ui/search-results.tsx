@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { Link as RouterLink, useNavigate } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { ListState } from '#/shared/components/list-state'
 
 import { type SearchKind, searchKinds } from '../model/catalog'
@@ -10,7 +11,10 @@ import { searchResultsOptions } from '../queries'
 import { SearchKinds } from './search-kinds'
 import { SearchSection } from './search-section'
 
-/** One `search` answer: the section links with counts, then the chosen section (or every non-empty one). */
+/**
+ * One `search` answer: the section links with counts, then the chosen section (or every non-empty one). Nothing found
+ * names the query and leads to the catalog; an empty section ("People") goes back to all sections, query kept (B-CAT-09).
+ */
 export function SearchResults({ q, kind }: { q: string; kind: SearchKind | undefined }) {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const query = useSuspenseQuery(searchResultsOptions(q))
@@ -25,9 +29,14 @@ export function SearchResults({ q, kind }: { q: string; kind: SearchKind | undef
         pending={false}
         error={query.error}
         count={count}
-        filtered
-        emptyText={m.catalog_palette_empty()}
-        onResetFilters={() => void navigate({ to: '/search', search: {} })}
+        filtered={kind !== undefined}
+        emptyText={m.catalog_search_none({ q })}
+        emptyAction={
+          <RouterLink to="/courses" className={buttonVariants({ variant: 'outline' })}>
+            {m.catalog_landing_all_courses()}
+          </RouterLink>
+        }
+        onResetFilters={() => void navigate({ to: '/search', search: { q } })}
         onRetry={() => void query.refetch()}
       >
         {shown.map(each => (

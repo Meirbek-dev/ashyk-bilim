@@ -199,16 +199,22 @@ test('B-CAT-08 a guest gets no people section', async ({ page, signInAs }) => {
   await expect(people()).toBeVisible()
 })
 
-test('B-CAT-09 no query invites one; punctuation alone finds nothing without an error', async ({ page }) => {
+test('B-CAT-09 no query invites one; punctuation alone finds nothing without an error and leads to the catalog', async ({
+  page,
+}) => {
   await page.goto('/search')
   await expect(page.getByText(m.catalog_search_prompt({}, ru))).toBeVisible()
-  await page.goto(`/search?q=${encodeURIComponent('!@#$%^&*()')}`)
-  await expect(page.getByText(m.ui_no_matches({}, ru))).toBeVisible()
+  const q = '!@#$%^&*()'
+  await page.goto(`/search?q=${encodeURIComponent(q)}`)
+  await expect(page.getByText(m.catalog_search_none({ q }, ru))).toBeVisible()
   await untilActs(
-    () => page.getByRole('button', { name: m.ui_reset_filters({}, ru) }).click(),
-    () => expect(page).toHaveURL(/\/search$/, { timeout: 1000 }),
+    () =>
+      page
+        .getByRole('main')
+        .getByRole('link', { name: m.catalog_landing_all_courses({}, ru) })
+        .click(),
+    () => expect(page).toHaveURL(/\/courses$/, { timeout: 1000 }),
   )
-  await expect(page.getByText(m.catalog_search_prompt({}, ru))).toBeVisible()
 })
 
 test('B-CAT-10 Ctrl+K and the top-bar button open the palette; Escape closes it', async ({ page }) => {
