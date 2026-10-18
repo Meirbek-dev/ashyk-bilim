@@ -19,6 +19,7 @@ export const AdminUserPage = zod
                 .describe('What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).'),
             )
             .describe('What the caller may do to this account now.'),
+          avatar_key: zod.string().nullable().describe('Public profile photo (`/content/<key>`); `null` = initials.'),
           created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
           display_name: zod.string(),
           email: zod.string(),
@@ -31,6 +32,7 @@ export const AdminUserPage = zod
         .describe('Admin listing row (includes email + status - platform:read gated).'),
     ),
     next_cursor: zod.union([zod.uuid(), zod.null()]),
+    total: zod.int().describe('Accounts matching the filter, all pages.'),
   })
   .describe('Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.')
 

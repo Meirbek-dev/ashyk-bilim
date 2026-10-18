@@ -927,6 +927,13 @@ expression: json
             },
             "type": "array"
           },
+          "avatar_key": {
+            "description": "Public profile photo (`/content/<key>`); `null` = initials.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
           },
@@ -966,7 +973,8 @@ expression: json
           "status",
           "roles",
           "created_at_unix",
-          "allowed_actions"
+          "allowed_actions",
+          "avatar_key"
         ],
         "type": "object"
       },
@@ -997,10 +1005,15 @@ expression: json
                 "type": "null"
               }
             ]
+          },
+          "total": {
+            "description": "Accounts matching the filter, all pages.",
+            "type": "integer"
           }
         },
         "required": [
           "items",
+          "total",
           "next_cursor"
         ],
         "type": "object"

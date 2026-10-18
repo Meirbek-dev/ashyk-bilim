@@ -189,6 +189,8 @@ pub struct AdminUser {
     pub status: String,
     pub roles: Vec<String>,
     pub created_at_unix: i64,
+    /// Public profile photo (`/content/<key>`); `null` = initials.
+    pub avatar_key: Option<String>,
     /// What the caller may do to this account now.
     pub allowed_actions: Vec<ab_domain::identity::rbac_admin::AdminUserAction>,
 }
@@ -208,6 +210,7 @@ impl AdminUser {
             status: u.status,
             roles: u.roles,
             created_at_unix: u.created_at,
+            avatar_key: u.avatar_key,
         }
     }
 }
@@ -217,6 +220,8 @@ impl AdminUser {
 pub struct AdminUserPage {
     pub items: Vec<AdminUser>,
     pub next_cursor: Option<UserId>,
+    /// Accounts matching the filter, all pages.
+    pub total: i64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

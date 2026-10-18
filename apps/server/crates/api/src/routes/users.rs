@@ -223,7 +223,7 @@ pub async fn list_users(
     CurrentActor(actor): CurrentActor,
     Query(query): Query<AdminUserListQuery>,
 ) -> ApiResult<Json<AdminUserPage>> {
-    let (users, next_cursor) = state
+    let (users, next_cursor, total) = state
         .rbac
         .list_users(
             &actor,
@@ -243,6 +243,7 @@ pub async fn list_users(
             .map(|u| AdminUser::for_actor(u, &actor))
             .collect(),
         next_cursor,
+        total,
     }))
 }
 

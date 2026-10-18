@@ -5304,6 +5304,7 @@ export const vUserStatus = v.picklist(['active', 'disabled']);
  */
 export const vAdminUser = v.object({
     allowed_actions: v.array(vAdminUserAction),
+    avatar_key: v.nullable(v.string()),
     created_at_unix: vUnixTime,
     display_name: v.string(),
     email: v.string(),
@@ -5319,7 +5320,8 @@ export const vAdminUser = v.object({
  */
 export const vAdminUserPage = v.object({
     items: v.array(vAdminUser),
-    next_cursor: v.nullable(vUserId)
+    next_cursor: v.nullable(vUserId),
+    total: v.pipe(v.number(), v.integer())
 });
 
 export const vUserSummary = v.object({

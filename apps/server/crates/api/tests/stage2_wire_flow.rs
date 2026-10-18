@@ -545,6 +545,9 @@ async fn admin_writes_answer_the_resource_on_request(pool: PgPool) {
     let items = disabled_only.json()["items"].as_array().unwrap().clone();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["id"], target.to_string());
+    // The filter's count over all pages, and the photo key (none yet) for the list's avatars.
+    assert_eq!(disabled_only.json()["total"], 1);
+    assert!(items[0]["avatar_key"].is_null());
     app.create_user("aaron", "aaron@example.com", &["instructor"])
         .await;
     let by_name = app.get_as(&admin, "/api/v2/users?sort=name&limit=1").await;

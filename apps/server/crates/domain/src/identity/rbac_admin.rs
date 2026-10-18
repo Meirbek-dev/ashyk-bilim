@@ -410,17 +410,18 @@ impl RbacAdminService {
         filter: ab_db::identity::UserFilter<'_>,
         cursor: Option<UserId>,
         limit: i64,
-    ) -> Result<(Vec<AdminUser>, Option<UserId>)> {
+    ) -> Result<(Vec<AdminUser>, Option<UserId>, i64)> {
         Self::require_read_users(actor)?;
         let limit = ab_core::page_limit(limit, 100)?;
         let mut rows = ab_db::identity::list_users(&self.pool, filter, cursor, limit + 1).await?;
+        let total = ab_db::identity::count_users(&self.pool, filter).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|u| u.id)
         } else {
             None
         };
-        Ok((rows, next))
+        Ok((rows, next, total))
     }
 
     /// Disable (revoking every live session) or re-enable an account.

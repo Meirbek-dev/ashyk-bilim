@@ -307,6 +307,10 @@ export type AdminUser = {
      * What the caller may do to this account now.
      */
     allowed_actions: Array<AdminUserAction>;
+    /**
+     * Public profile photo (`/content/<key>`); `null` = initials.
+     */
+    avatar_key: string | null;
     created_at_unix: UnixTime;
     display_name: string;
     email: string;
@@ -334,6 +338,10 @@ export type AdminUserAction = 'manage_roles' | 'disable' | 'enable';
 export type AdminUserPage = {
     items: Array<AdminUser>;
     next_cursor: UserId | null;
+    /**
+     * Accounts matching the filter, all pages.
+     */
+    total: number;
 };
 
 /**

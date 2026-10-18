@@ -604,6 +604,7 @@ pub struct AdminUserRow {
     pub status: String,
     pub roles: Vec<String>,
     pub created_at: i64,
+    pub avatar_key: Option<String>,
 }
 
 /// Admin listing filters (`GET /users`).
@@ -635,7 +636,7 @@ pub async fn list_users(
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
-                  (extract(epoch FROM u.created_at))::bigint AS "created_at!"
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key
            FROM users u
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id
@@ -669,6 +670,27 @@ pub async fn list_users(
     Ok(rows)
 }
 
+/// How many accounts match the admin listing's filter (`GET /users` `total`).
+pub async fn count_users(pool: &PgPool, filter: UserFilter<'_>) -> Result<i64> {
+    let pattern = filter.q.map(|q| format!("%{}%", crate::like_escape(q)));
+    let total = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "total!" FROM users u
+           WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE ''
+                  OR u.display_name ILIKE $1 ESCAPE '' OR u.email ILIKE $1 ESCAPE ''
+                  OR u.organization ILIKE $1 ESCAPE '')
+             AND ($2::text IS NULL OR u.status = $2)
+             AND ($3::text IS NULL OR EXISTS (
+                   SELECT 1 FROM user_roles fr JOIN roles f ON f.id = fr.role_id
+                   WHERE fr.user_id = u.id AND f.slug = $3))"#,
+        pattern.as_deref(),
+        filter.status,
+        filter.role
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(total)
+}
+
 /// One admin listing row (after creation).
 pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<AdminUserRow>> {
     let row = sqlx::query_as!(
@@ -676,7 +698,7 @@ pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<Adm
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
-                  (extract(epoch FROM u.created_at))::bigint AS "created_at!"
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key
            FROM users u
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id

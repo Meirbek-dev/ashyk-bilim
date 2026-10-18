@@ -16,6 +16,7 @@ export const AdminUser = zod
           .describe('What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).'),
       )
       .describe('What the caller may do to this account now.'),
+    avatar_key: zod.string().nullable().describe('Public profile photo (`/content/<key>`); `null` = initials.'),
     created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
     display_name: zod.string(),
     email: zod.string(),
