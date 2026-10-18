@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 
 import { RemediationGate } from '#/features/ai'
+import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
@@ -29,6 +30,7 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
   const state = workOf(task)
   const next = state.kind === 'edit' || (state.kind === 'done' && attemptsLeft(task))
   const reasons = [...new Set(task.disabled_reasons.map(reason => reasonLabels[reason]()))]
+  const retry = next && reasons.length === 0 && state.kind === 'done'
   const returned = state.kind === 'edit' && state.attempt?.status === 'returned' ? state.attempt : null
   return (
     <section aria-labelledby="submission-work" className="flex flex-col gap-4">
@@ -63,12 +65,23 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
       {next && reasons.length === 0 && state.kind === 'edit' ? (
         <DraftEditor task={task} run={work.run} pending={work.pending} submitting={work.submitting} />
       ) : null}
-      {next && reasons.length === 0 && state.kind === 'done' ? (
-        <div>
+      {retry ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Suspense fallback={null}>
+            <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+          </Suspense>
           <Button variant="secondary" disabled={work.pending} onClick={() => work.run({ kind: 'start' })}>
             {work.pending ? <Spinner data-icon="inline-start" /> : null}
             {m.submission_new_attempt()}
           </Button>
+        </div>
+      ) : null}
+      {/* Handed in: the way on to the next activity (B-PLY-18), beside a new attempt when one is open. */}
+      {state.kind !== 'edit' && !retry ? (
+        <div>
+          <Suspense fallback={null}>
+            <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+          </Suspense>
         </div>
       ) : null}
       {state.attempt ? (

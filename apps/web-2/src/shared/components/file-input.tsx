@@ -178,7 +178,7 @@ export function FileInput(props: FileInputProps) {
           aria-disabled={inactive || undefined}
           className={cn(
             buttonVariants({ variant: 'outline' }),
-            'cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring',
+            'cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-50 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring',
           )}
         >
           {multiple > 1 ? m.ui_files_choose() : m.ui_file_choose()}

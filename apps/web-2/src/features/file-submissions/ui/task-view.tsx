@@ -25,7 +25,7 @@ export function TaskView({ courseId, activityId }: { courseId: CourseId; activit
     <>
       <TaskHeader task={task} now={now} />
       <WorkArea task={task} ids={{ courseId, activityId, taskId: task.id }} />
-      <History taskId={task.id} />
+      <History taskId={task.id} currentId={task.current_attempt?.id ?? null} />
     </>
   )
 }

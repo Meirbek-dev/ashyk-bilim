@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useId } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
@@ -14,6 +14,8 @@ import { Skeleton } from '#/shared/ui/skeleton'
 export function GradeDetails({ attempt }: { attempt: Attempt }) {
   const { final_score: score, raw_score: raw, late_penalty_pct: penalty, feedback } = attempt
   const criteria = attempt.rubric_scores?.criteria ?? []
+  // Unique per instance: the history shows earlier attempts' grades on the same page.
+  const id = useId()
   return (
     <div className="flex flex-col gap-4">
       {score === null ? null : (
@@ -33,8 +35,8 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
         </div>
       )}
       {feedback ? (
-        <section aria-labelledby="submission-feedback" className="flex flex-col gap-2">
-          <h3 id="submission-feedback" className="text-lg font-semibold">
+        <section aria-labelledby={`${id}-feedback`} className="flex flex-col gap-2">
+          <h3 id={`${id}-feedback`} className="text-lg font-semibold">
             {m.submission_feedback()}
           </h3>
           <div className="border-l-2 pl-4">
@@ -45,8 +47,8 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
         </section>
       ) : null}
       {criteria.length > 0 ? (
-        <section aria-labelledby="submission-criteria" className="flex flex-col gap-2">
-          <h3 id="submission-criteria" className="text-lg font-semibold">
+        <section aria-labelledby={`${id}-criteria`} className="flex flex-col gap-2">
+          <h3 id={`${id}-criteria`} className="text-lg font-semibold">
             {m.submission_rubric_scores()}
           </h3>
           <ul className="flex flex-col divide-y text-sm">

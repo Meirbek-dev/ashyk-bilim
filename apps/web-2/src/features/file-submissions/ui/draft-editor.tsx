@@ -18,7 +18,7 @@ type DraftEditorProps = {
 
 /**
  * The open attempt's files (B-FSB-04): an uploaded file is attached at once, "Remove" detaches it; at the task's
- * file count the picker is off and says why. "Submit work" asks first (B-FSB-05).
+ * file count the picker is replaced by why. "Submit work" asks first (B-FSB-05).
  */
 export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps) {
   const [confirming, setConfirming] = useState(false)
@@ -34,17 +34,21 @@ export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps
           onRemove={id => void run({ kind: 'files', change: { remove: id } })?.catch(() => null)}
         />
       ) : null}
-      <FileInput
-        label={m.submission_file_field()}
-        description={full ? m.submission_files_full() : undefined}
-        purpose="file-submission"
-        limits={uploadLimits(task)}
-        disabled={full || pending}
-        multiple={task.max_files - files.length}
-        onUploaded={(upload, file) =>
-          run({ kind: 'files', change: { add: { upload_id: upload.id, display_name: file.name } } })
-        }
-      />
+      {/* At the task's file count the picker goes away: a dead drop zone reads as broken. */}
+      {full ? (
+        <p className="text-sm text-muted-foreground">{m.submission_files_full()}</p>
+      ) : (
+        <FileInput
+          label={m.submission_file_field()}
+          purpose="file-submission"
+          limits={uploadLimits(task)}
+          disabled={pending}
+          multiple={task.max_files - files.length}
+          onUploaded={(upload, file) =>
+            run({ kind: 'files', change: { add: { upload_id: upload.id, display_name: file.name } } })
+          }
+        />
+      )}
       <div>
         <SubmitDialog
           open={confirming}

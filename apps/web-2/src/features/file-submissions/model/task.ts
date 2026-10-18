@@ -20,6 +20,10 @@ export function workOf(task: FileSubmission): Work {
   return { kind: 'waiting', attempt }
 }
 
+/** An earlier handed-in attempt opens in the history to its grade and files (B-FSB-23); the current one is above. */
+export const opensInHistory = (attempt: Attempt, currentId: string | null): boolean =>
+  attempt.id !== currentId && attempt.submitted_at_unix !== null
+
 /** The open attempt (draft or returned) that a file change or a submit acts on; null = the server opens one. */
 export const openAttempt = (task: FileSubmission): Attempt | null => {
   const work = workOf(task)

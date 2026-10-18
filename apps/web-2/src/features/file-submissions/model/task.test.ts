@@ -21,6 +21,7 @@ import {
   changedFiles,
   lateRule,
   openAttempt,
+  opensInHistory,
   pastDue,
   uploadLimits,
   versionHeader,
@@ -141,6 +142,13 @@ describe('draft files', () => {
     expect(withNew.current_attempt).toBe(next)
     const saved = attempt({ id: 'new', version: 4 })
     expect(withAttempt(withNew, saved).attempts).toEqual([saved, old])
+  })
+
+  test('B-FSB-23 an earlier handed-in attempt opens in the history; the current one and a draft do not', () => {
+    const handedIn = attempt({ id: 'a1', status: 'published', submitted_at_unix: 5 })
+    expect(opensInHistory(handedIn, 'a2')).toBe(true)
+    expect(opensInHistory(handedIn, 'a1')).toBe(false)
+    expect(opensInHistory(attempt({ id: 'a3' }), 'a2')).toBe(false)
   })
 
   test('B-FSB-04 the task narrows the upload: its types and its size in MB', () => {
