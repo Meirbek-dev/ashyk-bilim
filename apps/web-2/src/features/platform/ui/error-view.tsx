@@ -2,7 +2,7 @@ import { useRouter, type ErrorComponentProps } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
-import { ErrorAlert } from '#/shared/components/error-alert'
+import { StatusScreen } from '#/shared/components/status-screen'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
@@ -15,17 +15,13 @@ export function ErrorView({ error }: ErrorComponentProps) {
   const apiError = error instanceof ApiError ? error : null
   if (apiError?.status === 403) return <ForbiddenView />
   return (
-    <section className="flex max-w-prose flex-col items-start gap-4">
-      <h1 className="text-2xl font-semibold">{m.platform_error_title()}</h1>
-      {apiError ? <ErrorAlert>{presentError(apiError)}</ErrorAlert> : null}
+    <StatusScreen title={m.platform_error_title()} text={apiError ? presentError(apiError) : m.platform_error_text()}>
+      <Button onClick={() => void router.invalidate()}>{m.platform_error_retry()}</Button>
       {apiError?.requestId ? (
-        <p className="text-sm text-muted-foreground select-all">
+        <p className="basis-full text-sm text-muted-foreground select-all">
           {m.platform_error_request_id({ id: apiError.requestId })}
         </p>
       ) : null}
-      <Button variant="outline" onClick={() => void router.invalidate()}>
-        {m.platform_error_retry()}
-      </Button>
-    </section>
+    </StatusScreen>
   )
 }

@@ -1,12 +1,16 @@
+import { Link as RouterLink } from '@tanstack/react-router'
+
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/components/button-variants'
+import { StatusScreen } from '#/shared/components/status-screen'
 
 /** An unknown role slug (the role list has no such role). */
 export function RoleNotFound() {
   return (
-    <section className="flex flex-col items-start gap-4">
-      <h1 className="text-2xl font-semibold">{m.admin_role_not_found()}</h1>
-      <Link to="/admin/roles">{m.admin_roles_all()}</Link>
-    </section>
+    <StatusScreen title={m.admin_role_not_found()} text={m.ui_not_found_text()}>
+      <RouterLink to="/admin/roles" className={buttonVariants()}>
+        {m.admin_roles_all()}
+      </RouterLink>
+    </StatusScreen>
   )
 }

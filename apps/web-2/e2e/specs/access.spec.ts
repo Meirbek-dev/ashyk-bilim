@@ -82,6 +82,7 @@ for (const role of ROLES) {
       if (outcome === 'not-found') {
         expect(response?.status()).toBe(404)
         await expect(page.getByRole('heading', { name: m.platform_not_found_title({}, ru) })).toBeVisible()
+        await expect(page).toHaveTitle(new RegExp(`^${m.platform_not_found_title({}, ru)} · `))
         expect(new URL(page.url()).pathname).toBe(path)
       } else if (outcome === 'login') {
         await expect(page).toHaveURL(/\/login\?redirect=/)
@@ -89,6 +90,8 @@ for (const role of ROLES) {
         await expect(page).toHaveURL(/\/home$/)
       } else if (outcome === 'forbidden') {
         await expect(forbidden).toBeVisible()
+        // The document says it too, not the name of the tab the link pointed at.
+        await expect(page).toHaveTitle(new RegExp(`^${m.platform_forbidden_title({}, ru)} · `))
         expect(new URL(page.url()).pathname).toBe(path)
       } else {
         await expect(page.getByRole('main')).toBeVisible()

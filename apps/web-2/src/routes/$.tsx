@@ -1,6 +1,7 @@
 import { createFileRoute, notFound, redirect, rootRouteId } from '@tanstack/react-router'
 
 import { assessmentHome } from '#/features/assessments'
+import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 
 // Every address no route takes. An old-web URL (`/ru/course/<id>`, `/dash/...`) moves permanently to its web-2
@@ -8,6 +9,7 @@ import { ApiError } from '#/shared/api/errors'
 // The URL map loads on demand: `beforeLoad` sits in the entry chunk (G-05 initial JS budget).
 const legacyTarget = async (href: string) => (await import('#/shared/lib/legacy-urls')).legacyTarget(href)
 export const Route = createFileRoute('/$')({
+  staticData: { title: m.platform_not_found_title },
   beforeLoad: async ({ location }) => {
     const target = await legacyTarget(location.href)
     if (typeof target === 'string') throw redirect({ href: target, statusCode: 301 })

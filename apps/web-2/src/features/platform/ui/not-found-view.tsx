@@ -1,14 +1,18 @@
+import { Link as RouterLink } from '@tanstack/react-router'
+
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/components/button-variants'
+import { StatusScreen } from '#/shared/components/status-screen'
 
 export function NotFoundView() {
   return (
-    <section className="flex flex-col items-start gap-4">
-      <h1 className="text-2xl font-semibold">{m.platform_not_found_title()}</h1>
-      <div className="flex flex-wrap gap-4">
-        <Link to="/search">{m.platform_not_found_search()}</Link>
-        <Link to="/">{m.platform_not_found_home()}</Link>
-      </div>
-    </section>
+    <StatusScreen title={m.platform_not_found_title()} text={m.platform_not_found_text()}>
+      <RouterLink to="/" className={buttonVariants()}>
+        {m.platform_not_found_home()}
+      </RouterLink>
+      <RouterLink to="/search" className={buttonVariants({ variant: 'outline' })}>
+        {m.platform_not_found_search()}
+      </RouterLink>
+    </StatusScreen>
   )
 }

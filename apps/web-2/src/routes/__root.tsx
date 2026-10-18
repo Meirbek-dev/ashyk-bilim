@@ -1,20 +1,32 @@
-import { createRootRouteWithContext } from '@tanstack/react-router'
+import { createRootRouteWithContext, isNotFound } from '@tanstack/react-router'
 
 import { AppShell, ErrorView, NotFoundView, RootDocument } from '#/features/platform'
 import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
 import type { RouterContext } from '#/shared/api/query-client'
 import { sessionOptions } from '#/shared/auth/session'
 import { ssrStatusHeaders } from '#/shared/lib/ssr-status'
 import appCss from '#/styles/globals.css?url'
 import brandPalette from '../../public/brand/palette.json'
 
+const failedTitle = (error: unknown) => {
+  if (isNotFound(error)) return m.platform_not_found_title()
+  if (error instanceof ApiError && error.status === 403) return m.platform_forbidden_title()
+  if (error instanceof ApiError && error.status === 404) return m.platform_not_found_title()
+  return m.platform_error_title()
+}
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => ({
     session: await context.queryClient.query({ ...sessionOptions(), staleTime: 'static' }),
   }),
   head: ({ matches }) => {
-    // The deepest route with a title names the document; a route's own head may still override it.
-    const title = matches.findLast(match => match.staticData.title)?.staticData.title?.()
+    // The deepest route with a title names the document; a route's own head may still override it. A page that
+    // could not show its object says so instead («Страница не найдена», «Нет доступа»), not the name of its tab.
+    const failed = matches.find(match => match.status === 'notFound' || match.status === 'error')
+    const title = failed
+      ? failedTitle(failed.error)
+      : matches.findLast(match => match.staticData.title)?.staticData.title?.()
     return {
       meta: [
         { charSet: 'utf-8' },
