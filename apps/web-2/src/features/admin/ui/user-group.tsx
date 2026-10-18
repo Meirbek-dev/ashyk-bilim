@@ -17,7 +17,7 @@ import { groupChoicesOptions } from '../queries'
 export function UserGroup({ user }: { user: AdminUser }) {
   const { data: groups } = useSuspenseQuery(groupChoicesOptions())
   const add = useMutation(addMembersOptions(useQueryClient()))
-  const member = { id: user.id, username: user.username, display_name: user.display_name, avatar_key: null }
+  const member = { id: user.id, username: user.username, display_name: user.display_name, avatar_key: user.avatar_key }
   const form = useAppForm(groupChoiceSchema, {
     defaultValues: { group: '' },
     onSubmit: ({ group }) =>
