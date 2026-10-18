@@ -20,7 +20,7 @@
   "attempt_rule_copy_paste": "Көшіру мен қоюға тыйым салынған, олар бұзушылық ретінде жазылады",
   "attempt_rule_right_click": "Мәтінмәндік мәзір өшірілген",
   "attempt_rule_fullscreen": "Толық экран режимі қажет: одан шығу бұзушылық ретінде жазылады",
-  "attempt_rule_threshold": "Бұзушылық шегі: {count}",
+  "attempt_rule_threshold": "{count} немесе одан көп бұзушылық болса, тапсырғанда әрекет нөлденеді",
   "attempt_consent": "Мен ережелерді түсінемін",
   "attempt_start": "Бастау",
   "attempt_continue": "Жалғастыру",

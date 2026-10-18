@@ -20,7 +20,7 @@
   "attempt_rule_copy_paste": "Copying and pasting are blocked and recorded as violations",
   "attempt_rule_right_click": "The context menu is turned off",
   "attempt_rule_fullscreen": "Full screen is required: leaving it is recorded as a violation",
-  "attempt_rule_threshold": "Violation limit: {count}",
+  "attempt_rule_threshold": "{count} or more violations and the attempt scores zero when handed in",
   "attempt_consent": "I understand the rules",
   "attempt_start": "Start",
   "attempt_continue": "Continue",

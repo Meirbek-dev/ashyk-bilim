@@ -20,7 +20,7 @@
   "attempt_rule_copy_paste": "Копирование и вставка запрещены и записываются как нарушение",
   "attempt_rule_right_click": "Контекстное меню отключено",
   "attempt_rule_fullscreen": "Нужен полноэкранный режим: выход из него записывается как нарушение",
-  "attempt_rule_threshold": "Порог нарушений: {count}",
+  "attempt_rule_threshold": "Если нарушений наберётся {count} или больше, при сдаче попытка обнулится",
   "attempt_consent": "Я понимаю правила",
   "attempt_start": "Начать",
   "attempt_continue": "Продолжить",
