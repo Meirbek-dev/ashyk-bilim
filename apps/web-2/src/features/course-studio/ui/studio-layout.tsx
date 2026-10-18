@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useBlocker, useMatch, useParams, Link as RouterLink } from '@tanstack/react-router'
+import { Outlet, useBlocker, useMatch, useMatchRoute, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft, Eye } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
@@ -58,6 +58,11 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
+  // The AI panel helps write the lesson; settings, submissions and results get the full width.
+  const editing = useMatchRoute()({
+    to: '/teach/courses/$courseId/activities/$activityId/edit',
+    params: { courseId, activityId },
+  })
   const [save, setSave] = useState<SaveStates>({})
   const state = activitySaveState(save, activityId)
   // A reload or a closed tab inside the autosave pause (or with a refused save) would drop the edit: the browser asks
@@ -98,7 +103,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
           {publishControl?.(activity) ?? <PublishSwitch courseId={courseId} activity={activity} />}
         </>
       }
-      aside={aside}
+      aside={editing ? aside : undefined}
       wide
     >
       <div className="flex flex-col gap-gutter">
