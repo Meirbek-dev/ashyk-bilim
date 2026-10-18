@@ -14,6 +14,15 @@ import { activityOptions } from '../queries'
  * A page, video or document through the editor's view preset (its video player, YouTube embed and PDF frame).
  * `onVideoEnded`: a hosted video played to the end (the player marks the lesson done).
  */
+// Text-shaped placeholder while the viewer loads and its editor is created (no empty flash before the lesson).
+const lines = (
+  <div aria-hidden className="flex flex-col gap-3">
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-11/12" />
+    <Skeleton className="h-4 w-2/3" />
+  </div>
+)
+
 export function LessonContent({ activityId, onVideoEnded }: { activityId: ActivityId; onVideoEnded?: () => void }) {
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const content = lessonDocument(activity.activity_type, activity.activity_sub_type, activity.content)
@@ -22,9 +31,9 @@ export function LessonContent({ activityId, onVideoEnded }: { activityId: Activi
   return (
     <>
       {page.outline.length > 0 ? <PageOutline outline={page.outline} /> : null}
-      <Suspense fallback={<Skeleton className="h-row w-full" />}>
+      <Suspense fallback={lines}>
         <VideoEndedContext value={onVideoEnded ?? null}>
-          <BlockViewer content={page.content} />
+          <BlockViewer content={page.content} fallback={lines} />
         </VideoEndedContext>
       </Suspense>
     </>
