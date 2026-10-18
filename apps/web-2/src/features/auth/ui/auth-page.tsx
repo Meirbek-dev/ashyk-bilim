@@ -20,7 +20,8 @@ export function AuthPage({ title, children }: { title: string; children: ReactNo
     </RouterLink>
   )
   return (
-    <FocusPage back={back} title={title} wide>
+    // The heading below names the page: the top bar holds only the way back (no second «Вход» above the first).
+    <FocusPage back={back} title="" wide>
       <div className="mx-auto grid w-full max-w-5xl items-center gap-16 lg:grid-cols-2 lg:py-8">
         <section className="mx-auto flex w-full max-w-sm flex-col gap-6">
           <div>
