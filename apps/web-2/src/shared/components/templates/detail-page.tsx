@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 
 type DetailPageProps = {
+  /** A ghost link with ArrowLeft above the title: back to the list the object belongs to. */
+  back?: ReactNode
   /** The object's picture (a 16:9 `CourseCover`): a course or collection cover. */
   cover?: ReactNode
   /** `hero`: the cover fills the right of the header, as big as the title (the page a learner reads); `thumb`: a small
@@ -23,7 +25,7 @@ type DetailPageProps = {
 
 /** An object's page (DESIGN 6): cover, title, meta, status, primary action, tab links, then the tab's route. */
 export function DetailPage(props: DetailPageProps) {
-  const { cover, coverSize = 'hero', title, meta, status, primaryAction, tabs, children } = props
+  const { back, cover, coverSize = 'hero', title, meta, status, primaryAction, tabs, children } = props
   const hero = cover && coverSize === 'hero'
   const heading = (
     <div className="flex min-w-0 flex-col gap-2">
@@ -36,6 +38,7 @@ export function DetailPage(props: DetailPageProps) {
   )
   return (
     <section className="@container flex flex-col gap-gutter">
+      {back ? <div className="-mb-3 -ml-2.5 self-start">{back}</div> : null}
       {hero ? (
         <header className="grid gap-6 @3xl:grid-cols-5 @3xl:items-center @3xl:gap-10">
           <div className="@3xl:order-last @3xl:col-span-2">{cover}</div>

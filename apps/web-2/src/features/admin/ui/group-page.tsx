@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { Link as RouterLink, useParams } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 
@@ -18,11 +19,16 @@ export function GroupPage() {
   const { data: group } = useSuspenseQuery(groupOptions(groupId))
   return (
     <DetailPage
+      back={
+        <RouterLink to="/teach/groups" className={buttonVariants({ variant: 'ghost' })}>
+          <ArrowLeft aria-hidden />
+          {m.admin_groups_all()}
+        </RouterLink>
+      }
       title={group.name}
       meta={`${m.admin_group_member_count({ count: group.member_count })} · ${m.admin_group_updated({ date: formatDate(group.updated_at_unix) })}`}
       primaryAction={canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
     >
-      <Link to="/teach/groups">{m.admin_groups_all()}</Link>
       {group.description ? <p className="max-w-prose wrap-anywhere">{group.description}</p> : null}
       {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
       <GroupMembers group={group} />

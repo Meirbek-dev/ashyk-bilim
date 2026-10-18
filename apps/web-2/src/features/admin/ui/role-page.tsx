@@ -1,9 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { Link as RouterLink, useParams } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 
@@ -25,12 +26,17 @@ export function RolePage() {
   const base = useState(role.version)
   return (
     <DetailPage
+      back={
+        <RouterLink to="/admin/roles" className={buttonVariants({ variant: 'ghost' })}>
+          <ArrowLeft aria-hidden />
+          {m.admin_roles_all()}
+        </RouterLink>
+      }
       title={roleName(role)}
       meta={m.admin_role_meta({ slug: role.slug, priority: role.priority })}
       status={<StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>}
       primaryAction={canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
     >
-      <Link to="/admin/roles">{m.admin_roles_all()}</Link>
       {description ? <p className="max-w-prose wrap-anywhere">{description}</p> : null}
       {canRole(role, 'update') ? <RoleEditSection role={role} base={base} /> : null}
       {canRole(role, 'set_permissions') ? (
