@@ -18,7 +18,7 @@ export function SettingsPage({ title, nav, children }: SettingsPageProps) {
       <div className="flex flex-col gap-gutter @3xl:flex-row">
         <nav
           aria-label={m.ui_sections()}
-          className="flex shrink-0 overflow-x-auto border-b @3xl:w-48 @3xl:flex-col @3xl:border-b-0"
+          className="flex shrink-0 overflow-x-auto border-b @3xl:sticky @3xl:top-20 @3xl:w-48 @3xl:flex-col @3xl:self-start @3xl:border-b-0 @3xl:*:border-b-0 @3xl:*:border-l-2"
         >
           {nav}
         </nav>
