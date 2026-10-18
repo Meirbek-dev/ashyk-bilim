@@ -29,7 +29,7 @@
   "home_state_needs_grading": "Ждёт проверки",
   "home_state_returned": "Возвращено на исправление",
   "home_state_graded": "Оценено",
-  "home_state_passed": "Сдано",
-  "home_state_failed": "Не сдано",
+  "home_state_passed": "Зачтено",
+  "home_state_failed": "Не зачтено",
   "home_state_completed": "Пройдено"
 }
