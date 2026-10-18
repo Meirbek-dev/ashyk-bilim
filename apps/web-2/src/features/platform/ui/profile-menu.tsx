@@ -48,7 +48,7 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
         />
       }
       title={session.user.display_name}
-      detail={session.user.username}
+      detail={`@${session.user.username}`}
       choice={workspace}
       actions={[
         {
