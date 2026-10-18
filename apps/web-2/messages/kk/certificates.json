@@ -3,6 +3,8 @@
   "certificates_invalid": "Жарамсыз",
   "certificates_not_found": "Сертификат табылмады",
   "certificates_not_found_hint": "{code} коды берілген сертификаттардың ешқайсысына сәйкес келмейді. Оны құжаттағы кодпен салыстырыңыз.",
+  "certificates_check_label": "Басқа кодты тексеру",
+  "certificates_check": "Тексеру",
   "certificates_holder": "Иесі",
   "certificates_instructor": "Оқытушы",
   "certificates_code": "Сертификат коды",

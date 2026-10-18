@@ -3,6 +3,8 @@
   "certificates_invalid": "Недействителен",
   "certificates_not_found": "Сертификат не найден",
   "certificates_not_found_hint": "Код {code} не совпадает ни с одним выданным сертификатом. Сверьте его с кодом на документе.",
+  "certificates_check_label": "Проверить другой код",
+  "certificates_check": "Проверить",
   "certificates_holder": "Владелец",
   "certificates_instructor": "Преподаватель",
   "certificates_code": "Код сертификата",

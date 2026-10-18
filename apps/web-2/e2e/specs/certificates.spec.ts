@@ -15,7 +15,7 @@ const test = base.extend<{ issued: { code: string; course: string; holder: strin
 })
 
 test(
-  'B-CRT-01 B-CRT-03 a guest gets the verdict, the holder and the course in the server-rendered document',
+  'B-CRT-01 B-CRT-03 B-CRT-07 a guest gets the verdict, the holder and the course in the server-rendered document',
   { tag: '@smoke' },
   async ({ page, issued }) => {
     const document = await page.request.get(`/certificates/${issued.code}/verify`)
@@ -41,7 +41,7 @@ test(
   },
 )
 
-test('B-CRT-02 an unknown code is not valid and answers 404; the code is read without case and dashes', async ({
+test('B-CRT-02 B-CRT-08 an unknown code is not valid (404), another is checked from there; case and dashes do not matter', async ({
   page,
   issued,
 }) => {
@@ -52,6 +52,9 @@ test('B-CRT-02 an unknown code is not valid and answers 404; the code is read wi
   await expect(page.getByRole('heading', { level: 1, name: m.certificates_not_found({}, ru) })).toBeVisible()
   await expect(page.getByText(m.certificates_invalid({}, ru))).toBeVisible()
   await expect(page.getByText(m.certificates_not_found_hint({ code: unknown }, ru))).toBeVisible()
+  await page.getByLabel(m.certificates_check_label({}, ru)).fill(issued.code)
+  await page.getByRole('button', { name: m.certificates_check({}, ru) }).click()
+  await expect(page.getByText(m.certificates_valid({}, ru))).toBeVisible()
 
   await page.goto(`/certificates/${issued.code.replaceAll('-', '').toLowerCase()}/verify`)
   await expect(page.getByText(m.certificates_valid({}, ru))).toBeVisible()
