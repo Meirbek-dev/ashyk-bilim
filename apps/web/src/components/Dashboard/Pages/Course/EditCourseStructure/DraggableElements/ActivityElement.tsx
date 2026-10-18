@@ -43,8 +43,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useQueryClient } from '@tanstack/react-query'
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations'
 import { cleanActivityUuid, cleanCourseUuid, isCourseAuthor } from '@/lib/course-management'
-import type { DraggableAttributes } from '@dnd-kit/core'
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
 
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { useCourse } from '@components/Contexts/CourseContext'
@@ -89,7 +88,7 @@ interface ActivityElementProps {
   course_uuid: string
   isDragging?: boolean
   attributes?: DraggableAttributes | undefined
-  listeners?: SyntheticListenerMap | undefined
+  listeners?: DraggableSyntheticListeners
 }
 
 const ACTIVITY_CONFIG = {

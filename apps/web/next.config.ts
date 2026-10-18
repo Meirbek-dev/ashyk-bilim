@@ -63,7 +63,6 @@ const nextConfig: NextConfig = {
 
   // Build & Environment
   output: 'standalone',
-  reactStrictMode: true,
   transpilePackages: ['@base-ui/react'],
 
   partialPrefetching: true,
@@ -75,27 +74,23 @@ const nextConfig: NextConfig = {
     serverActions: {
       allowedOrigins: ['cs-mooc.tou.edu.kz', 'localhost:3000'],
     },
-    // Turbopack / Package Optimization
+    // Turbopack / Package Optimization (lucide-react and recharts are optimized by default).
     optimizePackageImports: [
       '@icons-pack/react-simple-icons',
-      'lucide-react',
       // Animation
       'motion/react',
       // Heavy utility libs
-      'recharts',
       '@daypicker/react',
-      'date-fns',
       // TipTap editor (heavy)
       '@tiptap/core',
       '@tiptap/react',
       '@tiptap/pm',
       '@tiptap/starter-kit',
+      '@tiptap/extensions',
       '@tiptap/extension-link',
       '@tiptap/extension-image',
       '@tiptap/extension-table',
       '@tiptap/extension-heading',
-      '@tiptap/extension-character-count',
-      '@tiptap/extension-focus',
       '@tiptap/extension-youtube',
       'tiptap-markdown',
     ],

@@ -195,22 +195,9 @@ function combineAbortSignals(signals: (AbortSignal | undefined | null)[]): {
   }
 }
 
+// `AbortSignal.timeout` exists in Node 18+ and every browser Next supports (Safari 16+).
 function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
-  if (typeof AbortSignal.timeout === 'function') {
-    return { signal: AbortSignal.timeout(timeoutMs), cleanup: () => undefined }
-  }
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`)
-    error.name = 'TimeoutError'
-    controller.abort(error)
-  }, timeoutMs)
-
-  return {
-    signal: controller.signal,
-    cleanup: () => clearTimeout(timeoutId),
-  }
+  return { signal: AbortSignal.timeout(timeoutMs), cleanup: () => undefined }
 }
 
 function getFetchErrorResponse(error: unknown): FetchResponse<unknown> | null {

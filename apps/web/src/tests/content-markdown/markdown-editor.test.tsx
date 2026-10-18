@@ -107,6 +107,21 @@ describe('MarkdownEditor', () => {
     })
   })
 
+  it('toolbar buttons show the active mark without a document change (collapsed cursor)', async () => {
+    const user = userEvent.setup()
+    // jsdom has no layout; the `focus()` chain scrolls the selection into view through Range rects.
+    Range.prototype.getClientRects = () =>
+      ({ length: 0, item: () => null, [Symbol.iterator]: [][Symbol.iterator] }) as DOMRectList
+    Range.prototype.getBoundingClientRect = () => new DOMRect()
+    // Fixed value: the host never re-renders, so the toolbar must subscribe to the editor itself.
+    render(<MarkdownEditor value="Initial" onChange={vi.fn()} preset="questionPrompt" />)
+
+    const bold = await screen.findByRole('button', { name: /^bold/i })
+    expect(bold).toHaveAttribute('aria-pressed', 'false')
+    await user.click(bold)
+    await waitFor(() => expect(bold).toHaveAttribute('aria-pressed', 'true'))
+  })
+
   it('reports validation issues to the host surface', () => {
     const onValidationChange = vi.fn()
 
