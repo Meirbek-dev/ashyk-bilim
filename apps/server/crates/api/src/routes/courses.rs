@@ -11,8 +11,9 @@ use crate::detach::detached;
 use crate::dto::courses::{
     AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseAuthor,
     CourseLifecycleRequest, CourseListItem, CourseListProgress, CourseListQuery, CoursePage,
-    CourseReadiness, CourseUpdate, CreateCourseRequest, CreateCourseUpdateRequest,
-    DuplicateCourseRequest, EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
+    CourseReadiness, CourseTeachingStats, CourseUpdate, CreateCourseRequest,
+    CreateCourseUpdateRequest, DuplicateCourseRequest, EditCourseUpdateRequest,
+    UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
@@ -165,7 +166,7 @@ pub async fn list_courses(
     } else {
         None
     };
-    let items = list_items(&state, &actor, courses).await?;
+    let items = list_items(&state, &actor, courses, mine).await?;
     Ok(Json(CoursePage {
         items,
         next_cursor,
@@ -178,8 +179,9 @@ pub(crate) async fn list_items(
     state: &AppState,
     actor: &ab_domain::identity::Actor,
     courses: Vec<ab_domain::catalog::courses::Course>,
+    mine: bool,
 ) -> ApiResult<Vec<CourseListItem>> {
-    let mut extras = state.courses.list_extras(actor, &courses).await?;
+    let mut extras = state.courses.list_extras(actor, &courses, mine).await?;
     Ok(courses
         .into_iter()
         .map(|c| {
@@ -202,6 +204,11 @@ pub(crate) async fn list_items(
                 progress: extras.progress.remove(&c.id).map(|p| CourseListProgress {
                     progress_pct: p.progress_pct,
                     completed_at_unix: p.completed_at,
+                }),
+                teaching: extras.teaching.remove(&c.id).map(|t| CourseTeachingStats {
+                    learners: t.learners,
+                    activities: t.activities,
+                    ungraded: t.ungraded,
                 }),
                 authors,
                 course: Course::for_actor(c, actor),

@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import type { Course } from '#/shared/api/gen/types.gen'
+import type { CourseListItem as Item } from '#/shared/api/gen/types.gen'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
 import { formatDate } from '#/shared/i18n/format'
@@ -8,11 +8,11 @@ import { Checkbox } from '#/shared/ui/checkbox'
 import { courseStatus } from '../model/course'
 import { CourseStatusBadge } from './course-status'
 
-type CourseListItemProps = { course: Course; checked: boolean; onToggle: () => void }
+type CourseListItemProps = { course: Item; checked: boolean; onToggle: () => void }
 
 /**
  * One course of the teacher's list: its bulk checkbox (B-CST-45), cover thumbnail, name into the workspace, status,
- * last change.
+ * last change, learners and activities, and the work waiting for a grade as a link into the inbox (B-CST-01).
  */
 export function CourseListItem({ course, checked, onToggle }: CourseListItemProps) {
   return (
@@ -33,9 +33,24 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
           </h2>
           <CourseStatusBadge status={courseStatus(course)} />
         </div>
-        <p className="text-sm text-muted-foreground">
-          {m.studio_updated({ date: formatDate(course.updated_at_unix) })}
+        <p className="text-sm text-muted-foreground tabular-nums">
+          {[
+            m.studio_updated({ date: formatDate(course.updated_at_unix) }),
+            ...(course.teaching
+              ? [
+                  m.studio_list_learners({ count: course.teaching.learners }),
+                  m.studio_list_activities({ count: course.teaching.activities }),
+                ]
+              : []),
+          ].join(' · ')}
         </p>
+        {course.teaching && course.teaching.ungraded > 0 ? (
+          <p className="text-sm">
+            <Link to="/teach" search={{ course: course.id }}>
+              {m.studio_list_ungraded({ count: course.teaching.ungraded })}
+            </Link>
+          </p>
+        ) : null}
       </div>
     </div>
   )

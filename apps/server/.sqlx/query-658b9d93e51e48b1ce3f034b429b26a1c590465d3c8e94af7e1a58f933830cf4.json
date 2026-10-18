@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id AS \"course_id!: CourseId\",\n                  (SELECT count(DISTINCT tr.user_id) FROM trail_runs tr\n                   WHERE tr.course_id = c.id AND NOT is_course_staff(tr.course_id, tr.user_id)) AS \"learners!\",\n                  (SELECT count(*) FROM activities a WHERE a.course_id = c.id) AS \"activities!\",\n                  (SELECT count(*) FROM submissions s\n                   WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'pending')\n                  + (SELECT count(*) FROM file_submission_attempts fa\n                     WHERE fa.course_id = c.id AND NOT fa.preview AND fa.status = 'submitted') AS \"ungraded!\"\n           FROM courses c WHERE c.id = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "learners!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "activities!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "ungraded!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "658b9d93e51e48b1ce3f034b429b26a1c590465d3c8e94af7e1a58f933830cf4"
+}

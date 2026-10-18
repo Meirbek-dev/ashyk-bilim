@@ -974,6 +974,15 @@ export const vCourseSummary = v.object({
 });
 
 /**
+ * A teacher's numbers for one of their courses (`GET /courses?mine=true`).
+ */
+export const vCourseTeachingStats = v.object({
+    activities: v.pipe(v.number(), v.integer()),
+    learners: v.pipe(v.number(), v.integer()),
+    ungraded: v.pipe(v.number(), v.integer())
+});
+
+/**
  * `CourseUpdate.allowed_actions`: an announcement's writes follow the
  * course's `update`.
  */
@@ -4693,7 +4702,8 @@ export const vCourseLearnerPage = v.object({
  */
 export const vCourseListItem = v.intersect([vCourse, v.object({
         authors: v.array(vCourseAuthor),
-        progress: v.nullable(vCourseListProgress)
+        progress: v.nullable(vCourseListProgress),
+        teaching: v.optional(vCourseTeachingStats)
     })]);
 
 /**

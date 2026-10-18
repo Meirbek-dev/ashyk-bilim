@@ -18,6 +18,36 @@
   "studio_preset_published": "Published",
   "studio_preset_archived": "Archived",
   "studio_updated": "Changed {date}",
+  "studio_list_learners": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} learner",
+        "countPlural=other": "{count} learners"
+      }
+    }
+  ],
+  "studio_list_activities": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} activity",
+        "countPlural=other": "{count} activities"
+      }
+    }
+  ],
+  "studio_list_ungraded": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} submission to review",
+        "countPlural=other": "{count} submissions to review"
+      }
+    }
+  ],
   "studio_status_draft": "Draft",
   "studio_status_published": "Published",
   "studio_status_archived": "Archived",

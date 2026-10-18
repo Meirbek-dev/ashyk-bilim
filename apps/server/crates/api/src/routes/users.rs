@@ -411,7 +411,7 @@ pub async fn user_courses(
         .list_by_user(&actor, user, query.cursor, query.limit.unwrap_or(20))
         .await?;
     Ok(Json(CoursePage {
-        items: crate::routes::courses::list_items(&state, &actor, courses).await?,
+        items: crate::routes::courses::list_items(&state, &actor, courses, false).await?,
         next_cursor,
         summary: None,
     }))

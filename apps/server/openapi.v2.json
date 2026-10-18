@@ -5677,6 +5677,10 @@
                     "type": "null"
                   }
                 ]
+              },
+              "teaching": {
+                "$ref": "#/components/schemas/CourseTeachingStats",
+                "description": "Present only with `mine=true`: what the course holds for its teachers."
               }
             },
             "required": [
@@ -5948,6 +5952,29 @@
           "private",
           "attention",
           "archived"
+        ],
+        "type": "object"
+      },
+      "CourseTeachingStats": {
+        "description": "A teacher's numbers for one of their courses (`GET /courses?mine=true`).",
+        "properties": {
+          "activities": {
+            "description": "Activities, drafts included.",
+            "type": "integer"
+          },
+          "learners": {
+            "description": "Enrolled learners (course staff never count).",
+            "type": "integer"
+          },
+          "ungraded": {
+            "description": "Work awaiting a grade: pending submissions and submitted file attempts.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "learners",
+          "activities",
+          "ungraded"
         ],
         "type": "object"
       },

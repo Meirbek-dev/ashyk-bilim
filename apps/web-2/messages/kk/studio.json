@@ -18,6 +18,36 @@
   "studio_preset_published": "Жарияланғандар",
   "studio_preset_archived": "Мұрағатта",
   "studio_updated": "{date} өзгертілді",
+  "studio_list_learners": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} білім алушы",
+        "countPlural=other": "{count} білім алушы"
+      }
+    }
+  ],
+  "studio_list_activities": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} белсенділік",
+        "countPlural=other": "{count} белсенділік"
+      }
+    }
+  ],
+  "studio_list_ungraded": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} жұмыс тексеруді күтуде",
+        "countPlural=other": "{count} жұмыс тексеруді күтуде"
+      }
+    }
+  ],
   "studio_status_draft": "Нобай",
   "studio_status_published": "Жарияланған",
   "studio_status_archived": "Мұрағатта",

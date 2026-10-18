@@ -153,6 +153,8 @@ fn normalize_learnings(items: Vec<Learning>) -> Result<Vec<Learning>> {
 pub struct ListExtras {
     pub users: HashMap<UserId, ab_db::identity::UserSummaryRow>,
     pub progress: HashMap<CourseId, ab_db::progress::MemberProgressRow>,
+    /// Only for the caller's own list (`mine`): learners, activities, work awaiting a grade.
+    pub teaching: HashMap<CourseId, ab_db::progress::TeachingStatsRow>,
 }
 
 /// `GET /courses` filters (see `ab_db::catalog::CourseFilter`).
@@ -641,8 +643,14 @@ impl CoursesService {
     }
 
     /// What a `GET /courses` page shows beside each course: its authors'
-    /// names and the caller's progress where they are a member.
-    pub async fn list_extras(&self, actor: &Actor, courses: &[Course]) -> Result<ListExtras> {
+    /// names and the caller's progress where they are a member; with `mine`
+    /// (the courses the caller edits) the teaching numbers too.
+    pub async fn list_extras(
+        &self,
+        actor: &Actor,
+        courses: &[Course],
+        mine: bool,
+    ) -> Result<ListExtras> {
         let author_ids: Vec<UserId> = courses
             .iter()
             .flat_map(|c| c.creator_id.iter().chain(&c.contributor_ids).copied())
@@ -662,7 +670,21 @@ impl CoursesService {
                 .map(|p| (p.course_id, p))
                 .collect()
         };
-        Ok(ListExtras { users, progress })
+        let teaching = if mine && !actor.is_anonymous() {
+            let ids: Vec<CourseId> = courses.iter().map(|c| c.id).collect();
+            ab_db::progress::teaching_stats(&self.pool, &ids)
+                .await?
+                .into_iter()
+                .map(|t| (t.course_id, t))
+                .collect()
+        } else {
+            HashMap::new()
+        };
+        Ok(ListExtras {
+            users,
+            progress,
+            teaching,
+        })
     }
 
     pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {

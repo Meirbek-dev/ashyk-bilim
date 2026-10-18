@@ -1879,6 +1879,10 @@ export type CourseListItem = Course & {
      */
     authors: Array<CourseAuthor>;
     progress: CourseListProgress | null;
+    /**
+     * Present only with `mine=true`: what the course holds for its teachers.
+     */
+    teaching?: CourseTeachingStats;
 };
 
 /**
@@ -1983,6 +1987,24 @@ export type CourseSummary = {
      */
     ready: number;
     total: number;
+};
+
+/**
+ * A teacher's numbers for one of their courses (`GET /courses?mine=true`).
+ */
+export type CourseTeachingStats = {
+    /**
+     * Activities, drafts included.
+     */
+    activities: number;
+    /**
+     * Enrolled learners (course staff never count).
+     */
+    learners: number;
+    /**
+     * Work awaiting a grade: pending submissions and submitted file attempts.
+     */
+    ungraded: number;
 };
 
 /**

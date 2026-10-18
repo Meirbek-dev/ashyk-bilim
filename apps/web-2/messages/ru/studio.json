@@ -20,6 +20,42 @@
   "studio_preset_published": "Опубликованные",
   "studio_preset_archived": "В архиве",
   "studio_updated": "Изменён {date}",
+  "studio_list_learners": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} учащийся",
+        "countPlural=few": "{count} учащихся",
+        "countPlural=many": "{count} учащихся",
+        "countPlural=other": "{count} учащихся"
+      }
+    }
+  ],
+  "studio_list_activities": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} активность",
+        "countPlural=few": "{count} активности",
+        "countPlural=many": "{count} активностей",
+        "countPlural=other": "{count} активности"
+      }
+    }
+  ],
+  "studio_list_ungraded": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} работа ждёт проверки",
+        "countPlural=few": "{count} работы ждут проверки",
+        "countPlural=many": "{count} работ ждут проверки",
+        "countPlural=other": "{count} работы ждут проверки"
+      }
+    }
+  ],
   "studio_status_draft": "Черновик",
   "studio_status_published": "Опубликован",
   "studio_status_archived": "В архиве",

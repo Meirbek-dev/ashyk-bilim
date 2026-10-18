@@ -794,6 +794,38 @@ pub async fn member_progress(
     Ok(rows)
 }
 
+/// What a teacher's course list shows beside each course: learners (members, not staff), activities and work
+/// awaiting a grade (a `pending` submission or a `submitted` file attempt, previews left out).
+pub struct TeachingStatsRow {
+    pub course_id: CourseId,
+    pub learners: i64,
+    pub activities: i64,
+    pub ungraded: i64,
+}
+
+pub async fn teaching_stats(
+    pool: &PgPool,
+    course_ids: &[CourseId],
+) -> Result<Vec<TeachingStatsRow>> {
+    let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
+    let rows = sqlx::query_as!(
+        TeachingStatsRow,
+        r#"SELECT c.id AS "course_id!: CourseId",
+                  (SELECT count(DISTINCT tr.user_id) FROM trail_runs tr
+                   WHERE tr.course_id = c.id AND NOT is_course_staff(tr.course_id, tr.user_id)) AS "learners!",
+                  (SELECT count(*) FROM activities a WHERE a.course_id = c.id) AS "activities!",
+                  (SELECT count(*) FROM submissions s
+                   WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'pending')
+                  + (SELECT count(*) FROM file_submission_attempts fa
+                     WHERE fa.course_id = c.id AND NOT fa.preview AND fa.status = 'submitted') AS "ungraded!"
+           FROM courses c WHERE c.id = ANY($1)"#,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// Published-activity counts per course (trail `course_total_steps`).
 pub struct CourseStepCountRow {
     pub course_id: CourseId,

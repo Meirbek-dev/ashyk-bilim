@@ -110,6 +110,14 @@ export const CoursePage = zod
                 ),
               zod.null(),
             ]),
+            teaching: zod
+              .object({
+                activities: zod.int().describe('Activities, drafts included.'),
+                learners: zod.int().describe('Enrolled learners (course staff never count).'),
+                ungraded: zod.int().describe('Work awaiting a grade: pending submissions and submitted file attempts.'),
+              })
+              .optional()
+              .describe('Present only with `mine=true`: what the course holds for its teachers.'),
           }),
         )
         .describe('A `GET /courses` item: the course plus who wrote it and how far the\ncaller got.'),

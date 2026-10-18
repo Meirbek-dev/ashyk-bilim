@@ -2310,7 +2310,8 @@ async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool)
 }
 
 /// `GET /courses` items name their authors and carry the caller's
-/// progress once enrolled (`null` before, and for anonymous callers).
+/// progress once enrolled (`null` before, and for anonymous callers); the
+/// teacher's own list (`mine=true`) carries the teaching numbers, others not.
 #[sqlx::test(migrations = "../../migrations")]
 async fn course_list_items_carry_authors_and_progress(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -2353,4 +2354,10 @@ async fn course_list_items_carry_authors_and_progress(pool: PgPool) {
     assert!(after["progress"]["completed_at_unix"].is_null());
     let anonymous = item(&app.get("/api/v2/courses").await);
     assert!(anonymous["progress"].is_null());
+    assert!(anonymous.get("teaching").is_none());
+    let mine = item(&app.get_as(&teacher, "/api/v2/courses?mine=true").await);
+    assert_eq!(
+        mine["teaching"],
+        serde_json::json!({ "learners": 1, "activities": 0, "ungraded": 0 })
+    );
 }

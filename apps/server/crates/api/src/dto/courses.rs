@@ -86,6 +86,21 @@ pub struct CourseListItem {
     /// The signed-in caller's progress; `null` when not enrolled (or
     /// anonymous, or staff of the course).
     pub progress: Option<CourseListProgress>,
+    /// Present only with `mine=true`: what the course holds for its teachers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub teaching: Option<CourseTeachingStats>,
+}
+
+/// A teacher's numbers for one of their courses (`GET /courses?mine=true`).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseTeachingStats {
+    /// Enrolled learners (course staff never count).
+    pub learners: i64,
+    /// Activities, drafts included.
+    pub activities: i64,
+    /// Work awaiting a grade: pending submissions and submitted file attempts.
+    pub ungraded: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
