@@ -31,11 +31,13 @@ export function CaseFields({ form, editable }: { form: CodeFormApi; editable: bo
                 <li key={test.id} className="flex min-w-0 flex-col gap-4 py-4">
                   <div className="flex items-center gap-2">
                     <span className="flex-1 font-medium">{m.code_case({ number: index + 1 })}</span>
-                    <IconButton
-                      label={m.code_case_remove({ number: index + 1 })}
-                      icon={<X aria-hidden />}
-                      onClick={() => list.removeValue(index)}
-                    />
+                    {editable ? (
+                      <IconButton
+                        label={m.code_case_remove({ number: index + 1 })}
+                        icon={<X aria-hidden />}
+                        onClick={() => list.removeValue(index)}
+                      />
+                    ) : null}
                   </div>
                   <form.AppField name={`tests[${index}].description`}>
                     {field => <field.TextField label={m.code_field_description()} />}
