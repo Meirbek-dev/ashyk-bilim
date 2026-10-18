@@ -92,7 +92,10 @@ export function queueColumns(ids: Ids, search: QueueSearch, selection: Selection
           params={{ ...ids, submissionId: row.id }}
           search={search}
         >
-          {row.allowed_actions.length > 0 ? m.grading_action_grade() : m.grading_action_open()}
+          {/* Graded or not, a work still to release is graded; a released or returned one is opened. */}
+          {row.allowed_actions.length > 0 && !['published', 'returned'].includes(row.status)
+            ? m.grading_action_grade()
+            : m.grading_action_open()}
         </RouterLink>
       ),
     },

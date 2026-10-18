@@ -18,15 +18,19 @@ const doneText = ({ published, skipped, pending }: PublishOutcome) =>
     ? m.grading_publish_files_done({ published: formatNumber(published), skipped: formatNumber(skipped) })
     : m.grading_publish_all_done({ published: formatNumber(published), pending: formatNumber(pending) })
 
-/** Releases every held grade of the work (B-GRD-07, B-GRD-25): asks with the count, then reports the outcome. */
+/**
+ * Releases every held grade of the work (B-GRD-07, B-GRD-25): asks with the count, then reports the outcome. With
+ * nothing held there is no button (a disabled primary read as broken).
+ */
 export function PublishAll({ work, courseId, held }: PublishAllProps) {
   const [open, setOpen] = useState(false)
   const publish = useMutation(publishAllOptions(work, courseId))
+  if (held === 0 && !open) return null
   return (
     <ConfirmDialog
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button disabled={held === 0}>{m.grading_publish_all()}</Button>}
+      trigger={<Button>{m.grading_publish_all()}</Button>}
       title={m.grading_publish_all_title()}
       consequence={m.grading_publish_all_text({ count: formatNumber(held) })}
       confirmLabel={m.grading_publish()}
