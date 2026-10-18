@@ -23,6 +23,30 @@
   "course_activity_done": "Пройдено",
   "course_learnings_title": "Чему вы научитесь",
   "course_syllabus_title": "Программа курса",
+  "course_chapters_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} глава",
+        "countPlural=few": "{count} главы",
+        "countPlural=many": "{count} глав",
+        "countPlural=other": "{count} главы"
+      }
+    }
+  ],
+  "course_activities_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} активность",
+        "countPlural=few": "{count} активности",
+        "countPlural=many": "{count} активностей",
+        "countPlural=other": "{count} активности"
+      }
+    }
+  ],
   "course_syllabus_empty": "В курсе пока нет активностей.",
   "course_apply": "Стать соавтором",
   "course_applied": "Заявка отправлена",

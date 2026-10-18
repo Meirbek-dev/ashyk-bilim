@@ -23,6 +23,26 @@
   "course_activity_done": "Done",
   "course_learnings_title": "What you will learn",
   "course_syllabus_title": "Course outline",
+  "course_chapters_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} chapter",
+        "countPlural=other": "{count} chapters"
+      }
+    }
+  ],
+  "course_activities_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} activity",
+        "countPlural=other": "{count} activities"
+      }
+    }
+  ],
   "course_syllabus_empty": "The course has no activities yet.",
   "course_apply": "Become a co-author",
   "course_applied": "Application sent",

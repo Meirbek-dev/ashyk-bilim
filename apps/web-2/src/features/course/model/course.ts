@@ -96,6 +96,12 @@ export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
 const ROLE_ORDER = ['creator', 'maintainer', 'contributor']
 
 /** Names for the header: active authors, creator first; reporters are read-only and never authors (BUG-146). */
+/** The course's size as the syllabus lists it (B-CRS-14): chapters and activities. */
+export const syllabusSize = (chapters: SyllabusChapter[]) => ({
+  chapters: chapters.length,
+  activities: chapters.reduce((sum, chapter) => sum + chapter.activities.length, 0),
+})
+
 export const authorNames = (roster: Contributor[]): string[] =>
   roster
     .filter(row => row.status === 'active' && ROLE_ORDER.includes(row.role))

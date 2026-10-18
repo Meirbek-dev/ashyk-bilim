@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
+import { Check } from 'lucide-react'
 import { Suspense } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
@@ -33,10 +34,18 @@ export function AboutPage() {
           <h2 id="course-learnings" className="text-xl font-semibold">
             {m.course_learnings_title()}
           </h2>
-          <ul className="flex max-w-prose list-disc flex-col gap-1 pl-5">
+          {/* Two columns of outcomes, each marked by its own emoji or a check (B-CRS-08). */}
+          <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {course.learnings.map(learning => (
-              <li key={learning.id} className="wrap-anywhere">
-                {learning.emoji ? `${learning.emoji} ${learning.text}` : learning.text}
+              <li key={learning.id} className="flex items-start gap-2 wrap-anywhere">
+                {learning.emoji ? (
+                  <span aria-hidden className="w-5 shrink-0 text-center">
+                    {learning.emoji}
+                  </span>
+                ) : (
+                  <Check aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                )}
+                <span>{learning.text}</span>
               </li>
             ))}
           </ul>

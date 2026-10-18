@@ -23,6 +23,26 @@
   "course_activity_done": "Өтілді",
   "course_learnings_title": "Не үйренесіз",
   "course_syllabus_title": "Курс бағдарламасы",
+  "course_chapters_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} тарау",
+        "countPlural=other": "{count} тарау"
+      }
+    }
+  ],
+  "course_activities_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} белсенділік",
+        "countPlural=other": "{count} белсенділік"
+      }
+    }
+  ],
   "course_syllabus_empty": "Курста әзірге белсенділіктер жоқ.",
   "course_apply": "Бірлескен автор болу",
   "course_applied": "Өтінім жіберілді",

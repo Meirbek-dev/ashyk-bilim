@@ -2,7 +2,15 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { Activity, Contributor, Course, LearnerCourseState } from '#/shared/api/gen/types.gen'
 
-import { application, authorNames, curriculumSyllabus, outlineSyllabus, primaryAction } from './course'
+import {
+  application,
+  authorNames,
+  curriculumSyllabus,
+  outlineSyllabus,
+  primaryAction,
+  syllabusSize,
+  type SyllabusChapter,
+} from './course'
 
 const course = (patch: Partial<Course> = {}): Course => ({
   id: 'c1',
@@ -191,6 +199,27 @@ describe('syllabus and progress', () => {
         activities: [{ id: 'a1', title: 'a1', type: 'video', complete: false, available: false, opensAt: null }],
       },
     ])
+  })
+
+  test('B-CRS-14 the size line counts the chapters and activities the syllabus lists', () => {
+    const lesson: SyllabusChapter['activities'][number] = {
+      id: 'a',
+      title: 'A',
+      type: 'video',
+      complete: false,
+      available: false,
+      opensAt: null,
+    }
+    expect(
+      syllabusSize([
+        { id: 'c1', title: 'C1', activities: [lesson, lesson] },
+        { id: 'c2', title: 'C2', activities: [lesson] },
+      ]),
+    ).toEqual({
+      chapters: 2,
+      activities: 3,
+    })
+    expect(syllabusSize([])).toEqual({ chapters: 0, activities: 0 })
   })
 
   test('B-CRS-10 completion and availability come from the learner state as the server sent them', () => {

@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
 import { formatNumber } from '#/shared/i18n/format'
 
-import type { SyllabusChapter } from '../model/course'
+import { syllabusSize, type SyllabusChapter } from '../model/course'
 import { SyllabusRow } from './syllabus-row'
 
 /**
@@ -14,9 +14,18 @@ import { SyllabusRow } from './syllabus-row'
 export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters: SyllabusChapter[] }) {
   return (
     <section aria-labelledby="course-syllabus" className="flex flex-col gap-6">
-      <h2 id="course-syllabus" className="text-xl font-semibold">
-        {m.course_syllabus_title()}
-      </h2>
+      <div className="flex flex-col gap-1">
+        <h2 id="course-syllabus" className="text-xl font-semibold">
+          {m.course_syllabus_title()}
+        </h2>
+        {/* The size of the course at a glance (B-CRS-14): chapters and activities as listed below. */}
+        {chapters.length > 0 ? (
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {m.course_chapters_count({ count: chapters.length })} ·{' '}
+            {m.course_activities_count({ count: syllabusSize(chapters).activities })}
+          </p>
+        ) : null}
+      </div>
       {chapters.length === 0 ? <p className="text-muted-foreground">{m.course_syllabus_empty()}</p> : null}
       <div className="flex flex-col gap-8">
         {chapters.map((chapter, index) => {
