@@ -84,6 +84,7 @@ export function queueColumns(ids: Ids, search: QueueSearch, selection: Selection
       id: 'action',
       header: m.grading_col_action(),
       priority: 2,
+      action: true,
       cell: row => (
         <RouterLink
           className={buttonVariants({ variant: 'outline' })}

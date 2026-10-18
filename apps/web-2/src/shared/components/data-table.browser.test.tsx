@@ -1,6 +1,8 @@
 import { page } from 'vite-plus/test/browser'
 import { describe, expect, test, vi } from 'vite-plus/test'
 
+import { Button } from '#/shared/ui/button'
+
 import type { DataColumn, Sort } from './data-columns'
 import { DataTable } from './data-table'
 import { renderInRouter } from './testing'
@@ -49,5 +51,27 @@ describe('DataTable', () => {
     await expect.element(cards.first().getByRole('heading', { name: 'Algebra' })).toBeVisible()
     await expect.element(cards.first().getByRole('definition')).toHaveTextContent('12')
     await expect.element(cards.first()).not.toHaveTextContent('Code')
+  })
+
+  test('narrow: a second priority 1 column is a line under the title, the action column has no label', async () => {
+    await page.viewport(390, 800)
+    const queue: DataColumn<Row>[] = [
+      { id: 'name', header: 'Activity', cell: row => row.name, priority: 1 },
+      { id: 'who', header: 'Learner', cell: row => `learner ${row.id}`, priority: 1 },
+      {
+        id: 'act',
+        header: 'Action',
+        cell: row => <Button aria-label={`Open ${row.id}`} />,
+        priority: 2,
+        action: true,
+      },
+    ]
+    const screen = await renderInRouter(<DataTable label={label} rows={rows} columns={queue} getKey={row => row.id} />)
+    const card = screen.getByRole('listitem').first()
+    await expect.element(card.getByRole('heading', { name: 'Algebra' })).toBeVisible()
+    await expect.element(card.getByText('learner a')).toBeVisible()
+    await expect.element(card.getByRole('button', { name: 'Open a' })).toBeVisible()
+    await expect.element(card).not.toHaveTextContent('Action')
+    await expect.element(card).not.toHaveTextContent('Learner')
   })
 })

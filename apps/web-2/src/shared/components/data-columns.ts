@@ -4,9 +4,11 @@ export type DataColumn<T> = {
   id: string
   header: string
   cell: (row: T) => ReactNode
-  /** Narrow width: 1 = the card's title, 2 = a labelled line on the card, 3 = table only. */
+  /** Narrow width: 1 = the card's title (more of them: lines under it), 2 = a labelled line on the card, 3 = table only. */
   priority: 1 | 2 | 3
   sortable?: boolean
+  /** The row's action (a button or link): on a card it ends the card, without the column's label. */
+  action?: boolean
   /** Long text (a course name) wraps in the table instead of widening it; the title column (priority 1) always does. */
   wrap?: boolean
 }

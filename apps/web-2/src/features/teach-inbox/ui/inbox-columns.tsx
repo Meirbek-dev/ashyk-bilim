@@ -42,5 +42,11 @@ export const inboxColumns: DataColumn<WorkItem>[] = [
   { id: 'state', header: m.inbox_state(), priority: 2, cell: item => <KindBadge kind={item.kind} /> },
   { id: 'since', header: m.inbox_col_since(), priority: 2, cell: item => date(item.created_at_unix) },
   { id: 'due', header: m.inbox_col_due(), priority: 3, cell: item => date(item.due_at_unix) },
-  { id: 'action', header: m.inbox_col_action(), priority: 2, cell: item => <WorkActionLink item={item} /> },
+  {
+    id: 'action',
+    header: m.inbox_col_action(),
+    priority: 2,
+    action: true,
+    cell: item => <WorkActionLink item={item} />,
+  },
 ]
