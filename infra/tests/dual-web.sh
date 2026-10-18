@@ -29,6 +29,9 @@ up() {
       compose exec -T nginx curl -fs -o /dev/null -H 'Host: ashyq.test' "http://127.0.0.1$probe" 2>/dev/null && return
     sleep 1
   done
+  compose ps -a >&2
+  compose logs --tail 30 "${@:2}" >&2
+  compose exec -T nginx curl -s -H 'Host: ashyq.test' "http://127.0.0.1$probe" >&2 || true
   die "edge did not answer"
 }
 
