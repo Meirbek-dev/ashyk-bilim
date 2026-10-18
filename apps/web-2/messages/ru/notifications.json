@@ -34,7 +34,7 @@
   "notifications_text_score": "Оценка: {score}",
   "notifications_text_due": "Срок: {date}",
   "notifications_text_update": "«{title}», курс «{course}»",
-  "notifications_text_reply": "{author} ответил(а) в обсуждении курса «{course}»",
+  "notifications_text_reply": "Новый ответ от {author} в обсуждении курса «{course}»",
   "notifications_text_application": "{applicant} хочет стать соавтором курса «{course}»",
   "notifications_xp_awarded": "Начислено {amount} XP",
   "notifications_prefs_title": "Что присылать",
