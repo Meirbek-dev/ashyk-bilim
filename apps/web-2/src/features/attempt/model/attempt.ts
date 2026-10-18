@@ -8,6 +8,7 @@ import type {
   ItemAnswer,
   ItemBody,
   Policy,
+  StudentSubmission,
 } from '#/shared/api/gen/types.gen'
 
 export type EntryAction =
@@ -23,6 +24,18 @@ export function entryAction(state: AttemptState): EntryAction {
 }
 
 export const needsRemediation = (state: AttemptState) => state.disabled_reasons.includes('REMEDIATION_REQUIRED')
+
+/**
+ * "Passed / not passed" of a handed-in attempt (B-ATT-23): only for a released score, against the effective passing
+ * score; null while there is nothing to judge (on review, held back, returned for revision).
+ */
+export function resultVerdict(
+  attempt: Pick<StudentSubmission, 'final_score' | 'release_state'>,
+  state: Pick<AttemptState, 'effective'>,
+): 'passed' | 'not_passed' | null {
+  if (attempt.release_state !== 'visible' || attempt.final_score === null) return null
+  return attempt.final_score >= state.effective.passing_score ? 'passed' : 'not_passed'
+}
 
 /** The exam protections the client applies (devtools detection is not one: a window-size guess, not a measure). */
 export type Protection = 'tab_switch' | 'copy_paste' | 'right_click' | 'fullscreen'

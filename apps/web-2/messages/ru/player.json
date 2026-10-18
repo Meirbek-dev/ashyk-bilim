@@ -19,6 +19,7 @@
   "player_unmarked": "Отметка снята",
   "player_continue": "Продолжить",
   "player_finish": "Итоги курса",
+  "player_next_step": "Далее: {title}",
   "player_empty": "Здесь пока ничего нет.",
   "player_opens_at": "Откроется {date}. До этого задание недоступно.",
   "player_locked_text": "Эта активность вам недоступна.",

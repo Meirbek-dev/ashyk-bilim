@@ -1,6 +1,8 @@
+import { CalendarClock, Eye, ListChecks, RotateCcw, Target, Timer } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, AttemptState, ReviewVisibility } from '#/shared/api/gen/types.gen'
-import { formatDateTime, formatNumber } from '#/shared/i18n/format'
+import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { protections, type Protection } from '../model/attempt'
 
@@ -17,7 +19,17 @@ const ruleLabels = {
   fullscreen: m.attempt_rule_fullscreen,
 } satisfies Record<Protection, () => string>
 
-/** The conditions before starting (B-ATT-02, B-ATT-04): from the effective policy of `attempt-state` only. */
+const attemptsText = (state: AttemptState) => {
+  const used = formatNumber(state.attempts_used)
+  if (state.attempts_remaining === null)
+    return state.attempts_used === 0 ? m.attempt_attempts_unlimited_fresh() : m.attempt_attempts_unlimited({ used })
+  return m.attempt_attempts_left({ used, left: formatNumber(state.attempts_remaining) })
+}
+
+/**
+ * The conditions before starting (B-ATT-02, B-ATT-04): from the effective policy of `attempt-state` only, one fact per
+ * line with its icon, the passing score among them.
+ */
 export function PolicySummary({ assessment, state }: { assessment: AssessmentDetail; state: AttemptState }) {
   const { effective } = state
   const rules = protections(assessment.policy)
@@ -25,21 +37,33 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.attempt_entry_heading()}</h2>
-      <ul className="flex flex-col gap-1 text-sm">
-        <li>{m.attempt_questions({ count: formatNumber(assessment.items.length) })}</li>
+      <ul className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
         <li>
+          <ListChecks aria-hidden />
+          {m.attempt_questions({ count: formatNumber(assessment.items.length) })}
+        </li>
+        <li>
+          <Timer aria-hidden />
           {minutes === null ? m.attempt_no_time_limit() : m.attempt_time_limit({ minutes: formatNumber(minutes) })}
         </li>
         <li>
-          {state.attempts_remaining === null
-            ? m.attempt_attempts_unlimited({ used: formatNumber(state.attempts_used) })
-            : m.attempt_attempts_left({
-                used: formatNumber(state.attempts_used),
-                left: formatNumber(state.attempts_remaining),
-              })}
+          <RotateCcw aria-hidden />
+          {attemptsText(state)}
         </li>
-        {effective.due_at_unix ? <li>{m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}</li> : null}
-        <li>{visibility[assessment.policy.review_visibility]()}</li>
+        <li>
+          <Target aria-hidden />
+          {m.attempt_passing_score({ score: formatPercent(effective.passing_score) })}
+        </li>
+        {effective.due_at_unix ? (
+          <li>
+            <CalendarClock aria-hidden />
+            {m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}
+          </li>
+        ) : null}
+        <li>
+          <Eye aria-hidden />
+          {visibility[assessment.policy.review_visibility]()}
+        </li>
       </ul>
       {rules.length ? (
         <div className="flex flex-col gap-2">

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { ActivityState, ActivityType, LearnerCourseState, NextAction } from '#/shared/api/gen/types.gen'
 
-import { activityKind, locate, playerAction } from './player'
+import { activityKind, locate, nextStep, playerAction } from './player'
 
 const activity = (id: string, patch: Partial<ActivityState> = {}): ActivityState => ({
   id,
@@ -66,6 +66,13 @@ describe('player model', () => {
     expect(locate(state, 'a')).toMatchObject({ prev: null, next: { id: 'b' } })
     expect(locate(state, 'c')).toMatchObject({ prev: { id: 'b' }, next: null })
     expect(locate(state, 'elsewhere')).toBeNull()
+  })
+
+  test('B-PLY-18 after graded work: the next activity across chapters, the summary after the last, none off the outline', () => {
+    const state = course([[activity('a'), activity('b')], [activity('c')]])
+    expect(nextStep(state, 'b')).toMatchObject({ kind: 'activity', activity: { id: 'c' } })
+    expect(nextStep(state, 'c')).toEqual({ kind: 'finish' })
+    expect(nextStep(state, 'draft')).toBeNull()
   })
 
   test('B-PLY-06 a lesson that is not done offers to mark it, whatever comes next', () => {

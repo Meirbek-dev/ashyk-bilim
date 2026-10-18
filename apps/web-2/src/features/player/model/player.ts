@@ -32,6 +32,16 @@ export function locate(state: LearnerCourseState, id: ActivityId) {
   return { entry, prev: flat[index - 1] ?? null, next: flat[index + 1] ?? null }
 }
 
+/**
+ * Where to go after handing in graded work (B-PLY-18): the next activity in contents order, the course summary after
+ * the last one, or nothing for an activity the outline does not list.
+ */
+export function nextStep(state: LearnerCourseState, id: ActivityId) {
+  const found = locate(state, id)
+  if (!found) return null
+  return found.next ? ({ kind: 'activity', activity: found.next } as const) : ({ kind: 'finish' } as const)
+}
+
 /** `ActivityState.allowed_actions` an entry card can act on (the server's work-state vocabulary). */
 export type EntryAction = 'start' | 'continue' | 'revise' | 'view_feedback' | 'view_receipt'
 const ENTRY_ACTIONS = new Set<string>(['start', 'continue', 'revise', 'view_feedback', 'view_receipt'])

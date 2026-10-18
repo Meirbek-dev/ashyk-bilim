@@ -51,9 +51,11 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   }
   if (action.kind === 'continue')
     return (
-      <RouterLink to={ATTEMPT_PATH} params={params} search={{ attempt: action.draftId }} className={buttonVariants()}>
-        {m.attempt_continue()}
-      </RouterLink>
+      <div>
+        <RouterLink to={ATTEMPT_PATH} params={params} search={{ attempt: action.draftId }} className={buttonVariants()}>
+          {m.attempt_continue()}
+        </RouterLink>
+      </div>
     )
   if (action.kind === 'blocked')
     return (

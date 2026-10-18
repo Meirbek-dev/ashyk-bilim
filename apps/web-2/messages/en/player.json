@@ -19,6 +19,7 @@
   "player_unmarked": "Mark removed",
   "player_continue": "Continue",
   "player_finish": "Course summary",
+  "player_next_step": "Next: {title}",
   "player_empty": "Nothing here yet.",
   "player_opens_at": "Opens {date}. Until then it is not available.",
   "player_locked_text": "This activity is not available to you.",

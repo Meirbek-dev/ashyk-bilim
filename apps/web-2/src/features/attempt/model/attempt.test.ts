@@ -16,6 +16,7 @@ import {
   isBlank,
   needsRemediation,
   protections,
+  resultVerdict,
   retryDelayMs,
   saveOutcome,
   runsToDueDate,
@@ -85,6 +86,15 @@ describe('attempt model', () => {
       kind: 'blocked',
       reasons: ['PAST_DUE'],
     })
+  })
+
+  test('B-ATT-23 a released score is passed or not against the effective passing score; nothing to judge otherwise', () => {
+    const visible = { release_state: 'visible' as const }
+    expect(resultVerdict({ ...visible, final_score: 60 }, state())).toBe('passed')
+    expect(resultVerdict({ ...visible, final_score: 59.5 }, state())).toBe('not_passed')
+    expect(resultVerdict({ ...visible, final_score: null }, state())).toBeNull()
+    expect(resultVerdict({ release_state: 'awaiting_release', final_score: 90 }, state())).toBeNull()
+    expect(resultVerdict({ release_state: 'returned_for_revision', final_score: 10 }, state())).toBeNull()
   })
 
   test('B-ATT-20 remediation is required only when the server says so', () => {

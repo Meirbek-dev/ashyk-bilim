@@ -3,6 +3,7 @@ export { ensureCompletion, ensureEntry, ensureLearner, ensurePlayer, learnerStat
 export { ActivityHeader } from './ui/activity-header'
 export { CompletionPage } from './ui/completion-page'
 export { PlayerError } from './ui/player-error'
+export { NextStepLink } from './ui/next-step-link'
 export { PlayerNotFound } from './ui/player-not-found'
 export { PlayerPage } from './ui/player-page'
 export { PreviewNote } from './ui/preview-note'

@@ -19,6 +19,7 @@
   "player_unmarked": "Белгі алынды",
   "player_continue": "Жалғастыру",
   "player_finish": "Курс қорытындысы",
+  "player_next_step": "Келесі: {title}",
   "player_empty": "Мұнда әзірге ештеңе жоқ.",
   "player_opens_at": "{date} ашылады. Оған дейін тапсырма қолжетімсіз.",
   "player_locked_text": "Бұл белсенділік сізге қолжетімсіз.",

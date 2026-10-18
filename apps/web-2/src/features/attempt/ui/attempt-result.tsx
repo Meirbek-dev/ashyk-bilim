@@ -8,11 +8,14 @@ import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatPercent } from '#/shared/i18n/format'
 
+import { resultVerdict } from '../model/attempt'
 import { stateOptions } from '../queries'
 import { ATTEMPT_PATH, AttemptFrame } from './attempt-frame'
 import { statuses } from './attempts-list'
 import { ItemComments } from './item-comments'
+import { ResultActions } from './result-actions'
 import { ResultBreakdown } from './result-breakdown'
+import { ScoreHero } from './score-hero'
 
 // Why there is no grade to show yet, by release state; `visible` shows the grade instead.
 const waiting = {
@@ -22,12 +25,17 @@ const waiting = {
   visible: null,
 } satisfies Record<ReleaseState, (() => string) | null>
 
-/** A handed-in attempt (B-ATT-18, B-ATT-19): what the release mode lets the learner see, and how it was handed in. */
+/**
+ * A handed-in attempt (B-ATT-18, B-ATT-19, B-ATT-23): the released score large with "passed / not passed" against the
+ * passing score, what the release mode lets the learner see, how it was handed in, and the way on: another attempt
+ * when it did not pass and one is open, otherwise the next activity of the course.
+ */
 export function AttemptResult({ assessment, attempt }: { assessment: AssessmentDetail; attempt: StudentSubmission }) {
   const { data: state } = useSuspenseQuery(stateOptions(assessment.id))
   const status = statuses[attempt.status]
   const note = waiting[attempt.release_state]
   const released = attempt.release_state === 'visible' || attempt.release_state === 'returned_for_revision'
+  const verdict = resultVerdict(attempt, state)
   const grading = attempt.grading
   return (
     <AttemptFrame title={assessment.title}>
@@ -39,18 +47,9 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
             {attempt.is_late ? <StatusBadge tone="warning">{m.attempt_late()}</StatusBadge> : null}
           </div>
         </header>
-        <ul className="flex flex-col gap-1 text-sm">
+        <ScoreHero attempt={attempt} state={state} released={released} />
+        <ul className="flex flex-col gap-1 text-sm empty:hidden">
           {note ? <li>{note()}</li> : null}
-          {attempt.final_score === null ? null : (
-            <li className="text-lg font-semibold tabular-nums">
-              {m.attempt_score({ score: formatPercent(attempt.final_score) })}
-            </li>
-          )}
-          {released ? (
-            <li className="tabular-nums">
-              {m.attempt_passing_score({ score: formatPercent(state.effective.passing_score) })}
-            </li>
-          ) : null}
           {attempt.auto_submit_reason === 'time_expired' ? <li>{m.attempt_auto_time()}</li> : null}
           {attempt.auto_submit_reason === 'integrity_violation' ? <li>{m.attempt_auto_violation()}</li> : null}
           {attempt.auto_submit_reason === 'deadline_passed' ? <li>{m.attempt_auto_deadline()}</li> : null}
@@ -59,6 +58,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
             <li>{m.attempt_late_penalty({ percent: formatPercent(attempt.late_penalty_pct) })}</li>
           ) : null}
         </ul>
+        <ResultActions retry={verdict === 'not_passed' && state.can_start} />
         {grading?.feedback ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{m.attempt_feedback_heading()}</h2>
