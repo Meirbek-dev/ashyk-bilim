@@ -115,6 +115,7 @@
   "grading_rubric_total": "From the rubric: {percent}",
   "grading_final_score": "Grade, %",
   "grading_kpi_total": "All submissions",
+  "grading_show_works": "Show submissions",
   "grading_kpi_needs_grading": "Awaiting review",
   "grading_kpi_graded": "Not published",
   "grading_kpi_published": "Published",

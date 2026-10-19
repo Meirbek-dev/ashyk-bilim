@@ -115,6 +115,7 @@
   "grading_rubric_total": "Критерийлер бойынша: {percent}",
   "grading_final_score": "Баға, %",
   "grading_kpi_total": "Барлық жұмыстар",
+  "grading_show_works": "Жұмыстарды көрсету",
   "grading_kpi_needs_grading": "Тексеруді күтуде",
   "grading_kpi_graded": "Жарияланбаған",
   "grading_kpi_published": "Жарияланған",

@@ -117,6 +117,7 @@
   "grading_rubric_total": "По рубрике: {percent}",
   "grading_final_score": "Оценка, %",
   "grading_kpi_total": "Всего работ",
+  "grading_show_works": "Показать работы",
   "grading_kpi_needs_grading": "Ждут проверки",
   "grading_kpi_graded": "Не опубликованы",
   "grading_kpi_published": "Опубликованы",
