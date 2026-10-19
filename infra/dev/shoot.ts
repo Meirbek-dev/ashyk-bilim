@@ -2,7 +2,7 @@
 // `just shoot`: screenshots of web-2 pages on a running dev slot, as real accounts, for design review.
 //
 //   just shoot [--slot N] [--pages file.json] [--page name=/path ...] [--as <login>] [--filter <regex>]
-//              [--widths 1440,390] [--modes light,dark] [--label after] [--ref <git-ref>]
+//              [--widths 1440,390] [--modes light,dark] [--label after] [--ref <git-ref>] [--locale kk|en]
 //
 // Pages: `--pages` is a JSON list of { "name", "path", "as"? } (`as`: a username or email, signed in through the
 // dev-only /auth/dev-login; none: `--as`, else a guest). `--page name=/path` adds one more.
@@ -35,6 +35,7 @@ function parse(argv: string[]) {
     modes: ['light', 'dark'],
     label: '',
     ref: '',
+    locale: '',
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? ''
@@ -55,6 +56,7 @@ function parse(argv: string[]) {
     else if (arg === '--widths') o.widths = value().split(',').map(Number)
     else if (arg === '--modes') o.modes = value().split(',')
     else if (arg === '--label') o.label = value()
+    else if (arg === '--locale') o.locale = value()
     else if (arg === '--ref') o.ref = value()
     else die(`unknown argument ${arg} (see the header of infra/dev/shoot.ts)`)
   }
@@ -124,7 +126,7 @@ async function main(): Promise<void> {
     for (const page of pages)
       for (const mode of o.modes)
         for (const width of o.widths)
-          await shot(browser, { page, mode, width, base, out, cookie: cookies.get(page.as) })
+          await shot(browser, { page, mode, width, base, out, cookie: cookies.get(page.as), locale: o.locale })
   } finally {
     await browser.close()
     server?.stop()
@@ -132,9 +134,18 @@ async function main(): Promise<void> {
   process.stdout.write(`shoot: ${out}\n`)
 }
 
-type ShotArgs = { page: Page; mode: string; width: number; base: string; out: string; cookie: string | undefined }
+type ShotArgs = {
+  page: Page
+  mode: string
+  width: number
+  base: string
+  out: string
+  cookie: string | undefined
+  /** The web's ab_locale cookie (none: ru, the base locale). */
+  locale: string
+}
 
-async function shot(browser: import('playwright').Browser, { page, mode, width, base, out, cookie }: ShotArgs) {
+async function shot(browser: import('playwright').Browser, { page, mode, width, base, out, cookie, locale }: ShotArgs) {
   const height = width > 800 ? 900 : 844
   const context = await browser.newContext({
     viewport: { width, height },
@@ -142,6 +153,7 @@ async function shot(browser: import('playwright').Browser, { page, mode, width, 
     locale: 'ru-RU',
   })
   if (cookie) await context.addCookies([{ name: 'ab_session', value: cookie, domain: 'localhost', path: '/' }])
+  if (locale) await context.addCookies([{ name: 'ab_locale', value: locale, domain: 'localhost', path: '/' }])
   const tab = await context.newPage()
   const flags: string[] = []
   tab.on('pageerror', error => flags.push(`ERR ${error.message.slice(0, 160)}`))
