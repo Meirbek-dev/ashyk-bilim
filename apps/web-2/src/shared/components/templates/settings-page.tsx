@@ -11,6 +11,17 @@ type SettingsPageProps = {
   children: ReactNode
 }
 
+/**
+ * A tab row that scrolls sideways (390 px) shows its current tab: a ref callback, so the last tab of a deep link is not
+ * cut off at the edge on load.
+ */
+export function revealCurrentTab(row: HTMLElement | null) {
+  const current = row?.querySelector<HTMLElement>('[aria-current="page"]')
+  if (!row || !current) return
+  const end = current.offsetLeft + current.offsetWidth
+  if (end > row.scrollLeft + row.clientWidth) row.scrollLeft = end - row.clientWidth
+}
+
 /** Settings (DESIGN 6): section links, then stacked sections that each save on their own. */
 export function SettingsPage({ title, nav, children }: SettingsPageProps) {
   return (
@@ -19,8 +30,9 @@ export function SettingsPage({ title, nav, children }: SettingsPageProps) {
       <div className="flex flex-col gap-gutter @3xl:flex-row">
         {nav ? (
           <nav
+            ref={revealCurrentTab}
             aria-label={m.ui_sections()}
-            className="flex shrink-0 overflow-x-auto border-b @3xl:sticky @3xl:top-20 @3xl:w-48 @3xl:flex-col @3xl:self-start @3xl:border-b-0 @3xl:*:border-b-0 @3xl:*:border-l-2"
+            className="relative flex shrink-0 overflow-x-auto border-b @3xl:sticky @3xl:top-20 @3xl:w-48 @3xl:flex-col @3xl:self-start @3xl:border-b-0 @3xl:*:border-b-0 @3xl:*:border-l-2"
           >
             {nav}
           </nav>

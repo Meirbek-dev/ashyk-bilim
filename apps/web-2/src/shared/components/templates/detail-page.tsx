@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { revealCurrentTab } from './settings-page'
 
 type DetailPageProps = {
   /** A ghost link with ArrowLeft above the title: back to the list the object belongs to. */
@@ -57,7 +58,7 @@ export function DetailPage(props: DetailPageProps) {
         </header>
       )}
       {tabs ? (
-        <nav aria-label={m.ui_sections()} className="flex overflow-x-auto border-b">
+        <nav ref={revealCurrentTab} aria-label={m.ui_sections()} className="relative flex overflow-x-auto border-b">
           {tabs}
         </nav>
       ) : null}

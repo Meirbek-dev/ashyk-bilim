@@ -12,7 +12,7 @@ import { renderInRouter } from '../testing'
 import { DetailPage } from './detail-page'
 import { FocusPage } from './focus-page'
 import { ListPage } from './list-page'
-import { SettingsPage } from './settings-page'
+import { revealCurrentTab, SettingsPage } from './settings-page'
 import { SettingsSection } from './settings-section'
 
 const text = {
@@ -145,5 +145,25 @@ describe('SettingsPage', () => {
     await expect.element(section.getByRole('heading', { level: 2, name: text.section })).toBeVisible()
     await section.getByRole('button', { name: m.ui_save() }).click()
     expect(onSubmit).toHaveBeenCalledOnce()
+  })
+})
+
+describe('revealCurrentTab', () => {
+  test('a sideways-scrolling tab row shows its current tab, cut off at the edge otherwise', async () => {
+    const screen = await renderInRouter(
+      <nav ref={revealCurrentTab} aria-label={text.title} className="relative flex w-40 overflow-x-auto">
+        {['Profile', 'Security', 'Appearance', 'Notifications'].map((name, index) => (
+          <span key={name} aria-current={index === 3 ? 'page' : undefined} className="shrink-0 px-4">
+            {name}
+          </span>
+        ))}
+      </nav>,
+    )
+    const row = screen.getByRole('navigation', { name: text.title })
+    await expect.element(row).toBeVisible()
+    const nav = row.element()
+    const current = screen.getByText('Notifications').element()
+    expect(nav.scrollLeft).toBeGreaterThan(0)
+    expect(current.getBoundingClientRect().right).toBeLessThanOrEqual(nav.getBoundingClientRect().right + 1)
   })
 })
