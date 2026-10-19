@@ -902,6 +902,10 @@ expression: json
           "teacher_user_id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "teacher_username": {
+            "description": "Tells two teachers with one display name apart (the prod copy has two «Садуакас Дулатович Байжуманов»).",
+            "type": "string"
+          },
           "workload_backlog": {
             "type": "integer"
           }
@@ -909,6 +913,7 @@ expression: json
         "required": [
           "teacher_user_id",
           "teacher_display_name",
+          "teacher_username",
           "managed_course_count",
           "workload_backlog",
           "sla_breaches",

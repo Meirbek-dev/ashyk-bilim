@@ -4476,6 +4476,7 @@ export const vAdminTeacherRow = v.object({
     sla_breaches: v.pipe(v.number(), v.integer()),
     teacher_display_name: v.string(),
     teacher_user_id: vUserId,
+    teacher_username: v.string(),
     workload_backlog: v.pipe(v.number(), v.integer())
 });
 

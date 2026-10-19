@@ -296,6 +296,10 @@ export type AdminTeacherRow = {
     sla_breaches: number;
     teacher_display_name: string;
     teacher_user_id: UserId;
+    /**
+     * Tells two teachers with one display name apart (the prod copy has two «Садуакас Дулатович Байжуманов»).
+     */
+    teacher_username: string;
     workload_backlog: number;
 };
 

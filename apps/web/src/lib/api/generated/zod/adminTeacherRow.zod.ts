@@ -14,6 +14,11 @@ export const AdminTeacherRow = zod.object({
   sla_breaches: zod.int(),
   teacher_display_name: zod.string(),
   teacher_user_id: zod.uuid(),
+  teacher_username: zod
+    .string()
+    .describe(
+      'Tells two teachers with one display name apart (the prod copy has two «Садуакас Дулатович Байжуманов»).',
+    ),
   workload_backlog: zod.int(),
 })
 

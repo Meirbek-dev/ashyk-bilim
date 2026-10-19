@@ -538,6 +538,8 @@ pub struct AnomalyItem {
 pub struct AdminTeacherRow {
     pub teacher_user_id: UserId,
     pub teacher_display_name: String,
+    /// Tells two teachers with one display name apart (the prod copy has two «Садуакас Дулатович Байжуманов»).
+    pub teacher_username: String,
     pub managed_course_count: i64,
     pub workload_backlog: i64,
     pub sla_breaches: i64,

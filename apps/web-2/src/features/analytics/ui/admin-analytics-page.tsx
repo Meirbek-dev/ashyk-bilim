@@ -41,7 +41,18 @@ const courseColumns = (): DataColumn<AdminCourseRow>[] => [
 ]
 
 const teacherColumns = (): DataColumn<AdminTeacherRow>[] => [
-  { id: 'teacher', header: m.analytics_col_teacher(), priority: 1, cell: row => name(row.teacher_display_name) },
+  {
+    id: 'teacher',
+    header: m.analytics_col_teacher(),
+    priority: 1,
+    // The @username under the name: the prod copy has two teachers named «Садуакас Дулатович Байжуманов».
+    cell: row => (
+      <span className="flex flex-col">
+        {name(row.teacher_display_name)}
+        <span className="text-xs wrap-anywhere text-muted-foreground">@{row.teacher_username}</span>
+      </span>
+    ),
+  },
   { id: 'courses', header: m.analytics_col_courses(), priority: 2, cell: row => count(row.managed_course_count) },
   { id: 'backlog', header: m.analytics_col_backlog(), priority: 2, cell: row => count(row.workload_backlog) },
   { id: 'breaches', header: m.analytics_sla_breaches(), priority: 2, cell: row => count(row.sla_breaches) },

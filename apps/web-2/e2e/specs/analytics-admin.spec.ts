@@ -32,7 +32,8 @@ test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', 
   await expect(page.getByRole('heading', { level: 1, name: m.analytics_admin_title({}, ru) })).toBeVisible()
   const courses = page.getByRole('table', { name: m.analytics_admin_courses({}, ru) })
   await expect(courses.getByText(course.course_name, { exact: true }).first()).toBeVisible()
-  await expect(page.getByRole('table', { name: m.analytics_admin_teachers({}, ru) })).toContainText(
-    teacher.teacher_display_name,
-  )
+  const teachers = page.getByRole('table', { name: m.analytics_admin_teachers({}, ru) })
+  await expect(teachers).toContainText(teacher.teacher_display_name)
+  // Namesakes are told apart by the @username under the name.
+  await expect(teachers).toContainText(`@${teacher.teacher_username}`)
 })

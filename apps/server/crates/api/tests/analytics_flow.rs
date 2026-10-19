@@ -2353,6 +2353,13 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
     assert_eq!(count_of(&dave), Some(serde_json::json!(1)), "{rows}");
     let dave_row = find_row(rows, "teacher_user_id", &dave.user_id.to_string()).unwrap();
     assert_ne!(dave_row["teacher_display_name"], "(unknown user)", "{rows}");
+    // Two teachers can share a display name: the row carries the username too.
+    assert!(
+        dave_row["teacher_username"]
+            .as_str()
+            .is_some_and(|u| !u.is_empty() && u != "(unknown user)"),
+        "{rows}"
+    );
     let inspected = app
         .get_as(
             &admin,

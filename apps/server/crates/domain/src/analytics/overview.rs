@@ -561,6 +561,7 @@ pub fn build_admin_overview(
             AdminTeacherRow {
                 teacher_user_id: *teacher_id,
                 teacher_display_name: ctx.display_name(*teacher_id),
+                teacher_username: ctx.username(*teacher_id),
                 managed_course_count: count_i64(course_ids.len()),
                 workload_backlog: workload.backlog_total,
                 sla_breaches: workload.sla_breaches,
