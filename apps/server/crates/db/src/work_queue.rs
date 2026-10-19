@@ -242,6 +242,8 @@ pub async fn upcoming_deadlines(
                WHERE c.archived_at IS NULL
                  AND ($1::uuid IS NULL OR r.user_id = $1)
                  AND NOT is_course_staff(r.course_id, r.user_id)
+                 -- An unpublished course is gone for its learners: no deadline on Today, no reminder.
+                 AND course_visible(c, r.user_id, false)
            ),
            work AS (
                SELECT m.user_id, m.course_id, s.activity_id, s.id AS assessment_id,

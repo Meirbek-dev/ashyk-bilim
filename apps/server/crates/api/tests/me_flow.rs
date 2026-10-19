@@ -381,6 +381,27 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     assert_eq!(strangers["deadlines"], serde_json::json!([]));
     assert_eq!(strangers["course_updates"], serde_json::json!([]));
 
+    // An unpublished course is gone for its learners: its deadlines leave the agenda, and come back with it.
+    let lifecycle = |action: &'static str| {
+        let (app, teacher, course_id) = (&app, &teacher, course_id.clone());
+        async move {
+            let res = app
+                .post_as(
+                    teacher,
+                    &format!("/api/v2/courses/{course_id}/lifecycle"),
+                    &serde_json::json!({ "action": action }),
+                )
+                .await;
+            assert_eq!(res.status, StatusCode::OK, "{action}: {}", res.text());
+        }
+    };
+    lifecycle("unpublish").await;
+    let hidden = app.get_as(&alice, "/api/v2/me/agenda").await.json();
+    assert_eq!(hidden["deadlines"], serde_json::json!([]), "{hidden}");
+    lifecycle("publish").await;
+    let back = app.get_as(&alice, "/api/v2/me/agenda").await.json();
+    assert_eq!(back["deadlines"][0]["activity_id"], activity_id.as_str());
+
     let draft = app
         .post_as(
             &alice,
