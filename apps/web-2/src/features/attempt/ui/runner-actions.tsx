@@ -1,6 +1,6 @@
 import type { StudentSubmission } from '#/shared/api/gen/types.gen'
 import { m } from '#/paraglide/messages'
-import { Button } from '#/shared/ui/button'
+import { SubmitButton } from '#/shared/components/submit-button'
 
 import { AttemptTimer } from './attempt-timer'
 
@@ -18,9 +18,9 @@ export function RunnerActions({ left, attempt, receivedAt, pending, onSubmit }: 
   return (
     <>
       {left === null ? null : <AttemptTimer seconds={left} attempt={attempt} receivedAt={receivedAt} />}
-      <Button onClick={onSubmit} disabled={pending}>
+      <SubmitButton onClick={onSubmit} pending={pending}>
         {m.attempt_submit()}
-      </Button>
+      </SubmitButton>
     </>
   )
 }

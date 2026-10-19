@@ -5,9 +5,8 @@ import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { RemediationSession, UserId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { passThreshold } from '../model/ai'
 import { completeSessionOptions } from '../queries'
@@ -80,13 +79,13 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
           </p>
           {complete.error ? <ErrorAlert>{presentError(complete.error)}</ErrorAlert> : null}
           <div>
-            <Button
-              disabled={answers.some(answer => !answer.trim()) || complete.isPending}
+            <SubmitButton
+              pending={complete.isPending}
+              disabled={answers.some(answer => !answer.trim())}
               onClick={() => complete.mutate({ path: { session_id: session.id }, body: { answers } })}
             >
-              {complete.isPending ? <Spinner data-icon="inline-start" /> : null}
               {m.ai_remediation_complete()}
-            </Button>
+            </SubmitButton>
           </div>
         </section>
       )}

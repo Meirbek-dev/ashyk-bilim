@@ -7,10 +7,9 @@ import { m } from '#/paraglide/messages'
 import type { ActivityId, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { startOptions, stateOptions } from '../queries'
 import { reasonLabels } from './labels'
@@ -64,14 +63,13 @@ export function Entry({ courseId, assessmentId, activityId, last }: EntryProps) 
       {state.can_start ? (
         <div className="flex flex-wrap items-center gap-2">
           {nextLeads ? next : null}
-          <Button
+          <SubmitButton
             variant={nextLeads && last ? 'secondary' : 'default'}
-            disabled={start.isPending}
+            pending={start.isPending}
             onClick={() => start.mutate({ path: { assessment_id: assessmentId } })}
           >
-            {start.isPending ? <Spinner data-icon="inline-start" /> : null}
             {used === 0 ? m.code_start() : m.code_start_again()}
-          </Button>
+          </SubmitButton>
           {nextLeads ? null : next}
         </div>
       ) : (

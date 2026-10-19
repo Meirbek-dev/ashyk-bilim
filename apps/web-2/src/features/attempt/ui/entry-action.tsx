@@ -7,12 +7,11 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { AssessmentDetail, AttemptState, DisabledReason } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDateTime } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { Field, FieldLabel } from '#/shared/ui/field'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { entryAction, protections } from '../model/attempt'
 import { startOptions, stateOptions, submissionKey } from '../queries'
@@ -95,10 +94,9 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
           <FieldLabel htmlFor={consentId}>{m.attempt_consent()}</FieldLabel>
         </Field>
       ) : null}
-      <Button onClick={begin} disabled={start.isPending || (rules.length > 0 && !agreed)}>
-        {start.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton onClick={begin} pending={start.isPending} disabled={rules.length > 0 && !agreed}>
         {action.revision ? m.attempt_revise() : m.attempt_start()}
-      </Button>
+      </SubmitButton>
       {start.error && !refused ? <ErrorAlert>{presentError(start.error)}</ErrorAlert> : null}
     </div>
   )

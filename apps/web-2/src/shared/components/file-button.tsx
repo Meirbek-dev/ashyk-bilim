@@ -1,8 +1,7 @@
 import { useRef } from 'react'
 
-import { Button } from '#/shared/ui/button'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { Input } from '#/shared/ui/input'
-import { Spinner } from '#/shared/ui/spinner'
 
 type FileButtonProps = {
   label: string
@@ -30,10 +29,9 @@ export function FileButton({ label, accept, onFile, pending = false }: FileButto
           if (file) onFile(file)
         }}
       />
-      <Button variant="outline" disabled={pending} onClick={() => input.current?.click()}>
-        {pending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton variant="outline" pending={pending} onClick={() => input.current?.click()}>
         {label}
-      </Button>
+      </SubmitButton>
     </>
   )
 }

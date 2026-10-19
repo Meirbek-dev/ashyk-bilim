@@ -1,9 +1,8 @@
 import type { FormEvent, ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { ErrorAlert } from '../error-alert'
 
@@ -54,10 +53,9 @@ export function SettingsSection({
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {saveButton ? (
         <div>
-          <Button type="submit" variant="secondary" disabled={pending} focusableWhenDisabled>
-            {pending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton type="submit" variant="secondary" pending={pending}>
             {m.ui_save()}
-          </Button>
+          </SubmitButton>
         </div>
       ) : null}
     </form>

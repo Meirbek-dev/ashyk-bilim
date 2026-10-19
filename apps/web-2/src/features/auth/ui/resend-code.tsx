@@ -3,8 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import { ErrorAlert } from '#/shared/components/error-alert'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { toast } from '#/shared/ui/toast'
 
 import { resendVerificationOptions } from '../queries'
@@ -20,10 +19,9 @@ export function ResendCode({ email }: { email: () => string }) {
     )
   return (
     <>
-      <Button variant="outline" className="w-full" disabled={resend.isPending} onClick={send}>
-        {resend.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton variant="outline" className="w-full" pending={resend.isPending} onClick={send}>
         {m.auth_verify_resend()}
-      </Button>
+      </SubmitButton>
       {resend.error ? <ErrorAlert>{limitedText(resend.error)}</ErrorAlert> : null}
     </>
   )

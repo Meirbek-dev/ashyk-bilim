@@ -3,8 +3,8 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { vStudyRequest } from '#/shared/api/gen/valibot.gen'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 // The question's limits come from the contract (`StudyRequest.question`); Q&A takes the same text.
 const vAsk = v.pick(vStudyRequest, ['question'])
@@ -43,10 +43,9 @@ export function AskForm({ label, pending, onAsk, stop }: AskFormProps) {
         ) : null}
         <form.Subscribe selector={state => state.values.question.trim() === ''}>
           {empty => (
-            <Button type="submit" disabled={empty || pending}>
-              {pending ? <Spinner data-icon="inline-start" /> : null}
+            <SubmitButton type="submit" pending={pending} disabled={empty}>
               {m.ai_ask()}
-            </Button>
+            </SubmitButton>
           )}
         </form.Subscribe>
       </div>

@@ -6,10 +6,10 @@ import { vVerifyEmailRequest } from '#/shared/api/gen/valibot.gen'
 import { sessionOptions } from '#/shared/auth/session'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Alert, AlertDescription, AlertTitle } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { isWrongCode } from '../model/account-search'
@@ -50,10 +50,9 @@ export function EmailBannerForm({ email, onHide }: { email: string; onHide: () =
             </form.AppField>
           </div>
           <div className="flex flex-col gap-2 sm:mt-6 sm:flex-row">
-            <Button type="submit" disabled={verify.isPending}>
-              {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
+            <SubmitButton type="submit" pending={verify.isPending}>
               {m.auth_verify_submit()}
-            </Button>
+            </SubmitButton>
             <div>
               <ResendCode email={() => email} />
             </div>

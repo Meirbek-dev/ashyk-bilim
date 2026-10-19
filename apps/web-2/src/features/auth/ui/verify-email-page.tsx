@@ -6,9 +6,8 @@ import { vVerifyEmailRequest } from '#/shared/api/gen/valibot.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { isWrongCode } from '../model/account-search'
@@ -58,10 +57,9 @@ export function VerifyEmailPage() {
           )}
         </form.AppField>
         {verify.error && !isWrongCode(verify.error) ? <ErrorAlert>{presentError(verify.error)}</ErrorAlert> : null}
-        <Button type="submit" className="w-full" disabled={verify.isPending}>
-          {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" className="w-full" pending={verify.isPending}>
           {m.auth_verify_submit()}
-        </Button>
+        </SubmitButton>
         <ResendCode email={() => form.getFieldValue('email')} />
       </AuthForm>
       <Link to="/login">{m.auth_verify_to_login()}</Link>

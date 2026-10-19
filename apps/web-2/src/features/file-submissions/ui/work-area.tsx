@@ -5,10 +5,9 @@ import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { attemptsLeft, workOf } from '../model/task'
 import { taskOptions, type WorkIds } from '../queries'
@@ -70,10 +69,9 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
           <Suspense fallback={null}>
             <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
           </Suspense>
-          <Button variant="secondary" disabled={work.pending} onClick={() => work.run({ kind: 'start' })}>
-            {work.pending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton variant="secondary" pending={work.pending} onClick={() => work.run({ kind: 'start' })}>
             {m.submission_new_attempt()}
-          </Button>
+          </SubmitButton>
         </div>
       ) : null}
       {/* Handed in: the way on to the next activity (B-PLY-18), beside a new attempt when one is open. */}

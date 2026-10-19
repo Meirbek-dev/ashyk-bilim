@@ -2,9 +2,8 @@ import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { AuthForm } from './auth-form'
 import { AuthSwitch } from './auth-switch'
@@ -59,10 +58,9 @@ export function SignupPage() {
           )}
         </form.AppField>
         {formError ? <ErrorAlert>{presentError(formError)}</ErrorAlert> : null}
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" className="w-full" pending={pending}>
           {m.auth_signup_submit()}
-        </Button>
+        </SubmitButton>
       </AuthForm>
       <AuthSwitch to="/login" redirect={redirect} />
     </AuthPage>

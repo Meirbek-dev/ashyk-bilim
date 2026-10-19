@@ -9,8 +9,8 @@ import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { loginOptions } from '../queries'
 import { AuthForm } from './auth-form'
@@ -87,10 +87,9 @@ export function LoginPage() {
           </>
         )}
         <LoginError error={login.error} googleError={totpStep ? undefined : search.error} />
-        <Button type="submit" className="w-full" disabled={login.isPending}>
-          {login.isPending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" className="w-full" pending={login.isPending}>
           {m.auth_login_submit()}
-        </Button>
+        </SubmitButton>
         {totpStep ? (
           <Button variant="ghost" className="w-full" onClick={backToPassword}>
             {m.auth_login_back()}

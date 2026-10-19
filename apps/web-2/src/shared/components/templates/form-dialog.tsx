@@ -2,6 +2,7 @@ import { useHydrated } from '@tanstack/react-router'
 import { useId, type FormEvent, type ReactElement, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import {
@@ -13,7 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '#/shared/ui/dialog'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { ErrorAlert } from '../error-alert'
 
@@ -57,10 +57,9 @@ export function FormDialog(props: FormDialogProps) {
         </form>
         <DialogFooter>
           <DialogClose render={<Button variant="ghost" />}>{m.ui_cancel()}</DialogClose>
-          <Button type="submit" form={formId} disabled={pending} focusableWhenDisabled>
-            {pending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton type="submit" form={formId} pending={pending}>
             {submitLabel}
-          </Button>
+          </SubmitButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

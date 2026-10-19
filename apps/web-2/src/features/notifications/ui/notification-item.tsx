@@ -4,8 +4,8 @@ import { m } from '#/paraglide/messages'
 import type { Notification } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDateTime } from '#/shared/i18n/format'
-import { Button } from '#/shared/ui/button'
 
 import { notificationTarget } from '../model/notifications'
 import { markReadOptions } from '../queries'
@@ -58,9 +58,9 @@ export function NotificationItem({ notification, compact = false, onNavigate }: 
         <p className="text-xs text-muted-foreground">{formatDateTime(created_at_unix)}</p>
       </div>
       {unread && !compact ? (
-        <Button variant="ghost" size="sm" disabled={markRead.isPending} onClick={read}>
+        <SubmitButton variant="ghost" size="sm" pending={markRead.isPending} onClick={read}>
           {m.notifications_mark_read()}
-        </Button>
+        </SubmitButton>
       ) : null}
     </div>
   )

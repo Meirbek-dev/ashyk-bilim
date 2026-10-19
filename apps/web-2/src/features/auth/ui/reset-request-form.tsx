@@ -5,8 +5,7 @@ import { getLocale } from '#/paraglide/runtime'
 import { vPasswordResetRequest } from '#/shared/api/gen/valibot.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
+import { SubmitButton } from '#/shared/components/submit-button'
 
 import { requestPasswordResetOptions } from '../queries'
 import { AuthForm } from './auth-form'
@@ -31,10 +30,9 @@ export function ResetRequestForm({ onSent }: { onSent: (login: string) => void }
         {field => <field.TextField label={m.auth_login_field_login()} autoComplete="username" required />}
       </form.AppField>
       {request.error ? <ErrorAlert>{limitedText(request.error)}</ErrorAlert> : null}
-      <Button type="submit" className="w-full" disabled={request.isPending}>
-        {request.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton type="submit" className="w-full" pending={request.isPending}>
         {m.auth_reset_request_submit()}
-      </Button>
+      </SubmitButton>
     </AuthForm>
   )
 }

@@ -4,9 +4,8 @@ import { useHydrated } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { Course, UserId } from '#/shared/api/gen/types.gen'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { application } from '../model/course'
@@ -43,26 +42,26 @@ export function ContributorApplication({ course, userId }: { course: Course; use
       {state === 'pending' ? (
         <>
           <p className="text-sm text-muted-foreground">{m.course_application_pending()}</p>
-          <Button
+          <SubmitButton
             variant="outline"
             onClick={onWithdraw}
-            disabled={!hydrated || withdraw.isPending}
+            pending={withdraw.isPending}
+            disabled={!hydrated}
             data-hydrating={hydrated ? undefined : true}
           >
-            {withdraw.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.course_withdraw()}
-          </Button>
+          </SubmitButton>
         </>
       ) : (
-        <Button
+        <SubmitButton
           variant="outline"
           onClick={onApply}
-          disabled={!hydrated || apply.isPending}
+          pending={apply.isPending}
+          disabled={!hydrated}
           data-hydrating={hydrated ? undefined : true}
         >
-          {apply.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.course_apply()}
-        </Button>
+        </SubmitButton>
       )}
       {error ? (
         <p className="text-sm text-muted-foreground">{typeof error === 'string' ? error : presentError(error)}</p>

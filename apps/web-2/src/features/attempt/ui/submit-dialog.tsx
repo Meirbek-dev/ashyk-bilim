@@ -2,6 +2,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentItem } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { Link } from '#/shared/components/link'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import {
   AlertDialog,
@@ -12,8 +13,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#/shared/ui/alert-dialog'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { ATTEMPT_PATH } from './attempt-frame'
 
@@ -59,10 +58,9 @@ export function SubmitDialog({ open, onOpenChange, unanswered, onSubmit, pending
         {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         <AlertDialogFooter>
           <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
-          <Button onClick={onSubmit} disabled={pending}>
-            {pending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton onClick={onSubmit} pending={pending}>
             {m.attempt_submit()}
-          </Button>
+          </SubmitButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

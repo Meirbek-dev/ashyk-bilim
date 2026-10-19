@@ -1,6 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
+import { SubmitButton } from '#/shared/components/submit-button'
 
 type ShowMoreProps = { hasMore: boolean; pending: boolean; onMore: () => void }
 
@@ -9,11 +8,9 @@ export function ShowMore({ hasMore, pending, onMore }: ShowMoreProps) {
   if (!hasMore) return null
   return (
     <div className="flex justify-center">
-      {/* Keeps keyboard focus while the page loads (a disabled button drops it to <body>). */}
-      <Button variant="outline" disabled={pending} focusableWhenDisabled onClick={onMore}>
-        {pending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton variant="outline" pending={pending} onClick={onMore}>
         {m.ui_show_more()}
-      </Button>
+      </SubmitButton>
     </div>
   )
 }

@@ -5,9 +5,9 @@ import { m } from '#/paraglide/messages'
 import { vPasswordResetConfirmRequest } from '#/shared/api/gen/valibot.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { isResetCodeInvalid, resetFormError } from '../model/account-search'
@@ -62,10 +62,9 @@ export function ResetConfirmForm({ login, code, onRestart }: ResetConfirmFormPro
         )}
       </form.AppField>
       {formError ? <ErrorAlert>{limitedText(formError)}</ErrorAlert> : null}
-      <Button type="submit" className="w-full" disabled={confirm.isPending}>
-        {confirm.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton type="submit" className="w-full" pending={confirm.isPending}>
         {m.auth_reset_submit()}
-      </Button>
+      </SubmitButton>
       <Button variant="ghost" className="w-full" onClick={onRestart}>
         {m.auth_reset_again()}
       </Button>

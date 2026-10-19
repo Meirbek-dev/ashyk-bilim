@@ -3,8 +3,8 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
-import { Button } from '#/shared/ui/button'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { PopoverHeader, PopoverTitle } from '#/shared/ui/popover'
 
 import { LATEST } from '../model/notifications'
@@ -41,9 +41,9 @@ export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
       </ListState>
       <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-2">
         {unread > 0 ? (
-          <Button variant="ghost" size="sm" disabled={markAll.isPending} onClick={() => markAll.mutate({})}>
+          <SubmitButton variant="ghost" size="sm" pending={markAll.isPending} onClick={() => markAll.mutate({})}>
             {m.notifications_mark_all()}
-          </Button>
+          </SubmitButton>
         ) : null}
         <RouterLink
           to="/notifications"

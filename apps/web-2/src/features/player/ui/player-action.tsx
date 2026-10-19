@@ -6,6 +6,7 @@ import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, LearnerCourseState } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -52,10 +53,9 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
     <div className="flex flex-col items-start gap-2 empty:hidden">
       <div className="flex flex-wrap items-center gap-2 empty:hidden">
         {action?.kind === 'mark' ? (
-          <Button onClick={submit} disabled={mark.isPending}>
-            {mark.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton onClick={submit} pending={mark.isPending}>
             {m.player_mark()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {action?.kind === 'continue' ? (
           <RouterLink

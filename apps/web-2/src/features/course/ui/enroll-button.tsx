@@ -4,9 +4,8 @@ import { useEffect, useEffectEvent, useRef } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { enrollOptions } from '../queries'
@@ -34,10 +33,14 @@ export function EnrollButton({ courseId }: { courseId: CourseId }) {
   }, [hydrated, asked])
   return (
     <div className="flex flex-col gap-2">
-      <Button onClick={submit} disabled={!hydrated || enroll.isPending} data-hydrating={hydrated ? undefined : true}>
-        {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton
+        onClick={submit}
+        pending={enroll.isPending}
+        disabled={!hydrated}
+        data-hydrating={hydrated ? undefined : true}
+      >
         {m.course_enroll()}
-      </Button>
+      </SubmitButton>
       {enroll.error ? <p className="text-sm text-destructive">{presentError(enroll.error)}</p> : null}
     </div>
   )

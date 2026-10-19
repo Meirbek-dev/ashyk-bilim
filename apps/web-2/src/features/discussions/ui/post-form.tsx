@@ -6,10 +6,10 @@ import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { errorText } from '#/shared/components/form/field-errors'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { hasText } from '../model/discussions'
 
@@ -87,10 +87,9 @@ export function PostForm({
       </form.Field>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       <div className="flex gap-2">
-        <Button type="submit" variant="secondary" disabled={pending} focusableWhenDisabled>
-          {pending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" variant="secondary" pending={pending}>
           {submitLabel}
-        </Button>
+        </SubmitButton>
         {onCancel ? (
           <Button variant="ghost" onClick={onCancel}>
             {m.ui_cancel()}

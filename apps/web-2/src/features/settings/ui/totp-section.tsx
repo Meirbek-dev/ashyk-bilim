@@ -8,9 +8,9 @@ import { Anchor } from '#/shared/components/anchor'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
@@ -64,10 +64,9 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
       {profile.mfa_enabled ? <DisableTotp /> : null}
       {!profile.mfa_enabled && !pending ? (
         <div>
-          <Button variant="outline" onClick={() => enroll.mutate({})} disabled={enroll.isPending}>
-            {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton variant="outline" onClick={() => enroll.mutate({})} pending={enroll.isPending}>
             {m.settings_totp_enable()}
-          </Button>
+          </SubmitButton>
         </div>
       ) : null}
       {pending ? (
@@ -92,10 +91,9 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
           </form.AppField>
           {verifyError ? <ErrorAlert>{presentError(verifyError)}</ErrorAlert> : null}
           <div className="flex gap-2">
-            <Button type="submit" variant="secondary" disabled={verify.isPending}>
-              {verify.isPending ? <Spinner data-icon="inline-start" /> : null}
+            <SubmitButton type="submit" variant="secondary" pending={verify.isPending}>
               {m.settings_totp_confirm()}
-            </Button>
+            </SubmitButton>
             <Button variant="ghost" onClick={() => enroll.reset()}>
               {m.ui_cancel()}
             </Button>
