@@ -29,7 +29,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
           <Link variant="title" from="/admin/users" to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
             <span className="font-medium wrap-anywhere">{user.display_name || user.username}</span>
           </Link>
-          <span className="wrap-anywhere text-muted-foreground">@{user.username}</span>
+          <span className="text-sm font-normal wrap-anywhere text-muted-foreground">@{user.username}</span>
         </span>
       </span>
     ),
