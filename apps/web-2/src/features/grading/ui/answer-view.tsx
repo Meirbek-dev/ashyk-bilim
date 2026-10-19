@@ -39,8 +39,12 @@ function choice(item: AssessmentItem, answer: ItemAnswer | undefined, key: Corre
   )
 }
 
+// Blank code or text was handed in as nothing: an empty box read as a rendering fault.
+const blank = (answer: ItemAnswer) =>
+  (answer.kind === 'code' && !answer.source?.trim()) || (answer.kind === 'open_text' && !answer.text?.trim())
+
 function given(item: AssessmentItem, answer: ItemAnswer | undefined) {
-  if (!answer) return <p className="text-muted-foreground">{m.grading_no_answer()}</p>
+  if (!answer || blank(answer)) return <p className="text-muted-foreground">{m.grading_no_answer()}</p>
   switch (answer.kind) {
     case 'open_text':
       return <p className="wrap-anywhere whitespace-pre-wrap">{answer.text}</p>

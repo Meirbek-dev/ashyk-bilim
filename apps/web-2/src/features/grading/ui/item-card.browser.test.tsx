@@ -55,4 +55,20 @@ describe('ItemCard', () => {
     await expect.element(screen.getByRole('heading', { name: m.grading_criteria() })).toBeInTheDocument()
     await expect.element(screen.getByText('условие')).toBeInTheDocument()
   })
+
+  test('B-GRD-11 a blank hand-in reads as no answer, not an empty box', async () => {
+    const open: AssessmentItem = {
+      ...item,
+      kind: 'open_text',
+      body: { kind: 'open_text', prompt: 'Опишите цикл', min_words: null, rubric: null },
+    }
+    const screen = await renderInRouter(
+      <ol>
+        <ItemCard item={open} answer={{ kind: 'open_text', text: '  ' }} graded={undefined}>
+          {null}
+        </ItemCard>
+      </ol>,
+    )
+    await expect.element(screen.getByText(m.grading_no_answer())).toBeVisible()
+  })
 })
