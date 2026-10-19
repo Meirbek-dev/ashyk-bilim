@@ -39,7 +39,11 @@ export function Contents({ state, onPick }: { state: LearnerCourseState; onPick:
             >
               {index + 1}
             </span>
-            <h2 id={`chapter-${chapter.id}`} className="text-sm font-semibold wrap-anywhere">
+            <h2
+              id={`chapter-${chapter.id}`}
+              title={chapter.title}
+              className="line-clamp-3 text-sm font-semibold wrap-anywhere"
+            >
               {chapter.title}
             </h2>
           </div>
