@@ -23,7 +23,8 @@ const ROUTE_PATH = '/teach/courses/$courseId/learners'
 
 const date = (unix: number | null) => <span className="tabular-nums">{unix === null ? '—' : formatDate(unix)}</span>
 
-const columns = (courseId: string): DataColumn<CourseLearner>[] => [
+// `removable`: some row allows «remove» - without it (a co-author) the action column would be a header over empty cells.
+const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner>[] => [
   {
     id: 'learner',
     header: m.studio_learners_col_learner(),
@@ -69,14 +70,18 @@ const columns = (courseId: string): DataColumn<CourseLearner>[] => [
     priority: 3,
     cell: learner => date(learner.enrolled_at_unix),
   },
-  {
-    id: 'action',
-    header: m.studio_learners_col_action(),
-    priority: 2,
-    action: true,
-    cell: learner =>
-      learner.allowed_actions.includes('remove') ? <RemoveLearner courseId={courseId} learner={learner} /> : null,
-  },
+  ...(removable
+    ? [
+        {
+          id: 'action',
+          header: m.studio_learners_col_action(),
+          priority: 2 as const,
+          action: true,
+          cell: (learner: CourseLearner) =>
+            learner.allowed_actions.includes('remove') ? <RemoveLearner courseId={courseId} learner={learner} /> : null,
+        },
+      ]
+    : []),
 ]
 
 /**
@@ -124,7 +129,10 @@ export function LearnersSection({
         <DataTable
           label={m.studio_learners_title()}
           rows={query.data}
-          columns={columns(courseId)}
+          columns={columns(
+            courseId,
+            query.data.some(learner => learner.allowed_actions.includes('remove')),
+          )}
           getKey={learner => learner.user_id}
         />
         <ShowMore

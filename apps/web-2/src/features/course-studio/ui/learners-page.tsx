@@ -2,6 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
@@ -29,6 +31,8 @@ export function LearnersPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/learners' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
   const groups = useSuspenseQuery(courseGroupsOptions(courseId))
+  // A group's name opens its page for whoever may open the groups space.
+  const groupPages = hasCapability(useSuspenseQuery(sessionOptions()).data, 'groups.manage')
   // An archived course is read-only: its group links are shown, not changed.
   const editable = can(course, 'update')
   const add =
@@ -68,7 +72,15 @@ export function LearnersPage() {
               {group => (
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex min-w-0 grow basis-48 flex-col gap-1">
-                    <h3 className="text-base font-medium wrap-anywhere">{group.name}</h3>
+                    <h3 className="text-base font-medium wrap-anywhere">
+                      {groupPages ? (
+                        <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
+                          {group.name}
+                        </Link>
+                      ) : (
+                        group.name
+                      )}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
                       {m.studio_group_members({ count: group.member_count })}
                     </p>
