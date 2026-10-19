@@ -18,6 +18,7 @@ import { AuthSwitch } from './auth-switch'
 import { AuthPage } from './auth-page'
 import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
+import { SessionEndedNote } from './session-ended-note'
 
 const defaultValues: LoginRequest = { login: '', password: '' }
 
@@ -52,6 +53,7 @@ export function LoginPage() {
   }
   return (
     <AuthPage title={m.auth_login_title()}>
+      <SessionEndedNote />
       {totpStep ? null : <GoogleSignIn redirect={redirect} />}
       <AuthForm onSubmit={() => form.handleSubmit()}>
         {totpStep ? (

@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import { redirect } from '@tanstack/react-router'
+import * as v from 'valibot'
 
 import { ApiError } from '#/shared/api/errors'
 import { noteSessionBack, noteSessionExpired, sessionHeld } from '#/shared/api/held-session'
@@ -7,6 +8,7 @@ import type { currentSessionQueryKey } from '#/shared/api/gen/@tanstack/react-qu
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import { KEY_ORIGIN } from '#/shared/api/key-origin'
 import { applyProfileLanguage } from '#/shared/i18n/profile-language'
+import { storageItem } from '#/shared/lib/storage'
 
 import { safeRedirect } from './redirect'
 
@@ -16,6 +18,12 @@ import { safeRedirect } from './redirect'
 const sessionQueryKey = (): ReturnType<typeof currentSessionQueryKey> => [
   { _id: 'currentSession', baseUrl: KEY_ORIGIN },
 ]
+
+/**
+ * Set when a live session ended under the tab (a 401 on a read: expired, signed out elsewhere); the sign-in page says
+ * why it is shown and clears it (B-AUTH-16). Per tab, so another tab's fresh visit is not told about it.
+ */
+export const sessionEnded = storageItem('ab.session-ended', v.literal(true), 'session')
 
 /** The caller's session, or null for a guest. Read by the root route into the router context (spec 7.5). */
 export const sessionOptions = () =>

@@ -1,6 +1,6 @@
 import { hashKey, MutationCache, QueryCache, QueryClient, type Query, type QueryKey } from '@tanstack/react-query'
 
-import { sessionOptions } from '#/shared/auth/session'
+import { sessionEnded, sessionOptions } from '#/shared/auth/session'
 
 import { ApiError, isSessionLost } from './errors'
 import { noteSessionExpired, sessionHeld } from './held-session'
@@ -30,6 +30,17 @@ const retryOnce = (failureCount: number, error: Error): boolean =>
  */
 const refetchUnlessHeld = (query: Query): boolean =>
   !sessionHeld() || query.queryHash === hashKey(sessionOptions().queryKey)
+
+/** The sign-in page's «session ended» note (B-AUTH-16): set when a signed-in tab's session went away, cleared by a
+ * new one. Storage may refuse (private mode, quota): the note is then just not shown. */
+function noteSessionEnded(ended: boolean) {
+  try {
+    if (ended) sessionEnded.set(true)
+    else sessionEnded.remove()
+  } catch {
+    // no storage: no note
+  }
+}
 
 /**
  * One QueryClient per request (SSR) or per tab. Owns the two global behaviors of spec 7.5-7.6:
@@ -79,6 +90,7 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     if (now === user) return
     const previous = user
     user = now
+    noteSessionEnded(previous !== null && now === null)
     if (previous === null) return
     if (now !== null) queryClient.removeQueries({ predicate: query => query.queryHash !== hashKey(sessionKey) })
     void onSessionLost()
