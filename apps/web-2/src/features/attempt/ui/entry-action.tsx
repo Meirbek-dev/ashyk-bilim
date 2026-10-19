@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link as RouterLink, useNavigate, useParams } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { Timer } from 'lucide-react'
 import { useId, useState } from 'react'
 
@@ -10,7 +10,6 @@ import { ErrorAlert } from '#/shared/components/error-alert'
 import { formatDateTime } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { buttonVariants } from '#/shared/components/button-variants'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { Field, FieldLabel } from '#/shared/ui/field'
 import { Spinner } from '#/shared/ui/spinner'
@@ -18,6 +17,7 @@ import { Spinner } from '#/shared/ui/spinner'
 import { entryAction, protections } from '../model/attempt'
 import { startOptions, stateOptions, submissionKey } from '../queries'
 import { ATTEMPT_PATH, ATTEMPT_ROUTE } from './attempt-frame'
+import { ContinueDraft } from './continue-draft'
 
 const reasons = {
   NOT_PUBLISHED: m.attempt_reason_not_published,
@@ -50,14 +50,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const reread = async () => {
     await queryClient.query({ ...stateOptions(assessment.id), staleTime: 0 }).catch(() => null)
   }
-  if (action.kind === 'continue')
-    return (
-      <div>
-        <RouterLink to={ATTEMPT_PATH} params={params} search={{ attempt: action.draftId }} className={buttonVariants()}>
-          {m.attempt_continue()}
-        </RouterLink>
-      </div>
-    )
+  if (action.kind === 'continue') return <ContinueDraft draftId={action.draftId} />
   if (action.kind === 'blocked')
     return (
       <section className="flex flex-col gap-2">

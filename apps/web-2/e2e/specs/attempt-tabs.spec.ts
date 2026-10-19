@@ -4,7 +4,8 @@ import { m } from '#/paraglide/messages'
 
 import { expect, items, type MadeQuiz, ru, test } from './attempt-fixture'
 
-// One attempt open in two tabs (or a reload, or another device): what a tab shows and sends (slice 5.2, R-08).
+// One attempt open in two tabs (or a reload, or another device, or back on its entry): what a tab shows and sends
+// (slice 5.2, R-08).
 
 test.describe.configure({ timeout: 90_000 })
 
@@ -52,4 +53,20 @@ test('B-ATT-16 «Сдать» in a tab that missed another tab’s answer shows 
     'true',
   )
   await other.close()
+})
+
+test('B-ATT-27 the entry of an open timed draft says how long is left beside «Продолжить»', async ({
+  page,
+  learner,
+  makeQuiz,
+}) => {
+  const quiz = await makeQuiz({ policy: { time_limit_seconds: 600 } })
+  await learner.enroll(quiz.course)
+  await learner.signIn()
+  await start(page, quiz)
+  await page.goto(quiz.url)
+  await expect(page.getByRole('link', { name: m.attempt_continue({}, ru) })).toBeVisible()
+  // «Осталось 09:58. …»: the text before the time has no regex specials in any locale.
+  const [before] = m.attempt_continue_left({ time: '§' }, ru).split('§')
+  await expect(page.getByText(new RegExp(`^${before}(09|10):\\d\\d`))).toBeVisible()
 })

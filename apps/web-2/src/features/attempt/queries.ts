@@ -79,11 +79,14 @@ export async function ensureAttempt(
   await ensureEntry(queryClient, courseId, activityId)
   const assessment = await queryClient.query({ ...assessmentOptions(activityId), staleTime: 'static' }).catch(missing)
   if (assessment.kind === 'code_challenge') throw notFound()
-  const [submission] = await Promise.all([
+  const [submission, state] = await Promise.all([
     attemptId ? queryClient.query({ ...submissionOptions(attemptId), staleTime: 'static' }).catch(missing) : null,
     queryClient.query({ ...stateOptions(assessment.id), staleTime: 'static' }),
     queryClient.query({ ...attemptsOptions(assessment.id), staleTime: 'static' }),
   ])
+  // The entry shows how long an open draft has left (B-ATT-27): its own read, fresh each time the entry opens.
+  if (!attemptId && state.can_continue && state.draft_id)
+    await queryClient.query({ ...submissionOptions(state.draft_id), staleTime: 0 }).catch(() => null)
   if (submission && submission.assessment_id !== assessment.id) throw notFound()
   if (submission && released(submission))
     await queryClient.query({ ...feedbackOptions(submission.id), staleTime: 'static' })

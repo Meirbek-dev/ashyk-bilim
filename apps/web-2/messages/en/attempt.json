@@ -61,6 +61,7 @@
   "attempt_submit": "Submit",
   "attempt_finish": "Finish attempt",
   "attempt_time_left": "Time left",
+  "attempt_continue_left": "{time} left. The clock keeps running while the page is closed.",
   "attempt_late_cutoff_left": "Until late submissions close",
   "attempt_due_left": "Until the deadline",
   "attempt_due_by": "Due {date}",

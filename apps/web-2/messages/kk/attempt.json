@@ -61,6 +61,7 @@
   "attempt_submit": "Тапсыру",
   "attempt_finish": "Әрекетті аяқтау",
   "attempt_time_left": "Қалған уақыт",
+  "attempt_continue_left": "{time} қалды. Бет жабық болса да, уақыт жүре береді.",
   "attempt_late_cutoff_left": "Кешіктіріп тапсыру жабылғанға дейін",
   "attempt_due_left": "Тапсыру мерзімінің аяқталуына дейін",
   "attempt_due_by": "{date} дейін тапсыру",
