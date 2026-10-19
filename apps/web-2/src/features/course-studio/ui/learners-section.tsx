@@ -105,10 +105,13 @@ export function LearnersSection({
         </div>
         {add}
       </div>
-      <div className="flex flex-wrap items-end gap-2">
-        <LearnersSearchBox key={q ?? ''} q={q} />
-        {query.data.length > 0 && !q ? <ExportLearners courseId={courseId} courseName={courseName} /> : null}
-      </div>
+      {/* Nobody enrolled (and no search): nothing to search or export. */}
+      {query.data.length === 0 && !q ? null : (
+        <div className="flex flex-wrap items-end gap-2">
+          <LearnersSearchBox key={q ?? ''} q={q} />
+          {query.data.length > 0 && !q ? <ExportLearners courseId={courseId} courseName={courseName} /> : null}
+        </div>
+      )}
       <ListState
         pending={false}
         error={query.error}

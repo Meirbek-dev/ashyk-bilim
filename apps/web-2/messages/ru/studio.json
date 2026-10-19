@@ -294,7 +294,7 @@
   "studio_delete": "Удалить",
   "studio_learners_title": "Учащиеся",
   "studio_learners_hint": "Записанные на курс, сначала новые.",
-  "studio_learners_empty": "На курс пока никто не записался",
+  "studio_learners_empty": "На курс пока никто не записался. Здесь появятся учащиеся, их прогресс и последняя активность.",
   "studio_learners_col_learner": "Учащийся",
   "studio_learners_col_progress": "Прогресс",
   "studio_learners_col_active": "Последняя активность",

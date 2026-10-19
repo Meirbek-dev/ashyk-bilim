@@ -280,7 +280,7 @@
   "studio_delete": "Delete",
   "studio_learners_title": "Learners",
   "studio_learners_hint": "Enrolled in the course, newest first.",
-  "studio_learners_empty": "Nobody has enrolled in the course yet",
+  "studio_learners_empty": "Nobody has enrolled in the course yet. Learners, their progress and last activity will appear here.",
   "studio_learners_col_learner": "Learner",
   "studio_learners_col_progress": "Progress",
   "studio_learners_col_active": "Last activity",

@@ -36,27 +36,30 @@ export function GradebookPage(): ReactElement {
       <h2 id="grading-gradebook" className="text-xl font-semibold">
         {m.grading_gradebook_table()}
       </h2>
-      <div className="flex flex-wrap items-end gap-2">
-        <LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />
-        <RouterLink
-          to="/teach/courses/$courseId/gradebook"
-          params={{ courseId }}
-          search={{ ...search, pending: search.pending ? undefined : true }}
-          aria-current={search.pending ? 'true' : undefined}
-          className={buttonVariants({ variant: search.pending ? 'secondary' : 'outline' })}
-        >
-          {search.pending ? <Check aria-hidden data-icon="inline-start" /> : null}
-          {m.grading_pending_only()}
-        </RouterLink>
-        <GroupFilter
-          courseId={courseId}
-          group={search.group}
-          onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
-        />
-        <Anchor className={buttonVariants({ variant: 'outline' })} href={gradebookCsvHref(courseId)} download>
-          {m.grading_export_csv()}
-        </Anchor>
-      </div>
+      {/* No learner at all (and no filter): nothing to search, filter or export - only the empty state. */}
+      {rows.length === 0 && active === 0 ? null : (
+        <div className="flex flex-wrap items-end gap-2">
+          <LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />
+          <RouterLink
+            to="/teach/courses/$courseId/gradebook"
+            params={{ courseId }}
+            search={{ ...search, pending: search.pending ? undefined : true }}
+            aria-current={search.pending ? 'true' : undefined}
+            className={buttonVariants({ variant: search.pending ? 'secondary' : 'outline' })}
+          >
+            {search.pending ? <Check aria-hidden data-icon="inline-start" /> : null}
+            {m.grading_pending_only()}
+          </RouterLink>
+          <GroupFilter
+            courseId={courseId}
+            group={search.group}
+            onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
+          />
+          <Anchor className={buttonVariants({ variant: 'outline' })} href={gradebookCsvHref(courseId)} download>
+            {m.grading_export_csv()}
+          </Anchor>
+        </div>
+      )}
       <ListState
         pending={false}
         error={query.error}
