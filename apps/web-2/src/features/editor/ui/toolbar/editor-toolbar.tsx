@@ -39,7 +39,7 @@ export function EditorToolbar({ editor, onInsert }: EditorToolbarProps) {
     <div
       role="toolbar"
       aria-label={m.editor_toolbar()}
-      className="sticky top-0 z-10 flex flex-wrap gap-1 border-b border-border bg-background py-1 *:aria-pressed:bg-accent *:aria-pressed:text-accent-foreground"
+      className="sticky top-14 z-10 flex flex-wrap gap-1 border-b border-border bg-background py-1 *:aria-pressed:bg-accent *:aria-pressed:text-accent-foreground"
     >
       <TextStyleMenu editor={editor} level={state.level} />
       {FORMAT_ITEMS.map((item, index) => (

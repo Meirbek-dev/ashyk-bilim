@@ -121,6 +121,31 @@ describe('FocusPage', () => {
     await screen.getByRole('button', { name: text.rubric }).click()
     await expect.element(page.getByRole('dialog', { name: text.rubric }).getByText(text.draft)).toBeVisible()
   })
+
+  test('a long contents panel opens scrolled to the current item; the page does not move', async () => {
+    await page.viewport(1440, 600)
+    const rows = Array.from({ length: 40 }, (_, index) => index)
+    const screen = await renderInRouter(
+      <FocusPage
+        back={null}
+        title={text.activity}
+        contents={
+          <ol>
+            {rows.map(index => (
+              <li key={index} aria-current={index === 38 ? 'page' : undefined} className="h-10">
+                {`${text.activity} ${index}`}
+              </li>
+            ))}
+          </ol>
+        }
+      >
+        {null}
+      </FocusPage>,
+    )
+    const current = screen.getByText(`${text.activity} 38`)
+    await expect.element(current).toBeInViewport()
+    expect(window.scrollY).toBe(0)
+  })
 })
 
 describe('SettingsPage', () => {

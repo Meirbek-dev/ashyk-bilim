@@ -24,6 +24,20 @@ type FocusPageProps = {
   children: ReactNode
 }
 
+/**
+ * The contents panel opens scrolled to the current item (`aria-current`): in a course of 40 activities the one being
+ * studied was 1900 px down, out of sight. Only the panel scrolls, never the page. The bar and both panels stay put while
+ * the page scrolls (an attempt's clock and «Сдать» stay in sight); a panel is viewport-tall under the bar (`h-14`), so
+ * `pb-18` keeps its last rows reachable.
+ */
+function revealCurrentItem(panel: HTMLElement | null) {
+  const current = panel?.querySelector<HTMLElement>('[aria-current="page"]')
+  if (!panel || !current) return
+  const top = current.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop
+  if (top + current.offsetHeight > panel.scrollTop + panel.clientHeight * 0.8)
+    panel.scrollTop = top - panel.clientHeight / 3
+}
+
 /** The focus layout (DESIGN 6): no navigation, a top bar, panels that become sheets when narrow. */
 export function FocusPage({
   back,
@@ -38,7 +52,7 @@ export function FocusPage({
 }: FocusPageProps) {
   return (
     <div className="@container flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center gap-2 border-b px-4 @3xl:px-6">
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background px-4 @3xl:px-6">
         {back}
         {contents ? (
           <div className="@5xl:hidden">
@@ -70,14 +84,16 @@ export function FocusPage({
       </header>
       <div className="flex flex-1">
         {contents ? (
-          <nav aria-label={m.ui_contents()} className="hidden w-72 shrink-0 overflow-y-auto border-r p-4 @5xl:block">
-            {contents}
+          <nav aria-label={m.ui_contents()} className="hidden w-72 shrink-0 border-r @5xl:block">
+            <div ref={revealCurrentItem} className="sticky top-14 max-h-dvh overflow-y-auto p-4 pb-18">
+              {contents}
+            </div>
           </nav>
         ) : null}
         <main className={`mx-auto w-full px-4 py-gutter @3xl:px-6 ${wide ? '' : 'max-w-prose'}`}>{children}</main>
         {aside ? (
-          <aside aria-label={aside.label} className="hidden w-96 shrink-0 overflow-y-auto border-l p-4 @5xl:block">
-            {aside.content}
+          <aside aria-label={aside.label} className="hidden w-96 shrink-0 border-l @5xl:block">
+            <div className="sticky top-14 max-h-dvh overflow-y-auto p-4 pb-18">{aside.content}</div>
           </aside>
         ) : null}
       </div>
