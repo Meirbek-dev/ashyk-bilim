@@ -7,11 +7,11 @@ import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
-import { formatNumber } from '#/shared/i18n/format'
+import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { assessmentOptions, itemStatsOptions, statsOptionsOf } from '../queries'
 import { type CountFilter, CountTile } from './count-tile'
-import { kindLabels, scoreText } from './labels'
+import { kindLabels } from './labels'
 
 const counts: readonly {
   key: keyof Stats & ('total' | 'needs_grading' | 'graded' | 'published' | 'returned' | 'late')
@@ -26,7 +26,8 @@ const counts: readonly {
   { key: 'late', label: m.grading_kpi_late, filter: { late: true } },
 ]
 
-const share = (value: number | null) => (value === null ? m.grading_no_score() : scoreText(value))
+// Shares and averages at one decimal (formatPercent), as the per-question columns: «28,57 %» beside «28,6 %» read as two numbers.
+const share = (value: number | null) => (value === null ? m.grading_no_score() : formatPercent(value))
 
 const itemColumns: DataColumn<ItemAnalytics>[] = [
   {
