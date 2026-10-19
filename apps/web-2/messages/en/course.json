@@ -15,7 +15,7 @@
   "course_next_review_completion": "Course summary",
   "course_leave": "Leave course",
   "course_leave_title": "Leave the course “{name}”?",
-  "course_leave_consequence": "The course leaves your course list. You can enroll again at any time.",
+  "course_leave_consequence": "The course will disappear from My courses. You can enroll again at any time.",
   "course_left": "You left the course",
   "course_progress_title": "Your progress",
   "course_progress_count": "{done} of {total} done",
