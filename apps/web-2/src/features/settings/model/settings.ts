@@ -7,8 +7,6 @@ import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
 
-export { contentUrl } from '#/shared/lib/content-url'
-
 const MB = 1024 * 1024
 export const AVATAR_MAX_MB = maxUploadBytes('avatar') / MB
 

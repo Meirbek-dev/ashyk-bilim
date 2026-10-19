@@ -5,12 +5,13 @@ import { m } from '#/paraglide/messages'
 import type { UserProfile } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { FileButton } from '#/shared/components/file-button'
+import { UserAvatar } from '#/shared/components/user-avatar'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
-import { AVATAR_MAX_MB, avatarProblem, contentUrl } from '../model/settings'
+import { AVATAR_MAX_MB, avatarProblem } from '../model/settings'
 import { avatarOptions } from '../queries'
 import { PlainSection } from './plain-section'
 
@@ -36,7 +37,8 @@ export function AvatarSection({ profile }: { profile: UserProfile }) {
   return (
     <PlainSection title={m.settings_avatar_title()} description={m.settings_avatar_hint({ mb: AVATAR_MAX_MB })}>
       {profile.avatar_key ? (
-        <img src={contentUrl(profile.avatar_key)} alt="" className="size-20 rounded-full bg-muted object-cover" />
+        // The shared avatar: a photo whose file is gone shows the initials, not a broken-image glyph.
+        <UserAvatar name={profile.display_name} avatarKey={profile.avatar_key} size="profile" />
       ) : (
         <p className="text-sm text-muted-foreground">{m.settings_avatar_none()}</p>
       )}
