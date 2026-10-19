@@ -27,6 +27,8 @@ export COMPOSE_ENV_FILES=$work/backup/secrets/.env STACK_ENV_FILE=$work/backup/s
 export SERVER_ENV_FILE=$work/server.env
 export PUBLIC_SCHEME=http FORCE_HTTPS=0 HTTP_PORT=${DRILL_HTTP_PORT:-18080} HTTPS_PORT=${DRILL_HTTPS_PORT:-18443}
 export TLS_DIR=$work/certs ACME_WEBROOT=$work/acme
+# Archived production paths must never be mounted by the throwaway stack.
+export RUSTFS_DATA_DIR=rustfs_data BACKUP_DIR=$work/backups
 domain=$(sed -n 's/^NGINX_SERVER_NAME=//p' "$COMPOSE_ENV_FILES" | tail -n 1)
 export SMOKE_ORIGIN=http://$domain:$HTTP_PORT
 

@@ -206,7 +206,7 @@ services:
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
       RUSTFS_VOLUMES: /data
     volumes:
-      - rustfs_data:/data
+      - ${RUSTFS_DATA_DIR:-rustfs_data}:/data
     networks: [edge-net, data-net]
     security_opt:
       - no-new-privileges:true

@@ -41,8 +41,10 @@ done
 
 log "volumes"
 compose up --no-start rustfs redis zitadel
+content=$("$CTR" inspect "$(compose ps -aq rustfs)" --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}')
+[[ -n $content ]] || die "cannot determine the RustFS data mount"
 "$CTR" run --rm -i \
-  -v "${project}_rustfs_data:/v/rustfs" \
+  -v "$content:/v/rustfs" \
   -v "${project}_redis_data:/v/redis" \
   -v "${project}_zitadel_machinekey:/v/zitadel_machinekey" \
   "$PG_IMAGE" sh -c 'zstd -dc | tar -xpf - --numeric-owner --no-anchored -C /v --strip-components=1 \

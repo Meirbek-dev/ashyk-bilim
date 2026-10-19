@@ -263,7 +263,7 @@ services:
       - db_dumps:/backup/db_dumps:ro
       # ponytail: live copy of the whole bucket volume (object keys are immutable);
       # fine up to ~20 GB, beyond that switch to an incremental `rclone sync`.
-      - rustfs_data:/backup/rustfs:ro
+      - ${RUSTFS_DATA_DIR:-rustfs_data}:/backup/rustfs:ro
       - redis_data:/backup/redis:ro
       - zitadel_machinekey:/backup/zitadel_machinekey:ro
       - ${STACK_ENV_FILE:-./.env}:/backup/secrets/.env:ro

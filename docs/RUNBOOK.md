@@ -35,6 +35,13 @@ Next.js frontend remains in production. Frontend replacement: `docs/STAGE-2-CUTO
 Keep the legacy `openu` database, `app_content` volume and `backups/legacy-final-*`
 (owner decision). They are outside the new backups. Never run `docker volume prune`.
 
+Production content is bind-mounted from `/data/openu-prod/content`
+(`RUSTFS_DATA_DIR` in `.env`). Archives use `/data/openu-prod/backups`
+(`BACKUP_DIR`); `~/openu-prod/backups` is a compatibility symlink there.
+Pre-deploy dumps use `/data/openu-prod/dumps` through the `dumps` symlink.
+The former `openu-prod_rustfs_data` volume is retained as a pre-move rollback
+copy; it receives no new writes. Restore drills use their own content volume.
+
 ## 2. Database hardening
 
 Each item is its own maintenance window.

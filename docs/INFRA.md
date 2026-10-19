@@ -365,6 +365,11 @@ labels):
   into the `db_dumps` volume (written to `.tmp`, then renamed).
 - redis: `redis-cli SAVE`.
 
+Production storage lives on the data disk: `RUSTFS_DATA_DIR=/data/openu-prod/content`
+and `BACKUP_DIR=/data/openu-prod/backups` in `.env`. RustFS and the backup
+service mount the same content directory; other stacks default to a named volume.
+Restore drills override both paths to keep production storage isolated.
+
 Archive layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
 `backup/rustfs` (live copy of the whole volume; object keys are immutable;
 switch to an incremental `rclone sync` beyond about 20 GB),
