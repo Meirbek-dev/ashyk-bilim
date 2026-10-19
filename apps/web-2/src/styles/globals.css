@@ -25,6 +25,11 @@
    question list marks its current question "step". */
 @custom-variant current (&:is([aria-current='page'], [aria-current='step']));
 
+/* A `#section` link (a settings section nav) lands below the sticky top bar (h-14), not under it. */
+html {
+  scroll-padding-top: 4.5rem;
+}
+
 body {
   @apply bg-background text-foreground antialiased;
 }

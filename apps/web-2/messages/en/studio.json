@@ -321,6 +321,7 @@
   "studio_contributor_reactivate": "Bring back to the team",
   "studio_contributor_reactivated": "The co-author is back on the team",
   "studio_learnings_title": "What you'll learn",
+  "studio_settings_title": "Course settings",
   "studio_learnings_hint": "The list on the course page. One point per line; an emoji at the start of a line becomes the point's icon.",
   "studio_learnings_field": "Points",
   "studio_learnings_too_many": "At most {max} points",

@@ -331,6 +331,7 @@
   "studio_contributor_reactivate": "Вернуть в команду",
   "studio_contributor_reactivated": "Соавтор снова в команде",
   "studio_learnings_title": "Чему вы научитесь",
+  "studio_settings_title": "Настройки курса",
   "studio_learnings_hint": "Список на странице курса. Один пункт в строке; эмодзи в начале строки станет значком пункта.",
   "studio_learnings_field": "Пункты",
   "studio_learnings_too_many": "Не больше {max} пунктов",
