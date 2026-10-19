@@ -109,6 +109,10 @@ pub enum NotificationPayload {
     CourseTeamAdded {
         course_id: CourseId,
         course_name: String,
+        /// `maintainer`, `contributor` or `reporter` (an observer: read-only);
+        /// empty in rows stored before it was sent.
+        #[serde(default)]
+        role: String,
     },
 }
 

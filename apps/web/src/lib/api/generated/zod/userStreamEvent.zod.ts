@@ -154,6 +154,12 @@ export const UserStreamEvent = zod
                 .object({
                   course_id: zod.uuid(),
                   course_name: zod.string(),
+                  role: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      '`maintainer`, `contributor` or `reporter` (an observer: read-only);\nempty in rows stored before it was sent.',
+                    ),
                   type: zod.enum(['course_team_added']),
                 })
                 .describe('The recipient joined a course team: added, or their application\napproved.'),

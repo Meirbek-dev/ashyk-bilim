@@ -5086,6 +5086,7 @@ export const vNotificationPayload = v.union([
     v.object({
         course_id: vCourseId,
         course_name: v.string(),
+        role: v.optional(v.string()),
         type: v.picklist(['course_team_added'])
     })
 ]);

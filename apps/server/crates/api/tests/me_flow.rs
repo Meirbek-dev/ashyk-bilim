@@ -571,6 +571,8 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
         joined["items"][0]["payload"]["course_id"],
         course_id.as_str()
     );
+    // An applicant joins as a contributor: the link goes to the workspace.
+    assert_eq!(joined["items"][0]["payload"]["role"], "contributor");
 
     let boss = app
         .create_user("boss", "boss@example.com", &["admin"])

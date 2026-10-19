@@ -155,7 +155,7 @@ const note = (type: 'course_team_added' | 'course_update', payload: Notification
 test('B-NOT-12 joining a course team reads the session again (the teach space); other notifications refresh nothing', () => {
   const joined = invalidationsFor(
     'notification.created',
-    note('course_team_added', { type: 'course_team_added', course_id: COURSE, course_name: 'C' }),
+    note('course_team_added', { type: 'course_team_added', course_id: COURSE, course_name: 'C', role: 'contributor' }),
   )
   expect(hits(joined, currentSessionQueryKey())).toBe(true)
   const update = note('course_update', {

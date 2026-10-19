@@ -40,6 +40,7 @@
   "notifications_text_application": "{applicant} хочет стать соавтором курса «{course}»",
   "notifications_text_post": "Новая тема от {author} в обсуждении курса «{course}»",
   "notifications_text_team_added": "Вас добавили в команду курса «{course}»",
+  "notifications_text_team_observer": "Вас добавили наблюдателем курса «{course}»: вы видите его, даже черновик, но ничего не меняете",
   "notifications_xp_awarded": "Начислено {amount} XP",
   "notifications_prefs_title": "Что присылать",
   "notifications_prefs_hint": "Уведомления приходят только в приложение: на колокольчик и страницу «Уведомления».",

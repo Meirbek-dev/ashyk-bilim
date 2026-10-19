@@ -63,7 +63,10 @@ export function notificationTarget(payload: NotificationPayload) {
     case 'contributor_application':
       return linkOptions({ to: '/teach/courses/$courseId/team', params: course })
     case 'course_team_added':
-      return linkOptions({ to: '/teach/courses/$courseId/overview', params: course })
+      // An observer has no workspace (no `teach` space): the course page, which shows them drafts too.
+      return payload.role === 'reporter'
+        ? linkOptions({ to: '/courses/$courseId', params: course })
+        : linkOptions({ to: '/teach/courses/$courseId/overview', params: course })
   }
   // A type this build does not know yet (a newer server): the list itself.
   return linkOptions({ to: '/notifications' })

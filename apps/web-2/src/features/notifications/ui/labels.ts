@@ -66,7 +66,11 @@ export function notificationLines(payload: NotificationPayload): string[] {
     case 'discussion_post':
       return [m.notifications_text_post({ author: payload.author_name, course: payload.course_name })]
     case 'course_team_added':
-      return [m.notifications_text_team_added({ course: payload.course_name })]
+      return [
+        payload.role === 'reporter'
+          ? m.notifications_text_team_observer({ course: payload.course_name })
+          : m.notifications_text_team_added({ course: payload.course_name }),
+      ]
   }
   return []
 }

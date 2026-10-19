@@ -4047,6 +4047,11 @@ export type NotificationPayload = {
 } | {
     course_id: CourseId;
     course_name: string;
+    /**
+     * `maintainer`, `contributor` or `reporter` (an observer: read-only);
+     * empty in rows stored before it was sent.
+     */
+    role?: string;
     type: 'course_team_added';
 };
 

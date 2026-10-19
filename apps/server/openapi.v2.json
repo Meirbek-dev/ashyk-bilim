@@ -11887,6 +11887,10 @@
               "course_name": {
                 "type": "string"
               },
+              "role": {
+                "description": "`maintainer`, `contributor` or `reporter` (an observer: read-only);\nempty in rows stored before it was sent.",
+                "type": "string"
+              },
               "type": {
                 "enum": [
                   "course_team_added"

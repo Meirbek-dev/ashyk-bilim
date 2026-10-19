@@ -91,8 +91,13 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
       author_name: 'Аня',
     }),
   ).toEqual({ to: '/courses/$courseId/discussions', params: { courseId: COURSE }, search: { thread } })
-  expect(notificationTarget({ ...names, type: 'course_team_added' })).toEqual({
+  expect(notificationTarget({ ...names, type: 'course_team_added', role: 'contributor' })).toEqual({
     to: '/teach/courses/$courseId/overview',
+    params: { courseId: COURSE },
+  })
+  // An observer has no workspace: the course page.
+  expect(notificationTarget({ ...names, type: 'course_team_added', role: 'reporter' })).toEqual({
+    to: '/courses/$courseId',
     params: { courseId: COURSE },
   })
 })
