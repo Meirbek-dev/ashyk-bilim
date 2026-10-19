@@ -21,4 +21,9 @@ describe('notification bell links', () => {
     expect(hrefFor(note({ type: 'grade_published', activity_id: 'a1' }))).toBe('/course/c1/activity/a1')
     expect(hrefFor(note({ type: 'course_update' }))).toBe('/course/c1')
   })
+  it('opens the discussions for a new thread and the workspace (course page for an observer) for a team join', () => {
+    expect(hrefFor(note({ type: 'discussion_post' }))).toBe('/course/c1#discussions')
+    expect(hrefFor(note({ type: 'course_team_added', role: 'contributor' }))).toBe('/dash/courses/c1/curriculum')
+    expect(hrefFor(note({ type: 'course_team_added', role: 'reporter' }))).toBe('/course/c1')
+  })
 })

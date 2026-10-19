@@ -1462,7 +1462,9 @@
         "deadline_approaching": "Due soon: “{activity}”",
         "course_update": "New announcement: “{title}”",
         "discussion_reply": "{author} replied in a discussion",
-        "contributor_application": "{applicant} wants to co-author the course"
+        "contributor_application": "{applicant} wants to co-author the course",
+        "discussion_post": "{author} started a new discussion thread",
+        "course_team_added": "You were added to the course team"
       }
     },
     "WidgetErrorBoundary": {

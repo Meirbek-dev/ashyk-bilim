@@ -1466,7 +1466,9 @@
         "deadline_approaching": "Скоро срок сдачи: «{activity}»",
         "course_update": "Новое объявление: «{title}»",
         "discussion_reply": "{author} ответил(а) в обсуждении",
-        "contributor_application": "{applicant} хочет стать соавтором курса"
+        "contributor_application": "{applicant} хочет стать соавтором курса",
+        "discussion_post": "Новая тема от {author} в обсуждении",
+        "course_team_added": "Вас добавили в команду курса"
       }
     },
     "WidgetErrorBoundary": {

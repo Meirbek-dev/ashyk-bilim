@@ -28,6 +28,7 @@ const Payload = zod
     title: zod.string().optional(),
     author_name: zod.string().optional(),
     applicant_name: zod.string().optional(),
+    role: zod.string().optional(),
     due_at_unix: zod.number().nullable().optional(),
   })
   .loose()
@@ -61,13 +62,21 @@ const KNOWN_TYPES = new Set([
   'course_update',
   'discussion_reply',
   'contributor_application',
+  'discussion_post',
+  'course_team_added',
 ])
 
 export function hrefFor({ payload }: Notification): string {
   if (payload.type === 'contributor_application') return `/dash/courses/${payload.course_id}/collaboration`
+  // An observer (reporter) has no editing workspace: the course page.
+  if (payload.type === 'course_team_added')
+    return payload.role === 'reporter'
+      ? `/course/${payload.course_id}`
+      : `/dash/courses/${payload.course_id}/curriculum`
   if (payload.activity_id) return `/course/${payload.course_id}/activity/${payload.activity_id}`
   // A reply lives in the course discussions, far below the course outline.
-  if (payload.type === 'discussion_reply') return `/course/${payload.course_id}#discussions`
+  if (payload.type === 'discussion_reply' || payload.type === 'discussion_post')
+    return `/course/${payload.course_id}#discussions`
   return `/course/${payload.course_id}`
 }
 
