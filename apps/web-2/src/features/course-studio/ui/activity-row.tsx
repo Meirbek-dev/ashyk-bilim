@@ -96,7 +96,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
       </div>
       <div className="ms-auto flex items-center gap-2">
         <ActivityStatusBadge published={activity.published} />
-        <QuickPublish courseId={courseId} activity={activity} />
+        <QuickPublish courseId={courseId} activity={activity} onPublished={() => renameButton.current?.focus()} />
         {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
         {allowed('update') ? (
           <IconButton
