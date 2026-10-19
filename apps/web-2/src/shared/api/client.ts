@@ -18,6 +18,9 @@ const SESSION_COOKIE = 'ab_session'
 // SSR: an API that accepts and never answers would hold the document (and its memory) until nginx gives up at 60 s;
 // past this a read fails and the route renders its error (one retry: twice this at most per read).
 const SSR_TIMEOUT_MS = 8000
+// Browser: a read with no response headers after this fails (the region shows its error and Retry instead of a
+// skeleton forever behind a wedged API or proxy). Only until the headers: a long download or stream keeps going.
+const READ_TIMEOUT_MS = 30_000
 
 const apiOrigin = createIsomorphicFn()
   .server(() => serverEnv.apiOrigin)
@@ -45,12 +48,18 @@ const forwardedHeaders = createIsomorphicFn()
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const built = new Request(input, init)
   const forwarded = forwardedHeaders()
+  const waiting = headersDeadline(READ_TIMEOUT_MS)
   // Rebuilt with a buffered body: re-wrapping the Request would turn the body into a stream, which
   // browsers only upload over HTTP/2 (net::ERR_ALPN_NEGOTIATION_FAILED on HTTP/1.1).
   const request = new Request(built.url.replace(KEY_ORIGIN, apiOrigin()), {
     method: built.method,
     headers: built.headers,
-    signal: forwarded ? AbortSignal.any([built.signal, AbortSignal.timeout(SSR_TIMEOUT_MS)]) : built.signal,
+    signal: forwarded
+      ? AbortSignal.any([built.signal, AbortSignal.timeout(SSR_TIMEOUT_MS)])
+      : // Safari before 17.4 has no AbortSignal.any: its reads go without the deadline rather than fail.
+        built.method === 'GET' && 'any' in AbortSignal
+        ? AbortSignal.any([built.signal, waiting.signal])
+        : built.signal,
     body: ['GET', 'HEAD'].includes(built.method) ? null : await built.arrayBuffer(),
   })
   if (forwarded) {
@@ -59,11 +68,20 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
     }
     forwarded.forEach((value, name) => request.headers.set(name, value))
   }
-  const response = await fetch(request)
+  const response = await fetch(request).finally(waiting.done)
   // The event stream compares event times with read times through this offset (`events.ts`).
   if (!forwarded) noteServerDate(response.headers.get('date'))
   if (!response.ok) throw await problemError(response)
   return response
+}
+
+/** A signal that aborts after `ms` unless `done()` (the response headers arrived) came first. */
+export function headersDeadline(ms: number) {
+  const controller = new AbortController()
+  const deadline = AbortSignal.timeout(ms)
+  const abort = () => controller.abort(deadline.reason)
+  deadline.addEventListener('abort', abort, { once: true })
+  return { signal: controller.signal, done: () => deadline.removeEventListener('abort', abort) }
 }
 
 /** Every failed response becomes an ApiError, built from the server's problem+json body. */
