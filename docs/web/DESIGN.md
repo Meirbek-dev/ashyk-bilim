@@ -125,7 +125,8 @@ get the same shell without navigation. Auth pages use the full wordmark. Navy ar
 including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
 **Focus layout** (5.2): no navigation. Top bar: back button, context title (`text-lg`, truncated), save status,
-then actions on the right. Used by the activity player, attempt, activity editor and single-submission review.
+then actions on the right; the bar and the side panels stay in view (sticky, own scroll) while the page scrolls. Used by
+the activity player, attempt, activity editor and single-submission review.
 
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
 | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
