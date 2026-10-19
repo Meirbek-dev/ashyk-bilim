@@ -29,7 +29,7 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
           </p>
         ) : null}
         {/* What it is made of (B-CRS-15): each type's tile and «Видео: 12». */}
-        {size.byType.length > 1 ? (
+        {size.byType.length > 1 && size.activities > 5 ? (
           <ul aria-label={m.course_composition()} className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-sm">
             {size.byType.map(([type, count]) => (
               <li key={type} className="flex items-center gap-2">
