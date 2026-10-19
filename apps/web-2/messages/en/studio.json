@@ -10,7 +10,7 @@
       }
     }
   ],
-  "studio_courses_empty": "You have no courses yet",
+  "studio_courses_empty": "Courses you create, or whose team you join, appear here. A new course stays a draft until you publish it.",
   "studio_search_label": "Search by name",
   "studio_preset_label": "Course set",
   "studio_preset_all": "All",

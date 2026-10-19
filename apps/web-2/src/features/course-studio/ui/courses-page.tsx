@@ -6,26 +6,18 @@ import { m } from '#/paraglide/messages'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { DataList } from '#/shared/components/data-list'
-import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
 
-import { presetCount, type Preset } from '../model/course'
+import { presetCount } from '../model/course'
 import { myCoursesOptions } from '../queries'
+import { CoursesPresets } from './courses-presets'
 import { CoursesSearchBox } from './courses-search'
 import { CoursesSortMenu } from './courses-sort'
 import { CourseListItem } from './course-list-item'
 import { CoursesBulkBar } from './courses-bulk-bar'
 import { CreateCourseDialog } from './create-course-dialog'
-
-const presetLabels: Record<Preset | 'all', () => string> = {
-  all: m.studio_preset_all,
-  drafts: m.studio_preset_drafts,
-  published: m.studio_preset_published,
-  archived: m.studio_preset_archived,
-}
-const PRESETS = ['all', 'drafts', 'published', 'archived'] as const
 
 /** `/teach/courses`: the caller's editable courses, filtered by name and preset (both in the URL). */
 export function CoursesPage() {
@@ -42,41 +34,25 @@ export function CoursesPage() {
       return next
     })
   const summary = query.data.pages[0]?.summary
-  const filters = (
-    <nav aria-label={m.studio_preset_label()} className="flex flex-wrap">
-      {PRESETS.map(preset => {
-        const value = preset === 'all' ? undefined : preset
-        return (
-          <Link
-            key={preset}
-            to="/teach/courses"
-            search={{ q: search.q, preset: value, sort: search.sort }}
-            activeOptions={{ exact: true }}
-            variant="tab"
-          >
-            {presetLabels[preset]()}
-            {summary ? (
-              <span className="ms-2 text-muted-foreground tabular-nums">{presetCount(summary, value)}</span>
-            ) : null}
-          </Link>
-        )
-      })}
-    </nav>
-  )
+  // No course at all (not a filter that matches none): no search, order or presets to offer - only the empty state.
+  const none = summary !== undefined && presetCount(summary, undefined) === 0 && !search.q
+  const filters = <CoursesPresets search={search} summary={summary} />
   return (
     <ListPage
       title={m.studio_courses_title()}
-      count={summary ? m.studio_courses_count({ count: presetCount(summary, search.preset) }) : undefined}
+      count={summary && !none ? m.studio_courses_count({ count: presetCount(summary, search.preset) }) : undefined}
       primaryAction={hasCapability(session, 'course.create') ? <CreateCourseDialog /> : null}
       // Keyed by the URL value: "back" to another search refills the box.
       search={
         // One row with the presets: a wrapper of its own put the order menu on a second line under the search box.
-        <>
-          <CoursesSearchBox key={search.q ?? ''} search={search} />
-          <CoursesSortMenu search={search} />
-        </>
+        none ? undefined : (
+          <>
+            <CoursesSearchBox key={search.q ?? ''} search={search} />
+            <CoursesSortMenu search={search} />
+          </>
+        )
       }
-      filters={filters}
+      filters={none ? undefined : filters}
       activeFilters={search.preset ? 1 : 0}
     >
       <ListState
