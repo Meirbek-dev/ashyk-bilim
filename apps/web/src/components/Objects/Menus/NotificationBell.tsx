@@ -27,6 +27,7 @@ const Payload = zod
     activity_name: zod.string().optional(),
     title: zod.string().optional(),
     author_name: zod.string().optional(),
+    excerpt: zod.string().optional(),
     applicant_name: zod.string().optional(),
     role: zod.string().optional(),
     due_at_unix: zod.number().nullable().optional(),
@@ -65,6 +66,11 @@ const KNOWN_TYPES = new Set([
   'discussion_post',
   'course_team_added',
 ])
+
+/** A reply's or new thread's own words, quoted (CONTRACT-REQ-E-1): twenty replies no longer read alike. */
+export function excerptOf({ payload }: Notification): string | null {
+  return payload.excerpt ? `«${payload.excerpt}»` : null
+}
 
 export function hrefFor({ payload }: Notification): string {
   if (payload.type === 'contributor_application') return `/dash/courses/${payload.course_id}/collaboration`
@@ -205,6 +211,9 @@ export function NotificationBell({ className }: { className?: string }) {
                           })}
                         </span>
                       </span>
+                      {excerptOf(item) ? (
+                        <span className="line-clamp-2 text-sm [overflow-wrap:anywhere]">{excerptOf(item)}</span>
+                      ) : null}
                       <span className="text-muted-foreground truncate text-xs">
                         {payload.course_name} · {format.relativeTime(new Date(item.created_at_unix * 1000), now)}
                       </span>

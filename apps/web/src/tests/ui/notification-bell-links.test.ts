@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useFormatter: () => ({}) }))
 
-import { hrefFor } from '@components/Objects/Menus/NotificationBell'
+import { excerptOf, hrefFor } from '@components/Objects/Menus/NotificationBell'
 
 const note = (payload: Record<string, unknown>) =>
   ({
@@ -25,5 +25,9 @@ describe('notification bell links', () => {
     expect(hrefFor(note({ type: 'discussion_post' }))).toBe('/course/c1#discussions')
     expect(hrefFor(note({ type: 'course_team_added', role: 'contributor' }))).toBe('/dash/courses/c1/curriculum')
     expect(hrefFor(note({ type: 'course_team_added', role: 'reporter' }))).toBe('/course/c1')
+  })
+  it('quotes the post words of a reply or thread; older rows have none', () => {
+    expect(excerptOf(note({ type: 'discussion_reply', excerpt: 'Срок завтра?' }))).toBe('«Срок завтра?»')
+    expect(excerptOf(note({ type: 'discussion_post' }))).toBeNull()
   })
 })
