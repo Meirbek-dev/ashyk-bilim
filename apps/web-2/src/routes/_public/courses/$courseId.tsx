@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense } from 'react'
+import * as v from 'valibot'
 
 import { AiSheet } from '#/features/ai'
 import { aiSearchSchema } from '#/features/ai/route'
@@ -9,9 +10,10 @@ import { m } from '#/paraglide/messages'
 import { pageMeta } from '#/shared/lib/document-title'
 
 // The course page (spec 5.4): header with one primary action; tabs are child routes. The AI panel opens in a side
-// sheet from the header (slice 6.3); `?ai=` keeps it open.
+// sheet from the header (slice 6.3); `?ai=` keeps it open. `?enroll=1`: a guest's «Записаться» came back signed in,
+// and the enrolment it asked for runs (B-CRS-16).
 export const Route = createFileRoute('/_public/courses/$courseId')({
-  validateSearch: aiSearchSchema,
+  validateSearch: v.object({ ...aiSearchSchema.entries, enroll: v.fallback(v.optional(v.literal(1)), undefined) }),
   loader: async ({ context, params }) => {
     const course = await ensureCoursePage(context.queryClient, params.courseId, context.session)
     return { name: course.name, summary: markdownSummary(course.description), image: course.thumbnail_key }

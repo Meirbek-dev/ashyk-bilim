@@ -53,8 +53,12 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
           {session ? (
             <LearnerAction course={course} />
           ) : (
-            // A guest's "Enrol" signs in first and comes back here (UX-021).
-            <RouterLink to="/login" search={{ redirect: `/courses/${courseId}/about` }} className={buttonVariants()}>
+            // A guest's "Enrol" signs in first and comes back here (UX-021), where the enrolment runs (B-CRS-16).
+            <RouterLink
+              to="/login"
+              search={{ redirect: `/courses/${courseId}/about?enroll=1` }}
+              className={buttonVariants()}
+            >
               {m.course_enroll()}
             </RouterLink>
           )}

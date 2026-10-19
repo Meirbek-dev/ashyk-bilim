@@ -107,11 +107,17 @@ test('B-CRS-02 the header names the authors and the update date', async ({ page,
   await expect(page.getByText(m.course_authors({ names: 'E2E teacher' }, ru), { exact: false })).toBeVisible()
 })
 
-test('B-CRS-03 a guest enrolling signs in first and comes back', async ({ page, course }) => {
+test('B-CRS-03 B-CRS-16 a guest enrols after signing in', async ({ page, signInAs, course }) => {
   const made = await course()
   await page.goto(about(made))
   await page.getByRole('link', { name: m.course_enroll({}, ru) }).click()
-  await expect(page).toHaveURL(new RegExp(`/login\\?redirect=${encodeURIComponent(about(made))}`))
+  await expect(page).toHaveURL(new RegExp(`/login\\?redirect=${encodeURIComponent(`${about(made)}?enroll=1`)}`))
+  const back = new URL(page.url()).searchParams.get('redirect') ?? ''
+  await signInAs('student')
+  await page.goto(back)
+  await expect(page.getByText(m.course_enrolled({}, ru))).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`${about(made)}$`))
+  await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toBeVisible()
 })
 
 test('B-CRS-04 a student enrols and the header offers to start', async ({ page, signInAs, course }) => {
