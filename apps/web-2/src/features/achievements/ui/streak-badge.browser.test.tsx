@@ -70,5 +70,7 @@ test('B-ACH-15 on a narrow home the pills read «0 XP» and «3 дня»; the fu
   const screen = await render(3, Math.floor(Date.now() / 1000) - 60)
   await expect.element(screen.getByText(m.achievements_xp({ xp: '0' }), { exact: true })).toBeVisible()
   await expect.element(screen.getByText(m.achievements_days({ count: 3 }), { exact: true })).toBeVisible()
-  await expect.element(screen.getByText(m.achievements_summary({ level: 1, xp: '0' }))).not.toBeVisible()
+  // The full wording is there for screen readers only (sr-only), not drawn.
+  const full = screen.getByText(m.achievements_summary({ level: 1, xp: '0' })).element()
+  expect(full.getBoundingClientRect().width).toBeLessThanOrEqual(1)
 })

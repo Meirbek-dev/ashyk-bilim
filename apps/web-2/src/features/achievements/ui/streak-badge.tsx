@@ -21,27 +21,29 @@ export function StreakBadge() {
   const summary = m.achievements_summary({ level: profile.level, xp: formatNumber(profile.total_xp) })
   const streak = days === null ? null : m.achievements_days({ count: days })
   // On a phone the two pills share one row: the ring already shows the level and the flame the streak, so the text
-  // shortens to «200 XP» and «1 день» (the full wording stays the link's name).
+  // shortens to «200 XP» and «1 день» (the full wording stays, read out, as the link's name).
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Link to="/achievements" variant="pill" aria-label={summary}>
+      <Link to="/achievements" variant="pill">
         <ProgressRing value={levelProgress(profile).percent} tone="stroke-reward" className="size-8">
           <span aria-hidden className="font-heading text-xs font-semibold tabular-nums">
             {profile.level}
           </span>
         </ProgressRing>
-        <span aria-hidden className="tabular-nums">
-          <span className="@md:hidden">{m.achievements_xp({ xp: formatNumber(profile.total_xp) })}</span>
-          <span className="hidden @md:inline">{summary}</span>
+        <span className="tabular-nums">
+          <span aria-hidden className="@md:hidden">
+            {m.achievements_xp({ xp: formatNumber(profile.total_xp) })}
+          </span>
+          <span className="sr-only @md:not-sr-only">{summary}</span>
         </span>
       </Link>
       {streak === null ? null : (
-        <Link to="/achievements" variant="pill" aria-label={m.achievements_streak_badge({ days: streak })}>
+        <Link to="/achievements" variant="pill">
           <Flame aria-hidden className="text-reward" />
-          <span aria-hidden>
-            <span className="@md:hidden">{streak}</span>
-            <span className="hidden @md:inline">{m.achievements_streak_badge({ days: streak })}</span>
+          <span aria-hidden className="@md:hidden">
+            {streak}
           </span>
+          <span className="sr-only @md:not-sr-only">{m.achievements_streak_badge({ days: streak })}</span>
         </Link>
       )}
     </div>
