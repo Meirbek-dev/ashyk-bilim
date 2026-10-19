@@ -18,8 +18,12 @@ const readinessLabels: Record<ReadinessCode, () => string> = {
   'certificate-not-configured': m.studio_readiness_certificate_not_configured,
 }
 
-const label = (raw: string) => {
+/** How many links one line names; the rest are «и ещё N», a link to the content (ten drafts were ten lines of links). */
+const SHOWN = 5
+
+const label = (raw: string, count: number) => {
   const code = readinessCode(raw)
+  if (code === 'activity-unpublished' && count > 1) return m.studio_readiness_activities_unpublished({ count })
   return code ? readinessLabels[code]() : m.studio_readiness_unknown({ code: raw })
 }
 
@@ -67,13 +71,18 @@ export function ReadinessList({ courseId, live = false }: { courseId: string; li
             {/* Seven drafts are one line with seven links, not seven identical lines (B-CST-48). */}
             {groupReadiness(group.items).map(({ code, items }) => (
               <li key={code} className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
-                <span>{label(code)}</span>
-                {items.map((item, index) => (
+                <span>{label(code, items.length)}</span>
+                {items.slice(0, SHOWN).map((item, index) => (
                   <span key={item.activity_id ?? index}>
                     {where(courseId, item)}
-                    {index < items.length - 1 ? ',' : null}
+                    {index < Math.min(items.length, SHOWN) - 1 ? ',' : null}
                   </span>
                 ))}
+                {items.length > SHOWN ? (
+                  <Link to="/teach/courses/$courseId/content" params={{ courseId }}>
+                    {m.studio_readiness_more({ count: items.length - SHOWN })}
+                  </Link>
+                ) : null}
               </li>
             ))}
           </ul>

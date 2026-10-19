@@ -106,6 +106,19 @@
   "studio_readiness_file_submission_unpublished": "Отправка файла не опубликована.",
   "studio_readiness_file_submission_not_ready": "У отправки файла нет инструкции.",
   "studio_readiness_activity_unpublished": "Активность в черновике: учащиеся её не видят.",
+  "studio_readiness_activities_unpublished": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} активность в черновике: учащиеся её не видят.",
+        "countPlural=few": "{count} активности в черновике: учащиеся их не видят.",
+        "countPlural=many": "{count} активностей в черновике: учащиеся их не видят.",
+        "countPlural=other": "{count} активности в черновике: учащиеся их не видят."
+      }
+    }
+  ],
+  "studio_readiness_more": "и ещё {count}",
   "studio_readiness_thumbnail_missing": "У курса нет обложки.",
   "studio_readiness_certificate_not_configured": "Сертификат не настроен.",
   "studio_readiness_unknown": "Есть замечание сервера: {code}.",

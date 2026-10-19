@@ -94,6 +94,17 @@
   "studio_readiness_file_submission_unpublished": "The file submission is not published.",
   "studio_readiness_file_submission_not_ready": "The file submission has no instructions.",
   "studio_readiness_activity_unpublished": "The activity is a draft: learners cannot see it.",
+  "studio_readiness_activities_unpublished": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} activity is a draft: learners cannot see it.",
+        "countPlural=other": "{count} activities are drafts: learners cannot see them."
+      }
+    }
+  ],
+  "studio_readiness_more": "and {count} more",
   "studio_readiness_thumbnail_missing": "The course has no cover.",
   "studio_readiness_certificate_not_configured": "The certificate is not set up.",
   "studio_readiness_unknown": "The server reports an issue: {code}.",

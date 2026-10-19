@@ -94,6 +94,17 @@
   "studio_readiness_file_submission_unpublished": "Файл жіберу тапсырмасы жарияланбаған.",
   "studio_readiness_file_submission_not_ready": "Файл жіберу тапсырмасында нұсқаулық жоқ.",
   "studio_readiness_activity_unpublished": "Белсенділік нобайда: білім алушылар оны көрмейді.",
+  "studio_readiness_activities_unpublished": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} белсенділік нобайда: білім алушылар оны көрмейді.",
+        "countPlural=other": "{count} белсенділік нобайда: білім алушылар оларды көрмейді."
+      }
+    }
+  ],
+  "studio_readiness_more": "тағы {count}",
   "studio_readiness_thumbnail_missing": "Курстың мұқабасы жоқ.",
   "studio_readiness_certificate_not_configured": "Курс сертификаты бапталмаған.",
   "studio_readiness_unknown": "Сервердің ескертпесі бар: {code}.",
