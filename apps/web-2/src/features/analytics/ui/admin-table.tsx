@@ -9,6 +9,8 @@ import { ShowMore } from '#/shared/components/show-more'
 
 type AdminTableProps<T> = {
   title: string
+  /** One line on what the ranking measures, when its numbers need it. */
+  description?: string
   rows: readonly T[]
   columns: readonly DataColumn<T>[]
   getKey: (row: T) => string
@@ -18,14 +20,17 @@ type AdminTableProps<T> = {
 const FIRST = 8
 
 /** One ranking of the admin overview: its heading and table, or one sentence when there is nothing yet. */
-export function AdminTable<T extends RowData>({ title, rows, columns, getKey }: AdminTableProps<T>) {
+export function AdminTable<T extends RowData>({ title, description, rows, columns, getKey }: AdminTableProps<T>) {
   const headingId = useId()
   const [all, setAll] = useState(false)
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className="text-xl font-semibold">
-        {title}
-      </h2>
+      <div className="flex flex-col gap-1">
+        <h2 id={headingId} className="text-xl font-semibold">
+          {title}
+        </h2>
+        {description ? <p className="max-w-prose text-sm text-muted-foreground">{description}</p> : null}
+      </div>
       <ListState
         pending={false}
         error={null}

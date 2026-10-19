@@ -294,5 +294,7 @@
   "analytics_admin_group": "Топ: {group}",
   "analytics_admin_all": "барлығы",
   "analytics_admin_roi": "Мазмұн қайтарымы",
+  "analytics_admin_roi_hint": "Курсты аяқтау мен денсаулығы бір белсенділікке шаққанда: неғұрлым жоғары болса, әр белсенділік соғұрлым көп нәтиже береді.",
+  "analytics_admin_courses_hint": "Денсаулық - курстың 0-ден 100-ге дейінгі бағасы; әлі ешкім бастамаған курстар - соңында.",
   "analytics_program_unassigned": "Авторы жоқ"
 }

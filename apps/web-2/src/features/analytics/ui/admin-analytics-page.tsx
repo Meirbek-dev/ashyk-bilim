@@ -108,12 +108,14 @@ export function AdminAnalyticsPage() {
         <AsOf at={data.generated_at_unix} />
         <AdminTable
           title={m.analytics_admin_courses()}
+          description={m.analytics_admin_courses_hint()}
           rows={data.course_health_ranking}
           columns={courseColumns()}
           getKey={row => row.course_id}
         />
         <AdminTable
           title={m.analytics_admin_roi()}
+          description={m.analytics_admin_roi_hint()}
           rows={data.content_roi}
           columns={courseColumns()}
           getKey={row => row.course_id}
