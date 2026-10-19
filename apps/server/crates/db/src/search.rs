@@ -15,6 +15,39 @@ use sqlx::PgPool;
 use crate::catalog::CourseRow;
 use crate::collections::CollectionRow;
 
+/// Inflection endings of Russian (and the Kazakh vowel ones), longest first.
+const ENDINGS: &[&str] = &[
+    "ями", "ами", "ого", "его", "ому", "ему", "ыми", "ими", "ых", "их", "ой", "ей", "ий", "ый",
+    "ая", "яя", "ое", "ее", "ов", "ев", "ам", "ям", "ах", "ях", "ом", "ем", "ию", "ия", "ие", "ии",
+    "а", "я", "ы", "и", "у", "ю", "е", "о", "й", "ь", "і",
+];
+
+/// A Cyrillic word without its inflection ending: «базы» finds «базами».
+///
+/// A word-start prefix alone missed every other case form («данных» / «данные»). The stem keeps at least three
+/// letters; other words stay as typed.
+/// ponytail: an ending list, not a stemmer - add Snowball if Kazakh suffixes (-лар, -ның) start to matter.
+#[must_use]
+pub fn stem(word: &str) -> &str {
+    if !word
+        .chars()
+        .all(|c| matches!(c, 'а'..='я' | 'А'..='Я' | 'ё' | 'Ё') || "әғқңөұүһіӘҒҚҢӨҰҮҺІ".contains(c))
+    {
+        return word;
+    }
+    let lower = word.to_lowercase();
+    let letters = lower.chars().count();
+    ENDINGS
+        .iter()
+        .find(|ending| lower.ends_with(*ending) && letters - ending.chars().count() >= 3)
+        .map_or(word, |ending| {
+            let keep = letters - ending.chars().count();
+            word.char_indices()
+                .nth(keep)
+                .map_or(word, |(at, _)| &word[..at])
+        })
+}
+
 /// `to_tsquery` text for `query`: every word a quoted prefix term.
 ///
 /// `'крит':*` matches «Критик», `'gauntlet21-analytics':*` the hyphenated
@@ -31,7 +64,7 @@ pub fn prefix_tsquery(query: &str) -> String {
                 _ => (false, word),
             };
             let not = if negate { "!" } else { "" };
-            let quoted = word.replace('\\', r"\\").replace('\'', "''");
+            let quoted = stem(word).replace('\\', r"\\").replace('\'', "''");
             format!("{not}'{quoted}':*")
         })
         .collect::<Vec<_>>()
@@ -64,6 +97,7 @@ pub fn word_patterns(query: &str) -> WordPatterns {
             Some(rest) if !rest.is_empty() => (true, rest),
             _ => (false, word),
         };
+        let word = stem(word);
         let mut pattern = String::new();
         if word.starts_with(char::is_alphanumeric) {
             pattern.push_str("(^|[^[:alnum:]])");
@@ -220,7 +254,24 @@ pub async fn search_users(
 
 #[cfg(test)]
 mod tests {
-    use super::{WordPatterns, prefix_tsquery, word_patterns};
+    use super::{WordPatterns, prefix_tsquery, stem, word_patterns};
+
+    #[test]
+    fn cyrillic_words_lose_their_inflection_ending() {
+        assert_eq!(stem("базы"), "баз");
+        assert_eq!(stem("Данных"), "Данн");
+        assert_eq!(stem("программирования"), "программирован");
+        assert_eq!(stem("курс"), "курс");
+        assert_eq!(stem("Крит"), "Крит");
+        assert_eq!(stem("мы"), "мы");
+        assert_eq!(stem("java"), "java");
+        assert_eq!(stem("С#"), "С#");
+        assert_eq!(stem("бағдарламалау"), "бағдарламала");
+        assert_eq!(
+            word_patterns("базы").words,
+            vec![r"(^|[^[:alnum:]])баз".to_owned()]
+        );
+    }
 
     #[test]
     fn word_patterns_anchor_words_and_keep_symbols() {
