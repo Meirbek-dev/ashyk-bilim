@@ -1,4 +1,5 @@
 import { Agent } from 'node:http'
+import { resolve } from 'node:path'
 
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import babel from '@rolldown/plugin-babel'
@@ -25,8 +26,12 @@ const proxy = {
   '/content': { ...storage, rewrite: (path: string) => path.replace(/^\/content\//, '/ab-public/') },
 }
 
+// `just e2e` builds beside running dev servers: messages compile outside src/paraglide (e2e.ts, a `paraglide` dir).
+const paraglideOutdir = process.env['AB_PARAGLIDE_OUTDIR']
+const paraglideDir = paraglideOutdir && `${resolve(paraglideOutdir).replaceAll('\\', '/')}/`
+
 const plugins = lazyPlugins(() => [
-  paraglideVitePlugin(paraglideOptions),
+  paraglideVitePlugin(paraglideOutdir ? { ...paraglideOptions, outdir: paraglideOutdir } : paraglideOptions),
   tailwindcss(),
   tanstackStart({ router: { codeSplittingOptions: { defaultBehavior: ROUTE_SPLIT } } }),
   viteReact(),
@@ -270,7 +275,7 @@ export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
   server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy },
-  resolve: { dedupe: ['zod'] }, // one Zod: @ag-ui/client's own 3.25 copy hides its config from disableZodJit (CSP)
+  resolve: { dedupe: ['zod'], alias: paraglideDir ? [{ find: /^#\/paraglide\//, replacement: paraglideDir }] : [] }, // one Zod: @ag-ui/client's own 3.25 copy hides its config from disableZodJit (CSP)
   build: {
     manifest: true,
     // CSP `font-src 'self'` refuses `data:` fonts (KaTeX's woff2 would be inlined).

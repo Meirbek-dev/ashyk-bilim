@@ -264,7 +264,12 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     if (o.app === 'web2') {
       const app = join(root, 'apps/web-2')
       buildIfChanged('apps/web-2', '', join(app, 'dist/server/server.js'), dir, () =>
-        run([process.execPath, 'x', 'vp', 'build'], { cwd: app, log: join(dir, 'build.log') }),
+        // Messages compile outside src/paraglide, which the running dev servers import (vite.config.ts).
+        run([process.execPath, 'x', 'vp', 'build'], {
+          cwd: app,
+          env: { AB_PARAGLIDE_OUTDIR: join(root, 'tmp/e2e/web2-build/paraglide') },
+          log: join(dir, 'build.log'),
+        }),
       )
       const web = { PUBLIC_ORIGIN: origin, INTERNAL_API_URL: `http://127.0.0.1:${ports.api}` }
       start('serve', [node, 'serve.ts'], app, { ...web, PORT: String(ports.serve), HOST: '127.0.0.1' }, dir)
