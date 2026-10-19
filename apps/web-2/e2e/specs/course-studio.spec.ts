@@ -84,7 +84,8 @@ test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacher�
   await expect(page.getByRole('heading', { name: m.course_not_found({}, ru) })).toBeVisible()
   const foreign = await studio.course({ owner: 'admin', chapters: [{ pages: [{ published: true }] }], publish: true })
   await page.goto(tab(foreign.course.id, 'overview'))
-  await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
+  // UX-F-38: a teacher off the team is told so, with the course page and «Мои курсы» as the ways on.
+  await expect(page.getByRole('heading', { name: m.studio_not_on_team_title({}, ru) })).toBeVisible()
 })
 
 test('B-CST-47 overview opens with the course pulse from the server', async ({ page, studio }) => {
