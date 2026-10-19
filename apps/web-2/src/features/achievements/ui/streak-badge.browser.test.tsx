@@ -65,3 +65,10 @@ test('B-ACH-08 the /home pills link the level and a live learning streak to /ach
   await expect.element(broken.getByRole('link', { name: level })).toBeInTheDocument()
   await expect.element(broken.getByRole('link', { name: text })).not.toBeInTheDocument()
 })
+
+test('B-ACH-15 on a narrow home the pills read «0 XP» and «3 дня»; the full wording stays their name', async () => {
+  const screen = await render(3, Math.floor(Date.now() / 1000) - 60)
+  await expect.element(screen.getByText(m.achievements_xp({ xp: '0' }), { exact: true })).toBeVisible()
+  await expect.element(screen.getByText(m.achievements_days({ count: 3 }), { exact: true })).toBeVisible()
+  await expect.element(screen.getByText(m.achievements_summary({ level: 1, xp: '0' }))).not.toBeVisible()
+})

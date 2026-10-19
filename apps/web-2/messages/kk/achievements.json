@@ -1,5 +1,6 @@
 {
   "achievements_summary": "{level}-деңгей · {xp} XP",
+  "achievements_xp": "{xp} XP",
   "achievements_level_title": "Деңгей",
   "achievements_progress_label": "Деңгей барысы",
   "achievements_progress_left": "{next}-деңгейге дейін тағы {left} XP",

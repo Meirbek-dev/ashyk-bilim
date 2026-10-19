@@ -1,5 +1,6 @@
 {
   "achievements_summary": "Level {level} · {xp} XP",
+  "achievements_xp": "{xp} XP",
   "achievements_level_title": "Level",
   "achievements_progress_label": "Level progress",
   "achievements_progress_left": "{left} XP to level {next}",

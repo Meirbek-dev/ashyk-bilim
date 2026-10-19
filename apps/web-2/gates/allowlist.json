@@ -43,6 +43,10 @@
       "reason": "Established kk term (legacy catalog uses Геймификация), spelled like ru."
     },
     {
+      "key": "achievements_xp",
+      "reason": "«{xp} XP»: a number and the XP unit, the same in every locale."
+    },
+    {
       "key": "platform_nav_courses_short",
       "reason": "kk «Каталог» (the bar's short form of «Курстар каталогы») is spelled like ru."
     },
