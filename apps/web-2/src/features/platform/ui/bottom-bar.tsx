@@ -32,7 +32,7 @@ function barItems(sections: Section[]) {
       {shown.map(section => (
         <Link key={section.to} variant="bar" to={section.to} activeOptions={{ exact: section.exact === true }}>
           <section.icon aria-hidden />
-          <span className="line-clamp-2">{section.label()}</span>
+          <span className="line-clamp-2">{(section.short ?? section.label)()}</span>
         </Link>
       ))}
       {rest.length > 0 ? (

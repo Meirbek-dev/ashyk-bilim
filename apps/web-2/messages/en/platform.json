@@ -19,6 +19,8 @@
   "platform_workspace_teach": "Teach",
   "platform_workspace_admin": "Admin",
   "platform_nav_learning": "My courses",
+  "platform_nav_learning_short": "My courses",
+  "platform_nav_courses_short": "Catalog",
   "platform_nav_courses": "Catalog",
   "platform_nav_achievements": "Achievements",
   "platform_nav_inbox": "Inbox",

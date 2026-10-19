@@ -34,6 +34,8 @@ export type Section = {
   /** The nav target; every route under this path belongs to the section. */
   to: NavPath
   label: () => string
+  /** The phone bottom bar's label when `label` would wrap out of its 56 px (kk «Курстар каталогы» -> «Каталог»). */
+  short?: () => string
   icon: LucideIcon
   /** Needed on top of the workspace's capability. */
   capability?: Capability
@@ -60,8 +62,8 @@ const learn: Workspace = {
   prefix: '/',
   sections: [
     { to: '/home', label: m.platform_nav_home, icon: CalendarCheck },
-    { to: '/learning', label: m.platform_nav_learning, icon: GraduationCap },
-    { to: '/courses', label: m.platform_nav_courses, icon: BookOpen },
+    { to: '/learning', label: m.platform_nav_learning, short: m.platform_nav_learning_short, icon: GraduationCap },
+    { to: '/courses', label: m.platform_nav_courses, short: m.platform_nav_courses_short, icon: BookOpen },
     { to: '/collections', label: m.platform_nav_collections, icon: Library },
     { to: '/achievements', label: m.platform_nav_achievements, icon: Trophy, gamification: true },
   ],

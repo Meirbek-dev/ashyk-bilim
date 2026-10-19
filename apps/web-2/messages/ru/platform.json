@@ -19,6 +19,8 @@
   "platform_workspace_teach": "Преподавание",
   "platform_workspace_admin": "Администрирование",
   "platform_nav_learning": "Мои курсы",
+  "platform_nav_learning_short": "Мои курсы",
+  "platform_nav_courses_short": "Каталог",
   "platform_nav_courses": "Каталог",
   "platform_nav_achievements": "Достижения",
   "platform_nav_inbox": "Входящие",
