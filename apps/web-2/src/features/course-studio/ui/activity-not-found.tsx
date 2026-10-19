@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { StatusScreen } from '#/shared/components/status-screen'
 
 /** An unknown, malformed or foreign activity id in the studio: the API answers 404 for all of them. */
 export function ActivityNotFound() {
@@ -20,7 +21,14 @@ export function ActivityNotFound() {
   ) : null
   return (
     <FocusPage back={back} title={m.studio_activity_not_found()}>
-      <h1 className="text-2xl font-semibold">{m.studio_activity_not_found()}</h1>
+      {/* As a missing course: why it may be gone and the way on, not a bare heading on an empty page. */}
+      <StatusScreen title={m.studio_activity_not_found()} text={m.ui_not_found_text()}>
+        {courseId ? (
+          <RouterLink to="/teach/courses/$courseId/content" params={{ courseId }} className={buttonVariants()}>
+            {m.platform_tab_content()}
+          </RouterLink>
+        ) : null}
+      </StatusScreen>
     </FocusPage>
   )
 }

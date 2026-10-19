@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { StatusScreen } from '#/shared/components/status-screen'
 
 /** An unknown, malformed or foreign submission id, or an activity without hand-ins: the API answers 404. */
 export function SubmissionNotFound() {
@@ -21,7 +22,17 @@ export function SubmissionNotFound() {
     ) : null
   return (
     <FocusPage back={back} title={m.grading_not_found()}>
-      <h1 className="text-2xl font-semibold">{m.grading_not_found()}</h1>
+      <StatusScreen title={m.grading_not_found()} text={m.ui_not_found_text()}>
+        {courseId && activityId ? (
+          <RouterLink
+            to="/teach/courses/$courseId/activities/$activityId/submissions"
+            params={{ courseId, activityId }}
+            className={buttonVariants()}
+          >
+            {m.platform_tab_submissions()}
+          </RouterLink>
+        ) : null}
+      </StatusScreen>
     </FocusPage>
   )
 }
