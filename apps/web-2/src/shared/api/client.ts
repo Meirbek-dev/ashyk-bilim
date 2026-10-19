@@ -84,8 +84,12 @@ export function headersDeadline(ms: number) {
   return { signal: controller.signal, done: () => deadline.removeEventListener('abort', abort) }
 }
 
-/** Every failed response becomes an ApiError, built from the server's problem+json body. */
-async function problemError(response: Response): Promise<ApiError> {
+/**
+ * Every failed response becomes an ApiError, built from the server's problem+json body. A gateway's own 502-504 (the
+ * proxy in front of a restarting or stopped API answers HTML) is «service unavailable, try later», not an internal
+ * error that asks for a support code nobody was given.
+ */
+export async function problemError(response: Response): Promise<ApiError> {
   // A proxy in front of the API can answer with HTML: such a body is not a problem, not a crash.
   const body: unknown = await response.json().catch(() => null)
   const parsed = v.safeParse(vProblem, body)
@@ -93,7 +97,7 @@ async function problemError(response: Response): Promise<ApiError> {
   const retryAfter = Number(response.headers.get('retry-after'))
   return new ApiError({
     status: response.status,
-    code: problem?.code ?? 'internal',
+    code: problem?.code ?? (response.status >= 502 && response.status <= 504 ? 'service-unavailable' : 'internal'),
     fieldErrors: problem?.field_errors ?? [],
     requestId: problem?.request_id ?? response.headers.get('x-request-id'),
     retryAfter: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
