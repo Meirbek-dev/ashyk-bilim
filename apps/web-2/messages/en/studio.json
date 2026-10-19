@@ -261,6 +261,7 @@
   "studio_learners_col_action": "Action",
   "studio_learner_completed": "Course completed {date}",
   "studio_learner_remove": "Remove from course",
+  "studio_learner_remove_named": "Remove “{name}” from the course",
   "studio_learner_remove_title": "Remove “{name}” from the course?",
   "studio_learner_remove_consequence": "The learner’s enrollment and progress go, as if they had left; their submissions stay.",
   "studio_learner_removed": "Learner removed",

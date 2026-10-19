@@ -261,6 +261,7 @@
   "studio_learners_col_action": "Әрекет",
   "studio_learner_completed": "Курс {date} аяқталды",
   "studio_learner_remove": "Курстан шығару",
+  "studio_learner_remove_named": "«{name}» курстан шығару",
   "studio_learner_remove_title": "«{name}» курстан шығарылсын ба?",
   "studio_learner_remove_consequence": "Білім алушының жазылуы мен прогресі ол өзі шыққандай жойылады; жіберілген жұмыстары сақталады.",
   "studio_learner_removed": "Білім алушы шығарылды",

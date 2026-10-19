@@ -40,7 +40,7 @@ test('B-CST-35 learners lists who enrolled, found by a search; one is removed af
   await search.fill('e2e-student1')
   await search.press('Enter')
   await expect(row).toBeVisible()
-  await row.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
+  await row.getByRole('button', { name: /^Исключить «/ }).click()
   const confirm = page.getByRole('alertdialog', { name: /^Исключить «/ })
   await expect(confirm.getByText(m.studio_learner_remove_consequence({}, ru))).toBeVisible()
   await confirm.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()

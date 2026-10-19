@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { UserMinus } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseLearner } from '#/shared/api/gen/types.gen'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
-import { Button } from '#/shared/ui/button'
+import { IconButton } from '#/shared/components/icon-button'
 import { toast } from '#/shared/ui/toast'
 
 import { removeLearnerOptions } from '../people-queries'
@@ -30,7 +31,12 @@ export function RemoveLearner({ courseId, learner }: { courseId: string; learner
         setOpen(next)
         if (!next) remove.reset()
       }}
-      trigger={<Button variant="outline">{m.studio_learner_remove()}</Button>}
+      trigger={
+        <IconButton
+          label={m.studio_learner_remove_named({ name: learner.display_name || learner.username })}
+          icon={<UserMinus aria-hidden />}
+        />
+      }
       title={m.studio_learner_remove_title({ name: learner.display_name || learner.username })}
       consequence={m.studio_learner_remove_consequence()}
       confirmLabel={m.studio_learner_remove()}

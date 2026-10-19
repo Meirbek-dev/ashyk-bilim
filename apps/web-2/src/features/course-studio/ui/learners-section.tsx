@@ -47,7 +47,7 @@ const columns = (courseId: string): DataColumn<CourseLearner>[] => [
     header: m.studio_learners_col_progress(),
     priority: 2,
     cell: learner => (
-      <span className="flex flex-col gap-1">
+      <span className="flex flex-col items-start gap-1">
         <ScoreBar value={learner.progress_pct ?? 0} text={formatPercent(learner.progress_pct ?? 0)} />
         {learner.completed_at_unix === null ? null : (
           <span className="text-xs text-muted-foreground">

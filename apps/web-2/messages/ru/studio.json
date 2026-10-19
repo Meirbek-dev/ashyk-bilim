@@ -271,6 +271,7 @@
   "studio_learners_col_action": "Действие",
   "studio_learner_completed": "Курс пройден {date}",
   "studio_learner_remove": "Исключить из курса",
+  "studio_learner_remove_named": "Исключить «{name}» из курса",
   "studio_learner_remove_title": "Исключить «{name}» из курса?",
   "studio_learner_remove_consequence": "Запись и прогресс учащегося удалятся, как если бы он вышел сам; отправленные работы останутся.",
   "studio_learner_removed": "Учащийся исключён",
