@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { ReadinessItem } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
-import { readinessCode, readinessTarget, type ReadinessCode } from '../model/studio'
+import { groupReadiness, readinessCode, readinessTarget, type ReadinessCode } from '../model/studio'
 import { readinessOptions } from '../queries'
 
 const readinessLabels: Record<ReadinessCode, () => string> = {
@@ -18,9 +18,9 @@ const readinessLabels: Record<ReadinessCode, () => string> = {
   'certificate-not-configured': m.studio_readiness_certificate_not_configured,
 }
 
-const label = (item: ReadinessItem) => {
-  const code = readinessCode(item.code)
-  return code ? readinessLabels[code]() : m.studio_readiness_unknown({ code: item.code })
+const label = (raw: string) => {
+  const code = readinessCode(raw)
+  return code ? readinessLabels[code]() : m.studio_readiness_unknown({ code: raw })
 }
 
 /** One readiness item: what is wrong, and a link to where it is fixed. */
@@ -64,10 +64,16 @@ export function ReadinessList({ courseId, live = false }: { courseId: string; li
         <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
           <h3 className="text-base font-medium">{group.title}</h3>
           <ul className="flex flex-col gap-2">
-            {group.items.map(item => (
-              <li key={`${item.code}-${item.activity_id ?? ''}`} className="flex flex-wrap gap-x-2 text-sm">
-                <span>{label(item)}</span>
-                {where(courseId, item)}
+            {/* Seven drafts are one line with seven links, not seven identical lines (B-CST-48). */}
+            {groupReadiness(group.items).map(({ code, items }) => (
+              <li key={code} className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
+                <span>{label(code)}</span>
+                {items.map((item, index) => (
+                  <span key={item.activity_id ?? index}>
+                    {where(courseId, item)}
+                    {index < items.length - 1 ? ',' : null}
+                  </span>
+                ))}
               </li>
             ))}
           </ul>

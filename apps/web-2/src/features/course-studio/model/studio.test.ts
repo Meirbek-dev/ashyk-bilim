@@ -2,7 +2,7 @@ import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
 import { m } from '#/paraglide/messages'
-import type { Block, Contributor, CourseSummary } from '#/shared/api/gen/types.gen'
+import type { Block, Contributor, CourseSummary, ReadinessItem } from '#/shared/api/gen/types.gen'
 
 import { coursesSearchSchema } from '../route'
 import { courseStatus, presetCount } from './course'
@@ -14,6 +14,7 @@ import {
   fileContent,
   mediaPreview,
   mediaSource,
+  groupReadiness,
   readinessCode,
   readinessTarget,
   replacedMediaBlockIds,
@@ -50,7 +51,17 @@ describe('course list', () => {
   })
 })
 
+const draft = (id: string): ReadinessItem => ({ code: 'activity-unpublished', activity_id: id, title: id })
+
 describe('readiness', () => {
+  test('B-CST-48 items of one code make one line with all their activities, in the server order', () => {
+    const thumb: ReadinessItem = { code: 'thumbnail-missing', activity_id: null, title: null }
+    expect(groupReadiness([draft('a'), thumb, draft('b')])).toEqual([
+      { code: 'activity-unpublished', items: [draft('a'), draft('b')] },
+      { code: 'thumbnail-missing', items: [thumb] },
+    ])
+  })
+
   test('B-CST-05 every item links to where it is fixed', () => {
     expect(readinessTarget({ code: 'assessment-not-ready', activity_id: 'a1', title: 'Quiz' })).toEqual({
       activityId: 'a1',

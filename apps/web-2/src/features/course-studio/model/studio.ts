@@ -39,6 +39,13 @@ const isReadinessCode = (code: string): code is ReadinessCode => (READINESS_CODE
 export const readinessCode = (code: string): ReadinessCode | null => (isReadinessCode(code) ? code : null)
 
 /** Where an item is fixed: the activity's studio, or a workspace tab. */
+/** Readiness items of one code together, in the server's order (B-CST-48): one line, every activity linked on it. */
+export function groupReadiness(items: readonly ReadinessItem[]): { code: string; items: ReadinessItem[] }[] {
+  const groups = new Map<string, ReadinessItem[]>()
+  for (const item of items) groups.set(item.code, [...(groups.get(item.code) ?? []), item])
+  return [...groups].map(([code, grouped]) => ({ code, items: grouped }))
+}
+
 export type ReadinessTarget = { activityId: string } | { tab: 'content' | 'settings' }
 
 export function readinessTarget(item: ReadinessItem): ReadinessTarget {
