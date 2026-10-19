@@ -28,7 +28,9 @@ export function LeaderboardSection({ rank }: { rank: number | null }) {
             ? m.achievements_hidden()
             : m.achievements_your_place({ rank: formatNumber(rank), total: formatNumber(total) })}
         </span>
-        <Link to="/settings/notifications">{m.achievements_visibility_link()}</Link>
+        <Link to="/settings/notifications" hash="achievements">
+          {m.achievements_visibility_link()}
+        </Link>
       </p>
       <ListState
         pending={false}

@@ -18,6 +18,8 @@ type SettingsSectionProps = {
   error: unknown
   /** `false` when the section saves by itself (a picked cover): no Save button. */
   saveButton?: boolean
+  /** An anchor other pages link to (`hash`); the section lands under the sticky top bar. */
+  id?: string
   children: ReactNode
 }
 
@@ -29,6 +31,7 @@ export function SettingsSection({
   pending,
   error,
   saveButton = true,
+  id,
   children,
 }: SettingsSectionProps) {
   const submit = (event: FormEvent) => {
@@ -36,7 +39,13 @@ export function SettingsSection({
     void onSubmit()
   }
   return (
-    <form noValidate onSubmit={submit} aria-label={title} className="flex max-w-prose flex-col gap-4">
+    <form
+      id={id}
+      noValidate
+      onSubmit={submit}
+      aria-label={title}
+      className="flex max-w-prose scroll-mt-20 flex-col gap-4"
+    >
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>

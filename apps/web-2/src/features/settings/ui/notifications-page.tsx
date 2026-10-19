@@ -39,6 +39,7 @@ export function NotificationsPage() {
   })
   return (
     <SettingsSection
+      id="achievements"
       title={m.settings_gamification_title()}
       description={m.settings_gamification_hint()}
       onSubmit={() => form.handleSubmit()}
