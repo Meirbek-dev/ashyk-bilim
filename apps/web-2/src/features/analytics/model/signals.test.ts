@@ -75,9 +75,16 @@ describe('analytics signals', () => {
     expect(courseOf({ params: {}, course_id: null }, courses)).toBeUndefined()
   })
 
-  test('B-ANL-25 a signal links only into the analytics tabs of this web', () => {
+  test('B-ANL-25 a signal links only into the analytics tabs of this web; the old web paths are translated', () => {
     expect(signalHref('/teach/analytics/learners?course=c')).toBe('/teach/analytics/learners?course=c')
-    expect(signalHref('/dash/analytics/learners/at-risk')).toBeUndefined()
+    expect(signalHref('/dash/analytics/learners/at-risk')).toBe('/teach/analytics/learners')
+    expect(signalHref('/dash/analytics/assessments/exam/019b-a1')).toBe(
+      '/teach/analytics/performance?assessmentType=exam&assessmentId=019b-a1',
+    )
+    expect(signalHref('/dash/analytics/courses/c1')).toBe('/teach/analytics/performance?courseId=c1')
+    expect(signalHref('/dash/analytics/courses?course_ids=c1')).toBe('/teach/analytics/overview?course=c1')
+    expect(signalHref('/dash/analytics?drill=backlog')).toBe('/teach/analytics/operations?metric=backlog')
+    expect(signalHref('/dash/courses/c1')).toBeUndefined()
     expect(signalHref(null)).toBeUndefined()
   })
 })

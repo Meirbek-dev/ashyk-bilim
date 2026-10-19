@@ -146,8 +146,34 @@ export const courseOf = (
     ? undefined
     : (item.course_name ?? courses.find(course => course.value === item.course_id)?.label)
 
-export const signalHref = (href: string | null | undefined): string | undefined =>
-  href?.startsWith('/teach/analytics') ? href : undefined
+/**
+ * An API that also serves the old web (dual-web: its link scheme) sends that web's analytics paths. Each of the five
+ * forms of `ab_core::links::WebLink` maps to its tab here (the old at-risk link names no course).
+ */
+const legacyAnalytics: readonly [RegExp, (match: RegExpMatchArray) => string][] = [
+  [
+    /^\/dash\/analytics\/assessments\/([\w-]+)\/([\w-]+)$/,
+    ([, kind = '', id = '']) => `/teach/analytics/performance?assessmentType=${kind}&assessmentId=${id}`,
+  ],
+  [/^\/dash\/analytics\/courses\/([\w-]+)$/, ([, course = '']) => `/teach/analytics/performance?courseId=${course}`],
+  [
+    /^\/dash\/analytics\/courses\?course_ids=([\w-]+)$/,
+    ([, course = '']) => `/teach/analytics/overview?course=${course}`,
+  ],
+  [/^\/dash\/analytics\?drill=backlog$/, () => '/teach/analytics/operations?metric=backlog'],
+  [/^\/dash\/analytics\/learners\/at-risk$/, () => '/teach/analytics/learners'],
+]
+
+/** A signal's link into the analytics tabs of this web (B-ANL-25); anything else is no link. */
+export function signalHref(href: string | null | undefined): string | undefined {
+  if (!href) return undefined
+  if (href.startsWith('/teach/analytics')) return href
+  for (const [pattern, to] of legacyAnalytics) {
+    const match = href.match(pattern)
+    if (match) return to(match)
+  }
+  return undefined
+}
 
 const COMPONENTS: Record<string, () => string> = {
   inactivity: m.analytics_component_inactivity,
