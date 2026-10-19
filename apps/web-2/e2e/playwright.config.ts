@@ -12,7 +12,8 @@ export default defineConfig({
   testDir: './specs',
   // Against `vp dev`: compiles every route once before the specs (cold first loads, F-2).
   globalSetup: './global-setup.ts',
-  outputDir: '../test-results',
+  // `just e2e[-dev]` gives each run its own (tmp/e2e/<run>/test-results): parallel runs do not delete each other's traces.
+  outputDir: process.env['E2E_OUTPUT_DIR'] ?? '../test-results',
   // Short output for agents (8.4): one line per test; a failure prints the trace path, not the trace.
   reporter: 'line',
   retries: 0,

@@ -169,7 +169,8 @@ function freshDatabase(name: string, env: Record<string, string>, dir: string): 
 async function dev(o: ReturnType<typeof parse>, env: Record<string, string>): Promise<number> {
   const m = readManifest(o.slot)
   if (!m || !alive(m.supervisor)) throw new Error(`slot ${o.slot} is not running: just stack up ${o.slot}`)
-  const dir = join(root, `tmp/e2e/${o.app}-dev-${o.slot}`)
+  // Per run: two agents driving the same slot at once no longer share (and clobber) one log and one test-results dir.
+  const dir = join(root, `tmp/e2e/${o.app}-dev-${o.slot}-${process.pid}`)
   mkdirSync(dir, { recursive: true })
   const appEnv =
     o.app === 'web2'
@@ -205,7 +206,7 @@ async function playwright(o: ReturnType<typeof parse>, env: Record<string, strin
   writeFileSync(logPath, '')
   const child = Bun.spawn([process.execPath, 'x', 'playwright', 'test', ...config, ...o.args], {
     cwd,
-    env: { ...process.env, NO_COLOR: '1', ...machineEnv(), ...env },
+    env: { ...process.env, NO_COLOR: '1', ...machineEnv(), E2E_OUTPUT_DIR: join(dir, 'test-results'), ...env },
     stdout: 'pipe',
     stderr: 'pipe',
   })
