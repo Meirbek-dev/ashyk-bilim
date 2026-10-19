@@ -2,6 +2,7 @@ import { page } from 'vite-plus/test/browser'
 import { describe, expect, test, vi } from 'vite-plus/test'
 
 import { Button } from '#/shared/ui/button'
+import { Checkbox } from '#/shared/ui/checkbox'
 
 import type { DataColumn, Sort } from './data-columns'
 import { DataTable } from './data-table'
@@ -73,5 +74,24 @@ describe('DataTable', () => {
     await expect.element(card.getByRole('button', { name: 'Open a' })).toBeVisible()
     await expect.element(card).not.toHaveTextContent('Action')
     await expect.element(card).not.toHaveTextContent('Learner')
+  })
+
+  test('narrow: the selection column sits before the card title, without its label', async () => {
+    await page.viewport(390, 800)
+    const picked: DataColumn<Row>[] = [
+      {
+        id: 'pick',
+        header: 'Select',
+        cell: row => <Checkbox aria-label={`Pick ${row.name}`} />,
+        priority: 2,
+        select: true,
+      },
+      { id: 'name', header: 'Name', cell: row => row.name, priority: 1 },
+    ]
+    const screen = await renderInRouter(<DataTable label={label} rows={rows} columns={picked} getKey={row => row.id} />)
+    const card = screen.getByRole('listitem').first()
+    await expect.element(card.getByRole('checkbox', { name: 'Pick Algebra' })).toBeVisible()
+    await expect.element(card.getByRole('heading', { name: 'Algebra' })).toBeVisible()
+    await expect.element(card).not.toHaveTextContent('Select')
   })
 })

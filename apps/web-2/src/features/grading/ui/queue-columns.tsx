@@ -32,6 +32,7 @@ const selectColumn = (selection: Selection): DataColumn<QueueRow> => ({
   id: 'select',
   header: m.grading_col_select(),
   priority: 2,
+  select: true,
   cell: row => (
     <Checkbox
       aria-label={m.grading_select_row({ name: learnerName(row) })}

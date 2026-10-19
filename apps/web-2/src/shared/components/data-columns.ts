@@ -9,6 +9,8 @@ export type DataColumn<T> = {
   sortable?: boolean
   /** The row's action (a button or link): on a card it ends the card, without the column's label. */
   action?: boolean
+  /** The row's selection checkbox: on a card it sits before the title, without the column's label. */
+  select?: boolean
   /** Long text (a course name) wraps in the table instead of widening it; the title column (priority 1) always does. */
   wrap?: boolean
 }

@@ -10,14 +10,22 @@ type DataTableCardsProps<T> = { rows: readonly T[]; columns: readonly DataColumn
  * as lines under it (the learner of a work item), priority 2 as labelled lines, the action column last.
  */
 export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps<T>) {
-  const [title, ...subtitles] = columns.filter(column => column.priority === 1 && !column.action)
-  const lines = columns.filter(column => column.priority === 2 && !column.action)
+  const [title, ...subtitles] = columns.filter(column => column.priority === 1 && !column.action && !column.select)
+  const select = columns.find(column => column.select && column.priority !== 3)
+  const lines = columns.filter(column => column.priority === 2 && !column.action && !column.select)
   const actions = columns.filter(column => column.priority !== 3 && column.action)
   return (
     <DataList items={rows} getKey={getKey}>
       {row => (
         <>
-          {title ? <h3 className="font-medium">{title.cell(row)}</h3> : null}
+          {select ? (
+            <div className="flex items-start gap-3">
+              <div className="pt-0.5">{select.cell(row)}</div>
+              {title ? <h3 className="min-w-0 flex-1 font-medium">{title.cell(row)}</h3> : null}
+            </div>
+          ) : title ? (
+            <h3 className="font-medium">{title.cell(row)}</h3>
+          ) : null}
           {subtitles.map(column => (
             <p key={column.id} className="text-sm">
               {column.cell(row)}
