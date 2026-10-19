@@ -12,7 +12,10 @@ export function RolePermissionList({ permissions }: { permissions: readonly stri
     <dl className="flex max-w-4xl flex-col divide-y border-y text-sm">
       {permissionsByResource(permissions).map(([resource, grants]) => (
         <div key={resource} className="flex flex-col gap-1 py-2 @xl:grid @xl:grid-cols-4 @xl:gap-gutter">
-          <dt className="font-mono font-medium">{resource}</dt>
+          {/* The wildcard resource says what it means; the grant beside it stays as sent. */}
+          <dt className={resource === '*' ? 'font-medium' : 'font-mono font-medium'}>
+            {resource === '*' ? m.admin_role_permissions_all() : resource}
+          </dt>
           <dd className="@xl:col-span-3">
             <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-muted-foreground">
               {grants.map(grant => (
