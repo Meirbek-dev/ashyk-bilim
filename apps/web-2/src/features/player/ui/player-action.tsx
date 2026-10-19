@@ -75,7 +75,10 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
             params={{ courseId, activityId: entry.id }}
             className={buttonVariants()}
           >
-            {entryLabels[action.action]()}
+            {/* OPEN-E-6: a failed test with an attempt left leads with the retake. */}
+            {entry.state === 'failed' && action.action === 'start'
+              ? m.attempt_try_again()
+              : entryLabels[action.action]()}
           </RouterLink>
         ) : null}
         {unmarkable ? (

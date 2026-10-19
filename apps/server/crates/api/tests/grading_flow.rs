@@ -4653,3 +4653,45 @@ fn shape(cell: &str) -> String {
         .map(|c| if c.is_ascii_digit() { 'd' } else { c })
         .collect()
 }
+
+/// OPEN-E-6: a failed quiz with an attempt left offers the retake first
+/// in learner-state (`start` before `view_feedback`); at the cap it offers
+/// the result only.
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_quiz_with_attempts_left_offers_the_retake(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, choice_id, essay_id) = quiz_with_essay(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "max_attempts": 2, "passing_score": 50 }),
+    )
+    .await;
+    let bob = learner(&app, "bob").await;
+    let entry_actions = || async {
+        let state = app
+            .get_as(&bob, &format!("/api/v2/courses/{course_id}/learner-state"))
+            .await;
+        let entry = state.json()["outline"][0]["activities"][0].clone();
+        assert_eq!(entry["state"], "failed", "{entry}");
+        entry["allowed_actions"].clone()
+    };
+    for expected in [
+        serde_json::json!(["start", "view_feedback"]),
+        serde_json::json!(["view_feedback"]),
+    ] {
+        let attempt = submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
+        let published = app
+            .send(grade(
+                &teacher,
+                &attempt,
+                Some("1"),
+                &serde_json::json!({ "action": "publish", "final_score": 30 }),
+            ))
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+        assert_eq!(entry_actions().await, expected);
+    }
+}

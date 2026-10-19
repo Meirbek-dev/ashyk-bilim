@@ -309,6 +309,41 @@ impl LearnerStateService {
             .collect())
     }
 
+    /// OPEN-E-6: a failed test the learner may take again offers `start`
+    /// first (attempts left, not past due, no remediation gate): the
+    /// player card is the retake, not only the result.
+    async fn offer_retakes(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+        states: &mut [(ChapterId, ActivityState)],
+    ) -> Result<()> {
+        let failed = |s: &ActivityState| s.state == WorkState::Failed && s.blocked_reason.is_none();
+        if !states.iter().any(|(_, s)| failed(s)) {
+            return Ok(());
+        }
+        for assessment in
+            ab_db::assessments::list_assessments_for_course(&self.pool, course_id).await?
+        {
+            let Some((_, state)) = states
+                .iter_mut()
+                .find(|(_, s)| s.id == assessment.activity_id && failed(s))
+            else {
+                continue;
+            };
+            // A gate that cannot be read leaves the card as it was, not the page broken.
+            if self
+                .assessments
+                .attempt_state(actor, assessment.id)
+                .await
+                .is_ok_and(|a| a.can_start)
+            {
+                state.allowed_actions.insert(0, "start");
+            }
+        }
+        Ok(())
+    }
+
     /// Visible course (404) the caller may access (403). A guest gets the
     /// anonymous state of a public course: not enrolled, nothing done.
     pub async fn course_state(
@@ -349,7 +384,7 @@ impl LearnerStateService {
         let enrolled = has_run;
 
         let opens_at = scheduled_opening(&self.pool, course.id).await?;
-        let states: Vec<(ChapterId, ActivityState)> = activities
+        let mut states: Vec<(ChapterId, ActivityState)> = activities
             .iter()
             .filter(|a| a.published || opens_at.contains_key(&a.id))
             .map(|a| {
@@ -374,6 +409,9 @@ impl LearnerStateService {
                 (a.chapter_id, state)
             })
             .collect();
+        if !guest && !staff && !archived {
+            self.offer_retakes(actor, course.id, &mut states).await?;
+        }
         let outline = build_outline(&chapters, &states);
         let flat: Vec<&ActivityState> = states.iter().map(|(_, s)| s).collect();
         let progress = progress_state(course_progress.as_ref(), &flat);
