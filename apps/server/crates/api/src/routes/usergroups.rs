@@ -1,4 +1,4 @@
-use ab_core::id::{CourseId, UsergroupId};
+use ab_core::id::{CourseId, UserId, UsergroupId};
 use ab_db::versions::Versioned;
 use axum::Json;
 use axum::extract::State;
@@ -90,7 +90,12 @@ pub async fn list_usergroups(
 ) -> ApiResult<Json<UsergroupPage>> {
     let (groups, next_cursor) = state
         .usergroups
-        .list(&actor, query.cursor, query.limit.unwrap_or(20))
+        .list(
+            &actor,
+            query.cursor,
+            query.member,
+            query.limit.unwrap_or(20),
+        )
         .await?;
     Ok(Json(UsergroupPage {
         items: groups
@@ -414,6 +419,7 @@ pub async fn create_group(
     get, path = "/groups", tag = "usergroups",
     params(
         ("cursor" = Option<UsergroupId>, Query, description = "next_cursor from the previous page"),
+        ("member" = Option<UserId>, Query, description = "Only the groups this user belongs to"),
         ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
     ),
     responses((status = 200, description = "Page of usergroups", body = UsergroupPage)),

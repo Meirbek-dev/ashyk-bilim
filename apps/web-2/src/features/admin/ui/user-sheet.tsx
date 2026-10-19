@@ -83,7 +83,9 @@ export function UserSheet({ id }: { id: string }) {
           {hasCapability(session, 'groups.manage') ? <UserGroup user={user} /> : null}
           {hasCapability(session, 'admin.gamification') ? <AwardXp user={user} /> : null}
         </>
-      ) : null}
+      ) : user ? null : (
+        <p className="text-sm text-muted-foreground">{m.admin_user_not_found_hint()}</p>
+      )}
     </SheetPanel>
   )
 }

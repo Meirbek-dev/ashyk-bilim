@@ -9,6 +9,7 @@ import * as zod from 'zod'
 
 export const ListGroupsParams = zod.object({
   cursor: zod.uuid().optional(),
+  member: zod.uuid().optional(),
   limit: zod.int().optional(),
 })
 

@@ -33073,6 +33073,15 @@
             }
           },
           {
+            "description": "Only the groups this user belongs to",
+            "in": "query",
+            "name": "member",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
             "description": "Page size, 1..=100 (default 20)",
             "in": "query",
             "name": "limit",

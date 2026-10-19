@@ -110,7 +110,12 @@ test('B-ADM-05 disable asks first, enable does not', async ({ page, account, api
   await expect(sheet.getByRole('button', { name: m.admin_user_disable({}, ru) })).toBeVisible()
 })
 
-test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, account, api, seed }) => {
+test('B-ADM-06 the panel lists the user’s groups; «Add to group» puts the user in one and back out', async ({
+  page,
+  account,
+  api,
+  seed,
+}) => {
   const name = `E2E group ${randomUUID().slice(0, 8)}`
   const group = await createGroup({ client: api, body: { name }, headers: cookie(seed), throwOnError: true })
   try {
@@ -124,6 +129,11 @@ test('B-ADM-06 "Add to group" puts the user among the members', async ({ page, a
       headers: cookie(seed),
     })
     expect(members.data?.items.map(member => member.username)).toEqual([account.username])
+    // The panel lists the group now, and takes the user out of it again.
+    await expect(sheet.getByRole('link', { name })).toBeVisible()
+    await sheet.getByRole('button', { name: m.admin_user_group_remove({ group: name }, ru) }).click()
+    await expect(page.getByText(m.admin_user_group_removed({}, ru))).toBeVisible()
+    await expect(sheet.getByRole('link', { name })).toHaveCount(0)
   } finally {
     await deleteGroup({ client: api, path: { group_id: group.data.id }, headers: cookie(seed) })
   }

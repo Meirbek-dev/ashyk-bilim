@@ -108,6 +108,8 @@ pub struct UsergroupCoursesRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UsergroupListQuery {
     pub cursor: Option<UsergroupId>,
+    /// Only the groups this user is a member of.
+    pub member: Option<UserId>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,
 }

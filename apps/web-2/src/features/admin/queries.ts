@@ -107,6 +107,9 @@ export function loadUsersPage(queryClient: QueryClient, session: SessionInfo | n
     user && hasCapability(session, 'groups.manage')
       ? queryClient.query({ ...groupChoicesOptions(), staleTime: 'static' })
       : null,
+    user && hasCapability(session, 'groups.manage')
+      ? queryClient.query({ ...userGroupsOptions(user), staleTime: 'static' })
+      : null,
   ])
 }
 
@@ -229,3 +232,6 @@ export const groupChoicesOptions = () => ({
   ...listGroupsOptions({ query: { limit: 100 } }),
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_members')),
 })
+
+/** The groups a user belongs to (`?member=`), for the user panel. */
+export const userGroupsOptions = (userId: string) => listGroupsOptions({ query: { member: userId, limit: 100 } })

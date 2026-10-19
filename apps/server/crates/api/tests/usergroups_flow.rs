@@ -75,6 +75,17 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
         .map(|m| m["username"].as_str().unwrap().to_owned())
         .collect();
     assert_eq!(names, ["alice", "bob"]);
+    // The admin user panel lists a user's groups by `member`.
+    let of_alice = app
+        .get_as(&owner, &format!("/api/v2/groups?member={alice}"))
+        .await;
+    assert_eq!(of_alice.status, StatusCode::OK, "{}", of_alice.text());
+    assert_eq!(of_alice.json()["items"][0]["id"], id.as_str());
+    let outsider = app.create_user("carol", "c@example.com", &["user"]).await;
+    let of_carol = app
+        .get_as(&owner, &format!("/api/v2/groups?member={outsider}"))
+        .await;
+    assert_eq!(of_carol.json()["items"], serde_json::json!([]));
 
     // Course links round-trip and appear from the course side.
     let course = app

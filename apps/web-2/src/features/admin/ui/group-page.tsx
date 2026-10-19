@@ -32,9 +32,10 @@ export function GroupPage() {
       primaryAction={canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
     >
       {group.description ? <p className="max-w-prose wrap-anywhere">{group.description}</p> : null}
-      {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
       <GroupCourses group={group} />
       <GroupMembers group={group} />
+      {/* Renaming is rare: the courses and people the page is visited for come first. */}
+      {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
     </DetailPage>
   )
 }

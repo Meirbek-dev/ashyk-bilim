@@ -11,13 +11,21 @@ import { toast } from '#/shared/ui/toast'
 
 import { groupChoiceSchema } from '../model/admin'
 import { addMembersOptions } from '../group-queries'
-import { groupChoicesOptions } from '../queries'
+import { groupChoicesOptions, userGroupsOptions } from '../queries'
+import { UserGroupList } from './user-group-list'
 
-/** "Add to group": the groups the caller may change the members of (`manage_members`). Shown with `groups.manage`. */
+/**
+ * "Groups" (shown with `groups.manage`): the groups the user is in (links; removable where the caller has
+ * `manage_members`), then "Add to group" among the groups the caller may change and the user is not in yet.
+ */
 export function UserGroup({ user }: { user: AdminUser }) {
+  const queryClient = useQueryClient()
   const { data: groups } = useSuspenseQuery(groupChoicesOptions())
-  const add = useMutation(addMembersOptions(useQueryClient()))
+  const { data: page } = useSuspenseQuery(userGroupsOptions(user.id))
+  const meta = { invalidates: [userGroupsOptions(user.id).queryKey] }
+  const add = useMutation({ ...addMembersOptions(queryClient), meta })
   const member = { id: user.id, username: user.username, display_name: user.display_name, avatar_key: user.avatar_key }
+  const addable = groups.filter(group => !page.items.some(own => own.id === group.id))
   const form = useAppForm(groupChoiceSchema, {
     defaultValues: { group: '' },
     onSubmit: ({ group }) =>
@@ -36,9 +44,10 @@ export function UserGroup({ user }: { user: AdminUser }) {
       <h3 id="user-groups" className="font-medium">
         {m.admin_user_group_title()}
       </h3>
+      <UserGroupList user={user} member={member} />
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.admin_user_group_none()}</p>
-      ) : (
+      ) : addable.length > 0 ? (
         <form
           noValidate
           className="flex flex-wrap items-end gap-2"
@@ -53,7 +62,7 @@ export function UserGroup({ user }: { user: AdminUser }) {
                 label={m.admin_user_group_field()}
                 options={[
                   { value: '', label: m.admin_user_group_choose() },
-                  ...groups.map(group => ({ value: group.id, label: group.name })),
+                  ...addable.map(group => ({ value: group.id, label: group.name })),
                 ]}
               />
             )}
@@ -63,7 +72,7 @@ export function UserGroup({ user }: { user: AdminUser }) {
             {m.admin_user_group_add()}
           </Button>
         </form>
-      )}
+      ) : null}
       {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
     </section>
   )

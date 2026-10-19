@@ -14100,6 +14100,10 @@ export type ListGroupsData = {
          */
         cursor?: UsergroupId;
         /**
+         * Only the groups this user belongs to
+         */
+        member?: UserId;
+        /**
          * Page size, 1..=100 (default 20)
          */
         limit?: number;
