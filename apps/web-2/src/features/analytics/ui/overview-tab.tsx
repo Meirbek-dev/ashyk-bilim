@@ -7,7 +7,7 @@ import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { TimeSeries } from '#/shared/components/charts/time-series'
 import { formatDayMonth, formatNumber } from '#/shared/i18n/format'
 
-import { pickFilters, type TileMetric } from '../model/filters'
+import { pickFilters, tabPaths, type TileMetric } from '../model/filters'
 import { overviewOptions } from '../queries'
 import { AsOf } from './as-of'
 import { DrillSection } from './drill-section'
@@ -16,13 +16,13 @@ import { MetricTile } from './metric-tile'
 import { SignalList } from './signal-list'
 
 /** Each KPI in reading order, with the drill-through behind it (if the server has one). */
-const tiles: readonly { name: keyof TeacherOverviewSummary; drill?: TileMetric }[] = [
+const tiles: readonly { name: keyof TeacherOverviewSummary; drill?: TileMetric; tab?: 'learners' | 'performance' }[] = [
   { name: 'active_learners', drill: 'active_learners' },
   { name: 'returning_learners' },
   { name: 'completion_rate', drill: 'completion_rate' },
-  { name: 'at_risk_learners' },
+  { name: 'at_risk_learners', tab: 'learners' },
   { name: 'ungraded_submissions', drill: 'backlog' },
-  { name: 'negative_engagement_courses' },
+  { name: 'negative_engagement_courses', tab: 'performance' },
 ]
 
 const series: readonly { name: keyof TeacherOverviewTrends; label: () => string }[] = [
@@ -41,8 +41,14 @@ export function OverviewTab() {
     <div className="flex flex-col gap-8">
       <AsOf at={data.generated_at_unix} />
       <KpiStrip label={m.analytics_kpis()} columns={3}>
-        {tiles.map(({ name, drill }) => (
-          <MetricTile key={name} label={kpiLabels[name]()} card={data.summary[name]} drill={drill} />
+        {tiles.map(({ name, drill, tab }) => (
+          <MetricTile
+            key={name}
+            label={kpiLabels[name]()}
+            card={data.summary[name]}
+            drill={drill}
+            tab={tab ? { to: tabPaths[tab], filters } : undefined}
+          />
         ))}
       </KpiStrip>
       {search.metric ? (
