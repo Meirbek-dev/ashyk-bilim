@@ -44,7 +44,17 @@ export function PublishPage() {
             </Link>
           </p>
         ) : null}
-        <ReadinessList courseId={courseId} live={status !== 'draft'} />
+        {/* An archived course is read-only: what blocks publishing is moot until it is restored. */}
+        {status === 'archived' ? (
+          <p className="flex flex-wrap gap-x-2">
+            <span>{m.studio_publish_archived()}</span>
+            <Link to="/teach/courses/$courseId/settings" params={{ courseId }} hash="archive">
+              {m.studio_go_settings()}
+            </Link>
+          </p>
+        ) : (
+          <ReadinessList courseId={courseId} live={status !== 'draft'} />
+        )}
         {can(course, 'publish') ? (
           <>
             {readiness.ready ? null : <p className="text-sm text-muted-foreground">{m.studio_publish_blocked()}</p>}

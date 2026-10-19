@@ -223,6 +223,7 @@
   "studio_publish_named": "«{name}» жариялау",
   "studio_published": "Курс жарияланды",
   "studio_publish_live": "Курс каталогта білім алушыларға көрінеді.",
+  "studio_publish_archived": "Курс мұрағатта: каталогта жоқ, бәрі тек оқуға ашық. Қайта жариялау үшін оны қалпына келтіріңіз.",
   "studio_publish_open_page": "Курс бетін ашу",
   "studio_publish_blocked": "Алдымен жариялауға кедергі болатынды түзетіңіз.",
   "studio_unpublish": "Жариялаудан алу",

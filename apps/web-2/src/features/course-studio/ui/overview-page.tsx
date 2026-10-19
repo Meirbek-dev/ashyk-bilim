@@ -18,9 +18,11 @@ export function OverviewPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/overview' })
   const { data: readiness } = useSuspenseQuery(readinessOptions(courseId))
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
-  const live = courseStatus(course) !== 'draft'
+  const status = courseStatus(course)
+  const live = status !== 'draft'
   const pulse = <CoursePulse courseId={courseId} />
-  if (live && readiness.blockers.length + readiness.warnings.length === 0)
+  // An archived course is read-only: the header offers «Восстановить»; readiness would only point at locked pages.
+  if (status === 'archived' || (live && readiness.blockers.length + readiness.warnings.length === 0))
     return <div className="@container flex flex-col gap-8">{pulse}</div>
   return (
     <div className="@container flex flex-col gap-8">
