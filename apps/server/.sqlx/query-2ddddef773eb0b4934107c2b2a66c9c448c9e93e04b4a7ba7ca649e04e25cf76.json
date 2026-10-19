@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH bumped AS (\n               UPDATE assessments SET content_version = content_version + 1\n               WHERE id = $1 RETURNING content_version\n           ), drafts AS (\n               UPDATE submissions s SET content_version = b.content_version\n               FROM bumped b\n               WHERE s.assessment_id = $1 AND s.status = 'draft'\n                 AND s.content_version = b.content_version - 1\n           )\n           SELECT content_version AS \"content_version!\" FROM bumped",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "content_version!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "content_version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2ddddef773eb0b4934107c2b2a66c9c448c9e93e04b4a7ba7ca649e04e25cf76"
+}

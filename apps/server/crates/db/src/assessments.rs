@@ -574,6 +574,31 @@ pub async fn bump_content_version<'e>(
     Ok(())
 }
 
+/// OPEN-B-2: a wording edit is a new content version, but the answer key is
+/// the same - open drafts on the version it replaces move with it (a draft
+/// on older content stays stale). Returns the new version.
+pub async fn bump_wording_version<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: AssessmentId,
+) -> Result<i32> {
+    let version = sqlx::query_scalar!(
+        r#"WITH bumped AS (
+               UPDATE assessments SET content_version = content_version + 1
+               WHERE id = $1 RETURNING content_version
+           ), drafts AS (
+               UPDATE submissions s SET content_version = b.content_version
+               FROM bumped b
+               WHERE s.assessment_id = $1 AND s.status = 'draft'
+                 AND s.content_version = b.content_version - 1
+           )
+           SELECT content_version AS "content_version!" FROM bumped"#,
+        id.0
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(version)
+}
+
 /// Set the access mode and bump `policy_version` (UX-154: the access tab's
 /// `If-Match`); returns the new version.
 pub async fn set_access_mode<'e>(

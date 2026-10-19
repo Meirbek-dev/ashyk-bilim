@@ -231,8 +231,14 @@ impl Assessment {
         edit_lock: Option<service::EditLock>,
     ) -> Self {
         let policy = PolicyInput::from_row(&a).into();
-        if edit_lock.is_none() && allowed_actions.contains(&service::AssessmentAction::Update) {
-            allowed_actions.push(service::AssessmentAction::Edit);
+        if allowed_actions.contains(&service::AssessmentAction::Update) {
+            match edit_lock {
+                None => allowed_actions.push(service::AssessmentAction::Edit),
+                Some(service::EditLock::HasSubmissions) => {
+                    allowed_actions.push(service::AssessmentAction::EditWording);
+                }
+                Some(_) => {}
+            }
         }
         let allowed_transitions =
             if allowed_actions.contains(&service::AssessmentAction::Transition) {

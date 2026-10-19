@@ -11,24 +11,27 @@ import { Input } from '#/shared/ui/input'
 import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
 import { newOption } from '../model/items'
+import type { EditMode } from '../model/route'
 
-const radio = (option: ChoiceOption, at: number) => (
-  <RadioGroupItem value={option.id} aria-label={m.assessments_option_correct({ number: at + 1 })} />
+// Each mark is disabled on its own: a disabled RadioGroup would also disable the option texts inside it (`wording`).
+const radio = (option: ChoiceOption, at: number, disabled: boolean) => (
+  <RadioGroupItem value={option.id} disabled={disabled} aria-label={m.assessments_option_correct({ number: at + 1 })} />
 )
 
 type ChoiceOptionsProps = {
   variant: ChoiceVariant
   options: ChoiceOption[]
   onChange: (options: ChoiceOption[]) => void
-  editable: boolean
+  mode: EditMode
 }
 
 /**
  * The options and the correct mark: a radio per option (one answer), a checkbox (several), or the two fixed
- * true/false options. The last option cannot be removed.
+ * true/false options. The last option cannot be removed. In `wording` mode only the option texts change.
  */
-export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOptionsProps) {
+export function ChoiceOptions({ variant, options, onChange, mode }: ChoiceOptionsProps) {
   const id = useId()
+  const editable = mode === 'all'
   const patch = (at: number, change: Partial<ChoiceOption>) =>
     onChange(options.map((option, index) => (index === at ? { ...option, ...change } : option)))
   const correct = options.find(option => option.is_correct)?.id ?? ''
@@ -40,7 +43,7 @@ export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOp
         aria-label={m.assessments_option_text({ number: at + 1 })}
         placeholder={m.assessments_option_text({ number: at + 1 })}
         value={option.text ?? ''}
-        disabled={!editable}
+        disabled={mode === 'none'}
         onChange={event => patch(at, { text: event.target.value })}
       />
       <IconButton
@@ -61,7 +64,7 @@ export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOp
   )
   const trueFalse = (option: ChoiceOption) => (
     <Field key={option.id} orientation="horizontal">
-      <RadioGroupItem id={`${id}-${option.id}`} value={option.id} />
+      <RadioGroupItem id={`${id}-${option.id}`} value={option.id} disabled={!editable} />
       <FieldLabel htmlFor={`${id}-${option.id}`} className="font-normal">
         {option.id === 'true' ? m.assessments_option_true() : m.assessments_option_false()}
       </FieldLabel>
@@ -84,12 +87,11 @@ export function ChoiceOptions({ variant, options, onChange, editable }: ChoiceOp
         <RadioGroup
           aria-labelledby={`${id}-legend`}
           value={correct}
-          disabled={!editable}
           onValueChange={value => onChange(options.map(option => ({ ...option, is_correct: option.id === value })))}
         >
           {variant === 'true_false'
             ? options.map(trueFalse)
-            : options.map((option, at) => row(option, at, radio(option, at)))}
+            : options.map((option, at) => row(option, at, radio(option, at, !editable)))}
         </RadioGroup>
       )}
       {variant === 'true_false' || !editable ? null : (

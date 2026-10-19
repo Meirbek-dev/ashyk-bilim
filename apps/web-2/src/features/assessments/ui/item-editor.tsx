@@ -9,7 +9,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { FieldError } from '#/shared/ui/field'
 
 import { itemForm, itemFormSchema, itemPatch } from '../model/item-form'
-import { can } from '../model/route'
+import { editMode } from '../model/route'
 import { BodyFields } from './body-fields'
 import { ItemActions } from './item-actions'
 import { useItemAutosave } from './use-item-autosave'
@@ -18,10 +18,11 @@ type ItemEditorProps = { activityId: string; assessment: AssessmentDetail; item:
 
 /**
  * The open question: title, points and its body. Every change is validated by the generated schema and, when valid,
- * autosaved after a pause; an invalid one shows under its field and is not sent. Keyed by the question.
+ * autosaved after a pause; an invalid one shows under its field and is not sent. On an answered live assessment only
+ * the wording takes edits (B-ASM-31): points, answers and the structure stay read-only. Keyed by the question.
  */
 export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
-  const editable = can(assessment, 'edit')
+  const mode = editMode(assessment)
   const autosave = useItemAutosave(activityId, assessment.id, item.id)
   // Captured once: saving puts the answer into the cache, which must not reset what the author is typing.
   const [defaultValues] = useState(() => itemForm(item))
@@ -42,7 +43,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
         <h2 id={`item-${item.id}`} className="min-w-0 flex-1 text-lg font-semibold wrap-anywhere">
           {item.position}. {item.title || m.assessments_item_untitled()}
         </h2>
-        {editable ? (
+        {mode === 'all' ? (
           <ItemActions
             activityId={activityId}
             assessmentId={assessment.id}
@@ -58,23 +59,23 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
         className="flex flex-col gap-4"
         onSubmit={event => event.preventDefault()}
       >
-        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-4">
+        <fieldset disabled={mode === 'none'} className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap gap-4">
             <div className="min-w-60 flex-1">
               <form.AppField name="title">
                 {field => <field.TextField label={m.assessments_field_title()} />}
               </form.AppField>
             </div>
-            <div className="w-32">
+            <fieldset disabled={mode !== 'all'} className="w-32">
               <form.AppField name="points">
                 {field => <field.TextField label={m.assessments_field_points()} inputMode="decimal" />}
               </form.AppField>
-            </div>
+            </fieldset>
           </div>
           <form.Field name="body">
             {field => (
               <>
-                <BodyFields body={field.state.value} onChange={field.handleChange} editable={editable} />
+                <BodyFields body={field.state.value} onChange={field.handleChange} mode={mode} />
                 {field.state.meta.errors.length > 0 ? <FieldError>{m.validation_invalid()}</FieldError> : null}
               </>
             )}

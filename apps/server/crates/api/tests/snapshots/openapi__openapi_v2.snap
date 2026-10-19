@@ -1932,7 +1932,8 @@ expression: json
           "transition",
           "duplicate",
           "grade",
-          "edit"
+          "edit",
+          "edit_wording"
         ],
         "type": "string"
       },
@@ -3161,7 +3162,8 @@ expression: json
           "deadline-extension-requested",
           "grade-saved",
           "grades-published",
-          "submission-submitted"
+          "submission-submitted",
+          "wording-edited"
         ],
         "type": "string"
       },

@@ -351,6 +351,45 @@ impl ItemBody {
         serde_json::from_value(value.clone())
     }
 
+    /// OPEN-B-2: the body with its wording blanked - what grading and the
+    /// learner's answers depend on. Two bodies with equal keys differ only in
+    /// wording (prompt, option and field labels, explanation, rubric, code
+    /// statement and test descriptions), which an answered assessment takes.
+    /// Answer keys, option ids, matching pairs, tests, languages, starter
+    /// code and limits are the key.
+    #[must_use]
+    pub fn answer_key(&self) -> serde_json::Value {
+        let mut key = self.clone();
+        match &mut key {
+            Self::Choice(b) => {
+                b.prompt.clear();
+                b.explanation = None;
+                b.options.iter_mut().for_each(|o| o.text.clear());
+            }
+            Self::OpenText(b) => {
+                b.prompt.clear();
+                b.rubric = None;
+            }
+            Self::Form(b) => {
+                b.prompt.clear();
+                b.fields.iter_mut().for_each(|f| f.label.clear());
+            }
+            Self::Code(b) => {
+                b.prompt.clear();
+                b.input_spec.clear();
+                b.output_spec.clear();
+                b.constraints.clear();
+                b.tests.iter_mut().for_each(|t| t.description = None);
+            }
+            Self::Matching(b) => {
+                b.prompt.clear();
+                b.explanation = None;
+            }
+            Self::MatchingLearner(b) => b.prompt.clear(),
+        }
+        key.to_stored()
+    }
+
     /// The legacy default body for a fresh code challenge.
     #[must_use]
     pub const fn default_code() -> Self {
@@ -1045,6 +1084,58 @@ mod tests {
             "same seed, same order"
         );
         assert_ne!(serde_json::to_value(&other).unwrap(), wire);
+    }
+
+    /// OPEN-B-2: wording moves leave the key; a correct mark, an option or
+    /// a pair does not.
+    #[test]
+    fn answer_key_ignores_wording_only() {
+        let choice = |prompt: &str, text: &str, correct: bool| {
+            ItemBody::Choice(ChoiceBody {
+                prompt: prompt.into(),
+                options: vec![ChoiceOption {
+                    id: "a".into(),
+                    text: text.into(),
+                    is_correct: correct,
+                }],
+                multiple: false,
+                variant: None,
+                explanation: None,
+            })
+        };
+        let base = choice("Captial?", "Pariss", true).answer_key();
+        assert_eq!(choice("Capital?", "Paris", true).answer_key(), base);
+        assert_ne!(choice("Captial?", "Pariss", false).answer_key(), base);
+        let matching = |right: &str| {
+            ItemBody::Matching(MatchingBody {
+                prompt: "p".into(),
+                pairs: vec![MatchingPair {
+                    left: "l".into(),
+                    right: right.into(),
+                }],
+                explanation: None,
+            })
+            .answer_key()
+        };
+        assert_ne!(matching("a"), matching("b"));
+        let code = |prompt: &str, expected: &str| {
+            let ItemBody::Code(mut body) = ItemBody::default_code() else {
+                panic!("code")
+            };
+            body.prompt = prompt.into();
+            body.tests.push(CodeTestCase {
+                id: "t".into(),
+                input: "1".into(),
+                expected_output: expected.into(),
+                is_visible: true,
+                weight: 1,
+                description: Some(prompt.into()),
+                match_mode: MatchMode::Exact,
+            });
+            ItemBody::Code(body).answer_key()
+        };
+        assert_eq!(code("Sum", "2"), code("Sum two numbers", "2"));
+        assert_ne!(code("Sum", "2"), code("Sum", "3"));
     }
 
     #[test]

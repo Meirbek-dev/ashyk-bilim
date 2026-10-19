@@ -8,7 +8,7 @@
 import * as zod from 'zod'
 
 export const AssessmentAction = zod
-  .enum(['update', 'transition', 'duplicate', 'grade', 'edit'])
+  .enum(['update', 'transition', 'duplicate', 'grade', 'edit', 'edit_wording'])
   .describe('What the caller may do to an assessment (`Assessment.allowed_actions`).')
 
 export type AssessmentAction = zod.input<typeof AssessmentAction>

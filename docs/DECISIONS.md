@@ -2853,3 +2853,16 @@ The owner removed G-05 (gzip budgets for initial JS, chunks and CSS, plus the en
 parity work pushed initial JS to 200.7 KB gzip against a 180 KB cap. `bun run build` is plain `vp build`; CI and
 `just check` no longer fail on bundle size. The lint rules `ab/route-level-imports` and `ab/route-entry-imports`
 still keep feature code and the generated SDK out of route-level options.
+
+## Answered live assessments take wording fixes (2026-10-19)
+
+OPEN-B-2. A published quiz, exam or code challenge with submissions (`edit_lock: has_submissions`) used to take only a
+rename; a typo meant unpublishing it. It now takes wording edits (`allowed_actions: edit_wording`): titles, the
+description, prompts, option and form-field labels, explanations, rubrics, the code statement (text, input/output
+formats, constraints) and test descriptions. `ItemBody::answer_key` blanks exactly those fields; an item write whose
+key or `max_score` differs from the stored one keeps the old 409 (`assessment-read-only`, reason `has_submissions`),
+as do weight, scale, policy, adds, deletes and reorders. A body wording edit bumps `content_version` and moves open
+drafts on the replaced version with it (same key, so they still submit instead of the BUG-224 «reopen» 409); a title
+or description edit does not bump it. Each wording edit on a locked assessment writes a `wording-edited` audit row.
+Option text counts as wording although it can change meaning: the grader keys answers by option id, and typos in
+options are the common case. No regrade flow: key and points changes stay locked.

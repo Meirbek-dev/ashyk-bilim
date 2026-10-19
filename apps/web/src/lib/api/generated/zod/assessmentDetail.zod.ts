@@ -72,7 +72,7 @@ export const AssessmentDetail = zod
     allowed_actions: zod
       .array(
         zod
-          .enum(['update', 'transition', 'duplicate', 'grade', 'edit'])
+          .enum(['update', 'transition', 'duplicate', 'grade', 'edit', 'edit_wording'])
           .describe('What the caller may do to an assessment (`Assessment.allowed_actions`).'),
       )
       .describe('What the caller may do to this assessment now.'),

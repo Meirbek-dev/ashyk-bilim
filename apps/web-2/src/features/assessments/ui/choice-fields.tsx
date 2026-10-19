@@ -4,15 +4,16 @@ import { m } from '#/paraglide/messages'
 import { Field, FieldLabel } from '#/shared/ui/field'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
+import type { EditMode } from '../model/route'
 import { CHOICE_VARIANTS, choiceVariant, withVariant, type Choice } from '../model/items'
 import { ChoiceOptions } from './choice-options'
 import { kindLabels } from './labels'
 import { MarkdownField } from './markdown-field'
 
-type ChoiceFieldsProps = { body: Choice; onChange: (body: Choice) => void; editable: boolean }
+type ChoiceFieldsProps = { body: Choice; onChange: (body: Choice) => void; mode: EditMode }
 
 /** A choice question: its variant, the options with the correct mark, and the explanation shown after answering. */
-export function ChoiceFields({ body, onChange, editable }: ChoiceFieldsProps) {
+export function ChoiceFields({ body, onChange, mode }: ChoiceFieldsProps) {
   const id = useId()
   const variant = body.variant ?? (body.multiple ? 'multiple_choice' : 'single_choice')
   return (
@@ -22,7 +23,7 @@ export function ChoiceFields({ body, onChange, editable }: ChoiceFieldsProps) {
         <NativeSelect
           id={id}
           value={variant}
-          disabled={!editable}
+          disabled={mode !== 'all'}
           onChange={event => {
             const next = choiceVariant(event.target.value)
             if (next) onChange(withVariant(body, next))
@@ -39,13 +40,13 @@ export function ChoiceFields({ body, onChange, editable }: ChoiceFieldsProps) {
         variant={variant}
         options={body.options ?? []}
         onChange={options => onChange({ ...body, options })}
-        editable={editable}
+        mode={mode}
       />
       <MarkdownField
         label={m.assessments_field_explanation()}
         value={body.explanation ?? ''}
         onChange={explanation => onChange({ ...body, explanation: explanation || null })}
-        editable={editable}
+        editable={mode !== 'none'}
       />
     </div>
   )

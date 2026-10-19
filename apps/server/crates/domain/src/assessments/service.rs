@@ -58,9 +58,9 @@ pub(crate) async fn ensure_editable<'e>(
     }
 }
 
-/// A rename only: allowed on a published assessment with submissions too -
-/// the title is no content change (DECISIONS 2026-10-11); archived and
-/// scheduled ones stay read-only.
+/// A rename (or a description fix, OPEN-B-2) only: allowed on a published
+/// assessment with submissions too - wording is no content change
+/// (DECISIONS 2026-10-11); archived and scheduled ones stay read-only.
 pub(crate) async fn ensure_renamable<'e>(
     db: impl sqlx::PgExecutor<'e>,
     assessment: &Assessment,
@@ -532,6 +532,10 @@ pub enum AssessmentAction {
     /// `update` with no edit lock: details, policy and items take writes
     /// now (`edit_lock` says why not otherwise).
     Edit,
+    /// OPEN-B-2: `update` on an answered live assessment - only wording
+    /// (titles, description, prompts, option and field labels,
+    /// explanations, rubrics) takes writes; keys and points stay locked.
+    EditWording,
 }
 
 impl AssessmentsService {
@@ -965,21 +969,42 @@ impl AssessmentsService {
         let assessment = ab_db::assessments::lock_assessment(&mut tx, id)
             .await?
             .ok_or_else(|| Error::not_found("assessment"))?;
-        // Only the title moves (the other fields absent or unchanged): a
-        // rename, allowed while learners have submissions.
-        let rename_only = changes
-            .description
-            .is_none_or(|d| d == assessment.description)
-            && changes
-                .weight
-                .is_none_or(|w| (w - assessment.weight).abs() < f64::EPSILON)
+        // Only the wording moves (title, description; weight and scale absent
+        // or unchanged): allowed while learners have submissions (OPEN-B-2).
+        let wording_only = changes
+            .weight
+            .is_none_or(|w| (w - assessment.weight).abs() < f64::EPSILON)
             && changes
                 .grading_type
                 .is_none_or(|g| g == assessment.grading_type);
-        if rename_only {
+        if wording_only {
             ensure_renamable(&mut *tx, &assessment).await?;
         } else {
             ensure_editable(&mut *tx, &assessment).await?;
+        }
+        let fields: Vec<&str> = [
+            ("title", title.is_some_and(|t| t != assessment.title)),
+            (
+                "description",
+                changes
+                    .description
+                    .is_some_and(|d| d != assessment.description),
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(field, moved)| moved.then_some(field))
+        .collect();
+        if !fields.is_empty()
+            && edit_lock(&mut *tx, &assessment).await? == Some(EditLock::HasSubmissions)
+        {
+            ab_db::assessments::insert_audit_event(
+                &mut *tx,
+                id,
+                Some(actor.user_id),
+                ab_core::assessments::AuditEventKind::WordingEdited,
+                serde_json::json!({ "fields": fields }),
+            )
+            .await?;
         }
         ab_db::assessments::update_assessment_details(
             &mut *tx,
@@ -1575,7 +1600,6 @@ impl AssessmentsService {
             assessment,
             mut items,
         } = Self::lock_detail(&mut tx, row.assessment_id).await?;
-        ensure_editable(&mut *tx, &assessment).await?;
         // BUG-257: content = what the learner answers and is scored on - the
         // body (prompt, options, correct answers, tests) and the max score.
         // The editor re-sends the whole item, so compare, don't test presence;
@@ -1590,8 +1614,24 @@ impl AssessmentsService {
                     .max_score
                     .is_some_and(|s| s.to_bits() != item.max_score.to_bits())
         });
-        if content_changed {
-            Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
+        // OPEN-B-2: an answered live assessment takes wording fixes (title,
+        // prompt, labels, explanations) - same answer key, same points.
+        let wording_edit = edit_lock(&mut *tx, &assessment).await?
+            == Some(EditLock::HasSubmissions)
+            && current.is_some_and(|item| {
+                changes
+                    .body
+                    .as_ref()
+                    .is_none_or(|b| b.answer_key() == item.body.answer_key())
+                    && changes
+                        .max_score
+                        .is_none_or(|s| s.to_bits() == item.max_score.to_bits())
+            });
+        if !wording_edit {
+            ensure_editable(&mut *tx, &assessment).await?;
+            if content_changed {
+                Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
+            }
         }
         if let Some(body) = &changes.body {
             Self::check_kind_allowed(assessment.kind, body.kind())?;
@@ -1609,6 +1649,7 @@ impl AssessmentsService {
             .as_deref()
             .map(|t| ab_core::required_str("title", t))
             .transpose()?;
+        let renamed = title.is_some_and(|t| current.is_some_and(|item| item.title != t));
         if assessment.lifecycle == Lifecycle::Published {
             let before = items.clone();
             if let Some(item) = items.iter_mut().find(|i| i.id == item_id) {
@@ -1636,7 +1677,21 @@ impl AssessmentsService {
             metadata.as_ref().map(ItemMetadataInput::as_db),
         )
         .await?;
-        if content_changed {
+        if wording_edit && (content_changed || renamed) {
+            let content_version = if content_changed {
+                ab_db::assessments::bump_wording_version(&mut *tx, row.assessment_id).await?
+            } else {
+                assessment.content_version
+            };
+            ab_db::assessments::insert_audit_event(
+                &mut *tx,
+                row.assessment_id,
+                Some(actor.user_id),
+                ab_core::assessments::AuditEventKind::WordingEdited,
+                serde_json::json!({ "item_id": item_id, "content_version": content_version }),
+            )
+            .await?;
+        } else if content_changed {
             ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
         }
         tx.commit().await?;

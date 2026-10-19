@@ -10,3 +10,12 @@ export const isAssessmentType = (type: ActivityType): type is AssessmentKind =>
 
 export const can = (assessment: Pick<AssessmentDetail, 'allowed_actions'>, action: AssessmentAction): boolean =>
   assessment.allowed_actions.includes(action)
+
+/**
+ * What the author may change now: everything (`edit`), only the wording of an answered live assessment
+ * (`edit_wording`: titles, description, prompts, option and field labels, explanations, rubric - B-ASM-31) or nothing.
+ */
+export type EditMode = 'all' | 'wording' | 'none'
+
+export const editMode = (assessment: Pick<AssessmentDetail, 'allowed_actions'>): EditMode =>
+  can(assessment, 'edit') ? 'all' : can(assessment, 'edit_wording') ? 'wording' : 'none'

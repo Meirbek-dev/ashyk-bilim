@@ -12,7 +12,7 @@ import { AccessSection } from './access-section'
 import { CopySection } from './copy-section'
 import { DetailsSection } from './details-section'
 import { JournalSection } from './journal-section'
-import { renameLock } from './labels'
+import { wordingLock } from './labels'
 import { OverridesSection } from './overrides-section'
 import { PolicySection } from './policy-section'
 import { PublishingSection } from './publishing-section'
@@ -51,7 +51,7 @@ export function AssessmentSettingsPage() {
   return (
     <SettingsPage title={m.assessments_settings_title()} nav={nav}>
       <div id="name">
-        <ActivitySettingsPage lock={renameLock(assessment)} />
+        <ActivitySettingsPage lock={wordingLock(assessment)} />
       </div>
       <div id="details">
         <DetailsSection activityId={activityId} assessment={assessment} />

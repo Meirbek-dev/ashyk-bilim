@@ -658,7 +658,7 @@ export type Assessment = {
 /**
  * What the caller may do to an assessment (`Assessment.allowed_actions`).
  */
-export type AssessmentAction = 'update' | 'transition' | 'duplicate' | 'grade' | 'edit';
+export type AssessmentAction = 'update' | 'transition' | 'duplicate' | 'grade' | 'edit' | 'edit_wording';
 
 export type AssessmentAuditEventRow = {
     action: string;
@@ -979,7 +979,7 @@ export type AuditEvent = {
  * `assessment_audit_events.event`: what an audit row records (the writers
  * take this type, so the wire set is closed).
  */
-export type AuditEventKind = 'lifecycle-transition' | 'auto-publish-skipped' | 'duplicated-from' | 'access-changed' | 'override-created' | 'override-updated' | 'override-deleted' | 'deadline-extended' | 'deadline-extension-requested' | 'grade-saved' | 'grades-published' | 'submission-submitted';
+export type AuditEventKind = 'lifecycle-transition' | 'auto-publish-skipped' | 'duplicated-from' | 'access-changed' | 'override-created' | 'override-updated' | 'override-deleted' | 'deadline-extended' | 'deadline-extension-requested' | 'grade-saved' | 'grades-published' | 'submission-submitted' | 'wording-edited';
 
 /**
  * `assessment_audit_events.payload`.

@@ -21,6 +21,7 @@ export const AuditEventKind = zod
     'grade-saved',
     'grades-published',
     'submission-submitted',
+    'wording-edited',
   ])
   .describe(
     '`assessment_audit_events.event`: what an audit row records (the writers\ntake this type, so the wire set is closed).',

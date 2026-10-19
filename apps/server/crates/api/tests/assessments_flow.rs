@@ -2616,14 +2616,176 @@ async fn published_assessment_with_submissions_can_be_renamed(pool: PgPool) {
         .await;
     assert_eq!(detail.json()["title"], "Week 1 (final)");
 
-    // A content change is still refused.
-    let content = app
+    // OPEN-B-2: the description is wording too; the weight stays locked.
+    let described = app
         .patch_as(
             &teacher,
             &format!("/api/v2/assessments/{id}"),
             &serde_json::json!({ "title": "X", "description": "changed" }),
         )
         .await;
+    assert_eq!(described.status, StatusCode::OK, "{}", described.text());
+    let content = app
+        .patch_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}"),
+            &serde_json::json!({ "weight": 3 }),
+        )
+        .await;
     assert_eq!(content.status, StatusCode::CONFLICT, "{}", content.text());
     assert_eq!(content.json()["details"]["reason"], "has_submissions");
+}
+
+/// OPEN-B-2: an answered live quiz takes wording fixes (item title, prompt,
+/// option text, explanation) as a new content version with an audit row,
+/// and an open draft keeps submitting; a key or points change stays 409.
+#[sqlx::test(migrations = "../../migrations")]
+async fn answered_assessment_takes_wording_edits_but_not_key_edits(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = scaffold(&app, &teacher).await;
+    app.publish_course(&course_id).await;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/assessments",
+            &serde_json::json!({ "chapter_id": chapter_id, "kind": "quiz", "title": "Week 1" }),
+        )
+        .await;
+    let id = created.json()["id"].as_str().unwrap().to_owned();
+    let item = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/items"),
+            &choice_item("Captial?"),
+        )
+        .await;
+    let item_id = item.json()["id"].as_str().unwrap().to_owned();
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{id}/lifecycle"),
+            &serde_json::json!({ "to": "published" }),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let learner = |name: &'static str| {
+        let (app, id) = (&app, &id);
+        async move {
+            let user = app
+                .create_user(name, &format!("{name}@example.com"), &["user"])
+                .await;
+            let session = app
+                .mint_session_for(
+                    user,
+                    &["assessment:submit:assigned", "assessment:read:assigned"],
+                )
+                .await;
+            let started = app
+                .post_as(
+                    &session,
+                    &format!("/api/v2/assessments/{id}/submissions"),
+                    &serde_json::json!({}),
+                )
+                .await;
+            assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+            (session, started.json()["id"].as_str().unwrap().to_owned())
+        }
+    };
+    let answer =
+        serde_json::json!({ "answers": { &item_id: { "kind": "choice", "selected": ["a"] } } });
+    let (alice, alice_sub) = learner("alice").await;
+    let graded = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{alice_sub}/submit"),
+            &answer,
+        )
+        .await;
+    assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    let (bob, bob_sub) = learner("bob").await;
+
+    let before = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json();
+    assert_eq!(before["edit_lock"], "has_submissions");
+    let actions = before["allowed_actions"].as_array().unwrap();
+    assert!(actions.contains(&"edit_wording".into()), "{actions:?}");
+    assert!(!actions.contains(&"edit".into()), "{actions:?}");
+    let version = before["content_version"].as_i64().unwrap();
+
+    let item_path = format!("/api/v2/assessment-items/{item_id}");
+    let body = |yes: &str, correct: &str| {
+        serde_json::json!({
+            "kind": "choice",
+            "prompt": "Capital?",
+            "explanation": "Paris is the capital.",
+            "options": [
+                { "id": "a", "text": yes, "is_correct": correct == "a" },
+                { "id": "b", "text": "no", "is_correct": correct == "b" }
+            ]
+        })
+    };
+    let worded = app
+        .patch_as(
+            &teacher,
+            &item_path,
+            &serde_json::json!({ "title": "Capital?", "max_score": 10, "body": body("yes!", "a") }),
+        )
+        .await;
+    assert_eq!(worded.status, StatusCode::OK, "{}", worded.text());
+    assert_eq!(worded.json()["body"]["prompt"], "Capital?");
+    let after = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json();
+    assert_eq!(after["content_version"].as_i64().unwrap(), version + 1);
+    let audit = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}/audit"))
+        .await;
+    assert!(audit.text().contains("wording-edited"), "{}", audit.text());
+    // The open draft moved with the wording: same key, it still submits.
+    let submitted = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/submissions/{bob_sub}/submit"),
+            &answer,
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+
+    for (what, change) in [
+        (
+            "correct mark",
+            serde_json::json!({ "body": body("yes!", "b") }),
+        ),
+        ("points", serde_json::json!({ "max_score": 7 })),
+        (
+            "an option",
+            serde_json::json!({ "body": {
+                "kind": "choice", "prompt": "Capital?",
+                "options": [{ "id": "a", "text": "yes!", "is_correct": true }]
+            } }),
+        ),
+    ] {
+        let refused = app.patch_as(&teacher, &item_path, &change).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::CONFLICT,
+            "{what}: {}",
+            refused.text()
+        );
+        assert_eq!(
+            refused.json()["details"]["reason"],
+            "has_submissions",
+            "{what}"
+        );
+    }
+    let unchanged = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await
+        .json();
+    assert_eq!(unchanged["content_version"].as_i64().unwrap(), version + 1);
+    assert_eq!(unchanged["items"][0]["max_score"], 10.0);
 }

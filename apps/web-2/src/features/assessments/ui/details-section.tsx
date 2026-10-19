@@ -9,6 +9,7 @@ import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { toast } from '#/shared/ui/toast'
 
 import { detailsBody, detailsForm, detailsFormSchema } from '../model/details'
+import { editMode } from '../model/route'
 import { updateAssessmentOptions } from '../queries'
 import { gradingLabels, lockReason, optionsOf } from './labels'
 import { MarkdownField } from './markdown-field'
@@ -16,7 +17,10 @@ import { isStale, useVersion } from './use-version'
 
 type DetailsSectionProps = { activityId: string; assessment: AssessmentDetail }
 
-/** "Basics": the description learners read, the weight in the course total and the scale; read-only while locked. */
+/**
+ * "Basics": the description learners read, the weight in the course total and the scale; read-only while locked. An
+ * answered live test keeps its description editable, the weight and the scale locked (B-ASM-31).
+ */
 export function DetailsSection({ activityId, assessment }: DetailsSectionProps) {
   const update = useMutation(updateAssessmentOptions(useQueryClient(), activityId))
   const version = useVersion(activityId)
@@ -30,7 +34,8 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
         { onSuccess: () => toast.add({ title: m.assessments_saved() }), onError: version.onError },
       ),
   })
-  const lock = lockReason(assessment)
+  const mode = editMode(assessment)
+  const lock = mode === 'wording' ? null : lockReason(assessment)
   return (
     <>
       <LockableSection
@@ -47,24 +52,28 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
               label={m.assessments_field_description()}
               value={field.state.value}
               onChange={field.handleChange}
-              editable={!lock}
+              editable={mode !== 'none'}
             />
           )}
         </form.AppField>
-        <form.AppField name="weight">
-          {field => (
-            <field.TextField
-              label={m.assessments_field_weight()}
-              description={m.assessments_field_weight_hint()}
-              inputMode="decimal"
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="grading_type">
-          {field => (
-            <field.RadioGroupField label={m.assessments_field_grading_type()} options={optionsOf(gradingLabels)} />
-          )}
-        </form.AppField>
+        {mode === 'wording' ? <p className="text-sm text-muted-foreground">{m.assessments_wording_details()}</p> : null}
+        {/* `inert` as in LockableSection: the radio group is a Base UI span a disabled fieldset does not reach. */}
+        <fieldset disabled={mode !== 'all'} inert={mode !== 'all'} className="flex min-w-0 flex-col gap-4">
+          <form.AppField name="weight">
+            {field => (
+              <field.TextField
+                label={m.assessments_field_weight()}
+                description={m.assessments_field_weight_hint()}
+                inputMode="decimal"
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="grading_type">
+            {field => (
+              <field.RadioGroupField label={m.assessments_field_grading_type()} options={optionsOf(gradingLabels)} />
+            )}
+          </form.AppField>
+        </fieldset>
       </LockableSection>
       <ConflictDialog
         open={version.conflict}

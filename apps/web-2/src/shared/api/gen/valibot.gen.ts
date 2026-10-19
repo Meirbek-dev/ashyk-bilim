@@ -325,7 +325,8 @@ export const vAssessmentAction = v.picklist([
     'transition',
     'duplicate',
     'grade',
-    'edit'
+    'edit',
+    'edit_wording'
 ]);
 
 export const vAssessmentDiagnosticsSnapshot = v.object({
@@ -382,7 +383,8 @@ export const vAuditEventKind = v.picklist([
     'deadline-extension-requested',
     'grade-saved',
     'grades-published',
-    'submission-submitted'
+    'submission-submitted',
+    'wording-edited'
 ]);
 
 /**

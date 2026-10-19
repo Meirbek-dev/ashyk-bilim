@@ -4460,14 +4460,10 @@ async fn staff_preview_does_not_lock_editing(pool: PgPool) {
     assert_eq!(rescored.status, StatusCode::OK, "{}", rescored.text());
     let alice = learner(&app, "alice").await;
     submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
-    // A learner's hand-in locks the content (a rename stays open, DECISIONS
-    // 2026-10-11).
+    // A learner's hand-in locks the content (wording stays open, DECISIONS
+    // 2026-10-11, OPEN-B-2).
     let locked = app
-        .patch_as(
-            &teacher,
-            &path,
-            &serde_json::json!({ "description": "changed" }),
-        )
+        .patch_as(&teacher, &path, &serde_json::json!({ "weight": 3 }))
         .await;
     assert_eq!(locked.status, StatusCode::CONFLICT, "{}", locked.text());
 }

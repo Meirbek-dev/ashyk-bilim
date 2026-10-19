@@ -378,6 +378,8 @@ pub enum AuditEventKind {
     GradeSaved,
     GradesPublished,
     SubmissionSubmitted,
+    /// OPEN-B-2: wording fixed on an assessment learners already answered.
+    WordingEdited,
 }
 
 impl AuditEventKind {
@@ -396,6 +398,7 @@ impl AuditEventKind {
             Self::GradeSaved => "grade-saved",
             Self::GradesPublished => "grades-published",
             Self::SubmissionSubmitted => "submission-submitted",
+            Self::WordingEdited => "wording-edited",
         }
     }
 }

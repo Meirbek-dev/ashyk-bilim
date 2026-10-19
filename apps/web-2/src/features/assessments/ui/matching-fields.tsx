@@ -6,13 +6,18 @@ import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { Input } from '#/shared/ui/input'
 
+import type { EditMode } from '../model/route'
 import { MarkdownField } from './markdown-field'
 
 type Matching = MatchingBody & { kind: 'matching' }
-type MatchingFieldsProps = { body: Matching; onChange: (body: Matching) => void; editable: boolean }
+type MatchingFieldsProps = { body: Matching; onChange: (body: Matching) => void; mode: EditMode }
 
-/** A matching question: left - right pairs (the learner sees the right column shuffled) and the explanation. */
-export function MatchingFields({ body, onChange, editable }: MatchingFieldsProps) {
+/**
+ * A matching question: left - right pairs (the learner sees the right column shuffled) and the explanation. The pairs
+ * are the answer key: `wording` mode keeps them read-only.
+ */
+export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
+  const editable = mode === 'all'
   const setPairs = (pairs: MatchingPair[]) => onChange({ ...body, pairs })
   const patch = (at: number, change: Partial<MatchingPair>) =>
     setPairs(body.pairs.map((pair, index) => (index === at ? { ...pair, ...change } : pair)))
@@ -60,7 +65,7 @@ export function MatchingFields({ body, onChange, editable }: MatchingFieldsProps
         label={m.assessments_field_explanation()}
         value={body.explanation ?? ''}
         onChange={explanation => onChange({ ...body, explanation: explanation || null })}
-        editable={editable}
+        editable={mode !== 'none'}
       />
     </div>
   )

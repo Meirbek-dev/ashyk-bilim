@@ -34,13 +34,15 @@ type CodeItemFormProps = { activityId: string; challenge: AssessmentDetail; code
 
 /**
  * The code item editor (B-COD-13..19): statement, languages with starter code and reference solution, test cases,
- * limits; one "Save" (only with changes) and "Check reference". Without `update` everything is read only. A runner
- * that is down keeps the form and "Save" working; "Check reference" waits for "Retry" (B-COD-23).
+ * limits; one "Save" (only with changes) and "Check reference". Without `update` everything is read only; a solved
+ * live challenge keeps only the statement editable (B-COD-27). A runner that is down keeps the form and "Save" working;
+ * "Check reference" waits for "Retry" (B-COD-23).
  */
 export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps) {
   const { data: runner, refetch, isFetching } = useSuspenseQuery(runnerStateOptions())
   const languages = languagesIn(runner)
-  const { form, update, check, checkReference, unsaved, editable } = useCodeItemForm({ activityId, challenge, code })
+  const { form, update, check, checkReference, unsaved, mode } = useCodeItemForm({ activityId, challenge, code })
+  const editable = mode === 'all'
   return (
     <form
       noValidate
@@ -57,11 +59,13 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
         </h2>
         <p className="text-sm text-muted-foreground">{editable ? m.code_studio_hint() : readOnlyReason(challenge)}</p>
       </div>
-      <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
+      <fieldset disabled={mode === 'none'} className="flex min-w-0 flex-col gap-8">
         <StatementFields form={form} />
-        <LanguageFields form={form} runner={runner} readOnly={!editable} />
-        <CaseFields form={form} editable={editable} />
-        <LimitFields form={form} />
+        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
+          <LanguageFields form={form} runner={runner} readOnly={!editable} />
+          <CaseFields form={form} editable={editable} />
+          <LimitFields form={form} />
+        </fieldset>
       </fieldset>
       {editable ? null : (
         // A locked challenge's cases still download (the fieldset would disable the buttons).
@@ -81,7 +85,7 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
       ) : check.error ? (
         <ErrorAlert>{presentError(check.error)}</ErrorAlert>
       ) : null}
-      {editable ? (
+      {mode === 'none' ? null : (
         <div className="flex flex-wrap gap-2">
           <form.Subscribe selector={state => unsaved(state.values)}>
             {changed => (
@@ -91,17 +95,19 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
               </Button>
             )}
           </form.Subscribe>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={runner.state === 'down' || check.isPending || update.isPending}
-            onClick={() => void checkReference()}
-          >
-            {check.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {m.code_check()}
-          </Button>
+          {editable ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={runner.state === 'down' || check.isPending || update.isPending}
+              onClick={() => void checkReference()}
+            >
+              {check.isPending ? <Spinner data-icon="inline-start" /> : null}
+              {m.code_check()}
+            </Button>
+          ) : null}
         </div>
-      ) : null}
+      )}
       {check.data ? <ReferenceResults results={check.data.results} languages={languages} /> : null}
     </form>
   )

@@ -60,6 +60,11 @@ export function useCodeItemForm({ activityId, challenge, code }: Ids) {
     checkReference,
     /** Whether "Save" has something to send (B-COD-18). */
     unsaved: (values: CodeForm) => unsaved(values, code),
-    editable: challenge.allowed_actions.includes('edit'),
+    /** `wording` (B-COD-27): a solved live challenge takes only statement fixes; languages, tests and limits stay. */
+    mode: challenge.allowed_actions.includes('edit')
+      ? ('all' as const)
+      : challenge.allowed_actions.includes('edit_wording')
+        ? ('wording' as const)
+        : ('none' as const),
   }
 }

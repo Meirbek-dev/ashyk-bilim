@@ -86,6 +86,7 @@ export const eventLabels: Record<AuditEventKind, () => string> = {
   'submission-submitted': m.assessments_event_submission_submitted,
   'grade-saved': m.assessments_event_grade_saved,
   'grades-published': m.assessments_event_grades_published,
+  'wording-edited': m.assessments_event_wording_edited,
 }
 
 export const issueLabels: Record<ReadinessIssueCode, () => string> = {
@@ -131,11 +132,11 @@ const lockLabels: Record<EditLock, () => string> = {
 }
 
 /**
- * Why the name is read-only: as `lockReason`, except that a published test with submissions may be renamed (the title
- * is no content change, B-ASM-30).
+ * Why the wording (name, description) is read-only: as `lockReason`, except that a published test with submissions
+ * takes wording fixes (`edit_wording`, B-ASM-30, B-ASM-31).
  */
-export function renameLock(assessment: Pick<AssessmentDetail, 'allowed_actions' | 'edit_lock'>): string | null {
-  return assessment.edit_lock === 'has_submissions' && can(assessment, 'update') ? null : lockReason(assessment)
+export function wordingLock(assessment: Pick<AssessmentDetail, 'allowed_actions' | 'edit_lock'>): string | null {
+  return can(assessment, 'edit_wording') ? null : lockReason(assessment)
 }
 
 /** Why the caller cannot edit the assessment now (B-ASM-11, B-ASM-28); null while it is editable (`edit`). */

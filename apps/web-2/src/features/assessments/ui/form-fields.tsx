@@ -10,16 +10,18 @@ import { Label } from '#/shared/ui/label'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
 import { newFormField } from '../model/items'
+import type { EditMode } from '../model/route'
 import { formTypeLabels } from './labels'
 
 type Form = FormBody & { kind: 'form' }
-type FormFieldsProps = { body: Form; onChange: (body: Form) => void; editable: boolean }
+type FormFieldsProps = { body: Form; onChange: (body: Form) => void; mode: EditMode }
 
 const FORM_TYPES = ['text', 'textarea', 'number', 'date'] as const satisfies FormFieldType[]
 const formType = (value: string) => FORM_TYPES.find(type => type === value) ?? 'text'
 
-/** A form question: the fields the learner fills in, each with a label, a type and "required". */
-export function FormFields({ body, onChange, editable }: FormFieldsProps) {
+/** A form question: the fields the learner fills in, each with a label, a type and "required"; `wording`: labels only. */
+export function FormFields({ body, onChange, mode }: FormFieldsProps) {
+  const editable = mode === 'all'
   const fields = body.fields ?? []
   const setFields = (next: FormField[]) => onChange({ ...body, fields: next })
   const patch = (at: number, change: Partial<FormField>) =>
@@ -34,7 +36,7 @@ export function FormFields({ body, onChange, editable }: FormFieldsProps) {
               placeholder={m.assessments_form_field_label({ number: at + 1 })}
               className="min-w-48 flex-1"
               value={field.label ?? ''}
-              disabled={!editable}
+              disabled={mode === 'none'}
               onChange={event => patch(at, { label: event.target.value })}
             />
             <NativeSelect

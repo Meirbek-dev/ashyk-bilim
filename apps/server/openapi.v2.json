@@ -1928,7 +1928,8 @@
           "transition",
           "duplicate",
           "grade",
-          "edit"
+          "edit",
+          "edit_wording"
         ],
         "type": "string"
       },
@@ -3157,7 +3158,8 @@
           "deadline-extension-requested",
           "grade-saved",
           "grades-published",
-          "submission-submitted"
+          "submission-submitted",
+          "wording-edited"
         ],
         "type": "string"
       },
