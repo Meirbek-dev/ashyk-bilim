@@ -13,7 +13,15 @@ type ReadinessListProps = { courseId: string; activityId: string; assessment: As
 /** What the server says blocks publishing (and what is worth a look), each question's issue linking to it. */
 export function ReadinessList({ courseId, activityId, assessment }: ReadinessListProps) {
   const { data: readiness } = useSuspenseQuery(assessmentReadinessOptions(assessment.id))
-  if (readiness.issues.length === 0) return <p className="text-sm text-success">{m.assessments_ready()}</p>
+  // «Ready to publish» only before it is: a live one says learners see it, an archived one says nothing here.
+  if (readiness.issues.length === 0) {
+    if (assessment.lifecycle === 'archived') return null
+    return assessment.lifecycle === 'published' ? (
+      <p className="text-sm text-muted-foreground">{m.assessments_live()}</p>
+    ) : (
+      <p className="text-sm text-success">{m.assessments_ready()}</p>
+    )
+  }
   const title = (id: string) => {
     const item = assessment.items.find(row => row.id === id)
     return item?.title || m.assessments_item_untitled()

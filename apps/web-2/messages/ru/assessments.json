@@ -157,6 +157,7 @@
   "assessments_lifecycle_archived": "В архиве",
   "assessments_scheduled_at": "Откроется {date}",
   "assessments_ready": "Готово к публикации",
+  "assessments_live": "Учащиеся видят задание и проходят его.",
   "assessments_blockers": "Мешает публикации",
   "assessments_warnings": "Стоит проверить",
   "assessments_issue_open": "Открыть вопрос «{title}»",

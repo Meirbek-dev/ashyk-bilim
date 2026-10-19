@@ -157,6 +157,7 @@
   "assessments_lifecycle_archived": "Мұрағатта",
   "assessments_scheduled_at": "{date} ашылады",
   "assessments_ready": "Жариялауға дайын",
+  "assessments_live": "Білім алушылар тапсырманы көріп, орындай алады.",
   "assessments_blockers": "Жариялауға кедергі",
   "assessments_warnings": "Тексеріп көрген жөн",
   "assessments_issue_open": "«{title}» сұрағын ашу",

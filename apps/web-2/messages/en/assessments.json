@@ -157,6 +157,7 @@
   "assessments_lifecycle_archived": "Archived",
   "assessments_scheduled_at": "Opens {date}",
   "assessments_ready": "Ready to publish",
+  "assessments_live": "Learners see the assessment and can take it.",
   "assessments_blockers": "Blocks publishing",
   "assessments_warnings": "Worth checking",
   "assessments_issue_open": "Open question “{title}”",
