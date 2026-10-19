@@ -12,7 +12,16 @@ import { PostForm } from './post-form'
  * A new post, or with `parentId` a reply under it. One `Idempotency-Key` per post: a resubmit after a lost answer
  * reuses it, so the server never stores the post twice (BUG-153).
  */
-export function NewPost({ courseId, parentId }: { courseId: CourseId; parentId?: DiscussionId }) {
+export function NewPost({
+  courseId,
+  parentId,
+  focusOnMount,
+}: {
+  courseId: CourseId
+  parentId?: DiscussionId
+  /** Opened from the collapsed composer: the editor takes the focus of the button it replaces. */
+  focusOnMount?: boolean
+}) {
   const queryClient = useQueryClient()
   const create = useMutation(
     parentId ? createReplyOptions(queryClient, courseId) : createPostOptions(queryClient, courseId),
@@ -39,6 +48,7 @@ export function NewPost({ courseId, parentId }: { courseId: CourseId; parentId?:
       onSubmit={submit}
       pending={create.isPending}
       error={create.error}
+      focusOnMount={focusOnMount}
     />
   )
 }

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import type { Page } from '@playwright/test'
+
 import { m } from '#/paraglide/messages'
 
 import { expect } from '../fixtures/seed'
@@ -7,6 +9,13 @@ import { clickUntil } from '../fixtures/test'
 import { article, tab, test } from './discussions-fixture'
 
 const ru = { locale: 'ru' } as const
+
+/** The top composer opens from its one line (B-DSC-19). */
+async function openComposer(page: Page) {
+  const composer = page.getByRole('region', { name: m.discussions_new({}, ru) })
+  await composer.getByRole('button', { name: m.discussions_start({}, ru) }).click()
+  return composer
+}
 
 test('B-DSC-01 B-DSC-14 a guest is invited to sign in; a learner not enrolled reads and is offered the enrolment', async ({
   page,
@@ -26,11 +35,11 @@ test('B-DSC-01 B-DSC-14 a guest is invited to sign in; a learner not enrolled re
   await page.goto(tab(made))
   await expect(article(page, 'Пост преподавателя.')).toBeVisible()
   await expect(page.getByText(m.discussions_members_only({}, ru))).toBeVisible()
-  const publish = page.getByRole('button', { name: m.discussions_publish({}, ru) })
-  await expect(publish).toHaveCount(0)
+  const start = page.getByRole('button', { name: m.discussions_start({}, ru) })
+  await expect(start).toHaveCount(0)
   // One enrol action on the page: the course header's, not a second one in the composer.
   await page.getByRole('button', { name: m.course_enroll({}, ru) }).click()
-  await expect(publish).toBeVisible()
+  await expect(start).toBeVisible()
 })
 
 test('B-DSC-02 posts come newest first, twenty at a time, then "Show more"', async ({
@@ -54,7 +63,7 @@ test('B-DSC-02 posts come newest first, twenty at a time, then "Show more"', asy
   await expect(more).toHaveCount(0)
 })
 
-test('B-DSC-03 a post needs text, carries an Idempotency-Key and lands first', async ({
+test('B-DSC-03 B-DSC-19 a post needs text, carries an Idempotency-Key and lands first', async ({
   page,
   signInAs,
   course,
@@ -64,7 +73,9 @@ test('B-DSC-03 a post needs text, carries an Idempotency-Key and lands first', a
   await post(made, 'Старый пост.')
   await signInAs('student')
   await page.goto(tab(made))
-  const composer = page.getByRole('region', { name: m.discussions_new({}, ru) })
+  const composer = await openComposer(page)
+  // B-DSC-19 the editor takes the focus of the line it replaces.
+  await expect(composer.getByRole('textbox')).toBeFocused()
   const publish = composer.getByRole('button', { name: m.discussions_publish({}, ru) })
   await clickUntil(publish, () =>
     expect(composer.getByText(m.discussions_text_required({}, ru))).toBeVisible({ timeout: 1000 }),
@@ -87,7 +98,7 @@ test('B-DSC-15 a draft with text asks before the page is left; an editor emptied
   const made = await course()
   await signInAs('student')
   await page.goto(tab(made))
-  const editor = page.getByRole('region', { name: m.discussions_new({}, ru) }).getByRole('textbox')
+  const editor = (await openComposer(page)).getByRole('textbox')
   await editor.fill('Черновик вопроса')
   const about = page.getByRole('link', { name: m.platform_tab_about({}, ru) })
   let asked = false
@@ -256,7 +267,7 @@ test('B-DSC-10 writes update the list from their answers, not from a re-read', a
   })
   const like = article(page, 'Пост для реакции.').getByRole('button', { name: likeName })
   await clickUntil(like, () => expect(like).toHaveText('1', { timeout: 2000 }))
-  const composer = page.getByRole('region', { name: m.discussions_new({}, ru) })
+  const composer = await openComposer(page)
   await composer.getByRole('textbox').fill('Ещё один пост.')
   await composer.getByRole('button', { name: m.discussions_publish({}, ru) }).click()
   await expect(article(page, 'Ещё один пост.')).toBeVisible({ timeout: 5000 })
