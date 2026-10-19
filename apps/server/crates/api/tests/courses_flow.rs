@@ -127,13 +127,29 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
         .await;
     assert_eq!(rival_delete.status, StatusCode::FORBIDDEN);
 
-    // Delete by owner cascades away.
+    // Delete by owner cascades away, its notifications too (they would link to «not found»).
+    sqlx::query(
+        "INSERT INTO notifications (user_id, kind, payload)
+         VALUES ($1, 'course_update', jsonb_build_object('type', 'course_update', 'course_id', $2::text))",
+    )
+    .bind(teacher.user_id.0)
+    .bind(&id)
+    .execute(&app.pool)
+    .await
+    .unwrap();
     let deleted = app
         .delete_as(&teacher, &format!("/api/v2/courses/{id}"))
         .await;
     assert_eq!(deleted.status, StatusCode::NO_CONTENT);
     let gone = app.get_as(&teacher, &format!("/api/v2/courses/{id}")).await;
     assert_eq!(gone.status, StatusCode::NOT_FOUND);
+    let left: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM notifications WHERE payload->>'course_id' = $1")
+            .bind(&id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(left, 0);
 }
 
 /// Restore regression: `learnings` round-trip, legacy garbage reads as

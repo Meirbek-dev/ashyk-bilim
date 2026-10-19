@@ -575,6 +575,15 @@ pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Resu
     if let Some(key) = thumbnail {
         crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
     }
+    // Its notifications go with it: each links into the course, which would answer «not found».
+    // ponytail: a scan of the notifications table (no index on payload->>'course_id'); fine for a
+    // rare delete, add an expression index if deletes or the table grow.
+    sqlx::query!(
+        "DELETE FROM notifications WHERE payload->>'course_id' = $1::uuid::text",
+        id.0
+    )
+    .execute(&mut *tx)
+    .await?;
     let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
         .execute(&mut *tx)
         .await?;
