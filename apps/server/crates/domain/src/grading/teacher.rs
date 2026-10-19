@@ -15,8 +15,8 @@ use ab_core::assessments::{
     AssessmentKind, AutoSubmitReason, FileAttemptStatus, ItemKind, SubmissionStatus,
 };
 use ab_core::id::{
-    ActivityId, AssessmentId, AssessmentItemId, CourseId, FileAttemptId, FileSubmissionId,
-    GradingEntryId, SubmissionId, UserId, UsergroupId,
+    ActivityId, AssessmentId, AssessmentItemId, ChapterId, CourseId, FileAttemptId,
+    FileSubmissionId, GradingEntryId, SubmissionId, UserId, UsergroupId,
 };
 use ab_core::permission::Action;
 use ab_core::{Error, ErrorCode, FieldError, Result};
@@ -1848,7 +1848,7 @@ impl GradingService {
         }
         users.sort_by(|a, b| (&a.display_name, a.id).cmp(&(&b.display_name, b.id)));
         users.dedup_by_key(|u| u.id);
-        let columns: Vec<(ActivityId, String)> = assessments
+        let mut columns: Vec<(ActivityId, String)> = assessments
             .into_iter()
             .map(|a| (a.activity_id, a.title))
             .chain(
@@ -1857,6 +1857,18 @@ impl GradingService {
                     .map(|f| (f.activity_id, f.title)),
             )
             .collect();
+        let chapters: Vec<ChapterId> = ab_db::catalog::list_chapters(&self.pool, course_id)
+            .await?
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        let activities: Vec<(ActivityId, ChapterId, i32)> =
+            ab_db::catalog::list_activities(&self.pool, course_id)
+                .await?
+                .into_iter()
+                .map(|a| (a.id, a.chapter_id, a.position))
+                .collect();
+        in_program_order(&mut columns, &chapters, &activities);
         let by_key: HashMap<(UserId, ActivityId), &GradebookCell> = cells
             .iter()
             .map(|c| ((c.user_id, c.activity_id), c))
@@ -1885,6 +1897,24 @@ impl GradingService {
         }
         Ok(out)
     }
+}
+
+/// Sort gradebook columns (tests and hand-ins come as two lists) into the
+/// course program's order: chapter position, then activity position. A
+/// column the program no longer lists goes last, in its incoming order.
+fn in_program_order<T>(
+    columns: &mut [(ActivityId, T)],
+    chapters: &[ChapterId],
+    activities: &[(ActivityId, ChapterId, i32)],
+) {
+    let place: HashMap<ActivityId, (usize, i32)> = activities
+        .iter()
+        .filter_map(|(id, chapter, position)| {
+            let index = chapters.iter().position(|c| c == chapter)?;
+            Some((*id, (index, *position)))
+        })
+        .collect();
+    columns.sort_by_key(|(id, _)| place.get(id).copied().unwrap_or((usize::MAX, i32::MAX)));
 }
 
 /// Course-stream event name for a grade landing in `target`.
@@ -2097,6 +2127,24 @@ fn reweight(breakdown: &mut GradingBreakdown, items: &[Item]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gradebook_csv_columns_follow_the_course_program() {
+        let id = |n: u128| ActivityId(uuid::Uuid::from_u128(n));
+        let ch = |n: u128| ChapterId(uuid::Uuid::from_u128(n));
+        // Chapter 2 comes first in the program; the hand-in (3) sits before the exam (2) in it.
+        let chapters = [ch(20), ch(10)];
+        let activities = [(id(1), ch(10), 1), (id(2), ch(20), 2), (id(3), ch(20), 1)];
+        let mut columns = vec![
+            (id(1), "quiz"),
+            (id(2), "exam"),
+            (id(9), "gone"),
+            (id(3), "hand-in"),
+        ];
+        in_program_order(&mut columns, &chapters, &activities);
+        let order: Vec<&str> = columns.iter().map(|(_, t)| *t).collect();
+        assert_eq!(order, ["hand-in", "exam", "quiz", "gone"]);
+    }
 
     #[test]
     fn teacher_transitions_follow_legacy_table() {
