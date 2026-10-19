@@ -206,7 +206,7 @@
   "analytics_action_send_personal_message": "Send a personal message",
   "analytics_why_grading_block_blocks_progress": "An unreviewed submission holds back progress",
   "analytics_why_inactivity_past_7_days": "No activity for over 7 days",
-  "analytics_why_inactive_days": "No activity for {days} days",
+  "analytics_why_inactive_days": "No activity for {days} days",
   "analytics_why_recent_assessment_failures": "Recently failed assignments",
   "analytics_why_missing_required_work": "Required submissions are missing",
   "analytics_why_progress_behind_course_baseline": "Progress is below the course average",

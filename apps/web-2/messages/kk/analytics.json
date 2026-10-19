@@ -206,7 +206,7 @@
   "analytics_action_send_personal_message": "Жеке хабарлама жазу",
   "analytics_why_grading_block_blocks_progress": "Тексерілмеген жұмыс ілгерілеуді ұстап тұр",
   "analytics_why_inactivity_past_7_days": "7 күннен астам белсенділік жоқ",
-  "analytics_why_inactive_days": "{days} күн белсенділік жоқ",
+  "analytics_why_inactive_days": "{days} күн белсенділік жоқ",
   "analytics_why_recent_assessment_failures": "Жақында тапсырмаларды тапсыра алмады",
   "analytics_why_missing_required_work": "Міндетті жұмыстар тапсырылмаған",
   "analytics_why_progress_behind_course_baseline": "Ілгерілеу курс бойынша орташадан төмен",
