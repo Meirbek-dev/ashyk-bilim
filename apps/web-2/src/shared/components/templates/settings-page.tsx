@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 
 type SettingsPageProps = {
-  title: string
+  /** The page heading; none inside a layout that already has the page's h1 (a course workspace tab). */
+  title?: string
   /** Kit `<Link variant="tab">` items, one per settings route: a column when wide, the tab row when narrow. None for a
    * page of one section: a nav with a single item points nowhere. */
   nav?: ReactNode
@@ -26,7 +27,7 @@ export function revealCurrentTab(row: HTMLElement | null) {
 export function SettingsPage({ title, nav, children }: SettingsPageProps) {
   return (
     <section className="@container flex flex-col gap-gutter">
-      <h1 className="text-2xl font-semibold">{title}</h1>
+      {title ? <h1 className="text-2xl font-semibold">{title}</h1> : null}
       <div className="flex flex-col gap-gutter @3xl:flex-row">
         {nav ? (
           <nav

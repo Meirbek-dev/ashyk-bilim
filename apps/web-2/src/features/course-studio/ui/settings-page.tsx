@@ -74,7 +74,7 @@ export function CourseSettingsPage() {
         ))
       : undefined
   return (
-    <SettingsPage title={m.studio_settings_title()} nav={nav}>
+    <SettingsPage nav={nav}>
       {sections.map(section => (
         <div key={section.id} id={section.id}>
           {section.body}
