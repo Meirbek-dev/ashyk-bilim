@@ -95,3 +95,19 @@ describe('DataTable', () => {
     await expect.element(card).not.toHaveTextContent('Select')
   })
 })
+
+describe('DataTable cards', () => {
+  test('narrow: the value of a line with a long label starts at the left under it, not at the far right', async () => {
+    await page.viewport(390, 800)
+    const long = 'Демонстрация онлайн компилятора платформы и ещё несколько слов'
+    const wide: DataColumn<Row>[] = [
+      ...columns.slice(0, 1),
+      { id: 'learners', header: long, cell: row => row.learners, priority: 2 },
+    ]
+    const screen = await renderInRouter(<DataTable label={label} rows={rows} columns={wide} getKey={row => row.id} />)
+    const value = screen.getByRole('listitem').first().getByRole('definition')
+    await expect.element(value).toBeVisible()
+    const term = screen.getByRole('listitem').first().getByRole('term').element().getBoundingClientRect()
+    expect(Math.abs(value.element().getBoundingClientRect().left - term.left)).toBeLessThan(2)
+  })
+})

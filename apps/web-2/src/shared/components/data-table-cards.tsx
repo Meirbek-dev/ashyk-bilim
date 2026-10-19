@@ -33,8 +33,10 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
           ))}
           {lines.length > 0 ? (
             <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {/* A label too long for the line goes whole and its value under it at the left, as after a short
+                  label; without the wrap the value hung at the far right (gradebook columns named by long activities). */}
               {lines.map(column => (
-                <div key={column.id} className="flex gap-1">
+                <div key={column.id} className="flex flex-wrap gap-x-1">
                   <dt className="text-muted-foreground">{column.header}</dt>
                   <dd>{column.cell(row)}</dd>
                 </div>
