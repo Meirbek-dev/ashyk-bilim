@@ -9,7 +9,8 @@ export function ShowMore({ hasMore, pending, onMore }: ShowMoreProps) {
   if (!hasMore) return null
   return (
     <div className="flex justify-center">
-      <Button variant="outline" disabled={pending} onClick={onMore}>
+      {/* Keeps keyboard focus while the page loads (a disabled button drops it to <body>). */}
+      <Button variant="outline" disabled={pending} focusableWhenDisabled onClick={onMore}>
         {pending ? <Spinner data-icon="inline-start" /> : null}
         {m.ui_show_more()}
       </Button>

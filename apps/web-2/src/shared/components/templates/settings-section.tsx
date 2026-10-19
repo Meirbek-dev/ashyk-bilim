@@ -45,7 +45,7 @@ export function SettingsSection({
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {saveButton ? (
         <div>
-          <Button type="submit" variant="secondary" disabled={pending}>
+          <Button type="submit" variant="secondary" disabled={pending} focusableWhenDisabled>
             {pending ? <Spinner data-icon="inline-start" /> : null}
             {m.ui_save()}
           </Button>

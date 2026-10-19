@@ -57,7 +57,7 @@ export function FormDialog(props: FormDialogProps) {
         </form>
         <DialogFooter>
           <DialogClose render={<Button variant="ghost" />}>{m.ui_cancel()}</DialogClose>
-          <Button type="submit" form={formId} disabled={pending}>
+          <Button type="submit" form={formId} disabled={pending} focusableWhenDisabled>
             {pending ? <Spinner data-icon="inline-start" /> : null}
             {submitLabel}
           </Button>

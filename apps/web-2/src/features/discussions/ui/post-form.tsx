@@ -87,7 +87,7 @@ export function PostForm({
       </form.Field>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       <div className="flex gap-2">
-        <Button type="submit" variant="secondary" disabled={pending}>
+        <Button type="submit" variant="secondary" disabled={pending} focusableWhenDisabled>
           {pending ? <Spinner data-icon="inline-start" /> : null}
           {submitLabel}
         </Button>
