@@ -10,6 +10,8 @@ type PdfFrameProps = {
   src: string
   title: string
   height?: number
+  /** As tall as the window (a lesson that is one document): replaces `height`. */
+  tall?: boolean
   /**
    * Shown instead of the frame where the browser draws no PDF in a page (Android Chrome, in-app browsers): an
    * "open in a new tab" link by default; null when the caller has its own.
@@ -42,7 +44,7 @@ export function framePath(src: string): string | null {
  * A PDF of our storage in the browser's own viewer. The frame is not sandboxed because Chromium shows no PDF in a
  * sandboxed frame; same-origin storage paths only (`framePath`), so no foreign page ever runs in it.
  */
-export function PdfFrame({ src, title, height = 540, fallback }: PdfFrameProps) {
+export function PdfFrame({ src, title, height = 540, tall = false, fallback }: PdfFrameProps) {
   const path = framePath(src)
   // After hydration only: the server cannot know the browser (UX-B-7: a blank box on phones).
   const hydrated = useHydrated()
@@ -55,5 +57,13 @@ export function PdfFrame({ src, title, height = 540, fallback }: PdfFrameProps) 
     ) : (
       fallback
     )
-  return <iframe src={path} title={title} height={height} className="w-full rounded-lg border border-border" />
+  // Viewer hints (Chrome, Firefox, Adobe): fit the page width, no thumbnail pane eating a third of the frame.
+  return (
+    <iframe
+      src={`${path}#navpanes=0&view=FitH`}
+      title={title}
+      height={height}
+      className={`w-full rounded-lg border border-border ${tall ? 'h-svh' : ''}`}
+    />
+  )
 }

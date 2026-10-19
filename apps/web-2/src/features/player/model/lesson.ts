@@ -7,8 +7,9 @@ const text = (value: unknown): string | null => (typeof value === 'string' && va
 const doc = (node: Record<string, unknown>): EditorDocument => ({ type: 'doc', content: [node] })
 
 /** A stored file key as the editor's file blocks keep it (`/content/<key>`). */
+/** A document lesson's PDF has no size (`null` over the block's 540 px default): it takes the window's height. */
 const fileBlock = (type: 'blockVideo' | 'blockPDF', key: string) =>
-  doc({ type, attrs: { blockObject: { content: { file_key: key } } } })
+  doc({ type, attrs: { blockObject: { content: { file_key: key } }, ...(type === 'blockPDF' ? { size: null } : {}) } })
 
 /**
  * What the editor's view preset shows for a lesson: the page itself, or a one-block document that reuses the

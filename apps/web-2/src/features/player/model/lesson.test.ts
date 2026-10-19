@@ -28,7 +28,7 @@ describe('lesson content', () => {
   test('B-PLY-10 a document becomes a PDF block; no file is nothing', () => {
     expect(lessonDocument('document', 'document_pdf', { filename: 'docs/a.pdf' })).toEqual({
       type: 'doc',
-      content: [{ type: 'blockPDF', attrs: { blockObject: { content: { file_key: 'docs/a.pdf' } } } }],
+      content: [{ type: 'blockPDF', attrs: { blockObject: { content: { file_key: 'docs/a.pdf' } }, size: null } }],
     })
     expect(lessonDocument('document', 'document_pdf', {})).toBeNull()
   })

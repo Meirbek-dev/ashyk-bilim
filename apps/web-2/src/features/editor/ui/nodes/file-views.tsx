@@ -29,7 +29,14 @@ export function FileView(props: ReactNodeViewProps) {
   if (node.type.name === 'blockPDF')
     return (
       <NodeViewWrapper className="my-4 flex flex-col gap-2">
-        <PdfFrame src={url} title={m.editor_pdf_title()} height={height(node.attrs['size'])} fallback={null} />
+        {/* No stored size (a document lesson, an old block): as tall as the window, not a 540 px letterbox. */}
+        <PdfFrame
+          src={url}
+          title={m.editor_pdf_title()}
+          height={height(node.attrs['size'])}
+          tall={!isRecord(node.attrs['size'])}
+          fallback={null}
+        />
         {/* A button, not a bare link: on a phone (no PDF viewer in a page) it is the lesson's one way in. */}
         <Anchor
           href={url}

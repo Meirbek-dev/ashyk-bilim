@@ -155,7 +155,9 @@ describe('paste and drop', () => {
 
     release()
     dropFile(textbox, new File(['%PDF'], 'handout.pdf', { type: 'application/pdf' }))
-    await expect.element(screen.getByTitle(m.editor_pdf_title())).toHaveAttribute('src', `/content/${SLOT.key}`)
+    await expect
+      .element(screen.getByTitle(m.editor_pdf_title()))
+      .toHaveAttribute('src', `/content/${SLOT.key}#navpanes=0&view=FitH`)
     expect(screen.getByTitle(m.editor_pdf_title()).element().hasAttribute('sandbox')).toBe(false)
   })
 

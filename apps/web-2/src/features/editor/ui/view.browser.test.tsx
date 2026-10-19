@@ -195,7 +195,7 @@ describe('B-EDT-19 media', () => {
     expect(video?.getAttribute('src')).toBe('/content/intro.mp4')
     expect(video?.hasAttribute('controls')).toBe(false)
     const pdf = screen.getByTitle(m.editor_pdf_title())
-    await expect.element(pdf).toHaveAttribute('src', '/content/handout.pdf')
+    await expect.element(pdf).toHaveAttribute('src', '/content/handout.pdf#navpanes=0&view=FitH')
     expect(pdf.element().hasAttribute('sandbox')).toBe(false)
   })
 

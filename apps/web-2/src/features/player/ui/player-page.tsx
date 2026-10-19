@@ -57,6 +57,8 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       contents={<Contents state={state} onPick={() => setContentsOpen(false)} />}
       contentsSheet={{ open: contentsOpen, onOpenChange: setContentsOpen }}
       aside={aside}
+      // A document reads at the column's full width (a PDF in 65ch opened at 38 %, B-PLY-10).
+      wide={entry.activity_type === 'document' && !entry.blocked_reason}
     >
       <article className="flex flex-col gap-gutter">
         <ActivityHeader type={entry.activity_type} title={entry.title} />
