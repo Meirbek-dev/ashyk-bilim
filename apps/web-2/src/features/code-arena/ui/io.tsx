@@ -1,6 +1,9 @@
 import { m } from '#/paraglide/messages'
 
-/** A program's input or output, verbatim, wrapped inside its column (no page scroll at 390 px); a long one scrolls. */
+/**
+ * A program's input or output, verbatim: lines are not wrapped (a traceback's caret stays under its column, «parsing»
+ * is not split as if it held a space); a wide or long one scrolls inside its box, never the page at 390 px.
+ */
 export function Io({ label, text }: { label: string; text: string }) {
   // An empty input (a program that reads nothing) says so, rather than drawing an empty grey bar.
   if (text === '')
@@ -13,9 +16,7 @@ export function Io({ label, text }: { label: string; text: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-2 font-mono break-all whitespace-pre-wrap">
-        {text}
-      </pre>
+      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-2 font-mono whitespace-pre">{text}</pre>
     </div>
   )
 }
