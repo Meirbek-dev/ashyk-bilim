@@ -35,7 +35,7 @@
   "code_reason_not_enrolled": "Enroll in the course to solve this challenge.",
   "code_solution": "Solution",
   "code_language": "Language",
-  "code_language_unknown": "Language #{id}",
+  "code_language_unknown": "Unavailable language (no. {id})",
   "code_editor_label": "Solution code",
   "code_run": "Run",
   "code_submit": "Submit",

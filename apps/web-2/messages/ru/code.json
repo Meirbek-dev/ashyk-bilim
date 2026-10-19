@@ -35,7 +35,7 @@
   "code_reason_not_enrolled": "Чтобы решать задачу, запишитесь на курс.",
   "code_solution": "Решение",
   "code_language": "Язык",
-  "code_language_unknown": "Язык #{id}",
+  "code_language_unknown": "Недоступный язык (№ {id})",
   "code_editor_label": "Код решения",
   "code_run": "Запустить",
   "code_submit": "Сдать",
