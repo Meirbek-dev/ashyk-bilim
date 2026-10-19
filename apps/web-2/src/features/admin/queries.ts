@@ -102,13 +102,20 @@ export function loadUsersPage(queryClient: QueryClient, session: SessionInfo | n
   const { user } = search
   return Promise.all([
     queryClient.infiniteQuery({ ...usersListOptions(search), staleTime: 'static' }),
-    user ? queryClient.query({ ...userOptions(user), staleTime: 'static' }) : null,
+    // The user's groups only once the user is known: an unknown id (a stale link) is the panel's «not found», not a
+    // 422 from `?member=` that fails the whole page.
+    user
+      ? queryClient
+          .query({ ...userOptions(user), staleTime: 'static' })
+          .then(found =>
+            found && hasCapability(session, 'groups.manage')
+              ? queryClient.query({ ...userGroupsOptions(found.id), staleTime: 'static' })
+              : null,
+          )
+      : null,
     hasCapability(session, 'admin.roles') ? queryClient.query({ ...rolesOptions(), staleTime: 'static' }) : null,
     user && hasCapability(session, 'groups.manage')
       ? queryClient.query({ ...groupChoicesOptions(), staleTime: 'static' })
-      : null,
-    user && hasCapability(session, 'groups.manage')
-      ? queryClient.query({ ...userGroupsOptions(user), staleTime: 'static' })
       : null,
   ])
 }
