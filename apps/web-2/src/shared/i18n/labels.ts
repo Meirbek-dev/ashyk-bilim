@@ -24,9 +24,6 @@ export const collectionVisibilityLabels = {
   private: m.collections_visibility_private,
 } satisfies Record<CollectionVisibility, () => string>
 
-export const collectionVisibility = (collection: { public: boolean }): CollectionVisibility =>
-  collection.public ? 'public' : 'private'
-
 /**
  * DESIGN 3: the one table that maps an activity type to its icon, label and color token (icon ink only). `custom` has
  * no row in DESIGN 3: it borrows the page token with its own icon.
