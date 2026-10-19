@@ -135,7 +135,7 @@
   "ai_admin_evals": "Сапа бақылауы",
   "ai_enabled": "ЖИ қосулы",
   "ai_provider_ready": "Провайдер дайын",
-  "ai_draft_mode": "Нобай режимі",
+  "ai_draft_mode": "Провайдер қолжетімсіз кезде дайындамалар",
   "ai_model": "Үлгі: {model}",
   "ai_max_request": "Сұраудағы токендер: {count}",
   "ai_max_output": "Жауаптағы токендер: {count}",

@@ -139,7 +139,7 @@
   "ai_admin_evals": "Контроль качества",
   "ai_enabled": "ИИ включён",
   "ai_provider_ready": "Провайдер готов",
-  "ai_draft_mode": "Режим черновика",
+  "ai_draft_mode": "Заготовки, когда провайдер недоступен",
   "ai_model": "Модель: {model}",
   "ai_max_request": "Токенов на запрос: {count}",
   "ai_max_output": "Токенов в ответе: {count}",

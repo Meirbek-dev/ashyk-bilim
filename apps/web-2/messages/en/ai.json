@@ -135,7 +135,7 @@
   "ai_admin_evals": "Quality evals",
   "ai_enabled": "AI enabled",
   "ai_provider_ready": "Provider ready",
-  "ai_draft_mode": "Draft mode",
+  "ai_draft_mode": "Placeholder answers while the provider is down",
   "ai_model": "Model: {model}",
   "ai_max_request": "Tokens per request: {count}",
   "ai_max_output": "Tokens per answer: {count}",
