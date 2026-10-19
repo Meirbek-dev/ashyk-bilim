@@ -45,7 +45,7 @@ export function VideoPlayer({ src }: { src: string }) {
     else element?.pause()
   }
   return (
-    <div ref={frame} className="flex flex-col overflow-hidden rounded-lg bg-muted">
+    <div ref={frame} className="flex flex-col overflow-hidden rounded-lg border bg-card">
       <video
         ref={video}
         src={src}
