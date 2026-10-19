@@ -38,6 +38,26 @@
       }
     }
   ],
+  "studio_content_chapters": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} chapter",
+        "countPlural=other": "{count} chapters"
+      }
+    }
+  ],
+  "studio_content_drafts": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} draft",
+        "countPlural=other": "{count} drafts"
+      }
+    }
+  ],
   "studio_list_ungraded": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

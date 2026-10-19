@@ -6,6 +6,7 @@ import {
   applyLayout,
   layoutMove,
   layoutOf,
+  programSummary,
   withActivity,
   withChapter,
   withoutActivity,
@@ -83,4 +84,9 @@ describe('cache patches', () => {
     expect(renamed.chapters[0]?.activities[1]?.name).toBe('Renamed')
     expect(ids(withActivity(curriculum, activity('b2', 'B', 2)))).toEqual(['A1:a1@1,a2@2,a3@3', 'B2:b1@1,b2@2'])
   })
+})
+
+test('B-CST-06 the program line counts chapters, activities and drafts', () => {
+  const live = withActivity(curriculum, { ...activity('b2', 'B', 2), published: true })
+  expect(programSummary(live)).toEqual({ chapters: 2, activities: 5, drafts: 4 })
 })

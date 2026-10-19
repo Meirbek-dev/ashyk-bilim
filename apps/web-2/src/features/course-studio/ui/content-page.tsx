@@ -16,6 +16,7 @@ import { courseOptions } from '../queries'
 import { ChapterSection } from './chapter-section'
 import { CreateChapterDialog } from './create-chapter-dialog'
 import { EmptyProgram } from './empty-program'
+import { ProgramHeader } from './program-header'
 
 /**
  * `content`: chapters and their activities in order. Dragging (pointer or keyboard on a handle) rearranges a
@@ -77,7 +78,7 @@ export function ContentPage() {
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
     <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
-      {shown.chapters.length > 0 ? <div className="flex justify-end">{create}</div> : null}
+      {shown.chapters.length > 0 ? <ProgramHeader curriculum={curriculum} create={create} /> : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
       {shown.chapters.length === 0 ? (
         <EmptyProgram create={create} />

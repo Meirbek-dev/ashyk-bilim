@@ -90,3 +90,13 @@ export const withoutActivity = (curriculum: Curriculum, id: string): Curriculum 
       : chapter,
   ),
 })
+
+/** The line above the program: how many chapters, activities and drafts (drafts only when there are some). */
+export function programSummary(curriculum: Curriculum) {
+  const activities = curriculum.chapters.flatMap(chapter => chapter.activities)
+  return {
+    chapters: curriculum.chapters.length,
+    activities: activities.length,
+    drafts: activities.filter(activity => !activity.published).length,
+  }
+}

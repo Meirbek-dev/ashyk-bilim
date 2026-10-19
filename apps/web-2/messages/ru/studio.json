@@ -44,6 +44,30 @@
       }
     }
   ],
+  "studio_content_chapters": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} глава",
+        "countPlural=few": "{count} главы",
+        "countPlural=many": "{count} глав",
+        "countPlural=other": "{count} главы"
+      }
+    }
+  ],
+  "studio_content_drafts": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} в черновике",
+        "countPlural=few": "{count} в черновике",
+        "countPlural=many": "{count} в черновике",
+        "countPlural=other": "{count} в черновике"
+      }
+    }
+  ],
   "studio_list_ungraded": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
