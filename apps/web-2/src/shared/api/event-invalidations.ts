@@ -4,6 +4,7 @@ import {
   agendaQueryKey,
   assessmentReviewQueueQueryKey,
   attemptStateQueryKey,
+  currentSessionQueryKey,
   dashboardQueryKey,
   fileSubmissionReviewQueueQueryKey,
   getActivityAssessmentQueryKey,
@@ -103,7 +104,9 @@ export const eventInvalidations = {
     getActivityFileSubmissionQueryKey({ path: { activity_id } }),
     anyOf(attemptStateQueryKey({ path: { assessment_id: UNKNOWN } })),
   ],
-  'notification.created': () => [],
+  // Joining a course team gives the `teach` space: the session's capabilities are read again, so the notification's
+  // link into the course workspace does not answer 403 until the next sign-in.
+  'notification.created': ({ type }) => (type === 'course_team_added' ? [currentSessionQueryKey()] : []),
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
   // LIVE (S-GAPS-2): a collection the user owns was changed by someone else - the lists and that collection.

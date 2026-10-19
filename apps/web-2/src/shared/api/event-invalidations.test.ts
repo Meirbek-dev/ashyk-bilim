@@ -6,6 +6,7 @@ import {
   agendaQueryKey,
   assessmentReviewQueueInfiniteQueryKey,
   attemptStateQueryKey,
+  currentSessionQueryKey,
   dashboardQueryKey,
   getActivityFileSubmissionQueryKey,
   getCollectionQueryKey,
@@ -25,6 +26,7 @@ import {
   unreadCountQueryKey,
   workQueueInfiniteQueryKey,
 } from './gen/@tanstack/react-query.gen'
+import type { Notification } from './gen/types.gen'
 
 const COURSE = '0190a5d2-0000-7000-8000-00000000000c'
 const OTHER_COURSE = '0190a5d2-0000-7000-8000-00000000000d'
@@ -140,4 +142,28 @@ test('B-NOT-16 the live events refresh the lists this web reads (its infinite an
   const groups = invalidationsFor('admin.updated', { list: 'groups' })
   expect(hits(groups, listGroupsInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
   expect(hits(groups, listRolesQueryKey())).toBe(false)
+})
+
+const note = (type: 'course_team_added' | 'course_update', payload: Notification['payload']): Notification => ({
+  id: '0190a5d2-0000-7000-8000-000000000051',
+  type,
+  payload,
+  created_at_unix: 1,
+  read_at_unix: null,
+})
+
+test('B-NOT-12 joining a course team reads the session again (the teach space); other notifications refresh nothing', () => {
+  const joined = invalidationsFor(
+    'notification.created',
+    note('course_team_added', { type: 'course_team_added', course_id: COURSE, course_name: 'C' }),
+  )
+  expect(hits(joined, currentSessionQueryKey())).toBe(true)
+  const update = note('course_update', {
+    type: 'course_update',
+    course_id: COURSE,
+    course_name: 'C',
+    update_id: '0190a5d2-0000-7000-8000-000000000052',
+    title: 'T',
+  })
+  expect(invalidationsFor('notification.created', update)).toEqual([])
 })
