@@ -11,7 +11,7 @@ import { ScoreBar } from '#/shared/components/charts/score-bar'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { activeFilters, type Filters, learnerSort, type LearnerSort } from '../model/filters'
-import { whyNowLabels } from '../model/signals'
+import { whyNowText } from '../model/signals'
 import { atRiskOptions } from '../queries'
 import { riskLevelBadges, riskTrendLabels } from './labels'
 import { Pager } from './pager'
@@ -74,13 +74,27 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
       </span>
     ),
   },
-  { id: 'trend', header: m.analytics_col_trend(), priority: 3, cell: row => riskTrendLabels[row.risk_trend]() },
-  { id: 'why', header: m.analytics_col_why_now(), priority: 3, wrap: true, cell: row => whyNowLabels[row.why_now]() },
+  {
+    id: 'trend',
+    header: m.analytics_col_trend(),
+    priority: 3,
+    // A row's usual state is quiet text (DESIGN 9): only a change stands out.
+    cell: row => (
+      <span className={row.risk_trend === 'stable' ? 'text-muted-foreground' : undefined}>
+        {riskTrendLabels[row.risk_trend]()}
+      </span>
+    ),
+  },
+  { id: 'why', header: m.analytics_col_why_now(), priority: 3, wrap: true, cell: row => whyNowText(row) },
   {
     id: 'interventions',
     header: m.analytics_col_interventions(),
     priority: 2,
-    cell: row => <span className="tabular-nums">{formatNumber(row.intervention_count)}</span>,
+    cell: row => (
+      <span className={row.intervention_count === 0 ? 'text-muted-foreground tabular-nums' : 'tabular-nums'}>
+        {formatNumber(row.intervention_count)}
+      </span>
+    ),
   },
 ]
 

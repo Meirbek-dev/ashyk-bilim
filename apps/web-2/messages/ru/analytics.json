@@ -206,6 +206,7 @@
   "analytics_action_send_personal_message": "Написать личное сообщение",
   "analytics_why_grading_block_blocks_progress": "Непроверенная работа держит прогресс",
   "analytics_why_inactivity_past_7_days": "Нет активности больше 7 дней",
+  "analytics_why_inactive_days": "Нет активности {days} дн.",
   "analytics_why_recent_assessment_failures": "Недавно не сдал задания",
   "analytics_why_missing_required_work": "Не сданы обязательные работы",
   "analytics_why_progress_behind_course_baseline": "Прогресс ниже среднего по курсу",

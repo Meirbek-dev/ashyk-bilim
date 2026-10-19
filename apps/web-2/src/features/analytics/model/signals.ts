@@ -3,6 +3,7 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import type {
   AnalyticsCode,
+  AtRiskLearnerRow,
   AssessmentKind,
   ContentBottleneckSignal,
   FilterOption,
@@ -222,3 +223,9 @@ export function signalTarget(item: Target): string | undefined {
     return `/teach/analytics/performance?assessmentType=${item.assessment_type}&assessmentId=${item.assessment_id}`
   return item.course_id ? `/teach/analytics/performance?courseId=${item.course_id}` : undefined
 }
+
+/** «Нет активности 146 дн.»: the reason code's fixed «больше 7 дней» said less than the days column beside it. */
+export const whyNowText = (row: Pick<AtRiskLearnerRow, 'why_now' | 'days_since_last_activity'>) =>
+  row.why_now === 'inactivity_past_7_days' && typeof row.days_since_last_activity === 'number'
+    ? m.analytics_why_inactive_days({ days: formatNumber(row.days_since_last_activity) })
+    : whyNowLabels[row.why_now]()

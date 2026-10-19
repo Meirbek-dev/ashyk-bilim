@@ -6,7 +6,7 @@ import type { AtRiskLearnerRow, CourseId, UserId } from '#/shared/api/gen/types.
 import { SheetPanel } from '#/shared/components/sheet-panel'
 import { formatDate } from '#/shared/i18n/format'
 
-import { recommendedActionLabels, riskBreakdown, riskReasonLabels, whyNowLabels } from '../model/signals'
+import { recommendedActionLabels, riskBreakdown, riskReasonLabels, whyNowText } from '../model/signals'
 import { interventionsOptions } from '../queries'
 import { InterventionDialog } from './intervention-dialog'
 import { LearnerLinks } from './learner-links'
@@ -43,7 +43,7 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
           <dt className="text-muted-foreground">{m.analytics_col_course()}</dt>
           <dd className="wrap-anywhere">{row.course_name}</dd>
           <dt className="text-muted-foreground">{m.analytics_col_why_now()}</dt>
-          <dd>{whyNowLabels[row.why_now]()}</dd>
+          <dd>{whyNowText(row)}</dd>
           <dt className="text-muted-foreground">{m.analytics_learner_action()}</dt>
           <dd>{recommendedActionLabels[row.recommended_action]()}</dd>
           {row.reason_codes.length > 0 ? (

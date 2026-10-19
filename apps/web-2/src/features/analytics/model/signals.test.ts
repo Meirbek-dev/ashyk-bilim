@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import {
   vAnalyticsCode,
   vContentBottleneckSignal,
@@ -18,6 +19,7 @@ import {
   severityBadges,
   signalHref,
   signalTarget,
+  whyNowText,
   signalText,
   whyNowLabels,
   riskBreakdown,
@@ -123,4 +125,16 @@ test('B-ANL-35 signals group by severity, most severe first, in server order wit
     ['critical', ['b']],
     ['warning', ['a', 'c']],
   ])
+})
+
+test('B-ANL-29 «Почему сейчас» names the days of inactivity; other reasons keep their label', () => {
+  expect(whyNowText({ why_now: 'inactivity_past_7_days', days_since_last_activity: 146 })).toBe(
+    m.analytics_why_inactive_days({ days: '146' }),
+  )
+  expect(whyNowText({ why_now: 'inactivity_past_7_days', days_since_last_activity: null })).toBe(
+    m.analytics_why_inactivity_past_7_days(),
+  )
+  expect(whyNowText({ why_now: 'recent_assessment_failures', days_since_last_activity: 3 })).toBe(
+    m.analytics_why_recent_assessment_failures(),
+  )
 })
