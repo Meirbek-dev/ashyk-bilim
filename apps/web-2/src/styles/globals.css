@@ -97,3 +97,14 @@ body {
   min-width: max(8rem, var(--anchor-width));
   max-width: min(var(--available-width), max(24rem, var(--anchor-width)));
 }
+
+/* A disabled checkbox or radio is dimmed with its label: the stock kit dims them with `disabled:` and `peer-disabled:`,
+   which never match, since Base UI renders these controls as spans with `data-disabled` (a locked challenge's
+   languages read as live). Unlayered, so it wins over the kit's utilities. */
+:is([data-slot='checkbox'], [data-slot='radio-group-item'])[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+:is([data-slot='checkbox'], [data-slot='radio-group-item'])[data-disabled] ~ [data-slot='label'] {
+  opacity: 0.5;
+}
