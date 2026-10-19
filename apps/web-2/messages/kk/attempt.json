@@ -8,7 +8,7 @@
   "attempt_questions": "Сұрақтар саны: {count}",
   "attempt_time_limit": "Уақыт шегі: {minutes} мин",
   "attempt_no_time_limit": "Уақыт шектелмеген",
-  "attempt_attempts_left": "Қалған әрекеттер: {left} (пайдаланылды: {used})",
+  "attempt_attempts_left": "Қалған әрекеттер: {total} ішінен {left}",
   "attempt_attempts_unlimited": "Әрекет саны шектелмеген, пайдаланылды: {used}",
   "attempt_attempts_unlimited_fresh": "Әрекет саны шектелмеген",
   "attempt_due": "Тапсыру мерзімі: {date}",

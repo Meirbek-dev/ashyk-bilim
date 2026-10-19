@@ -23,7 +23,8 @@ const attemptsText = (state: AttemptState) => {
   const used = formatNumber(state.attempts_used)
   if (state.attempts_remaining === null)
     return state.attempts_used === 0 ? m.attempt_attempts_unlimited_fresh() : m.attempt_attempts_unlimited({ used })
-  return m.attempt_attempts_left({ used, left: formatNumber(state.attempts_remaining) })
+  const total = formatNumber(state.attempts_used + state.attempts_remaining)
+  return m.attempt_attempts_left({ left: formatNumber(state.attempts_remaining), total })
 }
 
 /**

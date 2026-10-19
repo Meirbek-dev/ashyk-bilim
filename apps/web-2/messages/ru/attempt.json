@@ -8,7 +8,7 @@
   "attempt_questions": "Вопросов: {count}",
   "attempt_time_limit": "Лимит времени: {minutes} мин",
   "attempt_no_time_limit": "Без ограничения времени",
-  "attempt_attempts_left": "Попыток осталось: {left} (использовано: {used})",
+  "attempt_attempts_left": "Осталось попыток: {left} из {total}",
   "attempt_attempts_unlimited": "Попыток без ограничений, использовано: {used}",
   "attempt_attempts_unlimited_fresh": "Попыток без ограничений",
   "attempt_due": "Срок сдачи: {date}",
