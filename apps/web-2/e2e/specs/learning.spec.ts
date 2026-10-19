@@ -87,7 +87,7 @@ test('B-LRN-03 B-LRN-05 B-LRN-06 empty courses say so, archived ones are marked 
   await expect(card(page, empty)).toBeVisible()
 })
 
-test('B-LRN-07 a finished course lists its certificate with the PDF and the public verify page', async ({
+test('B-LRN-07 B-LRN-11 a finished course lists its certificate with the PDF and the public verify page', async ({
   page,
   learner,
   makeCourse,
@@ -98,7 +98,11 @@ test('B-LRN-07 a finished course lists its certificate with the PDF and the publ
   await learner.signIn()
   await page.goto('/learning')
 
+  // B-LRN-11 the header links down to the list.
+  await page.getByRole('link', { name: m.learning_certificates_jump({ count: 1 }, ru) }).click()
+  await expect(page).toHaveURL(/#my-certificates$/)
   const certificates = page.getByRole('region', { name: m.learning_certificates_title({}, ru) })
+  await expect(certificates.getByRole('heading', { level: 2 })).toBeInViewport()
   const item = certificates.getByRole('listitem').filter({ hasText: code })
   await expect(item.getByRole('link', { name: course.name })).toBeVisible()
   const pdf = item.getByRole('link', { name: m.certificates_download_pdf({}, ru) })

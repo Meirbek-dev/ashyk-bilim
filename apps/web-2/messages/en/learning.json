@@ -24,6 +24,8 @@
   "learning_no_activities": "This course has no published activities yet.",
   "learning_archived": "Archived",
   "learning_certificates_title": "My certificates",
+  "learning_certificates_jump": "Certificates: {count}",
+  "learning_certificates_jump_more": "Certificates: {count}+",
   "learning_certificates_empty": "Certificates of completed courses will appear here.",
   "learning_certificate_meta": "Issued {date} · code {code}",
   "learning_certificate_instructor": "Teacher: {name}",

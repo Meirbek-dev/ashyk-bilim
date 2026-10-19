@@ -26,6 +26,8 @@
   "learning_no_activities": "В курсе пока нет опубликованных активностей.",
   "learning_archived": "В архиве",
   "learning_certificates_title": "Мои сертификаты",
+  "learning_certificates_jump": "Сертификаты: {count}",
+  "learning_certificates_jump_more": "Сертификаты: {count}+",
   "learning_certificates_empty": "Здесь появятся сертификаты завершённых курсов.",
   "learning_certificate_meta": "Выдан {date} · код {code}",
   "learning_certificate_instructor": "Преподаватель: {name}",
