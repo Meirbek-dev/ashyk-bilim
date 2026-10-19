@@ -42,6 +42,7 @@ export const WorkItem = zod
       .string()
       .optional()
       .describe("Teacher items: the learner's display name, else username (absent otherwise)."),
+    learner_username: zod.string().optional().describe("Teacher items: the learner's username (namesakes)."),
     message_key: zod
       .enum(['revise', 'awaiting_feedback', 'review_feedback', 'continue', 'grade', 'release'])
       .optional()

@@ -68,6 +68,10 @@ pub struct WorkItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(nullable = false)]
     pub learner_name: Option<String>,
+    /// Teacher items: the learner's username (namesakes).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub learner_username: Option<String>,
     pub due_at_unix: Option<i64>,
     pub created_at_unix: Option<i64>,
     pub allowed_actions: Vec<&'static str>,
@@ -111,6 +115,7 @@ impl From<domain::WorkItem> for WorkItem {
             submission_id: i.submission_id,
             attempt_id: i.attempt_id,
             learner_name: i.learner_name,
+            learner_username: i.learner_username,
             due_at_unix: i.due_at,
             created_at_unix: i.created_at,
             allowed_actions: i.allowed_actions,

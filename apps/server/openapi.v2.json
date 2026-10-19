@@ -19658,6 +19658,10 @@
             "description": "Teacher items: the learner's display name, else username (absent otherwise).",
             "type": "string"
           },
+          "learner_username": {
+            "description": "Teacher items: the learner's username (namesakes).",
+            "type": "string"
+          },
           "message_key": {
             "$ref": "#/components/schemas/WorkMessageKey",
             "description": "Always present on this server (optional in the schema so earlier\nclients' fixtures stay valid)."

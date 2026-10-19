@@ -31,7 +31,15 @@ export const inboxColumns: DataColumn<WorkItem>[] = [
     id: 'learner',
     header: m.inbox_col_learner(),
     priority: 1,
-    cell: item => <span className="wrap-anywhere">{item.learner_name}</span>,
+    // The @username under the name tells namesakes apart (as in the gradebook).
+    cell: item => (
+      <span className="flex flex-col">
+        <span className="wrap-anywhere">{item.learner_name}</span>
+        {item.learner_username ? (
+          <span className="text-xs wrap-anywhere text-muted-foreground">@{item.learner_username}</span>
+        ) : null}
+      </span>
+    ),
   },
   {
     id: 'course',

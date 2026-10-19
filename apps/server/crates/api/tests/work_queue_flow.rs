@@ -394,6 +394,7 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     let g = &items(&grading)[0];
     assert_eq!(g["role"], "teacher");
     assert_eq!(g["kind"], "needs_grading");
+    assert_eq!(g["learner_username"], "alice");
     assert_eq!(g["status"], "needs_grading");
     assert_eq!(g["priority"], "high");
     assert!(g["id"].as_str().unwrap().starts_with("teacher-grade-"));

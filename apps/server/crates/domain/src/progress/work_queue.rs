@@ -150,6 +150,8 @@ pub struct WorkItem {
     pub attempt_id: Option<FileAttemptId>,
     /// Teacher items: the learner's display name (else username).
     pub learner_name: Option<String>,
+    /// Teacher items: the learner's username (tells namesakes apart).
+    pub learner_username: Option<String>,
     pub due_at: Option<i64>,
     pub created_at: Option<i64>,
     pub allowed_actions: Vec<&'static str>,
@@ -386,6 +388,7 @@ fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
         submission_id: None,
         attempt_id: None,
         learner_name: None,
+        learner_username: None,
         due_at: row.due_at,
         created_at: spec.created_at,
         allowed_actions: spec.allowed_actions,
@@ -436,6 +439,7 @@ fn teacher_item(
         submission_id: review_ref.filter(|_| !row.review_is_file).map(SubmissionId),
         attempt_id: review_ref.filter(|_| row.review_is_file).map(FileAttemptId),
         learner_name: Some(learner),
+        learner_username: Some(row.learner_username.clone()),
         due_at: None,
         created_at: None,
         allowed_actions: Vec::new(),
@@ -590,6 +594,7 @@ mod tests {
             submission_id: None,
             attempt_id: None,
             learner_name: None,
+            learner_username: None,
             due_at,
             created_at: None,
             allowed_actions: vec![],

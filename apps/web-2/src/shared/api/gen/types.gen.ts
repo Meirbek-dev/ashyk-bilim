@@ -6651,6 +6651,10 @@ export type WorkItem = {
      */
     learner_name?: string;
     /**
+     * Teacher items: the learner's username (namesakes).
+     */
+    learner_username?: string;
+    /**
      * Always present on this server (optional in the schema so earlier
      * clients' fixtures stay valid).
      */

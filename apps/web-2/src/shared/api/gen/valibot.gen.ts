@@ -5959,6 +5959,7 @@ export const vWorkItem = v.object({
     id: v.string(),
     kind: vWorkKind,
     learner_name: v.optional(v.string()),
+    learner_username: v.optional(v.string()),
     message_key: v.optional(vWorkMessageKey),
     message_params: v.optional(vWorkMessageParams),
     primary_action: v.string(),
