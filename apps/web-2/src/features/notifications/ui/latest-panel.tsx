@@ -7,7 +7,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { PopoverHeader, PopoverTitle } from '#/shared/ui/popover'
 
-import { LATEST } from '../model/notifications'
+import { foldThreadReplies, LATEST } from '../model/notifications'
 import { markAllReadOptions, notificationsListOptions } from '../queries'
 import { NotificationItem } from './notification-item'
 
@@ -17,7 +17,7 @@ type LatestPanelProps = { unread: number; onNavigate: () => void }
 export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
   const query = useSuspenseInfiniteQuery(notificationsListOptions(false))
   const markAll = useMutation(markAllReadOptions(useQueryClient()))
-  const latest = query.data.pages.flatMap(page => page.items).slice(0, LATEST)
+  const latest = foldThreadReplies(query.data.pages.flatMap(page => page.items)).slice(0, LATEST)
   return (
     <>
       <PopoverHeader>
@@ -32,9 +32,9 @@ export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
         onRetry={() => void query.refetch()}
       >
         <ul className="flex max-h-96 flex-col gap-4 overflow-y-auto">
-          {latest.map(notification => (
+          {latest.map(({ notification, folded }) => (
             <li key={notification.id}>
-              <NotificationItem notification={notification} compact onNavigate={onNavigate} />
+              <NotificationItem notification={notification} folded={folded} compact onNavigate={onNavigate} />
             </li>
           ))}
         </ul>

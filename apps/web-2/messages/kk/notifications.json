@@ -35,6 +35,16 @@
   "notifications_text_due": "Мерзімі: {date}",
   "notifications_text_update": "«{title}», «{course}» курсы",
   "notifications_text_reply": "{author} «{course}» курсының талқылауында жауап берді",
+  "notifications_text_replies": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "«{course}» курсының талқылауында {count} жаңа жауап",
+        "countPlural=other": "«{course}» курсының талқылауында {count} жаңа жауап"
+      }
+    }
+  ],
   "notifications_text_application": "{applicant} «{course}» курсының бірлескен авторы болғысы келеді",
   "notifications_text_post": "{author} «{course}» курсының талқылауында жаңа тақырып ашты",
   "notifications_text_excerpt": "«{text}»",

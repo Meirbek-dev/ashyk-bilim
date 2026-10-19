@@ -5,24 +5,25 @@ import { DataList } from '#/shared/components/data-list'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 
+import { foldThreadReplies } from '../model/notifications'
 import { notificationsListOptions } from '../queries'
 import { NotificationItem } from './notification-item'
 
 /** Newest first as one inbox panel (a row each), "Show more" by keyset cursor (B-NOT-03); each filter has its own empty text. */
 export function NotificationsList({ unread }: { unread: boolean }) {
   const query = useSuspenseInfiniteQuery(notificationsListOptions(unread))
-  const notifications = query.data.pages.flatMap(page => page.items)
+  const rows = foldThreadReplies(query.data.pages.flatMap(page => page.items))
   return (
     <ListState
       pending={false}
       error={query.error}
-      count={notifications.length}
+      count={rows.length}
       filtered={false}
       emptyText={unread ? m.notifications_empty_unread() : m.notifications_empty()}
       onRetry={() => void query.refetch()}
     >
-      <DataList variant="rows" items={notifications} getKey={notification => notification.id}>
-        {notification => <NotificationItem notification={notification} />}
+      <DataList variant="rows" items={rows} getKey={row => row.notification.id}>
+        {row => <NotificationItem notification={row.notification} folded={row.folded} />}
       </DataList>
       <ShowMore
         hasMore={query.hasNextPage}

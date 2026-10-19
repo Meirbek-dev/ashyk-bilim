@@ -35,6 +35,16 @@
   "notifications_text_due": "Deadline: {date}",
   "notifications_text_update": "“{title}”, course “{course}”",
   "notifications_text_reply": "{author} replied in a discussion of the course “{course}”",
+  "notifications_text_replies": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} new reply in a discussion of the course “{course}”",
+        "countPlural=other": "{count} new replies in a discussion of the course “{course}”"
+      }
+    }
+  ],
   "notifications_text_application": "{applicant} wants to co-author the course “{course}”",
   "notifications_text_post": "{author} started a thread in a discussion of the course “{course}”",
   "notifications_text_excerpt": "“{text}”",

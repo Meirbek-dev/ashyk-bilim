@@ -42,8 +42,8 @@ export const notificationIcons: Record<NotificationType, LucideIcon> = {
 
 const excerpt = (text: string | undefined) => (text ? [m.notifications_text_excerpt({ text })] : [])
 
-/** What happened, with the names the payload carries: one or two lines. */
-export function notificationLines(payload: NotificationPayload): string[] {
+/** What happened, with the names the payload carries: one or two lines; `replies` folded into one row of a thread. */
+export function notificationLines(payload: NotificationPayload, replies = 1): string[] {
   switch (payload.type) {
     case 'grade_published': {
       const what = m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name })
@@ -64,7 +64,9 @@ export function notificationLines(payload: NotificationPayload): string[] {
     // The post's own words under who wrote where (CONTRACT-REQ-E-1): twenty replies no longer read alike.
     case 'discussion_reply':
       return [
-        m.notifications_text_reply({ author: payload.author_name, course: payload.course_name }),
+        replies > 1
+          ? m.notifications_text_replies({ count: replies, course: payload.course_name })
+          : m.notifications_text_reply({ author: payload.author_name, course: payload.course_name }),
         ...excerpt(payload.excerpt),
       ]
     case 'contributor_application':

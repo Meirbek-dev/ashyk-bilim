@@ -21,6 +21,7 @@ test('B-NOT-04 a reply and a new thread carry the post words as their second lin
     m.notifications_text_excerpt({ text: 'Срок завтра?' }),
   ])
   expect(notificationLines(reply)).toHaveLength(1)
+  expect(notificationLines(reply, 3)[0]).toBe(m.notifications_text_replies({ count: 3, course: 'Алгебра' }))
   const post = { ...names, ...people, type: 'discussion_post' as const, discussion_id: thread, excerpt: 'Вопрос' }
   expect(notificationLines(post)[1]).toBe(m.notifications_text_excerpt({ text: 'Вопрос' }))
 })

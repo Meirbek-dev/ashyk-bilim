@@ -37,6 +37,18 @@
   "notifications_text_due": "Срок: {date}",
   "notifications_text_update": "«{title}», курс «{course}»",
   "notifications_text_reply": "Новый ответ от {author} в обсуждении курса «{course}»",
+  "notifications_text_replies": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} новый ответ в обсуждении курса «{course}»",
+        "countPlural=few": "{count} новых ответа в обсуждении курса «{course}»",
+        "countPlural=many": "{count} новых ответов в обсуждении курса «{course}»",
+        "countPlural=other": "{count} новых ответа в обсуждении курса «{course}»"
+      }
+    }
+  ],
   "notifications_text_application": "{applicant} хочет стать соавтором курса «{course}»",
   "notifications_text_post": "Новая тема от {author} в обсуждении курса «{course}»",
   "notifications_text_excerpt": "«{text}»",

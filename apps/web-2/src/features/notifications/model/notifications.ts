@@ -13,6 +13,32 @@ import type {
 import { formatNumber } from '#/shared/i18n/format'
 
 export const PAGE_SIZE = 20
+
+/** A row of a list: a notification and the ids of the older unread replies of its thread folded into it. */
+export type NotificationRow = { notification: Notification; folded: NotificationId[] }
+
+/**
+ * Unread replies in one thread fold into the newest (CONTRACT-REQ-E-1): one «3 новых ответа» row, not three alike.
+ * The list is newest first; read rows and other types stay one row each.
+ */
+export function foldThreadReplies(items: readonly Notification[]): NotificationRow[] {
+  const rows: NotificationRow[] = []
+  const threads = new Map<string, NotificationRow>()
+  for (const notification of items) {
+    const { payload } = notification
+    const thread =
+      payload.type === 'discussion_reply' && notification.read_at_unix === null ? payload.discussion_id : null
+    const open = thread === null ? undefined : threads.get(thread)
+    if (open) {
+      open.folded.push(notification.id)
+      continue
+    }
+    const row: NotificationRow = { notification, folded: [] }
+    if (thread !== null) threads.set(thread, row)
+    rows.push(row)
+  }
+  return rows
+}
 /** How many of the newest the bell's panel shows. */
 export const LATEST = 5
 

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import type { Notification } from '#/shared/api/gen/types.gen'
+import type { Notification, NotificationId } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -17,17 +17,20 @@ type NotificationItemProps = {
   compact?: boolean
   /** Called when the link is followed (the panel closes). */
   onNavigate?: () => void
+  /** Older unread replies of the same thread shown by this row (foldThreadReplies): read with it. */
+  folded?: readonly NotificationId[]
 }
 
 /** One notification: type, what happened (a link to it), when; unread ones are marked "New" (B-NOT-04, B-NOT-05). */
-export function NotificationItem({ notification, compact = false, onNavigate }: NotificationItemProps) {
+export function NotificationItem({ notification, compact = false, onNavigate, folded = [] }: NotificationItemProps) {
   const markRead = useMutation(markReadOptions(useQueryClient()))
   const { id, type, payload, created_at_unix } = notification
   const unread = notification.read_at_unix === null
   const read = () => {
-    if (unread) markRead.mutate({ path: { notification_id: id } })
+    if (unread)
+      for (const notificationId of [id, ...folded]) markRead.mutate({ path: { notification_id: notificationId } })
   }
-  const [what = '', ...details] = notificationLines(payload)
+  const [what = '', ...details] = notificationLines(payload, folded.length + 1)
   const Icon = notificationIcons[type]
   const Heading = compact ? 'h3' : 'h2'
   return (

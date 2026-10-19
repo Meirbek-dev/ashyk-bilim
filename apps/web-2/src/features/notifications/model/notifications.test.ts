@@ -5,6 +5,7 @@ import type { Notification, NotificationPage, NotificationPayload, NotificationT
 
 import {
   badgeCount,
+  foldThreadReplies,
   markRead,
   NOTIFICATION_TYPES,
   notificationTarget,
@@ -127,4 +128,36 @@ test('B-NOT-17 an award above the known level adds the level-up toast; an unknow
   expect(xpAwardToasts({ amount: 10, level: 3 }, 2)).toEqual(['Начислено 10 XP', 'Новый уровень: 3'])
   expect(xpAwardToasts({ amount: 10, level: 3 }, 3)).toEqual(['Начислено 10 XP'])
   expect(xpAwardToasts({ amount: 10, level: 3 }, null)).toEqual(['Начислено 10 XP'])
+})
+
+const reply = (id: string, thread: string, read_at_unix: number | null = null): Notification => ({
+  id,
+  type: 'discussion_reply',
+  payload: {
+    ...names,
+    type: 'discussion_reply',
+    discussion_id: thread,
+    reply_id: id,
+    author_id: '0190a5d2-0000-7000-8000-000000000014',
+    author_name: 'Аня',
+  },
+  created_at_unix: 1_700_000_000,
+  read_at_unix,
+})
+
+test('B-NOT-04 unread replies of one thread fold into the newest; read ones and other threads stay rows', () => {
+  const rows = foldThreadReplies([
+    reply('r3', 't1'),
+    notification('u1'),
+    reply('r2', 't1'),
+    reply('x1', 't2'),
+    reply('r1', 't1'),
+    reply('old', 't1', 1),
+  ])
+  expect(rows.map(row => [row.notification.id, row.folded])).toEqual([
+    ['r3', ['r2', 'r1']],
+    ['u1', []],
+    ['x1', []],
+    ['old', []],
+  ])
 })
