@@ -73,6 +73,7 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
       <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
       <GradeActions
         allowed={attempt.allowed_actions}
+        published={attempt.status === 'published'}
         pending={grade.pending}
         onAction={submit}
         error={mutation.error}

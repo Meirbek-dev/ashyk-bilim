@@ -99,6 +99,7 @@
   "grading_score_invalid": "Число от 0 до максимума",
   "grading_save": "Сохранить черновик",
   "grading_publish": "Опубликовать",
+  "grading_republish": "Обновить оценку",
   "grading_return": "Вернуть на исправление",
   "grading_saved": "Черновик сохранён",
   "grading_published": "Опубликовано",

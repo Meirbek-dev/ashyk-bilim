@@ -77,6 +77,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
       <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
       <GradeActions
         allowed={submission.allowed_actions}
+        published={submission.status === 'published'}
         pending={grade.pending}
         onAction={submit}
         error={mutation.error}

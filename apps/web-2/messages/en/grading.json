@@ -97,6 +97,7 @@
   "grading_score_invalid": "A number from 0 to the maximum",
   "grading_save": "Save draft",
   "grading_publish": "Publish",
+  "grading_republish": "Update the grade",
   "grading_return": "Return for revision",
   "grading_saved": "Draft saved",
   "grading_published": "Published",

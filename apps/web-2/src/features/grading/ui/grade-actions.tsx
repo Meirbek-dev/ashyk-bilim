@@ -22,10 +22,12 @@ type GradeActionsProps = {
   onAction: (action: GradeAction) => void
   /** The save's error; a 412 is the conflict dialog's, not shown here. */
   error: unknown
+  /** The grade is out already: publishing again updates what the learner sees (B-GRD-36). */
+  published?: boolean
 }
 
 /** Save draft, return for revision, publish (the one primary): each submits the form with its action. */
-export function GradeActions({ allowed, pending, onAction, error }: GradeActionsProps) {
+export function GradeActions({ allowed, pending, onAction, error, published = false }: GradeActionsProps) {
   return (
     <div className="flex flex-col gap-4">
       {error && !isStale(error) ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
@@ -39,7 +41,7 @@ export function GradeActions({ allowed, pending, onAction, error }: GradeActions
             onClick={() => onAction(action)}
           >
             {pending === action ? <Spinner data-icon="inline-start" /> : null}
-            {labels[action]()}
+            {action === 'publish' && published ? m.grading_republish() : labels[action]()}
           </Button>
         ))}
       </div>
