@@ -124,9 +124,8 @@ navigation becomes a bottom bar `h-14` of at most 5 icon + label items (current:
 get the same shell without navigation. Auth pages use the full wordmark. Navy artwork switches to white in dark mode,
 including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
-**Focus layout** (5.2): no navigation. Top bar: back button, context title (`text-lg`, truncated), save status,
-then actions on the right; the bar and the side panels stay in view (sticky, own scroll) while the page scrolls. Used by
-the activity player, attempt, activity editor and single-submission review.
+**Focus layout** (5.2): no navigation. Top bar (sticky, like the side panels): back, context title (`text-lg`,
+truncated), save status, actions right. Used by the activity player, attempt, activity editor and single-submission review.
 
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
 | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
