@@ -202,6 +202,7 @@ export function bySeverity<T extends { severity: Severity }>(items: readonly T[]
 }
 
 type Target = {
+  code?: AnalyticsCode
   href?: string | null
   course_id?: string | null
   assessment_type?: AssessmentKind | null
@@ -215,6 +216,8 @@ type Target = {
 export function signalTarget(item: Target): string | undefined {
   const href = signalHref(item.href)
   if (href) return href
+  // The platform-wide «Учащихся в зоне риска: N» names no course: the learners tab lists them.
+  if (item.code === 'risk_spike') return '/teach/analytics/learners'
   if (item.assessment_type && item.assessment_id)
     return `/teach/analytics/performance?assessmentType=${item.assessment_type}&assessmentId=${item.assessment_id}`
   return item.course_id ? `/teach/analytics/performance?courseId=${item.course_id}` : undefined

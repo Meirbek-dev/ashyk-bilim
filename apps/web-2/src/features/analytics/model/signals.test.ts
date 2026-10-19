@@ -97,6 +97,7 @@ describe('analytics signals', () => {
     expect(signalTarget({ href: '/teach/analytics/operations?metric=backlog', course_id: 'c1' })).toBe(
       '/teach/analytics/operations?metric=backlog',
     )
+    expect(signalTarget({ code: 'risk_spike' })).toBe('/teach/analytics/learners')
     expect(signalTarget({})).toBeUndefined()
   })
 })
