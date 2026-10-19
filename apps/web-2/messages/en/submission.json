@@ -102,7 +102,7 @@
   "submission_deadlines_title": "Deadline and attempts",
   "submission_deadlines_hint": "When to hand in, how late work counts and how many tries to give.",
   "submission_field_due": "Deadline",
-  "submission_field_due_hint": "Blank means no deadline.",
+  "submission_field_due_hint": "Platform time (Almaty). Blank - no deadline.",
   "submission_field_allow_late": "Accept after the deadline",
   "submission_field_late_policy": "Late work",
   "submission_late_kind_none": "No penalty",

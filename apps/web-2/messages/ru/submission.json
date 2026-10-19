@@ -104,7 +104,7 @@
   "submission_deadlines_title": "Сроки и попытки",
   "submission_deadlines_hint": "Когда сдавать, как считать опоздание и сколько попыток дать.",
   "submission_field_due": "Срок сдачи",
-  "submission_field_due_hint": "Пусто - без срока.",
+  "submission_field_due_hint": "По времени платформы (Алматы). Пусто - без срока.",
   "submission_field_allow_late": "Принимать после срока",
   "submission_field_late_policy": "Опоздание",
   "submission_late_kind_none": "Без штрафа",
