@@ -2,6 +2,7 @@ import { m } from '#/paraglide/messages'
 import type { ContentBottleneckRow } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { bottleneckLabel } from '../model/signals'
@@ -19,7 +20,18 @@ const columns = (withCourse: boolean): DataColumn<ContentBottleneckRow>[] => [
     id: 'activity',
     header: m.analytics_col_activity(),
     priority: 1,
-    cell: row => <span className="font-medium">{row.activity_name}</span>,
+    // Where learners stall is where the teacher acts: the activity's studio.
+    cell: row => (
+      <span className="font-medium wrap-anywhere">
+        <Link
+          variant="title"
+          to="/teach/courses/$courseId/activities/$activityId/edit"
+          params={{ courseId: row.course_id, activityId: row.activity_id }}
+        >
+          {row.activity_name}
+        </Link>
+      </span>
+    ),
   },
   ...(withCourse ? [course] : []),
   { id: 'signal', header: m.analytics_col_signal(), priority: 2, wrap: true, cell: row => bottleneckLabel(row.signal) },
