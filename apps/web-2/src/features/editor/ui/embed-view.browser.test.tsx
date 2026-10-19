@@ -36,3 +36,16 @@ test(
     await expect.element(screen.getByText(m.editor_embed_unsafe())).not.toBeInTheDocument()
   },
 )
+
+test('B-EDT-31 a YouTube embed is 16:9 at its width, whatever height was stored', { timeout: 60_000 }, async () => {
+  const youtube = { type: 'embedBlock', attrs: { type: 'youtube', url: 'dQw4w9WgXcQ', width: '100%', height: 480 } }
+  const screen = await render(
+    <div className="w-160">
+      <BlockViewer content={{ type: 'doc', content: [youtube] }} />
+    </div>,
+  )
+  const frame = screen.getByTitle(m.editor_embed_title())
+  await expect.element(frame, cold).toBeVisible()
+  const box = frame.element().getBoundingClientRect()
+  expect(Math.round((box.width / box.height) * 9)).toBe(16)
+})

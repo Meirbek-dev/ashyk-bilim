@@ -2,6 +2,7 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
+import { cn } from '#/shared/lib/utils'
 
 import { numberAttr, textAttr } from '../../model/document'
 import { embedSandbox, embedSrc, embedTypeForUrl, isOwnSite, youTubeId } from '../../model/embed'
@@ -15,7 +16,8 @@ const isHeight = (value: string) => /^\d+$/.test(value) && Number(value) >= 100 
  * width ('100%', '91%') and height (px) go to the iframe's own attributes; narrower embeds are centered.
  * Authoring: paste a URL, the provider is detected from it. Under a page embed (not YouTube) the page itself opens in a
  * new tab: a form that wants a Google sign-in cannot sign in inside a frame, and a page a service refuses to frame or
- * that is off the catalog would otherwise leave the learner with nothing (B-EDT-24).
+ * that is off the catalog would otherwise leave the learner with nothing (B-EDT-24). A YouTube video keeps 16:9 at
+ * the stored width whatever height was stored (B-EDT-31): a fixed 480 px left black bands, and a phone a tall box.
  */
 export function EmbedView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
   const type = textAttr(node.attrs['type'])
@@ -58,7 +60,7 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
           allow="fullscreen; clipboard-write; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           loading="lazy"
-          className="max-w-full rounded-lg border border-border"
+          className={cn('max-w-full rounded-lg border border-border', type === 'youtube' && 'aspect-video h-auto')}
         />
       ) : url && (editor.isEditable || !external) ? (
         <p className="text-sm text-destructive">{m.editor_embed_unsafe()}</p>
