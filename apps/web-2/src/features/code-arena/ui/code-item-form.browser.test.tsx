@@ -100,6 +100,11 @@ test('B-COD-27 a solved live challenge keeps its statement editable and Save, it
   )
   await expect.element(screen.getByRole('textbox', { name: m.code_field_input_spec() })).toBeEnabled()
   await expect.element(screen.getByRole('textbox', { name: m.code_field_time() })).toBeDisabled()
+  // The blank-means-default hint stands under the limits heading for both fields, not under the narrow time field.
+  await expect.element(screen.getByText(m.code_limits_hint())).toBeVisible()
+  await expect
+    .element(screen.getByRole('textbox', { name: m.code_field_time() }))
+    .not.toHaveAccessibleDescription(m.code_limits_hint())
   await expect.element(screen.getByRole('button', { name: m.ui_save() })).toBeInTheDocument()
   await expect.element(screen.getByRole('button', { name: m.code_check() })).not.toBeInTheDocument()
   await expect.element(screen.getByText(m.code_lock_has_submissions())).toBeVisible()

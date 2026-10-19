@@ -6,13 +6,15 @@ import type { CodeFormApi } from './use-code-item-form'
 export function LimitFields({ form }: { form: CodeFormApi }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-lg font-semibold">{m.code_limits()}</h3>
+      <div className="flex flex-col gap-1">
+        <h3 className="text-lg font-semibold">{m.code_limits()}</h3>
+        {/* Under the heading, not under the time field: it holds for both, and the 10 rem column broke it in four. */}
+        <p className="text-sm text-muted-foreground">{m.code_limits_hint()}</p>
+      </div>
       <div className="flex flex-wrap gap-4">
         <div className="w-40">
           <form.AppField name="time">
-            {field => (
-              <field.TextField label={m.code_field_time()} description={m.code_limits_hint()} inputMode="numeric" />
-            )}
+            {field => <field.TextField label={m.code_field_time()} inputMode="numeric" />}
           </form.AppField>
         </div>
         <div className="w-40">

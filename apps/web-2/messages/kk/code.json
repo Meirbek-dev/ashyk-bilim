@@ -117,7 +117,7 @@
   "code_field_visible": "Ашық: білім алушыға мысал ретінде көрінеді",
   "code_field_weight": "Салмағы",
   "code_limits": "Ресурс шектеулері",
-  "code_limits_hint": "Бос болса - құмсалғыштың әдепкі мәні.",
+  "code_limits_hint": "Бос қалдырылса, құмсалғыштың әдепкі мәні алынады.",
   "code_field_time": "Уақыт, с",
   "code_field_memory": "Жад, МБ",
   "code_check": "Эталонды тексеру",

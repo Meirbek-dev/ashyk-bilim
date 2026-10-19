@@ -117,7 +117,7 @@
   "code_field_visible": "Visible: learners see it as an example",
   "code_field_weight": "Weight",
   "code_limits": "Limits",
-  "code_limits_hint": "Blank means the sandbox default.",
+  "code_limits_hint": "Leave blank to use the sandbox default.",
   "code_field_time": "Time, s",
   "code_field_memory": "Memory, MB",
   "code_check": "Check reference",
