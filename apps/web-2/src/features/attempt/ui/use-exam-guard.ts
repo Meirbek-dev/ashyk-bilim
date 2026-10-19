@@ -12,7 +12,7 @@ function onFullscreenChange(change: () => void) {
   return () => document.removeEventListener('fullscreenchange', change)
 }
 
-// A browser without full screen (or one that refuses) leaves the notice up; the server still decides.
+// A browser that refuses full screen leaves the notice up; one without it shows none. The server still decides.
 const enterFullscreen = () => void document.documentElement.requestFullscreen?.().catch(() => null)
 
 /** A blur shorter than this (a permission prompt, a click into a frame) is not a tab switch. */
@@ -29,7 +29,8 @@ export function useExamGuard(policy: Policy, attempt: StudentSubmission) {
   const [state, setState] = useState<ViolationState | null>(null)
   const fullscreen = useSyncExternalStore(
     onFullscreenChange,
-    () => Boolean(document.fullscreenElement),
+    // iPhone Safari has no page full screen: no notice whose button cannot do anything (the server still decides).
+    () => Boolean(document.fullscreenElement) || !document.fullscreenEnabled,
     () => true,
   )
   const on = protections(policy)
