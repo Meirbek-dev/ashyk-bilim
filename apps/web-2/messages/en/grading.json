@@ -132,6 +132,7 @@
   "grading_col_average": "Average score",
   "grading_col_correct": "Correct",
   "grading_col_discrimination": "Discrimination",
+  "grading_discrimination_few": "Not enough data",
   "grading_kind_choice": "Choice",
   "grading_kind_open_text": "Open answer",
   "grading_kind_form": "Form",

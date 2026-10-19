@@ -134,6 +134,7 @@
   "grading_col_average": "Средний балл",
   "grading_col_correct": "Верно",
   "grading_col_discrimination": "Различающая сила",
+  "grading_discrimination_few": "Мало данных",
   "grading_kind_choice": "Выбор",
   "grading_kind_open_text": "Открытый ответ",
   "grading_kind_form": "Форма",

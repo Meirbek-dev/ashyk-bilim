@@ -55,13 +55,14 @@ const itemColumns: DataColumn<ItemAnalytics>[] = [
     priority: 2,
     cell: row => <span className="tabular-nums">{share(row.correct_pct)}</span>,
   },
+  // Null below six graded works or for an item without a right answer: too little to tell, not a missing grade.
   {
     id: 'discrimination',
     header: m.grading_col_discrimination(),
     priority: 3,
     cell: row => (
       <span className="tabular-nums">
-        {row.discrimination_index === null ? m.grading_no_score() : formatNumber(row.discrimination_index)}
+        {row.discrimination_index === null ? m.grading_discrimination_few() : formatNumber(row.discrimination_index)}
       </span>
     ),
   },
