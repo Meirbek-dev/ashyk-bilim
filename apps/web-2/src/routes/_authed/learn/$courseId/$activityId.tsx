@@ -12,9 +12,12 @@ import { documentTitle } from '#/shared/lib/document-title'
 // column and its phone sheet are left out (B-AI-02): a 384 px column for one line of "unavailable" is dead space.
 export const Route = createFileRoute('/_authed/learn/$courseId/$activityId')({
   validateSearch: aiSearchSchema,
+  // The AI capabilities do not wait for the player's reads (a refused player discards them).
   loader: async ({ context, params }) => {
-    const player = await ensurePlayer(context.queryClient, params.courseId, params.activityId)
-    const ai = await prefetchPanel(context.queryClient, { ...params, surface: 'student-activity' })
+    const [player, ai] = await Promise.all([
+      ensurePlayer(context.queryClient, params.courseId, params.activityId),
+      prefetchPanel(context.queryClient, { ...params, surface: 'student-activity' }),
+    ])
     return { ...player, aiOff: ai?.available === false }
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
