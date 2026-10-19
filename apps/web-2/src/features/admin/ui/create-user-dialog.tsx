@@ -85,12 +85,15 @@ export function CreateUserDialog({ withRoles }: { withRoles: boolean }) {
       pending={create.isPending}
       error={takenField(create.error) ? null : create.error}
     >
-      <form.AppField name="first_name">
-        {field => <field.TextField label={m.admin_user_field_first_name()} autoComplete="off" required />}
-      </form.AppField>
-      <form.AppField name="last_name">
-        {field => <field.TextField label={m.admin_user_field_last_name()} autoComplete="off" required />}
-      </form.AppField>
+      {/* First and last name side by side: two short values, as on a sign-up form. */}
+      <div className="grid items-start gap-4 sm:grid-cols-2">
+        <form.AppField name="first_name">
+          {field => <field.TextField label={m.admin_user_field_first_name()} autoComplete="off" required />}
+        </form.AppField>
+        <form.AppField name="last_name">
+          {field => <field.TextField label={m.admin_user_field_last_name()} autoComplete="off" required />}
+        </form.AppField>
+      </div>
       <form.AppField name="username">
         {field => <field.TextField label={m.admin_user_username()} autoComplete="off" required />}
       </form.AppField>
