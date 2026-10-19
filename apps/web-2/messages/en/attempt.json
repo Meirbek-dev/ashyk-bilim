@@ -103,6 +103,7 @@
   "attempt_item_points": "{score} of {max}",
   "attempt_correct_answer": "Correct answer",
   "attempt_no_answer": "No answer",
+  "attempt_verdict_unanswered": "Not answered",
   "attempt_feedback_heading": "Teacher feedback",
   "attempt_all_attempts": "All attempts"
 }

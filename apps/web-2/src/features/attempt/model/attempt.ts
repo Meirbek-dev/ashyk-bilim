@@ -5,6 +5,7 @@ import type {
   AutoSubmitReason,
   DisabledReason,
   ErrorCode,
+  GradedItem,
   ItemAnswer,
   ItemBody,
   Policy,
@@ -83,6 +84,15 @@ export function isBlank(answer: ItemAnswer | undefined, body?: ItemBody): boolea
   if (answer.kind === 'code') return !answer.source?.trim()
   const lefts = body?.kind === 'matching' && 'left' in body ? body.left.length : 1
   return (answer.matches?.length ?? 0) < Math.max(lefts, 1)
+}
+
+/** A graded question's verdict where the policy shows one; a question left empty is «not answered», not «wrong». */
+export type Verdict = 'correct' | 'partly' | 'wrong' | 'skipped'
+export const verdict = (entry: Pick<GradedItem, 'correct' | 'score'>, answered: boolean): Verdict | null => {
+  if (entry.correct === null) return null
+  if (entry.correct) return 'correct'
+  if (!answered) return 'skipped'
+  return entry.score > 0 ? 'partly' : 'wrong'
 }
 
 /** Questions without a complete answer, with their 1-based number in the order shown. */
