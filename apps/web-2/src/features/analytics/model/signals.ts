@@ -3,6 +3,7 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import type {
   AnalyticsCode,
+  AssessmentKind,
   ContentBottleneckSignal,
   FilterOption,
   MessageParams,
@@ -198,4 +199,23 @@ export function bySeverity<T extends { severity: Severity }>(items: readonly T[]
   return severityOrder
     .map(severity => [severity, items.filter(item => item.severity === severity)] as [Severity, T[]])
     .filter(([, group]) => group.length > 0)
+}
+
+type Target = {
+  href?: string | null
+  course_id?: string | null
+  assessment_type?: AssessmentKind | null
+  assessment_id?: string | null
+}
+
+/**
+ * Where a signal leads: its own link (`signalHref`), else the drill-down of the assessment or course it is about -
+ * forecasts and anomalies carry those ids and no link.
+ */
+export function signalTarget(item: Target): string | undefined {
+  const href = signalHref(item.href)
+  if (href) return href
+  if (item.assessment_type && item.assessment_id)
+    return `/teach/analytics/performance?assessmentType=${item.assessment_type}&assessmentId=${item.assessment_id}`
+  return item.course_id ? `/teach/analytics/performance?courseId=${item.course_id}` : undefined
 }

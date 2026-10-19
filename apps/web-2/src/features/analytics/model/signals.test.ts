@@ -17,6 +17,7 @@ import {
   riskReasonLabels,
   severityBadges,
   signalHref,
+  signalTarget,
   signalText,
   whyNowLabels,
   riskBreakdown,
@@ -86,6 +87,17 @@ describe('analytics signals', () => {
     expect(signalHref('/dash/analytics?drill=backlog')).toBe('/teach/analytics/operations?metric=backlog')
     expect(signalHref('/dash/courses/c1')).toBeUndefined()
     expect(signalHref(null)).toBeUndefined()
+  })
+
+  test('B-ANL-25 a forecast or anomaly without a link opens the drill-down of its assessment or course', () => {
+    expect(signalTarget({ href: null, course_id: 'c1', assessment_type: 'exam', assessment_id: 'a1' })).toBe(
+      '/teach/analytics/performance?assessmentType=exam&assessmentId=a1',
+    )
+    expect(signalTarget({ course_id: 'c1' })).toBe('/teach/analytics/performance?courseId=c1')
+    expect(signalTarget({ href: '/teach/analytics/operations?metric=backlog', course_id: 'c1' })).toBe(
+      '/teach/analytics/operations?metric=backlog',
+    )
+    expect(signalTarget({})).toBeUndefined()
   })
 })
 

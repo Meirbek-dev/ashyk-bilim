@@ -2,11 +2,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 
-import type { AnalyticsCode, FilterOption, MessageParams, Severity } from '#/shared/api/gen/types.gen'
+import type { AnalyticsCode, AssessmentKind, FilterOption, MessageParams, Severity } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { bySeverity, courseOf, severityBadges, signalHref, signalText } from '../model/signals'
+import { bySeverity, courseOf, severityBadges, signalTarget, signalText } from '../model/signals'
 
 type Signal = {
   id: string
@@ -16,6 +16,8 @@ type Signal = {
   href?: string | null
   course_id?: string | null
   course_name?: string | null
+  assessment_type?: AssessmentKind | null
+  assessment_id?: string | null
 }
 
 const severityLook = {
@@ -59,7 +61,7 @@ export function SignalList({
             <ul className="flex flex-col divide-y border-l pl-4">
               {group.map(item => {
                 const text = signalText[item.code](item.params)
-                const href = signalHref(item.href)
+                const href = signalTarget(item)
                 const course = courseOf(item, courses)
                 return (
                   <li key={item.id} className="py-2 wrap-anywhere">
