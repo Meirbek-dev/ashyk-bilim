@@ -1,6 +1,6 @@
 {
   "collections_title": "Collections",
-  "collections_empty": "No collections yet",
+  "collections_empty": "No collections yet: teachers put them together from courses on one topic.",
   "collections_updated": "Updated {date}",
   "collections_course_count": [
     {

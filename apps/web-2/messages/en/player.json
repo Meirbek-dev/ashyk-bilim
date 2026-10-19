@@ -21,7 +21,7 @@
   "player_continue": "Continue",
   "player_finish": "Course summary",
   "player_next_step": "Next: {title}",
-  "player_empty": "Nothing here yet.",
+  "player_empty": "The teacher has not added material here yet.",
   "player_opens_at": "Opens {date}. Until then it is not available.",
   "player_locked_text": "This activity is not available to you.",
   "player_entry_start": "Start",

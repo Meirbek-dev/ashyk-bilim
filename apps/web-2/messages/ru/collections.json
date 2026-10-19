@@ -1,6 +1,6 @@
 {
   "collections_title": "Коллекции",
-  "collections_empty": "Коллекций пока нет",
+  "collections_empty": "Коллекций пока нет: их собирают преподаватели из курсов одной темы.",
   "collections_updated": "Обновлено {date}",
   "collections_course_count": [
     {

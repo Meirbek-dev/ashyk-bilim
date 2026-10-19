@@ -51,5 +51,5 @@
   "course_withdraw": "Withdraw application",
   "course_withdrawn": "Application withdrawn",
   "course_application_decided": "The application has already been decided. The author list is updated.",
-  "course_updates_empty": "No announcements yet."
+  "course_updates_empty": "No announcements yet. News about the course from the teacher will appear here."
 }
