@@ -1,5 +1,7 @@
 import { Suspense, type ReactNode } from 'react'
 
+import { m } from '#/paraglide/messages'
+
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableRow } from '#/shared/ui/table'
 
 import type { ChartDatum } from './chart-data'
@@ -17,6 +19,14 @@ type ChartFigureProps = {
  * text (DESIGN 3, WCAG 1.1.1). The SVG loads lazily; its slot keeps the final height meanwhile.
  */
 export function ChartFigure({ title, data, formatValue, children }: ChartFigureProps) {
+  // Nothing but zeros (a quiet course, a new platform): one line says so; four flat lines on an axis up to 1 were noise.
+  if (data.every(datum => datum.value === 0))
+    return (
+      <figure className="flex min-w-0 flex-col gap-2">
+        <figcaption className="text-sm font-medium">{title}</figcaption>
+        <p className="text-sm text-muted-foreground">{m.ui_chart_all_zero()}</p>
+      </figure>
+    )
   return (
     <figure className="flex min-w-0 flex-col gap-2">
       <figcaption className="text-sm font-medium">{title}</figcaption>
