@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink, useNavigate, useParams } from '@tanstack/react-router'
+import { Timer } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -88,6 +89,13 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const refused = start.error instanceof ApiError && start.error.status === 403
   return (
     <div className="flex flex-col items-start gap-4">
+      {/* A timed test: the learner learns before starting that the clock cannot be paused (B-ATT-02). */}
+      {state.effective.time_limit_seconds !== null && !action.revision ? (
+        <p className="flex items-start gap-2 text-sm">
+          <Timer aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+          {m.attempt_clock_starts()}
+        </p>
+      ) : null}
       {rules.length ? (
         <Field orientation="horizontal">
           <Checkbox id={consentId} checked={agreed} onCheckedChange={checked => setAgreed(checked)} />
