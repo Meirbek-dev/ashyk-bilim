@@ -1,5 +1,5 @@
 import { PanelLeft, PanelRight } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 
@@ -50,6 +50,7 @@ export function FocusPage({
   wide = false,
   children,
 }: FocusPageProps) {
+  const sheetContents = useRef<HTMLDivElement>(null)
   return (
     <div className="@container flex min-h-dvh flex-col">
       <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background px-4 @3xl:px-6">
@@ -62,8 +63,10 @@ export function FocusPage({
               open={contentsSheet?.open}
               onOpenChange={contentsSheet?.onOpenChange}
               trigger={<IconButton label={m.ui_contents()} icon={<PanelLeft aria-hidden />} />}
+              // On a phone the sheet opens on the current item (focus scrolls it into view), not at the top.
+              initialFocus={() => sheetContents.current?.querySelector<HTMLElement>('[aria-current="page"]') ?? true}
             >
-              {contents}
+              <div ref={sheetContents}>{contents}</div>
             </SheetPanel>
           </div>
         ) : null}

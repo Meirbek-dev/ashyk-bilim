@@ -10,11 +10,13 @@ type SheetPanelProps = {
   onOpenChange?: (open: boolean) => void
   title: string
   side: 'left' | 'right'
+  /** Where focus lands on open (Base UI's `initialFocus`); default: the first focusable element. */
+  initialFocus?: () => HTMLElement | null | boolean
   children: ReactNode
 }
 
 /** A side panel over the page on the stock Sheet: filters, focus-layout panels when narrow, a selected list item. */
-export function SheetPanel({ trigger, open, onOpenChange, title, side, children }: SheetPanelProps) {
+export function SheetPanel({ trigger, open, onOpenChange, title, side, initialFocus, children }: SheetPanelProps) {
   // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
   const hydrated = useHydrated()
   return (
@@ -22,7 +24,7 @@ export function SheetPanel({ trigger, open, onOpenChange, title, side, children 
       {trigger ? (
         <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       ) : null}
-      <SheetContent side={side}>
+      <SheetContent side={side} initialFocus={initialFocus}>
         {/* Clear of the stock close button (absolute, top right): a long name wraps before it. */}
         <SheetHeader className="pr-12">
           <SheetTitle>{title}</SheetTitle>
