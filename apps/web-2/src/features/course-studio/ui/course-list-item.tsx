@@ -16,8 +16,13 @@ type CourseListItemProps = { course: Item; checked: boolean; onToggle: () => voi
  */
 export function CourseListItem({ course, checked, onToggle }: CourseListItemProps) {
   return (
-    <div className="flex items-center gap-3">
-      <Checkbox aria-label={m.studio_bulk_select({ name: course.name })} checked={checked} onCheckedChange={onToggle} />
+    <div className="flex items-start gap-3">
+      <Checkbox
+        className="mt-1"
+        aria-label={m.studio_bulk_select({ name: course.name })}
+        checked={checked}
+        onCheckedChange={onToggle}
+      />
       <CourseCover
         seed={course.id}
         imageKey={course.thumbnail_key}
@@ -27,7 +32,7 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
       <div className="flex min-w-0 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="min-w-0 text-base font-semibold wrap-anywhere">
-            <Link to="/teach/courses/$courseId/overview" params={{ courseId: course.id }}>
+            <Link variant="title" to="/teach/courses/$courseId/overview" params={{ courseId: course.id }}>
               {course.name}
             </Link>
           </h2>
@@ -42,7 +47,13 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
                   m.studio_list_activities({ count: course.teaching.activities }),
                 ]
               : []),
-          ].join(' · ')}
+          ].map((part, index, parts) => (
+            // A line breaks only after a «·», never inside a fact or before its separator (390 px).
+            <span key={part} className="me-1 inline-block whitespace-nowrap">
+              {part}
+              {index < parts.length - 1 ? ' ·' : null}
+            </span>
+          ))}
         </p>
         {course.teaching && course.teaching.ungraded > 0 ? (
           <p className="text-sm">
