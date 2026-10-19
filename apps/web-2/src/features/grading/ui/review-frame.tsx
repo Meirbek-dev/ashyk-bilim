@@ -10,6 +10,7 @@ import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
 
+import { lastCheck } from '../model/scoring'
 import { activityOptions, type Work } from '../queries'
 import { scoreText, statusMeta } from './labels'
 import { FeedbackDraft } from './feedback-draft'
@@ -60,6 +61,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
     </RouterLink>
   )
   const status = statusMeta[head.status]
+  const check = lastCheck(head)
   const draftTarget = useRef<((text: string) => void) | null>(null)
   const register = (take: (text: string) => void) => {
     draftTarget.current = take
@@ -103,8 +105,10 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
               {head.submitted_at_unix === null ? null : (
                 <span>{m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) })}</span>
               )}
-              {head.graded_at_unix === null ? null : (
-                <span>{m.grading_graded_at({ date: formatDateTime(head.graded_at_unix) })}</span>
+              {check === null ? null : (
+                <span>
+                  {(check.returned ? m.grading_returned_at : m.grading_graded_at)({ date: formatDateTime(check.at) })}
+                </span>
               )}
               {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
               {head.late_penalty_pct ? (

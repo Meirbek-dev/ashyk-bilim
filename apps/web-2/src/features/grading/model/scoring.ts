@@ -46,3 +46,13 @@ export function itemsPercent(items: readonly { score: number; max: number }[]): 
 /** The score after a late penalty, as the server applies it (`apply_late`, B-GRD-32): hundredths, penalty 0..100. */
 export const afterLatePenalty = (score: number, penaltyPct: number): number =>
   roundScore(score * (1 - Math.min(Math.max(penaltyPct, 0), 100) / 100))
+
+/**
+ * The review header's last check (B-GRD-35): a check older than the hand-in was a return for revision, and the work on
+ * screen is the learner's answer to it, so it reads «Возвращена», not «Проверена».
+ */
+export function lastCheck(head: { graded_at_unix: number | null; submitted_at_unix: number | null }) {
+  if (head.graded_at_unix === null) return null
+  const returned = head.submitted_at_unix !== null && head.graded_at_unix < head.submitted_at_unix
+  return { at: head.graded_at_unix, returned }
+}

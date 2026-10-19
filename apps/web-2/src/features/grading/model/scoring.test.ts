@@ -8,6 +8,7 @@ import {
   sumScores,
   toItemScale,
   afterLatePenalty,
+  lastCheck,
 } from './scoring'
 
 describe('B-GRD-22 score rounding', () => {
@@ -64,4 +65,12 @@ test('B-GRD-32 the late penalty is applied as the server does: a share off, hund
   expect(afterLatePenalty(66.67, 15)).toBe(56.67)
   expect(afterLatePenalty(80, 150)).toBe(0)
   expect(afterLatePenalty(80, -5)).toBe(80)
+})
+
+describe('lastCheck', () => {
+  test('B-GRD-35 a check before the latest hand-in was a return: the resubmitted work does not read «Проверена»', () => {
+    expect(lastCheck({ graded_at_unix: null, submitted_at_unix: 10 })).toBeNull()
+    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10 })).toEqual({ at: 20, returned: false })
+    expect(lastCheck({ graded_at_unix: 10, submitted_at_unix: 20 })).toEqual({ at: 10, returned: true })
+  })
 })
