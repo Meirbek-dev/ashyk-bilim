@@ -131,7 +131,7 @@ test('B-ACH-04 the own row is marked by id with the shared rank; B-ACH-05 the pl
   await expect(board.getByText(new RegExp(place.replaceAll('0', '[\\d\\s]+')))).toBeVisible()
   await expect(board.getByRole('link', { name: m.achievements_visibility_link({}, ru) })).toHaveAttribute(
     'href',
-    '/settings/notifications',
+    '/settings/notifications#achievements',
   )
   const rows = board.getByRole('listitem')
   await expect(rows).toHaveCount(20)
@@ -161,7 +161,7 @@ test('B-ACH-05 a learner hidden from the leaderboard is told so and pointed to t
   await expect(board.getByText(m.achievements_hidden({}, ru))).toBeVisible()
   await expect(board.getByText(m.achievements_you({}, ru), { exact: true })).toHaveCount(0)
   await board.getByRole('link', { name: m.achievements_visibility_link({}, ru) }).click()
-  await expect(page).toHaveURL(/\/settings\/notifications$/)
+  await expect(page).toHaveURL(/\/settings\/notifications#achievements$/)
 })
 
 test('B-ACH-13 with gamification off the navigation has no Achievements; the page still opens', async ({
