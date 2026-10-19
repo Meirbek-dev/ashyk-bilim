@@ -68,7 +68,8 @@ test('B-HOME-01 B-HOME-02 B-HOME-03 B-HOME-04 B-HOME-05 B-HOME-06 one page answe
   )
 
   const results = region(page, m.home_results_title({}, ru))
-  await expect(results.getByText(m.home_result_published({}, ru))).toBeVisible()
+  // The seeded activity is also named «Оценено»: look for the status in the badge.
+  await expect(results.locator('[data-slot=badge]', { hasText: m.home_result_published({}, ru) })).toBeVisible()
   await expect(results.getByRole('link', { name: 'Оценено' })).toBeVisible()
   await expect(results.getByText(m.home_score({ score: formatPercent(85, 'ru') }, ru))).toBeVisible()
   await expect(results.getByText(m.home_result_returned({}, ru))).toBeVisible()
