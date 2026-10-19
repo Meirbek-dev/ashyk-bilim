@@ -15,7 +15,13 @@ export const gradebookTableColumns = (courseId: string, activities: readonly Gra
     id: 'learner',
     header: m.grading_col_learner(),
     priority: 1,
-    cell: (row: GradebookRow) => <span className="wrap-anywhere">{learnerName(row)}</span>,
+    // The @username under the name: real rosters hold namesakes (two «Аида Солтангазинова» in one course).
+    cell: (row: GradebookRow) => (
+      <span className="flex flex-col">
+        <span className="wrap-anywhere">{learnerName(row)}</span>
+        <span className="text-xs font-normal wrap-anywhere text-muted-foreground">@{row.user.username}</span>
+      </span>
+    ),
   } satisfies DataColumn<GradebookRow>,
   ...activities.map((column): DataColumn<GradebookRow> => ({
     id: column.activityId,
