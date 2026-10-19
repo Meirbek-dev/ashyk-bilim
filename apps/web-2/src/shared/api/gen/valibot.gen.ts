@@ -5811,6 +5811,11 @@ export const vWorkKind = v.picklist([
     'awaiting_release'
 ]);
 
+export const vWorkKindCount = v.object({
+    count: v.pipe(v.number(), v.integer()),
+    kind: vWorkKind
+});
+
 /**
  * The message an item shows: the client renders `work_<key>_title`,
  * `_description` and `_action` with [`WorkMessageParams`] (the English
@@ -5969,6 +5974,7 @@ export const vWorkItem = v.object({
  */
 export const vWorkQueue = v.object({
     items: v.array(vWorkItem),
+    kind_counts: v.array(vWorkKindCount),
     next_cursor: v.nullable(v.string()),
     total: v.pipe(v.number(), v.integer())
 });

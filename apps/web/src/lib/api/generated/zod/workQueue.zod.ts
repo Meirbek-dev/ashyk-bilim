@@ -78,6 +78,27 @@ export const WorkQueue = zod
           'One thing to act on.\n\n`id` is stable across calls; `kind` names the situation. `title`,\n`description` and `primary_action` are English (the old web);\n`message_key` + `message_params` are the translatable form.',
         ),
     ),
+    kind_counts: zod
+      .array(
+        zod.object({
+          count: zod.int(),
+          kind: zod
+            .enum([
+              'in_progress',
+              'overdue',
+              'waiting_for_grade',
+              'returned_for_revision',
+              'feedback_released',
+              'needs_grading',
+              'sla_breach',
+              'awaiting_release',
+            ])
+            .describe('The situation an item names.'),
+        }),
+      )
+      .describe(
+        'Items per kind with the course filter but not the kind filter (the\ninbox tabs); a kind with none is absent.',
+      ),
     next_cursor: zod.string().nullable(),
     total: zod.int(),
   })

@@ -79,6 +79,15 @@ pub struct WorkQueue {
     pub items: Vec<WorkItem>,
     pub total: i64,
     pub next_cursor: Option<String>,
+    /// Items per kind with the course filter but not the kind filter (the
+    /// inbox tabs); a kind with none is absent.
+    pub kind_counts: Vec<WorkKindCount>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct WorkKindCount {
+    pub kind: domain::WorkKind,
+    pub count: i64,
 }
 
 impl From<domain::WorkItem> for WorkItem {
@@ -115,6 +124,11 @@ impl From<domain::WorkQueue> for WorkQueue {
             items: q.items.into_iter().map(Into::into).collect(),
             total: q.total,
             next_cursor: q.next_cursor,
+            kind_counts: q
+                .kind_counts
+                .into_iter()
+                .map(|(kind, count)| WorkKindCount { kind, count })
+                .collect(),
         }
     }
 }

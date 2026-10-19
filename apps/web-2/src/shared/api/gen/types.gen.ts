@@ -6675,6 +6675,11 @@ export type WorkItem = {
  */
 export type WorkKind = 'in_progress' | 'overdue' | 'waiting_for_grade' | 'returned_for_revision' | 'feedback_released' | 'needs_grading' | 'sla_breach' | 'awaiting_release';
 
+export type WorkKindCount = {
+    count: number;
+    kind: WorkKind;
+};
+
 /**
  * The message an item shows: the client renders `work_<key>_title`,
  * `_description` and `_action` with [`WorkMessageParams`] (the English
@@ -6701,6 +6706,11 @@ export type WorkPriority = 'critical' | 'high' | 'normal' | 'low';
  */
 export type WorkQueue = {
     items: Array<WorkItem>;
+    /**
+     * Items per kind with the course filter but not the kind filter (the
+     * inbox tabs); a kind with none is absent.
+     */
+    kind_counts: Array<WorkKindCount>;
     next_cursor: string | null;
     total: number;
 };

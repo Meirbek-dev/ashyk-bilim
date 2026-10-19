@@ -72,7 +72,7 @@ describe('teach inbox model', () => {
   })
 
   test('B-INB-06 asks for the next page with next_cursor and stops when it is null', () => {
-    expect(nextWorkCursor({ items: [], total: 3, next_cursor: 'abc' })).toBe('abc')
-    expect(nextWorkCursor({ items: [], total: 3, next_cursor: null })).toBeUndefined()
+    expect(nextWorkCursor({ items: [], total: 3, next_cursor: 'abc', kind_counts: [] })).toBe('abc')
+    expect(nextWorkCursor({ items: [], total: 3, next_cursor: null, kind_counts: [] })).toBeUndefined()
   })
 })

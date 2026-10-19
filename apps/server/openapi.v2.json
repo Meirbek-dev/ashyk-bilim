@@ -19720,6 +19720,21 @@
         ],
         "type": "string"
       },
+      "WorkKindCount": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WorkKind"
+          }
+        },
+        "required": [
+          "kind",
+          "count"
+        ],
+        "type": "object"
+      },
       "WorkMessageKey": {
         "description": "The message an item shows: the client renders `work_<key>_title`,\n`_description` and `_action` with [`WorkMessageParams`] (the English\n`title` / `description` / `primary_action` stay for the old web).",
         "enum": [
@@ -19774,6 +19789,13 @@
             },
             "type": "array"
           },
+          "kind_counts": {
+            "description": "Items per kind with the course filter but not the kind filter (the\ninbox tabs); a kind with none is absent.",
+            "items": {
+              "$ref": "#/components/schemas/WorkKindCount"
+            },
+            "type": "array"
+          },
           "next_cursor": {
             "type": [
               "string",
@@ -19787,6 +19809,7 @@
         "required": [
           "items",
           "total",
+          "kind_counts",
           "next_cursor"
         ],
         "type": "object"

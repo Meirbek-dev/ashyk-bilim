@@ -29,7 +29,7 @@ export function InboxPage() {
       filters={
         items.length > 0 || active > 0 ? (
           <>
-            <KindFilter search={search} />
+            <KindFilter search={search} counts={query.data.pages[0]?.kind_counts} />
             <CourseFilter items={items} course={search.course} />
             <SortMenu sort={search.sort} />
           </>

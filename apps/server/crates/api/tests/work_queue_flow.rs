@@ -383,6 +383,14 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     assert_eq!(w["allowed_actions"], serde_json::json!(["view_receipt"]));
     let grading = queue(&app, &teacher, "?role=teacher").await;
     assert_eq!(grading["total"], 1);
+    // The inbox tabs' counts: per kind, the kind filter left out.
+    assert_eq!(
+        grading["kind_counts"],
+        serde_json::json!([{ "kind": "needs_grading", "count": 1 }])
+    );
+    let other_kind = queue(&app, &teacher, "?role=teacher&kind=awaiting_release").await;
+    assert_eq!(other_kind["total"], 0);
+    assert_eq!(other_kind["kind_counts"], grading["kind_counts"]);
     let g = &items(&grading)[0];
     assert_eq!(g["role"], "teacher");
     assert_eq!(g["kind"], "needs_grading");

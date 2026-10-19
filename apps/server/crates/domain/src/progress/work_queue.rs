@@ -161,6 +161,9 @@ pub struct WorkQueue {
     pub items: Vec<WorkItem>,
     pub total: i64,
     pub next_cursor: Option<String>,
+    /// Items per kind with the course filter but not the kind filter: the
+    /// inbox tabs say how many each holds. Kinds with none are absent.
+    pub kind_counts: Vec<(WorkKind, i64)>,
 }
 
 /// `(primary, secondary - i64::MAX = missing, sorts last, id)`; what the
@@ -220,13 +223,32 @@ impl WorkQueueService {
                     .collect()
             }
         };
-        let items = items
+        let in_course: Vec<WorkItem> = items
             .into_iter()
-            .filter(|i| filter.kind.is_none_or(|k| i.kind == k))
             .filter(|i| filter.course_id.is_none_or(|c| i.course_id == c))
             .collect();
-        Ok(page(items, filter.sort, after.as_ref(), limit))
+        let kind_counts = count_kinds(&in_course);
+        let items = in_course
+            .into_iter()
+            .filter(|i| filter.kind.is_none_or(|k| i.kind == k))
+            .collect();
+        Ok(WorkQueue {
+            kind_counts,
+            ..page(items, filter.sort, after.as_ref(), limit)
+        })
     }
+}
+
+/// How many items of each kind, in first-seen order.
+fn count_kinds(items: &[WorkItem]) -> Vec<(WorkKind, i64)> {
+    let mut counts: Vec<(WorkKind, i64)> = Vec::new();
+    for item in items {
+        match counts.iter_mut().find(|(kind, _)| *kind == item.kind) {
+            Some((_, n)) => *n += 1,
+            None => counts.push((item.kind, 1)),
+        }
+    }
+    counts
 }
 
 fn now_unix() -> i64 {
@@ -535,6 +557,7 @@ fn page(
         items,
         total,
         next_cursor,
+        kind_counts: Vec::new(),
     }
 }
 
