@@ -5,10 +5,10 @@ import { m } from '#/paraglide/messages'
 import type { Contributor, UpdateContributorRequest } from '#/shared/api/gen/types.gen'
 import { ChoiceItems } from '#/shared/components/choice-items'
 import { Link } from '#/shared/components/link'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, isAssignableRole } from '../model/studio'
@@ -69,25 +69,22 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
           <span className="text-sm text-muted-foreground">{roleLabels[role]()}</span>
         )}
         {manage && applying ? (
-          <Button
+          <SubmitButton
             variant="secondary"
-
             onClick={() => patch({ status: 'active' }, m.studio_application_accepted())}
-            disabled={update.isPending}
+            pending={update.isPending}
           >
-            {update.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.studio_application_accept()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {manage && inactive ? (
-          <Button
+          <SubmitButton
             variant="secondary"
             onClick={() => patch({ status: 'active' }, m.studio_contributor_reactivated())}
-            disabled={update.isPending}
+            pending={update.isPending}
           >
-            {update.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.studio_contributor_reactivate()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {manage && role !== 'creator' ? <RemoveContributor courseId={courseId} row={row} applying={applying} /> : null}
       </div>

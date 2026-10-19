@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { ActivityId, CourseId, LectureReview } from '#/shared/api/gen/types.gen'
-import { Button } from '#/shared/ui/button'
+import { SubmitButton } from '#/shared/components/submit-button'
 
 import { critiqueQueue, reviewsKey, reviewsOptions } from '../queries'
 import { LectureReviewCard } from './lecture-review-card'
@@ -21,9 +21,9 @@ export function CritiqueTab({ courseId, activityId }: { courseId: CourseId; acti
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Button variant="outline" disabled={run.pending} onClick={start}>
+        <SubmitButton variant="outline" pending={run.pending} onClick={start}>
           {m.ai_critique_run()}
-        </Button>
+        </SubmitButton>
       </div>
       <RunStatus state={run.state} onCancel={run.cancel} cancelling={run.cancelling} onRetry={start} />
       {reviews.length === 0 ? (

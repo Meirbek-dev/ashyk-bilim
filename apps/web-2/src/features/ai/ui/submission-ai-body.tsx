@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { Button } from '#/shared/ui/button'
 
 import { feedbackDraft, gateHolds } from '../model/ai'
@@ -34,9 +35,9 @@ export function SubmissionAiBody({ submissionId, onFeedbackDraft }: BodyProps) {
     <section className="flex flex-col gap-4">
       <h3 className="text-lg font-semibold">{m.ai_submission_title()}</h3>
       <div>
-        <Button variant="outline" disabled={analyze.pending} onClick={startAnalysis}>
+        <SubmitButton variant="outline" pending={analyze.pending} onClick={startAnalysis}>
           {analysis ? m.ai_reanalyze() : m.ai_analyze()}
-        </Button>
+        </SubmitButton>
       </div>
       <RunStatus
         state={analyze.state}

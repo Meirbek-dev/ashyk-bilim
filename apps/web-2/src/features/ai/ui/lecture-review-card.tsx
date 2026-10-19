@@ -6,8 +6,8 @@ import { m } from '#/paraglide/messages'
 import type { CourseId, LectureReview } from '#/shared/api/gen/types.gen'
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDate } from '#/shared/i18n/format'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { levelLabels } from '../model/labels'
@@ -45,10 +45,10 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
                 </section>
               ) : null}
               <div>
-                <Button
+                <SubmitButton
                   variant="ghost"
                   size="sm"
-                  disabled={dismiss.isPending}
+                  pending={dismiss.isPending}
                   onClick={() =>
                     dismiss.mutate(
                       { path: { review_id: review.id }, body: { suggestion_id: item.suggestion_id } },
@@ -57,7 +57,7 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
                   }
                 >
                   {m.ai_suggestion_hide()}
-                </Button>
+                </SubmitButton>
               </div>
             </li>
           ))}

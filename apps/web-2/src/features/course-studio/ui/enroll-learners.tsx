@@ -5,9 +5,8 @@ import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { FileButton } from '#/shared/components/file-button'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { decodeCsv, MAX_ROSTER, MAX_ROSTER_FILE_BYTES, parsePasted, parseRosterCsv, summarize } from '../model/roster'
@@ -82,23 +81,21 @@ export function EnrollLearners({ courseId }: { courseId: string }) {
       </div>
       {(enroll.error ?? check.error) ? <ErrorAlert>{presentError(enroll.error ?? check.error)}</ErrorAlert> : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={enroll.isPending}>
-          {enroll.isPending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" pending={enroll.isPending}>
           {m.studio_roster_submit()}
-        </Button>
-        <Button
+        </SubmitButton>
+        <SubmitButton
           type="button"
           variant="outline"
-          disabled={check.isPending}
+          pending={check.isPending}
           onClick={() => {
             const identifiers = parsePasted(form.state.values.list)
             if (identifiers.length > 0)
               check.mutate({ path: { course_id: courseId }, body: { identifiers, dry_run: true } })
           }}
         >
-          {check.isPending ? <Spinner data-icon="inline-start" /> : null}
           {m.studio_roster_check()}
-        </Button>
+        </SubmitButton>
       </div>
       {check.data ? <EnrollReport result={check.data} preview /> : null}
       {enroll.data ? <EnrollReport result={enroll.data} /> : null}

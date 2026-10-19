@@ -4,8 +4,8 @@ import { m } from '#/paraglide/messages'
 import type { AiCourseAnalysisId, CourseId, FindingReview, Recommendation } from '#/shared/api/gen/types.gen'
 import { vFindingReviewAction } from '#/shared/api/gen/valibot.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDate } from '#/shared/i18n/format'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { findingLabels, findingStateLabels, levelLabels } from '../model/labels'
@@ -45,11 +45,11 @@ export function FindingRow({ courseId, analysisId, findingId, recommendation, re
       ) : (
         <div className="flex flex-wrap gap-2">
           {vFindingReviewAction.options.map(action => (
-            <Button
+            <SubmitButton
               key={action}
               variant="outline"
               size="sm"
-              disabled={verdict.isPending}
+              pending={verdict.isPending}
               onClick={() =>
                 verdict.mutate(
                   { path: { analysis_id: analysisId }, body: { action, finding_id: findingId } },
@@ -58,7 +58,7 @@ export function FindingRow({ courseId, analysisId, findingId, recommendation, re
               }
             >
               {findingLabels[action]()}
-            </Button>
+            </SubmitButton>
           ))}
         </div>
       )}

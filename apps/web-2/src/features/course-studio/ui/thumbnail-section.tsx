@@ -6,9 +6,9 @@ import { vUpdateCourseRequest } from '#/shared/api/gen/valibot.gen'
 import { CourseCover } from '#/shared/components/course-cover'
 import { FileField } from '#/shared/components/form/file-field'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { isStale } from '../model/course'
@@ -62,9 +62,9 @@ export function ThumbnailSection({ course }: { course: Course }) {
               alt={m.studio_thumbnail_alt()}
               className="aspect-video w-full max-w-sm rounded-lg border object-cover"
             />
-            <Button variant="outline" onClick={remove} disabled={update.isPending}>
+            <SubmitButton variant="outline" onClick={remove} pending={update.isPending}>
               {m.studio_thumbnail_remove()}
-            </Button>
+            </SubmitButton>
           </div>
         ) : (
           <div className="flex flex-col items-start gap-2">

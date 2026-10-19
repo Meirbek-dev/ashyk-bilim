@@ -4,9 +4,8 @@ import { useParams } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { Link } from '#/shared/components/link'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { can, courseStatus } from '../model/course'
@@ -58,10 +57,9 @@ export function PublishPage() {
         {can(course, 'publish') ? (
           <>
             {readiness.ready ? null : <p className="text-sm text-muted-foreground">{m.studio_publish_blocked()}</p>}
-            <Button disabled={!readiness.ready || publish.isPending} onClick={go}>
-              {publish.isPending ? <Spinner data-icon="inline-start" /> : null}
+            <SubmitButton pending={publish.isPending} disabled={!readiness.ready} onClick={go}>
               {m.studio_publish()}
-            </Button>
+            </SubmitButton>
           </>
         ) : null}
         {can(course, 'unpublish') ? <UnpublishCourse course={course} /> : null}

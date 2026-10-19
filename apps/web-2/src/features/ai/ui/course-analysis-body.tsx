@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { CourseId } from '#/shared/api/gen/types.gen'
-import { Button } from '#/shared/ui/button'
+import { SubmitButton } from '#/shared/components/submit-button'
 
 import { courseAnalysisKey, courseAnalysisOptions, courseAnalysisQueue } from '../queries'
 import { AnalysisReport } from './analysis-report'
@@ -20,9 +20,9 @@ export function CourseAnalysisBody({ courseId }: { courseId: CourseId }) {
       <h2 className="text-xl font-semibold">{m.ai_analysis_title()}</h2>
       <p className="text-sm text-muted-foreground">{m.ai_analysis_intro()}</p>
       <div>
-        <Button variant="outline" disabled={run.pending} onClick={start}>
+        <SubmitButton variant="outline" pending={run.pending} onClick={start}>
           {analysis ? m.ai_reanalyze() : m.ai_analyze()}
-        </Button>
+        </SubmitButton>
       </div>
       <RunStatus state={run.state} onCancel={run.cancel} cancelling={run.cancelling} onRetry={start} />
       {analysis ? (

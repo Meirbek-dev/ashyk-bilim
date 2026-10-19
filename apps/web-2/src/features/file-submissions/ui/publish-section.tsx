@@ -5,11 +5,11 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { publishTaskOptions, unpublishTaskOptions } from '../queries'
@@ -47,10 +47,9 @@ export function PublishSection({ task }: { task: FileSubmission }) {
       <p className="text-sm text-muted-foreground">{lifecycleHints[task.lifecycle]()}</p>
       {allowed.includes('publish') ? (
         <div>
-          <Button disabled={publish.isPending} onClick={run}>
-            {publish.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton pending={publish.isPending} onClick={run}>
             {m.submission_publish()}
-          </Button>
+          </SubmitButton>
         </div>
       ) : null}
       {allowed.includes('unpublish') ? (

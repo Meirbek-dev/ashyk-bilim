@@ -2,8 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { Activity, ActivityType } from '#/shared/api/gen/types.gen'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
@@ -45,15 +44,14 @@ export function QuickPublish({ courseId, activity, onPublished }: QuickPublishPr
           {refusal(update.error, activity)}
         </span>
       ) : null}
-      <Button
+      <SubmitButton
         variant="outline"
         aria-label={m.studio_publish_named({ name: activity.name })}
-        disabled={update.isPending}
+        pending={update.isPending}
         onClick={publish}
       >
-        {update.isPending ? <Spinner data-icon="inline-start" /> : null}
         {m.studio_publish()}
-      </Button>
+      </SubmitButton>
     </>
   )
 }

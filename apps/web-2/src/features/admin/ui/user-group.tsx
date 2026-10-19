@@ -4,9 +4,8 @@ import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { groupChoiceSchema } from '../model/admin'
@@ -67,10 +66,9 @@ export function UserGroup({ user }: { user: AdminUser }) {
               />
             )}
           </form.AppField>
-          <Button type="submit" variant="outline" disabled={add.isPending}>
-            {add.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton type="submit" variant="outline" pending={add.isPending}>
             {m.admin_user_group_add()}
-          </Button>
+          </SubmitButton>
         </form>
       ) : null}
       {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}

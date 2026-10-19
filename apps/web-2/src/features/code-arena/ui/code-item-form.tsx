@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, EditLock } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
@@ -89,10 +90,9 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
         <div className="flex flex-wrap gap-2">
           <form.Subscribe selector={state => unsaved(state.values)}>
             {changed => (
-              <Button type="submit" disabled={!changed || update.isPending}>
-                {update.isPending ? <Spinner data-icon="inline-start" /> : null}
+              <SubmitButton type="submit" pending={update.isPending} disabled={!changed}>
                 {m.ui_save()}
-              </Button>
+              </SubmitButton>
             )}
           </form.Subscribe>
           {editable ? (

@@ -5,9 +5,8 @@ import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { awardFormSchema } from '../model/admin'
@@ -62,10 +61,9 @@ export function AwardXp({ user }: { user: AdminUser }) {
       <form.AppField name="reason">{field => <field.TextField label={m.admin_award_reason()} />}</form.AppField>
       {award.error ? <ErrorAlert>{presentError(award.error)}</ErrorAlert> : null}
       <div>
-        <Button type="submit" variant="outline" disabled={award.isPending}>
-          {award.isPending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton type="submit" variant="outline" pending={award.isPending}>
           {m.admin_award_submit()}
-        </Button>
+        </SubmitButton>
       </div>
     </form>
   )

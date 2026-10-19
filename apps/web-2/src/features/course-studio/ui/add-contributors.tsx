@@ -6,10 +6,9 @@ import { m } from '#/paraglide/messages'
 import type { UserHit } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { ASSIGNABLE_ROLES, type RoleForm, roleSchema } from '../model/studio'
@@ -54,10 +53,9 @@ export function AddContributors({ courseId }: { courseId: string }) {
       <form.AppField name="role">
         {field => <field.SelectField label={m.studio_role_label()} options={roleOptions} />}
       </form.AppField>
-      <Button type="submit" variant="outline" disabled={people.length === 0 || add.isPending}>
-        {add.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton type="submit" variant="outline" pending={add.isPending} disabled={people.length === 0}>
         {m.studio_team_add_submit()}
-      </Button>
+      </SubmitButton>
       {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
     </form>
   )

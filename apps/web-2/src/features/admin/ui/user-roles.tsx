@@ -7,9 +7,8 @@ import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { IconButton } from '#/shared/components/icon-button'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { canRole, canUser, roleChoiceSchema } from '../model/admin'
@@ -87,10 +86,9 @@ export function UserRoles({ user }: { user: AdminUser }) {
               />
             )}
           </form.AppField>
-          <Button type="submit" variant="outline" disabled={assign.isPending}>
-            {assign.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton type="submit" variant="outline" pending={assign.isPending}>
             {m.admin_add()}
-          </Button>
+          </SubmitButton>
         </form>
       ) : null}
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}

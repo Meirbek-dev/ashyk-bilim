@@ -5,9 +5,8 @@ import { m } from '#/paraglide/messages'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { MultiCombobox, type ComboboxOption } from '#/shared/components/multi-combobox'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { linkableGroupsOptions, linkGroupsOptions } from '../queries'
@@ -48,10 +47,9 @@ export function LinkGroups({ courseId, linked }: { courseId: string; linked: rea
           onValueChange={setPicked}
         />
       </div>
-      <Button type="submit" variant="outline" disabled={picked.length === 0 || link.isPending}>
-        {link.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
         {m.studio_group_link_submit()}
-      </Button>
+      </SubmitButton>
       {link.error ? <ErrorAlert>{presentError(link.error)}</ErrorAlert> : null}
     </form>
   )

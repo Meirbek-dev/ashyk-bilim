@@ -3,9 +3,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { certificateConfig, certificateFields } from '../model/studio'
@@ -29,10 +28,9 @@ export function CertificateSection({ course }: { course: Course }) {
         <h2 className="text-xl font-semibold">{m.studio_certificate_title()}</h2>
         <p className="text-sm text-muted-foreground">{m.studio_certificate_hint()}</p>
       </div>
-      <Button variant="outline" onClick={enable} disabled={create.isPending}>
-        {create.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton variant="outline" onClick={enable} pending={create.isPending}>
         {m.studio_certificate_enable()}
-      </Button>
+      </SubmitButton>
       {create.error ? <ErrorAlert>{presentError(create.error)}</ErrorAlert> : null}
     </section>
   )

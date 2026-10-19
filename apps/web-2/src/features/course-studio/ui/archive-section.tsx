@@ -3,9 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { can } from '../model/course'
@@ -27,10 +26,9 @@ export function ArchiveSection({ course }: { course: Course }) {
         <p className="text-sm text-muted-foreground">{m.studio_archive_hint()}</p>
       </div>
       {can(course, 'restore') ? (
-        <Button variant="outline" onClick={back} disabled={restore.isPending}>
-          {restore.isPending ? <Spinner data-icon="inline-start" /> : null}
+        <SubmitButton variant="outline" onClick={back} pending={restore.isPending}>
           {m.studio_restore()}
-        </Button>
+        </SubmitButton>
       ) : null}
       {can(course, 'archive') ? <ArchiveCourse course={course} /> : null}
       {restore.error ? <ErrorAlert>{presentError(restore.error)}</ErrorAlert> : null}

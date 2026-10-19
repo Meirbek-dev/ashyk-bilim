@@ -5,9 +5,9 @@ import { m } from '#/paraglide/messages'
 import type { Collection } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { FileInput } from '#/shared/components/file-input'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { contentUrl } from '#/shared/lib/content-url'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { updateCollectionOptions } from '../queries'
@@ -50,9 +50,13 @@ export function CoverSection({ collection, base }: CoverSectionProps) {
             alt={m.collections_cover_title()}
             className="aspect-video w-full max-w-sm rounded-lg border object-cover"
           />
-          <Button variant="outline" onClick={() => void save(null).catch(() => undefined)} disabled={update.isPending}>
+          <SubmitButton
+            variant="outline"
+            onClick={() => void save(null).catch(() => undefined)}
+            pending={update.isPending}
+          >
             {m.collections_cover_remove()}
-          </Button>
+          </SubmitButton>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">{m.collections_cover_none()}</p>

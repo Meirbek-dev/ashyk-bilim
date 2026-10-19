@@ -4,10 +4,9 @@ import { Suspense, useState, type FormEvent } from 'react'
 import { m } from '#/paraglide/messages'
 import type { Usergroup, UserHit } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
 import { Skeleton } from '#/shared/ui/skeleton'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { addMembersOptions } from '../group-queries'
@@ -36,10 +35,9 @@ export function GroupMembersAdd({ group }: { group: Usergroup }) {
           <PeoplePicker label={m.admin_group_members_add()} value={picked} onValueChange={setPicked} />
         </Suspense>
       </div>
-      <Button type="submit" variant="outline" disabled={picked.length === 0 || add.isPending}>
-        {add.isPending ? <Spinner data-icon="inline-start" /> : null}
+      <SubmitButton type="submit" variant="outline" pending={add.isPending} disabled={picked.length === 0}>
         {m.admin_add()}
-      </Button>
+      </SubmitButton>
       {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
     </form>
   )

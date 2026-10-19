@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { setUserStatusOptions } from '../queries'
@@ -52,10 +52,9 @@ export function UserStatus({ user }: { user: AdminUser }) {
         />
       ) : (
         <>
-          <Button variant="outline" onClick={() => change(false)} disabled={status.isPending}>
-            {status.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton variant="outline" onClick={() => change(false)} pending={status.isPending}>
             {m.admin_user_enable()}
-          </Button>
+          </SubmitButton>
           {status.error ? <ErrorAlert>{presentError(status.error)}</ErrorAlert> : null}
         </>
       )}

@@ -6,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, Lifecycle } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
@@ -73,21 +74,21 @@ export function LifecycleActions({ activityId, title, assessment }: LifecycleAct
           <form.AppField name="scheduled_at">
             {field => <field.TextField label={m.assessments_schedule_at()} type="datetime-local" />}
           </form.AppField>
-          <Button type="submit" variant="outline" disabled={transition.isPending}>
+          <SubmitButton type="submit" variant="outline" pending={transition.isPending}>
             {m.assessments_schedule()}
-          </Button>
+          </SubmitButton>
         </form>
       ) : null}
       <div className="flex flex-wrap gap-2">
         {from === 'scheduled' ? (
-          <Button variant="outline" disabled={transition.isPending} onClick={() => run('draft')}>
+          <SubmitButton variant="outline" pending={transition.isPending} onClick={() => run('draft')}>
             {m.assessments_unschedule()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {from === 'archived' ? (
-          <Button variant="outline" disabled={transition.isPending} onClick={() => run('draft')}>
+          <SubmitButton variant="outline" pending={transition.isPending} onClick={() => run('draft')}>
             {m.assessments_restore()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {canMove(assessment, 'archived') ? (
           <ConfirmDialog

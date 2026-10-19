@@ -3,9 +3,9 @@ import { Download } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { toDateTimeInput } from '#/shared/i18n/format'
-import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
 import { rosterCsv } from '../model/roster'
@@ -37,10 +37,10 @@ export function ExportLearners({ courseId, courseName }: { courseId: string; cou
   return (
     <div className="flex flex-col gap-1">
       <div>
-        <Button variant="outline" onClick={() => save.mutate()} disabled={save.isPending}>
+        <SubmitButton variant="outline" onClick={() => save.mutate()} pending={save.isPending}>
           {save.isPending ? <Spinner data-icon="inline-start" /> : <Download aria-hidden data-icon="inline-start" />}
           {m.studio_roster_export()}
-        </Button>
+        </SubmitButton>
       </div>
       {save.error ? <p className="text-sm text-destructive">{presentError(save.error)}</p> : null}
     </div>
