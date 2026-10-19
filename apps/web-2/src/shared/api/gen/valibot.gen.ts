@@ -5066,6 +5066,7 @@ export const vNotificationPayload = v.union([
         course_id: vCourseId,
         course_name: v.string(),
         discussion_id: vDiscussionId,
+        excerpt: v.optional(v.string()),
         reply_id: vDiscussionId,
         type: v.picklist(['discussion_reply'])
     }),
@@ -5082,6 +5083,7 @@ export const vNotificationPayload = v.union([
         course_id: vCourseId,
         course_name: v.string(),
         discussion_id: vDiscussionId,
+        excerpt: v.optional(v.string()),
         type: v.picklist(['discussion_post'])
     }),
     v.object({

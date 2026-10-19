@@ -4033,6 +4033,11 @@ export type NotificationPayload = {
      * The thread (top-level post).
      */
     discussion_id: DiscussionId;
+    /**
+     * The post's first ~140 characters as plain text, so a list of
+     * them reads apart (CONTRACT-REQ-E-1); empty in rows stored before.
+     */
+    excerpt?: string;
     reply_id: DiscussionId;
     type: 'discussion_reply';
 } | {
@@ -4047,6 +4052,11 @@ export type NotificationPayload = {
     course_id: CourseId;
     course_name: string;
     discussion_id: DiscussionId;
+    /**
+     * The post's first ~140 characters as plain text, so a list of
+     * them reads apart (CONTRACT-REQ-E-1); empty in rows stored before.
+     */
+    excerpt?: string;
     type: 'discussion_post';
 } | {
     course_id: CourseId;

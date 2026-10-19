@@ -520,6 +520,8 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
         taught["items"][0]["payload"]["author_id"],
         alice.user_id.to_string()
     );
+    // CONTRACT-REQ-E-1: the post's plain text, so a list of them reads apart.
+    assert_eq!(taught["items"][0]["payload"]["excerpt"], "Question?");
     let reply = app
         .post_as(
             &bob,
@@ -533,6 +535,7 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
     assert_eq!(note["type"], "discussion_reply");
     assert_eq!(note["payload"]["discussion_id"], post_id.as_str());
     assert_eq!(note["payload"]["author_id"], bob.user_id.to_string());
+    assert_eq!(note["payload"]["excerpt"], "Answer.");
     assert_eq!(
         notifications(&app, &bob, "").await["items"],
         serde_json::json!([])

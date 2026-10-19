@@ -31,6 +31,10 @@
       "reason": "Brand name, not translated."
     },
     {
+      "key": "notifications_text_excerpt",
+      "reason": "The post's own words in «» quotes, as both ru and kk quote; nothing to translate."
+    },
+    {
       "key": "grading_percent",
       "reason": "A number and the percent sign with a no-break space, as Intl writes it in ru and kk; nothing to translate."
     },

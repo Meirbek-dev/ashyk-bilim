@@ -18,6 +18,8 @@ use crate::identity::Actor;
 
 pub const MAX_PAGE: i64 = 100;
 pub const MAX_CONTENT_CHARS: usize = 20_000;
+/// A notification's excerpt of the post (CONTRACT-REQ-E-1).
+const EXCERPT_CHARS: usize = 140;
 
 const fn perm(action: Action, scope: Scope) -> Permission {
     Permission {
@@ -579,6 +581,7 @@ impl DiscussionsService {
                 discussion_id: post.id,
                 author_id,
                 author_name: author_name(post),
+                excerpt: crate::rich_text::plain_excerpt(&post.content, EXCERPT_CHARS),
             },
             None,
         )
@@ -617,6 +620,7 @@ impl DiscussionsService {
                 reply_id: reply.id,
                 author_id,
                 author_name: author_name(reply),
+                excerpt: crate::rich_text::plain_excerpt(&reply.content, EXCERPT_CHARS),
             },
             None,
         )

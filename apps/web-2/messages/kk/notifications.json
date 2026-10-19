@@ -37,6 +37,7 @@
   "notifications_text_reply": "{author} «{course}» курсының талқылауында жауап берді",
   "notifications_text_application": "{applicant} «{course}» курсының бірлескен авторы болғысы келеді",
   "notifications_text_post": "{author} «{course}» курсының талқылауында жаңа тақырып ашты",
+  "notifications_text_excerpt": "«{text}»",
   "notifications_text_team_added": "Сізді «{course}» курсының командасына қосты",
   "notifications_text_team_observer": "Сізді «{course}» курсына бақылаушы ретінде қосты: оны, тіпті нобайын да көресіз, бірақ ештеңе өзгертпейсіз",
   "notifications_xp_awarded": "{amount} XP есептелді",

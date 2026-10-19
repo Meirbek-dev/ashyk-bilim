@@ -79,6 +79,12 @@ export const NotificationPage = zod
                   course_id: zod.uuid(),
                   course_name: zod.string(),
                   discussion_id: zod.uuid().describe('The thread (top-level post).'),
+                  excerpt: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      "The post's first ~140 characters as plain text, so a list of\nthem reads apart (CONTRACT-REQ-E-1); empty in rows stored before.",
+                    ),
                   reply_id: zod.uuid(),
                   type: zod.enum(['discussion_reply']),
                 })
@@ -99,6 +105,12 @@ export const NotificationPage = zod
                   course_id: zod.uuid(),
                   course_name: zod.string(),
                   discussion_id: zod.uuid(),
+                  excerpt: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      "The post's first ~140 characters as plain text, so a list of\nthem reads apart (CONTRACT-REQ-E-1); empty in rows stored before.",
+                    ),
                   type: zod.enum(['discussion_post']),
                 })
                 .describe(

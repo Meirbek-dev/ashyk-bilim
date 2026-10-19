@@ -232,11 +232,76 @@ fn plain_key(key: &str) -> bool {
         })
 }
 
+/// A notification's excerpt of a post (CONTRACT-REQ-E-1).
+///
+/// The readable text of an editor document, or of the old web's HTML or
+/// plain text, whitespace collapsed and cut to `limit` characters with an
+/// ellipsis, as web-2's `extractPlainText` reads it.
+#[must_use]
+pub fn plain_excerpt(content: &str, limit: usize) -> String {
+    fn collect(node: &Value, out: &mut String) {
+        if let Some(text) = node.get("text").and_then(Value::as_str) {
+            out.push_str(text);
+        }
+        if let Some(children) = node.get("content").and_then(Value::as_array) {
+            for child in children {
+                collect(child, out);
+            }
+        }
+        if node.get("type").and_then(Value::as_str) != Some("text") {
+            out.push(' ');
+        }
+    }
+    let mut text = String::new();
+    match serde_json::from_str::<Value>(content) {
+        Ok(doc) if doc.get("type").and_then(Value::as_str) == Some("doc") => {
+            collect(&doc, &mut text);
+        }
+        _ => {
+            let mut in_tag = false;
+            for c in content.chars() {
+                match c {
+                    '<' => in_tag = true,
+                    '>' if in_tag => {
+                        in_tag = false;
+                        text.push(' ');
+                    }
+                    _ if !in_tag => text.push(c),
+                    _ => {}
+                }
+            }
+        }
+    }
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let flat = words.join(" ");
+    if flat.chars().count() <= limit {
+        return flat;
+    }
+    let cut: String = flat.chars().take(limit).collect();
+    format!("{}…", cut.trim_end())
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn excerpts_read_documents_html_and_plain_text() {
+        let doc = json!({"type": "doc", "content": [
+            {"type": "paragraph", "content": [{"type": "text", "text": "Как сдать"}, {"type": "text", "text": " задание?"}]},
+            {"type": "paragraph", "content": [{"type": "text", "text": "Срок завтра."}]}
+        ]})
+        .to_string();
+        assert_eq!(plain_excerpt(&doc, 140), "Как сдать задание? Срок завтра.");
+        assert_eq!(
+            plain_excerpt("<p>Привет,</p><p>мир</p>", 140),
+            "Привет, мир"
+        );
+        assert_eq!(plain_excerpt("  просто   текст ", 140), "просто текст");
+        assert_eq!(plain_excerpt("абвгд ежз", 6), "абвгд…");
+    }
 
     fn fields(doc: &Value) -> Vec<String> {
         violations("content", doc, &["ashyq.test".to_owned()])

@@ -40,6 +40,8 @@ export const notificationIcons: Record<NotificationType, LucideIcon> = {
   course_team_added: Users,
 }
 
+const excerpt = (text: string | undefined) => (text ? [m.notifications_text_excerpt({ text })] : [])
+
 /** What happened, with the names the payload carries: one or two lines. */
 export function notificationLines(payload: NotificationPayload): string[] {
   switch (payload.type) {
@@ -59,12 +61,19 @@ export function notificationLines(payload: NotificationPayload): string[] {
       ]
     case 'course_update':
       return [m.notifications_text_update({ title: payload.title, course: payload.course_name })]
+    // The post's own words under who wrote where (CONTRACT-REQ-E-1): twenty replies no longer read alike.
     case 'discussion_reply':
-      return [m.notifications_text_reply({ author: payload.author_name, course: payload.course_name })]
+      return [
+        m.notifications_text_reply({ author: payload.author_name, course: payload.course_name }),
+        ...excerpt(payload.excerpt),
+      ]
     case 'contributor_application':
       return [m.notifications_text_application({ applicant: payload.applicant_name, course: payload.course_name })]
     case 'discussion_post':
-      return [m.notifications_text_post({ author: payload.author_name, course: payload.course_name })]
+      return [
+        m.notifications_text_post({ author: payload.author_name, course: payload.course_name }),
+        ...excerpt(payload.excerpt),
+      ]
     case 'course_team_added':
       return [
         payload.role === 'reporter'

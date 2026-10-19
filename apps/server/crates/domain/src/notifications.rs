@@ -87,6 +87,10 @@ pub enum NotificationPayload {
         reply_id: DiscussionId,
         author_id: UserId,
         author_name: String,
+        /// The post's first ~140 characters as plain text, so a list of
+        /// them reads apart (CONTRACT-REQ-E-1); empty in rows stored before.
+        #[serde(default)]
+        excerpt: String,
     },
     /// Someone applied to co-author a course the recipient owns.
     ContributorApplication {
@@ -103,6 +107,10 @@ pub enum NotificationPayload {
         discussion_id: DiscussionId,
         author_id: UserId,
         author_name: String,
+        /// The post's first ~140 characters as plain text, so a list of
+        /// them reads apart (CONTRACT-REQ-E-1); empty in rows stored before.
+        #[serde(default)]
+        excerpt: String,
     },
     /// The recipient joined a course team: added, or their application
     /// approved.

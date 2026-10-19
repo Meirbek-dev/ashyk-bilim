@@ -11800,6 +11800,10 @@ expression: json
                 "$ref": "#/components/schemas/DiscussionId",
                 "description": "The thread (top-level post)."
               },
+              "excerpt": {
+                "description": "The post's first ~140 characters as plain text, so a list of\nthem reads apart (CONTRACT-REQ-E-1); empty in rows stored before.",
+                "type": "string"
+              },
               "reply_id": {
                 "$ref": "#/components/schemas/DiscussionId"
               },
@@ -11869,6 +11873,10 @@ expression: json
               },
               "discussion_id": {
                 "$ref": "#/components/schemas/DiscussionId"
+              },
+              "excerpt": {
+                "description": "The post's first ~140 characters as plain text, so a list of\nthem reads apart (CONTRACT-REQ-E-1); empty in rows stored before.",
+                "type": "string"
               },
               "type": {
                 "enum": [
