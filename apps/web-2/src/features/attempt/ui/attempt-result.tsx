@@ -8,7 +8,7 @@ import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatPercent } from '#/shared/i18n/format'
 
-import { resultVerdict } from '../model/attempt'
+import { autoPart, resultVerdict } from '../model/attempt'
 import { stateOptions } from '../queries'
 import { ATTEMPT_PATH, AttemptFrame } from './attempt-frame'
 import { statuses } from './attempts-list'
@@ -37,6 +37,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
   const released = attempt.release_state === 'visible' || attempt.release_state === 'returned_for_revision'
   const verdict = resultVerdict(attempt, state)
   const grading = attempt.grading
+  const auto = autoPart(attempt, assessment.policy.review_visibility)
   return (
     <AttemptFrame title={assessment.title}>
       <article className="flex flex-col gap-gutter">
@@ -50,6 +51,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
         <ScoreHero attempt={attempt} state={state} released={released} />
         <ul className="flex flex-col gap-1 text-sm empty:hidden">
           {note ? <li>{note()}</li> : null}
+          {auto === null ? null : <li>{m.attempt_auto_part({ score: formatPercent(auto) })}</li>}
           {attempt.auto_submit_reason === 'time_expired' ? <li>{m.attempt_auto_time()}</li> : null}
           {attempt.auto_submit_reason === 'integrity_violation' ? <li>{m.attempt_auto_violation()}</li> : null}
           {attempt.auto_submit_reason === 'deadline_passed' ? <li>{m.attempt_auto_deadline()}</li> : null}

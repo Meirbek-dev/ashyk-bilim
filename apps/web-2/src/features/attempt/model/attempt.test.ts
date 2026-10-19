@@ -16,6 +16,7 @@ import {
   isBlank,
   needsRemediation,
   protections,
+  autoPart,
   resultVerdict,
   retryDelayMs,
   saveOutcome,
@@ -95,6 +96,14 @@ describe('attempt model', () => {
     expect(resultVerdict({ ...visible, final_score: null }, state())).toBeNull()
     expect(resultVerdict({ release_state: 'awaiting_release', final_score: 90 }, state())).toBeNull()
     expect(resultVerdict({ release_state: 'returned_for_revision', final_score: 10 }, state())).toBeNull()
+  })
+
+  test('B-ATT-25 an attempt on manual review shows its auto-scored part, unless scores are hidden or the grade is out', () => {
+    const pending = { status: 'pending' as const, final_score: null, auto_score: 40 }
+    expect(autoPart(pending, 'full')).toBe(40)
+    expect(autoPart(pending, 'none')).toBeNull()
+    expect(autoPart({ ...pending, status: 'published', final_score: 70 }, 'full')).toBeNull()
+    expect(autoPart({ ...pending, auto_score: null }, 'score_only')).toBeNull()
   })
 
   test('B-ATT-20 remediation is required only when the server says so', () => {

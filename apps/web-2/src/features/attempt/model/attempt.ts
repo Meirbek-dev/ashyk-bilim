@@ -26,6 +26,18 @@ export function entryAction(state: AttemptState): EntryAction {
 export const needsRemediation = (state: AttemptState) => state.disabled_reasons.includes('REMEDIATION_REQUIRED')
 
 /**
+ * The automatically scored part of an attempt still under manual review (B-ATT-25): shown when the policy lets the
+ * learner see scores at all; null once the grade is out or when nothing was auto-scored.
+ */
+export function autoPart(
+  attempt: Pick<StudentSubmission, 'auto_score' | 'final_score' | 'status'>,
+  visibility: Policy['review_visibility'],
+): number | null {
+  if (attempt.status !== 'pending' || attempt.final_score !== null || visibility === 'none') return null
+  return attempt.auto_score
+}
+
+/**
  * "Passed / not passed" of a handed-in attempt (B-ATT-23): only for a released score, against the effective passing
  * score; null while there is nothing to judge (on review, held back, returned for revision).
  */
