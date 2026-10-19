@@ -6,12 +6,12 @@ import { BlockViewer } from '#/features/editor'
 import { m } from '#/paraglide/messages'
 import type { Discussion, DiscussionAction } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { UserAvatar } from '#/shared/components/user-avatar'
 import { presentError } from '#/shared/i18n/errors'
 import { formatDate } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
 import { buttonVariants } from '#/shared/components/button-variants'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { updatePostOptions } from '../queries'
@@ -101,10 +101,9 @@ export function PostItem({ item, open = false }: PostItemProps) {
           </Button>
         ) : null}
         {can('moderate') ? (
-          <Button variant="ghost" onClick={moderate} disabled={update.isPending && !editing}>
-            {update.isPending && !editing ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton variant="ghost" onClick={moderate} pending={update.isPending && !editing}>
             {hidden ? m.discussions_restore() : m.discussions_hide()}
-          </Button>
+          </SubmitButton>
         ) : null}
         {can('delete') ? <DeletePost item={item} /> : null}
       </div>

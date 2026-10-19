@@ -1,7 +1,7 @@
 import { m } from '#/paraglide/messages'
+import { SubmitButton } from '#/shared/components/submit-button'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -9,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#/shared/ui/alert-dialog'
-import { Spinner } from '#/shared/ui/spinner'
 
 type ConflictDialogProps = {
   open: boolean
@@ -33,10 +32,9 @@ export function ConflictDialog({ open, onOpenChange, onRetry, pending }: Conflic
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
-          <AlertDialogAction disabled={pending} onClick={onRetry}>
-            {pending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton pending={pending} onClick={onRetry}>
             {m.ui_conflict_retry()}
-          </AlertDialogAction>
+          </SubmitButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

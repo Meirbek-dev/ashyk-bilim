@@ -5,8 +5,6 @@ import type { AssessmentDetail, EditLock } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { isRunnerDown, languagesIn, type CodeItem } from '../model/arena'
 import { runnerStateOptions } from '../queries'
@@ -96,15 +94,15 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
             )}
           </form.Subscribe>
           {editable ? (
-            <Button
+            <SubmitButton
               type="button"
               variant="outline"
-              disabled={runner.state === 'down' || check.isPending || update.isPending}
+              pending={check.isPending}
+              disabled={runner.state === 'down' || update.isPending}
               onClick={() => void checkReference()}
             >
-              {check.isPending ? <Spinner data-icon="inline-start" /> : null}
               {m.code_check()}
-            </Button>
+            </SubmitButton>
           ) : null}
         </div>
       )}

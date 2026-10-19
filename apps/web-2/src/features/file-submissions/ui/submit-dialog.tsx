@@ -36,7 +36,11 @@ export function SubmitDialog(props: SubmitDialogProps) {
   const cancel = useRef<HTMLButtonElement>(null)
   return (
     <AlertDialog open={open} onOpenChange={next => onOpenChange(next)}>
-      <AlertDialogTrigger render={<Button disabled={disabled} />}>{trigger}</AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={<Button disabled={disabled} focusableWhenDisabled className="aria-disabled:opacity-50" />}
+      >
+        {trigger}
+      </AlertDialogTrigger>
       <AlertDialogContent initialFocus={cancel}>
         <AlertDialogHeader>
           <AlertDialogTitle>{m.submission_submit_title()}</AlertDialogTitle>

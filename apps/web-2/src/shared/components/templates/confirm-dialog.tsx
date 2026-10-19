@@ -2,10 +2,10 @@ import { useHydrated } from '@tanstack/react-router'
 import { useRef, type ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -14,7 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '#/shared/ui/alert-dialog'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { ErrorAlert } from '../error-alert'
 
@@ -61,10 +60,9 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
             {onConfirm ? m.ui_cancel() : m.ui_close()}
           </AlertDialogCancel>
           {onConfirm ? (
-            <AlertDialogAction variant="destructive" disabled={pending} onClick={onConfirm}>
-              {pending ? <Spinner data-icon="inline-start" /> : null}
+            <SubmitButton variant="destructive" pending={pending} onClick={onConfirm}>
               {confirmLabel}
-            </AlertDialogAction>
+            </SubmitButton>
           ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>

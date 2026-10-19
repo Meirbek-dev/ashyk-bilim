@@ -8,9 +8,7 @@ import type { ActivityState, LearnerCourseState } from '#/shared/api/gen/types.g
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
 import { buttonVariants } from '#/shared/components/button-variants'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { activityKind, playerAction, type EntryAction } from '../model/player'
@@ -81,14 +79,14 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
           </RouterLink>
         ) : null}
         {unmarkable ? (
-          <Button
+          <SubmitButton
             variant="ghost"
-            disabled={pending || unmark.isPending}
+            pending={unmark.isPending}
+            disabled={pending}
             onClick={() => unmark.mutate(path, { onSuccess: () => toast.add({ title: m.player_unmarked() }) })}
           >
-            {unmark.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.player_unmark()}
-          </Button>
+          </SubmitButton>
         ) : null}
       </div>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}

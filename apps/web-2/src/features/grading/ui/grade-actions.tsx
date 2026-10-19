@@ -1,9 +1,8 @@
 import { m } from '#/paraglide/messages'
 import type { GradeAction } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Spinner } from '#/shared/ui/spinner'
 
 import { isStale } from './use-conflict'
 
@@ -33,16 +32,16 @@ export function GradeActions({ allowed, pending, onAction, error, published = fa
       {error && !isStale(error) ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       <div className="flex flex-wrap gap-2">
         {ORDER.filter(action => allowed.includes(action)).map(action => (
-          <Button
+          <SubmitButton
             key={action}
             type="button"
             variant={action === 'publish' ? 'default' : 'outline'}
+            pending={pending === action}
             disabled={pending !== null}
             onClick={() => onAction(action)}
           >
-            {pending === action ? <Spinner data-icon="inline-start" /> : null}
             {action === 'publish' && published ? m.grading_republish() : labels[action]()}
-          </Button>
+          </SubmitButton>
         ))}
       </div>
     </div>

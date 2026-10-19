@@ -15,12 +15,25 @@ type IconButtonProps = Omit<
 
 /**
  * An icon-only action: stock `Button` (ghost, size icon) inside a stock `Tooltip`, so the name and the tooltip can
- * never drift apart. Usable as the `render` of a dialog, sheet or menu trigger: it forwards their props.
+ * never drift apart. Usable as the `render` of a dialog, sheet or menu trigger: it forwards their props. Disabled, it
+ * stays focusable (aria-disabled): focus is not dropped while a request runs, and the tooltip can still say what it is.
  */
 export function IconButton({ label, icon, ...props }: IconButtonProps) {
   return (
     <Tooltip>
-      <TooltipTrigger delay={300} render={<Button variant="ghost" size="icon" aria-label={label} {...props} />}>
+      <TooltipTrigger
+        delay={300}
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={label}
+            focusableWhenDisabled
+            className="aria-disabled:opacity-50"
+            {...props}
+          />
+        }
+      >
         {icon}
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>

@@ -155,6 +155,37 @@ const routeLevelImports: Rule = {
   },
 }
 
+// `disabled={x.isPending}` drops keyboard focus to <body> the moment the button is pressed (OPEN-E-1).
+const PENDING_NAMES = new Set(['pending', 'isPending', 'submitting', 'isSubmitting'])
+const BUTTONS = new Set(['Button', 'AlertDialogAction'])
+const attribute = (node: Node, name: string): Node | null => {
+  const attributes = Array.isArray(node['attributes']) ? node['attributes'].filter(isNode) : []
+  return attributes.find(item => child(item, 'name')?.['name'] === name) ?? null
+}
+const readsPending = (value: Node | null): boolean => {
+  let found = false
+  walk(value, used => {
+    const name = used.type === 'Identifier' ? used['name'] : null
+    if (typeof name === 'string' && PENDING_NAMES.has(name)) found = true
+  })
+  return found
+}
+
+const pendingButtonFocus: Rule = {
+  create: context => ({
+    JSXOpeningElement(node) {
+      if (!BUTTONS.has(String(child(node, 'name')?.['name']))) return
+      const disabled = attribute(node, 'disabled')
+      if (!disabled || attribute(node, 'focusableWhenDisabled') || !readsPending(child(disabled, 'value'))) return
+      context.report({
+        node: disabled,
+        message:
+          'A button disabled while a request runs drops keyboard focus: use SubmitButton pending={...} from #/shared/components/submit-button.',
+      })
+    },
+  }),
+}
+
 export default {
   meta: { name: 'ab' },
   rules: {
@@ -164,5 +195,6 @@ export default {
     'no-dynamic-message': noDynamicMessage,
     'route-entry-imports': routeEntryImports,
     'route-level-imports': routeLevelImports,
+    'pending-button-focus': pendingButtonFocus,
   },
 }

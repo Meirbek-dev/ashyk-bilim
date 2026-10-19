@@ -156,7 +156,6 @@ const forbiddenElements = ['button', 'input', 'select', 'textarea', 'dialog', 't
   element,
   message: `Use the stock component from #/shared/ui or a composite from #/shared/components (Link / Anchor for <a>), not raw <${element}>.`,
 }))
-
 const LINK_COMPOSITES = ['src/shared/components/link.tsx', 'src/shared/components/anchor.tsx']
 const forbiddenExceptA = forbiddenElements.filter(entry => entry.element !== 'a')
 
@@ -173,6 +172,7 @@ const lint: OxlintConfig = {
     'ab/no-empty-fallback': 'error',
     'ab/no-literal-query-key': 'error',
     'ab/no-dynamic-message': 'error',
+    'ab/pending-button-focus': 'error',
     'max-lines': ['error', { max: 300 }],
     'max-lines-per-function': ['error', { max: 80 }],
     'typescript/no-floating-promises': 'error',

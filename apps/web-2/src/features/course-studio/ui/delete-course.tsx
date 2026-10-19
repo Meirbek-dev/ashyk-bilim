@@ -5,10 +5,10 @@ import { useId, useRef, useState } from 'react'
 import { m } from '#/paraglide/messages'
 import type { Course } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -20,7 +20,6 @@ import {
 import { Button } from '#/shared/ui/button'
 import { Field, FieldLabel } from '#/shared/ui/field'
 import { Input } from '#/shared/ui/input'
-import { Spinner } from '#/shared/ui/spinner'
 import { toast } from '#/shared/ui/toast'
 
 import { deleteCourseOptions } from '../queries'
@@ -73,10 +72,9 @@ export function DeleteCourse({ course }: { course: Course }) {
           <AlertDialogCancel ref={cancel} variant="ghost">
             {m.ui_cancel()}
           </AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={!matches || remove.isPending} onClick={confirm}>
-            {remove.isPending ? <Spinner data-icon="inline-start" /> : null}
+          <SubmitButton variant="destructive" pending={remove.isPending} disabled={!matches} onClick={confirm}>
             {m.studio_course_delete()}
-          </AlertDialogAction>
+          </SubmitButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
