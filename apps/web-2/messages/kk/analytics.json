@@ -32,6 +32,7 @@
   "analytics_kpi_negative_engagement": "Белсенділігі төмендеген курстар",
   "analytics_change_pct": "{value} % өткен кезеңге қарағанда",
   "analytics_change_value": "{value} өткен кезеңге қарағанда",
+  "analytics_change_points": "{value} пайыздық тармақ өткен кезеңге қарағанда",
   "analytics_trend_better": "жақсырақ",
   "analytics_trend_worse": "нашарырақ",
   "analytics_trend_same": "өзгеріссіз",

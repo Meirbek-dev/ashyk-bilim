@@ -32,6 +32,7 @@
   "analytics_kpi_negative_engagement": "Курсы с падением активности",
   "analytics_change_pct": "{value} % к прошлому периоду",
   "analytics_change_value": "{value} к прошлому периоду",
+  "analytics_change_points": "{value} п. п. к прошлому периоду",
   "analytics_trend_better": "лучше",
   "analytics_trend_worse": "хуже",
   "analytics_trend_same": "без изменений",

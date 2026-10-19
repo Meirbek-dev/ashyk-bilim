@@ -17,7 +17,10 @@ export function metricChange(card: MetricCard): { text: string; tone: 'success' 
   const delta = !missing(card.delta_pct)
     ? m.analytics_change_pct({ value: formatNumber(card.delta_pct, { signed: true }) })
     : !missing(card.delta_value)
-      ? m.analytics_change_value({ value: formatNumber(card.delta_value, { signed: true }) })
+      ? // A share's absolute change is in percentage points: "+100 к прошлому периоду" read as a count.
+        (card.unit === '%' ? m.analytics_change_points : m.analytics_change_value)({
+          value: formatNumber(card.delta_value, { signed: true }),
+        })
       : null
   if (delta === null) return null
   const trend = trendLabels[trendOf(card)]

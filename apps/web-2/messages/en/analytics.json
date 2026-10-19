@@ -32,6 +32,7 @@
   "analytics_kpi_negative_engagement": "Courses with falling activity",
   "analytics_change_pct": "{value}% vs the previous period",
   "analytics_change_value": "{value} vs the previous period",
+  "analytics_change_points": "{value} pp vs the previous period",
   "analytics_trend_better": "better",
   "analytics_trend_worse": "worse",
   "analytics_trend_same": "no change",
