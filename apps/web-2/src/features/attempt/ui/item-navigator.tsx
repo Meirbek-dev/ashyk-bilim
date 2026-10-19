@@ -15,6 +15,8 @@ type NavigatorProps = {
   onPick: () => void
 }
 
+const revealInPanel = (link: HTMLElement | null) => link?.scrollIntoView({ block: 'nearest' })
+
 /**
  * Every question of the attempt as a link (`?item=N`): number tile, title, "Answered" mark; the current one is marked.
  * A ring over the list counts the answered ones.
@@ -48,6 +50,8 @@ export function ItemNavigator({ items, answers, current, onPick }: NavigatorProp
                 search={search => ({ ...search, item: index + 1 })}
                 variant="nav"
                 aria-current={index + 1 === current ? 'step' : undefined}
+                // «Далее» moves the current question down a 115-row list: keep it in the panel's view.
+                ref={index + 1 === current ? revealInPanel : undefined}
                 onClick={onPick}
               >
                 <span
@@ -55,7 +59,9 @@ export function ItemNavigator({ items, answers, current, onPick }: NavigatorProp
                 >
                   {index + 1}
                 </span>
-                <span className="min-w-0 flex-1 wrap-anywhere">{item.title}</span>
+                <span title={item.title} className="line-clamp-2 min-w-0 flex-1 wrap-anywhere">
+                  {item.title}
+                </span>
                 {done ? (
                   <>
                     <Check aria-hidden className="text-success" />

@@ -31,7 +31,7 @@ type FocusPageProps = {
  * `pb-18` keeps its last rows reachable.
  */
 function revealCurrentItem(panel: HTMLElement | null) {
-  const current = panel?.querySelector<HTMLElement>('[aria-current="page"]')
+  const current = panel?.querySelector<HTMLElement>('[aria-current="page"], [aria-current="step"]')
   if (!panel || !current) return
   const top = current.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop
   if (top + current.offsetHeight > panel.scrollTop + panel.clientHeight * 0.8)
@@ -64,7 +64,10 @@ export function FocusPage({
               onOpenChange={contentsSheet?.onOpenChange}
               trigger={<IconButton label={m.ui_contents()} icon={<PanelLeft aria-hidden />} />}
               // On a phone the sheet opens on the current item (focus scrolls it into view), not at the top.
-              initialFocus={() => sheetContents.current?.querySelector<HTMLElement>('[aria-current="page"]') ?? true}
+              initialFocus={() =>
+                sheetContents.current?.querySelector<HTMLElement>('[aria-current="page"], [aria-current="step"]') ??
+                true
+              }
             >
               <div ref={sheetContents}>{contents}</div>
             </SheetPanel>
