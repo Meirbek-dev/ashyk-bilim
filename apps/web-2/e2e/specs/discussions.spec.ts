@@ -127,6 +127,15 @@ test('B-DSC-04 a thread opens under its post and lives in the URL', async ({ pag
   await expect(article(page, 'Первый ответ.')).toHaveCount(0)
 })
 
+test('B-DSC-18 a thread link scrolls the page to its post', async ({ page, signInAs, course, post }) => {
+  const made = await course()
+  const old = await post(made, 'Вопрос внизу списка.')
+  for (let index = 1; index <= 8; index += 1) await post(made, `Свежий пост ${index}.`)
+  await signInAs('student')
+  await page.goto(tab(made, old.id))
+  await expect(article(page, 'Вопрос внизу списка.')).toBeInViewport()
+})
+
 test('B-DSC-12 a thread link past the first page opens its post alone', async ({ page, signInAs, course, post }) => {
   const made = await course()
   const old = await post(made, 'Старый вопрос.')

@@ -6,7 +6,7 @@ import { linkedPostOptions, opensThread } from '../queries'
 import { PostRow } from './post-row'
 
 /** A thread link to a post on a page not loaded yet: the post read alone, open, above the list. */
-export function LinkedThread({ courseId, id }: { courseId: CourseId; id: DiscussionId }) {
+export function LinkedThread({ courseId, id, landing }: { courseId: CourseId; id: DiscussionId; landing: boolean }) {
   const { data: post } = useSuspenseQuery(linkedPostOptions(id))
-  return opensThread(post, courseId) ? <PostRow post={post} open /> : null
+  return opensThread(post, courseId) ? <PostRow post={post} open landing={landing} /> : null
 }
