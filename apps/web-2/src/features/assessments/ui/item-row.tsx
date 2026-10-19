@@ -43,8 +43,10 @@ export function ItemRow({ courseId, activityId, item, index, open, movable }: It
           params={{ courseId, activityId }}
           search={{ item: item.id }}
           aria-current={open ? 'true' : undefined}
+          variant="title"
         >
-          <span className="wrap-anywhere">
+          {/* A long prompt-as-title stays three lines in the list; the editor shows it whole. */}
+          <span className="line-clamp-3 wrap-anywhere">
             {item.position}. {title}
           </span>
         </Link>
