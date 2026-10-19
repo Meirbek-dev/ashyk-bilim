@@ -604,7 +604,13 @@ pub fn build_admin_overview(
             }
         })
         .collect();
-    course_health.sort_by(|a, b| a.health_score.total_cmp(&b.health_score));
+    // Courses nobody has started are not «lagging»: they follow the rest instead of filling the top with zeros.
+    let started: HashSet<CourseId> = ctx.member_progress(None).map(|p| p.course_id).collect();
+    course_health.sort_by(|a, b| {
+        (!started.contains(&a.course_id))
+            .cmp(&!started.contains(&b.course_id))
+            .then(a.health_score.total_cmp(&b.health_score))
+    });
     let mut content_roi = course_health.clone();
     content_roi.sort_by(|a, b| {
         b.content_roi_score

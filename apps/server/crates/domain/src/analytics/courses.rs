@@ -4,6 +4,7 @@
 use std::collections::{HashMap, HashSet};
 
 use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
+use ab_core::links::WebLink;
 
 use super::assessments::build_assessment_rows;
 use super::bottlenecks::build_content_bottlenecks;
@@ -72,7 +73,7 @@ pub fn course_top_alert(
             },
             code: AnalyticsCode::GradingBacklog,
             params: serde_json::json!({ "count": ungraded, "course_name": course_name }),
-            href: None,
+            href: Some(WebLink::AnalyticsBacklog.path(None)),
             course_id: Some(course_id),
             activity_id: None,
             assessment_id: None,
@@ -86,7 +87,7 @@ pub fn course_top_alert(
             severity: Severity::Warning,
             code: AnalyticsCode::EngagementDropped,
             params: serde_json::json!({ "delta_pct": delta.abs(), "course_name": course_name }),
-            href: None,
+            href: Some(WebLink::AnalyticsCourse(course_id).path(None)),
             course_id: Some(course_id),
             activity_id: None,
             assessment_id: None,
@@ -104,7 +105,7 @@ pub fn course_top_alert(
             },
             code: AnalyticsCode::ContentStale,
             params: serde_json::json!({ "days": days, "course_name": course_name }),
-            href: None,
+            href: Some(WebLink::AnalyticsCourse(course_id).path(None)),
             course_id: Some(course_id),
             activity_id: None,
             assessment_id: None,
