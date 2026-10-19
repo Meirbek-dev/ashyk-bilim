@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { CourseNotFound } from '#/features/course'
-import { CourseWorkspace, ensureWorkspace } from '#/features/course-studio'
+import { CourseWorkspace, ensureWorkspace, WorkspaceError } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 import { documentTitle } from '#/shared/lib/document-title'
 
@@ -22,5 +22,6 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId')({
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.name) }] : [] }),
   component: CourseWorkspace,
+  errorComponent: WorkspaceError,
   notFoundComponent: CourseNotFound,
 })
