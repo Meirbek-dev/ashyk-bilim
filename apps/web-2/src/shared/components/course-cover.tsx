@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { coverPattern } from './course-cover-pattern'
 
 type CourseCoverProps = {
@@ -29,10 +31,20 @@ const inks = [
 /**
  * A course's picture: its uploaded thumbnail, else an ornament generated from its id: Truchet arcs in one chart
  * colour on a tint of it, like the stitched felt of a syrmak rug. Decorative: the course name is always beside it.
+ * A picture that fails to load (a file gone from storage) gives way to the ornament, not an empty grey box.
  */
 export function CourseCover({ seed, imageKey, tone, shape = 'card', className = '' }: CourseCoverProps) {
-  if (imageKey)
-    return <img src={`/content/${imageKey}`} alt="" loading="lazy" className={`bg-muted object-cover ${className}`} />
+  const [broken, setBroken] = useState<string | null>(null)
+  if (imageKey && broken !== imageKey)
+    return (
+      <img
+        src={`/content/${imageKey}`}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(imageKey)}
+        className={`bg-muted object-cover ${className}`}
+      />
+    )
   const { cols, rows, field, path, studs } = coverPattern(seed, ...shapes[shape])
   const ink = inks[(tone ?? field) % inks.length] ?? inks[0]
   return (
