@@ -150,10 +150,21 @@ pub struct NotificationSettings {
     pub discussion_reply: bool,
     #[garde(skip)]
     pub contributor_application: bool,
+    /// Absent (a client older than the type) = on.
+    #[garde(skip)]
+    #[serde(default = "switched_on")]
+    pub discussion_post: bool,
+    #[garde(skip)]
+    #[serde(default = "switched_on")]
+    pub course_team_added: bool,
+}
+
+const fn switched_on() -> bool {
+    true
 }
 
 impl NotificationSettings {
-    const fn switches(&self) -> [(NotificationType, bool); 7] {
+    const fn switches(&self) -> [(NotificationType, bool); 9] {
         [
             (NotificationType::GradePublished, self.grade_published),
             (
@@ -171,6 +182,8 @@ impl NotificationSettings {
                 NotificationType::ContributorApplication,
                 self.contributor_application,
             ),
+            (NotificationType::DiscussionPost, self.discussion_post),
+            (NotificationType::CourseTeamAdded, self.course_team_added),
         ]
     }
 
@@ -194,6 +207,8 @@ impl NotificationSettings {
             course_update: on(NotificationType::CourseUpdate),
             discussion_reply: on(NotificationType::DiscussionReply),
             contributor_application: on(NotificationType::ContributorApplication),
+            discussion_post: on(NotificationType::DiscussionPost),
+            course_team_added: on(NotificationType::CourseTeamAdded),
         }
     }
 }

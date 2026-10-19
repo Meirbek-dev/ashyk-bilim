@@ -85,6 +85,25 @@ export const NotificationPayload = zod
         type: zod.enum(['contributor_application']),
       })
       .describe('Someone applied to co-author a course the recipient owns.'),
+    zod
+      .object({
+        author_id: zod.uuid(),
+        author_name: zod.string(),
+        course_id: zod.uuid(),
+        course_name: zod.string(),
+        discussion_id: zod.uuid(),
+        type: zod.enum(['discussion_post']),
+      })
+      .describe(
+        'A new thread in the discussions of a course the recipient teaches\n(creator or active maintainer / contributor; never its author).',
+      ),
+    zod
+      .object({
+        course_id: zod.uuid(),
+        course_name: zod.string(),
+        type: zod.enum(['course_team_added']),
+      })
+      .describe('The recipient joined a course team: added, or their application\napproved.'),
   ])
   .describe(
     'What happened, with the ids a client needs to route and to invalidate\ncaches, and the names the bell renders without another request.',

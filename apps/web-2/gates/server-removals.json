@@ -58,10 +58,6 @@
       "reason": "bare array; the web reads myCertificatesPage and myCourseCertificates (S-05, L-3)"
     },
     {
-      "operation": "listGroupCourses",
-      "reason": "the group screen shows no courses; links are managed from the course (groupsForCourse)"
-    },
-    {
       "operation": "getBlock",
       "reason": "no screen reads one block; the document carries the block's file"
     },

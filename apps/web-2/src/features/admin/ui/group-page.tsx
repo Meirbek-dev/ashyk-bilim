@@ -10,10 +10,12 @@ import { formatDate } from '#/shared/i18n/format'
 import { canGroup } from '../model/admin'
 import { groupOptions } from '../group-queries'
 import { DeleteGroup } from './delete-group'
+import { GroupCourses } from './group-courses'
 import { GroupEditSection } from './group-edit-section'
 import { GroupMembers } from './group-members'
 
-/** One group: its members, and only the edits its `allowed_actions` list. Courses are linked from the course side. */
+/** One group: its courses, its members, and only the edits its `allowed_actions` list. Courses are linked from the
+ * course side. */
 export function GroupPage() {
   const { groupId } = useParams({ from: '/_authed/teach/groups/$groupId' })
   const { data: group } = useSuspenseQuery(groupOptions(groupId))
@@ -31,6 +33,7 @@ export function GroupPage() {
     >
       {group.description ? <p className="max-w-prose wrap-anywhere">{group.description}</p> : null}
       {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
+      <GroupCourses group={group} />
       <GroupMembers group={group} />
     </DetailPage>
   )

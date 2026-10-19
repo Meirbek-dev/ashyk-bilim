@@ -88,6 +88,21 @@ impl CoursesService {
         .collect()
     }
 
+    /// CONTRACT-REQ-D-2: someone added to the team (or whose application
+    /// was approved) hears of it; nothing told them before.
+    async fn notify_joined(pool: &sqlx::PgPool, course: &Course, user_id: UserId) {
+        crate::notifications::notify(
+            pool,
+            &[user_id],
+            &crate::notifications::NotificationPayload::CourseTeamAdded {
+                course_id: course.id,
+                course_name: course.name.clone(),
+            },
+            None,
+        )
+        .await;
+    }
+
     fn not_creator(course: &Course, user_id: UserId) -> Result<()> {
         if course.creator_id == Some(user_id) {
             return Err(Error::conflict(
@@ -147,6 +162,7 @@ impl CoursesService {
         ProgressProjector::new(self.pool.clone())
             .after_staff_change(user_id, Some(course_id))
             .await;
+        Self::notify_joined(&self.pool, &course, user_id).await;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("user"))
@@ -164,9 +180,15 @@ impl CoursesService {
         let course = self.manageable(actor, course_id).await?;
         course.ensure_not_archived()?;
         Self::not_creator(&course, user_id)?;
+        let was_pending = ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
+            .await?
+            .is_some_and(|c| c.status == "pending");
         if !ab_db::catalog::update_contributor(&self.pool, course_id, user_id, role, status).await?
         {
             return Err(Error::not_found("contributor"));
+        }
+        if was_pending && status == Some("active") {
+            Self::notify_joined(&self.pool, &course, user_id).await;
         }
         // BUG-291: a deactivated / demoted author with a run is a member again.
         ProgressProjector::new(self.pool.clone())

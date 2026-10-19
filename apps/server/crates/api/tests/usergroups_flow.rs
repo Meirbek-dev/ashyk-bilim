@@ -95,6 +95,23 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
         .get_as(&owner, &format!("/api/v2/courses/{course_id}/usergroups"))
         .await;
     assert_eq!(linked.json().as_array().unwrap().len(), 1);
+    // OPEN-D-7: the group screen's list names its courses; a draft the
+    // caller cannot see is left out, not named.
+    let listed = app
+        .get_as(&owner, &format!("/api/v2/groups/{id}/courses"))
+        .await;
+    assert_eq!(listed.status, StatusCode::OK, "{}", listed.text());
+    let item = &listed.json()[0];
+    assert_eq!(item["name"], "Linked");
+    assert_eq!(item["published"], false);
+    assert_eq!(item["archived"], false);
+    assert_eq!(item["can_write"], true);
+    let outsider = app.mint_session(&["usergroup:read:platform"]).await;
+    let hidden = app
+        .get_as(&outsider, &format!("/api/v2/groups/{id}/courses"))
+        .await;
+    assert_eq!(hidden.status, StatusCode::OK);
+    assert_eq!(hidden.json().as_array().unwrap().len(), 0);
 
     // A rival with create+read can see but not modify someone else's group.
     let rival = organizer(&app, "rival").await;

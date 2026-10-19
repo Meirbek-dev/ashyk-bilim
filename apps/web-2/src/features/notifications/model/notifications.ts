@@ -25,6 +25,8 @@ export const NOTIFICATION_TYPES = [
   'course_update',
   'discussion_reply',
   'contributor_application',
+  'discussion_post',
+  'course_team_added',
 ] as const satisfies readonly NotificationType[]
 
 /** The badge text: up to 99, then "99+". */
@@ -52,6 +54,7 @@ export function notificationTarget(payload: NotificationPayload) {
     case 'course_update':
       return linkOptions({ to: '/courses/$courseId/updates', params: course })
     case 'discussion_reply':
+    case 'discussion_post':
       return linkOptions({
         to: '/courses/$courseId/discussions',
         params: course,
@@ -59,6 +62,8 @@ export function notificationTarget(payload: NotificationPayload) {
       })
     case 'contributor_application':
       return linkOptions({ to: '/teach/courses/$courseId/team', params: course })
+    case 'course_team_added':
+      return linkOptions({ to: '/teach/courses/$courseId/overview', params: course })
   }
   // A type this build does not know yet (a newer server): the list itself.
   return linkOptions({ to: '/notifications' })

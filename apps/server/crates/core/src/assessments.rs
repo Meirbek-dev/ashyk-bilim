@@ -350,6 +350,8 @@ text_enum!(
         CourseUpdate => "course_update",
         DiscussionReply => "discussion_reply",
         ContributorApplication => "contributor_application",
+        DiscussionPost => "discussion_post",
+        CourseTeamAdded => "course_team_added",
     }
 );
 

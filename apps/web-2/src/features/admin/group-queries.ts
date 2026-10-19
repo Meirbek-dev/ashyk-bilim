@@ -6,6 +6,7 @@ import {
   deleteGroupMutation,
   getGroupOptions,
   getGroupQueryKey,
+  listGroupCoursesOptions,
   listGroupMembersPageInfiniteQueryKey,
   listGroupsInfiniteQueryKey,
   updateGroupMutation,
@@ -43,6 +44,9 @@ export const groupsListOptions = () => {
 
 export const groupOptions = (id: UsergroupId) => getGroupOptions({ path: { group_id: id } })
 
+/** The courses the group is enrolled in, by name (OPEN-D-7). */
+export const groupCoursesOptions = (id: UsergroupId) => listGroupCoursesOptions({ path: { group_id: id } })
+
 /** A group's current `version`, read past the cache: "Reload and retry" after a 412. */
 export const groupVersion = async (queryClient: QueryClient, id: UsergroupId) =>
   (await queryClient.query({ ...groupOptions(id), staleTime: 0 })).version
@@ -74,6 +78,7 @@ export const ensureGroup = (queryClient: QueryClient, id: UsergroupId) =>
   Promise.all([
     queryClient.query({ ...groupOptions(id), staleTime: 'static' }),
     queryClient.infiniteQuery({ ...membersOptions(id), staleTime: 'static' }),
+    queryClient.query({ ...groupCoursesOptions(id), staleTime: 'static' }),
   ]).catch(notFoundOn404)
 
 // The infinite group lists only: the panel's group choices stay as loaded (a refetch there repeats its GET).

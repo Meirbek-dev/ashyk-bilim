@@ -7,8 +7,9 @@ use axum::response::{IntoResponse, Response};
 
 use crate::detach::detached;
 use crate::dto::usergroups::{
-    CreateUsergroupRequest, UpdateUsergroupRequest, Usergroup, UsergroupCoursesRequest,
-    UsergroupListQuery, UsergroupMember, UsergroupMembersRequest, UsergroupPage,
+    CreateUsergroupRequest, GroupCourse, UpdateUsergroupRequest, Usergroup,
+    UsergroupCoursesRequest, UsergroupListQuery, UsergroupMember, UsergroupMembersRequest,
+    UsergroupPage,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
@@ -584,20 +585,27 @@ pub async fn remove_group_members(
     remove_usergroup_members(State(state), CurrentActor(actor), Path(id), headers, body).await
 }
 
-/// Linked course ids.
+/// Linked courses the caller may see, by name (OPEN-D-7).
 ///
-/// S-10 name of [`list_usergroup_courses`] (that path is deprecated).
+/// S-10 path of [`list_usergroup_courses`] (bare ids, deprecated); this one
+/// answers the group screen: name, state, picture and whether the caller
+/// edits each course. Courses the caller may not see are left out.
 #[utoipa::path(
     get, path = "/groups/{group_id}/courses", tag = "usergroups",
     params(("group_id" = UsergroupId, Path, description = "Group id")),
-    responses((status = 200, description = "Linked course ids", body = [CourseId])),
+    responses((status = 200, description = "Linked courses, by name", body = [GroupCourse])),
 )]
 pub async fn list_group_courses(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<UsergroupId>,
-) -> ApiResult<Json<Vec<CourseId>>> {
-    list_usergroup_courses(State(state), CurrentActor(actor), Path(id)).await
+) -> ApiResult<Json<Vec<GroupCourse>>> {
+    let rows = state.usergroups.linked_courses(&actor, id).await?;
+    Ok(Json(
+        rows.into_iter()
+            .map(|(course, can_write)| GroupCourse::new(course, can_write))
+            .collect(),
+    ))
 }
 
 /// Link courses to the group.

@@ -3342,6 +3342,27 @@ export type GradingUpdated = {
     user_id: UserId;
 };
 
+/**
+ * A course linked to a group, as the group screen lists it (OPEN-D-7).
+ */
+export type GroupCourse = {
+    archived: boolean;
+    /**
+     * The caller edits the course: the screen links its workspace.
+     */
+    can_write: boolean;
+    id: CourseId;
+    name: string;
+    /**
+     * Listed in the catalog (`Course.public`).
+     */
+    published: boolean;
+    /**
+     * Storage key of the course picture (`/content/<key>`).
+     */
+    thumbnail_key: string | null;
+};
+
 export type Health = {
     /**
      * Always `"ok"` when the endpoint answers.
@@ -4016,6 +4037,17 @@ export type NotificationPayload = {
     course_id: CourseId;
     course_name: string;
     type: 'contributor_application';
+} | {
+    author_id: UserId;
+    author_name: string;
+    course_id: CourseId;
+    course_name: string;
+    discussion_id: DiscussionId;
+    type: 'discussion_post';
+} | {
+    course_id: CourseId;
+    course_name: string;
+    type: 'course_team_added';
 };
 
 export type NotificationPreferences = {
@@ -4036,9 +4068,14 @@ export type NotificationRead = {
  */
 export type NotificationSettings = {
     contributor_application: boolean;
+    course_team_added?: boolean;
     course_update: boolean;
     deadline_approaching: boolean;
     deadline_extended: boolean;
+    /**
+     * Absent (a client older than the type) = on.
+     */
+    discussion_post?: boolean;
     discussion_reply: boolean;
     grade_published: boolean;
     submission_returned: boolean;
@@ -4047,7 +4084,7 @@ export type NotificationSettings = {
 /**
  * In-app notification types (S-07; `notifications.kind`).
  */
-export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application';
+export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added';
 
 export type OpenTextBody = {
     min_words: number | null;
@@ -14255,9 +14292,9 @@ export type ListGroupCoursesData = {
 
 export type ListGroupCoursesResponses = {
     /**
-     * Linked course ids
+     * Linked courses, by name
      */
-    200: Array<CourseId>;
+    200: Array<GroupCourse>;
 };
 
 export type ListGroupCoursesResponse = ListGroupCoursesResponses[keyof ListGroupCoursesResponses];

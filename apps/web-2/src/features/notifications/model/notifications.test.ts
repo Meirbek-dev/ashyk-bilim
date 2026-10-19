@@ -82,6 +82,19 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
       applicant_name: 'Бек',
     }).to,
   ).toBe('/teach/courses/$courseId/team')
+  expect(
+    notificationTarget({
+      ...names,
+      type: 'discussion_post',
+      discussion_id: thread,
+      author_id: '0190a5d2-0000-7000-8000-000000000014',
+      author_name: 'Аня',
+    }),
+  ).toEqual({ to: '/courses/$courseId/discussions', params: { courseId: COURSE }, search: { thread } })
+  expect(notificationTarget({ ...names, type: 'course_team_added' })).toEqual({
+    to: '/teach/courses/$courseId/overview',
+    params: { courseId: COURSE },
+  })
 })
 
 test('B-NOT-07 a new notification goes first, once; an empty cache stays empty', () => {

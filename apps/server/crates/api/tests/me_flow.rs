@@ -509,6 +509,17 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
         .await;
     assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
     let post_id = post.json()["id"].as_str().unwrap().to_owned();
+    // CONTRACT-REQ-D-1: a new thread reaches the course's teacher, not its author.
+    let taught = notifications(&app, &teacher, "").await;
+    assert_eq!(taught["items"][0]["type"], "discussion_post", "{taught}");
+    assert_eq!(
+        taught["items"][0]["payload"]["discussion_id"],
+        post_id.as_str()
+    );
+    assert_eq!(
+        taught["items"][0]["payload"]["author_id"],
+        alice.user_id.to_string()
+    );
     let reply = app
         .post_as(
             &bob,
@@ -541,6 +552,24 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
     assert_eq!(
         owner["items"][0]["payload"]["applicant_id"],
         helper.user_id.to_string()
+    );
+    // CONTRACT-REQ-D-2: the approved applicant hears they joined the team.
+    let approved = app
+        .patch_as(
+            &teacher,
+            &format!(
+                "/api/v2/courses/{course_id}/contributors/{}",
+                helper.user_id
+            ),
+            &serde_json::json!({ "status": "active" }),
+        )
+        .await;
+    assert_eq!(approved.status, StatusCode::OK, "{}", approved.text());
+    let joined = notifications(&app, &helper, "").await;
+    assert_eq!(joined["items"][0]["type"], "course_team_added", "{joined}");
+    assert_eq!(
+        joined["items"][0]["payload"]["course_id"],
+        course_id.as_str()
     );
 
     let boss = app

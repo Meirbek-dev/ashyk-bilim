@@ -3,9 +3,11 @@ import {
   Award,
   CalendarPlus,
   Megaphone,
+  MessageSquarePlus,
   MessageSquareReply,
   Undo2,
   UserPlus,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -22,6 +24,8 @@ export const notificationTypeLabels: Record<NotificationType, () => string> = {
   course_update: m.notifications_type_course_update,
   discussion_reply: m.notifications_type_discussion_reply,
   contributor_application: m.notifications_type_contributor_application,
+  discussion_post: m.notifications_type_discussion_post,
+  course_team_added: m.notifications_type_course_team_added,
 }
 
 export const notificationIcons: Record<NotificationType, LucideIcon> = {
@@ -32,6 +36,8 @@ export const notificationIcons: Record<NotificationType, LucideIcon> = {
   course_update: Megaphone,
   discussion_reply: MessageSquareReply,
   contributor_application: UserPlus,
+  discussion_post: MessageSquarePlus,
+  course_team_added: Users,
 }
 
 /** What happened, with the names the payload carries: one or two lines. */
@@ -57,6 +63,10 @@ export function notificationLines(payload: NotificationPayload): string[] {
       return [m.notifications_text_reply({ author: payload.author_name, course: payload.course_name })]
     case 'contributor_application':
       return [m.notifications_text_application({ applicant: payload.applicant_name, course: payload.course_name })]
+    case 'discussion_post':
+      return [m.notifications_text_post({ author: payload.author_name, course: payload.course_name })]
+    case 'course_team_added':
+      return [m.notifications_text_team_added({ course: payload.course_name })]
   }
   return []
 }

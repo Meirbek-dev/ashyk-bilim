@@ -2420,9 +2420,11 @@ export const removeGroupCourses = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Linked course ids.
+ * Linked courses the caller may see, by name (OPEN-D-7).
  *
- * S-10 name of [`list_usergroup_courses`] (that path is deprecated).
+ * S-10 path of [`list_usergroup_courses`] (bare ids, deprecated); this one
+ * answers the group screen: name, state, picture and whether the caller
+ * edits each course. Courses the caller may not see are left out.
  */
 export const listGroupCourses = <ThrowOnError extends boolean = false>(options: Options<ListGroupCoursesData, ThrowOnError>): RequestResult<ListGroupCoursesResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListGroupCoursesResponses, unknown, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vListGroupCoursesResponse, data),

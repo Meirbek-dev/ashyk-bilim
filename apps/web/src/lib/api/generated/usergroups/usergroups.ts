@@ -26,6 +26,7 @@ import type {
 import {
   CourseId,
   CreateUsergroupRequest,
+  GroupCourse,
   ListGroupMembersPageParams,
   ListGroupsParams,
   ListUsergroupMembersPageParams,
@@ -1190,20 +1191,22 @@ export const getListGroupCoursesUrl = (groupId: UsergroupId) => {
 }
 
 /**
- * S-10 name of [`list_usergroup_courses`] (that path is deprecated).
- * @summary Linked course ids.
+ * S-10 path of [`list_usergroup_courses`] (bare ids, deprecated); this one
+ * answers the group screen: name, state, picture and whether the caller
+ * edits each course. Courses the caller may not see are left out.
+ * @summary Linked courses the caller may see, by name (OPEN-D-7).
  */
 export const listGroupCourses = async (
   groupId: UsergroupId,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<CourseId[]> => {
-  return orvalMutator<CourseId[]>(
+): Promise<GroupCourse[]> => {
+  return orvalMutator<GroupCourse[]>(
     getListGroupCoursesUrl(groupId),
     {
       ...options,
       method: 'GET',
     },
-    arrayParser(CourseId),
+    arrayParser(GroupCourse),
   )
 }
 
@@ -1279,7 +1282,7 @@ export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupC
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Linked course ids.
+ * @summary Linked courses the caller may see, by name (OPEN-D-7).
  */
 
 export function useListGroupCourses<TData = Awaited<ReturnType<typeof listGroupCourses>>, TError = ErrorType<unknown>>(
@@ -1362,7 +1365,7 @@ export function useListGroupCoursesSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Linked course ids.
+ * @summary Linked courses the caller may see, by name (OPEN-D-7).
  */
 
 export function useListGroupCoursesSuspense<

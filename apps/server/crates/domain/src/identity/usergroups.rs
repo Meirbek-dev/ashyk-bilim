@@ -256,6 +256,30 @@ impl UsergroupsService {
         ab_db::usergroups::list_course_ids(&self.pool, id).await
     }
 
+    /// OPEN-D-7: the linked courses the caller may see, each with whether
+    /// the caller may edit it (the group screen's «Курсы группы»).
+    /// Invisible ones are left out rather than named.
+    pub async fn linked_courses(
+        &self,
+        actor: &Actor,
+        id: UsergroupId,
+    ) -> Result<Vec<(ab_db::catalog::CourseRow, bool)>> {
+        self.get(actor, id).await?;
+        let courses = CoursesService::new(self.pool.clone());
+        let mut out = Vec::new();
+        // ponytail: one read per linked course; a batch query if groups link dozens.
+        for course_id in ab_db::usergroups::list_course_ids(&self.pool, id).await? {
+            if let Some(course) = ab_db::catalog::get_course(&self.pool, course_id).await?
+                && courses.can_read(actor, &course).await?
+            {
+                let writable = CoursesService::require_write(actor, &course).is_ok();
+                out.push((course, writable));
+            }
+        }
+        out.sort_by(|a, b| a.0.name.cmp(&b.0.name));
+        Ok(out)
+    }
+
     pub async fn add_courses(
         &self,
         actor: &Actor,

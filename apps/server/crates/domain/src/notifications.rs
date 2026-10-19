@@ -95,6 +95,21 @@ pub enum NotificationPayload {
         applicant_id: UserId,
         applicant_name: String,
     },
+    /// A new thread in the discussions of a course the recipient teaches
+    /// (creator or active maintainer / contributor; never its author).
+    DiscussionPost {
+        course_id: CourseId,
+        course_name: String,
+        discussion_id: DiscussionId,
+        author_id: UserId,
+        author_name: String,
+    },
+    /// The recipient joined a course team: added, or their application
+    /// approved.
+    CourseTeamAdded {
+        course_id: CourseId,
+        course_name: String,
+    },
 }
 
 impl NotificationPayload {
@@ -108,6 +123,8 @@ impl NotificationPayload {
             Self::CourseUpdate { .. } => NotificationType::CourseUpdate,
             Self::DiscussionReply { .. } => NotificationType::DiscussionReply,
             Self::ContributorApplication { .. } => NotificationType::ContributorApplication,
+            Self::DiscussionPost { .. } => NotificationType::DiscussionPost,
+            Self::CourseTeamAdded { .. } => NotificationType::CourseTeamAdded,
         }
     }
 }

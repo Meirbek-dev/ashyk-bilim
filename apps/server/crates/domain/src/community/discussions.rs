@@ -169,6 +169,16 @@ impl Abilities {
     }
 }
 
+/// The name a notification shows for a post's author: display name, else
+/// username.
+fn author_name(post: &DiscussionRow) -> String {
+    post.display_name
+        .clone()
+        .filter(|n| !n.trim().is_empty())
+        .or_else(|| post.username.clone())
+        .unwrap_or_default()
+}
+
 /// The grant half of `postable_course`.
 fn may_post(actor: &Actor) -> bool {
     actor.has(perm(Action::Create, Scope::Platform)) || actor.has(perm(Action::Create, Scope::Own))
@@ -522,6 +532,8 @@ impl DiscussionsService {
             .ok_or_else(|| Error::not_found("discussion"))?;
         if let Some(parent_id) = parent_id {
             Self::notify_reply(&self.pool, &course, parent_id, &row).await;
+        } else {
+            Self::notify_post(&self.pool, &course, &row).await;
         }
         crate::events::user::discussion(
             &self.pool,
@@ -541,6 +553,36 @@ impl DiscussionsService {
                     .map(|p| p.replies_count);
         }
         Ok(created)
+    }
+
+    /// CONTRACT-REQ-D-1: the course's teachers (creator, active maintainers
+    /// and contributors) hear of a new thread - a learner's question - and
+    /// never its author.
+    async fn notify_post(pool: &PgPool, course: &Course, post: &DiscussionRow) {
+        let Some(author_id) = post.user_id else {
+            return;
+        };
+        let mut recipients: Vec<UserId> = course
+            .creator_id
+            .into_iter()
+            .chain(course.contributor_ids.iter().copied())
+            .filter(|u| *u != author_id)
+            .collect();
+        recipients.sort_unstable();
+        recipients.dedup();
+        crate::notifications::notify(
+            pool,
+            &recipients,
+            &crate::notifications::NotificationPayload::DiscussionPost {
+                course_id: course.id,
+                course_name: course.name.clone(),
+                discussion_id: post.id,
+                author_id,
+                author_name: author_name(post),
+            },
+            None,
+        )
+        .await;
     }
 
     /// S-07: the thread's author and its other repliers hear of a reply
@@ -574,12 +616,7 @@ impl DiscussionsService {
                 discussion_id: thread,
                 reply_id: reply.id,
                 author_id,
-                author_name: reply
-                    .display_name
-                    .clone()
-                    .filter(|n| !n.trim().is_empty())
-                    .or_else(|| reply.username.clone())
-                    .unwrap_or_default(),
+                author_name: author_name(reply),
             },
             None,
         )

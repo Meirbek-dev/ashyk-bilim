@@ -118,3 +118,30 @@ pub struct UsergroupMemberPage {
     pub items: Vec<UsergroupMember>,
     pub next_cursor: Option<String>,
 }
+
+/// A course linked to a group, as the group screen lists it (OPEN-D-7).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GroupCourse {
+    pub id: CourseId,
+    pub name: String,
+    /// Listed in the catalog (`Course.public`).
+    pub published: bool,
+    pub archived: bool,
+    /// Storage key of the course picture (`/content/<key>`).
+    pub thumbnail_key: Option<String>,
+    /// The caller edits the course: the screen links its workspace.
+    pub can_write: bool,
+}
+
+impl GroupCourse {
+    pub fn new(course: ab_db::catalog::CourseRow, can_write: bool) -> Self {
+        Self {
+            id: course.id,
+            name: course.name,
+            published: course.public,
+            archived: course.archived_at.is_some(),
+            thumbnail_key: course.thumbnail_key,
+            can_write,
+        }
+    }
+}

@@ -10,9 +10,11 @@ import * as zod from 'zod'
 export const NotificationSettings = zod
   .object({
     contributor_application: zod.boolean(),
+    course_team_added: zod.boolean().optional(),
     course_update: zod.boolean(),
     deadline_approaching: zod.boolean(),
     deadline_extended: zod.boolean(),
+    discussion_post: zod.boolean().optional().describe('Absent (a client older than the type) = on.'),
     discussion_reply: zod.boolean(),
     grade_published: zod.boolean(),
     submission_returned: zod.boolean(),

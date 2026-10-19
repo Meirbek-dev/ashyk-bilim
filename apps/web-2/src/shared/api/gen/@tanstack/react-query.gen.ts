@@ -4786,9 +4786,11 @@ export const removeGroupCoursesMutation = (options?: Partial<Options<RemoveGroup
 export const listGroupCoursesQueryKey = (options: Options<ListGroupCoursesData>) => createQueryKey('listGroupCourses', options);
 
 /**
- * Linked course ids.
+ * Linked courses the caller may see, by name (OPEN-D-7).
  *
- * S-10 name of [`list_usergroup_courses`] (that path is deprecated).
+ * S-10 path of [`list_usergroup_courses`] (bare ids, deprecated); this one
+ * answers the group screen: name, state, picture and whether the caller
+ * edits each course. Courses the caller may not see are left out.
  */
 export const listGroupCoursesOptions = (options: Options<ListGroupCoursesData>) => queryOptions<ListGroupCoursesResponse, DefaultError, ListGroupCoursesResponse, ReturnType<typeof listGroupCoursesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

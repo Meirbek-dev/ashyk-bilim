@@ -280,17 +280,21 @@ impl CoursesService {
     /// the course (cohort access) - SQL `course_visible`, the predicate the
     /// catalogue, search and collections list by (BUG-190). Invisible = 404.
     pub(crate) async fn require_read(&self, actor: &Actor, course: &Course) -> Result<()> {
-        let see_all = sees_private(actor, ResourceType::Course);
-        if course.public
-            || see_all
-            || course.is_author(actor.user_id)
-            || ab_db::catalog::course_visible(&self.pool, course.id, Some(actor.user_id), see_all)
-                .await?
-        {
+        if self.can_read(actor, course).await? {
             Ok(())
         } else {
             Err(Error::not_found("course"))
         }
+    }
+
+    /// [`Self::require_read`] as a flag (lists that skip invisible courses).
+    pub(crate) async fn can_read(&self, actor: &Actor, course: &Course) -> Result<bool> {
+        let see_all = sees_private(actor, ResourceType::Course);
+        Ok(course.public
+            || see_all
+            || course.is_author(actor.user_id)
+            || ab_db::catalog::course_visible(&self.pool, course.id, Some(actor.user_id), see_all)
+                .await?)
     }
 
     pub async fn create(

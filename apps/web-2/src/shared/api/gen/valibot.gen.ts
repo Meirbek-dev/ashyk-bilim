@@ -1586,6 +1586,18 @@ export const vGradingMode = v.picklist([
 
 export const vGradingType = v.picklist(['numeric', 'percentage']);
 
+/**
+ * A course linked to a group, as the group screen lists it (OPEN-D-7).
+ */
+export const vGroupCourse = v.object({
+    archived: v.boolean(),
+    can_write: v.boolean(),
+    id: vCourseId,
+    name: v.string(),
+    published: v.boolean(),
+    thumbnail_key: v.nullable(v.string())
+});
+
 export const vHealth = v.object({
     status: v.string(),
     version: v.string()
@@ -2158,9 +2170,11 @@ export const vNotificationRead = v.object({
  */
 export const vNotificationSettings = v.strictObject({
     contributor_application: v.boolean(),
+    course_team_added: v.optional(v.boolean()),
     course_update: v.boolean(),
     deadline_approaching: v.boolean(),
     deadline_extended: v.boolean(),
+    discussion_post: v.optional(v.boolean()),
     discussion_reply: v.boolean(),
     grade_published: v.boolean(),
     submission_returned: v.boolean()
@@ -2176,7 +2190,9 @@ export const vNotificationType = v.picklist([
     'deadline_approaching',
     'course_update',
     'discussion_reply',
-    'contributor_application'
+    'contributor_application',
+    'discussion_post',
+    'course_team_added'
 ]);
 
 export const vOpenTextBody = v.object({
@@ -5058,6 +5074,19 @@ export const vNotificationPayload = v.union([
         course_id: vCourseId,
         course_name: v.string(),
         type: v.picklist(['contributor_application'])
+    }),
+    v.object({
+        author_id: vUserId,
+        author_name: v.string(),
+        course_id: vCourseId,
+        course_name: v.string(),
+        discussion_id: vDiscussionId,
+        type: v.picklist(['discussion_post'])
+    }),
+    v.object({
+        course_id: vCourseId,
+        course_name: v.string(),
+        type: v.picklist(['course_team_added'])
     })
 ]);
 
@@ -8719,9 +8748,9 @@ export const vListGroupCoursesPath = v.object({
 });
 
 /**
- * Linked course ids
+ * Linked courses, by name
  */
-export const vListGroupCoursesResponse = v.array(vCourseId);
+export const vListGroupCoursesResponse = v.array(vGroupCourse);
 
 export const vAddGroupCoursesBody = vUsergroupCoursesRequest;
 

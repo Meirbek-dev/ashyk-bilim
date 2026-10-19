@@ -9614,6 +9614,44 @@ expression: json
         ],
         "type": "object"
       },
+      "GroupCourse": {
+        "description": "A course linked to a group, as the group screen lists it (OPEN-D-7).",
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "can_write": {
+            "description": "The caller edits the course: the screen links its workspace.",
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "published": {
+            "description": "Listed in the catalog (`Course.public`).",
+            "type": "boolean"
+          },
+          "thumbnail_key": {
+            "description": "Storage key of the course picture (`/content/<key>`).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "published",
+          "archived",
+          "can_write",
+          "thumbnail_key"
+        ],
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -11808,6 +11846,64 @@ expression: json
               "type"
             ],
             "type": "object"
+          },
+          {
+            "description": "A new thread in the discussions of a course the recipient teaches\n(creator or active maintainer / contributor; never its author).",
+            "properties": {
+              "author_id": {
+                "$ref": "#/components/schemas/UserId"
+              },
+              "author_name": {
+                "type": "string"
+              },
+              "course_id": {
+                "$ref": "#/components/schemas/CourseId"
+              },
+              "course_name": {
+                "type": "string"
+              },
+              "discussion_id": {
+                "$ref": "#/components/schemas/DiscussionId"
+              },
+              "type": {
+                "enum": [
+                  "discussion_post"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "course_id",
+              "course_name",
+              "discussion_id",
+              "author_id",
+              "author_name",
+              "type"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "The recipient joined a course team: added, or their application\napproved.",
+            "properties": {
+              "course_id": {
+                "$ref": "#/components/schemas/CourseId"
+              },
+              "course_name": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "course_team_added"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "course_id",
+              "course_name",
+              "type"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -11850,6 +11946,9 @@ expression: json
           "contributor_application": {
             "type": "boolean"
           },
+          "course_team_added": {
+            "type": "boolean"
+          },
           "course_update": {
             "type": "boolean"
           },
@@ -11857,6 +11956,10 @@ expression: json
             "type": "boolean"
           },
           "deadline_extended": {
+            "type": "boolean"
+          },
+          "discussion_post": {
+            "description": "Absent (a client older than the type) = on.",
             "type": "boolean"
           },
           "discussion_reply": {
@@ -11889,7 +11992,9 @@ expression: json
           "deadline_approaching",
           "course_update",
           "discussion_reply",
-          "contributor_application"
+          "contributor_application",
+          "discussion_post",
+          "course_team_added"
         ],
         "type": "string"
       },
@@ -33279,7 +33384,7 @@ expression: json
         ]
       },
       "get": {
-        "description": "S-10 name of [`list_usergroup_courses`] (that path is deprecated).",
+        "description": "S-10 path of [`list_usergroup_courses`] (bare ids, deprecated); this one\nanswers the group screen: name, state, picture and whether the caller\nedits each course. Courses the caller may not see are left out.",
         "operationId": "list_group_courses",
         "parameters": [
           {
@@ -33298,16 +33403,16 @@ expression: json
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CourseId"
+                    "$ref": "#/components/schemas/GroupCourse"
                   },
                   "type": "array"
                 }
               }
             },
-            "description": "Linked course ids"
+            "description": "Linked courses, by name"
           }
         },
-        "summary": "Linked course ids.",
+        "summary": "Linked courses the caller may see, by name (OPEN-D-7).",
         "tags": [
           "usergroups"
         ]
