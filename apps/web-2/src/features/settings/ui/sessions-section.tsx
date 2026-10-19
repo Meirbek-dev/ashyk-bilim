@@ -1,7 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
+import { ShowMore } from '#/shared/components/show-more'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
@@ -11,9 +13,14 @@ import { PlainSection } from './plain-section'
 import { RevokeOtherSessions } from './revoke-other-sessions'
 import { RevokeSession } from './revoke-session'
 
+// Someone who never signs out has dozens of sessions: the latest few, the rest a click away (B-SET-20).
+const FIRST = 5
+
 /** Every live session of the user: this device first; any other can be ended, or all of them at once. */
 export function SessionsSection() {
   const { data } = useSuspenseQuery(sessionsOptions())
+  const [all, setAll] = useState(false)
+  const ordered = orderSessions(data)
   const others = data.filter(session => !session.current).map(session => session.handle)
   return (
     <PlainSection title={m.settings_sessions_title()} description={m.settings_sessions_hint()}>
@@ -22,7 +29,7 @@ export function SessionsSection() {
           <RevokeOtherSessions handles={others} />
         </div>
       ) : null}
-      <DataList items={orderSessions(data)} getKey={session => session.handle} variant="rows">
+      <DataList items={all ? ordered : ordered.slice(0, FIRST)} getKey={session => session.handle} variant="rows">
         {session => {
           const device = deviceLabel(session.user_agent) ?? m.settings_session_unknown_device()
           return (
@@ -42,6 +49,7 @@ export function SessionsSection() {
           )
         }}
       </DataList>
+      <ShowMore hasMore={!all && ordered.length > FIRST} pending={false} onMore={() => setAll(true)} />
     </PlainSection>
   )
 }
