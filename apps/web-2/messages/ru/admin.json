@@ -100,6 +100,7 @@
       }
     }
   ],
+  "admin_role_permissions_all": "Все права",
   "admin_role_permissions_empty": "У роли нет прав.",
   "admin_role_permissions_hint": "По одному праву на строку: ресурс:действие:область, например course:read:all.",
   "admin_role_permissions_refused": "Таких прав нет, строки: {lines}. Проверьте ресурс, действие и область.",
@@ -115,7 +116,7 @@
   "admin_role_deleted": "Роль удалена",
   "admin_role_admin": "Администратор",
   "admin_role_admin_hint": "Полный доступ ко всей платформе",
-  "admin_role_maintainer": "Мейнтейнер",
+  "admin_role_maintainer": "Куратор контента",
   "admin_role_maintainer_hint": "Сопровождение контента и курсов всей платформы",
   "admin_role_instructor": "Преподаватель",
   "admin_role_instructor_hint": "Создание и ведение собственных курсов",
@@ -125,7 +126,7 @@
   "admin_role_user_hint": "Обучение на курсах",
   "admin_role_guest": "Гость",
   "admin_role_guest_hint": "Ограниченный доступ без аккаунта",
-  "admin_role_maintainer_legacy": "Мейнтейнер: права прежней платформы",
+  "admin_role_maintainer_legacy": "Куратор контента: права прежней платформы",
   "admin_role_instructor_legacy": "Преподаватель: права прежней платформы",
   "admin_role_moderator_legacy": "Модератор: права прежней платформы",
   "admin_role_user_legacy": "Пользователь: права прежней платформы",

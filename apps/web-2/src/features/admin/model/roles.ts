@@ -47,3 +47,9 @@ export const roleNames = (slugs: readonly string[], roles: readonly Role[]): str
   ...roles.filter(role => slugs.includes(role.slug)).map(roleName),
   ...slugs.filter(slug => !roles.some(role => role.slug === slug)),
 ]
+
+/** The permission column: «Все права» for the wildcard (an admin's single `*:*:*` is not «1 право»), else the count. */
+export const permissionSummary = (permissions: readonly string[]) =>
+  permissions.includes('*:*:*')
+    ? m.admin_role_permissions_all()
+    : m.admin_role_permission_count({ count: permissions.length })

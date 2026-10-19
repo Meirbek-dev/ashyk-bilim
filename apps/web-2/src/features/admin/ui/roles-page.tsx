@@ -11,7 +11,7 @@ import { ListState } from '#/shared/components/list-state'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { ListPage } from '#/shared/components/templates/list-page'
 
-import { roleName } from '../model/roles'
+import { permissionSummary, roleName } from '../model/roles'
 import { rolesOptions } from '../queries'
 import { CreateRoleDialog } from './create-role-dialog'
 import { roleKindLabels } from './labels'
@@ -46,9 +46,7 @@ const columns: DataColumn<Role>[] = [
     id: 'permissions',
     header: m.admin_role_permissions(),
     priority: 2,
-    cell: role => (
-      <span className="tabular-nums">{m.admin_role_permission_count({ count: role.permissions.length })}</span>
-    ),
+    cell: role => <span className="tabular-nums">{permissionSummary(role.permissions)}</span>,
   },
   {
     id: 'priority',

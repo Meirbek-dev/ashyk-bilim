@@ -94,6 +94,7 @@
       }
     }
   ],
+  "admin_role_permissions_all": "Барлық құқықтар",
   "admin_role_permissions_empty": "Рөлдің құқықтары жоқ.",
   "admin_role_permissions_hint": "Әр жолға бір құқық: ресурс:әрекет:аумақ, мысалы course:read:all.",
   "admin_role_permissions_refused": "Мұндай құқықтар жоқ, жолдар: {lines}. Ресурсты, әрекетті және аумақты тексеріңіз.",

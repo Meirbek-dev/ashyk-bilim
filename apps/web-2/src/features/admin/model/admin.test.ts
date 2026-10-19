@@ -17,7 +17,7 @@ import {
   takenField,
 } from './admin'
 import { usersSearchSchema } from '../route'
-import { roleDescription, roleName, roleNames } from './roles'
+import { permissionSummary, roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
   slug,
@@ -50,6 +50,13 @@ describe('admin model', () => {
       m.admin_role_user(),
       'gone',
     ])
+  })
+
+  test('B-ADM-08 the wildcard reads «Все права», not «1 право»; other roles count their permissions', () => {
+    expect(permissionSummary(['*:*:*'])).toBe(m.admin_role_permissions_all())
+    expect(permissionSummary(['course:read:all', 'course:update:own'])).toBe(
+      m.admin_role_permission_count({ count: 2 }),
+    )
   })
 
   test('B-ADM-09 permissions are grouped by the text before the first colon, strings kept as sent', () => {
