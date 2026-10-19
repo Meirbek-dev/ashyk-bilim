@@ -50,17 +50,17 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is publishe
   await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
   await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
-  await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
+  await expect(publishing).toHaveCount(0)
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).toBeChecked()
 
-  await publishing.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
+  await page.getByRole('switch', { name: m.studio_published_switch({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.submission_unpublish_title({}, ru) })
   await confirm.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
   await expect(page.getByText(m.submission_unpublished_toast({}, ru))).toBeVisible()
   await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).not.toBeChecked()
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
-  await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
+  await expect(publishing).toHaveCount(0)
 
   const text = instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) })
   // Clearing a contenteditable right after the publish re-render sometimes selects nothing: fill until it is empty.
@@ -91,7 +91,7 @@ test('B-FSB-13 the header switch publishes and unpublishes the task, not the bar
   await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
   await toggle.click()
   await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
-  await expect(publishing.getByText(m.submission_lifecycle_published({}, ru), { exact: true })).toBeVisible()
+  await expect(publishing).toHaveCount(0)
   await expect(toggle).toBeChecked()
 
   await toggle.click()

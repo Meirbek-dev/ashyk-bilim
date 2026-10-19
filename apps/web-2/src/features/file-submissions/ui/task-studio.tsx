@@ -24,7 +24,8 @@ export function TaskStudio({ activityId, tab }: TaskStudioProps) {
     <div key={task.id} className="flex flex-col gap-12">
       {tab === 'edit' ? (
         <>
-          <PublishSection task={task} />
+          {/* Live: the header switch says it and takes it down; the section explains a draft (and an archived task). */}
+          {task.lifecycle === 'published' ? null : <PublishSection task={task} />}
           <InstructionsSection task={task} />
           <RubricSection task={task} />
         </>
