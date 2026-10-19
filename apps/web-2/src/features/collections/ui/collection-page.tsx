@@ -8,7 +8,7 @@ import { ListState } from '#/shared/components/list-state'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
-import { collectionActionLabels, collectionVisibility, collectionVisibilityLabels } from '#/shared/i18n/labels'
+import { collectionActionLabels, collectionVisibilityLabels } from '#/shared/i18n/labels'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { can } from '../model/collections'
@@ -41,8 +41,9 @@ export function CollectionPage() {
       }
       title={collection.name}
       meta={`${m.collections_course_count({ count: collection.courses.length })} · ${m.collections_updated({ date: formatDate(collection.updated_at_unix) })}`}
+      // Public is the usual state (quiet, like the list); only a hidden one is marked (B-COL-05).
       status={
-        <StatusBadge tone="neutral">{collectionVisibilityLabels[collectionVisibility(collection)]()}</StatusBadge>
+        collection.public ? undefined : <StatusBadge tone="neutral">{collectionVisibilityLabels.private()}</StatusBadge>
       }
       primaryAction={collection.allowed_actions.length > 0 ? actions : null}
     >
