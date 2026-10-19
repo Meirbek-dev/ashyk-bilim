@@ -166,6 +166,7 @@
   "studio_team_people": "People",
   "studio_team_added": "Co-authors added",
   "studio_team_remove": "Remove from team",
+  "studio_team_remove_named": "Remove “{name}” from the team",
   "studio_team_remove_title": "Remove “{name}” from the team?",
   "studio_team_remove_consequence": "They lose the right to edit the course.",
   "studio_team_removed": "Removed from team",

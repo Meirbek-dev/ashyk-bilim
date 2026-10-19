@@ -101,7 +101,7 @@ test('B-CST-16 B-CST-17 co-authors are added by search with a role, re-roled and
   await expect(page.getByText(m.studio_role_saved({}, ru))).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(role).toHaveText(m.studio_role_maintainer({}, ru))
-  await row.getByRole('button', { name: m.studio_team_remove({}, ru) }).click()
+  await row.getByRole('button', { name: /^Убрать «/ }).click()
   const confirm = page.getByRole('alertdialog', { name: /^Убрать «/ })
   await confirm.getByRole('button', { name: m.studio_team_remove({}, ru) }).click()
   await expect(page.getByText(m.studio_team_removed({}, ru))).toBeVisible()

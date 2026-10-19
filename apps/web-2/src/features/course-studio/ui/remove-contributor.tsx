@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { UserMinus } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Contributor } from '#/shared/api/gen/types.gen'
+import { IconButton } from '#/shared/components/icon-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
@@ -46,7 +48,14 @@ export function RemoveContributor({ courseId, row, applying }: RemoveContributor
         setOpen(next)
         if (!next) remove.reset()
       }}
-      trigger={<Button variant="outline">{texts.verb}</Button>}
+      trigger={
+        applying ? (
+          <Button variant="outline">{texts.verb}</Button>
+        ) : (
+          // One quiet icon per member row, as in the learners table (UX-F-4); an application keeps its two words.
+          <IconButton label={m.studio_team_remove_named({ name })} icon={<UserMinus aria-hidden />} />
+        )
+      }
       title={texts.title}
       consequence={texts.consequence}
       confirmLabel={texts.verb}

@@ -166,6 +166,7 @@
   "studio_team_people": "Адамдар",
   "studio_team_added": "Бірлескен авторлар қосылды",
   "studio_team_remove": "Командадан шығару",
+  "studio_team_remove_named": "«{name}» командадан шығару",
   "studio_team_remove_title": "«{name}» командадан шығарылсын ба?",
   "studio_team_remove_consequence": "Адам курсты өңдеу құқығынан айырылады.",
   "studio_team_removed": "Командадан шығарылды",
