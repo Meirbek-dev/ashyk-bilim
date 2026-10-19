@@ -14,6 +14,15 @@ const confidenceLabels: Record<Confidence, () => string> = {
   high: m.analytics_confidence_high,
 }
 
+/** The age of the numbers in the unit that reads at a glance: «332 мин назад» made the reader divide by 60. */
+function freshness(seconds: number): string {
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return m.analytics_dq_minutes({ count: formatNumber(minutes) })
+  const hours = Math.round(minutes / 60)
+  if (hours < 48) return m.analytics_dq_hours({ count: formatNumber(hours) })
+  return m.analytics_dq_days({ count: formatNumber(Math.round(hours / 24)) })
+}
+
 /**
  * How far the numbers can be trusted (B-ANL-32): the data mode and last rollup, freshness, confidence, the attempts
  * left out (previews, teachers'), the courses with too few learners to judge, and the server's data issues.
@@ -27,7 +36,7 @@ export function DataQuality({ quality }: { quality: AnalyticsDataQuality }) {
     },
     {
       label: m.analytics_dq_freshness(),
-      value: m.analytics_dq_minutes({ count: formatNumber(Math.round(quality.freshness_seconds / 60)) }),
+      value: freshness(quality.freshness_seconds),
     },
     { label: m.analytics_dq_confidence(), value: confidenceLabels[quality.confidence_level]() },
     { label: m.analytics_dq_excluded_preview(), value: formatNumber(quality.excluded_preview_attempts) },

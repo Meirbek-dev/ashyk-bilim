@@ -282,6 +282,8 @@
   "analytics_dq_rollup": "Соңғы қайта есептеу",
   "analytics_dq_freshness": "Жаңалығы",
   "analytics_dq_minutes": "{count} мин бұрын",
+  "analytics_dq_hours": "{count} сағ бұрын",
+  "analytics_dq_days": "{count} күн бұрын",
   "analytics_dq_confidence": "Сенімділік",
   "analytics_confidence_low": "Төмен",
   "analytics_confidence_medium": "Орташа",

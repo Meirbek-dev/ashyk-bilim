@@ -282,6 +282,8 @@
   "analytics_dq_rollup": "Последний пересчёт",
   "analytics_dq_freshness": "Свежесть",
   "analytics_dq_minutes": "{count} мин назад",
+  "analytics_dq_hours": "{count} ч назад",
+  "analytics_dq_days": "{count} дн. назад",
   "analytics_dq_confidence": "Достоверность",
   "analytics_confidence_low": "Низкая",
   "analytics_confidence_medium": "Средняя",

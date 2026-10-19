@@ -282,6 +282,8 @@
   "analytics_dq_rollup": "Last recomputed",
   "analytics_dq_freshness": "Freshness",
   "analytics_dq_minutes": "{count} min ago",
+  "analytics_dq_hours": "{count} h ago",
+  "analytics_dq_days": "{count} d ago",
   "analytics_dq_confidence": "Confidence",
   "analytics_confidence_low": "Low",
   "analytics_confidence_medium": "Medium",

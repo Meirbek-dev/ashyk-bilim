@@ -34,4 +34,21 @@ describe('DataQuality', () => {
     await expect.element(screen.getByText(m.analytics_dq_minutes({ count: '10' }))).toBeVisible()
     await expect.element(screen.getByText(m.analytics_dq_thin_course({ course: 'Алгебра', count: '2' }))).toBeVisible()
   })
+
+  test('B-ANL-32 the age of the numbers is in hours past an hour and in days past two', async () => {
+    const quality = {
+      mode: 'rollup' as const,
+      confidence_level: 'medium' as const,
+      last_rollup_time_unix: null,
+      excluded_preview_attempts: 0,
+      excluded_teacher_attempts: 0,
+      missing_event_sources: [],
+      issues: [],
+      courses_without_enough_data: [],
+    }
+    const hours = await renderInRouter(<DataQuality quality={{ ...quality, freshness_seconds: 19_920 }} />)
+    await expect.element(hours.getByText(m.analytics_dq_hours({ count: '6' }))).toBeVisible()
+    const days = await renderInRouter(<DataQuality quality={{ ...quality, freshness_seconds: 3 * 86_400 }} />)
+    await expect.element(days.getByText(m.analytics_dq_days({ count: '3' }))).toBeVisible()
+  })
 })
