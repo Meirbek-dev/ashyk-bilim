@@ -3,6 +3,7 @@ import type { GradingBacklogItem, TeacherWorkloadSummary } from '#/shared/api/ge
 import { Bars } from '#/shared/components/charts/bars'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatNumber } from '#/shared/i18n/format'
 
@@ -13,7 +14,14 @@ const columns = (): DataColumn<GradingBacklogItem>[] => [
     id: 'assessment',
     header: m.analytics_col_assessment(),
     priority: 1,
-    cell: row => <span className="wrap-anywhere">{row.title}</span>,
+    // The works waiting here are graded from the inbox: the course's queue there.
+    cell: row => (
+      <span className="wrap-anywhere">
+        <Link variant="title" to="/teach" search={{ course: row.course_id }}>
+          {row.title}
+        </Link>
+      </span>
+    ),
   },
   {
     id: 'course',
