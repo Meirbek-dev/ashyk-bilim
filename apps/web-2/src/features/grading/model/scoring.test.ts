@@ -7,6 +7,7 @@ import {
   roundScoreInput,
   sumScores,
   toItemScale,
+  typedItemsPercent,
   afterLatePenalty,
   lastCheck,
 } from './scoring'
@@ -45,6 +46,23 @@ describe('B-GRD-22 score rounding', () => {
     expect(itemsPercent(['a', 'b', 'c'].map(() => ({ score: 33.33, max: 33.33 })))).toBe(100)
     expect(itemsPercent([{ score: 1, max: 3 }])).toBe(33.33)
     expect(itemsPercent([])).toBeNull()
+  })
+
+  test('B-GRD-12 the typed item total waits for a first score; a blank beside a typed one counts 0', () => {
+    expect(typedItemsPercent([{ score: '', max: 100 }])).toBeNull()
+    expect(
+      typedItemsPercent([
+        { score: 'x', max: 10 },
+        { score: ' ', max: 10 },
+      ]),
+    ).toBeNull()
+    expect(typedItemsPercent([{ score: '0', max: 100 }])).toBe(0)
+    expect(
+      typedItemsPercent([
+        { score: '5', max: 10 },
+        { score: '', max: 10 },
+      ]),
+    ).toBe(25)
   })
 })
 

@@ -7,7 +7,7 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
 import { gradeForm, gradeFormSchema, gradeRequest } from '../model/grade-form'
-import { itemsPercent, parseScoreInput } from '../model/scoring'
+import { typedItemsPercent } from '../model/scoring'
 import { type ReviewIds, saveGradeOptions } from '../mutations'
 import { reviewOptions } from '../queries'
 import { GradeActions } from './grade-actions'
@@ -64,9 +64,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
         {rows => (
           <p className="text-sm text-muted-foreground tabular-nums">
             {m.grading_items_total({
-              percent: scoreText(
-                itemsPercent(rows.map(row => ({ score: parseScoreInput(row.score, row.max) ?? 0, max: row.max }))),
-              ),
+              percent: scoreText(typedItemsPercent(rows)),
             })}
           </p>
         )}

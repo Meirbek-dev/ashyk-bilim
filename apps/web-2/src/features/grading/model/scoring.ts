@@ -43,6 +43,13 @@ export function itemsPercent(items: readonly { score: number; max: number }[]): 
   return roundScore((sumScores(items.map(item => item.score)) / max) * 100)
 }
 
+/** The item total of typed scores (a blank one counts 0); null until one is typed: «0 %» over an ungraded work read as a grade. */
+export function typedItemsPercent(rows: readonly { score: string; max: number }[]): number | null {
+  const scores = rows.map(row => parseScoreInput(row.score, row.max))
+  if (scores.every(score => score === null)) return null
+  return itemsPercent(rows.map((row, index) => ({ score: scores[index] ?? 0, max: row.max })))
+}
+
 /** The score after a late penalty, as the server applies it (`apply_late`, B-GRD-32): hundredths, penalty 0..100. */
 export const afterLatePenalty = (score: number, penaltyPct: number): number =>
   roundScore(score * (1 - Math.min(Math.max(penaltyPct, 0), 100) / 100))
