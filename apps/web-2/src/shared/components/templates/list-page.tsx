@@ -31,7 +31,8 @@ export function ListPage(props: ListPageProps) {
   return (
     <section className="@container flex flex-col gap-gutter">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-baseline gap-3">
+        {/* Wraps whole: at 390 px a long title squeezed «169 пользователей» into a two-line column beside it. */}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-2xl font-semibold">{title}</h1>
           {count ? <p className="text-sm text-muted-foreground tabular-nums">{count}</p> : null}
         </div>

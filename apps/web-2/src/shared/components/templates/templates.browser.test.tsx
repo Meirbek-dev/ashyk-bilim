@@ -28,6 +28,8 @@ const text = {
   profile: 'Profile',
   section: 'Name',
   hint: 'Shown on your profile.',
+  longTitle: 'Пайдаланушылар тізімі',
+  count: '169 пайдаланушы',
 }
 
 const renderList = () =>
@@ -79,6 +81,19 @@ describe('ListPage', () => {
     await screen.getByRole('button', { name: m.ui_filters_count({ count: 2 }) }).click()
     const sheet = page.getByRole('dialog', { name: m.ui_filters() })
     await expect.element(sheet.getByRole('button', { name: text.filter })).toBeVisible()
+  })
+
+  test('narrow: a count that does not fit beside a long title goes under it on one line', async () => {
+    await page.viewport(390, 800)
+    const screen = await renderInRouter(
+      <ListPage title={text.longTitle} count={text.count}>
+        {null}
+      </ListPage>,
+    )
+    await expect.element(screen.getByText(text.count)).toBeVisible()
+    const count = screen.getByText(text.count).element()
+    const line = Number.parseFloat(getComputedStyle(count).lineHeight)
+    expect(count.getBoundingClientRect().height).toBeLessThan(line * 1.5)
   })
 })
 
