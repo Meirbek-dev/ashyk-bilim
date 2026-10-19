@@ -35,7 +35,8 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
         <p key={line}>{line}</p>
       ))}
       {attempt.status === 'draft' ? null : <FinalRun itemId={code.item.id} submissionId={attempt.id} />}
-      {answer ? (
+      {/* An empty source (a migrated or blank hand-in) says so, not an empty read-only editor. */}
+      {answer?.source.trim() ? (
         <>
           <p className="text-muted-foreground">{language?.name ?? m.code_language_unknown({ id: answer.language })}</p>
           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
