@@ -25,7 +25,7 @@ export function InboxPage() {
   return (
     <ListPage
       title={m.platform_nav_inbox()}
-      count={m.inbox_count({ count: total })}
+      count={total > 0 || active > 0 ? m.inbox_count({ count: total }) : undefined}
       filters={
         items.length > 0 || active > 0 ? (
           <>
