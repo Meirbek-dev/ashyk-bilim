@@ -7,6 +7,7 @@ import type {
   LearnerCourseState,
   UserId,
 } from '#/shared/api/gen/types.gen'
+import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
 /**
  * The page header's one primary action (spec 5.4), decided only from what the API answered:
@@ -97,10 +98,18 @@ const ROLE_ORDER = ['creator', 'maintainer', 'contributor']
 
 /** Names for the header: active authors, creator first; reporters are read-only and never authors (BUG-146). */
 /** The course's size as the syllabus lists it (B-CRS-14): chapters and activities. */
-export const syllabusSize = (chapters: SyllabusChapter[]) => ({
-  chapters: chapters.length,
-  activities: chapters.reduce((sum, chapter) => sum + chapter.activities.length, 0),
-})
+export const syllabusSize = (chapters: SyllabusChapter[]) => {
+  const all = chapters.flatMap(chapter => chapter.activities.map(activity => activityType(activity.type)))
+  return {
+    chapters: chapters.length,
+    activities: all.length,
+    /** What the course is made of (B-CRS-15), in the type table's order: «Видео: 12 · Документ: 15 · Экзамен: 1». */
+    byType: Object.keys(activityTypeMeta)
+      .map(activityType)
+      .map(type => [type, all.filter(one => one === type).length] as const)
+      .filter(([, count]) => count > 0),
+  }
+}
 
 export const authorNames = (roster: Contributor[]): string[] =>
   roster

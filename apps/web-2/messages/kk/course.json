@@ -23,6 +23,7 @@
   "course_activity_done": "Өтілді",
   "course_learnings_title": "Не үйренесіз",
   "course_syllabus_title": "Курс бағдарламасы",
+  "course_composition": "Курс неден тұрады",
   "course_chapters_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

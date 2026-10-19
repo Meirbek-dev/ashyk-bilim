@@ -2,7 +2,9 @@ import { Check } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
+import { ActivityIcon } from '#/shared/components/activity-icon'
 import { formatNumber } from '#/shared/i18n/format'
+import { activityTypeMeta } from '#/shared/i18n/labels'
 
 import { syllabusSize, type SyllabusChapter } from '../model/course'
 import { SyllabusRow } from './syllabus-row'
@@ -12,6 +14,7 @@ import { SyllabusRow } from './syllabus-row'
  * stitch of the course ornament). An activity the learner may open links into the player; the whole row is the link.
  */
 export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters: SyllabusChapter[] }) {
+  const size = syllabusSize(chapters)
   return (
     <section aria-labelledby="course-syllabus" className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -22,8 +25,21 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
         {chapters.length > 0 ? (
           <p className="text-sm text-muted-foreground tabular-nums">
             {m.course_chapters_count({ count: chapters.length })} ·{' '}
-            {m.course_activities_count({ count: syllabusSize(chapters).activities })}
+            {m.course_activities_count({ count: size.activities })}
           </p>
+        ) : null}
+        {/* What it is made of (B-CRS-15): each type's tile and «Видео: 12». */}
+        {size.byType.length > 1 ? (
+          <ul aria-label={m.course_composition()} className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-sm">
+            {size.byType.map(([type, count]) => (
+              <li key={type} className="flex items-center gap-2">
+                <ActivityIcon type={type} size="sm" />
+                <span className="tabular-nums">
+                  {activityTypeMeta[type].label()}: {formatNumber(count)}
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
       {chapters.length === 0 ? <p className="text-muted-foreground">{m.course_syllabus_empty()}</p> : null}

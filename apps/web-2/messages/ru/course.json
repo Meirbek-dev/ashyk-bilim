@@ -23,6 +23,7 @@
   "course_activity_done": "Пройдено",
   "course_learnings_title": "Чему вы научитесь",
   "course_syllabus_title": "Программа курса",
+  "course_composition": "Из чего состоит курс",
   "course_chapters_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

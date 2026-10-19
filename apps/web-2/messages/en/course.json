@@ -23,6 +23,7 @@
   "course_activity_done": "Done",
   "course_learnings_title": "What you will learn",
   "course_syllabus_title": "Course outline",
+  "course_composition": "What the course is made of",
   "course_chapters_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

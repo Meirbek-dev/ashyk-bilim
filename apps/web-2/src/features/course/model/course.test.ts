@@ -215,11 +215,11 @@ describe('syllabus and progress', () => {
         { id: 'c1', title: 'C1', activities: [lesson, lesson] },
         { id: 'c2', title: 'C2', activities: [lesson] },
       ]),
-    ).toEqual({
+    ).toMatchObject({
       chapters: 2,
       activities: 3,
     })
-    expect(syllabusSize([])).toEqual({ chapters: 0, activities: 0 })
+    expect(syllabusSize([])).toEqual({ chapters: 0, activities: 0, byType: [] })
   })
 
   test('B-CRS-10 completion and availability come from the learner state as the server sent them', () => {
@@ -267,3 +267,17 @@ function activity(id: string): Activity {
     version: 1,
   }
 }
+
+const of = (type: string, id: string) => ({ id, title: id, type, complete: false, available: false, opensAt: null })
+
+test('B-CRS-15 the composition counts each activity type the syllabus lists, in the type table order', () => {
+  const chapters = [
+    { id: 'c1', title: 'C1', activities: [of('exam', 'e'), of('video', 'v1')] },
+    { id: 'c2', title: 'C2', activities: [of('video', 'v2'), of('mystery', 'x')] },
+  ]
+  expect(syllabusSize(chapters).byType).toEqual([
+    ['video', 2],
+    ['exam', 1],
+    ['custom', 1],
+  ])
+})
