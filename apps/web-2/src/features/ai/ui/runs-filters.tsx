@@ -14,7 +14,7 @@ const vDays = v.pipe(v.string(), v.transform(Number), v.picklist(RUN_DAYS))
 
 /**
  * Period, status, kind, provider or model (Enter applies) and one course (set from a run's row) of the runs list: each
- * is a search param (B-AI-21).
+ * is a search param (B-AI-21). Each «all» says what it is all of: two «Все» side by side were unlabelled to the eye.
  */
 export function RunsFilters({ search }: { search: AdminAiSearch }) {
   const navigate = useNavigate({ from: '/admin/ai' })
@@ -41,7 +41,7 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         value={search.status ?? ''}
         onChange={event => set({ status: v.parse(v.optional(vAiRunStatus), event.target.value || undefined) })}
       >
-        <NativeSelectOption value="">{m.ai_all()}</NativeSelectOption>
+        <NativeSelectOption value="">{m.ai_all_statuses()}</NativeSelectOption>
         {vAiRunStatus.options.map(status => (
           <NativeSelectOption key={status} value={status}>
             {runStatusLabels[status]()}
@@ -53,7 +53,7 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         value={search.kind ?? ''}
         onChange={event => set({ kind: v.parse(v.optional(vAiRunKind), event.target.value || undefined) })}
       >
-        <NativeSelectOption value="">{m.ai_all()}</NativeSelectOption>
+        <NativeSelectOption value="">{m.ai_all_kinds()}</NativeSelectOption>
         {vAiRunKind.options.map(kind => (
           <NativeSelectOption key={kind} value={kind}>
             {kindLabels[kind]()}
@@ -66,7 +66,7 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         aria-label={m.ai_filter_provider()}
         placeholder={m.ai_filter_provider()}
         defaultValue={search.provider ?? ''}
-        className="w-48"
+        className="w-full sm:w-64"
         onKeyDown={event => {
           if (event.key === 'Enter') set({ provider: event.currentTarget.value.trim() || undefined })
         }}
