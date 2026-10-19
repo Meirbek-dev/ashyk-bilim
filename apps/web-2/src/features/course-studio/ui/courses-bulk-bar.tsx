@@ -31,7 +31,8 @@ export function CoursesBulkBar({ selected, onDone }: BulkBarProps) {
   if (selected.length === 0) return null
   const targets = action ? bulkTargets(selected, action) : []
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    // Sticky under the top bar (h-14): a phone scrolls the list while picking, the actions stay in reach.
+    <div className="sticky top-14 z-10 -my-2 flex flex-wrap items-center gap-2 bg-background py-2">
       <p className="text-sm tabular-nums">{m.studio_bulk_selected({ count: formatNumber(selected.length) })}</p>
       {BULK_ACTIONS.map(name => {
         const count = bulkTargets(selected, name).length
