@@ -10,10 +10,13 @@ import type { EditorDocument, EditorNode } from '../model/document'
 import { LEGACY_EMBED } from '../model/fixtures'
 import { BlockEditor, DiscussionEditor } from '../index'
 
+// Under a 56 px bar like every page (shell or focus top bar): the toolbar sticks below one (`top-14`).
 const render = (ui: ReactNode) =>
   renderInRouter(
     <QueryClientProvider client={new QueryClient()}>
-      <Suspense>{ui}</Suspense>
+      <div className="pt-14">
+        <Suspense>{ui}</Suspense>
+      </div>
     </QueryClientProvider>,
   )
 const ACTIVITY = 'activity_0190a5d2'
