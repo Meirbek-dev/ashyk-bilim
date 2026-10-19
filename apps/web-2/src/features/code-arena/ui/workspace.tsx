@@ -103,6 +103,8 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
         <Button
           variant="secondary"
           disabled={empty || runner.state !== 'ready' || actions.running}
+          // Run after run from the keyboard: focus stays on «Запустить» while it runs.
+          focusableWhenDisabled
           onClick={() => actions.runCode(answer)}
         >
           {actions.running ? <Spinner data-icon="inline-start" /> : <Play aria-hidden data-icon="inline-start" />}

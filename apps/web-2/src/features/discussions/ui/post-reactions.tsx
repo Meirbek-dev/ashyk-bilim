@@ -25,6 +25,7 @@ export function PostReactions({ item }: { item: Discussion }) {
         aria-pressed={item.is_liked}
         onClick={() => like.mutate({ path })}
         disabled={like.isPending}
+        focusableWhenDisabled
       >
         {like.isPending ? <Spinner data-icon="inline-start" /> : null}
         <ThumbsUp aria-hidden />
@@ -36,6 +37,7 @@ export function PostReactions({ item }: { item: Discussion }) {
         aria-pressed={item.is_disliked}
         onClick={() => dislike.mutate({ path })}
         disabled={dislike.isPending}
+        focusableWhenDisabled
       >
         {dislike.isPending ? <Spinner data-icon="inline-start" /> : null}
         <ThumbsDown aria-hidden />
