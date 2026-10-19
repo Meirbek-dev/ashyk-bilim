@@ -61,20 +61,16 @@ test(
   },
 )
 
-test(
-  'B-AI-02 the player leaves out the AI column where the AI is off',
-  { tag: '@ai' },
-  async ({ page, learner, makeCourse }) => {
-    const course = await makeCourse()
-    await learner.enroll(course)
-    await learner.signIn()
-    await mockCapabilities(page, caps({ modes: [], available: false, reason: 'restricted_activity' }))
-    await openSecondActivity(page, course)
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(panel(page)).toHaveCount(0)
-    await expect(page.getByRole('button', { name: m.ai_panel_title({}, ru) })).toHaveCount(0)
-  },
-)
+test('B-AI-02 no AI column in the player where AI is off', { tag: '@ai' }, async ({ page, learner, makeCourse }) => {
+  const course = await makeCourse()
+  await learner.enroll(course)
+  await learner.signIn()
+  await mockCapabilities(page, caps({ modes: [], available: false, reason: 'restricted_activity' }))
+  await openSecondActivity(page, course)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(panel(page)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: m.ai_panel_title({}, ru) })).toHaveCount(0)
+})
 
 test(
   'B-AI-03 B-AI-04 B-AI-05 B-AI-06 a learner asks the study companion in the player',
@@ -93,6 +89,7 @@ test(
     const ask = aside.getByRole('button', { name: m.ai_ask({}, ru) })
     await expect(ask).toBeDisabled()
     await aside.getByRole('button', { name: m.ai_mode_practice({}, ru) }).click()
+    await expect(aside.getByText(m.ai_mode_hint_practice({}, ru))).toBeVisible()
     await aside.getByRole('textbox', { name: m.ai_question({}, ru) }).fill('Что такое цикл?')
     await ask.click()
     await expect(aside.getByRole('button', { name: m.ai_stop({}, ru) })).toBeVisible()

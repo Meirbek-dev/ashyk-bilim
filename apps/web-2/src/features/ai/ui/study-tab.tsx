@@ -7,7 +7,7 @@ import { vStudyMode } from '#/shared/api/gen/valibot.gen'
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { Button } from '#/shared/ui/button'
 
-import { modeLabels } from '../model/labels'
+import { modeHints, modeLabels } from '../model/labels'
 import { studyQueue } from '../queries'
 import { AskForm } from './ask-form'
 import { RunStatus } from './run-status'
@@ -41,6 +41,7 @@ export function StudyTab({ courseId }: { courseId: CourseId }) {
             </Button>
           ))}
         </div>
+        <p className="text-sm text-muted-foreground">{modeHints[mode]()}</p>
       </fieldset>
       <AskForm label={m.ai_question()} pending={run.pending} onAsk={ask} />
       <RunStatus

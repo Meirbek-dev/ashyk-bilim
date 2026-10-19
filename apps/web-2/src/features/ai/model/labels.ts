@@ -33,6 +33,15 @@ export const modeLabels: Record<StudyMode, () => string> = {
   deepen: m.ai_mode_deepen,
 }
 
+/** What each study mode gives back, under the mode buttons (the names alone did not say). */
+export const modeHints: Record<StudyMode, () => string> = {
+  explain: m.ai_mode_hint_explain,
+  practice: m.ai_mode_hint_practice,
+  flashcards: m.ai_mode_hint_flashcards,
+  summarize: m.ai_mode_hint_summarize,
+  deepen: m.ai_mode_hint_deepen,
+}
+
 export const stepLabels: Record<RunEventState, () => string> = {
   queued: m.ai_step_queued,
   running: m.ai_step_running,
