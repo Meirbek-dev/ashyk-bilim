@@ -57,8 +57,13 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
           )}
         </form.AppField>
         {mode === 'wording' ? <p className="text-sm text-muted-foreground">{m.assessments_wording_details()}</p> : null}
-        {/* `inert` as in LockableSection: the radio group is a Base UI span a disabled fieldset does not reach. */}
-        <fieldset disabled={mode !== 'all'} inert={mode !== 'all'} className="flex min-w-0 flex-col gap-4">
+        {/* `inert` and the dimmed radios as in LockableSection: the radio group is a Base UI span a disabled fieldset does
+            not reach. */}
+        <fieldset
+          disabled={mode !== 'all'}
+          inert={mode !== 'all'}
+          className={`flex min-w-0 flex-col gap-4 ${mode === 'all' ? '' : '[&_[role=radio]]:opacity-50'}`}
+        >
           <form.AppField name="weight">
             {field => (
               <field.TextField

@@ -18,8 +18,13 @@ export function LockableSection({ lock, ...section }: LockableSectionProps) {
       </div>
       <p className="text-sm">{lock}</p>
       {/* ponytail: `inert` because the shared Switch / RadioGroup fields are Base UI spans a disabled fieldset does not
-          reach (and take no `disabled`); it also hides the values from assistive tech. Drop it once they do. */}
-      <fieldset disabled inert className="flex min-w-0 flex-col gap-4">
+          reach (and take no `disabled`); it also hides the values from assistive tech. Drop it once they do. The same
+          spans keep their live colours, so they are dimmed like the disabled inputs beside them. */}
+      <fieldset
+        disabled
+        inert
+        className="flex min-w-0 flex-col gap-4 [&_[role=checkbox]]:opacity-50 [&_[role=radio]]:opacity-50 [&_[role=switch]]:opacity-50"
+      >
         {section.children}
       </fieldset>
     </section>
