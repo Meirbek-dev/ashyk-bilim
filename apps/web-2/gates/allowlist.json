@@ -31,6 +31,10 @@
       "reason": "Brand name, not translated."
     },
     {
+      "key": "grading_percent",
+      "reason": "A number and the percent sign with a no-break space, as Intl writes it in ru and kk; nothing to translate."
+    },
+    {
       "key": "platform_nav_analytics",
       "reason": "Established kk term (legacy catalog uses Аналитика), spelled like ru."
     },

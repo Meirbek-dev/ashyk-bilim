@@ -42,7 +42,7 @@
   "grading_action_open": "Ашу",
   "grading_select_row": "Таңдау: {name}",
   "grading_no_score": "Баға жоқ",
-  "grading_percent": "{value}%",
+  "grading_percent": "{value} %",
   "grading_export_csv": "CSV жүктеп алу",
   "grading_selected": "Таңдалды: {count}",
   "grading_publish_all": "Бағаларды жариялау",

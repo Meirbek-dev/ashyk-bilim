@@ -44,7 +44,7 @@
   "grading_action_open": "Открыть",
   "grading_select_row": "Выбрать: {name}",
   "grading_no_score": "Нет оценки",
-  "grading_percent": "{value} %",
+  "grading_percent": "{value} %",
   "grading_export_csv": "Скачать CSV",
   "grading_selected": "Выбрано: {count}",
   "grading_publish_all": "Опубликовать оценки",
