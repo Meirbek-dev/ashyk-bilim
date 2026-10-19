@@ -5,7 +5,7 @@
   "ui_retry": "Retry",
   "ui_show_more": "Show more",
   "ui_no_matches": "Nothing matches these filters.",
-  "ui_chart_all_zero": "Every value in the period is 0.",
+  "ui_chart_all_zero": "Every value is 0 so far.",
   "ui_reset_filters": "Reset filters",
   "ui_forbidden": "You do not have access to this section.",
   "ui_not_found_text": "The link may be out of date, or you do not have access to it.",
