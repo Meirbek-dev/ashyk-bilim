@@ -24,6 +24,8 @@
   "analytics_view_delete_confirm": "Delete",
   "analytics_view_deleted": "View deleted",
   "analytics_kpis": "Key metrics",
+  "analytics_no_courses": "Analytics appears once you have a course: learner activity, performance and the review queue gather here.",
+  "analytics_no_courses_link": "Go to courses",
   "analytics_kpi_active_learners": "Active learners",
   "analytics_kpi_returning_learners": "Returning learners",
   "analytics_kpi_completion_rate": "Course completion",

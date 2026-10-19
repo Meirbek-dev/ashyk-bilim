@@ -21,6 +21,15 @@ export function AnalyticsLayout() {
   const tab = tabOf(useLocation().pathname)
   const { data: overview } = useSuspenseQuery(overviewOptions(filters))
   const counts = tabCounts(overview)
+  // No course in scope (a new teacher): six zero tiles and four flat charts say nothing - say what will appear.
+  if (overview.course_options.length === 0)
+    return (
+      <DetailPage title={m.platform_nav_analytics()}>
+        <p className="max-w-prose text-muted-foreground">
+          {m.analytics_no_courses()} <Link to="/teach/courses">{m.analytics_no_courses_link()}</Link>
+        </p>
+      </DetailPage>
+    )
   return (
     <DetailPage
       title={m.platform_nav_analytics()}

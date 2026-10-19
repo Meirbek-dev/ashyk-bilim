@@ -24,6 +24,8 @@
   "analytics_view_delete_confirm": "Удалить",
   "analytics_view_deleted": "Представление удалено",
   "analytics_kpis": "Ключевые показатели",
+  "analytics_no_courses": "Аналитика появится, когда у вас будет курс: здесь соберутся активность учащихся, успеваемость и очередь проверки.",
+  "analytics_no_courses_link": "Перейти к курсам",
   "analytics_kpi_active_learners": "Активные учащиеся",
   "analytics_kpi_returning_learners": "Вернувшиеся учащиеся",
   "analytics_kpi_completion_rate": "Завершение курсов",

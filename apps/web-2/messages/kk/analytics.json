@@ -24,6 +24,8 @@
   "analytics_view_delete_confirm": "Жою",
   "analytics_view_deleted": "Көрініс жойылды",
   "analytics_kpis": "Негізгі көрсеткіштер",
+  "analytics_no_courses": "Курсыңыз болғанда аналитика пайда болады: мұнда білім алушылардың белсенділігі, үлгерімі және тексеру кезегі жиналады.",
+  "analytics_no_courses_link": "Курстарға өту",
   "analytics_kpi_active_learners": "Белсенді білім алушылар",
   "analytics_kpi_returning_learners": "Қайта оралған білім алушылар",
   "analytics_kpi_completion_rate": "Курсты аяқтау",
