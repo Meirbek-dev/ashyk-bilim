@@ -29,7 +29,7 @@
   "notifications_type_discussion_reply": "Талқылаудағы жауап",
   "notifications_type_contributor_application": "Бірлескен автор өтінімі",
   "notifications_type_discussion_post": "Талқылауда жаңа тақырып",
-  "notifications_type_course_team_added": "Сіз курс командасындасыз",
+  "notifications_type_course_team_added": "Курс командасына қосу",
   "notifications_text_activity": "«{activity}», «{course}» курсы",
   "notifications_text_score": "Баға: {score}",
   "notifications_text_due": "Мерзімі: {date}",

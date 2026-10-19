@@ -31,7 +31,7 @@
   "notifications_type_discussion_reply": "Ответ в обсуждении",
   "notifications_type_contributor_application": "Заявка соавтора",
   "notifications_type_discussion_post": "Новая тема в обсуждении",
-  "notifications_type_course_team_added": "Вы в команде курса",
+  "notifications_type_course_team_added": "Добавление в команду курса",
   "notifications_text_activity": "«{activity}», курс «{course}»",
   "notifications_text_score": "Оценка: {score}",
   "notifications_text_due": "Срок: {date}",
