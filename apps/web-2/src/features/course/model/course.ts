@@ -94,6 +94,14 @@ export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
     })),
   }))
 
+/** The activity the server's `next_action` points at, with its type, for «Далее: …» under the progress (B-CRS-17). */
+export function nextActivity(state: LearnerCourseState): { id: ActivityId; title: string; type: string } | null {
+  const id = state.next_action?.activity_id
+  if (!id) return null
+  const found = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === id)
+  return found ? { id: found.id, title: found.title, type: found.activity_type } : null
+}
+
 const ROLE_ORDER = ['creator', 'maintainer', 'contributor']
 
 /** Names for the header: active authors, creator first; reporters are read-only and never authors (BUG-146). */

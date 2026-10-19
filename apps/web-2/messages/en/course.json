@@ -18,6 +18,7 @@
   "course_leave_consequence": "Your lesson completion marks and extended deadlines are reset; grades and submissions stay. You can enroll again at any time.",
   "course_left": "You left the course",
   "course_progress_title": "Your progress",
+  "course_next_up": "Next:",
   "course_progress_count": "{done} of {total} done",
   "course_activity_opens": "Opens {date}",
   "course_activity_done": "Done",

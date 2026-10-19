@@ -18,6 +18,7 @@
   "course_leave_consequence": "Отметки о пройденных уроках и продлённые сроки сбросятся, оценки и сданные работы останутся. Записаться снова можно в любой момент.",
   "course_left": "Вы покинули курс",
   "course_progress_title": "Ваш прогресс",
+  "course_next_up": "Далее:",
   "course_progress_count": "Пройдено {done} из {total}",
   "course_activity_opens": "Откроется {date}",
   "course_activity_done": "Пройдено",

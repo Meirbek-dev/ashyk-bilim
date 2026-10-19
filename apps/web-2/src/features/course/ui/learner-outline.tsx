@@ -1,11 +1,14 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
+import { ActivityIcon } from '#/shared/components/activity-icon'
+import { Link } from '#/shared/components/link'
 import { Progress } from '#/shared/components/progress'
 import type { Course } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
+import { activityType } from '#/shared/i18n/labels'
 
-import { outlineSyllabus } from '../model/course'
+import { nextActivity, outlineSyllabus } from '../model/course'
 import { learnerStateOptions } from '../queries'
 import { LeaveCourse } from './leave-course'
 import { Syllabus } from './syllabus'
@@ -17,6 +20,7 @@ import { Syllabus } from './syllabus'
 export function LearnerOutline({ course }: { course: Course }) {
   const { data: state } = useSuspenseQuery(learnerStateOptions(course.id))
   const { completed_required_count: done, total_required_count: total, progress_pct: percent } = state.progress
+  const next = state.enrolled ? nextActivity(state) : null
   return (
     <>
       {state.enrolled ? (
@@ -36,6 +40,15 @@ export function LearnerOutline({ course }: { course: Course }) {
             <LeaveCourse course={course} />
           </div>
           <Progress value={percent} aria-labelledby="course-progress" className="progress-lg" />
+          {next ? (
+            <p className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">{m.course_next_up()}</span>
+              <ActivityIcon type={activityType(next.type)} size="sm" />
+              <Link to="/learn/$courseId/$activityId" params={{ courseId: course.id, activityId: next.id }}>
+                {next.title}
+              </Link>
+            </p>
+          ) : null}
         </section>
       ) : null}
       <Syllabus courseId={course.id} chapters={outlineSyllabus(state)} />

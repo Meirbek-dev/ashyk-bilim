@@ -8,6 +8,7 @@ import {
   curriculumSyllabus,
   outlineSyllabus,
   primaryAction,
+  nextActivity,
   syllabusSize,
   type SyllabusChapter,
 } from './course'
@@ -280,4 +281,23 @@ test('B-CRS-15 the composition counts each activity type the syllabus lists, in 
     ['exam', 1],
     ['custom', 1],
   ])
+})
+
+const pointing = (activity_id: string | null) =>
+  state({
+    next_action: {
+      id: 'continue',
+      label: 'Continue',
+      reason: 'not_enrolled',
+      enabled: true,
+      activity_id,
+      course_id: 'c1',
+      href: null,
+    },
+  })
+
+test('B-CRS-17 «Далее» names the activity the server points at; none without one or outside the outline', () => {
+  expect(nextActivity(pointing('a1'))).toEqual({ id: 'a1', title: 'Page', type: 'dynamic' })
+  expect(nextActivity(pointing(null))).toBeNull()
+  expect(nextActivity(pointing('gone'))).toBeNull()
 })
