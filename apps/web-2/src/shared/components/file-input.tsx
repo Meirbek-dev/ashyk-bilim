@@ -183,7 +183,8 @@ export function FileInput(props: FileInputProps) {
         >
           {multiple > 1 ? m.ui_files_choose() : m.ui_file_choose()}
         </label>
-        <span>{multiple > 1 ? m.ui_files_drop() : m.ui_file_drop()}</span>
+        {/* A phone has nothing to drag a file from. */}
+        <span className="pointer-coarse:hidden">{multiple > 1 ? m.ui_files_drop() : m.ui_file_drop()}</span>
       </div>
       {progress === null ? null : <UploadProgress progress={progress} file={picked} onCancel={cancel} />}
       <div id={`${id}-status`} aria-live="polite" className="flex flex-col gap-1 text-sm">
