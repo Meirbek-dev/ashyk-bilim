@@ -7,6 +7,7 @@ import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { TimeSeries } from '#/shared/components/charts/time-series'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatDayMonth, formatNumber, formatPercent } from '#/shared/i18n/format'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
@@ -17,7 +18,7 @@ import { AsOf } from './as-of'
 import { BackLink } from './back-link'
 import { CourseHealth } from './course-health'
 
-const columns = (): DataColumn<ActivityDropoffRow>[] => [
+const columns = (courseId: CourseId): DataColumn<ActivityDropoffRow>[] => [
   {
     id: 'activity',
     header: m.analytics_col_activity(),
@@ -27,7 +28,14 @@ const columns = (): DataColumn<ActivityDropoffRow>[] => [
       return (
         <span className="inline-flex items-center gap-1 wrap-anywhere">
           <meta.icon aria-hidden className={`size-4 shrink-0 ${meta.ink}`} />
-          {row.activity_name}
+          {/* Where learners stop is where the teacher acts: the activity opens in its studio. */}
+          <Link
+            variant="title"
+            to="/teach/courses/$courseId/activities/$activityId/edit"
+            params={{ courseId, activityId: row.activity_id }}
+          >
+            {row.activity_name}
+          </Link>
         </span>
       )
     },
@@ -92,7 +100,7 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
           <DataTable
             label={m.analytics_dropoff_table()}
             rows={data.activity_dropoff}
-            columns={columns()}
+            columns={columns(courseId)}
             getKey={row => row.activity_id}
           />
         </ListState>
