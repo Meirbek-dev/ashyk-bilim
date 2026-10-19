@@ -209,6 +209,7 @@
   "studio_restored": "Курс восстановлен",
   "studio_publish_title": "Публикация",
   "studio_publish": "Опубликовать",
+  "studio_publish_named": "Опубликовать «{name}»",
   "studio_published": "Курс опубликован",
   "studio_publish_live": "Курс виден учащимся в каталоге.",
   "studio_publish_open_page": "Открыть страницу курса",

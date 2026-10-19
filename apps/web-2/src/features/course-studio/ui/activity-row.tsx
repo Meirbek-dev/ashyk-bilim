@@ -14,6 +14,7 @@ import { toast } from '#/shared/ui/toast'
 import { updateActivityOptions } from '../curriculum-queries'
 import { ActivityStatusBadge } from './activity-status'
 import { DeleteActivity } from './delete-activity'
+import { QuickPublish } from './quick-publish'
 import { RenameForm } from './rename-form'
 
 type ActivityRowProps = { courseId: string; activity: Activity; index: number }
@@ -95,6 +96,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
       </div>
       <div className="ms-auto flex items-center gap-2">
         <ActivityStatusBadge published={activity.published} />
+        <QuickPublish courseId={courseId} activity={activity} />
         {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
         {allowed('update') ? (
           <IconButton

@@ -199,6 +199,7 @@
   "studio_restored": "Курс қалпына келтірілді",
   "studio_publish_title": "Жариялау",
   "studio_publish": "Жариялау",
+  "studio_publish_named": "«{name}» жариялау",
   "studio_published": "Курс жарияланды",
   "studio_publish_live": "Курс каталогта білім алушыларға көрінеді.",
   "studio_publish_open_page": "Курс бетін ашу",

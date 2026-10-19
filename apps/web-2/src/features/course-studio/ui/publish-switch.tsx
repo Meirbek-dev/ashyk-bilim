@@ -21,7 +21,7 @@ const missingMedia: Record<string, () => string> = {
   document_doc: m.studio_publish_needs_document,
 }
 
-const refusal = (error: unknown, activity: ActivityDetail) =>
+export const refusal = (error: unknown, activity: Pick<ActivityDetail, 'activity_sub_type'>) =>
   error instanceof ApiError && error.code === 'activity-media-missing'
     ? (missingMedia[activity.activity_sub_type] ?? (() => presentError(error)))()
     : presentError(error)

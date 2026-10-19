@@ -199,6 +199,7 @@
   "studio_restored": "Course restored",
   "studio_publish_title": "Publishing",
   "studio_publish": "Publish",
+  "studio_publish_named": "Publish “{name}”",
   "studio_published": "Course published",
   "studio_publish_live": "Learners see the course in the catalog.",
   "studio_publish_open_page": "Open the course page",
