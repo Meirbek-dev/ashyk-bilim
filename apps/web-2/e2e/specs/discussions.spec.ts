@@ -206,7 +206,7 @@ test('B-DSC-07 B-DSC-13 delete asks, sends If-Match, the post is gone', async ({
   const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.discussions_delete({}, ru) }).click()
   expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByText(m.discussions_deleted({}, ru))).toBeVisible()
+  await expect(page.getByRole('heading', { name: m.discussions_deleted({}, ru), exact: true })).toBeVisible()
   await expect(article(page, 'Удаляемый пост.')).toHaveCount(0)
 })
 
