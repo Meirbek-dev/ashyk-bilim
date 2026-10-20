@@ -92,7 +92,9 @@ Trust zones:
   through it, without NAT loopback or `host-gateway`.
 
 All services log through `x-logging` (json-file, 10 MB x 5). Memory limits:
-web 2g; db, server, worker, zitadel 1g; rustfs 512m; nginx, redis 256m.
+web 2g; db, server, worker, zitadel, nginx 1g; rustfs 512m; redis 256m.
+Nginx uses two workers with its one-CPU quota (infra/nginx/nginx.conf),
+128k response-header buffers and eight 32k response-body buffers per proxied request.
 
 Volumes (`<project>_<name>`; the names are load-bearing, a rename means empty
 volumes): `postgres_data`, `redis_data`, `rustfs_data`, `zitadel_machinekey`,

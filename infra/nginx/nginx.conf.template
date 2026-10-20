@@ -159,9 +159,10 @@ proxy_socket_keepalive on;
 proxy_connect_timeout 10s;
 proxy_send_timeout 60s;
 proxy_read_timeout 60s;
+# Keep large authentication response headers; bound body buffering per request.
 proxy_buffer_size 128k;
-proxy_buffers 4 256k;
-proxy_busy_buffers_size 256k;
+proxy_buffers 8 32k;
+proxy_busy_buffers_size 128k;
 
 # API bodies are JSON only; file bytes use presigned URLs (2G on /ab-*).
 client_max_body_size 10M;
