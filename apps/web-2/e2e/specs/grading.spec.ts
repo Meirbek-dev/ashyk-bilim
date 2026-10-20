@@ -210,7 +210,7 @@ test('B-GRD-16 B-GRD-26 a file attempt: download by a signed link, rubric points
   await page.goto(`${queue(fileTask)}/${fileTask.attemptId}`)
   await expect(page.getByRole('button', { name: m.grading_download({ name: 'essay-1.pdf' }, ru) })).toBeVisible()
   await page.getByLabel(m.grading_criterion_score({ label: 'Ясность', max: 10 }, ru)).fill('8')
-  await expect(page.getByText(/80 %/).first()).toBeVisible()
+  await expect(page.getByText(/80\s%/).first()).toBeVisible()
   await page.getByLabel(m.grading_final_score({}, ru)).fill('80')
   await page.getByLabel(m.grading_feedback({}, ru)).fill('Ясно и по делу')
   await page.getByRole('button', { name: m.grading_publish({}, ru) }).click()
