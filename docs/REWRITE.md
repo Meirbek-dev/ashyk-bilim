@@ -1,9 +1,16 @@
 # Rewrite spec (v3)
 
-Status: proposed 2026-10-21, not started. Replaces `apps/server`, `apps/web` and the
-current stack topology. `apps/web-2` survives as the frontend (converted to an SPA).
-Until phase 5 lands, `ARCHITECTURE.md`, `INFRA.md` and `RUNBOOK.md` describe production;
-this file describes where it goes and in what order.
+Status: proposed 2026-10-21, revised the same day after a system audit (prod host, public
+site, repo). Not started. Replaces `apps/web`, the current stack topology and the shape of
+`apps/server`; `apps/web-2` survives as the frontend (converted to an SPA). Until phase 6
+lands, `ARCHITECTURE.md`, `INFRA.md` and `RUNBOOK.md` describe production; this file
+describes where it goes and in what order.
+
+Approach: **delete first, in place.** Operations are fixed before code (phase 0). Cut
+features, services and the second frontend are removed from the running system, each
+step deployable with production working. The v3 server shape (section 4) and schema
+(section 5) are then reached by restructuring `apps/server` module by module on the live
+database. A fresh crate plus one big import (section 9.5) is the fallback, not the plan.
 
 ## 1. Why
 
@@ -15,7 +22,7 @@ Measured on prod 2026-10-20:
 | Courses / activities | 51 / 483 |
 | Database / media | 107 MB / 16 GB |
 | Submissions since cutover (2026-09-30) | 66, from 20 learners |
-| Code runs since cutover | ~5 (41k imported) |
+| Code runs | 41,167 ever, all Python (Judge0 language 71); 41,166 from one account (Jun–Oct 2026), 1 from anyone else |
 | AI runs, ever | 13 (41 Q&A messages) |
 | File-submission attempts | 0 |
 
@@ -37,65 +44,103 @@ The cost is scope and parallel paths, not code quality:
   disk already do at this size.
 - AI (12.5k lines, 15 tables), analytics (11.6k, 9 tables) and gamification (2k) carry
   most of the schema and are barely used.
-- Two frontends receive fixes in parallel; the dual-web compatibility tax runs through
-  the server (`WEB_LINKS`, 21 deprecated operations, `phase9-removals.md`).
+- Two frontends receive fixes in parallel (586 of the 1,566 commits are `fix(web)` or
+  `fix(web-2)`); the dual-web compatibility tax runs through the server (`WEB_LINKS`,
+  20 deprecated operations, `apps/server/docs/phase9-removals.md`).
+
+The machinery around the code grew the same way: 5 compose files, 18 services, 44
+interpolated variables, 589-line CI workflow (red in 23 of the last 40 runs, 19 of them
+web2-e2e), an 8.5-minute pre-push hook, 46 + 23 just recipes, 2.5k lines of `infra/dev`,
+1.7k lines of web-2 gates, 95k lines of vendored agent skills and ~9k lines of docs.
+
+Operations found by the audit on 2026-10-21 that no code rewrite fixes:
+
+- Resend answers 403: verification and password-reset emails fail (14 in 30 h), unnoticed.
+- Backups never leave `cs01`, are full 10.7 GB copies of the media store every night,
+  contain `.env`/`server.env` in clear, and no restore drill has ever run on the host
+  (its ports 18080/18443 are taken by other tenants).
+- AI agents and editors run in the prod checkout; commits were authored there; the live
+  nginx config is newer than the deployed images; stray `ashyq-dual-*` containers run.
+- The host shares one Docker daemon with ~90 unrelated containers, including Portainer
+  with the Docker socket on `0.0.0.0`; `user` is in `docker` and `sudo`; SSH accepts
+  passwords; published Docker ports bypass UFW.
+- One query (`activities … EXISTS (… is_course_staff …)`) takes 1.6 s median.
+- The old web is still the default: `/ru` is 1.3 MB of HTML (1.2 MB inline RSC);
+  web-2's home page carries 128 `modulepreload` links.
 
 ## 2. Goals and non-goals
 
 Goals:
 
-- One Rust binary, one Postgres, one static frontend, nginx, Judge0. Nothing else.
+- Production keeps working after every phase; no single cutover day carries the rewrite.
+- Backups leave the host, are encrypted, and a restore is rehearsed monthly.
+- One Rust binary, one Postgres, one static frontend, nginx, Judge0 (if kept). Nothing
+  else, in its own VM.
 - Every course-scoped handler gets its access decision from one place, by construction.
 - Every write that must happen together happens in one transaction, jobs included.
 - Every JSONB column has a Rust type that is deserialized on write and on read.
 - The kept feature set works for the existing data with the same ids and URLs.
+- The tooling, CI and docs shrink with the code (sections 12–14).
 
 Non-goals:
 
 - Multi-tenancy, federation/OIDC, passkeys, push/email notification feeds.
-- Feature parity with v2 for anything on the cut list (section 9).
+- Feature parity with v2 for anything on the cut list (section 10).
 - Horizontal scaling. One process on one host handles 100× today's load.
 
 Size expectations (guidance, not a gate): server ≤ 30k lines of production Rust,
-≤ 35 tables, ≤ 120 operations; web-2 shrinks by the cut features.
+≤ 35 tables, ≤ 120 operations; web-2 shrinks by the cut features; docs ≤ 1,500 lines;
+CI ≤ 10 minutes.
 
 ## 3. Target topology
 
 ```
 browser ─► university proxy (TLS, 4 KiB response headers, ~100 MiB bodies)
-             └─► nginx :80/:443
-                   ├─ /assets/*            static files (immutable, 1 year)
-                   ├─ /media/_internal/*   internal; served after X-Accel-Redirect
-                   ├─ /api/*               ashyq :8000
-                   └─ everything else      ashyq :8000 (index.html + page meta)
-ashyq (one binary: HTTP, worker loop, scheduler, SSE fan-out)
-   ├─ Postgres 18  (app data, sessions, jobs, LISTEN/NOTIFY)
-   ├─ /data/ashyq/media  (local disk, nginx reads it)
-   ├─ Judge0 1.13.1  (separate VM or host, HTTP + token)
-   ├─ Resend  (email, called from jobs only)
-   ├─ Google OAuth
-   └─ Anthropic API  (course Q&A only)
+             └─► VM "ashyq" on cs01
+                   nginx :80/:443
+                     ├─ /assets/*            static files (immutable, 1 year)
+                     ├─ /media/_internal/*   internal; served after X-Accel-Redirect
+                     ├─ /api/*               ashyq :8000
+                     └─ everything else      ashyq :8000 (index.html + page meta)
+                   ashyq (one binary: HTTP, worker loop, scheduler, SSE fan-out)
+                     ├─ Postgres 18  (app data, sessions, jobs, LISTEN/NOTIFY)
+                     ├─ /data/ashyq/media  (local disk, nginx reads it)
+                     ├─ Resend  (email, called from jobs only)
+                     ├─ Google OAuth
+                     └─ Anthropic API  (course Q&A only)
+                   restic (cron)  pg_dump + media ─► encrypted repo on a second machine
+             VM "judge" on cs01
+                   Judge0 1.13.1 (server, workers, its Postgres and Redis; privileged
+                   inside the VM only), reachable from VM "ashyq" with a token
+second machine (tailnet): restic repository, monthly restore drill, dead-man check
 ```
 
-Containers on the app host: `nginx`, `ashyq`, `postgres`, `backup`. Judge0 (server,
-workers, its Postgres and Redis) runs elsewhere because it is `privileged`.
+Containers in VM `ashyq`: `nginx`, `ashyq`, `postgres`. No backup container, no Docker
+socket mounts, no init jobs (the binary runs `migrate`; Postgres roles come from the
+image's `docker-entrypoint-initdb.d`).
 
-Host: a dedicated LXD VM on `cs01` (the `user` account is already in `lxd`) or its own
-machine. Today the stack shares a Docker daemon with ~80 unrelated containers, including
-Portainer, n8n and a Postgres published on `0.0.0.0`; published Docker ports bypass UFW.
+LXD 5.21 is installed on `cs01` with no instances and `user` is in `lxd`, so both VMs cost
+no hardware. A VM, not a separate compose project, is what isolates Ashyq from the other
+tenants and contains the privileged Judge0 containers.
+
+nginx stays while the host itself terminates TLS on 443 (`infra/nginx/nginx.conf.template:180`).
+If direct 443 access is dropped (section 16), nginx can go too: the binary serves assets
+and media with `tower-http` `ServeDir` (Range requests included).
 
 ## 4. Server
 
 ### 4.1 Layout
 
-One crate, `apps/ashyq`, organized by feature. No `domain`/`db`/`api` layer crates.
+End state: one crate, `apps/ashyq`, organized by feature, reached in phase 5 by
+collapsing the 8 `apps/server` crates module by module. No `domain`/`db`/`api` layer
+crates.
 
 ```
 apps/ashyq/
   Cargo.toml
   migrations/
   src/
-    main.rs          serve | migrate | import-v2 | admin <cmd>
+    main.rs          serve | migrate | admin <cmd> | verify <module>
     app.rs           router, state, middleware
     error.rs         ErrorCode registry + problem+json (port as-is)
     db.rs            pool, Tx alias, NOTIFY listener
@@ -172,21 +217,23 @@ own POST response.
   create (`client_key` unique per user). No `Prefer` header, no generic idempotency table.
 - Cursor pagination with one shape (`items`, `next_cursor`); the generated client gets one
   hand-written `infiniteQueryOptions` helper instead of 34.
+- How the contract changes while getting there: section 8.
 
 ### 4.6 Observability
 
 - JSON logs; one `tracing` span per request with `request_id`, user id, route and status;
   spans on job runs and external calls (Judge0, Resend, Anthropic).
-- `GET /api/v2/health` (process) and `GET /api/v2/health/ready` (database plus last
-  worker heartbeat), the paths `smoke.sh` already checks.
-- No metrics backend. Alerting is an owner decision (section 11).
+- `GET /api/v2/health` (process) and `GET /api/v2/health/ready` (database, last worker
+  heartbeat, and the count of jobs that failed permanently in the last 24 h by kind), the
+  paths `smoke.sh` already checks.
+- No metrics backend. Alerting is the dead-man check in section 11.5.
 
 ## 5. Schema
 
-New database `ashyq3` in the same Postgres cluster, populated by `ashyq import-v2`
-(section 8). The v2 database is left untouched for rollback. Ids are kept: every row
-that survives keeps its v2 `id`, so URLs, certificates and media keys stay valid.
-`legacy_uuid`, `etl_*` and `zitadel_user_id` columns do not exist in v3.
+The target schema, reached by forward migrations on the existing `ashyq` database in
+phases 3–5 (section 9). Ids are kept by construction, so URLs, certificates and media
+keys stay valid. `legacy_uuid`, `etl_*` and `zitadel_user_id` columns are dropped once
+nothing reads them.
 
 Conventions: `uuid` primary keys (`uuidv7()` default), `timestamptz`, `text` + `CHECK` for
 enums, composite foreign keys wherever a row repeats its parent's `course_id`, so the
@@ -508,7 +555,7 @@ create table qa_messages (
   created_at    timestamptz not null default now()
 );
 
--- jobs and job_schedules: port the v2 tables as they are (migrations 0001, 0002).
+-- jobs and job_schedules: keep the v2 tables as they are (migrations 0001, 0002).
 
 create table platform (
   id       boolean primary key default true check (id),
@@ -526,13 +573,16 @@ checked before each call. No ledger or reservation tables.
 
 ## 6. Auth
 
+Lands in phase 4, inside the current server, replacing Zitadel and Redis sessions.
+
 ### 6.1 Passwords
 
 - argon2id (m=19 MiB, t=2, p=1), PHC string in `users.password_hash`.
-- Import keeps each user's latest Zitadel hash (section 8.2). At login, a `$2a$`/`$2b$`
-  hash is verified with bcrypt and replaced by argon2id in the same request; an
-  `$argon2…` hash is verified as is.
-- A user with no hash signs in with Google or uses password reset.
+- The switch copies each user's latest Zitadel hash (section 9.2). At login, a
+  `$2a$`/`$2b$` hash is verified with bcrypt and replaced by argon2id in the same request;
+  an `$argon2…` hash is verified as is.
+- A user with no hash signs in with Google or uses password reset. This depends on email
+  delivery working (phase 0).
 - Lockout: 5 `login-failed` audit rows for the same account in 15 min returns
   `too-many-attempts` for 15 min. Per-IP limits stay in nginx (`auth_limit`).
 - Constant-time failure path: an unknown login verifies against a fixed dummy hash.
@@ -546,14 +596,16 @@ checked before each call. No ledger or reservation tables.
 - New session id on login and on role change; role change deletes the user's other
   sessions. Logout deletes the row.
 - CSRF: `SameSite=Lax` plus an `Origin`/`Sec-Fetch-Site` check on every non-GET.
-- All v2 sessions end at cutover (they live in Redis). Users sign in again once.
+- All Redis sessions end at the phase-4 auth switch. Users sign in again once.
 
 ### 6.3 Authorization
+
+Lands in phase 5, module by module.
 
 Three global roles in code, not in tables: `learner`, `teacher` (may create courses),
 `admin` (everything). Course rights come from `course_staff` (`owner`, `editor`) and
 `enrolments`. The v2 permission tables, `moderator` and `maintainer` (0 users) and
-`instructor-legacy-grants` are not carried over.
+`instructor-legacy-grants` go away.
 
 ```rust
 // access.rs
@@ -581,13 +633,13 @@ bitflags! { pub struct Caps: u32 {
 - Rows below the course (activity, attempt) are fetched with `course_id = ctx.course.id`
   in the `WHERE` clause; a row from another course is a 404.
 - `admin::` routes take an `Admin` extractor. Account routes take `SignedIn`.
-- The v2 `permission_matrix` test is ported: every route in the OpenAPI document is
+- The `permission_matrix` test stays and grows: every route in the OpenAPI document is
   called as anonymous, learner, enrolled learner, other teacher, course editor, course
   owner and admin, against an archived and a live course; an unclassified route fails.
 
 ### 6.4 Google, email
 
-- Google OAuth (authorization code, signed `state`) ports from v2 as is. Callback path
+- Google OAuth (authorization code, signed `state`) is kept as is. Callback path
   `/api/v2/auth/google/callback`; the Google console entry for `/api/v1/…` and its nginx
   rewrite are removed first.
 - Verify-email and reset-password use `auth_tokens` (sha256 stored, 1 h / 24 h expiry)
@@ -595,110 +647,147 @@ bitflags! { pub struct Caps: u32 {
 
 ## 7. Frontend
 
-`apps/web-2` stays the codebase. Changes, in order:
+`apps/web-2` stays the codebase and becomes the only frontend in phase 1. Changes, in order:
 
-1. **SPA.** Drop TanStack Start's server: build static files, nginx serves
-   `/assets/*` with `immutable`; the server answers every page path with `index.html`.
-   For public course and catalog paths the server fills `<title>`, description and
-   Open Graph tags from the database before sending it (string replace on the file read
-   at boot). No Node container, no header forwarding, no `useHydrated` gates.
+1. **SPA (phase 1, with the cutover).** Drop TanStack Start's server (`serve.ts`): build
+   static files, nginx serves `/assets/*` with `immutable`; the server answers every
+   page path with `index.html`. For public course and catalog paths the server fills
+   `<title>`, description and Open Graph tags from the database before sending it
+   (string replace on the file read at boot); `sitemap.xml` lists only routes that exist.
+   No Node container, no header forwarding, no `useHydrated` gates.
 2. **CSP** becomes static and is sent by nginx: the directives of
    `src/shared/lib/csp.ts` with `script-src 'self'` in place of the nonce and
    `strict-dynamic`. The university proxy adds a second `X-Frame-Options`, HSTS and a
    conflicting `Referrer-Policy`; ask IT to stop adding them.
-3. **Cut features** follow the server (section 9): routes, queries, SPEC files and e2e
-   specs for cut features are deleted, not hidden.
-4. **Tests.** e2e selects by role, label and message key, never by literal Russian text.
+3. **Chunking.** The home page lists 128 `modulepreload` links; group vendor and route
+   chunks so the first page loads a handful of files.
+4. **Cut features** follow the server (section 10): routes, queries, SPEC files and e2e
+   specs for cut features are deleted, not hidden, in the same commit as the server side.
+5. **Tests.** e2e selects by role, label and message key, never by literal Russian text.
    Keep the editor content-loss check and the contract/codegen gate. Drop the 300/80-line
    caps, one-component-per-file, the behaviour-id bookkeeping and the gates whose only job
    is process (keep: format, lint, typecheck, unit, contract, e2e).
-5. **Toolchain** pinned to stable releases of TypeScript, Vite and Vitest; no aliased
-   or pre-release build tools and no loader shims (`gates/ts6-*.mjs`).
-6. **One markdown/rich-text path:** Tiptap renders read-only views too.
+6. **Toolchain** pinned to stable releases of TypeScript, Vite and Vitest; no aliased
+   or pre-release build tools (`vite-plus`) and no loader shims (`gates/ts6-*.mjs`).
+7. **One markdown/rich-text path:** Tiptap renders read-only views too.
+
+Items 4–7 land in phases 1–3 as they become possible.
 
 Kept as they are: generated client from OpenAPI (hey-api), loader prefetch +
 `useSuspenseQuery`, `meta.invalidates`, the routes → features → shared import rule,
 shadcn, Paraglide with the ru/kk/en catalogs, `allowed_actions`-driven UI.
 
-## 8. Migration
+## 8. Contract during the migration
 
-### 8.1 Data (`ashyq import-v2`)
+There is one client, web-2, in the same repository, and from phase 1 on no other. So the
+contract does not need a frozen oracle; it changes together with its client:
 
-Runs against a stopped v2 (maintenance page up), reads the v2 database and Zitadel's
-database through a second connection, writes `ashyq3` in one transaction, then runs the
-checks below. Idempotent: it drops and recreates `ashyq3` each time.
+- A commit that changes an operation changes the handler, the committed `openapi.json`,
+  the regenerated web-2 client, the web-2 code that calls it and the affected e2e specs.
+  CI's codegen drift gate fails if any of them disagree.
+- Phases 1–4: shape changes are removals only (cut features, the 20 deprecated
+  operations, `WEB_LINKS`). Auth (phase 4) keeps the web-2-facing operations and changes
+  only what is behind them.
+- Phase 5: shape changes happen per module (`blocks` → typed bodies, one pagination
+  shape, the reduced `If-Match` set, routes moving under `/courses/{course_id}`). The
+  check for a module is its e2e specs as updated in that commit, the rest of the e2e suite
+  unchanged, and the full permission matrix.
+- Paths stay `/api/v2/…`. No version bump and no compatibility operations: with one
+  client shipped from the same commit there is nothing to stay compatible with.
 
-| v2 | v3 |
-| --- | --- |
-| `users` | `users` (role from `user_roles`: admin > instructor/legacy-grants → teacher > learner) |
-| Zitadel eventstore | `users.password_hash` (8.2) |
-| `google_accounts` | `google_accounts` |
-| `courses`, `chapters` | same, `legacy_uuid` dropped |
-| `resource_authors` | `course_staff` (creator → owner, contributor → editor, active only) |
-| `activities` + `blocks` | `activities` with typed `body`; block media → `media` + `activity_media` |
-| `assessments` | `activities.body.policy` for quiz/exam/code |
-| `file_submissions` | `activities.body` for `assignment` |
-| `assessment_items` | `assessment_items` |
-| `submissions` + `grading_entries` | `attempts` + `grades` |
-| `file_submission_attempts` (+ files, grading) | `attempts` (+ `attempt_files`, `grades`); 0 rows today |
-| `code_runs` + `code_run_cases` | `code_runs` (cases folded into `cases`) |
-| `trail_runs` | `enrolments` |
-| `activity_progress` (completed) | `completions` |
-| `certifications`, `certificate_users` | `certificates`, `certificate_awards` (same `verify_code`) |
-| `course_updates` | `announcements` |
-| `ai_threads`, `ai_qa_messages` | `qa_threads`, `qa_messages` |
-| `uploads` | `media` (status `ready` only) |
-| `platforms` | `platform` |
-| `auth_audit_log`, `assessment_audit_events` | `audit_log` |
-| everything else | not imported (section 9); stays in the v2 dump |
+## 9. Data migration
 
-Checks (the import fails if any fails):
+### 9.1 In place
 
-- Row counts per mapped table equal the source, minus documented exclusions.
-- Every `activities.body` and `assessment_items.body` deserializes into its Rust type.
-- G-14 on every page: the Tiptap document rendered from v3 equals the v2 rendering
-  (text, node count, media references).
-- Every `course_progress` row computed by the view matches v2 `course_progress`
-  `completed_required_count`/`total_required_count`, or the difference is listed with a
-  reason (known: Q-2026-09-26-1 empty assignments).
-- Every certificate `verify_code` resolves.
+Every schema change in phases 3–5 is a forward migration on the live `ashyq` database:
 
-### 8.2 Password hashes
+- `just deploy` already dumps before migrations run; a destructive migration (drop,
+  type change, table merge) additionally requires a restore rehearsal (9.4) of the same
+  commit to pass first.
+- A data-moving migration ships with `ashyq verify <module>`, which the deploy runs after
+  migrating and which fails the deploy (rollback = restore the pre-migration dump) when:
+  - row counts differ from the source minus documented exclusions;
+  - any `activities.body` or `assessment_items.body` fails to deserialize into its type;
+  - G-14 fails on a page: the Tiptap document rendered from the new body differs from the
+    old rendering (text, node count, media references);
+  - a `course_progress` view row differs from the old projection's
+    `completed_required_count`/`total_required_count` without a listed reason (known:
+    Q-2026-09-26-1 empty assignments);
+  - a certificate `verify_code` does not resolve.
+- Old tables are dropped one deploy after the code stops reading them, never in the
+  same deploy.
+
+Where each v2 table goes and in which phase:
+
+| v2 | target | phase |
+| --- | --- | --- |
+| tables of cut features (section 10) | dropped after a per-table dump | 3 |
+| `etl_*`, `legacy_uuid` columns, legacy setting keys | dropped | 3 |
+| Zitadel eventstore | `users.password_hash` (9.2) | 4 |
+| `user_roles` | `users.role` (admin > instructor/legacy-grants → teacher > learner) | 4 |
+| `uploads` + RustFS objects | `media` (status `ready` only) + `/data/ashyq/media` (9.3) | 4 |
+| `resource_authors` | `course_staff` (creator → owner, contributor → editor, active only) | 5 |
+| `activities` + `blocks` | `activities` with typed `body`; block media → `media` + `activity_media` | 5 |
+| `assessments` | `activities.body.policy` for quiz/exam/code | 5 |
+| `file_submissions` | `activities.body` for `assignment` | 5 |
+| `submissions` + `grading_entries` | `attempts` + `grades` | 5 |
+| `file_submission_attempts` (+ files, grading) | `attempts` (+ `attempt_files`, `grades`); 0 rows today | 5 |
+| `code_runs` + `code_run_cases` | `code_runs` (cases folded into `cases`) | 5 |
+| `trail_runs` | `enrolments` | 5 |
+| `activity_progress` (completed) | `completions` | 5 |
+| `certifications`, `certificate_users` | `certificates`, `certificate_awards` (same `verify_code`) | 5 |
+| `course_updates` | `announcements` | 5 |
+| `ai_threads`, `ai_qa_messages` | `qa_threads`, `qa_messages` | 5 |
+| `platforms` | `platform` | 5 |
+| `auth_audit_log`, `assessment_audit_events` | `audit_log` | 5 |
+
+### 9.2 Password hashes
 
 Zitadel keeps hashes in `eventstore.events2` payloads (`encodedHash`). On 2026-10-20:
 23 `$2a$` (bcrypt, imported from the legacy system), 105 `$argon2…`, 109 `user.human.added`
-events without a hash (Google-only accounts or hashes set by later events). The importer
-takes the latest hash-bearing event per Zitadel user (`user.human.added`,
+events without a hash (Google-only accounts or hashes set by later events). The phase-4
+migration takes the latest hash-bearing event per Zitadel user (`user.human.added`,
 `user.human.password.changed`, and any other event type found carrying `encodedHash`),
 maps it through `users.zitadel_user_id`, and reports users who had a password login in
-`auth_audit_log` but get no hash. That list must be empty before cutover.
+`auth_audit_log` but get no hash. That list must be empty, and the rehearsal (9.4) must
+sign in as one bcrypt and one argon2 user, before the switch ships.
 
-### 8.3 Media
+### 9.3 Media
 
 RustFS stores objects in its own on-disk format, so files are copied through its S3 API
 (`rclone sync` from `ab-public` and `ab-private`) into `/data/ashyq/media/{public,private}/`
-with the same keys. `media.path` = the v2 key. Run once ahead of cutover, then again
-inside the window for the delta.
+with the same keys. `media.path` = the v2 key. Run once ahead of the switch, then again
+right before it for the delta; the switch deploy flips reads to disk and nginx
+`X-Accel-Redirect`.
 
-### 8.4 Rehearsal
+### 9.4 Rehearsal
 
-Use the restore recipe (prod backup → local stack) and run `import-v2` until it passes
-cleanly on two consecutive backups. Then run the web-2 e2e suite (adapted per section 7)
-and the ported permission matrix against the imported data, and sign in as one user of
-each hash type.
+Use the restore recipe (latest backup from the restic repository → local stack) and run
+the destructive migration plus `ashyq verify` on it, then the web-2 e2e suite and the
+permission matrix against the result. A destructive migration ships only after it passes
+on a backup no older than 24 h.
 
-## 9. Cut list
+### 9.5 Fallback: fresh crate and one import
 
-Removed in v3. Data stays in the final v2 dump. "Back on request" means rebuild when a
-teacher asks, against the new schema, not port the v2 code.
+If restructuring a module in place costs clearly more than writing it fresh, that module
+is written in `apps/ashyq` instead and its data moves with an `ashyq import-v2 <module>`
+step that applies the same mapping and the same checks. The target schema and ids are the
+same either way. A whole-system import with one cutover is the last resort: it trades the
+per-phase rollback for a window in which every write since cutover is lost on rollback.
+
+## 10. Cut list
+
+Removed in phase 3 (services in phase 4). Data stays in the per-table dumps and the final
+v2 backup. "Back on request" means rebuild when a teacher asks, against the new schema,
+not port the v2 code.
 
 | Area | Evidence (prod, 2026-10-20) | v3 |
 | --- | --- | --- |
 | Old Next.js web (`apps/web`) | superseded by web-2 | deleted in phase 1 |
 | Dual web, `WEB_LINKS`, phase-9 operations | compatibility only | deleted in phase 1 |
-| Zitadel | 1 TOTP enrolment, never verified | own auth (section 6) |
-| Redis | sessions + rate limits | Postgres + nginx |
-| RustFS | 16 GB, 31 tracked uploads | local disk |
+| Zitadel | 1 TOTP enrolment, never verified | own auth (section 6), phase 4 |
+| Redis | sessions + rate limits | Postgres + nginx, phase 4 |
+| RustFS | 16 GB, 31 tracked uploads | local disk, phase 4 |
 | Gamification (XP, levels, streaks) | reset at cutover | removed |
 | Analytics heuristics (forecasts, anomalies, risk snapshots, interventions, saved views, daily rollups) | 0 saved views, 0 interventions | removed; live SQL reports (below) |
 | AI agents other than course Q&A (course analysis, lecture review, submission analysis, remediation, student memory, evals, approvals) | 13 runs ever | removed |
@@ -711,67 +800,191 @@ teacher asks, against the new schema, not port the v2 code.
 | Bulk grading actions | 0 rows | removed |
 | Generic idempotency, `Prefer`, blanket `If-Match` | infrastructure | section 4.5 |
 | TOTP | see Zitadel | removed |
-| ETL tables, `legacy_uuid`, legacy setting keys | import artefacts | not imported |
+| ETL tables, `legacy_uuid`, legacy setting keys | import artefacts | dropped |
 | OTLP export | no collector | JSON logs only |
+| Code activities + Judge0 | 1 run ever outside one account's 41,166 | owner decision (section 16): keep in VM `judge`, or back on request |
 
 Reports that stay, computed live with SQL (175 active learners make this instant):
 gradebook with CSV export, course progress per learner, "needs grading" inbox, per-item
 score distribution, completion funnel by activity.
 
-## 10. Phases
+## 11. Stack and operations
 
-Each phase ends green on CI and leaves production working. No phase starts while the
-previous one has open items.
+### 11.1 Host
 
-**Phase 0 — decisions.** Owner answers section 11. Cut list frozen. No new features on v2
-from here on; v2 gets only security and data-loss fixes.
+- VM `ashyq` (LXD on `cs01`): Docker + one `compose.yaml`, `/data/ashyq/{postgres,media}`
+  on a volume backed by `/data`. Nothing else runs in it: no editors, no agents, no
+  checkout, no other tenants. SSH by key only.
+- VM `judge` (if kept): Judge0 server, 2 workers, its Postgres and Redis, with CPU and
+  memory limits; its port is reachable from VM `ashyq` only, with `AUTHN_TOKEN` set.
+- Until phase 2 lands, on `cs01` directly: no agent or editor sessions in
+  `~/openu-prod`, no commits there, no ad-hoc `docker compose` runs from it.
 
-**Phase 1 — one frontend.** Cut prod over to web-2 (STAGE-2-CUTOVER.md), 7-day watch,
-delete `apps/web`, the dual-web profile, `WEB_LINKS` and everything in
-`phase9-removals.md`. Exit: one web container, `apps/web` gone from `main`.
+### 11.2 Compose and config
 
-**Phase 2 — host and hygiene.** Ashyq gets its own LXD VM (or host); Judge0 moves to a
-separate VM. Until then on `cs01`: remove the stray `ashyq-dual-*` containers, add the
-jobs retention, deploy so images match the checkout, stop running agents in the prod
-checkout. Exit: the stack runs in its own VM; backups and restore drill pass there.
+- One `compose.yaml` for prod with no overlays; dev uses the same file with a `dev`
+  profile for the extras it needs. `compose.{prod,dev,smoke,web2}.yaml`,
+  `infra/compose.{nginx,dual}-check.yaml` and the four init jobs go.
+- nginx: one static config directory mounted as a directory (no single-file bind mounts,
+  no forced recreate), `server_name` the only templated value, no `COMPOSE_PROFILES`
+  `map`, security headers and CSP in one include.
+- `.env` holds secrets only and is never edited by a script. The image tag lives in
+  `release.env`, written by `just deploy`.
 
-**Phase 3 — v3 server.** Build `apps/ashyq` next to `apps/server`, module by module in
-this order: auth, catalog + content, media, progress, assessments + grading, code,
-certificates, announcements, reports, Q&A, admin. The v3 contract is the v2 contract
-minus the cut list, on the same `/api/v2/…` paths, so web-2 and its e2e suite are the
-oracle; contract changes beyond removals wait until phase 6. Routes that v2 serves outside
-a course path but that are course-scoped move under it only if web-2 moves with them in
-the same commit. Each module lands with its `sqlx::test`s and its slice of the permission matrix.
-Exit: web-2 (minus cut features) passes its e2e suite against v3 on imported data.
+### 11.3 Deploy and rollback
 
-**Phase 4 — import and rehearsal.** `import-v2` complete with every check in 8.1, two
-clean rehearsals on fresh backups, media copied, every password user has a hash.
+- `just deploy <sha>` (from the dev box): waits for the image `<sha>` on GHCR, copies
+  `compose.yaml`, the nginx directory and `release.env` to the VM, dumps the database
+  when the image's migrations differ, runs `ashyq migrate` and `ashyq verify`, restarts,
+  smokes `health/ready` locally and through the public URL (header size check included),
+  appends to `deploy-history`. On failure it rolls back to the previous tag (and the dump
+  when migrations ran).
+- The VM needs no git: rollback compares the migration lists embedded in the two images.
 
-**Phase 5 — cutover.** In an exam-free window:
+### 11.4 Backups
 
-1. Announce: everyone signs in again.
-2. Maintenance page; stop v2 `server`, `worker`, `web2`.
-3. Final media delta sync; `ashyq import-v2`; checks pass.
-4. Start v3 (`nginx`, `ashyq`) and the web-2 build without the cut features.
-5. Smoke as learner, teacher, admin; sign in with a bcrypt and an argon2 account.
-6. Lift the maintenance page.
+- restic, run by cron in VM `ashyq`: `pg_dump -Fc` of `ashyq` plus `/data/ashyq/media`,
+  into an encrypted repository on a second machine on the tailnet (section 16). restic
+  deduplicates, so a night costs the delta, not 10.7 GB. Retention: 7 daily, 4 weekly,
+  6 monthly.
+- Secrets (`.env`, restic password) are not in the backups; their copy lives in the
+  owner's password manager.
+- Monthly drill on the second machine: `restic restore` into a throwaway stack, migrate,
+  smoke, sign in with `login-as`. The drill writes its result next to the repository.
+- Until phase 2: the same restic setup on `cs01`, replacing the `backup` container and
+  its Docker socket mount.
 
-Rollback for 7 days: stop v3, start the v2 containers (their database, Zitadel, Redis and
-RustFS volumes were never written by v3). Writes made in v3 since cutover are lost on
-rollback; after 7 days rollback is off the table and phase 6 starts.
+### 11.5 Alerting
 
-**Phase 6 — removal.** Delete `apps/server`, Zitadel, Redis, RustFS, their volumes
-(after a final archived dump), `compose.*` overlays for them, and the docs that describe
-them (`ARCHITECTURE.md`, `DECISIONS.md` and the old parts of `INFRA.md`/`RUNBOOK.md` are
-rewritten for v3, with history in Git). Then the frontend SPA work in section 7 if it
-was not done in phase 3.
+A cron on the second machine every 5 minutes: `curl /api/v2/health/ready` through the
+public URL; it alerts the owner when the check fails twice in a row or when the response
+reports permanently failed jobs (failed email jobs included). No external monitoring
+service. The alert channel is an owner decision (section 16).
 
-## 11. Owner decisions
+### 11.6 Judge0
 
-1. Cutover date for phase 1 (web-2) and the exam-free window for phase 5.
+Kept only if code activities stay (section 16). It runs in VM `judge` with resource
+limits, not on the app host. The server treats it as optional: when it is down, code
+items return `code-runner-unavailable` and nothing else breaks.
+
+## 12. CI
+
+- One workflow, three jobs, target under 10 minutes:
+  1. `rust`: fmt, clippy, `sqlx` offline check, nextest, `openapi.json` diff.
+  2. `web`: format, lint, typecheck, unit, codegen drift, build.
+  3. `e2e`: build the image, start the stack from it, Playwright, then push the image as
+     `<sha>` (on `main`, green only).
+- Deleted: `stack-smoke` and its stub web, the dual-web and nginx-check tests (after
+  phase 1), the `ci-<sha>` → `<sha>` retag job, `infra/tests/development.test.mjs`, the
+  web (Next) jobs (phase 1).
+- A failing e2e test is fixed or quarantined (skipped with a line in `apps/web-2/BACKLOG.md`)
+  the same day. A phase exit requires two consecutive green runs on `main`.
+
+## 13. Developer and agent tooling
+
+- Hooks: pre-commit formats the staged files; pre-push runs the fast checks (rustfmt,
+  clippy on changed crates, typecheck, unit; under 2 minutes). The full `just check` and
+  e2e run in CI.
+- `justfile` under 20 recipes: `stack up|down|logs`, `db reset|sql`, `login-as`, `check`,
+  `e2e`, `fmt`, `deploy`, `rollback`, `backup`, `restore-drill`, `wt new|land`.
+  `apps/server/justfile` merges into it.
+- `infra/dev` shrinks from 2.5k lines to the code those recipes need (~300 lines).
+- web-2 gates: keep codegen drift; delete the other G-03…G-13 gates, `SPEC.md` files,
+  behaviour ids and `next-id`.
+- Vendored third-party skills (`.agents/skills`, 95k lines, `skills-lock.json`,
+  `skills-sync`) are deleted; project-written skills stay in `.agents/skills` (at most a
+  few), third-party ones are installed per user.
+- One lockfile: web-2 joins the root workspace (or the root `package.json` goes).
+- Housekeeping on the dev box: `git gc`; `temp-restore/` (a prod backup with secrets and
+  personal data) deleted; restores come from the restic repository.
+- Agent workflow during the rewrite: one agent per phase item or module, landing with its
+  tests and its slice of the permission matrix. No gauntlet or QA sweep loops and no
+  feature work until phase 6 ends. Agents never run on the prod host.
+
+## 14. Docs
+
+- `DECISIONS.md` is frozen now: no appends. New decisions go into this file until
+  phase 6.
+- Deleted after phase 1: `MODERNIZATION-STAGE-2.md`, `STAGE-2-CUTOVER.md`,
+  `web/ACCEPTANCE.md`, `apps/server/docs/phase9-removals.md`, the web-2 `SPEC.md` files,
+  the empty `docs/archive/`.
+- End state after phase 6, under 1,500 lines: `README.md`, `ARCHITECTURE.md` (v3, with
+  `COURSE_ARCHIVING.md` folded in), `OPERATIONS.md` (`INFRA.md` + `RUNBOOK.md` merged),
+  `FINDINGS.md`, the `AGENTS.md` files. `DECISIONS.md` and this file are deleted; their
+  history stays in Git.
+
+## 15. Phases
+
+Each phase ends with two consecutive green CI runs on `main` and production working. No
+phase starts while the previous one has open items.
+
+**Phase 0 — operations and freeze.**
+
+- Email: Resend 403 fixed (owner), a reset email received end to end.
+- Backups: restic to the second machine (11.4) replaces the `backup` container; first
+  restore drill passes there.
+- Alerting: dead-man check (11.5) live.
+- Prod host: stray `ashyq-dual-*` containers removed; agents and editors out of
+  `~/openu-prod`; deploys only through `just deploy`; the leftover databases
+  `ashyq_backup_verify_20260930`, `ashyq_final_backup_verify_20260930` and
+  `zitadel_bootstrap_failed_20260930` dropped (`openu` stays, owner decision); IT asked to
+  turn off SSH password auth and the proxy's duplicate headers.
+- The slow `activities … is_course_staff` query fixed.
+- Dev box: `temp-restore/` deleted, `git gc`.
+- Freeze: no new features; v2 gets only security, data-loss and phase-0 fixes. Flaky e2e
+  quarantined (section 12); `DECISIONS.md` frozen.
+
+Exit: restore drill from the off-host repository passed; emails delivered; alert fired
+once on purpose.
+
+**Phase 1 — one frontend, as an SPA.** Cut prod over to web-2 (STAGE-2-CUTOVER.md) as the
+static build of section 7 items 1–3, with the server filling page meta; dual web off.
+7-day watch, then delete `apps/web`, the Node `web` and `web2` containers, the
+dual-web profile, `WEB_LINKS`, the deprecated operations, the Next CI jobs and the docs
+listed in section 14. Exit: no Node container in prod, `apps/web` gone from `main`.
+
+**Phase 2 — host.** VMs `ashyq` and `judge` (11.1), stack moved with a dump/restore and a
+media copy in a short maintenance window, deploys by tag (11.3), backups and drill
+running from the VM. Exit: nothing of Ashyq left on `cs01`'s Docker daemon except the
+retained v2 volumes; drill passes.
+
+**Phase 3 — deletions.** Cut features (section 10) removed from server and web-2 in the
+same commits, their tables dropped after per-table dumps, ETL leftovers dropped. Compose
+overlays, CI jobs, tooling and gates trimmed per sections 11.2, 12 and 13. Exit: measured
+lines, tables and operations recorded here; CI under 15 minutes.
+
+**Phase 4 — services.** Each its own deploy with its own rollback:
+
+1. Worker folded into the server binary (one container).
+2. Media from RustFS to disk (9.3); RustFS stopped, volume kept.
+3. Own auth (section 6, 9.2), sessions and rate limits in Postgres; Zitadel and Redis
+   stopped, volumes kept. Users sign in once; announce it a week ahead, ship in a
+   low-traffic window, and keep Zitadel startable for 14 days as the rollback.
+
+Exit: containers are `nginx`, `ashyq`, `postgres`.
+
+**Phase 5 — restructure.** Module by module, in this order: catalog + content, media,
+progress, assessments + grading, code, certificates, announcements, reports, Q&A, admin.
+Each module lands with `CourseCtx`/`Caps` (6.3), transactions and jobs (4.3), typed
+bodies (5.3), its data migration and `ashyq verify` (9.1), its `sqlx::test`s, its web-2
+changes (section 8) and its permission-matrix slice; the crates collapse into
+`apps/ashyq` as their contents move. Exit: one crate, the size expectations of section 2
+checked.
+
+**Phase 6 — removal.** After a final archived dump: Zitadel, Redis and RustFS volumes, the
+v2 tables left only for rollback, the `openu` database if the owner agrees. Docs rewritten
+per section 14.
+
+## 16. Owner decisions
+
+1. Date for phase 1 (web-2 cutover) and the low-traffic window for the phase-4 auth switch.
 2. Cut list: confirm, especially discussions, user groups and assessment extensions.
-3. Dedicated VM on `cs01` or a separate machine; where Judge0 runs.
-4. Local disk instead of S3-style storage for media.
-5. Alerting: one dead-man check (a cron curl of `/api/v2/health/ready` that emails on failure) or
-   none. Offsite backup stays declined unless decided otherwise (FINDINGS #3).
-6. Q&A: keep, with which monthly token cap.
+3. Code activities: keep Judge0 in VM `judge`, or cut it (back on request). Prod shows 1
+   run outside one account's 41,166 (all Python).
+4. Backups: the second machine for the restic repository and the dead-man check (the dev
+   box over the tailnet, or another). This reverses "no offsite backup" (FINDINGS #3)
+   for a machine the owner controls.
+5. Alert channel for the dead-man check (email from the checking machine, or another).
+6. Resend: fix the API key or domain behind the 403.
+7. Is direct 443 access to the host needed? If not, nginx can be dropped (section 3).
+8. Q&A: keep, with which monthly token cap.

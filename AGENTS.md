@@ -19,8 +19,9 @@
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
 - `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
-- `docs/REWRITE.md` - proposed v3 rewrite (one binary, Postgres only, web-2 as SPA): schema, auth,
-  migration phases, cut list. Not started; current docs still describe production.
+- `docs/REWRITE.md` - proposed v3 rewrite (ops fixes first, then delete-in-place to one binary,
+  Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
+  Not started; current docs still describe production.
 - `docs/MODERNIZATION-STAGE-2.md`, `docs/STAGE-2-CUTOVER.md`, `docs/web/ACCEPTANCE.md` -
   remaining frontend rollout scope, procedure and acceptance; `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
