@@ -76,11 +76,22 @@ export async function ensureAttempt(
   queryClient: QueryClient,
   { courseId, activityId, attemptId }: { courseId: CourseId; activityId: ActivityId; attemptId?: SubmissionId },
 ) {
+  // The assessment and the attempt (with its feedback) are read while the player's rules are checked: four reads in
+  // a row were two; the rules still decide first (their refusal is awaited before these are).
+  const reading = queryClient.query({ ...assessmentOptions(activityId), staleTime: 'static' })
+  const attempt = attemptId
+    ? queryClient.query({ ...submissionOptions(attemptId), staleTime: 'static' }).then(async submission => {
+        if (released(submission)) await queryClient.query({ ...feedbackOptions(submission.id), staleTime: 'static' })
+        return submission
+      })
+    : null
+  void reading.catch(() => null)
+  void attempt?.catch(() => null)
   await ensureEntry(queryClient, courseId, activityId)
-  const assessment = await queryClient.query({ ...assessmentOptions(activityId), staleTime: 'static' }).catch(missing)
+  const assessment = await reading.catch(missing)
   if (assessment.kind === 'code_challenge') throw notFound()
   const [submission, state] = await Promise.all([
-    attemptId ? queryClient.query({ ...submissionOptions(attemptId), staleTime: 'static' }).catch(missing) : null,
+    attempt?.catch(missing) ?? null,
     queryClient.query({ ...stateOptions(assessment.id), staleTime: 'static' }),
     queryClient.query({ ...attemptsOptions(assessment.id), staleTime: 'static' }),
   ])
@@ -88,7 +99,5 @@ export async function ensureAttempt(
   if (!attemptId && state.can_continue && state.draft_id)
     await queryClient.query({ ...submissionOptions(state.draft_id), staleTime: 0 }).catch(() => null)
   if (submission && submission.assessment_id !== assessment.id) throw notFound()
-  if (submission && released(submission))
-    await queryClient.query({ ...feedbackOptions(submission.id), staleTime: 'static' })
   return { title: assessment.title }
 }
