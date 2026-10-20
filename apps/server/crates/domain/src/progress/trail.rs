@@ -12,6 +12,7 @@ use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use ab_db::catalog::ActivityRow;
 use ab_db::progress::{TrailRow, TrailRunRow, TrailStepRow};
+use futures::{StreamExt, TryStreamExt};
 use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::assessments::service::AssessmentsService;
@@ -92,6 +93,8 @@ const fn trail_perm(action: Action, scope: Scope) -> Permission {
 
 /// How long a mark / leave spins for the (user, course) lock before 409.
 const LOCK_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+/// Runs hydrated at once by a trail read (each holds a pool connection per query).
+const RUN_READS_AT_ONCE: usize = 4;
 /// How long a write on a member's behalf (projection, course-wide
 /// recalculation, deadline extension) waits: a slow mark / leave never drops
 /// that member (BUG-272); bounded so a stuck holder cannot hang the caller.
@@ -254,44 +257,17 @@ impl TrailService {
         let totals = ab_db::progress::published_activity_counts(&self.pool, &course_ids).await?;
         let pcts =
             ab_db::progress::course_progress_pcts(&self.pool, trail.user_id, &course_ids).await?;
-        let mut out = Vec::with_capacity(runs.len());
-        for run in runs {
-            let Some(course) = ab_db::catalog::get_course(&self.pool, run.course_id).await? else {
-                continue;
-            };
-            if self.courses.require_read(actor, &course).await.is_err() {
-                continue;
-            }
-            let activities = ab_db::catalog::list_activities(&self.pool, run.course_id).await?;
-            let next_activity_id = self.next_activity(&run, &activities, &steps).await?;
-            let run_steps = steps
-                .iter()
-                .filter(|s| s.trail_run_id == run.id)
-                .filter_map(|s| {
-                    activities
-                        .iter()
-                        .find(|a| a.id == s.activity_id)
-                        .map(|a| TrailStep {
-                            row: s.clone(),
-                            activity: a.clone(),
-                        })
-                })
-                .collect();
-            out.push(TrailRun {
-                course_total_steps: totals
-                    .iter()
-                    .find(|t| t.course_id == run.course_id)
-                    .map_or(0, |t| t.total),
-                progress_pct: pcts
-                    .iter()
-                    .find(|p| p.course_id == run.course_id)
-                    .map(|p| p.progress_pct),
-                steps: run_steps,
-                next_activity_id,
-                row: run,
-                course,
-            });
-        }
+        // Each run reads its course, outline and progress (~5 queries): 33 runs in a row took 140 ms of /enrollments
+        // and /me/agenda for a real learner. A few at a time, in order.
+        // ponytail: per-run queries, batch them by course_ids if trails grow past ~100 runs.
+        let out: Vec<TrailRun> = futures::stream::iter(
+            runs.into_iter()
+                .map(|run| self.hydrate_run(actor, run, &steps, &totals, &pcts)),
+        )
+        .buffered(RUN_READS_AT_ONCE)
+        .try_filter_map(|run| async move { Ok(run) })
+        .try_collect()
+        .await?;
         Ok(Trail {
             user_id: trail.user_id,
             row: Some(trail),
@@ -300,6 +276,51 @@ impl TrailService {
     }
 
     /// [`TrailRun::next_activity_id`]: chapters by position, then activities.
+    async fn hydrate_run(
+        &self,
+        actor: &Actor,
+        run: TrailRunRow,
+        steps: &[TrailStepRow],
+        totals: &[ab_db::progress::CourseStepCountRow],
+        pcts: &[ab_db::progress::CourseProgressPctRow],
+    ) -> Result<Option<TrailRun>> {
+        let Some(course) = ab_db::catalog::get_course(&self.pool, run.course_id).await? else {
+            return Ok(None);
+        };
+        if self.courses.require_read(actor, &course).await.is_err() {
+            return Ok(None);
+        }
+        let activities = ab_db::catalog::list_activities(&self.pool, run.course_id).await?;
+        let next_activity_id = self.next_activity(&run, &activities, steps).await?;
+        let run_steps = steps
+            .iter()
+            .filter(|s| s.trail_run_id == run.id)
+            .filter_map(|s| {
+                activities
+                    .iter()
+                    .find(|a| a.id == s.activity_id)
+                    .map(|a| TrailStep {
+                        row: s.clone(),
+                        activity: a.clone(),
+                    })
+            })
+            .collect();
+        Ok(Some(TrailRun {
+            course_total_steps: totals
+                .iter()
+                .find(|t| t.course_id == run.course_id)
+                .map_or(0, |t| t.total),
+            progress_pct: pcts
+                .iter()
+                .find(|p| p.course_id == run.course_id)
+                .map(|p| p.progress_pct),
+            steps: run_steps,
+            next_activity_id,
+            row: run,
+            course,
+        }))
+    }
+
     async fn next_activity(
         &self,
         run: &TrailRunRow,
