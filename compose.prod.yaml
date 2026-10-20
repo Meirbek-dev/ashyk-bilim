@@ -76,6 +76,7 @@ services:
       - ${TLS_DIR:-./certs}:/etc/nginx/certs:ro
       - ${ACME_WEBROOT:-/var/www/certbot}:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx/app
+      - nginx_content_cache:/var/cache/nginx/content
     networks:
       edge-net:
         # server/worker/web reach the public origin here (no NAT loopback, no host-gateway).
@@ -275,4 +276,5 @@ services:
 
 volumes:
   nginx_cache:
+  nginx_content_cache:
   db_dumps:

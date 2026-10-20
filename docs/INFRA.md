@@ -215,20 +215,23 @@ under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchai
 | --- | --- | --- |
 | `= /api/v1/auth/google/callback` | server, rewritten to `/api/v2/auth/google/callback` | `auth_limit`; drop once the Google console uses the v2 path |
 | `/api/v2/auth` | server | `auth_limit` 10 r/s, burst 20 |
-| `/api/v2` | server | `api_limit` 30 r/s, burst 60; `proxy_buffering off`, 300 s timeouts (SSE) |
+| SSE: `/api/v2/me/events`, submission/course grading events, AI run streams and Q&A chat | server | `api_limit` 30 r/s, burst 60; no buffering, 300 s timeouts |
+| `/api/v2` | server | `api_limit` 30 r/s, burst 60; buffering enabled, 60 s timeouts |
 | `/content/` | rustfs, rewritten to `/ab-public/` (query dropped) | anonymous read; `content_cache` 7 days; `Cache-Control: public, max-age=604800, immutable`; user-content headers |
 | `~ ^/(ab-public\|ab-private)/` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 2G bodies, no request buffering, 300 s; 403 for a query without a signature (no `X-Amz-Signature`, no `Authorization`); user-content headers |
 | `/` | web | `app_cache` only when the upstream says `immutable` |
 
 - **Server blocks.** `:80` serves ACME challenges from `ACME_WEBROOT`,
   redirects to https when `FORCE_HTTPS=1` unless the request carries
-  `X-Forwarded-Proto: https` (already terminated by the proxy in front), and
+  `X-Forwarded-Proto: https` from the configured trusted TCP peer (checked via
+  `$realip_remote_addr`, before real-IP rewriting), and
   otherwise serves the routes (the university proxy talks to this block).
-  `:443` serves the routes with TLS 1.2/1.3 and HTTP/2.
+  `:443` serves the routes with TLS 1.2/1.3 and HTTP/2. Separate default
+  servers reject unknown Host/SNI names. Redirects use the configured domain.
 - **Caching rule.** `map $upstream_http_cache_control $skip_cache` (1 unless
   the value contains `immutable`) + `proxy_no_cache $skip_cache`. No
   framework paths in the config. `app_cache` (1g) lives on the `nginx_cache`
-  volume; `content_cache` (5g) is not on a volume.
+  volume; `content_cache` (5g) lives on the `nginx_content_cache` volume.
 - **Real IP.** `real_ip_header X-Forwarded-For`, `real_ip_recursive on`,
   `set_real_ip_from ${TRUSTED_PROXY_CIDR}` (one CIDR). The default
   `127.0.0.1/32` trusts nobody: behind the university proxy every client then

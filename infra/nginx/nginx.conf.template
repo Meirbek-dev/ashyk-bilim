@@ -46,6 +46,7 @@ map "$http_authorization:$args" $unsigned_query {
 limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
 limit_req_status 429;
+server_tokens off;
 
 # Client IP from the TLS-terminating proxy in front of the host, and nobody else.
 real_ip_header X-Forwarded-For;
@@ -60,15 +61,19 @@ gzip_min_length 1024;
 gzip_types text/plain text/css text/javascript application/javascript
   application/json application/problem+json application/xml image/svg+xml font/woff2;
 
-map $http_x_forwarded_proto $real_forwarded_proto {
-  https https;
-  http http;
+# Trust forwarded scheme only from the original TCP peer, before real-IP rewriting.
+geo $realip_remote_addr $trusted_forwarder {
+  default 0;
+  ${TRUSTED_PROXY_CIDR} 1;
+}
+map "$scheme:$trusted_forwarder:$http_x_forwarded_proto" $real_forwarded_proto {
+  "http:1:https" https;
   default $scheme;
 }
 
 # Port 80 redirects to https when FORCE_HTTPS=1, except requests the upstream
 # proxy already terminated (X-Forwarded-Proto: https) and ACME challenges.
-map $http_x_forwarded_proto $https_redirect_proto {
+map $real_forwarded_proto $https_redirect_proto {
   https 0;
   default ${FORCE_HTTPS};
 }
@@ -164,6 +169,19 @@ client_body_buffer_size 32k;
 client_header_buffer_size 32k;
 large_client_header_buffers 4 32k;
 
+# Unknown hosts must never reach the application or generate host-based redirects.
+server {
+  listen 80 default_server;
+  server_name _;
+  return 444;
+}
+server {
+  listen 443 ssl default_server;
+  server_name _;
+  ssl_reject_handshake on;
+  return 444;
+}
+
 server {
   listen 80 so_keepalive=30s:10s:3;
   server_name ${NGINX_SERVER_NAME};
@@ -177,7 +195,7 @@ server {
   }
 
   if ($https_redirect) {
-    return 301 https://$host$request_uri;
+    return 301 https://${NGINX_SERVER_NAME}$request_uri;
   }
 
   include /etc/nginx/snippets/routes.conf;
