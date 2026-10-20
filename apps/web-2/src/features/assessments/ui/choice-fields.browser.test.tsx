@@ -40,8 +40,8 @@ test('B-ASM-31 an answered live test takes option wording, never the correct mar
   const screen = await renderInRouter(<Harness />)
   const first = screen.getByRole('textbox', { name: m.assessments_option_text({ number: 1 }) })
   await expect.element(first).toBeEnabled()
-  await userEvent.clear(first)
-  await userEvent.type(first, 'Paris')
+  await userEvent.fill(first, 'Paris')
+  await expect.poll(() => saved.options?.[0]?.text).toBe('Paris')
   expect(saved.options?.map(option => [option.id, option.text, option.is_correct])).toEqual([
     ['a', 'Paris', true],
     ['b', 'Rome', false],

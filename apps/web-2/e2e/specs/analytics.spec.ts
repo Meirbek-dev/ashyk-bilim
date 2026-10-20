@@ -40,8 +40,12 @@ test('B-ANL-05 B-ANL-06 B-ANL-07 overview: KPI tiles, trends as charts and text,
   for (const label of [m.analytics_kpi_active_learners({}, ru), m.analytics_kpi_at_risk_learners({}, ru)])
     await expect(kpis(page).getByRole('region', { name: label })).toBeVisible()
   for (const series of [m.analytics_series_submissions({}, ru), m.analytics_series_grading({}, ru)]) {
-    await expect(page.getByRole('figure', { name: series })).toBeVisible()
-    await expect(page.getByRole('img', { name: series })).toBeVisible()
+    const figure = page.getByRole('figure', { name: series })
+    await expect(figure).toBeVisible()
+    // A series of only zeros (a fresh seed has no grading yet) says so in one line instead of a flat chart.
+    await expect(
+      page.getByRole('img', { name: series }).or(figure.getByText(m.ui_chart_all_zero({}, ru))),
+    ).toBeVisible()
     await expect(page.getByRole('table', { name: series })).toBeAttached()
   }
   const completion = kpis(page).getByRole('region', { name: m.analytics_kpi_completion_rate({}, ru) })
