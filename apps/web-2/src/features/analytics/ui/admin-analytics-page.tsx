@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow } from '#/shared/api/gen/types.gen'
 import { ScoreBar } from '#/shared/components/charts/score-bar'
 import type { DataColumn } from '#/shared/components/data-columns'
+import { Link } from '#/shared/components/link'
 import { ListPage } from '#/shared/components/templates/list-page'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
@@ -22,7 +23,17 @@ const bar = (value: number | null | undefined, text: string) =>
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
 
 const courseColumns = (): DataColumn<AdminCourseRow>[] => [
-  { id: 'course', header: m.analytics_col_course(), priority: 1, cell: row => name(row.course_name) },
+  {
+    id: 'course',
+    header: m.analytics_col_course(),
+    priority: 1,
+    // A ranking row leads to the course's drill-down: why it scores low is the next question (B-ANL-41).
+    cell: row => (
+      <Link variant="title" to="/teach/analytics/performance" search={{ courseId: row.course_id }}>
+        {name(row.course_name)}
+      </Link>
+    ),
+  },
   {
     id: 'health',
     header: m.analytics_col_health(),
@@ -48,7 +59,9 @@ const teacherColumns = (): DataColumn<AdminTeacherRow>[] => [
     // The @username under the name: the prod copy has two teachers named «Садуакас Дулатович Байжуманов».
     cell: row => (
       <span className="flex flex-col">
-        {name(row.teacher_display_name)}
+        <Link variant="title" to="/admin/users" search={{ user: row.teacher_user_id }}>
+          {name(row.teacher_display_name)}
+        </Link>
         <span className="text-xs wrap-anywhere text-muted-foreground">@{row.teacher_username}</span>
       </span>
     ),

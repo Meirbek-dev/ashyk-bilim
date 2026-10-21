@@ -8,7 +8,7 @@ import { expect, test } from '../fixtures/seed'
 const ru = { locale: 'ru' } as const
 test.use({ as: 'teacher' })
 
-test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', async ({
+test('B-ANL-20 B-ANL-41 the admin overview ranks the platform; a teacher has no access', async ({
   page,
   signInAs,
   baseURL,
@@ -36,4 +36,13 @@ test('B-ANL-20 the admin overview ranks the platform; a teacher has no access', 
   await expect(teachers).toContainText(teacher.teacher_display_name)
   // Namesakes are told apart by the @username under the name.
   await expect(teachers).toContainText(`@${teacher.teacher_username}`)
+  // B-ANL-41: a course row opens its drill-down, a teacher row the user's sheet.
+  await expect(courses.getByRole('link', { name: course.course_name, exact: true }).first()).toHaveAttribute(
+    'href',
+    `/teach/analytics/performance?courseId=${course.course_id}`,
+  )
+  await expect(teachers.getByRole('link', { name: teacher.teacher_display_name }).first()).toHaveAttribute(
+    'href',
+    `/admin/users?user=${teacher.teacher_user_id}`,
+  )
 })
