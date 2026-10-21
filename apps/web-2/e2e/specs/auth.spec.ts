@@ -214,6 +214,7 @@ test('B-AUTH-12 B-AUTH-13 a forgotten password is reset with the emailed code; t
   await expect(page).toHaveURL(/\/login$/)
   const done = page.getByText(m.auth_reset_done({}, ru))
   await expect(done).toBeVisible()
+  await expect(page.getByLabel(m.auth_login_field_login({}, ru))).toHaveValue(account.username)
   // A toast still leaving while the next page renders trips axe (aria-hidden-focus): let it go first.
   await expect(done).toBeHidden({ timeout: 15_000 })
   await signIn(page, account.username, password)

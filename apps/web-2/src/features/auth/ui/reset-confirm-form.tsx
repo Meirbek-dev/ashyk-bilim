@@ -15,6 +15,13 @@ import { confirmPasswordResetOptions } from '../queries'
 import { AuthForm } from './auth-form'
 import { limitedText } from './login-error'
 
+declare module '@tanstack/react-router' {
+  interface HistoryState {
+    /** Set by a finished password reset: the sign-in form opens with this name (B-AUTH-13). */
+    login?: string
+  }
+}
+
 type ResetConfirmFormProps = { login: string; code: string | undefined; onRestart: () => void }
 
 /**
@@ -33,7 +40,8 @@ export function ResetConfirmForm({ login, code, onRestart }: ResetConfirmFormPro
           {
             onSuccess: async () => {
               toast.add({ title: m.auth_reset_done() })
-              await navigate({ to: '/login' })
+              // The name goes along in history state, never the URL: the sign-in form opens filled in (B-AUTH-13).
+              await navigate({ to: '/login', state: { login } })
             },
           },
         )

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useLocation, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -22,8 +22,6 @@ import { EnrolNote } from './enrol-note'
 import { SessionEndedNote } from './session-ended-note'
 import { guestBack } from '../model/login-search'
 
-const defaultValues: LoginRequest = { login: '', password: '' }
-
 /** Password sign-in; a 401 `mfa-required` turns the form into the code step and the same sign-in is sent again. */
 export function LoginPage() {
   const search = useSearch({ from: '/_guest/login' })
@@ -31,6 +29,8 @@ export function LoginPage() {
   const navigate = useNavigate()
   const login = useMutation(loginOptions())
   const [totpStep, setTotpStep] = useState(false)
+  const known = useLocation({ select: location => location.state.login }) // after a password reset
+  const [defaultValues] = useState<LoginRequest>(() => ({ login: known ?? '', password: '' }))
   const form = useAppForm(vLoginRequest, {
     defaultValues,
     onSubmit: body =>
