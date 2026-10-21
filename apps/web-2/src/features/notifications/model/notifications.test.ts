@@ -8,6 +8,7 @@ import {
   foldThreadReplies,
   markRead,
   NOTIFICATION_TYPES,
+  preferenceTypes,
   notificationTarget,
   prependNotification,
   xpAwardToasts,
@@ -122,6 +123,10 @@ test('B-NOT-08 a read marks one notification, or all of them, and keeps earlier 
 test('B-NOT-09 the settings list every notification type once', () => {
   expectTypeOf<(typeof NOTIFICATION_TYPES)[number]>().toEqualTypeOf<NotificationType>()
   expect(new Set(NOTIFICATION_TYPES).size).toBe(NOTIFICATION_TYPES.length)
+  // A learner never gets staff-only types: no switches for them; a teacher sees all.
+  expect(preferenceTypes(true)).toEqual(NOTIFICATION_TYPES)
+  expect(preferenceTypes(false)).not.toContain('contributor_application')
+  expect(preferenceTypes(false)).toHaveLength(NOTIFICATION_TYPES.length - 3)
 })
 
 test('B-NOT-17 an award above the known level adds the level-up toast; an unknown previous level adds none', () => {

@@ -160,7 +160,8 @@ test2('B-NOT-09 the per-type switches are saved and read back', async ({ page, a
   await page.goto('/settings/notifications')
   const section = page.getByRole('form', { name: m.notifications_prefs_title({}, ru) })
   const update = section.getByRole('switch', { name: m.notifications_type_course_update({}, ru) })
-  await expect(section.getByRole('switch')).toHaveCount(9)
+  // A learner: the three staff-only types (applications, new threads, team changes) are left out.
+  await expect(section.getByRole('switch')).toHaveCount(6)
   await expect(update).toBeChecked()
   await update.click()
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()

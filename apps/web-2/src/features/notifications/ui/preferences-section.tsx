@@ -3,17 +3,23 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { vNotificationSettings } from '#/shared/api/gen/valibot.gen'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
-import { NOTIFICATION_TYPES } from '../model/notifications'
+import { preferenceTypes } from '../model/notifications'
 import { preferencesOptions, savePreferencesOptions } from '../queries'
 import { notificationTypeLabels } from './labels'
 
-/** One switch per notification type; "Save" sends the whole set (B-NOT-09). Mounted on /settings/notifications. */
+/**
+ * One switch per notification type the user can receive (staff-only ones need the teach capability); "Save" sends the
+ * whole set (B-NOT-09). Mounted on /settings/notifications.
+ */
 export function NotificationPreferences() {
   const { data } = useSuspenseQuery(preferencesOptions())
+  const { data: session } = useSuspenseQuery(sessionOptions())
   const save = useMutation(savePreferencesOptions(useQueryClient()))
   const [defaultValues] = useState(data)
   const form = useAppForm(vNotificationSettings, {
@@ -30,7 +36,7 @@ export function NotificationPreferences() {
       pending={save.isPending}
       error={save.error}
     >
-      {NOTIFICATION_TYPES.map(type => (
+      {preferenceTypes(hasCapability(session, 'teach')).map(type => (
         <form.AppField key={type} name={type}>
           {field => <field.SwitchField label={notificationTypeLabels[type]()} />}
         </form.AppField>

@@ -55,6 +55,13 @@ export const NOTIFICATION_TYPES = [
   'course_team_added',
 ] as const satisfies readonly NotificationType[]
 
+/** Types only course staff receive (applications, new threads, team changes): a learner's settings leave them out. */
+const STAFF_TYPES = new Set<NotificationType>(['contributor_application', 'discussion_post', 'course_team_added'])
+
+/** The switches a user sees (B-NOT-09): staff-only types need the teach capability. */
+export const preferenceTypes = (teaches: boolean) =>
+  NOTIFICATION_TYPES.filter(type => teaches || !STAFF_TYPES.has(type))
+
 /** The badge text: up to 99, then "99+". */
 export const badgeCount = (count: number, format: (value: number) => string) =>
   count > 99 ? `${format(99)}+` : format(count)
