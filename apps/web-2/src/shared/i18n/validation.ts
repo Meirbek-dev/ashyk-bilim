@@ -13,11 +13,14 @@ const requirement = (issue: Issue): string => {
 
 /** Valibot issue -> Paraglide text, read at validation time so it follows the current locale. */
 export function validationMessage(issue: Issue): string {
+  // Whatever rule a blank field breaks (a pattern, a custom check: a new role's identifier), it reads "fill it in", as
+  // every other required field does; «Проверьте это значение.» under an empty field was a riddle.
+  if (issue.input === '' && issue.type !== 'max_length') return m.validation_required()
   switch (issue.type) {
     case 'min_length':
     case 'non_empty':
       // An empty field is "fill it in", whatever its minimum: «Минимум символов: 3» under a blank username misleads.
-      return issue.requirement === 1 || issue.type === 'non_empty' || issue.input === ''
+      return issue.requirement === 1 || issue.type === 'non_empty'
         ? m.validation_required()
         : m.validation_min_length({ min: requirement(issue) })
     case 'max_length':

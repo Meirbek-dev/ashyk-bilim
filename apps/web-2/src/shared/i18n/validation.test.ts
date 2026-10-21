@@ -23,6 +23,20 @@ describe('validationMessage', () => {
     expect(firstMessage(v.pipe(v.string(), v.email()), 'x')).toBe(m.validation_email())
   })
 
+  test('a blank field reads "fill it in" whatever rule it breaks (a pattern, a custom check)', () => {
+    expect(firstMessage(v.pipe(v.string(), v.regex(/^[a-z-]+$/)), '')).toBe(m.validation_required())
+    expect(
+      firstMessage(
+        v.pipe(
+          v.string(),
+          v.check(text => text.length > 0),
+        ),
+        '',
+      ),
+    ).toBe(m.validation_required())
+    expect(firstMessage(v.pipe(v.string(), v.regex(/^[a-z-]+$/)), 'A B')).toBe(m.validation_format())
+  })
+
   test('a server "invalid" on an email field says what an address looks like; elsewhere it stays generic', () => {
     expect(serverFieldMessage('invalid', 'email')).toBe(m.validation_email())
     expect(serverFieldMessage('invalid', 'contact_email')).toBe(m.validation_email())
