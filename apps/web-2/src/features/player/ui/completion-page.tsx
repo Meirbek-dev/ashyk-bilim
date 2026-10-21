@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
-import { CertificatePdfLink } from '#/features/certificates'
+import { CertificatePdfLink, CertificateShare, certificateTitle } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { CourseCover } from '#/shared/components/course-cover'
 import { FocusPage } from '#/shared/components/templates/focus-page'
@@ -26,7 +26,8 @@ export function CompletionPage() {
   const { progress, certificate } = state
   const completed = state.enrollment_state === 'completed'
   const nextId = state.next_action?.enabled ? state.next_action.activity_id : null
-  const code = certificates[0]?.certificate.verify_code ?? null
+  const issued = certificates[0]
+  const code = issued?.certificate.verify_code ?? null
   return (
     <FocusPage back={<BackToCourse courseId={courseId} />} title={state.title}>
       <section className="flex flex-col gap-gutter">
@@ -67,6 +68,18 @@ export function CompletionPage() {
               ) : null}
               {code ? <CertificatePdfLink code={code} /> : null}
             </div>
+            {/* The moment a learner wants to show it (B-CRT-09): the link to copy and LinkedIn's form. */}
+            {issued ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <CertificateShare
+                  code={issued.certificate.verify_code}
+                  name={certificateTitle(issued.certification.config, issued.course.name)}
+                  issuedAtUnix={issued.certificate.issued_at_unix}
+                  linkedIn
+                  variant="ghost"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
         <p className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
