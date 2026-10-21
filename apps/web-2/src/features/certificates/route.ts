@@ -8,7 +8,9 @@ import { documentTitle } from '#/shared/lib/document-title'
 /** The verify page's document head: what a messenger shows for the link printed on the PDF. */
 export function certificateHead({ holder, course, certificate }: VerifiedCertificate) {
   const title = m.certificates_og_title({ holder: holder.display_name, course: course.name })
-  const description = m.certificates_summary({ date: formatDate(certificate.issued_at_unix) })
+  const description = m.certificates_summary({
+    date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
+  })
   return [
     { title: documentTitle(title) },
     { name: 'description', content: description },

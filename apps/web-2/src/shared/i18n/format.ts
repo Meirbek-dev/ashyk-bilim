@@ -37,9 +37,9 @@ function kkParts(epochMs: number) {
   return { year: part('year'), day: part('day'), month: KK_MONTHS[Number(part('month')) - 1] }
 }
 
-function kkDate(epochMs: number): string {
+function kkDate(epochMs: number, withYear: boolean): string {
   const { year, day, month } = kkParts(epochMs)
-  return `${year} ж. ${day} ${month}`
+  return withYear ? `${year} ж. ${day} ${month}` : `${day} ${month}`
 }
 
 /**
@@ -51,11 +51,17 @@ export function formatNumber(value: number, { signed = false } = {}, locale: str
   return format.format(value)
 }
 
-/** A calendar date from the API's unix seconds, e.g. "2026 ж. 1 ақпан". */
-export function formatDate(unixSeconds: number, locale: string = getLocale()): string {
+/**
+ * A calendar date from the API's unix seconds. The year only when it is not this year («14 октября», «3 марта 2025 г.»,
+ * "2025 ж. 3 наурыз"), as every list and meta line reads better without «2026 г.»; `withYear` for formal records
+ * (a certificate's issue date).
+ */
+export function formatDate(unixSeconds: number, locale: string = getLocale(), { withYear = false } = {}): string {
   const epochMs = unixSeconds * 1000
-  if (locale === 'kk') return kkDate(epochMs)
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: FORMAT_TIME_ZONE }).format(epochMs)
+  const year = withYear || platformParts(epochMs).year !== platformParts(Date.now()).year
+  if (locale === 'kk') return kkDate(epochMs, year)
+  const style = year ? ({ dateStyle: 'long' } as const) : ({ day: 'numeric', month: 'long' } as const)
+  return new Intl.DateTimeFormat(locale, { ...style, timeZone: FORMAT_TIME_ZONE }).format(epochMs)
 }
 
 /** Day and month without the year, for chart axes and dense rows, e.g. "1 февр." / "Feb 1" / "1 ақпан". */

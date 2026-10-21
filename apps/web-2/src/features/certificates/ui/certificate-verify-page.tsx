@@ -39,7 +39,7 @@ export function CertificateVerifyPage({ code }: { code: string }) {
   return (
     <DetailPage
       title={course.name}
-      meta={m.certificates_summary({ date: formatDate(certificate.issued_at_unix) })}
+      meta={m.certificates_summary({ date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }) })}
       status={
         <StatusBadge tone="success">
           <BadgeCheck aria-hidden className="size-3" />
