@@ -31,7 +31,13 @@ export function DetailPage(props: DetailPageProps) {
   const heading = (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-display' : 'text-2xl'}`}>{title}</h1>
+        {/* A workspace's tabs are its content: on a phone a 96-character course name took six lines above them. */}
+        <h1
+          title={hero ? undefined : title}
+          className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-display' : 'line-clamp-2 text-2xl @2xl:line-clamp-none'}`}
+        >
+          {title}
+        </h1>
         {status}
       </div>
       {meta ? <p className="text-sm text-muted-foreground">{meta}</p> : null}
