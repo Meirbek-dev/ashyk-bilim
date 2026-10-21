@@ -10,7 +10,7 @@ import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
 
-import { presetCount } from '../model/course'
+import { hasNoCourses, presetCount } from '../model/course'
 import { myCoursesOptions } from '../queries'
 import { CoursesPresets } from './courses-presets'
 import { CoursesSearchBox } from './courses-search'
@@ -35,7 +35,7 @@ export function CoursesPage() {
     })
   const summary = query.data.pages[0]?.summary
   // No course at all (not a filter that matches none): no search, order or presets to offer - only the empty state.
-  const none = summary !== undefined && presetCount(summary, undefined) === 0 && !search.q
+  const none = summary !== undefined && hasNoCourses(summary) && !search.q
   const filters = <CoursesPresets search={search} summary={summary} />
   return (
     <ListPage
@@ -60,7 +60,11 @@ export function CoursesPage() {
         error={query.error}
         count={courses.length}
         filtered={Boolean(search.q ?? search.preset)}
-        emptyText={m.studio_courses_empty()}
+        emptyText={
+          summary && summary.total === 0 && summary.archived > 0
+            ? m.studio_courses_all_archived()
+            : m.studio_courses_empty()
+        }
         onResetFilters={() => void navigate({ to: '/teach/courses', search: {} })}
         onRetry={() => void query.refetch()}
       >

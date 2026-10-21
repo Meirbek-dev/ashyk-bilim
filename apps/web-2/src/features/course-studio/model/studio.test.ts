@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import type { Block, Contributor, CourseSummary, ReadinessItem } from '#/shared/api/gen/types.gen'
 
 import { coursesSearchSchema } from '../route'
-import { courseStatus, presetCount } from './course'
+import { courseStatus, hasNoCourses, presetCount } from './course'
 import {
   certificateConfig,
   certificateFields,
@@ -37,6 +37,12 @@ describe('course list', () => {
     expect(presetCount(summary, 'drafts')).toBe(3)
     expect(presetCount(summary, 'published')).toBe(5)
     expect(presetCount(summary, 'archived')).toBe(1)
+  })
+
+  test('B-CST-49 a teacher whose only course is archived still has courses: the presets stay to find it', () => {
+    const zero = { total: 0, ready: 0, private: 0, attention: 0, archived: 0 }
+    expect(hasNoCourses(zero)).toBe(true)
+    expect(hasNoCourses({ ...zero, archived: 1 })).toBe(false)
   })
 
   test('B-CST-02 a blank search is no search; an unknown preset is rejected; an unknown sort is the default', () => {

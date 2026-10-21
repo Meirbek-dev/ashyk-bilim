@@ -29,6 +29,12 @@ export const courseStatus = (course: Pick<Course, 'public' | 'archived_at_unix'>
 export const searchBoxSchema = v.object({ q: v.string() })
 
 /** The count the header shows for the current preset, from the server's `summary`. */
+/**
+ * No course at all, archived ones included (B-CST-49): `total` leaves the archive out, and a teacher who archived
+ * their only course must still see the «Архив» preset to get it back.
+ */
+export const hasNoCourses = (summary: CourseSummary): boolean => summary.total + summary.archived === 0
+
 export function presetCount(summary: CourseSummary, preset: Preset | undefined): number {
   if (preset === 'drafts') return summary.private
   if (preset === 'published') return summary.ready
