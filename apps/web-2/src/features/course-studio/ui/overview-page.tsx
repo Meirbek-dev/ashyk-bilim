@@ -11,8 +11,8 @@ import { ReadinessList } from './readiness-list'
 
 /**
  * `overview`: the course pulse (B-CST-47), then what is missing before publishing, from the server, with the next step;
- * a live course shows only what is still worth improving (its warnings), or nothing (B-CST-05). A draft puts its
- * readiness first: before learners come, what is missing is the next step, the pulse is all zeros.
+ * a live course shows only what is still worth improving (its warnings), or nothing (B-CST-05). A draft shows its
+ * readiness only, the next step as the page's primary button: before learners come the pulse is four zeros.
  */
 export function OverviewPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/overview' })
@@ -32,25 +32,16 @@ export function OverviewPage() {
         <ReadinessList courseId={courseId} live={live} />
         <div>
           {live ? null : readiness.ready ? (
-            <RouterLink
-              to="/teach/courses/$courseId/publish"
-              params={{ courseId }}
-              className={buttonVariants({ variant: 'outline' })}
-            >
+            <RouterLink to="/teach/courses/$courseId/publish" params={{ courseId }} className={buttonVariants()}>
               {m.studio_go_publish()}
             </RouterLink>
           ) : (
-            <RouterLink
-              to="/teach/courses/$courseId/content"
-              params={{ courseId }}
-              className={buttonVariants({ variant: 'outline' })}
-            >
+            <RouterLink to="/teach/courses/$courseId/content" params={{ courseId }} className={buttonVariants()}>
               {m.studio_go_content()}
             </RouterLink>
           )}
         </div>
       </section>
-      {live ? null : pulse}
     </div>
   )
 }

@@ -89,7 +89,7 @@ test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacherâ€
 })
 
 test('B-CST-47 overview opens with the course pulse from the server', async ({ page, studio }) => {
-  const made = await studio.course({ chapters: [{ pages: [{ published: true }] }] })
+  const made = await studio.course({ chapters: [{ pages: [{ published: true }] }], publish: true })
   await page.goto(tab(made.course.id, 'overview'))
   const pulse = page.getByRole('region', { name: m.studio_pulse_title({}, ru) })
   await expect(pulse.getByText(m.studio_pulse_enrolled({}, ru))).toBeVisible()
@@ -108,6 +108,8 @@ test('B-CST-05 overview lists blockers and warnings with links to fix them, or s
   await page.goto(tab(draft.course.id, 'overview'))
   const blockers = page.getByRole('region', { name: m.studio_readiness_blockers({}, ru) })
   await expect(blockers.getByText(m.studio_readiness_no_live_activity({}, ru))).toBeVisible()
+  // B-CST-47: a draft has no pulse (four zeros before any learner).
+  await expect(page.getByRole('region', { name: m.studio_pulse_title({}, ru) })).toHaveCount(0)
   await expect(blockers.getByRole('link', { name: m.studio_go_content({}, ru) })).toHaveAttribute(
     'href',
     tab(draft.course.id, 'content'),

@@ -123,7 +123,7 @@
   "studio_readiness_certificate_not_configured": "Сертификат не настроен.",
   "studio_readiness_unknown": "Есть замечание сервера: {code}.",
   "studio_go_settings": "Открыть настройки",
-  "studio_go_content": "Открыть программу",
+  "studio_go_content": "Открыть содержание",
   "studio_go_publish": "Перейти к публикации",
   "studio_content_label": "Программа курса",
   "studio_content_empty": "В курсе пока нет глав",

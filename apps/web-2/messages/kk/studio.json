@@ -109,7 +109,7 @@
   "studio_readiness_certificate_not_configured": "Курс сертификаты бапталмаған.",
   "studio_readiness_unknown": "Сервердің ескертпесі бар: {code}.",
   "studio_go_settings": "Баптауларды ашу",
-  "studio_go_content": "Бағдарламаны ашу",
+  "studio_go_content": "Мазмұнды ашу",
   "studio_go_publish": "Жариялауға өту",
   "studio_content_label": "Курс бағдарламасы",
   "studio_content_empty": "Курста әзірге тарау жоқ",
