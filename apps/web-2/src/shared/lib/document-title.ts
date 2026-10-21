@@ -9,6 +9,18 @@ import { contentUrl } from './content-url'
 export const documentTitle = (name?: string | null): string =>
   name ? `${name} · ${m.platform_brand()}` : m.platform_brand()
 
+type TitledMatch = { staticData: { title?: () => string } }
+
+/**
+ * A tab's document title: the open tab before its object («Журнал · Python · Ashyq Bilim»), so browser tabs and
+ * history tell a course's tabs apart. `layout` is the match whose tabs these are; on the layout itself, its name.
+ */
+export const tabTitle = (name: string, layout: TitledMatch, matches: readonly TitledMatch[]): string => {
+  const open = matches.at(-1)
+  const tab = open && open !== layout ? open.staticData.title?.() : undefined
+  return documentTitle(tab ? `${tab} · ${name}` : name)
+}
+
 // Link previews and shared links need absolute URLs: the public origin on the server, the page's own in the browser.
 export const siteOrigin = createIsomorphicFn()
   .server(() => serverEnv.publicOrigin)

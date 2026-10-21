@@ -24,10 +24,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   head: ({ matches }) => {
     // The deepest route with a title names the document; a route's own head may still override it. A page that
     // could not show its object says so instead («Страница не найдена», «Нет доступа»), not the name of its tab.
+    // A tab names its section too («Учащиеся · Аналитика»): its parent route's title follows its own.
     const failed = matches.find(match => match.status === 'notFound' || match.status === 'error')
-    const title = failed
-      ? failedTitle(failed.error)
-      : matches.findLast(match => match.staticData.title)?.staticData.title?.()
+    const page = matches.findLast(match => match.staticData.title)
+    const name = page?.staticData.title?.()
+    const section = page ? matches[matches.indexOf(page) - 1]?.staticData.title?.() : undefined
+    const title = failed ? failedTitle(failed.error) : name && section ? `${name} · ${section}` : name
     return {
       meta: [
         { charSet: 'utf-8' },

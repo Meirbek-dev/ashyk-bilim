@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CourseNotFound } from '#/features/course'
 import { CourseWorkspace, ensureWorkspace, WorkspaceError } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
-import { documentTitle } from '#/shared/lib/document-title'
+import { tabTitle } from '#/shared/lib/document-title'
 
 // The course workspace (spec 5.4): 7 tabs; access, groups and enrollments live in learners.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId')({
@@ -20,7 +20,9 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId')({
       { to: '/teach/courses/$courseId/publish', label: m.platform_tab_publish },
     ],
   },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.name) }] : [] }),
+  head: ({ loaderData, match, matches }) => ({
+    meta: loaderData ? [{ title: tabTitle(loaderData.name, match, matches) }] : [],
+  }),
   component: CourseWorkspace,
   errorComponent: WorkspaceError,
   notFoundComponent: CourseNotFound,
