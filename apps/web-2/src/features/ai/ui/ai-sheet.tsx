@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useHydrated, useNavigate, useSearch } from '@tanstack/react-router'
-import { Sparkles } from 'lucide-react'
+import { Bot } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId } from '#/shared/api/gen/types.gen'
@@ -35,7 +35,7 @@ export function AiSheet({ courseId }: { courseId: CourseId }) {
       }
       trigger={
         <Button variant="outline" disabled={!hydrated} data-hydrating={hydrated ? undefined : true}>
-          <Sparkles data-icon="inline-start" aria-hidden />
+          <Bot data-icon="inline-start" aria-hidden />
           {m.ai_open_panel()}
         </Button>
       }
