@@ -1,7 +1,11 @@
 [
   {
     "slug": "modern-minimal",
-    "name": "Ashyq",
+    "name": {
+      "ru": "Ashyq",
+      "kk": "Ашық",
+      "en": "Ashyq"
+    },
     "preview": [
       "oklch(0.985 0.006 215)",
       "oklch(0.24 0.04 258)",
@@ -11,7 +15,11 @@
   },
   {
     "slug": "t3-chat",
-    "name": "T3 Chat",
+    "name": {
+      "ru": "Слива",
+      "kk": "Алхоры",
+      "en": "Plum"
+    },
     "preview": [
       "oklch(0.98 0.01 325.6)",
       "oklch(0.33 0.12 325)",
@@ -21,7 +29,11 @@
   },
   {
     "slug": "twitter",
-    "name": "Twitter",
+    "name": {
+      "ru": "Небо",
+      "kk": "Аспан",
+      "en": "Sky"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.19 0.01 248.5)",
@@ -31,7 +43,11 @@
   },
   {
     "slug": "mocha-mousse",
-    "name": "Mocha Mousse",
+    "name": {
+      "ru": "Мокко",
+      "kk": "Мокко",
+      "en": "Mocha"
+    },
     "preview": [
       "oklch(0.95 0.01 102.5)",
       "oklch(0.41 0.03 40.4)",
@@ -41,7 +57,11 @@
   },
   {
     "slug": "bubblegum",
-    "name": "Bubblegum",
+    "name": {
+      "ru": "Фламинго",
+      "kk": "Фламинго",
+      "en": "Flamingo"
+    },
     "preview": [
       "oklch(0.94 0.02 345.7)",
       "oklch(0.415 0 0)",
@@ -51,7 +71,11 @@
   },
   {
     "slug": "doom-64",
-    "name": "Doom 64",
+    "name": {
+      "ru": "Гранат",
+      "kk": "Анар",
+      "en": "Garnet"
+    },
     "preview": [
       "oklch(0.85 0 0)",
       "oklch(0.16 0 0)",
@@ -61,7 +85,11 @@
   },
   {
     "slug": "catppuccin",
-    "name": "Catppuccin",
+    "name": {
+      "ru": "Лаванда",
+      "kk": "Лаванда",
+      "en": "Lavender"
+    },
     "preview": [
       "oklch(0.96 0.01 264.5)",
       "oklch(0.44 0.04 279.3)",
@@ -71,7 +99,11 @@
   },
   {
     "slug": "graphite",
-    "name": "Graphite",
+    "name": {
+      "ru": "Графит",
+      "kk": "Графит",
+      "en": "Graphite"
+    },
     "preview": [
       "oklch(0.96 0 0)",
       "oklch(0.32 0 0)",
@@ -81,7 +113,11 @@
   },
   {
     "slug": "perpetuity",
-    "name": "Perpetuity",
+    "name": {
+      "ru": "Бирюза",
+      "kk": "Фирұза",
+      "en": "Turquoise"
+    },
     "preview": [
       "oklch(0.95 0.01 197)",
       "oklch(0.38 0.06 212.7)",
@@ -91,7 +127,11 @@
   },
   {
     "slug": "kodama-grove",
-    "name": "Kodama Grove",
+    "name": {
+      "ru": "Роща",
+      "kk": "Тоғай",
+      "en": "Grove"
+    },
     "preview": [
       "oklch(0.88 0.05 91.8)",
       "oklch(0.255 0.03 59.2)",
@@ -101,7 +141,11 @@
   },
   {
     "slug": "cosmic-night",
-    "name": "Cosmic Night",
+    "name": {
+      "ru": "Сумерки",
+      "kk": "Ымырт",
+      "en": "Twilight"
+    },
     "preview": [
       "oklch(0.97 0.01 286.1)",
       "oklch(0.3 0.06 282.4)",
@@ -111,7 +155,11 @@
   },
   {
     "slug": "tangerine",
-    "name": "Tangerine",
+    "name": {
+      "ru": "Мандарин",
+      "kk": "Мандарин",
+      "en": "Tangerine"
+    },
     "preview": [
       "oklch(0.94 0 0)",
       "oklch(0.32 0 0)",
@@ -121,7 +169,11 @@
   },
   {
     "slug": "quantum-rose",
-    "name": "Quantum Rose",
+    "name": {
+      "ru": "Роза",
+      "kk": "Раушан",
+      "en": "Rose"
+    },
     "preview": [
       "oklch(0.969 0.019 342.6)",
       "oklch(0.44 0.17 352.4)",
@@ -131,7 +183,11 @@
   },
   {
     "slug": "nature",
-    "name": "Nature",
+    "name": {
+      "ru": "Луг",
+      "kk": "Шалғын",
+      "en": "Meadow"
+    },
     "preview": [
       "oklch(0.97 0.01 80.7)",
       "oklch(0.3 0.04 30.2)",
@@ -141,7 +197,11 @@
   },
   {
     "slug": "bold-tech",
-    "name": "Bold Tech",
+    "name": {
+      "ru": "Индиго",
+      "kk": "Индиго",
+      "en": "Indigo"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.36 0.14 278.7)",
@@ -151,7 +211,11 @@
   },
   {
     "slug": "elegant-luxury",
-    "name": "Elegant Luxury",
+    "name": {
+      "ru": "Бордо",
+      "kk": "Бордо",
+      "en": "Burgundy"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.22 0 0)",
@@ -161,7 +225,11 @@
   },
   {
     "slug": "amber-minimal",
-    "name": "Amber Minimal",
+    "name": {
+      "ru": "Янтарь",
+      "kk": "Кәріптас",
+      "en": "Amber"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.27 0 0)",
@@ -171,7 +239,11 @@
   },
   {
     "slug": "supabase",
-    "name": "Supabase",
+    "name": {
+      "ru": "Мята",
+      "kk": "Жалбыз",
+      "en": "Mint"
+    },
     "preview": [
       "oklch(0.99 0 0)",
       "oklch(0.2 0 0)",
@@ -181,7 +253,11 @@
   },
   {
     "slug": "neo-brutalism",
-    "name": "Neo Brutalism",
+    "name": {
+      "ru": "Плакат",
+      "kk": "Плакат",
+      "en": "Poster"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0 0 0)",
@@ -191,7 +267,11 @@
   },
   {
     "slug": "solar-dusk",
-    "name": "Solar Dusk",
+    "name": {
+      "ru": "Охра",
+      "kk": "Охра",
+      "en": "Ochre"
+    },
     "preview": [
       "oklch(0.99 0.01 84.6)",
       "oklch(0.37 0.03 49.6)",
@@ -201,7 +281,11 @@
   },
   {
     "slug": "claymorphism",
-    "name": "Claymorphism",
+    "name": {
+      "ru": "Глина",
+      "kk": "Саз",
+      "en": "Clay"
+    },
     "preview": [
       "oklch(0.92 0 0)",
       "oklch(0.28 0.04 260)",
@@ -211,7 +295,11 @@
   },
   {
     "slug": "cyberpunk",
-    "name": "Cyberpunk",
+    "name": {
+      "ru": "Неон",
+      "kk": "Неон",
+      "en": "Neon"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.16 0.04 281.8)",
@@ -221,7 +309,11 @@
   },
   {
     "slug": "pastel-dreams",
-    "name": "Pastel Dreams",
+    "name": {
+      "ru": "Пастель",
+      "kk": "Пастель",
+      "en": "Pastel"
+    },
     "preview": [
       "oklch(0.97 0.01 314.8)",
       "oklch(0.37 0.03 259.7)",
@@ -231,7 +323,11 @@
   },
   {
     "slug": "clean-slate",
-    "name": "Clean Slate",
+    "name": {
+      "ru": "Сланец",
+      "kk": "Тақтатас",
+      "en": "Slate"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.28 0.04 260)",
@@ -241,7 +337,11 @@
   },
   {
     "slug": "caffeine",
-    "name": "Caffeine",
+    "name": {
+      "ru": "Кофе",
+      "kk": "Кофе",
+      "en": "Coffee"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.24 0 0)",
@@ -251,7 +351,11 @@
   },
   {
     "slug": "ocean-breeze",
-    "name": "Ocean Breeze",
+    "name": {
+      "ru": "Бриз",
+      "kk": "Самал",
+      "en": "Breeze"
+    },
     "preview": [
       "oklch(0.98 0.01 244.3)",
       "oklch(0.37 0.03 259.7)",
@@ -261,7 +365,11 @@
   },
   {
     "slug": "retro-arcade",
-    "name": "Retro Arcade",
+    "name": {
+      "ru": "Ретро",
+      "kk": "Ретро",
+      "en": "Retro"
+    },
     "preview": [
       "oklch(0.97 0.03 90.1)",
       "oklch(0.31 0.05 219.7)",
@@ -271,7 +379,11 @@
   },
   {
     "slug": "midnight-bloom",
-    "name": "Midnight Bloom",
+    "name": {
+      "ru": "Ирис",
+      "kk": "Сүсен",
+      "en": "Iris"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.32 0 0)",
@@ -281,7 +393,11 @@
   },
   {
     "slug": "candyland",
-    "name": "Candyland",
+    "name": {
+      "ru": "Леденец",
+      "kk": "Кәмпит",
+      "en": "Candy"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.32 0 0)",
@@ -291,7 +407,11 @@
   },
   {
     "slug": "northern-lights",
-    "name": "Northern Lights",
+    "name": {
+      "ru": "Северное сияние",
+      "kk": "Солтүстік шұғыла",
+      "en": "Aurora"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.32 0 0)",
@@ -301,7 +421,11 @@
   },
   {
     "slug": "vintage-paper",
-    "name": "Vintage Paper",
+    "name": {
+      "ru": "Пергамент",
+      "kk": "Пергамент",
+      "en": "Parchment"
+    },
     "preview": [
       "oklch(0.96 0.02 90.2)",
       "oklch(0.38 0.02 64.3)",
@@ -311,7 +435,11 @@
   },
   {
     "slug": "sunset-horizon",
-    "name": "Sunset Horizon",
+    "name": {
+      "ru": "Закат",
+      "kk": "Шапақ",
+      "en": "Sunset"
+    },
     "preview": [
       "oklch(0.988 0.008 67.8)",
       "oklch(0.34 0.01 2.8)",
@@ -321,7 +449,11 @@
   },
   {
     "slug": "starry-night",
-    "name": "Starry Night",
+    "name": {
+      "ru": "Полночь",
+      "kk": "Түн ортасы",
+      "en": "Midnight"
+    },
     "preview": [
       "oklch(0.98 0 0)",
       "oklch(0.26 0.04 268.1)",
@@ -331,7 +463,11 @@
   },
   {
     "slug": "claude",
-    "name": "Claude",
+    "name": {
+      "ru": "Терракота",
+      "kk": "Терракота",
+      "en": "Terracotta"
+    },
     "preview": [
       "oklch(0.98 0.01 95.1)",
       "oklch(0.34 0.03 95.7)",
@@ -341,7 +477,11 @@
   },
   {
     "slug": "vercel",
-    "name": "Vercel",
+    "name": {
+      "ru": "Контраст",
+      "kk": "Контраст",
+      "en": "Contrast"
+    },
     "preview": [
       "oklch(0.99 0 0)",
       "oklch(0 0 0)",
@@ -351,7 +491,11 @@
   },
   {
     "slug": "mono",
-    "name": "Mono",
+    "name": {
+      "ru": "Монохром",
+      "kk": "Монохром",
+      "en": "Monochrome"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.14 0 0)",
@@ -361,7 +505,11 @@
   },
   {
     "slug": "violet-bloom",
-    "name": "Violet Bloom",
+    "name": {
+      "ru": "Фиалка",
+      "kk": "Шегіргүл",
+      "en": "Violet"
+    },
     "preview": [
       "oklch(0.994 0 0)",
       "oklch(0 0 0)",
@@ -371,7 +519,11 @@
   },
   {
     "slug": "amethyst-haze",
-    "name": "Amethyst Haze",
+    "name": {
+      "ru": "Аметист",
+      "kk": "Аметист",
+      "en": "Amethyst"
+    },
     "preview": [
       "oklch(0.978 0.004 301.4)",
       "oklch(0.365 0.033 287.1)",
@@ -381,7 +533,11 @@
   },
   {
     "slug": "notebook",
-    "name": "Notebook",
+    "name": {
+      "ru": "Тетрадь",
+      "kk": "Дәптер",
+      "en": "Notebook"
+    },
     "preview": [
       "oklch(0.982 0 0)",
       "oklch(0.348 0 0)",
@@ -391,7 +547,11 @@
   },
   {
     "slug": "soft-pop",
-    "name": "Soft Pop",
+    "name": {
+      "ru": "Поп-арт",
+      "kk": "Поп-арт",
+      "en": "Pop art"
+    },
     "preview": [
       "oklch(0.979 0.008 121.6)",
       "oklch(0 0 0)",
@@ -401,7 +561,11 @@
   },
   {
     "slug": "sage-garden",
-    "name": "Sage Garden",
+    "name": {
+      "ru": "Шалфей",
+      "kk": "Сәлбен",
+      "en": "Sage"
+    },
     "preview": [
       "oklch(0.976 0.004 91.4)",
       "oklch(0.242 0.03 269.9)",
@@ -411,7 +575,11 @@
   },
   {
     "slug": "astro-vista",
-    "name": "Astro Vista",
+    "name": {
+      "ru": "Абрикос",
+      "kk": "Өрік",
+      "en": "Apricot"
+    },
     "preview": [
       "oklch(0.938 0.004 236.5)",
       "oklch(0.321 0 0)",
@@ -421,7 +589,11 @@
   },
   {
     "slug": "beso-colors",
-    "name": "Beso Colors",
+    "name": {
+      "ru": "Лагуна",
+      "kk": "Лагуна",
+      "en": "Lagoon"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.166 0.026 269.4)",
@@ -431,7 +603,11 @@
   },
   {
     "slug": "brownie",
-    "name": "Brownie",
+    "name": {
+      "ru": "Какао",
+      "kk": "Какао",
+      "en": "Cocoa"
+    },
     "preview": [
       "oklch(0.968 0.016 99)",
       "oklch(0.38 0.031 52.9)",
@@ -441,7 +617,11 @@
   },
   {
     "slug": "celestial",
-    "name": "Celestial",
+    "name": {
+      "ru": "Лазурь",
+      "kk": "Көгілдір",
+      "en": "Azure"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0 0 0)",
@@ -451,7 +631,11 @@
   },
   {
     "slug": "claude-plus",
-    "name": "Claude Plus",
+    "name": {
+      "ru": "Кирпич",
+      "kk": "Кірпіш",
+      "en": "Brick"
+    },
     "preview": [
       "oklch(0.982 0.005 95.1)",
       "oklch(0.344 0.027 95.7)",
@@ -461,7 +645,11 @@
   },
   {
     "slug": "leadgen",
-    "name": "Leadgen",
+    "name": {
+      "ru": "Ультрамарин",
+      "kk": "Ультрамарин",
+      "en": "Ultramarine"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.145 0.002 286.1)",
@@ -471,7 +659,11 @@
   },
   {
     "slug": "light-green",
-    "name": "Light Green",
+    "name": {
+      "ru": "Лайм",
+      "kk": "Лайм",
+      "en": "Lime"
+    },
     "preview": [
       "oklch(0.989 0.005 117.9)",
       "oklch(0.208 0.04 265.8)",
@@ -481,7 +673,11 @@
   },
   {
     "slug": "melancholic-mint",
-    "name": "Melancholic Mint",
+    "name": {
+      "ru": "Олива",
+      "kk": "Зәйтүн",
+      "en": "Olive"
+    },
     "preview": [
       "oklch(0.889 0.005 106.5)",
       "oklch(0.27 0 0)",
@@ -491,7 +687,11 @@
   },
   {
     "slug": "open-profile",
-    "name": "Open Profile",
+    "name": {
+      "ru": "Лимон",
+      "kk": "Лимон",
+      "en": "Lemon"
+    },
     "preview": [
       "oklch(0.966 0.005 106.5)",
       "oklch(0.164 0 0)",
@@ -501,7 +701,11 @@
   },
   {
     "slug": "party-rock",
-    "name": "Party Rock",
+    "name": {
+      "ru": "Пурпур",
+      "kk": "Күлгін",
+      "en": "Purple"
+    },
     "preview": [
       "oklch(0.956 0.015 102.5)",
       "oklch(0 0 0)",
@@ -511,7 +715,11 @@
   },
   {
     "slug": "portfolio",
-    "name": "Portfolio",
+    "name": {
+      "ru": "Лён",
+      "kk": "Зығыр",
+      "en": "Linen"
+    },
     "preview": [
       "oklch(0.976 0.007 97.4)",
       "oklch(0.218 0 0)",
@@ -521,7 +729,11 @@
   },
   {
     "slug": "resolve",
-    "name": "Resolve",
+    "name": {
+      "ru": "Сталь",
+      "kk": "Болат",
+      "en": "Steel"
+    },
     "preview": [
       "oklch(0.938 0.004 236.5)",
       "oklch(0.321 0 0)",
@@ -531,7 +743,11 @@
   },
   {
     "slug": "sage-garden-plus",
-    "name": "Sage Garden Plus",
+    "name": {
+      "ru": "Эвкалипт",
+      "kk": "Эвкалипт",
+      "en": "Eucalyptus"
+    },
     "preview": [
       "oklch(0.994 0 0)",
       "oklch(0 0 0)",
@@ -541,7 +757,11 @@
   },
   {
     "slug": "sakura",
-    "name": "Sakura",
+    "name": {
+      "ru": "Сакура",
+      "kk": "Сакура",
+      "en": "Sakura"
+    },
     "preview": [
       "oklch(0.986 0.008 49.9)",
       "oklch(0.428 0.026 46.6)",
@@ -551,7 +771,11 @@
   },
   {
     "slug": "sandstone",
-    "name": "Sandstone",
+    "name": {
+      "ru": "Песчаник",
+      "kk": "Құмтас",
+      "en": "Sandstone"
+    },
     "preview": [
       "oklch(0.979 0.001 106.4)",
       "oklch(0.23 0.004 106.7)",
@@ -561,7 +785,11 @@
   },
   {
     "slug": "shadcn-default",
-    "name": "Shadcn Default",
+    "name": {
+      "ru": "Нейтральная",
+      "kk": "Бейтарап",
+      "en": "Neutral"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.145 0 0)",
@@ -571,7 +799,11 @@
   },
   {
     "slug": "twitter-plus",
-    "name": "Twitter Plus",
+    "name": {
+      "ru": "Василёк",
+      "kk": "Гүлкекіре",
+      "en": "Cornflower"
+    },
     "preview": [
       "oklch(1 0 0)",
       "oklch(0.188 0.013 248.5)",
@@ -581,7 +813,11 @@
   },
   {
     "slug": "violete-eye",
-    "name": "Violete Eye",
+    "name": {
+      "ru": "Сирень",
+      "kk": "Сирень",
+      "en": "Lilac"
+    },
     "preview": [
       "oklch(0.989 0.005 286.3)",
       "oklch(0.226 0.019 280.2)",
@@ -591,7 +827,11 @@
   },
   {
     "slug": "vtron",
-    "name": "Vtron",
+    "name": {
+      "ru": "Кобальт",
+      "kk": "Кобальт",
+      "en": "Cobalt"
+    },
     "preview": [
       "oklch(0.991 0 0)",
       "oklch(0.199 0.047 270.6)",
@@ -601,7 +841,11 @@
   },
   {
     "slug": "whatsapp",
-    "name": "Whatsapp",
+    "name": {
+      "ru": "Малахит",
+      "kk": "Малахит",
+      "en": "Malachite"
+    },
     "preview": [
       "oklch(0.961 0.005 258.3)",
       "oklch(0.215 0.019 235.1)",
@@ -611,7 +855,11 @@
   },
   {
     "slug": "yellow",
-    "name": "Yellow",
+    "name": {
+      "ru": "Подсолнух",
+      "kk": "Күнбағыс",
+      "en": "Sunflower"
+    },
     "preview": [
       "oklch(0.99 0.016 95.2)",
       "oklch(0.214 0.002 286.2)",
@@ -621,7 +869,11 @@
   },
   {
     "slug": "zen",
-    "name": "Zen",
+    "name": {
+      "ru": "Камень",
+      "kk": "Тас",
+      "en": "Stone"
+    },
     "preview": [
       "oklch(0.919 0.017 88)",
       "oklch(0.235 0 0)",

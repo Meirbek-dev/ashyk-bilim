@@ -4,7 +4,8 @@ import * as v from 'valibot'
 const vThemeManifest = v.array(
   v.object({
     slug: v.string(),
-    name: v.string(),
+    /** Neutral names by palette, one per UI locale (no other companies' brands); the slug keeps saved choices. */
+    name: v.object({ ru: v.string(), kk: v.string(), en: v.string() }),
     /** background, foreground, primary, accent of the light mode: the picker's swatch. */
     preview: v.tuple([v.string(), v.string(), v.string(), v.string()]),
   }),

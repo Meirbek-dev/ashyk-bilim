@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { getLocale } from '#/paraglide/runtime'
 import type { ThemeManifest } from '#/shared/api/themes'
 import { FieldLabel, FieldLegend, FieldSet } from '#/shared/ui/field'
 import { Input } from '#/shared/ui/input'
@@ -17,7 +18,8 @@ export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
   const id = useId()
   const [query, setQuery] = useState('')
   const needle = query.trim().toLocaleLowerCase()
-  const shown = themes.filter(theme => theme.slug === value || theme.name.toLocaleLowerCase().includes(needle))
+  const locale = getLocale()
+  const shown = themes.filter(theme => theme.slug === value || theme.name[locale].toLocaleLowerCase().includes(needle))
   // The box opens on the chosen theme, wherever it is in the list (the box is the cards' offset parent).
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -56,7 +58,7 @@ export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
                 <rect key={index} x={index} width="1" height="1" fill={color} />
               ))}
             </svg>
-            <span className="min-w-0 py-1 leading-tight">{theme.name}</span>
+            <span className="min-w-0 py-1 leading-tight">{theme.name[locale]}</span>
           </FieldLabel>
         ))}
       </RadioGroup>
