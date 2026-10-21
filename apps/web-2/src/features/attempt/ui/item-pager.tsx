@@ -10,7 +10,7 @@ import { ATTEMPT_PATH } from './attempt-frame'
 type PagerProps = { current: number; total: number; onFinish: () => void; disabled: boolean }
 
 /**
- * "Previous" and "Next" question (`?item=N`); on the last one "Finish attempt" opens the hand-in confirmation
+ * "Previous" and "Next" question (`?item=N`); on the last one "Submit answers" (the top bar's verb) opens the hand-in confirmation
  * (B-ATT-24), so the way out is where the learner's eyes are, not only in the top bar.
  */
 export function ItemPager({ current, total, onFinish, disabled }: PagerProps) {

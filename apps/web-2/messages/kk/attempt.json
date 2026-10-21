@@ -59,7 +59,7 @@
   "attempt_answered": "Жауап берілді",
   "attempt_answered_count": "{total} ішінен {done} жауап берілді",
   "attempt_submit": "Тапсыру",
-  "attempt_finish": "Әрекетті аяқтау",
+  "attempt_finish": "Жауаптарды тапсыру",
   "attempt_time_left": "Қалған уақыт",
   "attempt_continue_left": "{time} қалды. Бет жабық болса да, уақыт жүре береді.",
   "attempt_late_cutoff_left": "Кешіктіріп тапсыру жабылғанға дейін",

@@ -59,7 +59,7 @@
   "attempt_answered": "Отвечен",
   "attempt_answered_count": "Отвечено {done} из {total}",
   "attempt_submit": "Сдать",
-  "attempt_finish": "Завершить попытку",
+  "attempt_finish": "Сдать ответы",
   "attempt_time_left": "Осталось времени",
   "attempt_continue_left": "Осталось {time}. Время идёт, даже когда страница закрыта.",
   "attempt_late_cutoff_left": "До закрытия поздней сдачи",
