@@ -70,7 +70,7 @@
   "settings_password_hint": "После смены пароля другие сеансы завершатся.",
   "settings_field_current_password": "Текущий пароль",
   "settings_field_new_password": "Новый пароль",
-  "settings_field_new_password_hint": "Не короче 8 символов: строчная и заглавная латинские буквы, цифра и символ.",
+  "settings_field_new_password_hint": "Не короче 8 символов: строчная и заглавная латинские буквы, цифра и знак.",
   "settings_password_changed": "Пароль изменён. Другие сеансы завершены.",
   "settings_password_google": "Вы входите через Google: у этой учётной записи нет пароля, и задать его здесь нельзя.",
   "settings_sessions_title": "Сеансы",

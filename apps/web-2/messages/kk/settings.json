@@ -70,7 +70,7 @@
   "settings_password_hint": "Құпиясөзді ауыстырғаннан кейін басқа сеанстар аяқталады.",
   "settings_field_current_password": "Ағымдағы құпиясөз",
   "settings_field_new_password": "Жаңа құпиясөз",
-  "settings_field_new_password_hint": "Кемінде 8 таңба: кіші және бас латын әріптері, цифр және таңба.",
+  "settings_field_new_password_hint": "Кемінде 8 таңба: кіші және бас латын әріптері, цифр және белгі.",
   "settings_password_changed": "Құпиясөз өзгертілді. Басқа сеанстар аяқталды.",
   "settings_password_google": "Сіз Google арқылы кіресіз: бұл тіркелгіде құпиясөз жоқ, оны мұнда орнату мүмкін емес.",
   "settings_sessions_title": "Сеанстар",
