@@ -68,11 +68,15 @@ describe('player model', () => {
     expect(locate(state, 'elsewhere')).toBeNull()
   })
 
-  test('B-PLY-18 after graded work: the next activity across chapters, the summary after the last, none off the outline', () => {
+  test('B-PLY-18 after graded work: the next activity across chapters, after the last the work left or the summary', () => {
     const state = course([[activity('a'), activity('b')], [activity('c')]])
     expect(nextStep(state, 'b')).toMatchObject({ kind: 'activity', activity: { id: 'c' } })
     expect(nextStep(state, 'c')).toEqual({ kind: 'finish' })
     expect(nextStep(state, 'draft')).toBeNull()
+    // The last one done while «a» is still open: the way on is «a», not the summary of an unfinished course.
+    const unfinished = course([[activity('a'), activity('b')], [activity('c')]], { activity_id: 'a' })
+    expect(nextStep(unfinished, 'c')).toMatchObject({ kind: 'activity', activity: { id: 'a' } })
+    expect(nextStep(course([[activity('c')]], { activity_id: 'c' }), 'c')).toEqual({ kind: 'finish' })
   })
 
   test('B-PLY-06 a lesson that is not done offers to mark it, whatever comes next', () => {
