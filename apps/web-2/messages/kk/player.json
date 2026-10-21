@@ -70,5 +70,6 @@
   "player_page_submission": "Жұмысты тапсыру",
   "player_outline": "Осы бетте",
   "player_out_of_attempts": "Әрекеттер таусылды. Қайта тапсыру керек болса,",
-  "player_ask_teacher": "курс талқылауында оқытушыға жазыңыз."
+  "player_ask_teacher": "курс талқылауында оқытушыға жазыңыз.",
+  "player_hours_left": "{hours} сағ қалды"
 }

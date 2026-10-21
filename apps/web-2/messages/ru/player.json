@@ -72,5 +72,6 @@
   "player_page_submission": "Сдача работы",
   "player_outline": "На этой странице",
   "player_out_of_attempts": "Попыток больше не осталось. Если нужна пересдача,",
-  "player_ask_teacher": "напишите преподавателю в обсуждениях курса."
+  "player_ask_teacher": "напишите преподавателю в обсуждениях курса.",
+  "player_hours_left": "Осталось {hours} ч"
 }

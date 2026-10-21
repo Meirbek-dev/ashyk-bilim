@@ -29,7 +29,7 @@ import { UnlistedLesson } from './unlisted-lesson'
  */
 export function PlayerPage({ aside }: { aside?: { label: string; content: ReactNode } }) {
   const { courseId, activityId } = useParams({ from: '/_authed/learn/$courseId/$activityId' })
-  const { data: state } = useSuspenseQuery(learnerStateOptions(courseId))
+  const { data: state, dataUpdatedAt } = useSuspenseQuery(learnerStateOptions(courseId))
   const [contentsOpen, setContentsOpen] = useState(false)
   const mark = useMutation(markOptions(useQueryClient(), courseId))
   useHotkey(shortcuts.contents.hotkey, () => setContentsOpen(open => !open))
@@ -73,7 +73,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         ) : lesson ? (
           <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (
-          <EntryCard courseId={courseId} entry={entry} action={action} />
+          <EntryCard courseId={courseId} entry={entry} action={action} nowUnix={Math.floor(dataUpdatedAt / 1000)} />
         )}
         <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
           {lesson ? action : null}

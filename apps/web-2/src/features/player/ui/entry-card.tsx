@@ -32,6 +32,7 @@ const hints = {
 } satisfies Record<Exclude<ActivityKind, 'lesson'>, () => string>
 
 const fresh = new Set<WorkState>(['not_started', 'in_progress'])
+const open = new Set<WorkState>(['not_started', 'in_progress', 'returned'])
 
 /**
  * Graded work's entry (B-PLY-11): the work state, the released grade large, the deadline, a line on how the work goes
@@ -41,20 +42,27 @@ export function EntryCard({
   courseId,
   entry,
   action,
+  nowUnix,
 }: {
   courseId: CourseId
   entry: ActivityState
   action: ReactNode
+  /** When the learner state was read: the clock the hours left are counted from. */
+  nowUnix: number
 }) {
   const status = workStates[entry.state]
   const kind = activityKind(entry.activity_type)
   // Failed with no attempt left (B-PLY-19): the learner is not left at a dead end that «Продолжить» keeps leading to.
+  // Due within 48 h and not handed in (B-PLY-21): the hours left in the warning tone, as /home says it.
+  const left = entry.due_at_unix === null ? 0 : entry.due_at_unix - nowUnix
+  const soon = open.has(entry.state) && left > 0 && left <= 48 * 3600 ? Math.max(1, Math.ceil(left / 3600)) : null
   const outOfAttempts = entry.state === 'failed' && !entry.allowed_actions.includes('start')
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
         {entry.is_late ? <StatusBadge tone="warning">{m.player_late()}</StatusBadge> : null}
+        {soon === null ? null : <StatusBadge tone="warning">{m.player_hours_left({ hours: soon })}</StatusBadge>}
       </div>
       {typeof entry.score === 'number' ? (
         <p className="font-heading text-xl font-semibold tabular-nums">
