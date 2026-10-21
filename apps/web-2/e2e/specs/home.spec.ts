@@ -82,7 +82,7 @@ test('B-HOME-01 B-HOME-02 B-HOME-03 B-HOME-04 B-HOME-05 B-HOME-06 one page answe
   await expect(page).toHaveURL(new RegExp(`/courses/${course.id}/updates$`))
 })
 
-test('B-HOME-07 B-HOME-09 a learner with no courses gets one sentence, new courses and the catalog', async ({
+test('B-HOME-07 B-HOME-09 B-HOME-12 a learner with no courses gets one sentence, new courses and the catalog', async ({
   page,
   learner,
 }) => {
@@ -90,6 +90,8 @@ test('B-HOME-07 B-HOME-09 a learner with no courses gets one sentence, new cours
   await page.goto('/home')
   await expect(page.getByText(m.home_empty({}, ru))).toBeVisible()
   await expect(region(page, m.home_deadlines_title({}, ru))).toHaveCount(0)
+  // B-HOME-12: a learner does not teach - no way into the teaching space here.
+  await expect(page.getByRole('link', { name: m.home_go_teach({}, ru) })).toHaveCount(0)
   // The seeded stand always has public courses: some are suggested as cards that open their page.
   await expect(region(page, m.home_suggested_title({}, ru)).getByRole('link').first()).toHaveAttribute(
     'href',

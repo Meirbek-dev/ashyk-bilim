@@ -3,6 +3,8 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { CourseGrid, landingCoursesOptions } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { anyEnrollmentOptions } from '../queries'
@@ -16,6 +18,8 @@ export function HomeWelcome() {
   const { data } = useSuspenseQuery(landingCoursesOptions())
   const finished = useSuspenseQuery(anyEnrollmentOptions()).data.runs.length > 0
   const courses = data.items.slice(0, 3)
+  // A teacher's first sign-in lands here, in «Учёба»: the way to their own space, not only the catalog (B-HOME-12).
+  const teaches = hasCapability(useSuspenseQuery(sessionOptions()).data, 'teach')
   return (
     <div className="flex w-full flex-col items-start gap-10 py-2">
       <div className="flex flex-col items-start gap-4">
@@ -27,6 +31,11 @@ export function HomeWelcome() {
           {finished ? (
             <RouterLink to="/learning" className={buttonVariants({ variant: 'outline' })}>
               {m.home_my_courses()}
+            </RouterLink>
+          ) : null}
+          {teaches ? (
+            <RouterLink to="/teach" className={buttonVariants({ variant: 'outline' })}>
+              {m.home_go_teach()}
             </RouterLink>
           ) : null}
         </div>
