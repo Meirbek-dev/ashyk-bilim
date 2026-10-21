@@ -14,7 +14,7 @@ export const GradebookTotal = zod
     user_id: zod.uuid(),
   })
   .describe(
-    "A learner's course result: the weight-averaged percent of the graded\ncolumns. Graded work counts with its grade, work awaiting grading does\nnot count yet, missing work counts as 0 once the learner's own due date\nhas passed (not before it, nor without a due date).",
+    "A learner's course result: the weight-averaged percent of the graded columns.\n\nGraded work counts with its grade, work awaiting grading does not count\nyet, missing work counts as 0 once the learner's own due date has passed\n(not before it, nor without a due date).",
   )
 
 export type GradebookTotal = zod.input<typeof GradebookTotal>

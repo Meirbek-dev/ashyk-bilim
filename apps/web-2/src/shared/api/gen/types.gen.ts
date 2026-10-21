@@ -3332,10 +3332,11 @@ export type GradebookSummary = {
 };
 
 /**
- * A learner's course result: the weight-averaged percent of the graded
- * columns. Graded work counts with its grade, work awaiting grading does
- * not count yet, missing work counts as 0 once the learner's own due date
- * has passed (not before it, nor without a due date).
+ * A learner's course result: the weight-averaged percent of the graded columns.
+ *
+ * Graded work counts with its grade, work awaiting grading does not count
+ * yet, missing work counts as 0 once the learner's own due date has passed
+ * (not before it, nor without a due date).
  */
 export type GradebookTotal = {
     /**
@@ -4868,6 +4869,11 @@ export type RecentResult = {
     course_id: CourseId;
     course_name: string;
     kind: ResultKind;
+    /**
+     * The released grade against the passing score (a file task: the
+     * grader's pass/fail); null for returned work.
+     */
+    passed: boolean | null;
     /**
      * Released score (null for returned work).
      */

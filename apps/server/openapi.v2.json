@@ -9523,7 +9523,7 @@
         "type": "object"
       },
       "GradebookTotal": {
-        "description": "A learner's course result: the weight-averaged percent of the graded\ncolumns. Graded work counts with its grade, work awaiting grading does\nnot count yet, missing work counts as 0 once the learner's own due date\nhas passed (not before it, nor without a due date).",
+        "description": "A learner's course result: the weight-averaged percent of the graded columns.\n\nGraded work counts with its grade, work awaiting grading does not count\nyet, missing work counts as 0 once the learner's own due date has passed\n(not before it, nor without a due date).",
         "properties": {
           "missing": {
             "description": "Columns counted as 0 (past due, no graded work).",
@@ -14188,6 +14188,13 @@
           "kind": {
             "$ref": "#/components/schemas/ResultKind"
           },
+          "passed": {
+            "description": "The released grade against the passing score (a file task: the\ngrader's pass/fail); null for returned work.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "score": {
             "description": "Released score (null for returned work).",
             "format": "double",
@@ -14215,6 +14222,7 @@
           "activity_id",
           "activity_name",
           "at_unix",
+          "passed",
           "score",
           "submission_id"
         ],

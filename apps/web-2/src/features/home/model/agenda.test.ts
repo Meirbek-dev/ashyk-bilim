@@ -47,6 +47,7 @@ const result = (activity_id: string): RecentResult => ({
   course_name: 'Course',
   kind: 'submission_returned',
   score: null,
+  passed: null,
   submission_id: null,
 })
 

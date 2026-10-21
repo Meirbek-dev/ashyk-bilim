@@ -4177,6 +4177,7 @@ export const vRecentResult = v.object({
     course_id: vCourseId,
     course_name: v.string(),
     kind: vResultKind,
+    passed: v.nullable(v.boolean()),
     score: v.nullable(v.number()),
     submission_id: v.nullable(vSubmissionId)
 });
@@ -4960,10 +4961,11 @@ export const vGradebookCell = v.object({
 });
 
 /**
- * A learner's course result: the weight-averaged percent of the graded
- * columns. Graded work counts with its grade, work awaiting grading does
- * not count yet, missing work counts as 0 once the learner's own due date
- * has passed (not before it, nor without a due date).
+ * A learner's course result: the weight-averaged percent of the graded columns.
+ *
+ * Graded work counts with its grade, work awaiting grading does not count
+ * yet, missing work counts as 0 once the learner's own due date has passed
+ * (not before it, nor without a due date).
  */
 export const vGradebookTotal = v.object({
     missing: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),

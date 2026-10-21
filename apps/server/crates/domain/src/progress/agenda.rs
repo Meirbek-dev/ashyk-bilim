@@ -85,6 +85,9 @@ pub struct RecentResult {
     pub submission_id: Option<ab_core::id::SubmissionId>,
     /// Released score (null for returned work).
     pub score: Option<f64>,
+    /// The released grade against the passing score (a file task: the
+    /// grader's pass/fail); null for returned work.
+    pub passed: Option<bool>,
     pub at_unix: i64,
 }
 
@@ -139,6 +142,7 @@ fn result(row: RecentResultRow) -> RecentResult {
         activity_name: row.activity_name,
         submission_id: row.submission_id,
         score: if returned { None } else { row.score },
+        passed: (!returned).then_some(row.state == ActivityProgressState::Passed),
         at_unix: row.at,
     }
 }

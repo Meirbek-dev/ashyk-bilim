@@ -488,6 +488,8 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
         activity_id.as_str()
     );
     assert_eq!(agenda["deadlines"][0]["state"], "passed", "{agenda}");
+    // CONTRACT-REQ-G-1: the result says pass or fail, not only «graded».
+    assert_eq!(agenda["recent_results"][0]["passed"], true, "{agenda}");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

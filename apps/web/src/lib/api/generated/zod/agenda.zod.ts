@@ -79,6 +79,12 @@ export const Agenda = zod
           course_id: zod.uuid(),
           course_name: zod.string(),
           kind: zod.enum(['grade_published', 'submission_returned']).describe('What a recent result is.'),
+          passed: zod
+            .boolean()
+            .nullable()
+            .describe(
+              "The released grade against the passing score (a file task: the\ngrader's pass/fail); null for returned work.",
+            ),
           score: zod.number().nullable().describe('Released score (null for returned work).'),
           submission_id: zod.union([
             zod.uuid().describe('The latest assessment submission, when the activity is one.'),
