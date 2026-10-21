@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import type { Agenda, AgendaDeadline, RecentResult, WorkItem, WorkKind } from '#/shared/api/gen/types.gen'
 import { fromDateTimeInput } from '#/shared/i18n/format'
 
-import { attentionWork, groupDeadlines, isEmptyToday, timeOf } from './agenda'
+import { attentionWork, groupDeadlines, hoursLeft, isEmptyToday, timeOf } from './agenda'
 
 const at = (local: string) => fromDateTimeInput(local)
 
@@ -90,4 +90,12 @@ describe('home model', () => {
     expect(isEmptyToday({ ...empty, deadlines: [deadline('a', 0)] }, [])).toBe(false)
     expect(isEmptyToday({ ...empty, recent_results: [result('a')] }, [])).toBe(false)
   })
+})
+
+test('B-HOME-11 work not handed in, due within 48 h, shows the hours left; handed-in or far work does not', () => {
+  const now = 1_000_000
+  expect(hoursLeft({ due_at_unix: now + 5 * 3600 - 60, state: 'not_started' }, now)).toBe(5)
+  expect(hoursLeft({ due_at_unix: now + 120, state: 'returned' }, now)).toBe(1)
+  expect(hoursLeft({ due_at_unix: now + 5 * 3600, state: 'submitted' }, now)).toBeNull()
+  expect(hoursLeft({ due_at_unix: now + 49 * 3600, state: 'in_progress' }, now)).toBeNull()
 })

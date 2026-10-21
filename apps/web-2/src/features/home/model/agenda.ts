@@ -10,6 +10,15 @@ const dayOf = (unix: number) => toDateTimeInput(unix).slice(0, 10)
 /** The platform-zone time of day of an instant, e.g. "23:59". */
 export const timeOf = (unix: number) => toDateTimeInput(unix).slice(11)
 
+const OPEN_WORK = new Set<AgendaDeadline['state']>(['not_started', 'in_progress', 'returned'])
+
+/** Whole hours left on work not handed in yet, when the deadline is within 48 h (B-HOME-11); else null. */
+export function hoursLeft(deadline: Pick<AgendaDeadline, 'due_at_unix' | 'state'>, nowUnix: number): number | null {
+  const left = deadline.due_at_unix - nowUnix
+  if (!OPEN_WORK.has(deadline.state) || left <= 0 || left > 48 * 3600) return null
+  return Math.max(1, Math.ceil(left / 3600))
+}
+
 type DayName = 'today' | 'tomorrow' | 'later'
 export type DeadlineDay = { day: string; name: DayName; dueUnix: number; deadlines: AgendaDeadline[] }
 

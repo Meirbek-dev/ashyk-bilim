@@ -5,12 +5,13 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
-import { timeOf } from '../model/agenda'
+import { hoursLeft, timeOf } from '../model/agenda'
 import { progressStates } from './labels'
 import { PlayerLink } from './player-link'
 
 /** One deadline: activity type, state, the title into the player, course and time (and the late cutoff). */
-export function DeadlineItem({ deadline }: { deadline: AgendaDeadline }) {
+export function DeadlineItem({ deadline, nowUnix }: { deadline: AgendaDeadline; nowUnix: number }) {
+  const soon = hoursLeft(deadline, nowUnix)
   const type = activityType(deadline.activity_type)
   const state = progressStates[deadline.state]
   const due = m.home_due_time({ time: timeOf(deadline.due_at_unix) })
@@ -22,6 +23,8 @@ export function DeadlineItem({ deadline }: { deadline: AgendaDeadline }) {
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           {activityTypeMeta[type].label()}
           <StatusBadge tone={state.tone}>{state.label()}</StatusBadge>
+          {/* Within 48 h and not handed in: the time left, in the warning tone (DESIGN 3). */}
+          {soon === null ? null : <StatusBadge tone="warning">{m.home_hours_left({ hours: soon })}</StatusBadge>}
         </div>
         <PlayerLink courseId={deadline.course_id} activityId={deadline.activity_id}>
           {deadline.activity_name}
