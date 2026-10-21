@@ -63,7 +63,8 @@ const learn: Workspace = {
   sections: [
     { to: '/home', label: m.platform_nav_home, icon: CalendarCheck },
     { to: '/learning', label: m.platform_nav_learning, short: m.platform_nav_learning_short, icon: GraduationCap },
-    { to: '/courses', label: m.platform_nav_courses, short: m.platform_nav_courses_short, icon: BookOpen },
+    // Exact: a course page is mostly opened by its learners (from My courses, Today), so «Каталог» lit there misled.
+    { to: '/courses', label: m.platform_nav_courses, short: m.platform_nav_courses_short, icon: BookOpen, exact: true },
     { to: '/collections', label: m.platform_nav_collections, icon: Library },
     { to: '/achievements', label: m.platform_nav_achievements, icon: Trophy, gamification: true },
   ],
