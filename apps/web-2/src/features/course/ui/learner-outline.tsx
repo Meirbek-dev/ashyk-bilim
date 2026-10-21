@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Award } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { ActivityIcon } from '#/shared/components/activity-icon'
@@ -8,7 +9,7 @@ import type { Course } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
 import { activityType } from '#/shared/i18n/labels'
 
-import { nextActivity, outlineSyllabus } from '../model/course'
+import { certificateLine, nextActivity, outlineSyllabus } from '../model/course'
 import { learnerStateOptions } from '../queries'
 import { LeaveCourse } from './leave-course'
 import { Syllabus } from './syllabus'
@@ -21,6 +22,7 @@ export function LearnerOutline({ course }: { course: Course }) {
   const { data: state } = useSuspenseQuery(learnerStateOptions(course.id))
   const { completed_required_count: done, total_required_count: total, progress_pct: percent } = state.progress
   const next = state.enrolled ? nextActivity(state) : null
+  const certificate = certificateLine(state)
   return (
     <>
       {state.enrolled ? (
@@ -49,6 +51,19 @@ export function LearnerOutline({ course }: { course: Course }) {
             </p>
           ) : null}
         </section>
+      ) : null}
+      {/* What finishing earns (B-CRS-20): the certificate is a reason to start and to finish. */}
+      {certificate ? (
+        <p className="flex items-center gap-2 text-sm">
+          <Award aria-hidden className="size-4 shrink-0 text-reward" />
+          {certificate.kind === 'yours' ? (
+            <Link to="/certificates/$certificateId/verify" params={{ certificateId: certificate.code }}>
+              {m.course_certificate_yours()}
+            </Link>
+          ) : (
+            m.course_certificate_offered()
+          )}
+        </p>
       ) : null}
       <Syllabus courseId={course.id} chapters={outlineSyllabus(state, course.allowed_actions.includes('update'))} />
       {/* Rare and destructive: after the programme, not between the progress and its bar (on a phone it split them). */}

@@ -156,3 +156,10 @@ const IN_FLIGHT = new Set<WorkState>([
 const isInFlight = (work: WorkState): work is InFlight => IN_FLIGHT.has(work)
 export const inFlight = ({ complete, work }: Pick<SyllabusActivity, 'complete' | 'work'>): InFlight | null =>
   !complete && isInFlight(work) ? work : null
+
+/** What the course page says about its certificate (B-CRS-20): offered, the learner's own (its code), or nothing. */
+export function certificateLine(state: Pick<LearnerCourseState, 'certificate'>) {
+  const { configured, verify_code: code } = state.certificate
+  if (!configured) return null
+  return code ? ({ kind: 'yours', code } as const) : ({ kind: 'offered' } as const)
+}

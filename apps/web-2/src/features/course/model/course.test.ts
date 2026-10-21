@@ -5,6 +5,7 @@ import type { Activity, Contributor, Course, LearnerCourseState } from '#/shared
 import {
   application,
   authorNames,
+  certificateLine,
   curriculumSyllabus,
   inFlight,
   outlineSyllabus,
@@ -332,4 +333,14 @@ test('B-CRS-18 a syllabus row names work in flight; done and untouched rows say 
   expect(inFlight({ complete: false, work: 'not_started' })).toBeNull()
   expect(inFlight({ complete: true, work: 'passed' })).toBeNull()
   expect(inFlight({ complete: false, work: 'locked' })).toBeNull()
+})
+
+const cert = (patch: Partial<LearnerCourseState['certificate']>) => ({
+  certificate: { configured: true, eligible: false, href: null, issued: false, verify_code: null, ...patch },
+})
+
+test('B-CRS-20 the page says a certificate is offered, or links the learner to theirs', () => {
+  expect(certificateLine(cert({ configured: false }))).toBeNull()
+  expect(certificateLine(cert({}))).toEqual({ kind: 'offered' })
+  expect(certificateLine(cert({ issued: true, verify_code: 'AB12' }))).toEqual({ kind: 'yours', code: 'AB12' })
 })
