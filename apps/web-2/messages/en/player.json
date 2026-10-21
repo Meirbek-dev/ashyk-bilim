@@ -24,7 +24,7 @@
   "player_empty": "The teacher has not added material here yet.",
   "player_opens_at": "Opens {date}. Until then it is not available.",
   "player_locked_text": "This activity is not available to you.",
-  "player_entry_start": "Start",
+  "player_entry_start": "Open",
   "player_entry_revise": "Revise the submission",
   "player_entry_view_feedback": "View the result",
   "player_entry_view_receipt": "View the receipt",

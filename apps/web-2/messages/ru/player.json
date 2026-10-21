@@ -24,7 +24,7 @@
   "player_empty": "Преподаватель ещё не добавил сюда материал.",
   "player_opens_at": "Откроется {date}. До этого задание недоступно.",
   "player_locked_text": "Эта активность вам недоступна.",
-  "player_entry_start": "Начать",
+  "player_entry_start": "Открыть",
   "player_entry_revise": "Исправить работу",
   "player_entry_view_feedback": "Посмотреть результат",
   "player_entry_view_receipt": "Посмотреть квитанцию",
