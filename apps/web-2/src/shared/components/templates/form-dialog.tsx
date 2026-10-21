@@ -1,5 +1,5 @@
 import { useHydrated } from '@tanstack/react-router'
-import { useId, type FormEvent, type ReactElement, type ReactNode } from 'react'
+import { useId, useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -40,6 +40,9 @@ export function FormDialog(props: FormDialogProps) {
   const formId = useId()
   // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
   const hydrated = useHydrated()
+  // The form-wide message is about the input that was sent: once the user edits, it goes (the field errors clear the
+  // same way); a new submit that fails again brings a new error object, and the message back.
+  const [edited, setEdited] = useState<unknown>(null)
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void onSubmit()
@@ -51,9 +54,16 @@ export function FormDialog(props: FormDialogProps) {
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <form id={formId} noValidate onSubmit={submit} className="flex flex-col gap-4">
+        <form
+          id={formId}
+          noValidate
+          onSubmit={submit}
+          onInput={() => setEdited(error)}
+          onChange={() => setEdited(error)}
+          className="flex flex-col gap-4"
+        >
           {children}
-          {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
+          {error && error !== edited ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         </form>
         <DialogFooter>
           <DialogClose render={<Button variant="ghost" />}>{m.ui_cancel()}</DialogClose>

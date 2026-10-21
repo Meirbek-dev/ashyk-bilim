@@ -71,6 +71,11 @@ describe('FormDialog', () => {
     expect(submit).toHaveBeenCalledWith({ name: 'Algebra', slug: 'algebra' })
     await expect.element(dialog.getByText(m.validation_duplicate())).toBeVisible()
     await expect.element(dialog.getByRole('alert').filter({ hasText: m.errors_validation_failed() })).toBeVisible()
+    // Editing the input the message was about takes it away; it does not stay over a corrected form.
+    await dialog.getByLabelText(text.slug).fill('algebra-2')
+    await expect
+      .element(dialog.getByRole('alert').filter({ hasText: m.errors_validation_failed() }))
+      .not.toBeInTheDocument()
   })
 
   test('a double click submits once: the second submit lands while the first is in flight', async () => {

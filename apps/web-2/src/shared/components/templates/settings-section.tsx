@@ -1,4 +1,4 @@
-import type { FormEvent, ReactNode } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -33,6 +33,8 @@ export function SettingsSection({
   id,
   children,
 }: SettingsSectionProps) {
+  // As FormDialog: the region message is about what was sent; an edit takes it away until the next failed save.
+  const [edited, setEdited] = useState<unknown>(null)
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void onSubmit()
@@ -42,6 +44,8 @@ export function SettingsSection({
       id={id}
       noValidate
       onSubmit={submit}
+      onInput={() => setEdited(error)}
+      onChange={() => setEdited(error)}
       aria-label={title}
       className="flex max-w-prose scroll-mt-20 flex-col gap-4"
     >
@@ -50,7 +54,7 @@ export function SettingsSection({
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {children}
-      {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
+      {error && error !== edited ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {saveButton ? (
         <div>
           <SubmitButton type="submit" variant="secondary" pending={pending}>
