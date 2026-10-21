@@ -38,6 +38,10 @@ export function getRouter() {
   setupRouterSsrQueryIntegration({ router, queryClient })
   guardViewTransitions(router)
   reloadOnLanguageChange(router)
+  if (typeof document !== 'undefined')
+    router.subscribe('onRendered', ({ fromLocation, pathChanged }) => {
+      if (fromLocation && pathChanged) focusNewPage()
+    })
   return router
 }
 
@@ -68,6 +72,20 @@ function guardViewTransitions(router: AnyRouter) {
 
 /** WebKit underneath: Safari, and Chrome/Firefox/Edge on iOS (CriOS, FxiOS, EdgiOS); Blink browsers say Chrome/. */
 export const isWebKit = (userAgent: string) => /AppleWebKit/.test(userAgent) && !/Chrome\/|Chromium\//.test(userAgent)
+
+/**
+ * After a client navigation that dropped the focus (the clicked link or button left with the old page, so it sits on
+ * <body>), it goes to the new page's heading: a keyboard or screen-reader user goes on from the page they are on,
+ * not from the top of the document. Focus that survived (a sidebar link, a tab) stays.
+ */
+export function focusNewPage(): void {
+  const active = document.activeElement
+  if (active && active !== document.body && active.isConnected) return
+  const target = document.querySelector<HTMLElement>('main h1') ?? document.querySelector<HTMLElement>('main')
+  if (!target) return
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1')
+  target.focus({ preventScroll: true })
+}
 
 function skippedTransition(): void {
   // Nothing to recover: the DOM update already happened (or failed, and updateCallbackDone carries that).

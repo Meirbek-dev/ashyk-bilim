@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vite-plus/test'
 
-import { getRouter, isWebKit } from './router'
+import { focusNewPage, getRouter, isWebKit } from './router'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -44,4 +44,19 @@ test('WebKit (Safari, any iOS browser) navigates without a view transition; Blin
   await getRouter().startViewTransition(update)
   expect(update).toHaveBeenCalledOnce()
   expect(start).not.toHaveBeenCalled()
+})
+
+test('a navigation that dropped the focus puts it on the new page heading; focus that survived stays', () => {
+  document.body.innerHTML = '<nav><a href="/x">Side</a></nav><main><h1>Курс</h1><button>Начать</button></main>'
+  const heading = document.querySelector('h1')
+  document.querySelector('button')?.focus()
+  document.querySelector('button')?.remove()
+  focusNewPage()
+  expect(document.activeElement).toBe(heading)
+  expect(heading?.getAttribute('tabindex')).toBe('-1')
+  const side = document.querySelector('a')
+  side?.focus()
+  focusNewPage()
+  expect(document.activeElement).toBe(side)
+  document.body.innerHTML = ''
 })
