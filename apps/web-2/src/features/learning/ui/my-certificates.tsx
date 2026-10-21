@@ -51,7 +51,7 @@ export function MyCertificates() {
               ) : null}
               <p className="text-sm wrap-anywhere text-muted-foreground">
                 {m.learning_certificate_meta({
-                  date: formatDate(certificate.issued_at_unix),
+                  date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
                   code: certificate.verify_code,
                 })}
               </p>

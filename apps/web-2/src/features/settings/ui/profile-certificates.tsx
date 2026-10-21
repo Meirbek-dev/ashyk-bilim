@@ -30,10 +30,12 @@ export function ProfileCertificates({ certificates }: { certificates: readonly P
               <p className="text-sm wrap-anywhere text-muted-foreground">
                 {/* The course only when the certificate is named otherwise: «X · выдан» under «X» said it twice. */}
                 {certificate.certificate_name === certificate.course_name
-                  ? m.settings_user_certificate_issued({ date: formatDate(certificate.issued_at_unix) })
+                  ? m.settings_user_certificate_issued({
+                      date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
+                    })
                   : m.settings_user_certificate_line({
                       course: certificate.course_name,
-                      date: formatDate(certificate.issued_at_unix),
+                      date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
                     })}
               </p>
             </div>
