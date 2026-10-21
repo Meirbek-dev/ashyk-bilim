@@ -45,19 +45,29 @@ export function getRouter() {
  * The router's own startViewTransition returns only `updateCallbackDone`, so a skipped transition (a resize or a
  * hidden tab mid-navigation) rejects `ready` and `finished` with nobody listening. Same logic, rejections handled:
  * a skipped transition only loses the animation, the update itself still ran.
+ * Off on WebKit (Safari, and every iOS browser): Playwright's WebKit crashed the page on every client navigation
+ * with view transitions on (OPEN-E-5); an animation is not worth that risk.
  * ponytail: ignores `{ types }` view-transition options; the app only uses `true`.
  */
 function guardViewTransitions(router: AnyRouter) {
   router.startViewTransition = update => {
     const wanted = router.shouldViewTransition ?? router.options.defaultViewTransition
     router.shouldViewTransition = undefined
-    if (!wanted || typeof document === 'undefined' || typeof document.startViewTransition !== 'function')
+    if (
+      !wanted ||
+      typeof document === 'undefined' ||
+      typeof document.startViewTransition !== 'function' ||
+      isWebKit(navigator.userAgent)
+    )
       return update()
     const transition = document.startViewTransition(update)
     for (const settled of [transition.ready, transition.finished]) settled.catch(skippedTransition)
     return transition.updateCallbackDone
   }
 }
+
+/** WebKit underneath: Safari, and Chrome/Firefox/Edge on iOS (CriOS, FxiOS, EdgiOS); Blink browsers say Chrome/. */
+export const isWebKit = (userAgent: string) => /AppleWebKit/.test(userAgent) && !/Chrome\/|Chromium\//.test(userAgent)
 
 function skippedTransition(): void {
   // Nothing to recover: the DOM update already happened (or failed, and updateCallbackDone carries that).
