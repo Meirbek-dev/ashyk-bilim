@@ -25,7 +25,12 @@ type ShareProps = {
 export function CertificateShare({ code, name, issuedAtUnix, linkedIn = false, variant = 'outline' }: ShareProps) {
   const [copied, setCopied] = useState(false)
   const url = verifyUrl(siteOrigin(), code)
-  const copy = () => void navigator.clipboard.writeText(url).then(() => setCopied(true))
+  // Clipboard refused (an old browser, a denied permission): the page itself opens, its address ready to copy.
+  const copy = () =>
+    void navigator.clipboard.writeText(url).then(
+      () => setCopied(true),
+      () => window.open(url, '_blank', 'noopener'),
+    )
   return (
     <>
       <Button variant={variant} onClick={copy}>
