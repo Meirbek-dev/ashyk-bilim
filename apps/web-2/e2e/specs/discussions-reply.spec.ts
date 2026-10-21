@@ -20,5 +20,5 @@ test('B-DSC-20 «Ответить» on a post without replies puts the cursor in
     .click()
   await expect(
     page.getByRole('region', { name: m.discussions_replies({ count: 0 }, ru) }).getByRole('textbox'),
-  ).toBeFocused()
+  ).toBeFocused({ timeout: 15_000 }) // the editor chunk loads on demand
 })
