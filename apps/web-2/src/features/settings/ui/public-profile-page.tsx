@@ -1,11 +1,10 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from '@tanstack/react-router'
 
+import { CourseGrid } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
-import { DataList } from '#/shared/components/data-list'
-import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { DetailPage } from '#/shared/components/templates/detail-page'
@@ -62,18 +61,8 @@ export function PublicProfilePage() {
             emptyText={m.settings_user_courses_empty()}
             onRetry={() => void courses.refetch()}
           >
-            <DataList items={items} getKey={course => course.id}>
-              {course => (
-                <>
-                  <h3 className="font-medium wrap-anywhere">
-                    <Link to="/courses/$courseId" params={{ courseId: course.id }}>
-                      {course.name}
-                    </Link>
-                  </h3>
-                  {course.description ? <p className="text-sm text-muted-foreground">{course.description}</p> : null}
-                </>
-              )}
-            </DataList>
+            {/* The same cover cards as the catalog: a teacher's courses read as courses, not as a list of links. */}
+            <CourseGrid courses={items} level={3} />
             <ShowMore
               hasMore={courses.hasNextPage}
               pending={courses.isFetchingNextPage}
