@@ -5,6 +5,7 @@ import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { presentError } from '#/shared/i18n/errors'
@@ -45,7 +46,11 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
       ) : null}
       {returned ? (
         <>
-          <p className="font-medium">{m.submission_returned()}</p>
+          {/* Returned: what happened, what to do, then the teacher's words (the files below stay editable). */}
+          <div className="flex flex-col items-start gap-2">
+            <StatusBadge tone="warning">{m.submission_returned()}</StatusBadge>
+            <p className="text-sm text-muted-foreground">{m.submission_returned_hint()}</p>
+          </div>
           <GradeDetails attempt={returned} />
         </>
       ) : null}

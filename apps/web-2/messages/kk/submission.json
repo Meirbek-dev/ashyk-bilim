@@ -56,6 +56,7 @@
   "submission_new_attempt": "Жаңа әрекет",
   "submission_attempt_started": "Әрекет басталды",
   "submission_returned": "Жұмыс пысықтауға қайтарылды",
+  "submission_returned_hint": "Жұмысты оқытушының пікірі бойынша түзетіп, қайта тапсырыңыз: төмендегі файлдарды ауыстырыңыз немесе қосыңыз.",
   "submission_reason_past_due": "Мерзімі өтті, жұмыстар енді қабылданбайды.",
   "submission_reason_remediation": "Алдымен тағайындалған қателерді талдаудан өтіңіз.",
   "submission_reason_course_archived": "Курс мұрағатта: жұмыс тапсыруға болмайды.",

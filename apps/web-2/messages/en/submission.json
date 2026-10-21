@@ -56,6 +56,7 @@
   "submission_new_attempt": "New attempt",
   "submission_attempt_started": "Attempt started",
   "submission_returned": "Your submission was returned for revision",
+  "submission_returned_hint": "Revise your submission using the teacher’s feedback and hand it in again: replace or add files below.",
   "submission_reason_past_due": "The deadline has passed: submissions are no longer accepted.",
   "submission_reason_remediation": "Complete the assigned mistake review first.",
   "submission_reason_course_archived": "The course is archived: submissions are closed.",
