@@ -77,7 +77,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
     >
       <ArrowLeft aria-hidden />
       {/* Text only when wide: with the AI panel button the narrow header has no room for it. */}
-      <span className="sr-only @3xl:not-sr-only">{m.platform_back()}</span>
+      <span className="sr-only @3xl:not-sr-only">{m.platform_back_to_course()}</span>
     </RouterLink>
   )
   const previewTo = PREVIEW[activity.activity_type]

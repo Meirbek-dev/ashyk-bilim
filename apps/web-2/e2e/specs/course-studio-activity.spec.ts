@@ -19,7 +19,7 @@ test('B-CST-26 the header switch publishes at once and asks before unpublishing;
   const made = await studio.course({ chapters: [{ pages: [{ name: 'Лекция' }] }] })
   const activity = made.chapters[0]?.activities[0]
   await page.goto(studioUrl(made.course.id, activity?.id ?? ''))
-  await expect(page.getByRole('link', { name: m.platform_back({}, ru) })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: m.platform_back_to_course({}, ru) })).toHaveAttribute(
     'href',
     `/teach/courses/${made.course.id}/content`,
   )
@@ -59,7 +59,7 @@ test('B-CST-27 a page autosaves with its status, and the status is per activity'
   })
   expect(JSON.stringify(data.content)).toContain('Текст урока')
   expect(data.version).toBeGreaterThan(first?.version ?? 0)
-  await page.getByRole('link', { name: m.platform_back({}, ru) }).click()
+  await page.getByRole('link', { name: m.platform_back_to_course({}, ru) }).click()
   await page.getByRole('link', { name: 'Вторая' }).click()
   await expect(page).toHaveURL(new RegExp(`${second?.id}/edit$`))
   await expect(page.getByRole('textbox', { name: m.editor_label({}, ru) })).toBeVisible()

@@ -16,7 +16,7 @@ export function ActivityNotFound() {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.platform_back()}
+      {m.platform_back_to_course()}
     </RouterLink>
   ) : null
   return (

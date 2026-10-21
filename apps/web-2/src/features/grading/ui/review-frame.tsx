@@ -57,7 +57,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.platform_back()}
+      {m.platform_back_to_submissions()}
     </RouterLink>
   )
   const status = statusMeta[head.status]
