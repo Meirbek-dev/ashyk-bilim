@@ -69,6 +69,7 @@
   "settings_password_title": "Password",
   "settings_password_hint": "Changing the password signs out your other sessions.",
   "settings_field_current_password": "Current password",
+  "settings_current_password_wrong": "The current password is wrong.",
   "settings_field_new_password": "New password",
   "settings_field_new_password_hint": "At least 8 characters: a lowercase and an uppercase Latin letter, a digit and a symbol.",
   "settings_password_changed": "Password changed. Other sessions were signed out.",

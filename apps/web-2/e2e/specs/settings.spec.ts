@@ -167,7 +167,7 @@ test('B-SET-08 this device is marked and another session ends; B-SET-07 a passwo
   await current.fill('not-the-password')
   await password.getByLabel(m.settings_field_new_password({}, ru)).fill('Nov-Parol-2026!')
   await save(password)
-  await expect(password.getByText(m.errors_invalid_credentials({}, ru))).toBeVisible()
+  await expect(password.getByText(m.settings_current_password_wrong({}, ru))).toBeVisible()
   await current.fill(me.account.password)
   await save(password)
   await expect(page.getByText(m.settings_password_changed({}, ru))).toBeVisible({ timeout: 20_000 }) // Zitadel is slow

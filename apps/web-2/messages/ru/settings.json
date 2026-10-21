@@ -69,6 +69,7 @@
   "settings_password_title": "Пароль",
   "settings_password_hint": "После смены пароля другие сеансы завершатся.",
   "settings_field_current_password": "Текущий пароль",
+  "settings_current_password_wrong": "Текущий пароль неверный.",
   "settings_field_new_password": "Новый пароль",
   "settings_field_new_password_hint": "Не короче 8 символов: строчная и заглавная латинские буквы, цифра и знак.",
   "settings_password_changed": "Пароль изменён. Другие сеансы завершены.",

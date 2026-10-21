@@ -5,7 +5,6 @@ import type { ChangePasswordRequest } from '#/shared/api/gen/types.gen'
 import { vChangePasswordRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
-import { presentError } from '#/shared/i18n/errors'
 import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
@@ -29,7 +28,8 @@ export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
         if (!hasCode(error, 'invalid-credentials')) throw error
         form.setFieldMeta('current_password', meta => ({
           ...meta,
-          errorMap: { ...meta.errorMap, onSubmit: presentError(error) },
+          // Only the password was asked here: «Неверный логин или пароль» would point at a login nobody typed.
+          errorMap: { ...meta.errorMap, onSubmit: m.settings_current_password_wrong() },
         }))
       }
     },

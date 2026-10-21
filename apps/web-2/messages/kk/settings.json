@@ -69,6 +69,7 @@
   "settings_password_title": "Құпиясөз",
   "settings_password_hint": "Құпиясөзді ауыстырғаннан кейін басқа сеанстар аяқталады.",
   "settings_field_current_password": "Ағымдағы құпиясөз",
+  "settings_current_password_wrong": "Ағымдағы құпиясөз қате.",
   "settings_field_new_password": "Жаңа құпиясөз",
   "settings_field_new_password_hint": "Кемінде 8 таңба: кіші және бас латын әріптері, цифр және белгі.",
   "settings_password_changed": "Құпиясөз өзгертілді. Басқа сеанстар аяқталды.",
