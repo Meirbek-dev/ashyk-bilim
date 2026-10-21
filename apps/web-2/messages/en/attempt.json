@@ -89,7 +89,7 @@
   "attempt_submitted": "Submitted",
   "attempt_pending_text": "Your submission is waiting for the teacher’s review.",
   "attempt_auto_part": "Auto-checked: {score}. The teacher will review the rest.",
-  "attempt_awaiting_text": "The grade will be published later.",
+  "attempt_awaiting_text": "The teacher will publish the grade after review; you will get a notification.",
   "attempt_returned_text": "The submission was returned for revision.",
   "attempt_auto_time": "Submitted automatically: time ran out.",
   "attempt_auto_late_cutoff": "Submitted automatically: late submissions closed.",
