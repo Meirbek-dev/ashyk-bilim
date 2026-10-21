@@ -51,6 +51,10 @@ export const authorNames = (authors: readonly Pick<CourseAuthor, 'display_name' 
   authors.map(author => author.display_name.trim() || author.username).join(', ')
 
 /** Palette navigation: the sections the access table lets this user open, per workspace (B-CAT-11). */
+/** Where a palette course hit leads (B-CAT-12): the workspace of a course the user may edit, else its page. */
+export const paletteCourseTarget = (course: Pick<Course, 'allowed_actions'>) =>
+  course.allowed_actions.includes('update') ? ('/teach/courses/$courseId' as const) : ('/courses/$courseId' as const)
+
 export function paletteSections(
   session: SessionInfo | null,
   text: string,

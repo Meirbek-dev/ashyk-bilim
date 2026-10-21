@@ -8,7 +8,7 @@ import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { gamificationOn } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 
-import { PALETTE_LIMIT, paletteSections } from '../model/catalog'
+import { PALETTE_LIMIT, paletteCourseTarget, paletteSections } from '../model/catalog'
 import { shortcuts } from '../model/shortcuts'
 import { searchResultsOptions } from '../queries'
 import { searchKindLabels } from './kind-labels'
@@ -66,7 +66,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
           entries: found.courses.map(course => ({
             id: `course:${course.id}`,
             label: course.name,
-            onSelect: go(() => navigate({ to: '/courses/$courseId', params: { courseId: course.id } })),
+            onSelect: go(() => navigate({ to: paletteCourseTarget(course), params: { courseId: course.id } })),
           })),
         },
         {

@@ -9,6 +9,7 @@ import {
   courseState,
   landingLead,
   nextCoursesCursor,
+  paletteCourseTarget,
   paletteSections,
   resolveSort,
   searchKinds,
@@ -109,4 +110,10 @@ describe('catalog model', () => {
     ).toBe('Образовательная платформа')
     expect(landingLead({ name: 'Ashyq', description: 'Ashyqtau курсы', about: '' })).toBe('Ashyqtau курсы')
   })
+})
+
+test('B-CAT-12 a palette course hit opens the workspace of a course the user may edit, else the course page', () => {
+  expect(paletteCourseTarget({ allowed_actions: ['update', 'publish'] })).toBe('/teach/courses/$courseId')
+  expect(paletteCourseTarget({ allowed_actions: ['apply_contributor'] })).toBe('/courses/$courseId')
+  expect(paletteCourseTarget({ allowed_actions: [] })).toBe('/courses/$courseId')
 })
