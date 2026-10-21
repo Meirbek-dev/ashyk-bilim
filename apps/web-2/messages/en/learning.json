@@ -29,5 +29,6 @@
   "learning_certificates_empty": "Certificates of completed courses will appear here.",
   "learning_certificate_meta": "Issued {date} · code {code}",
   "learning_certificate_instructor": "Teacher: {name}",
-  "learning_certificate_verify": "Verify"
+  "learning_certificate_verify": "Verify",
+  "learning_certificates_on_profile": "Show on my public profile"
 }

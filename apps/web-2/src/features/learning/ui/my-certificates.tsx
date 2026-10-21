@@ -17,9 +17,19 @@ export function MyCertificates() {
   const query = useSuspenseInfiniteQuery(certificatesOptions())
   return (
     <section aria-labelledby="my-certificates" className="flex flex-col gap-4">
-      <h2 id="my-certificates" className="text-xl font-semibold">
-        {m.learning_certificates_title()}
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="my-certificates" className="text-xl font-semibold">
+          {m.learning_certificates_title()}
+        </h2>
+        {/* The profile switch lives in settings (privacy.show_certificates, off by default): one click from here. */}
+        {query.data.length > 0 ? (
+          <p className="text-sm">
+            <Link to="/settings/notifications" hash="achievements">
+              {m.learning_certificates_on_profile()}
+            </Link>
+          </p>
+        ) : null}
+      </div>
       <ListState
         pending={false}
         error={query.error}
