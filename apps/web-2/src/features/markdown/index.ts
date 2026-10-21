@@ -1,7 +1,7 @@
 import { lazy } from 'react'
 
 // Heavy modules (react-markdown, KaTeX, shiki, Tiptap) sit behind these lazy boundaries: wrap in <Suspense>.
-export const MarkdownView = lazy(() => import('./ui/markdown-view').then(module => ({ default: module.MarkdownView })))
+export { MarkdownView } from './ui/markdown-text'
 export const MarkdownEditor = lazy(() =>
   import('./ui/markdown-editor').then(module => ({ default: module.MarkdownEditor })),
 )
