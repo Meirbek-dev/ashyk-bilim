@@ -54,3 +54,37 @@ export function certificateKind(config: CertificationConfig, courseName?: string
   const type = config.certification_type ? typeLabels[config.certification_type]() : ''
   return [name, type].filter(Boolean).join(' · ')
 }
+
+/** What the certificate is called where it travels alone (LinkedIn): its own name, else the course's. */
+export const certificateTitle = (config: CertificationConfig, courseName: string): string =>
+  config.certification_name?.trim() || courseName
+
+/** The public verify page as an absolute URL: what a holder shares (B-CRT-09). */
+export const verifyUrl = (origin: string, code: string): string =>
+  `${origin}/certificates/${encodeURIComponent(code)}/verify`
+
+/**
+ * LinkedIn's "Add licence or certification" form, prefilled (B-CRT-09): name, issuer, issue month, credential id and
+ * URL. The month is the issue date's in UTC; LinkedIn keeps only year and month.
+ */
+export function linkedInAddHref(input: {
+  name: string
+  issuer: string
+  issuedAtUnix: number
+  code: string
+  url: string
+}) {
+  const issued = new Date(input.issuedAtUnix * 1000)
+  const href = new URL('https://www.linkedin.com/profile/add')
+  const fields = {
+    startTask: 'CERTIFICATION_NAME',
+    name: input.name,
+    organizationName: input.issuer,
+    issueYear: String(issued.getUTCFullYear()),
+    issueMonth: String(issued.getUTCMonth() + 1),
+    certId: input.code,
+    certUrl: input.url,
+  }
+  for (const [key, value] of Object.entries(fields)) href.searchParams.set(key, value)
+  return href.href
+}

@@ -21,5 +21,8 @@
   "certificates_type_professional": "Professional Development",
   "certificates_type_continuing": "Continuing Education",
   "certificates_type_workshop": "Workshop",
-  "certificates_type_specialization": "Specialization"
+  "certificates_type_specialization": "Specialization",
+  "certificates_copy_link": "Copy link",
+  "certificates_link_copied": "Link copied",
+  "certificates_linkedin": "Add to LinkedIn"
 }

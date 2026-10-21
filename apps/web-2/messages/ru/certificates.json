@@ -21,5 +21,8 @@
   "certificates_type_professional": "Профессиональное развитие",
   "certificates_type_continuing": "Дополнительное образование",
   "certificates_type_workshop": "Семинар",
-  "certificates_type_specialization": "Специализация"
+  "certificates_type_specialization": "Специализация",
+  "certificates_copy_link": "Скопировать ссылку",
+  "certificates_link_copied": "Ссылка скопирована",
+  "certificates_linkedin": "Добавить в LinkedIn"
 }

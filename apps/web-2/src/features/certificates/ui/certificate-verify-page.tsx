@@ -9,9 +9,10 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 
-import { certificateKind } from '../model/certificates'
+import { certificateKind, certificateTitle } from '../model/certificates'
 import { verificationOptions } from '../queries'
 import { CertificatePdfLink } from './certificate-pdf-link'
+import { CertificateShare } from './certificate-share'
 
 /**
  * The public answer to "is this certificate real, and whose is it". Both verify URLs render it: the plain one and
@@ -45,7 +46,16 @@ export function CertificateVerifyPage({ code }: { code: string }) {
           {m.certificates_valid()}
         </StatusBadge>
       }
-      primaryAction={<CertificatePdfLink code={certificate.verify_code} variant="default" />}
+      primaryAction={
+        <div className="flex flex-wrap gap-2">
+          <CertificatePdfLink code={certificate.verify_code} variant="default" />
+          <CertificateShare
+            code={certificate.verify_code}
+            name={certificateTitle(certification.config, course.name)}
+            issuedAtUnix={certificate.issued_at_unix}
+          />
+        </div>
+      }
     >
       <div className="relative isolate overflow-hidden rounded-2xl border px-4 py-10 sm:px-10 sm:py-14">
         <CourseCover seed={course.id} className="absolute inset-0 -z-10 size-full" />

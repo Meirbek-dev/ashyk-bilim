@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
-import { CertificatePdfLink, certificateKind } from '#/features/certificates'
+import { CertificatePdfLink, CertificateShare, certificateKind, certificateTitle } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
@@ -59,6 +59,13 @@ export function MyCertificates() {
                 >
                   {m.learning_certificate_verify()}
                 </RouterLink>
+                <CertificateShare
+                  code={certificate.verify_code}
+                  name={certificateTitle(certification.config, course.name)}
+                  issuedAtUnix={certificate.issued_at_unix}
+                  linkedIn
+                  variant="ghost"
+                />
               </div>
             </>
           )}

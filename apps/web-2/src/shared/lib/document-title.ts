@@ -9,8 +9,8 @@ import { contentUrl } from './content-url'
 export const documentTitle = (name?: string | null): string =>
   name ? `${name} · ${m.platform_brand()}` : m.platform_brand()
 
-// Link previews need absolute image URLs: the public origin on the server, the page's own in the browser.
-const siteOrigin = createIsomorphicFn()
+// Link previews and shared links need absolute URLs: the public origin on the server, the page's own in the browser.
+export const siteOrigin = createIsomorphicFn()
   .server(() => serverEnv.publicOrigin)
   .client(() => new URL(document.baseURI).origin)
 

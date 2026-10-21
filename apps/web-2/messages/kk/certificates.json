@@ -21,5 +21,8 @@
   "certificates_type_professional": "Кәсіби даму",
   "certificates_type_continuing": "Қосымша білім",
   "certificates_type_workshop": "Шеберхана",
-  "certificates_type_specialization": "Мамандандыру"
+  "certificates_type_specialization": "Мамандандыру",
+  "certificates_copy_link": "Сілтемені көшіру",
+  "certificates_link_copied": "Сілтеме көшірілді",
+  "certificates_linkedin": "LinkedIn-ге қосу"
 }

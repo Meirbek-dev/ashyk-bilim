@@ -2,7 +2,7 @@ import { expect, test } from 'vite-plus/test'
 
 import { fromPath, printedLocale } from '#/shared/i18n/printed-locale'
 
-import { certificateKind, certificatePdfHref } from './certificates'
+import { certificateKind, certificatePdfHref, certificateTitle, linkedInAddHref, verifyUrl } from './certificates'
 
 test('B-CRT-06 the printed prefixes map to interface locales (kz is kk); anything else is no URL', () => {
   expect(printedLocale('ru')).toBe('ru')
@@ -34,4 +34,25 @@ test("B-CRT-01 the certificate is named as its PDF: the author's name and the ty
 
 test('B-CRT-04 the PDF link is a relative API path in the interface language', () => {
   expect(certificatePdfHref('AB12-CD34', 'kk')).toBe('/api/v2/certificates/AB12-CD34/pdf?lang=kk')
+})
+
+test('B-CRT-09 a holder shares the verify URL and adds the certificate to LinkedIn prefilled', () => {
+  const url = verifyUrl('https://ashyq.example', 'Y5KU-K37T')
+  expect(url).toBe('https://ashyq.example/certificates/Y5KU-K37T/verify')
+  expect(certificateTitle({ certification_name: '  ' }, 'Java')).toBe('Java')
+  expect(certificateTitle({ certification_name: 'Java Pro' }, 'Java')).toBe('Java Pro')
+  // 2026-09-23 UTC: September.
+  const href = new URL(
+    linkedInAddHref({ name: 'Java Pro', issuer: 'Ashyq Bilim', issuedAtUnix: 1790188436, code: 'Y5KU-K37T', url }),
+  )
+  expect(href.origin + href.pathname).toBe('https://www.linkedin.com/profile/add')
+  expect(Object.fromEntries(href.searchParams)).toEqual({
+    startTask: 'CERTIFICATION_NAME',
+    name: 'Java Pro',
+    organizationName: 'Ashyq Bilim',
+    issueYear: '2026',
+    issueMonth: '9',
+    certId: 'Y5KU-K37T',
+    certUrl: url,
+  })
 })
