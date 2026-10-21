@@ -31,5 +31,9 @@
   "home_state_graded": "Бағаланды",
   "home_state_passed": "Өтті",
   "home_state_failed": "Өтпеді",
-  "home_state_completed": "Өтілді"
+  "home_state_completed": "Өтілді",
+  "home_all_done": "Бастаған курстардың бәрі аяқталды. Аяқталған курстар мен сертификаттар «Менің курстарым» бөлімінде.",
+  "home_find_next_course": "Жаңа курс табу",
+  "home_my_courses": "Менің курстарым",
+  "home_more_title": "Басқа курстар"
 }

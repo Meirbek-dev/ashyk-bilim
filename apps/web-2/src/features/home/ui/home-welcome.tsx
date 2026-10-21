@@ -5,22 +5,36 @@ import { CourseGrid, landingCoursesOptions } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/components/button-variants'
 
+import { anyEnrollmentOptions } from '../queries'
+
 /**
  * Today with nothing in it (B-HOME-07, B-HOME-09): the way to the catalog and, so a first visit is not a blank page,
- * the newest public courses as cards (read by the loader).
+ * the newest public courses as cards (read by the loader). A learner with courses but nothing to continue has finished
+ * every one started (B-HOME-10): the way back to them and their certificates comes too, the cards are "more courses".
  */
 export function HomeWelcome() {
   const { data } = useSuspenseQuery(landingCoursesOptions())
+  const finished = useSuspenseQuery(anyEnrollmentOptions()).data.runs.length > 0
   const courses = data.items.slice(0, 3)
   return (
-    <div className="flex w-full flex-col items-start gap-10">
-      <RouterLink to="/courses" className={buttonVariants()}>
-        {m.home_find_course()}
-      </RouterLink>
+    <div className="flex w-full flex-col items-start gap-10 py-2">
+      <div className="flex flex-col items-start gap-4">
+        <p className="text-muted-foreground">{finished ? m.home_all_done() : m.home_empty()}</p>
+        <div className="flex flex-wrap gap-2">
+          <RouterLink to="/courses" className={buttonVariants()}>
+            {finished ? m.home_find_next_course() : m.home_find_course()}
+          </RouterLink>
+          {finished ? (
+            <RouterLink to="/learning" className={buttonVariants({ variant: 'outline' })}>
+              {m.home_my_courses()}
+            </RouterLink>
+          ) : null}
+        </div>
+      </div>
       {courses.length > 0 ? (
         <section aria-labelledby="home-suggested" className="flex w-full flex-col gap-4">
           <h2 id="home-suggested" className="text-xl font-semibold">
-            {m.home_suggested_title()}
+            {finished ? m.home_more_title() : m.home_suggested_title()}
           </h2>
           <CourseGrid courses={courses} level={3} />
         </section>

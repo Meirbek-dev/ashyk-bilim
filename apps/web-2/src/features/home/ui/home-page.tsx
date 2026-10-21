@@ -38,25 +38,31 @@ export function HomePage() {
         <ListState
           pending={false}
           error={agenda.error}
-          count={empty ? 0 : 1}
+          count={1}
           filtered={false}
           emptyText={m.home_empty()}
-          emptyAction={<HomeWelcome />}
           onRetry={() => void agenda.refetch()}
         >
-          <ContinueSection items={continue_learning} />
-          <div className={side ? 'grid gap-12 @4xl:grid-cols-5 @4xl:gap-8' : 'flex flex-col gap-12'}>
-            <div className="flex flex-col gap-12 @4xl:col-span-3">
-              <AttentionSection items={attention} />
-              <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />
-            </div>
-            {side ? (
-              <div className="flex flex-col gap-12 @4xl:col-span-2">
-                <ResultsSection results={recent_results} />
-                <UpdatesSection updates={course_updates} />
+          {/* An empty Today is not one sentence: who is new and who has finished everything read differently. */}
+          {empty ? (
+            <HomeWelcome />
+          ) : (
+            <>
+              <ContinueSection items={continue_learning} />
+              <div className={side ? 'grid gap-12 @4xl:grid-cols-5 @4xl:gap-8' : 'flex flex-col gap-12'}>
+                <div className="flex flex-col gap-12 @4xl:col-span-3">
+                  <AttentionSection items={attention} />
+                  <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />
+                </div>
+                {side ? (
+                  <div className="flex flex-col gap-12 @4xl:col-span-2">
+                    <ResultsSection results={recent_results} />
+                    <UpdatesSection updates={course_updates} />
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
+            </>
+          )}
         </ListState>
       </div>
     </section>

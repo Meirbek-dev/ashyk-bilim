@@ -99,6 +99,23 @@ test('B-HOME-07 B-HOME-09 a learner with no courses gets one sentence, new cours
   await expect(page).toHaveURL(/\/courses$/)
 })
 
+test('B-HOME-10 a learner whose every course is finished is not greeted as a newcomer', async ({
+  page,
+  learner,
+  makeCourse,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  await learner.enroll(course, 1)
+  await learner.signIn()
+  await page.goto('/home')
+  await expect(page.getByText(m.home_all_done({}, ru))).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: m.home_my_courses({}, ru) })).toHaveAttribute(
+    'href',
+    '/learning',
+  )
+  await expect(region(page, m.home_more_title({}, ru))).toBeVisible()
+})
+
 for (const locale of ['kk', 'en'] as const) {
   test(`B-HOME-08 /home speaks ${locale}`, async ({ page, context, baseURL, learner, makeCourse }) => {
     const course = await makeCourse({ activities: 1 })

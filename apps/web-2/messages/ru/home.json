@@ -31,5 +31,9 @@
   "home_state_graded": "Оценено",
   "home_state_passed": "Зачтено",
   "home_state_failed": "Не зачтено",
-  "home_state_completed": "Пройдено"
+  "home_state_completed": "Пройдено",
+  "home_all_done": "Все начатые курсы пройдены. Пройденные курсы и сертификаты — в «Мои курсы».",
+  "home_find_next_course": "Найти новый курс",
+  "home_my_courses": "Мои курсы",
+  "home_more_title": "Другие курсы"
 }
