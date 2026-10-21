@@ -114,6 +114,6 @@
   "submission_field_cutoff": "Date after which it is 0 points",
   "submission_field_max_attempts": "Attempt limit",
   "submission_field_release": "Grade release",
-  "submission_release_immediate": "Right after the review",
+  "submission_release_immediate": "Right after review",
   "submission_release_batch": "All together, when the teacher releases them"
 }
