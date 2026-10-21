@@ -25,3 +25,20 @@ test('B-NOT-04 a reply and a new thread carry the post words as their second lin
   const post = { ...names, ...people, type: 'discussion_post' as const, discussion_id: thread, excerpt: 'Вопрос' }
   expect(notificationLines(post)[1]).toBe(m.notifications_text_excerpt({ text: 'Вопрос' }))
 })
+
+test('B-NOT-04 a released or returned work quotes the teacher feedback; an old row without it does not', () => {
+  const work = {
+    ...names,
+    activity_id: '0190a5d2-0000-7000-8000-000000000021',
+    activity_name: 'Эссе',
+    submission_id: null,
+    attempt_id: null,
+  }
+  const what = m.notifications_text_activity({ activity: 'Эссе', course: 'Алгебра' })
+  const quote = m.notifications_text_excerpt({ text: 'Добавьте пример' })
+  expect(
+    notificationLines({ ...work, type: 'grade_published', final_score: 90, excerpt: 'Добавьте пример' })[1],
+  ).toContain(quote)
+  expect(notificationLines({ ...work, type: 'submission_returned', excerpt: 'Добавьте пример' })).toEqual([what, quote])
+  expect(notificationLines({ ...work, type: 'submission_returned' })).toEqual([what])
+})

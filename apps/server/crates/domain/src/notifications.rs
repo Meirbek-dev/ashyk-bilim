@@ -26,6 +26,8 @@ use crate::identity::Actor;
 pub const RETENTION_DAYS: i32 = 90;
 pub const DEFAULT_PAGE: i64 = 20;
 pub const MAX_PAGE: i64 = 100;
+/// Characters of the teacher's words a grade notification quotes.
+const EXCERPT_CHARS: usize = 140;
 
 /// What happened, with the ids a client needs to route and to invalidate
 /// caches, and the names the bell renders without another request.
@@ -41,6 +43,10 @@ pub enum NotificationPayload {
         submission_id: Option<SubmissionId>,
         attempt_id: Option<FileAttemptId>,
         final_score: Option<f64>,
+        /// The teacher's overall feedback, first ~140 characters as plain
+        /// text (CONTRACT-REQ-G-2); empty without one or in rows stored before.
+        #[serde(default)]
+        excerpt: String,
     },
     /// The recipient's work was returned for revision.
     SubmissionReturned {
@@ -50,6 +56,10 @@ pub enum NotificationPayload {
         activity_name: String,
         submission_id: Option<SubmissionId>,
         attempt_id: Option<FileAttemptId>,
+        /// What to fix: the teacher's feedback, first ~140 characters as
+        /// plain text (CONTRACT-REQ-G-2); empty without one or before.
+        #[serde(default)]
+        excerpt: String,
     },
     /// A teacher extended the recipient's deadline: `assessment_id` for an
     /// assessment, `file_submission_id` for a file submission (S-GAPS;
@@ -230,6 +240,7 @@ pub async fn grade_changed(
     work: (Option<SubmissionId>, Option<FileAttemptId>),
     status: ab_core::assessments::SubmissionStatus,
     final_score: Option<f64>,
+    feedback: &str,
 ) {
     use ab_core::assessments::SubmissionStatus;
     let Some((course_id, course_name, activity_name)) = activity_names(pool, activity_id).await
@@ -258,6 +269,7 @@ pub async fn grade_changed(
             submission_id,
             attempt_id,
             final_score,
+            excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
         },
         SubmissionStatus::Returned => NotificationPayload::SubmissionReturned {
             course_id,
@@ -266,6 +278,7 @@ pub async fn grade_changed(
             activity_name,
             submission_id,
             attempt_id,
+            excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
         },
         _ => return,
     };

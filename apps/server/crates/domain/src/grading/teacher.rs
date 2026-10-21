@@ -826,6 +826,7 @@ impl GradingService {
         activity_id: ActivityId,
         target: SubmissionStatus,
         final_score: f64,
+        feedback: &str,
     ) {
         if let Some(events) = &self.events {
             events
@@ -863,6 +864,7 @@ impl GradingService {
                 (Some(row.id), None),
                 target,
                 Some(final_score),
+                feedback,
             )
             .await;
         }
@@ -1594,7 +1596,7 @@ impl GradingService {
             }
             _ => {}
         }
-        self.emit_course(&row, assessment.activity_id, target, final_score)
+        self.emit_course(&row, assessment.activity_id, target, final_score, &feedback)
             .await;
         let fresh = self.load_submission(id).await?;
         ProgressProjector::new(self.pool.clone())
@@ -1834,6 +1836,7 @@ impl GradingService {
                 assessment.activity_id,
                 SubmissionStatus::Published,
                 final_score,
+                &feedback,
             )
             .await;
         }

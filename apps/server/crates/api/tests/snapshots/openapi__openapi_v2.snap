@@ -11787,6 +11787,10 @@ expression: json
               "course_name": {
                 "type": "string"
               },
+              "excerpt": {
+                "description": "The teacher's overall feedback, first ~140 characters as plain\ntext (CONTRACT-REQ-G-2); empty without one or in rows stored before.",
+                "type": "string"
+              },
               "final_score": {
                 "format": "double",
                 "type": [
@@ -11846,6 +11850,10 @@ expression: json
                 "$ref": "#/components/schemas/CourseId"
               },
               "course_name": {
+                "type": "string"
+              },
+              "excerpt": {
+                "description": "What to fix: the teacher's feedback, first ~140 characters as\nplain text (CONTRACT-REQ-G-2); empty without one or before.",
                 "type": "string"
               },
               "submission_id": {

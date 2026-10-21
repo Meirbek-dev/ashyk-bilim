@@ -411,6 +411,7 @@ impl FileSubmissionsService {
                 (None, Some(attempt.id)),
                 status,
                 attempt.final_score,
+                &attempt.feedback,
             )
             .await;
         }

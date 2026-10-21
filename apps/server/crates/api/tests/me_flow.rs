@@ -427,7 +427,7 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
                 .header(header::COOKIE, &teacher.cookie)
                 .header(header::IF_MATCH, "1")
                 .body(Body::from(
-                    serde_json::json!({ "action": "publish",
+                    serde_json::json!({ "action": "publish", "feedback": "Хороший ответ, добавьте пример.",
                         "item_grades": [{ "item_id": &essay_id, "score": 9 }] })
                     .to_string(),
                 ))
@@ -447,6 +447,11 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     assert_eq!(grade["payload"]["activity_id"], activity_id.as_str());
     assert_eq!(grade["payload"]["activity_name"], "Essay");
     assert_eq!(grade["payload"]["final_score"], 90.0);
+    // CONTRACT-REQ-G-2: the teacher's words travel with the grade.
+    assert_eq!(
+        grade["payload"]["excerpt"],
+        "Хороший ответ, добавьте пример."
+    );
     assert_eq!(
         notifications(&app, &teacher, "").await["items"],
         serde_json::json!([])

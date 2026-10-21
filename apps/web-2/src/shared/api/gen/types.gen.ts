@@ -4087,6 +4087,11 @@ export type NotificationPayload = {
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;
+    /**
+     * The teacher's overall feedback, first ~140 characters as plain
+     * text (CONTRACT-REQ-G-2); empty without one or in rows stored before.
+     */
+    excerpt?: string;
     final_score: number | null;
     submission_id: SubmissionId | null;
     type: 'grade_published';
@@ -4096,6 +4101,11 @@ export type NotificationPayload = {
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;
+    /**
+     * What to fix: the teacher's feedback, first ~140 characters as
+     * plain text (CONTRACT-REQ-G-2); empty without one or before.
+     */
+    excerpt?: string;
     submission_id: SubmissionId | null;
     type: 'submission_returned';
 } | {

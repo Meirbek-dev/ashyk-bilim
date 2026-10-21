@@ -5086,6 +5086,7 @@ export const vNotificationPayload = v.union([
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),
+        excerpt: v.optional(v.string()),
         final_score: v.nullable(v.number()),
         submission_id: v.nullable(vSubmissionId),
         type: v.picklist(['grade_published'])
@@ -5096,6 +5097,7 @@ export const vNotificationPayload = v.union([
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),
+        excerpt: v.optional(v.string()),
         submission_id: v.nullable(vSubmissionId),
         type: v.picklist(['submission_returned'])
     }),

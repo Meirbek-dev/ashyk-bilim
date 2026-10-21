@@ -23,6 +23,12 @@ export const NotificationPage = zod
                   attempt_id: zod.union([zod.uuid(), zod.null()]),
                   course_id: zod.uuid(),
                   course_name: zod.string(),
+                  excerpt: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      "The teacher's overall feedback, first ~140 characters as plain\ntext (CONTRACT-REQ-G-2); empty without one or in rows stored before.",
+                    ),
                   final_score: zod.number().nullable(),
                   submission_id: zod.union([zod.uuid(), zod.null()]),
                   type: zod.enum(['grade_published']),
@@ -35,6 +41,12 @@ export const NotificationPage = zod
                   attempt_id: zod.union([zod.uuid(), zod.null()]),
                   course_id: zod.uuid(),
                   course_name: zod.string(),
+                  excerpt: zod
+                    .string()
+                    .optional()
+                    .describe(
+                      "What to fix: the teacher's feedback, first ~140 characters as\nplain text (CONTRACT-REQ-G-2); empty without one or before.",
+                    ),
                   submission_id: zod.union([zod.uuid(), zod.null()]),
                   type: zod.enum(['submission_returned']),
                 })

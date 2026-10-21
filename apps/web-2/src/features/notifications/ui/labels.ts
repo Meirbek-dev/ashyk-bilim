@@ -45,14 +45,19 @@ const excerpt = (text: string | undefined) => (text ? [m.notifications_text_exce
 /** What happened, with the names the payload carries: one or two lines; `replies` folded into one row of a thread. */
 export function notificationLines(payload: NotificationPayload, replies = 1): string[] {
   switch (payload.type) {
+    // The teacher's words travel with the grade (CONTRACT-REQ-G-2): the score and the feedback share line two.
     case 'grade_published': {
       const what = m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name })
-      return payload.final_score === null
-        ? [what]
-        : [what, m.notifications_text_score({ score: formatPercent(payload.final_score) })]
+      const score =
+        payload.final_score === null ? [] : [m.notifications_text_score({ score: formatPercent(payload.final_score) })]
+      const said = [...score, ...excerpt(payload.excerpt)].join(' · ')
+      return said ? [what, said] : [what]
     }
     case 'submission_returned':
-      return [m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name })]
+      return [
+        m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name }),
+        ...excerpt(payload.excerpt),
+      ]
     case 'deadline_approaching':
     case 'deadline_extended':
       return [
