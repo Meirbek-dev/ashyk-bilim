@@ -68,7 +68,7 @@ describe('player model', () => {
     expect(locate(state, 'elsewhere')).toBeNull()
   })
 
-  test('B-PLY-18 after graded work: the next activity across chapters, after the last the work left or the summary', () => {
+  test('B-PLY-18 after graded work: the next unfinished activity across chapters, after the last the work left or the summary', () => {
     const state = course([[activity('a'), activity('b')], [activity('c')]])
     expect(nextStep(state, 'b')).toMatchObject({ kind: 'activity', activity: { id: 'c' } })
     expect(nextStep(state, 'c')).toEqual({ kind: 'finish' })
@@ -77,6 +77,9 @@ describe('player model', () => {
     const unfinished = course([[activity('a'), activity('b')], [activity('c')]], { activity_id: 'a' })
     expect(nextStep(unfinished, 'c')).toMatchObject({ kind: 'activity', activity: { id: 'a' } })
     expect(nextStep(course([[activity('c')]], { activity_id: 'c' }), 'c')).toEqual({ kind: 'finish' })
+    // Done work ahead is skipped: the way on is the next thing still to do.
+    const done = activity('b', { complete: true })
+    expect(nextStep(course([[activity('a'), done, activity('c')]]), 'a')).toMatchObject({ activity: { id: 'c' } })
   })
 
   test('B-PLY-06 a lesson that is not done offers to mark it, whatever comes next', () => {
