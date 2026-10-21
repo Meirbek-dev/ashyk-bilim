@@ -7,7 +7,9 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   `teach.tsx` / `admin.tsx` guarded by `requireCapability`. `shared/auth/access.ts` is the one table "workspace ->
   section -> capability": guards, sidebar, bottom bar, switcher (and the palette) read it. A new nav section = a row.
 - Route `staticData`: `title` (document title, layout heading), `layout: 'focus'` (the route draws
-  `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment). Tabs live
+  `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment),
+  `skeleton: 'grid' | 'detail' | 'tiles'` (PendingView's shape, rows by default; chosen by route position only, never
+  load status, so the data-only SSR paint and hydration agree). A tab's title is followed by its parent's. Tabs live
   in the layout route file; its `index.tsx` redirects to the first tab. A 403 thrown in `beforeLoad` renders in place
   (`ErrorView` -> `ForbiddenView`) and SSR answers with the ApiError's status (`shared/lib/ssr-status.ts`).
 - No stub routes (gate `under-construction`). Each OpenAPI operation has a consumer in `src/`, is a service operation
