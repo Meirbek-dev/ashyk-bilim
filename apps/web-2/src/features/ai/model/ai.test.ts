@@ -104,6 +104,12 @@ test('B-AI-31 a citation keeps a quote and drops an excerpt in machine form', ()
   expect(readableExcerpt('{"due_at":null,"grading_mode":"auto"}')).toBe('')
   expect(readableExcerpt('"prompt":"Print n squared."')).toBe('')
   expect(readableExcerpt('Пустые ограничения: "constraints": []')).toBe('')
+  // Settings quoted as snake_case pairs (an exam's limits, a document's file) are machine form too.
+  expect(readableExcerpt('max_attempts: 1, time_limit_seconds: 3600, passing_score: 60.0')).toBe('')
+  expect(readableExcerpt('file_name: e2e-document.pdf')).toBe('')
+  expect(readableExcerpt('Сохраните файл как report_2024.pdf: так проще.')).toBe(
+    'Сохраните файл как report_2024.pdf: так проще.',
+  )
   expect(readableExcerpt(null)).toBe('')
 })
 
