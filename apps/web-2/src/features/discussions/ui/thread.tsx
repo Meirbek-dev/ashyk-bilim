@@ -36,7 +36,10 @@ export function Thread({ post }: { post: Discussion }) {
           onMore={() => void query.fetchNextPage()}
         />
       </ListState>
-      {post.allowed_actions.includes('reply') ? <NewPost courseId={post.course_id} parentId={post.id} /> : null}
+      {/* No replies yet: the thread was opened by «Ответить», so the cursor waits in the reply (B-DSC-20). */}
+      {post.allowed_actions.includes('reply') ? (
+        <NewPost courseId={post.course_id} parentId={post.id} focusOnMount={post.replies_count === 0} />
+      ) : null}
     </section>
   )
 }
