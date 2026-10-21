@@ -52,7 +52,7 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
             </Suspense>
           </section>
         ) : null}
-        <AttemptsList attempts={attempts} />
+        <AttemptsList attempts={attempts} state={state} />
       </article>
     </AttemptFrame>
   )
