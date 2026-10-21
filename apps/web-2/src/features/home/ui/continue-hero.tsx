@@ -19,11 +19,10 @@ export function ContinueHero({ item }: { item: ContinueLearning }) {
   const percent = percentOf(item)
   return (
     <article className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @2xl:grid-cols-5">
-      <CourseCover
-        seed={item.course_id}
-        imageKey={item.thumbnail_key}
-        className="aspect-video size-full @2xl:col-span-2 @2xl:aspect-auto @2xl:min-h-60"
-      />
+      {/* The text sets the row's height; an uploaded picture of any shape fills it (it once stretched the card to 440 px). */}
+      <div className="relative aspect-video @2xl:col-span-2 @2xl:aspect-auto @2xl:min-h-60">
+        <CourseCover seed={item.course_id} imageKey={item.thumbnail_key} className="absolute inset-0 size-full" />
+      </div>
       <div className="flex flex-col justify-center gap-5 p-gutter @2xl:col-span-3 @2xl:px-8">
         <h3 className="text-2xl font-semibold wrap-anywhere">{item.course_name}</h3>
         <div className="flex items-center gap-3">
