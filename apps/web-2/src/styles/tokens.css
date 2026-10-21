@@ -236,6 +236,14 @@
   }
 }
 
+/* The router's page cross-fade (view transitions): the browser default is 250 ms and the rule above does not reach
+   these pseudo-elements, so it ignored both the 200 ms cap (DESIGN 10) and reduced motion. */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--duration-base);
+}
+
 @layer base {
   *,
   ::before,
