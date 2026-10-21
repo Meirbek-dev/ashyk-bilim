@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 import type { RemediationSession, UserId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -46,8 +47,8 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
       {done && score !== null ? (
         <output className="font-medium">
           {session.status === 'passed'
-            ? m.ai_remediation_result_passed({ score })
-            : m.ai_remediation_result_failed({ score })}
+            ? m.ai_remediation_result_passed({ score: formatPercent(score) })
+            : m.ai_remediation_result_failed({ score: formatPercent(score) })}
         </output>
       ) : null}
       {session.status === 'passed' ? (
@@ -75,7 +76,7 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
             ))}
           </ol>
           <p className="text-sm text-muted-foreground">
-            {m.ai_remediation_threshold({ threshold: passThreshold(session) })}
+            {m.ai_remediation_threshold({ threshold: formatPercent(passThreshold(session)) })}
           </p>
           {complete.error ? <ErrorAlert>{presentError(complete.error)}</ErrorAlert> : null}
           <div>

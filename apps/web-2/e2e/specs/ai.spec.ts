@@ -3,6 +3,7 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import type { QaMessage, RemediationSession, RunArtifact } from '#/shared/api/gen/types.gen'
+import { formatPercent } from '#/shared/i18n/format'
 import { vQaChatRequest } from '#/shared/api/gen/valibot.gen'
 
 import { expect as baseExpect, type MadeCourse, test } from '../fixtures/learning'
@@ -291,7 +292,7 @@ test(
     await expect(aside.getByText('Проверка идёт перед каждым шагом.')).toHaveCount(0)
     await finish.click()
     expect(await posted.promise).toEqual({ answers: ['Когда условие ложно'] })
-    await expect(aside.getByText(m.ai_remediation_result_passed({ score: 100 }, ru))).toBeVisible()
+    await expect(aside.getByText(m.ai_remediation_result_passed({ score: formatPercent(100, 'ru') }, ru))).toBeVisible()
     await expect(aside.getByText('Проверка идёт перед каждым шагом.')).toBeVisible()
   },
 )

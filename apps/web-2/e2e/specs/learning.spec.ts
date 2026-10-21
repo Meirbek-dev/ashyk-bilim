@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 
 import { expect, type MadeCourse, test } from '../fixtures/learning'
 
@@ -36,9 +37,9 @@ test('B-LRN-01 B-LRN-02 B-LRN-03 B-LRN-04 started courses show the server progre
 
   await expect(card(page, fresh)).toContainText(m.learning_state_not_started({}, ru))
   await expect(card(page, half)).toContainText(m.learning_state_in_progress({}, ru))
-  await expect(card(page, half)).toContainText(m.learning_progress({ percent: 50 }, ru))
+  await expect(card(page, half)).toContainText(m.learning_progress({ percent: formatPercent(50, 'ru') }, ru))
   await expect(card(page, done)).toContainText(m.learning_state_completed({}, ru))
-  await expect(card(page, done)).toContainText(m.learning_progress({ percent: 100 }, ru))
+  await expect(card(page, done)).toContainText(m.learning_progress({ percent: formatPercent(100, 'ru') }, ru))
   for (const [course, action, href] of [
     [fresh, m.learning_action_start({}, ru), `/learn/${fresh.id}/${fresh.activityIds[0]}`],
     [half, m.learning_action_continue({}, ru), `/learn/${half.id}/${half.activityIds[1]}`],

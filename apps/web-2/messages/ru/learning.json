@@ -22,7 +22,7 @@
   "learning_action_continue": "Продолжить",
   "learning_action_start": "Начать",
   "learning_action_open": "Открыть курс",
-  "learning_progress": "Пройдено {percent}%",
+  "learning_progress": "Пройдено {percent}",
   "learning_no_activities": "В курсе пока нет опубликованных активностей.",
   "learning_archived": "В архиве",
   "learning_certificates_title": "Мои сертификаты",

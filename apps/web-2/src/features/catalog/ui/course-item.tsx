@@ -4,7 +4,7 @@ import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
 import { Progress } from '#/shared/components/progress'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { authorNames, courseState, type CourseState } from '../model/catalog'
 
@@ -52,7 +52,7 @@ export function CourseItem({ course, level = 2 }: CourseItemProps) {
             <div className="flex items-center gap-3">
               <Progress aria-hidden value={percent} className="flex-1" />
               <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                {m.catalog_course_progress({ percent })}
+                {m.catalog_course_progress({ percent: formatPercent(percent) })}
               </span>
             </div>
           )}

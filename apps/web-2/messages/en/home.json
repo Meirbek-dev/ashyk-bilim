@@ -3,7 +3,7 @@
   "home_continue_title": "Continue",
   "home_continue_next": "Next: {activity}",
   "home_continue_action": "Continue",
-  "home_progress": "{percent}% done",
+  "home_progress": "{percent} done",
   "home_deadlines_title": "Deadlines",
   "home_deadlines_empty": "No deadlines in the next 14 days.",
   "home_day_today": "Today",

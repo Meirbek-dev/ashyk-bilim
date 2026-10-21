@@ -1,6 +1,7 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 import type { ContinueLearning } from '#/shared/api/gen/types.gen'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -37,7 +38,9 @@ export function ContinueHero({ item }: { item: ContinueLearning }) {
         {percent === null ? null : (
           <div className="flex max-w-md items-center gap-3">
             <Progress aria-hidden value={percent} className="progress-lg flex-1" />
-            <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{m.home_progress({ percent })}</span>
+            <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+              {m.home_progress({ percent: formatPercent(percent) })}
+            </span>
           </div>
         )}
         <div>

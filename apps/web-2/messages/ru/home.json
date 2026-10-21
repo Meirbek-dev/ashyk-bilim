@@ -3,7 +3,7 @@
   "home_continue_title": "Продолжить",
   "home_continue_next": "Далее: {activity}",
   "home_continue_action": "Продолжить",
-  "home_progress": "Пройдено {percent}%",
+  "home_progress": "Пройдено {percent}",
   "home_deadlines_title": "Сроки",
   "home_deadlines_empty": "В ближайшие 14 дней сроков нет.",
   "home_day_today": "Сегодня",

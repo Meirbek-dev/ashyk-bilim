@@ -20,7 +20,7 @@
   "learning_action_continue": "Continue",
   "learning_action_start": "Start",
   "learning_action_open": "Open course",
-  "learning_progress": "{percent}% done",
+  "learning_progress": "{percent} done",
   "learning_no_activities": "This course has no published activities yet.",
   "learning_archived": "Archived",
   "learning_certificates_title": "My certificates",

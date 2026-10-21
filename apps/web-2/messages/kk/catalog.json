@@ -28,7 +28,7 @@
   "catalog_course_state_archived": "Мұрағатта",
   "catalog_course_authors": "Авторлар: {names}",
   "catalog_course_author": "Авторы: {names}",
-  "catalog_course_progress": "{percent}% өтілді",
+  "catalog_course_progress": "{percent} өтілді",
   "catalog_search_title": "Іздеу",
   "catalog_search_label": "Іздеу мәтіні",
   "catalog_search_prompt": "Курстарды, жинақтарды және адамдарды табу үшін сұрау енгізіңіз.",

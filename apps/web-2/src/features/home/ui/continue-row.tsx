@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 import type { ContinueLearning } from '#/shared/api/gen/types.gen'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
@@ -35,7 +36,9 @@ export function ContinueRow({ item }: { item: ContinueLearning }) {
         {percent === null ? null : (
           <div className="flex max-w-xs items-center gap-2">
             <Progress aria-hidden value={percent} className="flex-1" />
-            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{m.home_progress({ percent })}</span>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {m.home_progress({ percent: formatPercent(percent) })}
+            </span>
           </div>
         )}
       </div>

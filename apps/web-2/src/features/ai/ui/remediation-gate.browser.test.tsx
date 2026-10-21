@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 import { createQueryClient } from '#/shared/api/query-client'
 import { json } from '#/shared/api/testing'
 import type { RemediationSession, SessionInfo } from '#/shared/api/gen/types.gen'
@@ -92,7 +93,7 @@ describe('RemediationGate (where the gate blocks the learner)', () => {
     const before = reads
     await userEvent.fill(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }) }), 'Ответ')
     await userEvent.click(screen.getByRole('button', { name: m.ai_remediation_complete() }))
-    await expect.element(screen.getByText(m.ai_remediation_result_passed({ score: 100 }))).toBeVisible()
+    await expect.element(screen.getByText(m.ai_remediation_result_passed({ score: formatPercent(100) }))).toBeVisible()
     await expect.poll(() => reads).toBeGreaterThan(before)
   })
 })

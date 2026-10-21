@@ -28,7 +28,7 @@
   "catalog_course_state_archived": "В архиве",
   "catalog_course_authors": "Авторы: {names}",
   "catalog_course_author": "Автор: {names}",
-  "catalog_course_progress": "Пройдено {percent}%",
+  "catalog_course_progress": "Пройдено {percent}",
   "catalog_search_title": "Поиск",
   "catalog_search_label": "Что найти",
   "catalog_search_prompt": "Введите запрос, чтобы найти курсы, коллекции и людей.",

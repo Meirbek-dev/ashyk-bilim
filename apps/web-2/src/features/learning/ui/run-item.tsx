@@ -2,6 +2,7 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { Circle, CircleCheck, CircleDashed, type LucideIcon } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { formatPercent } from '#/shared/i18n/format'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Progress } from '#/shared/components/progress'
 import type { Enrollment } from '#/shared/api/gen/types.gen'
@@ -62,7 +63,9 @@ export function RunItem({ run }: { run: Enrollment }) {
             </span>
             {run.course.archived_at_unix ? <StatusBadge tone="neutral">{m.learning_archived()}</StatusBadge> : null}
             {run.course_total_steps === 0 ? null : (
-              <span className="text-muted-foreground tabular-nums">{m.learning_progress({ percent })}</span>
+              <span className="text-muted-foreground tabular-nums">
+                {m.learning_progress({ percent: formatPercent(percent) })}
+              </span>
             )}
           </div>
           {run.course_total_steps === 0 ? (

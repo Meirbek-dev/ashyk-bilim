@@ -3,7 +3,7 @@
   "home_continue_title": "Жалғастыру",
   "home_continue_next": "Келесі: {activity}",
   "home_continue_action": "Жалғастыру",
-  "home_progress": "{percent}% өтілді",
+  "home_progress": "{percent} өтілді",
   "home_deadlines_title": "Мерзімдер",
   "home_deadlines_empty": "Алдағы 14 күнде мерзімдер жоқ.",
   "home_day_today": "Бүгін",
