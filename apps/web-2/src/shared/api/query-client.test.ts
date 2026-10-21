@@ -1,3 +1,4 @@
+import { onlineManager } from '@tanstack/react-query'
 import { expect, test } from 'vite-plus/test'
 
 import { dashboardQueryKey, getCourseQueryKey, unreadCountQueryKey } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -89,4 +90,19 @@ test('clearing the cache (the SSR teardown after the response) or collecting the
   expect(guards).toBe(0)
   client.setQueryData(key, null)
   expect(guards).toBe(1)
+})
+
+const offline = () => Promise.reject(new TypeError('Failed to fetch'))
+
+test('offline, a save and a read fail at once (an error to show) instead of waiting paused for the network', async () => {
+  onlineManager.setOnline(false)
+  try {
+    const queryClient = createQueryClient(async () => {})
+    const save = queryClient.getMutationCache().build(queryClient, { mutationFn: offline })
+    await expect(save.execute(undefined)).rejects.toThrow('Failed to fetch')
+    const read = { queryKey: unreadCountQueryKey(), queryFn: offline, retry: false }
+    await expect(queryClient.query(read)).rejects.toThrow('Failed to fetch')
+  } finally {
+    onlineManager.setOnline(true)
+  }
 })

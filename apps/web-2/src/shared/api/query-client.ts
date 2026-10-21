@@ -59,8 +59,13 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     void queryClient.invalidateQueries({ queryKey: sessionOptions().queryKey, refetchType: 'none' })
   }
   const queryClient: QueryClient = new QueryClient({
+    // 'always': offline, a read or a save fails at once with «Нет соединения с сервером» and its Retry. Query's
+    // default ('online') paused them instead: a Save spun forever and a page stayed a skeleton with no word why
+    // (navigator.onLine is also wrong behind some proxies and VPNs).
     defaultOptions: {
+      mutations: { networkMode: 'always' },
       queries: {
+        networkMode: 'always',
         staleTime: 30_000,
         retry: retryOnce,
         refetchOnWindowFocus: refetchUnlessHeld,
