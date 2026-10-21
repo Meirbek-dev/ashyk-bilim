@@ -147,6 +147,26 @@
   "studio_groups_title": "Groups",
   "studio_groups_hint": "Members of a linked group see the course even while it is a draft.",
   "studio_groups_empty": "The course is not linked to any group yet",
+  "studio_publish_lessons": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Publish {count} lesson",
+        "countPlural=other": "Publish {count} lessons"
+      }
+    }
+  ],
+  "studio_lessons_published": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} lesson published",
+        "countPlural=other": "{count} lessons published"
+      }
+    }
+  ],
   "studio_groups_none_yet": "No groups yet: create one to enroll a whole group of learners at once.",
   "studio_groups_create": "Create a group",
   "studio_group_members": [

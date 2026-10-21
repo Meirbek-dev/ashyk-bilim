@@ -78,7 +78,7 @@ export function ContentPage() {
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
     <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
-      {shown.chapters.length > 0 ? <ProgramHeader curriculum={curriculum} create={create} /> : null}
+      {shown.chapters.length > 0 ? <ProgramHeader courseId={courseId} curriculum={curriculum} create={create} /> : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
       {shown.chapters.length === 0 ? (
         <EmptyProgram create={create} />

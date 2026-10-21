@@ -1,4 +1,4 @@
-import type { Activity, Chapter, Curriculum, CurriculumChapter } from '#/shared/api/gen/types.gen'
+import type { Activity, ActivityType, Chapter, Curriculum, CurriculumChapter } from '#/shared/api/gen/types.gen'
 
 // The curriculum cache takes every write itself: moves answer 204, creates answer the new row, and a refetch would
 // repeat the page's GET. Positions stay 1-based and contiguous, as the server renumbers them.
@@ -92,6 +92,23 @@ export const withoutActivity = (curriculum: Curriculum, id: string): Curriculum 
 })
 
 /** The line above the program: how many chapters, activities and drafts (drafts only when there are some). */
+/**
+ * Lessons go live with the activity's own flag; a quiz, exam, code challenge or file task publishes its assessment or
+ * config first, in its studio (the server answers 409 `activity-not-ready` otherwise).
+ */
+export const LESSON_TYPES: readonly ActivityType[] = ['dynamic', 'video', 'document']
+
+/** The draft lessons the caller may publish from `content`, in program order (B-CST-51). */
+export const draftLessons = (curriculum: Curriculum): Activity[] =>
+  curriculum.chapters
+    .flatMap(chapter => chapter.activities)
+    .filter(
+      activity =>
+        !activity.published &&
+        LESSON_TYPES.includes(activity.activity_type) &&
+        activity.allowed_actions.includes('update'),
+    )
+
 export function programSummary(curriculum: Curriculum) {
   const activities = curriculum.chapters.flatMap(chapter => chapter.activities)
   return {

@@ -147,6 +147,26 @@
   "studio_groups_title": "Топтар",
   "studio_groups_hint": "Байланысқан топтың мүшелері курсты ол нобайда тұрғанда да көреді.",
   "studio_groups_empty": "Курс әзірге бірде-бір топпен байланыспаған",
+  "studio_publish_lessons": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} сабақты жариялау",
+        "countPlural=other": "{count} сабақты жариялау"
+      }
+    }
+  ],
+  "studio_lessons_published": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} сабақ жарияланды",
+        "countPlural=other": "{count} сабақ жарияланды"
+      }
+    }
+  ],
   "studio_groups_none_yet": "Әзірге топ жоқ: білім алушыларды бүкіл топпен жазу үшін топ құрыңыз.",
   "studio_groups_create": "Топ құру",
   "studio_group_members": [

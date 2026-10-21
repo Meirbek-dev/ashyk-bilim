@@ -1,16 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import type { Activity, ActivityType } from '#/shared/api/gen/types.gen'
+import type { Activity } from '#/shared/api/gen/types.gen'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
+import { LESSON_TYPES } from '../model/curriculum'
 import { refusal } from './publish-switch'
-
-/** Lessons go live with the activity's own flag; a quiz, exam, code challenge or file task publishes its assessment or
- * config first, in its studio (the server answers 409 `activity-not-ready` otherwise). */
-const lessonTypes: readonly ActivityType[] = ['dynamic', 'video', 'document']
 
 /**
  * «Опубликовать» on a draft lesson's row in `content` (UX-F-2): no trip into the studio for each lesson. A lesson
@@ -25,7 +22,7 @@ type QuickPublishProps = {
 
 export function QuickPublish({ courseId, activity, onPublished }: QuickPublishProps) {
   const update = useMutation(updateActivityOptions(useQueryClient(), courseId))
-  if (activity.published || !lessonTypes.includes(activity.activity_type)) return null
+  if (activity.published || !LESSON_TYPES.includes(activity.activity_type)) return null
   if (!activity.allowed_actions.includes('update')) return null
   const publish = () =>
     update.mutate(

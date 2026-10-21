@@ -20,6 +20,7 @@ import {
   updateActivityMutation,
   updateChapterMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { updateActivity } from '#/shared/api/gen/sdk.gen'
 import type { Activity, ActivityDetail, Chapter, CourseId, Curriculum } from '#/shared/api/gen/types.gen'
 
 import { withActivity, withChapter, withoutActivity, withoutChapter } from './model/curriculum'
@@ -95,6 +96,38 @@ export const updateActivityOptions = (queryClient: QueryClient, courseId: Course
   onSuccess: (activity: ActivityDetail) => {
     queryClient.setQueryData(getActivityQueryKey({ path: { activity_id: activity.id } }), activity)
     patch(queryClient, courseId, curriculum => withActivity(curriculum, activity))
+  },
+  meta: { invalidates: [readiness(courseId)] },
+})
+
+/**
+ * «Опубликовать уроки» (B-CST-51): each draft lesson in turn; a refused one (no video, link or document yet) stays a
+ * draft and comes back with its error, the rest go live.
+ */
+export const publishLessonsOptions = (queryClient: QueryClient, courseId: CourseId) => ({
+  mutationFn: async (lessons: readonly Activity[]) => {
+    const published: ActivityDetail[] = []
+    const refused: { activity: Activity; error: unknown }[] = []
+    for (const lesson of lessons) {
+      try {
+        const { data } = await updateActivity({
+          path: { activity_id: lesson.id },
+          body: { published: true },
+          headers: { 'If-Match': lesson.version },
+          throwOnError: true,
+        })
+        published.push(data)
+      } catch (error) {
+        refused.push({ activity: lesson, error })
+      }
+    }
+    return { published, refused }
+  },
+  onSuccess: ({ published }: { published: ActivityDetail[] }) => {
+    for (const activity of published) {
+      queryClient.setQueryData(getActivityQueryKey({ path: { activity_id: activity.id } }), activity)
+      patch(queryClient, courseId, curriculum => withActivity(curriculum, activity))
+    }
   },
   meta: { invalidates: [readiness(courseId)] },
 })

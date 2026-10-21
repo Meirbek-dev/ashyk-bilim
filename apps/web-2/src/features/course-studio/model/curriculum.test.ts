@@ -4,6 +4,7 @@ import type { Activity, Curriculum, CurriculumChapter } from '#/shared/api/gen/t
 
 import {
   applyLayout,
+  draftLessons,
   layoutMove,
   layoutOf,
   programSummary,
@@ -89,4 +90,13 @@ describe('cache patches', () => {
 test('B-CST-06 the program line counts chapters, activities and drafts', () => {
   const live = withActivity(curriculum, { ...activity('b2', 'B', 2), published: true })
   expect(programSummary(live)).toEqual({ chapters: 2, activities: 5, drafts: 4 })
+})
+
+test('B-CST-51 «Опубликовать уроки» takes the draft pages, videos and documents one may change, not tests or live ones', () => {
+  const mixed = withActivity(
+    withActivity(curriculum, { ...activity('b2', 'B', 2), activity_type: 'quiz', activity_sub_type: 'quiz_standard' }),
+    { ...activity('b3', 'B', 3), published: true },
+  )
+  const locked = withActivity(mixed, { ...activity('b4', 'B', 4), allowed_actions: [] })
+  expect(draftLessons(locked).map(lesson => lesson.id)).toEqual(['a1', 'a2', 'a3', 'b1'])
 })
