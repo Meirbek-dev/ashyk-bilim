@@ -18,7 +18,7 @@ export const progressStates = {
   completed: { label: m.home_state_completed, tone: 'success' },
 } satisfies Record<ActivityProgressState, Status>
 
-export const resultKinds = {
+const resultKinds = {
   grade_published: { label: m.home_result_published, tone: 'success' },
   submission_returned: { label: m.home_result_returned, tone: 'warning' },
 } satisfies Record<ResultKind, Status>
