@@ -452,6 +452,8 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
         grade["payload"]["excerpt"],
         "Хороший ответ, добавьте пример."
     );
+    // CONTRACT-REQ-G-2b: and the type, so the bell opens the work itself.
+    assert_eq!(grade["payload"]["activity_type"], "quiz", "{grade}");
     assert_eq!(
         notifications(&app, &teacher, "").await["items"],
         serde_json::json!([])

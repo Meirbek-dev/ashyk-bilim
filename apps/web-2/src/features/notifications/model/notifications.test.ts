@@ -46,6 +46,7 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
     final_score: 90,
     submission_id: null,
     attempt_id: null,
+    activity_type: null,
   }
   expect(notificationTarget(graded)).toEqual({
     to: '/learn/$courseId/$activityId',
@@ -56,6 +57,7 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
     type: 'submission_returned',
     submission_id: null,
     attempt_id: '0190a5d2-0000-7000-8000-00000000000e',
+    activity_type: null,
   }
   expect(notificationTarget(returned).to).toBe('/learn/$courseId/$activityId/submission')
   expect(notificationTarget({ ...activity, type: 'deadline_approaching', due_at_unix: 1 }).to).toBe(

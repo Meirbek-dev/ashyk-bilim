@@ -5096,6 +5096,7 @@ export const vNotificationPayload = v.union([
     v.object({
         activity_id: vActivityId,
         activity_name: v.string(),
+        activity_type: v.nullable(vActivityType),
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),
@@ -5107,6 +5108,7 @@ export const vNotificationPayload = v.union([
     v.object({
         activity_id: vActivityId,
         activity_name: v.string(),
+        activity_type: v.nullable(vActivityType),
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),

@@ -4094,6 +4094,7 @@ export type NotificationPage = {
 export type NotificationPayload = {
     activity_id: ActivityId;
     activity_name: string;
+    activity_type: ActivityType | null;
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;
@@ -4108,6 +4109,7 @@ export type NotificationPayload = {
 } | {
     activity_id: ActivityId;
     activity_name: string;
+    activity_type: ActivityType | null;
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;

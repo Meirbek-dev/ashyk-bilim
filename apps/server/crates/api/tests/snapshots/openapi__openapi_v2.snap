@@ -11787,6 +11787,17 @@ expression: json
               "activity_name": {
                 "type": "string"
               },
+              "activity_type": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ActivityType",
+                    "description": "The activity's type, so the bell opens the work itself\n(CONTRACT-REQ-G-2b); `null` in rows stored before."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "attempt_id": {
                 "oneOf": [
                   {
@@ -11837,6 +11848,7 @@ expression: json
               "activity_id",
               "activity_name",
               "type",
+              "activity_type",
               "attempt_id",
               "final_score",
               "submission_id"
@@ -11851,6 +11863,17 @@ expression: json
               },
               "activity_name": {
                 "type": "string"
+              },
+              "activity_type": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ActivityType",
+                    "description": "The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "attempt_id": {
                 "oneOf": [
@@ -11895,6 +11918,7 @@ expression: json
               "activity_id",
               "activity_name",
               "type",
+              "activity_type",
               "attempt_id",
               "submission_id"
             ],

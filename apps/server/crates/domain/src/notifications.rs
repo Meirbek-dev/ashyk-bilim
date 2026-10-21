@@ -47,6 +47,11 @@ pub enum NotificationPayload {
         /// text (CONTRACT-REQ-G-2); empty without one or in rows stored before.
         #[serde(default)]
         excerpt: String,
+        /// The activity's type, so the bell opens the work itself
+        /// (CONTRACT-REQ-G-2b); `null` in rows stored before.
+        #[serde(default)]
+        #[schema(value_type = Option<crate::wire::ActivityType>)]
+        activity_type: Option<String>,
     },
     /// The recipient's work was returned for revision.
     SubmissionReturned {
@@ -60,6 +65,10 @@ pub enum NotificationPayload {
         /// plain text (CONTRACT-REQ-G-2); empty without one or before.
         #[serde(default)]
         excerpt: String,
+        /// The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before.
+        #[serde(default)]
+        #[schema(value_type = Option<crate::wire::ActivityType>)]
+        activity_type: Option<String>,
     },
     /// A teacher extended the recipient's deadline: `assessment_id` for an
     /// assessment, `file_submission_id` for a file submission (S-GAPS;
@@ -248,6 +257,11 @@ pub async fn grade_changed(
         return;
     };
     let (submission_id, attempt_id) = work;
+    let activity_type = ab_db::catalog::get_activity(pool, activity_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| a.activity_type);
     user::submission(
         owner,
         user::SubmissionUpdated {
@@ -270,6 +284,7 @@ pub async fn grade_changed(
             attempt_id,
             final_score,
             excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
+            activity_type,
         },
         SubmissionStatus::Returned => NotificationPayload::SubmissionReturned {
             course_id,
@@ -279,6 +294,7 @@ pub async fn grade_changed(
             submission_id,
             attempt_id,
             excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
+            activity_type,
         },
         _ => return,
     };

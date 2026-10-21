@@ -33,6 +33,7 @@ test('B-NOT-04 a released or returned work quotes the teacher feedback; an old r
     activity_name: 'Эссе',
     submission_id: null,
     attempt_id: null,
+    activity_type: 'quiz' as const,
   }
   const what = m.notifications_text_activity({ activity: 'Эссе', course: 'Алгебра' })
   const quote = m.notifications_text_excerpt({ text: 'Добавьте пример' })
