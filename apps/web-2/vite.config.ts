@@ -12,7 +12,7 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 
 import { fmt } from './fmt.config.ts'
 import { paraglideOptions } from './gates/codegen.ts'
-import { ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
+import { CODE_SPLITTING, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
 // Dev is same-origin like prod: the API (`just dev-up`) and storage sit behind the dev server's proxy.
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
@@ -282,7 +282,7 @@ export default defineConfig({
     assetsInlineLimit: (file: string) => (/\.(woff2?|ttf)$/.test(file) ? false : undefined),
     // Spec 7.4: response schemas leave the bundle, so an unused `v.object(...)` is dead code; every `v.<fn>()` result is
     // droppable: call a valibot side effect by its named import (`setGlobalMessage`), never as `v.<fn>()`.
-    rolldownOptions: { treeshake: { manualPureFunctions: ['v'] } },
+    rolldownOptions: { treeshake: { manualPureFunctions: ['v'] }, output: { codeSplitting: CODE_SPLITTING } },
   },
   test: {
     // Several worktrees run verify at once: the fixed default port (63315) collides.

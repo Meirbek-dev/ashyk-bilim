@@ -11,6 +11,18 @@ export const ROUTE_SPLIT: ('loader' | 'component' | 'pendingComponent' | 'errorC
   ['notFoundComponent'],
 ]
 
+// Rolldown's default split gave every module the entry shares with a lazy route (router hooks, one module per
+// Paraglide message) its own chunk: a first load preloaded 106-184 files, ~70 % under 2 KB. Everything the entry
+// reaches is one chunk; the lazy routes' messages are one chunk per catalog (the key's first segment).
+// Measured on a production build (/home): 136 -> 37 preloads, 257 -> 225 KB gzip.
+const MESSAGE = /[\\/]paraglide[\\/]messages[\\/]([a-z0-9]+)_/
+export const CODE_SPLITTING = {
+  groups: [
+    { name: 'app', tags: ['$initial' as const] },
+    { name: (id: string) => `messages-${MESSAGE.exec(id)?.[1] ?? 'other'}`, test: MESSAGE },
+  ],
+}
+
 // Spec 7.4: responses are validated with the generated Valibot schemas in dev and tests only.
 // The production build drops the per-operation validators so the schemas tree-shake out.
 const VALIDATOR_LINE = /^\s*responseValidator: async \(data\) => await v\.parseAsync\(\w+, data\),\n/gm
