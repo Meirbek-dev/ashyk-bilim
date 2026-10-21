@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { ChevronRight, CircleAlert, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 
 import type { AnalyticsCode, AssessmentKind, FilterOption, MessageParams, Severity } from '#/shared/api/gen/types.gen'
@@ -68,6 +68,9 @@ export function SignalList({
                     {href ? (
                       <Anchor
                         href={href}
+                        // A quiet title link with a chevron (B-ANL-40): dozens of fully underlined sentences read as
+                        // one block of link text; the chevron tells a row that opens a tab from one that is just text.
+                        className="group flex items-start justify-between gap-2 underline-offset-4 hover:underline"
                         onClick={event => {
                           // The server's href is a built URL: a plain click stays in the app, a modified one is the browser's.
                           if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
@@ -76,12 +79,16 @@ export function SignalList({
                           void navigate({ href })
                         }}
                       >
-                        {text}
+                        <span>{text}</span>
+                        <ChevronRight
+                          aria-hidden
+                          className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                        />
                       </Anchor>
                     ) : (
                       text
                     )}
-                    {course ? <span className="text-sm text-muted-foreground"> · {course}</span> : null}
+                    {course ? <span className="block text-sm text-muted-foreground">{course}</span> : null}
                   </li>
                 )
               })}
