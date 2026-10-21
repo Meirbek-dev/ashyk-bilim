@@ -28,11 +28,12 @@ export const kindLabels: Record<NewItemKind, () => string> = {
   code: m.assessments_kind_code,
 }
 
+// One tone per state across courses, file tasks and assessments (DESIGN 3: draft = warning; archived is quiet).
 export const lifecycleBadges: Record<Lifecycle, { label: () => string; tone: StatusTone }> = {
-  draft: { label: m.assessments_lifecycle_draft, tone: 'neutral' },
+  draft: { label: m.assessments_lifecycle_draft, tone: 'warning' },
   scheduled: { label: m.assessments_lifecycle_scheduled, tone: 'info' },
   published: { label: m.assessments_lifecycle_published, tone: 'success' },
-  archived: { label: m.assessments_lifecycle_archived, tone: 'warning' },
+  archived: { label: m.assessments_lifecycle_archived, tone: 'neutral' },
 }
 
 export const formTypeLabels: Record<FormFieldType, () => string> = {
