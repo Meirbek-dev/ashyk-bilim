@@ -131,6 +131,17 @@ describe('the "/" menu', () => {
     expect(JSON.stringify(last(onChange))).not.toContain('"text":"/"')
   })
 
+  test('B-EDT-33 "/" offers the text blocks too: a heading by its name', async () => {
+    const onChange = vi.fn<(doc: EditorDocument) => void>()
+    const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
+    await screen.getByRole('textbox', { name: m.editor_label() }).click()
+    await userEvent.keyboard('/')
+    await expect.element(screen.getByRole('option', { name: m.editor_bullet_list() })).toBeVisible()
+    await screen.getByRole('option', { name: m.editor_heading({ level: 2 }) }).click()
+    await userEvent.keyboard('Свет')
+    await expect.poll(() => find(last(onChange), 'heading')?.attrs?.['level']).toBe(2)
+  })
+
   test('B-EDT-10 "/" inside text is typed as a character', async () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
     const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)

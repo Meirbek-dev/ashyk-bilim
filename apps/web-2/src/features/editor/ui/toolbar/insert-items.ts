@@ -6,11 +6,17 @@ import {
   Code2,
   FileText,
   FlipHorizontal2,
+  Heading2,
+  Heading3,
   Image,
   Info,
   Link,
+  List,
+  ListOrdered,
   Minus,
   MousePointerClick,
+  Quote,
+  SquareCode,
   Table,
   Tag,
   TriangleAlert,
@@ -24,11 +30,44 @@ const node = (content: JSONContent) => (editor: Editor) => editor.chain().focus(
 
 export type InsertItem = { value: string; label: () => string; Icon: LucideIcon; insert: (editor: Editor) => boolean }
 
+const chain = (editor: Editor) => editor.chain().focus()
+
 /**
- * Blocks the "/" menu adds, each as an empty node of the stored schema. Atom blocks open their own form (file,
- * URL, formula, question) while empty.
+ * Blocks the "/" menu adds: first the text blocks a writer reaches for («/заголовок», B-EDT-33), then each rich block
+ * as an empty node of the stored schema. Atom blocks open their own form (file, URL, formula, question) while empty.
  */
 export const INSERT_ITEMS: readonly InsertItem[] = [
+  {
+    value: 'heading2',
+    label: () => m.editor_heading({ level: 2 }),
+    Icon: Heading2,
+    insert: editor => chain(editor).setHeading({ level: 2 }).run(),
+  },
+  {
+    value: 'heading3',
+    label: () => m.editor_heading({ level: 3 }),
+    Icon: Heading3,
+    insert: editor => chain(editor).setHeading({ level: 3 }).run(),
+  },
+  {
+    value: 'bulletList',
+    label: m.editor_bullet_list,
+    Icon: List,
+    insert: editor => chain(editor).toggleBulletList().run(),
+  },
+  {
+    value: 'orderedList',
+    label: m.editor_ordered_list,
+    Icon: ListOrdered,
+    insert: editor => chain(editor).toggleOrderedList().run(),
+  },
+  { value: 'quote', label: m.editor_quote, Icon: Quote, insert: editor => chain(editor).toggleBlockquote().run() },
+  {
+    value: 'codeBlock',
+    label: m.editor_code_block,
+    Icon: SquareCode,
+    insert: editor => chain(editor).toggleCodeBlock().run(),
+  },
   { value: 'image', label: m.editor_block_image, Icon: Image, insert: node({ type: 'blockImage' }) },
   { value: 'video', label: m.editor_block_video, Icon: Video, insert: node({ type: 'blockVideo' }) },
   { value: 'pdf', label: m.editor_block_pdf, Icon: FileText, insert: node({ type: 'blockPDF' }) },
