@@ -1,8 +1,22 @@
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { Skeleton } from '#/shared/ui/skeleton'
 
+type Shape = 'grid' | 'detail' | 'tiles' | undefined
+
+/** The deepest `staticData.skeleton` at or under the match `from` (its id); the same on the server and the client. */
+export function skeletonShape(
+  matches: readonly { id: string; staticData: { skeleton?: Shape } }[],
+  from: string | undefined,
+): Shape {
+  const start = Math.max(
+    0,
+    matches.findIndex(match => match.id === from),
+  )
+  return matches.slice(start).findLast(match => match.staticData.skeleton)?.staticData.skeleton
+}
+
 /** A shell page's loading shape (PendingView): rows, a card grid, an object page with tabs, or tiles over rows. */
-export function PageSkeleton({ shape }: { shape: 'grid' | 'detail' | 'tiles' | undefined }) {
+export function PageSkeleton({ shape }: { shape: Shape }) {
   if (shape === 'grid')
     return (
       <div className="@container flex flex-col gap-gutter">
