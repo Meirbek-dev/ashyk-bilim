@@ -11,6 +11,8 @@ type FocusPageProps = {
   back: ReactNode
   /** The context: activity, attempt or submission name. */
   title: string
+  /** The title is the page's h1: for a screen whose content brings no heading of its own (an editor, results). */
+  heading?: boolean
   saveStatus?: ReactNode
   actions?: ReactNode
   /** Left panel: the contents (activity list). */
@@ -42,6 +44,7 @@ function revealCurrentItem(panel: HTMLElement | null) {
 export function FocusPage({
   back,
   title,
+  heading = false,
   saveStatus,
   actions,
   contents,
@@ -73,7 +76,11 @@ export function FocusPage({
             </SheetPanel>
           </div>
         ) : null}
-        <p className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</p>
+        {heading ? (
+          <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</h1>
+        ) : (
+          <p className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</p>
+        )}
         {saveStatus ? <div className="text-sm text-muted-foreground">{saveStatus}</div> : null}
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
         {aside ? (

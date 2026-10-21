@@ -59,8 +59,14 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   // The AI panel helps write the lesson; settings, submissions and results get the full width.
-  const editing = useMatchRoute()({
+  const matchRoute = useMatchRoute()
+  const editing = matchRoute({
     to: '/teach/courses/$courseId/activities/$activityId/edit',
+    params: { courseId, activityId },
+  })
+  // Settings and submissions bring their own h1 (templates); the editor and results do not: the bar's name is it.
+  const results = matchRoute({
+    to: '/teach/courses/$courseId/activities/$activityId/results',
     params: { courseId, activityId },
   })
   const [save, setSave] = useState<SaveStates>({})
@@ -96,6 +102,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
     <FocusPage
       back={back}
       title={activity.name}
+      heading={Boolean(editing || results)}
       saveStatus={state ? <output>{saveLabels[state]()}</output> : null}
       actions={
         <>
