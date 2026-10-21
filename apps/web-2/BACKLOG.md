@@ -15,6 +15,9 @@ old completion logs and temporary machine setup are in Git.
   `pagehide` reports a navigation to the page being left ("goto interrupted"); a standalone
   script reproduces both without the suite (a few percent of runs, load-dependent, never on
   guest pages) and no app history call is involved. Linux WebKit (CI) is the evidence.
+- Performance, not started: a lesson page renders its stored document with read-only Tiptap
+  (~460 KB raw / ~140 KB gzip, the largest chunk of the most visited learner page). A static
+  renderer (React elements per node, the custom node views as plain components) would drop it.
 
 Use `just stack up`, `just login-as`, and `just e2e` from the root guide for local work.
 Re-run checks on the release being considered; old green runs are not release evidence.
