@@ -1,4 +1,4 @@
-import { CalendarClock, Eye, ListChecks, RotateCcw, Target, Timer } from 'lucide-react'
+import { CalendarClock, Eye, ListOrdered, RotateCcw, Target, Timer } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, AttemptState, ReviewVisibility } from '#/shared/api/gen/types.gen'
@@ -40,7 +40,7 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
       <h2 className="text-xl font-semibold">{m.attempt_entry_heading()}</h2>
       <ul className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
         <li>
-          <ListChecks aria-hidden />
+          <ListOrdered aria-hidden />
           {m.attempt_questions({ count: formatNumber(assessment.items.length) })}
         </li>
         <li>
