@@ -1,7 +1,7 @@
-import { Check, Lock } from 'lucide-react'
+import { Check, CircleX, Clock, Lock, RotateCcw, type LucideIcon } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
+import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.gen'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { Link } from '#/shared/components/link'
 import { formatDateTime } from '#/shared/i18n/format'
@@ -9,8 +9,18 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 
 type RowProps = { courseId: CourseId; activity: ActivityState; onPick: () => void }
 
+// Work in flight beside the title (B-PLY-20): waiting for a grade, returned, failed; an icon with its name for readers.
+const flight: Partial<Record<WorkState, { icon: LucideIcon; className: string; label: () => string }>> = {
+  submitted: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_submitted },
+  needs_grading: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_needs_grading },
+  graded_hidden: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_graded_hidden },
+  returned: { icon: RotateCcw, className: 'text-warning', label: m.player_state_returned },
+  failed: { icon: CircleX, className: 'text-destructive', label: m.player_state_failed },
+}
+
 /** One activity of the contents: type tile, title, the server's mark; a restricted one is not a link. */
 export function ContentsRow({ courseId, activity, onPick }: RowProps) {
+  const work = activity.complete ? undefined : flight[activity.state]
   const label = (
     <>
       <ActivityIcon type={activity.activity_type} size="sm" />
@@ -42,6 +52,11 @@ export function ContentsRow({ courseId, activity, onPick }: RowProps) {
         <>
           <Check aria-hidden className="text-success" />
           <span className="sr-only">{m.player_done()}</span>
+        </>
+      ) : work ? (
+        <>
+          <work.icon aria-hidden className={work.className} />
+          <span className="sr-only">{work.label()}</span>
         </>
       ) : null}
     </Link>
