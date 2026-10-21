@@ -142,6 +142,22 @@
   "grading_kind_matching": "Сопоставление",
   "grading_gradebook_table": "Журнал оценок",
   "grading_gradebook_empty": "Здесь появятся учащиеся курса и их оценки.",
+  "grading_col_total": "Итог курса",
+  "grading_average": "Среднее",
+  "grading_course_average": "Средний итог курса: {value}.",
+  "grading_total_legend": "Итог — средняя оценка с учётом веса заданий. Несданная работа считается за 0 только после своего срока, работы на проверке пока не учитываются.",
+  "grading_total_missing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} не сдана в срок, учтена как 0",
+        "countPlural=few": "{count} не сданы в срок, учтены как 0",
+        "countPlural=many": "{count} не сдано в срок, учтены как 0",
+        "countPlural=other": "{count} не сданы в срок, учтены как 0"
+      }
+    }
+  ],
   "grading_pending_only": "Есть работы на проверку",
   "grading_cell_none": "Нет работы",
   "grading_cell_waiting": "Новая попытка ждёт проверки",

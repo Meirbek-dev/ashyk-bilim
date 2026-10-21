@@ -795,6 +795,42 @@ pub async fn gradebook_cells(
     Ok(cells)
 }
 
+/// A learner's own due date on one graded activity of a course.
+#[derive(Debug, Clone)]
+pub struct GradebookDueRow {
+    pub user_id: UserId,
+    pub activity_id: ActivityId,
+    pub due_at: i64,
+}
+
+/// The due dates of `users` that differ from the activity's (an assessment
+/// override in force, a file-task extension): the gradebook total counts
+/// missing work as 0 only after the learner's own deadline.
+pub async fn gradebook_due_overrides(
+    pool: &PgPool,
+    course_id: CourseId,
+    users: &[UserId],
+) -> Result<Vec<GradebookDueRow>> {
+    let users: Vec<uuid::Uuid> = users.iter().map(|u| u.0).collect();
+    let rows = sqlx::query_as!(
+        GradebookDueRow,
+        r#"SELECT o.user_id AS "user_id!: UserId", a.activity_id AS "activity_id!: ActivityId",
+                  (extract(epoch FROM o.due_at_override))::bigint AS "due_at!"
+           FROM assessment_overrides o JOIN assessments a ON a.id = o.assessment_id
+           WHERE a.course_id = $1 AND o.user_id = ANY($2) AND o.due_at_override IS NOT NULL
+             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
+           UNION ALL
+           SELECT fo.user_id, f.activity_id, (extract(epoch FROM fo.due_at))::bigint
+           FROM file_submission_overrides fo JOIN file_submissions f ON f.id = fo.file_submission_id
+           WHERE f.course_id = $1 AND fo.user_id = ANY($2)"#,
+        course_id.0,
+        &users
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 // ── Review queue (teacher) ──────────────────────────────────────────────────
 
 /// A submission joined with who made it.

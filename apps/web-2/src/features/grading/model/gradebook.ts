@@ -4,6 +4,8 @@ import type {
   GradebookCell,
   GradebookData,
   GradebookPage,
+  GradebookSummary,
+  GradebookTotal,
   UserSummary,
 } from '#/shared/api/gen/types.gen'
 
@@ -40,17 +42,25 @@ export function gradebookColumns(pages: readonly GradebookPage[], curriculum?: C
   return [...columns.values()].toSorted((a, b) => place(a) - place(b))
 }
 
-/** One learner's row: the cell of each activity they handed in. */
-export type GradebookRow = { user: UserSummary; cells: Map<ActivityId, GradebookCell> }
+/** One learner's row: the cell of each activity they handed in and their course total (B-GRD-37). */
+export type GradebookRow = {
+  user: UserSummary
+  cells: Map<ActivityId, GradebookCell>
+  total: GradebookTotal | undefined
+}
 
 export function gradebookRows(pages: readonly GradebookPage[]): GradebookRow[] {
   return pages.flatMap(page =>
     page.users.map(user => ({
       user,
       cells: new Map(page.cells.filter(cell => cell.user_id === user.id).map(cell => [cell.activity_id, cell])),
+      total: page.totals.find(total => total.user_id === user.id),
     })),
   )
 }
+
+/** The average row (B-GRD-37): the server sends it with the first page, over every learner the filters match. */
+export const gradebookSummary = (pages: readonly GradebookPage[]): GradebookSummary | null => pages[0]?.summary ?? null
 
 /**
  * Where a cell leads (B-GRD-19): the attempt still awaiting grading if there is one (UX-123), else the grade of

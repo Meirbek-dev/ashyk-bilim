@@ -4,7 +4,7 @@ import { Circle, CircleCheck, CircleDashed, type LucideIcon } from 'lucide-react
 import { m } from '#/paraglide/messages'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Progress } from '#/shared/components/progress'
-import type { TrailRun } from '#/shared/api/gen/types.gen'
+import type { Enrollment } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -36,7 +36,7 @@ export const runStateMeta = {
  * One started course: cover, state, name, the server's progress and the way back in (the next activity, else the
  * course). A thumbnail row in one column (phone), a cover card in the grid (B-LRN-10).
  */
-export function RunItem({ run }: { run: TrailRun }) {
+export function RunItem({ run }: { run: Enrollment }) {
   const state = runStateMeta[runState(run)]
   const next = nextActivity(run)
   const percent = Math.round(run.progress_pct ?? 0)

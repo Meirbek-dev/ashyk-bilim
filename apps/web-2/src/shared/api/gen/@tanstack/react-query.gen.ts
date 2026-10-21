@@ -3920,11 +3920,12 @@ export const listRepliesInfiniteOptions = (options: Options<ListRepliesData>) =>
 export const listEnrollmentsQueryKey = (options?: Options<ListEnrollmentsData>) => createQueryKey('listEnrollments', options);
 
 /**
- * The caller's trail: one run per course, one step per activity marked
- * done. Anonymous callers get an empty trail. With `limit` / `cursor` the
- * runs come in keyset pages (`next_cursor`).
+ * The caller's courses (trail runs without their steps). Anonymous callers
+ * get none. With `limit` / `cursor` the runs come in keyset pages
+ * (`next_cursor`).
  *
- * S-10 name of [`get_trail`] (that path is deprecated).
+ * S-10 name of [`get_trail`] (that path is deprecated; it still answers
+ * the full trail).
  */
 export const listEnrollmentsOptions = (options?: Options<ListEnrollmentsData>) => queryOptions<ListEnrollmentsResponse, DefaultError, ListEnrollmentsResponse, ReturnType<typeof listEnrollmentsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -3942,11 +3943,12 @@ export const listEnrollmentsOptions = (options?: Options<ListEnrollmentsData>) =
 export const listEnrollmentsInfiniteQueryKey = (options?: Options<ListEnrollmentsData>): QueryKey<Options<ListEnrollmentsData>> => createQueryKey('listEnrollments', options, true);
 
 /**
- * The caller's trail: one run per course, one step per activity marked
- * done. Anonymous callers get an empty trail. With `limit` / `cursor` the
- * runs come in keyset pages (`next_cursor`).
+ * The caller's courses (trail runs without their steps). Anonymous callers
+ * get none. With `limit` / `cursor` the runs come in keyset pages
+ * (`next_cursor`).
  *
- * S-10 name of [`get_trail`] (that path is deprecated).
+ * S-10 name of [`get_trail`] (that path is deprecated; it still answers
+ * the full trail).
  */
 export const listEnrollmentsInfiniteOptions = (options?: Options<ListEnrollmentsData>) => {
     const opts = infiniteQueryOptions<ListEnrollmentsResponse, DefaultError, InfiniteData<ListEnrollmentsResponse>, QueryKey<Options<ListEnrollmentsData>>, string | Pick<QueryKey<Options<ListEnrollmentsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(

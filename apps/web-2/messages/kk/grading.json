@@ -140,6 +140,20 @@
   "grading_kind_matching": "Сәйкестендіру",
   "grading_gradebook_table": "Баға журналы",
   "grading_gradebook_empty": "Мұнда курстың білім алушылары мен олардың бағалары пайда болады.",
+  "grading_col_total": "Курс қорытындысы",
+  "grading_average": "Орташа",
+  "grading_course_average": "Курстың орташа қорытындысы: {value}.",
+  "grading_total_legend": "Қорытынды — тапсырмалардың салмағы ескерілген орташа баға. Тапсырылмаған жұмыс мерзімі өткен соң ғана 0 болып есептеледі, тексерудегі жұмыстар әзірге есепке алынбайды.",
+  "grading_total_missing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} мерзімінде тапсырылмады, 0 болып есептелді",
+        "countPlural=other": "{count} мерзімінде тапсырылмады, 0 болып есептелді"
+      }
+    }
+  ],
   "grading_pending_only": "Тексеруге жұмыстары бар",
   "grading_cell_none": "Жұмыс жоқ",
   "grading_cell_waiting": "Жаңа әрекет тексеруді күтуде",

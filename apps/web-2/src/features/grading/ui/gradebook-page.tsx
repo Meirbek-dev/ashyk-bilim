@@ -11,17 +11,18 @@ import { ShowMore } from '#/shared/components/show-more'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { gradebookCsvHref } from '../model/exports'
-import { gradebookColumns, gradebookRows } from '../model/gradebook'
+import { gradebookColumns, gradebookRows, gradebookSummary } from '../model/gradebook'
 import { curriculumOptions, gradebookOptions } from '../queries'
-import { gradebookTableColumns } from './gradebook-columns'
+import { gradebookFooter, gradebookTableColumns } from './gradebook-columns'
 import { GroupFilter } from './group-filter'
+import { scoreText } from './labels'
 import { LearnerSearch } from './learner-search'
 
 const ROUTE = '/_authed/teach/courses/$courseId/gradebook'
 
 // ponytail: a plain table (100 learners per page x the course's graded activities); virtualize when a measured
 // course makes it slow.
-/** The course gradebook (B-GRD-19..21, B-GRD-24): learners x graded activities, cards per learner when narrow. */
+/** The course gradebook (B-GRD-19..21, B-GRD-24, B-GRD-37): learners x graded activities, cards per learner when narrow. */
 export function GradebookPage(): ReactElement {
   const { courseId } = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
@@ -31,11 +32,22 @@ export function GradebookPage(): ReactElement {
   const { data: curriculum } = useSuspenseQuery(curriculumOptions(courseId))
   const columns = gradebookTableColumns(courseId, gradebookColumns(query.data.pages, curriculum))
   const active = [search.q, search.pending, search.group].filter(Boolean).length
+  const summary = gradebookSummary(query.data.pages)
   return (
     <section aria-labelledby="grading-gradebook" className="@container flex flex-col gap-gutter">
-      <h2 id="grading-gradebook" className="text-xl font-semibold">
-        {m.grading_gradebook_table()}
-      </h2>
+      <div className="flex flex-col gap-1">
+        <h2 id="grading-gradebook" className="text-xl font-semibold">
+          {m.grading_gradebook_table()}
+        </h2>
+        {rows.length > 0 ? (
+          <p className="max-w-prose text-sm text-muted-foreground">
+            {summary?.course_average != null
+              ? `${m.grading_course_average({ value: scoreText(summary.course_average) })} `
+              : null}
+            {m.grading_total_legend()}
+          </p>
+        ) : null}
+      </div>
       {/* No learner at all (and no filter): nothing to search, filter or export - only the empty state. */}
       {rows.length === 0 && active === 0 ? null : (
         <div className="flex flex-wrap items-end gap-2">
@@ -69,7 +81,13 @@ export function GradebookPage(): ReactElement {
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable label={m.grading_gradebook_table()} rows={rows} columns={columns} getKey={row => row.user.id} />
+        <DataTable
+          label={m.grading_gradebook_table()}
+          rows={rows}
+          columns={columns}
+          getKey={row => row.user.id}
+          footer={summary ? gradebookFooter(summary) : undefined}
+        />
         <ShowMore
           hasMore={query.hasNextPage}
           pending={query.isFetchingNextPage}

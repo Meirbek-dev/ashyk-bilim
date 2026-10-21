@@ -1,12 +1,12 @@
 import { m } from '#/paraglide/messages'
-import type { TrailRun } from '#/shared/api/gen/types.gen'
+import type { Enrollment } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
 import { countByState, RUN_STATES, type RunState } from '../model/learning'
 import { runStateMeta } from './run-item'
 
 /** The state filter as links: the URL (`?state=`) is the filter, each option says how many courses it holds. */
-export function StateFilter({ runs }: { runs: readonly TrailRun[] }) {
+export function StateFilter({ runs }: { runs: readonly Enrollment[] }) {
   const counts = countByState(runs)
   const options: { state: RunState | undefined; label: string; count: number }[] = [
     { state: undefined, label: m.learning_filter_all(), count: runs.length },

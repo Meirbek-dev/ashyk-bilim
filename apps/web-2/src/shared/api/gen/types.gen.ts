@@ -2699,7 +2699,55 @@ export type EnrollLearnersResponse = {
  */
 export type EnrollOutcome = 'enrolled' | 'already_enrolled' | 'duplicate' | 'not_found' | 'course_staff' | 'account_disabled';
 
+/**
+ * What a course row of the learner's list shows.
+ */
+export type EnrolledCourse = {
+    archived_at_unix: UnixTime | null;
+    id: CourseId;
+    name: string;
+    /**
+     * Served at `/content/<key>`.
+     */
+    thumbnail_key: string | null;
+};
+
+/**
+ * One course the caller is enrolled in.
+ */
+export type Enrollment = {
+    course: EnrolledCourse;
+    course_id: CourseId;
+    /**
+     * Published activities in the course.
+     */
+    course_total_steps: number;
+    created_at_unix: UnixTime;
+    id: TrailRunId;
+    learning_status: LearningStatus;
+    next_activity_id: ActivityId | null;
+    /**
+     * The `learner-state` progress percent; `null` until the progress
+     * projection has a row for the course.
+     */
+    progress_pct: number | null;
+    updated_at_unix: UnixTime;
+};
+
 export type EnrollmentState = 'not_enrolled' | 'in_progress' | 'completed';
+
+/**
+ * `GET /enrollments`: the caller's courses with their progress, without
+ * the trail's per-activity steps and the long course texts (CONTRACT-REQ-E-2:
+ * 212 KB -> ~20 KB for a 33-course learner).
+ */
+export type Enrollments = {
+    /**
+     * With `limit`/`cursor`: pass back as `cursor`; `null` on the last page.
+     */
+    next_cursor: string | null;
+    runs: Array<Enrollment>;
+};
 
 /**
  * Stable, closed set of machine-readable error codes.
@@ -3182,6 +3230,10 @@ export type GradebookAssessment = {
     kind: AssessmentKind;
     passing_score: number;
     title: string;
+    /**
+     * Its share in the course total (a file task weighs 1).
+     */
+    weight: number;
 };
 
 /**
@@ -3226,6 +3278,18 @@ export type GradebookCell = {
 };
 
 /**
+ * One column's mean grade over the graded work in it.
+ */
+export type GradebookColumnAverage = {
+    activity_id: ActivityId;
+    average: number | null;
+    /**
+     * How many graded cells the average is over.
+     */
+    graded: number;
+};
+
+/**
  * A file-submission activity as a gradebook column.
  */
 export type GradebookFileSubmission = {
@@ -3244,6 +3308,11 @@ export type GradebookPage = {
     cells: Array<GradebookCell>;
     file_submissions: Array<GradebookFileSubmission>;
     next_cursor: string | null;
+    summary: GradebookSummary | null;
+    /**
+     * The course result of each learner on this page.
+     */
+    totals: Array<GradebookTotal>;
     users: Array<UserSummary>;
 };
 
@@ -3253,6 +3322,32 @@ export type GradebookPage = {
  * `submitted` / `graded` file attempt).
  */
 export type GradebookStatus = 'needs_grading';
+
+export type GradebookSummary = {
+    columns: Array<GradebookColumnAverage>;
+    /**
+     * Mean of the learners' course totals that are set.
+     */
+    course_average: number | null;
+};
+
+/**
+ * A learner's course result: the weight-averaged percent of the graded
+ * columns. Graded work counts with its grade, work awaiting grading does
+ * not count yet, missing work counts as 0 once the learner's own due date
+ * has passed (not before it, nor without a due date).
+ */
+export type GradebookTotal = {
+    /**
+     * Columns counted as 0 (past due, no graded work).
+     */
+    missing: number;
+    /**
+     * Percent; `null` while nothing counts yet.
+     */
+    score: number | null;
+    user_id: UserId;
+};
 
 export type GradedItem = {
     /**
@@ -13138,9 +13233,9 @@ export type ListEnrollmentsData = {
 
 export type ListEnrollmentsResponses = {
     /**
-     * Trail
+     * The caller's courses
      */
-    200: Trail;
+    200: Enrollments;
 };
 
 export type ListEnrollmentsResponse = ListEnrollmentsResponses[keyof ListEnrollmentsResponses];

@@ -75,6 +75,72 @@ pub struct TrailStep {
     pub updated_at_unix: i64,
 }
 
+/// `GET /enrollments`: the caller's courses with their progress, without
+/// the trail's per-activity steps and the long course texts (CONTRACT-REQ-E-2:
+/// 212 KB -> ~20 KB for a 33-course learner).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct Enrollments {
+    pub runs: Vec<Enrollment>,
+    /// With `limit`/`cursor`: pass back as `cursor`; `null` on the last page.
+    pub next_cursor: Option<String>,
+}
+
+/// One course the caller is enrolled in.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct Enrollment {
+    pub id: TrailRunId,
+    pub course_id: CourseId,
+    pub course: EnrolledCourse,
+    /// Published activities in the course.
+    pub course_total_steps: i64,
+    /// The `learner-state` progress percent; `null` until the progress
+    /// projection has a row for the course.
+    pub progress_pct: Option<f64>,
+    pub learning_status: LearningStatus,
+    /// The "continue" target; `null` when none is left.
+    pub next_activity_id: Option<ActivityId>,
+    pub created_at_unix: i64,
+    pub updated_at_unix: i64,
+}
+
+/// What a course row of the learner's list shows.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EnrolledCourse {
+    pub id: CourseId,
+    pub name: String,
+    /// Served at `/content/<key>`.
+    pub thumbnail_key: Option<String>,
+    pub archived_at_unix: Option<i64>,
+}
+
+impl From<Trail> for Enrollments {
+    fn from(t: Trail) -> Self {
+        Self {
+            runs: t
+                .runs
+                .into_iter()
+                .map(|r| Enrollment {
+                    id: r.id,
+                    course_id: r.course_id,
+                    course: EnrolledCourse {
+                        id: r.course.id,
+                        name: r.course.name,
+                        thumbnail_key: r.course.thumbnail_key,
+                        archived_at_unix: r.course.archived_at_unix,
+                    },
+                    course_total_steps: r.course_total_steps,
+                    progress_pct: r.progress_pct,
+                    learning_status: r.learning_status,
+                    next_activity_id: r.next_activity_id,
+                    created_at_unix: r.created_at_unix,
+                    updated_at_unix: r.updated_at_unix,
+                })
+                .collect(),
+            next_cursor: t.next_cursor,
+        }
+    }
+}
+
 impl Trail {
     pub fn for_actor(t: domain::Trail, actor: &ab_domain::identity::Actor) -> Self {
         Self {

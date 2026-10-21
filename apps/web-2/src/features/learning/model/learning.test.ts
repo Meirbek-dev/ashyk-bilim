@@ -1,12 +1,12 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { TrailRun } from '#/shared/api/gen/types.gen'
+import type { Enrollment } from '#/shared/api/gen/types.gen'
 
 import { learningSearchSchema } from '../route'
 import { countByState, nextActivity, orderRuns, runState } from './learning'
 
-function run(id: string, progress: number | null, archived = false): TrailRun {
+function run(id: string, progress: number | null, archived = false): Enrollment {
   return {
     id,
     course_id: id,
@@ -16,28 +16,11 @@ function run(id: string, progress: number | null, archived = false): TrailRun {
     progress_pct: progress,
     learning_status: 'in_progress',
     next_activity_id: null,
-    status: 'in_progress',
-    steps: [],
     course: {
       id,
-      version: 1,
       name: id,
-      about: '',
-      description: '',
-      allowed_actions: [],
       archived_at_unix: archived ? 1 : null,
-      archived_by: null,
-      contributor_ids: [],
-      creator_id: null,
-      created_at_unix: 0,
-      updated_at_unix: 0,
-      learnings: [],
-      open_to_contributors: false,
-      assessments_require_enrollment: true,
-      public: true,
-      tags: [],
       thumbnail_key: null,
-      thumbnail_video_key: null,
     },
   }
 }

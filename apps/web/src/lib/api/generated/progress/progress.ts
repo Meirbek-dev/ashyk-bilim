@@ -29,6 +29,7 @@ import {
   CourseLearnerPage,
   EnrollLearnersRequest,
   EnrollLearnersResponse,
+  Enrollments,
   GetTrailParams,
   LearnerCourseState,
   ListCourseLearnersParams,
@@ -725,22 +726,23 @@ export const getListEnrollmentsUrl = (params?: ListEnrollmentsParams) => {
 }
 
 /**
- * S-10 name of [`get_trail`] (that path is deprecated).
- * @summary The caller's trail: one run per course, one step per activity marked
-done. Anonymous callers get an empty trail. With `limit` / `cursor` the
-runs come in keyset pages (`next_cursor`).
+ * S-10 name of [`get_trail`] (that path is deprecated; it still answers
+ * the full trail).
+ * @summary The caller's courses (trail runs without their steps). Anonymous callers
+get none. With `limit` / `cursor` the runs come in keyset pages
+(`next_cursor`).
  */
 export const listEnrollments = async (
   params?: ListEnrollmentsParams,
   options?: Parameters<typeof orvalMutator>[1],
-): Promise<Trail> => {
-  return orvalMutator<Trail>(
+): Promise<Enrollments> => {
+  return orvalMutator<Enrollments>(
     getListEnrollmentsUrl(params),
     {
       ...options,
       method: 'GET',
     },
-    Trail,
+    Enrollments,
   )
 }
 
@@ -816,9 +818,9 @@ export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollm
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The caller's trail: one run per course, one step per activity marked
-done. Anonymous callers get an empty trail. With `limit` / `cursor` the
-runs come in keyset pages (`next_cursor`).
+ * @summary The caller's courses (trail runs without their steps). Anonymous callers
+get none. With `limit` / `cursor` the runs come in keyset pages
+(`next_cursor`).
  */
 
 export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollments>>, TError = ErrorType<unknown>>(
@@ -901,9 +903,9 @@ export function useListEnrollmentsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The caller's trail: one run per course, one step per activity marked
-done. Anonymous callers get an empty trail. With `limit` / `cursor` the
-runs come in keyset pages (`next_cursor`).
+ * @summary The caller's courses (trail runs without their steps). Anonymous callers
+get none. With `limit` / `cursor` the runs come in keyset pages
+(`next_cursor`).
  */
 
 export function useListEnrollmentsSuspense<

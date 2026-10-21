@@ -7732,6 +7732,99 @@ expression: json
         ],
         "type": "string"
       },
+      "EnrolledCourse": {
+        "description": "What a course row of the learner's list shows.",
+        "properties": {
+          "archived_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "thumbnail_key": {
+            "description": "Served at `/content/<key>`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived_at_unix",
+          "thumbnail_key"
+        ],
+        "type": "object"
+      },
+      "Enrollment": {
+        "description": "One course the caller is enrolled in.",
+        "properties": {
+          "course": {
+            "$ref": "#/components/schemas/EnrolledCourse"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_total_steps": {
+            "description": "Published activities in the course.",
+            "type": "integer"
+          },
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TrailRunId"
+          },
+          "learning_status": {
+            "$ref": "#/components/schemas/LearningStatus"
+          },
+          "next_activity_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActivityId",
+                "description": "The \"continue\" target; `null` when none is left."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress_pct": {
+            "description": "The `learner-state` progress percent; `null` until the progress\nprojection has a row for the course.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "updated_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          }
+        },
+        "required": [
+          "id",
+          "course_id",
+          "course",
+          "course_total_steps",
+          "learning_status",
+          "created_at_unix",
+          "updated_at_unix",
+          "next_activity_id",
+          "progress_pct"
+        ],
+        "type": "object"
+      },
       "EnrollmentState": {
         "enum": [
           "not_enrolled",
@@ -7739,6 +7832,29 @@ expression: json
           "completed"
         ],
         "type": "string"
+      },
+      "Enrollments": {
+        "description": "`GET /enrollments`: the caller's courses with their progress, without\nthe trail's per-activity steps and the long course texts (CONTRACT-REQ-E-2:\n212 KB -> ~20 KB for a 33-course learner).",
+        "properties": {
+          "next_cursor": {
+            "description": "With `limit`/`cursor`: pass back as `cursor`; `null` on the last page.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/Enrollment"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs",
+          "next_cursor"
+        ],
+        "type": "object"
       },
       "ErrorCode": {
         "description": "Stable, closed set of machine-readable error codes.",
@@ -9093,6 +9209,11 @@ expression: json
           },
           "title": {
             "type": "string"
+          },
+          "weight": {
+            "description": "Its share in the course total (a file task weighs 1).",
+            "format": "double",
+            "type": "number"
           }
         },
         "required": [
@@ -9101,6 +9222,7 @@ expression: json
           "title",
           "kind",
           "passing_score",
+          "weight",
           "due_at_unix"
         ],
         "type": "object"
@@ -9254,6 +9376,32 @@ expression: json
         ],
         "type": "object"
       },
+      "GradebookColumnAverage": {
+        "description": "One column's mean grade over the graded work in it.",
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "average": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "graded": {
+            "description": "How many graded cells the average is over.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activity_id",
+          "graded",
+          "average"
+        ],
+        "type": "object"
+      },
       "GradebookFileSubmission": {
         "description": "A file-submission activity as a gradebook column.",
         "properties": {
@@ -9312,6 +9460,24 @@ expression: json
               "null"
             ]
           },
+          "summary": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GradebookSummary",
+                "description": "The average row over every learner the filter matches; first page\nonly (`null` on later pages)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totals": {
+            "description": "The course result of each learner on this page.",
+            "items": {
+              "$ref": "#/components/schemas/GradebookTotal"
+            },
+            "type": "array"
+          },
           "users": {
             "items": {
               "$ref": "#/components/schemas/UserSummary"
@@ -9324,7 +9490,9 @@ expression: json
           "users",
           "assessments",
           "file_submissions",
-          "next_cursor"
+          "totals",
+          "next_cursor",
+          "summary"
         ],
         "type": "object"
       },
@@ -9334,6 +9502,56 @@ expression: json
           "needs_grading"
         ],
         "type": "string"
+      },
+      "GradebookSummary": {
+        "properties": {
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookColumnAverage"
+            },
+            "type": "array"
+          },
+          "course_average": {
+            "description": "Mean of the learners' course totals that are set.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "columns",
+          "course_average"
+        ],
+        "type": "object"
+      },
+      "GradebookTotal": {
+        "description": "A learner's course result: the weight-averaged percent of the graded\ncolumns. Graded work counts with its grade, work awaiting grading does\nnot count yet, missing work counts as 0 once the learner's own due date\nhas passed (not before it, nor without a due date).",
+        "properties": {
+          "missing": {
+            "description": "Columns counted as 0 (past due, no graded work).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "score": {
+            "description": "Percent; `null` while nothing counts yet.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "missing",
+          "score"
+        ],
+        "type": "object"
       },
       "GradedItem": {
         "properties": {
@@ -31370,7 +31588,7 @@ expression: json
     },
     "/api/v2/enrollments": {
       "get": {
-        "description": "S-10 name of [`get_trail`] (that path is deprecated).",
+        "description": "S-10 name of [`get_trail`] (that path is deprecated; it still answers\nthe full trail).",
         "operationId": "list_enrollments",
         "parameters": [
           {
@@ -31397,14 +31615,14 @@ expression: json
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Trail"
+                  "$ref": "#/components/schemas/Enrollments"
                 }
               }
             },
-            "description": "Trail"
+            "description": "The caller's courses"
           }
         },
-        "summary": "The caller's trail: one run per course, one step per activity marked\ndone. Anonymous callers get an empty trail. With `limit` / `cursor` the\nruns come in keyset pages (`next_cursor`).",
+        "summary": "The caller's courses (trail runs without their steps). Anonymous callers\nget none. With `limit` / `cursor` the runs come in keyset pages\n(`next_cursor`).",
         "tags": [
           "progress"
         ]

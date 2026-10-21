@@ -22,6 +22,7 @@ export const GradebookPage = zod
           .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
         passing_score: zod.number(),
         title: zod.string(),
+        weight: zod.number().describe('Its share in the course total (a file task weighs 1).'),
       }),
     ),
     cells: zod.array(
@@ -90,6 +91,36 @@ export const GradebookPage = zod
         .describe('A file-submission activity as a gradebook column.'),
     ),
     next_cursor: zod.string().nullable(),
+    summary: zod.union([
+      zod
+        .object({
+          columns: zod.array(
+            zod
+              .object({
+                activity_id: zod.uuid(),
+                average: zod.number().nullable(),
+                graded: zod.int().describe('How many graded cells the average is over.'),
+              })
+              .describe("One column's mean grade over the graded work in it."),
+          ),
+          course_average: zod.number().nullable().describe("Mean of the learners' course totals that are set."),
+        })
+        .describe('The average row over every learner the filter matches; first page\nonly (`null` on later pages).'),
+      zod.null(),
+    ]),
+    totals: zod
+      .array(
+        zod
+          .object({
+            missing: zod.int().describe('Columns counted as 0 (past due, no graded work).'),
+            score: zod.number().nullable().describe('Percent; `null` while nothing counts yet.'),
+            user_id: zod.uuid(),
+          })
+          .describe(
+            "A learner's course result: the weight-averaged percent of the graded\ncolumns. Graded work counts with its grade, work awaiting grading does\nnot count yet, missing work counts as 0 once the learner's own due date\nhas passed (not before it, nor without a due date).",
+          ),
+      )
+      .describe('The course result of each learner on this page.'),
     users: zod.array(
       zod.object({
         display_name: zod.string(),

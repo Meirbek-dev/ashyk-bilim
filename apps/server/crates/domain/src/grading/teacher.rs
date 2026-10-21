@@ -336,6 +336,8 @@ pub struct GradebookAssessment {
     pub kind: AssessmentKind,
     pub due_at: Option<i64>,
     pub passing_score: f64,
+    /// Its share in the course total (a file task weighs 1).
+    pub weight: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -352,7 +354,131 @@ pub struct GradebookPage {
     pub users: Vec<UserSummary>,
     pub assessments: Vec<GradebookAssessment>,
     pub file_submissions: Vec<GradebookFileSubmission>,
+    /// The course result of each learner on the page (OPEN-F-6).
+    pub totals: Vec<GradebookTotal>,
+    /// Averages over every learner the filter matches; first page only.
+    pub summary: Option<GradebookSummary>,
     pub next_cursor: Option<String>,
+}
+
+/// A learner's course result: the weight-averaged percent of the graded columns.
+///
+/// Graded work counts with its grade; work awaiting grading does not count
+/// yet; missing work counts as 0 once the learner's own due date has passed,
+/// and not at all before it (or without a due date).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GradebookTotal {
+    pub user_id: UserId,
+    /// Percent; `None` while nothing counts yet.
+    pub score: Option<f64>,
+    /// Columns counted as 0: past due without graded work.
+    pub missing: i32,
+}
+
+/// One column's mean grade over the graded work.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GradebookColumnAverage {
+    pub activity_id: ActivityId,
+    pub average: Option<f64>,
+    pub graded: i32,
+}
+
+/// The gradebook's average row over every learner the filter matches.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GradebookSummary {
+    pub columns: Vec<GradebookColumnAverage>,
+    /// Mean of the learners' totals that are set.
+    pub course_average: Option<f64>,
+}
+
+/// A column as the course total reads it.
+#[derive(Debug, Clone, Copy)]
+struct TotalColumn {
+    activity_id: ActivityId,
+    weight: f64,
+    due_at: Option<i64>,
+}
+
+fn mean(values: impl IntoIterator<Item = f64>) -> (Option<f64>, i32) {
+    let (sum, n) = values
+        .into_iter()
+        .fold((0.0, 0_i32), |(sum, n), v| (sum + v, n.saturating_add(1)));
+    ((n > 0).then(|| round2(sum / f64::from(n))), n)
+}
+
+/// The grade a cell counts with: graded or released work only.
+fn graded_score(cell: &GradebookCell) -> Option<f64> {
+    matches!(
+        cell.status,
+        SubmissionStatus::Graded | SubmissionStatus::Published
+    )
+    .then_some(cell.final_score)
+    .flatten()
+}
+
+/// Course totals of `users` (see [`GradebookTotal`]) and, over the same
+/// learners, the column averages.
+fn gradebook_totals(
+    users: &[UserId],
+    cells: &[GradebookCell],
+    columns: &[TotalColumn],
+    due_overrides: &HashMap<(UserId, ActivityId), i64>,
+    now: i64,
+) -> (Vec<GradebookTotal>, GradebookSummary) {
+    let by_key: HashMap<(UserId, ActivityId), &GradebookCell> = cells
+        .iter()
+        .map(|c| ((c.user_id, c.activity_id), c))
+        .collect();
+    let totals: Vec<GradebookTotal> = users
+        .iter()
+        .map(|&user_id| {
+            let (mut sum, mut weights, mut missing) = (0.0, 0.0, 0_i32);
+            for column in columns.iter().filter(|c| c.weight > 0.0) {
+                let cell = by_key.get(&(user_id, column.activity_id)).copied();
+                if let Some(score) = cell.and_then(graded_score) {
+                    sum = score.mul_add(column.weight, sum);
+                    weights += column.weight;
+                } else if cell.is_some_and(|c| c.status == SubmissionStatus::Pending) {
+                    // Handed in, awaiting the grader: not the learner's zero.
+                } else if due_overrides
+                    .get(&(user_id, column.activity_id))
+                    .copied()
+                    .or(column.due_at)
+                    .is_some_and(|due| due < now)
+                {
+                    weights += column.weight;
+                    missing = missing.saturating_add(1);
+                }
+            }
+            GradebookTotal {
+                user_id,
+                score: (weights > 0.0)
+                    .then(|| round2(sum / weights))
+                    .filter(|s| s.is_finite()),
+                missing,
+            }
+        })
+        .collect();
+    let summary = GradebookSummary {
+        columns: columns
+            .iter()
+            .map(|column| {
+                let (average, graded) = mean(
+                    users
+                        .iter()
+                        .filter_map(|u| by_key.get(&(*u, column.activity_id)))
+                        .filter_map(|c| graded_score(c)),
+                );
+                GradebookColumnAverage {
+                    activity_id: column.activity_id,
+                    average,
+                    graded,
+                }
+            })
+            .collect(),
+        course_average: mean(totals.iter().filter_map(|t| t.score)).0,
+    };
+    (totals, summary)
 }
 
 /// Header + status words of the CSV exports, by `Accept-Language`.
@@ -380,6 +506,15 @@ impl CsvLanguage {
                 _ => None,
             })
             .unwrap_or(Self::Ru)
+    }
+
+    /// The gradebook's course-result column.
+    const fn total(self) -> &'static str {
+        match self {
+            Self::Ru => "Итог курса",
+            Self::Kk => "Курс қорытындысы",
+            Self::En => "Course total",
+        }
     }
 
     const fn learner(self) -> &'static str {
@@ -1749,7 +1884,7 @@ impl GradingService {
         } else {
             None
         };
-        let rows = ab_db::submissions::gradebook_cells(&self.pool, course_id, &ids).await?;
+        let cells = self.gradebook_cells(course_id, &ids).await?;
         // The members' name order (`list_user_summaries` answers in no order).
         let mut users: Vec<_> = ab_db::identity::list_user_summaries(&self.pool, &ids)
             .await?
@@ -1757,30 +1892,98 @@ impl GradingService {
             .map(summary)
             .collect();
         users.sort_by_key(|u: &UserSummary| ids.iter().position(|id| *id == u.id));
-        let assessments = ab_db::assessments::gradebook_columns(&self.pool, course_id)
-            .await?
-            .into_iter()
-            .map(|a| GradebookAssessment {
-                id: a.id,
+        let assessments: Vec<GradebookAssessment> =
+            ab_db::assessments::gradebook_columns(&self.pool, course_id)
+                .await?
+                .into_iter()
+                .map(|a| GradebookAssessment {
+                    id: a.id,
+                    activity_id: a.activity_id,
+                    title: a.title,
+                    kind: a.kind,
+                    due_at: a.due_at,
+                    passing_score: a.passing_score,
+                    weight: a.weight,
+                })
+                .collect();
+        let file_submissions: Vec<GradebookFileSubmission> =
+            ab_db::file_submissions::list_for_course(&self.pool, course_id)
+                .await?
+                .into_iter()
+                .map(|f| GradebookFileSubmission {
+                    id: f.id,
+                    activity_id: f.activity_id,
+                    title: f.title,
+                    due_at: f.due_at,
+                })
+                .collect();
+        let columns: Vec<TotalColumn> = assessments
+            .iter()
+            .map(|a| TotalColumn {
                 activity_id: a.activity_id,
-                title: a.title,
-                kind: a.kind,
+                weight: a.weight,
                 due_at: a.due_at,
-                passing_score: a.passing_score,
             })
-            .collect();
-        let file_submissions = ab_db::file_submissions::list_for_course(&self.pool, course_id)
-            .await?
-            .into_iter()
-            .map(|f| GradebookFileSubmission {
-                id: f.id,
+            .chain(file_submissions.iter().map(|f| TotalColumn {
                 activity_id: f.activity_id,
-                title: f.title,
+                weight: 1.0,
                 due_at: f.due_at,
-            })
+            }))
             .collect();
+        let now = now_unix();
+        let overrides = self.gradebook_due_overrides(course_id, &ids).await?;
+        let (totals, page_summary) = gradebook_totals(&ids, &cells, &columns, &overrides, now);
+        // The average row covers every matching learner, not one page of them.
+        let summary = match (after, &next_cursor) {
+            (Some(_), _) => None,
+            (None, None) => Some(page_summary),
+            (None, Some(_)) => {
+                let all = ab_db::submissions::gradebook_members(
+                    &self.pool,
+                    course_id,
+                    None,
+                    i64::MAX,
+                    filter,
+                )
+                .await?;
+                let cells = self.gradebook_cells(course_id, &all).await?;
+                let overrides = self.gradebook_due_overrides(course_id, &all).await?;
+                Some(gradebook_totals(&all, &cells, &columns, &overrides, now).1)
+            }
+        };
         Ok(GradebookPage {
-            cells: rows
+            cells,
+            users,
+            assessments,
+            file_submissions,
+            totals,
+            summary,
+            next_cursor,
+        })
+    }
+
+    async fn gradebook_due_overrides(
+        &self,
+        course_id: CourseId,
+        users: &[UserId],
+    ) -> Result<HashMap<(UserId, ActivityId), i64>> {
+        Ok(
+            ab_db::submissions::gradebook_due_overrides(&self.pool, course_id, users)
+                .await?
+                .into_iter()
+                .map(|r| ((r.user_id, r.activity_id), r.due_at))
+                .collect(),
+        )
+    }
+
+    async fn gradebook_cells(
+        &self,
+        course_id: CourseId,
+        users: &[UserId],
+    ) -> Result<Vec<GradebookCell>> {
+        Ok(
+            ab_db::submissions::gradebook_cells(&self.pool, course_id, users)
+                .await?
                 .into_iter()
                 .map(|r| GradebookCell {
                     user_id: r.user_id,
@@ -1802,11 +2005,7 @@ impl GradingService {
                     graded_at: r.graded_at,
                 })
                 .collect(),
-            users,
-            assessments,
-            file_submissions,
-            next_cursor,
-        })
+        )
     }
 
     /// The whole gradebook matrix as CSV: learner, email, one column per
@@ -1831,6 +2030,7 @@ impl GradingService {
         let (mut users, assessments, file_submissions) =
             (first.users, first.assessments, first.file_submissions);
         cells.extend(first.cells);
+        let mut totals = first.totals;
         cursor.clone_from(&first.next_cursor);
         while let Some(next) = cursor.take() {
             let page = self
@@ -1843,6 +2043,7 @@ impl GradingService {
                 )
                 .await?;
             cells.extend(page.cells);
+            totals.extend(page.totals);
             users.extend(page.users);
             cursor = page.next_cursor;
         }
@@ -1873,8 +2074,11 @@ impl GradingService {
             .iter()
             .map(|c| ((c.user_id, c.activity_id), c))
             .collect();
+        let totals: HashMap<UserId, Option<f64>> =
+            totals.into_iter().map(|t| (t.user_id, t.score)).collect();
         let mut header = vec![language.learner().to_owned(), "Email".to_owned()];
         header.extend(columns.iter().map(|(_, title)| title.clone()));
+        header.push(language.total().to_owned());
         let mut out = String::from("\u{feff}");
         out.push_str(&csv_row(&header, language));
         for user in &users {
@@ -1893,6 +2097,13 @@ impl GradingService {
                     |score| score.to_string(),
                 )
             }));
+            fields.push(
+                totals
+                    .get(&user.id)
+                    .copied()
+                    .flatten()
+                    .map_or_else(String::new, |score| score.to_string()),
+            );
             out.push_str(&csv_row(&fields, language));
         }
         Ok(out)
@@ -2144,6 +2355,104 @@ mod tests {
         in_program_order(&mut columns, &chapters, &activities);
         let order: Vec<&str> = columns.iter().map(|(_, t)| *t).collect();
         assert_eq!(order, ["hand-in", "exam", "quiz", "gone"]);
+    }
+
+    #[test]
+    fn gradebook_total_weighs_graded_work_and_zeroes_only_overdue_gaps() {
+        let user = |n: u128| UserId(uuid::Uuid::from_u128(n));
+        let act = |n: u128| ActivityId(uuid::Uuid::from_u128(n));
+        let cell = |u: u128, a: u128, status: SubmissionStatus, score: Option<f64>| GradebookCell {
+            user_id: user(u),
+            activity_id: act(a),
+            assessment_id: None,
+            submission_id: None,
+            file_submission_id: None,
+            attempt_id: None,
+            status,
+            attempt_number: 1,
+            attempts: 1,
+            pending_attempt: None,
+            pending_attempt_id: None,
+            pending_attempt_status: None,
+            final_score: score,
+            is_late: false,
+            due_at_override: None,
+            submitted_at: None,
+            graded_at: None,
+        };
+        let now = 1_000;
+        let columns = [
+            // weight 3, no due date
+            TotalColumn {
+                activity_id: act(1),
+                weight: 3.0,
+                due_at: None,
+            },
+            // past due
+            TotalColumn {
+                activity_id: act(2),
+                weight: 1.0,
+                due_at: Some(500),
+            },
+            // due later
+            TotalColumn {
+                activity_id: act(3),
+                weight: 1.0,
+                due_at: Some(2_000),
+            },
+            // weight 0 never counts
+            TotalColumn {
+                activity_id: act(4),
+                weight: 0.0,
+                due_at: Some(500),
+            },
+        ];
+        let cells = [
+            cell(1, 1, SubmissionStatus::Published, Some(80.0)),
+            // learner 1 misses 2 (past due -> 0) and 3 (not due -> skipped)
+            cell(2, 1, SubmissionStatus::Graded, Some(60.0)),
+            cell(2, 2, SubmissionStatus::Pending, None),
+            cell(2, 3, SubmissionStatus::Published, Some(100.0)),
+        ];
+        // learner 3 got an extension on 2: not missing yet.
+        let overrides = HashMap::from([((user(3), act(2)), 5_000)]);
+        let (totals, summary) = gradebook_totals(
+            &[user(1), user(2), user(3)],
+            &cells,
+            &columns,
+            &overrides,
+            now,
+        );
+        // (80*3 + 0*1) / 4
+        assert_eq!(
+            totals[0],
+            GradebookTotal {
+                user_id: user(1),
+                score: Some(60.0),
+                missing: 1
+            }
+        );
+        // (60*3 + 100*1) / 4; the pending hand-in waits for the grader
+        assert_eq!(
+            totals[1],
+            GradebookTotal {
+                user_id: user(2),
+                score: Some(70.0),
+                missing: 0
+            }
+        );
+        assert_eq!(
+            totals[2],
+            GradebookTotal {
+                user_id: user(3),
+                score: None,
+                missing: 0
+            }
+        );
+        assert_eq!(summary.columns[0].average, Some(70.0));
+        assert_eq!(summary.columns[0].graded, 2);
+        assert_eq!(summary.columns[1].average, None);
+        assert_eq!(summary.course_average, Some(65.0));
     }
 
     #[test]

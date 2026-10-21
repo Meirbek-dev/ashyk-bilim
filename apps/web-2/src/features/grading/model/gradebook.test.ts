@@ -3,7 +3,14 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { Activity, Curriculum, CurriculumChapter, GradebookCell, GradebookPage } from '#/shared/api/gen/types.gen'
 
-import { gradebookColumns, gradebookQuery, gradebookRows, reviewTarget, waitingNote } from './gradebook'
+import {
+  gradebookColumns,
+  gradebookQuery,
+  gradebookRows,
+  gradebookSummary,
+  reviewTarget,
+  waitingNote,
+} from './gradebook'
 import { gradebookSearchSchema } from '../route'
 
 const user = (name: string) => ({ id: `u-${name}`, display_name: `Name ${name}`, username: name, email: '' })
@@ -29,11 +36,13 @@ const cell = (userId: string, activityId: string, extra: Partial<GradebookCell> 
 })
 const page = (names: string[], cells: GradebookCell[]): GradebookPage => ({
   assessments: [
-    { activity_id: 'act-q', due_at_unix: null, id: 'as-1', kind: 'quiz', passing_score: 50, title: 'Quiz' },
+    { activity_id: 'act-q', due_at_unix: null, id: 'as-1', kind: 'quiz', passing_score: 50, title: 'Quiz', weight: 1 },
   ],
   file_submissions: [{ activity_id: 'act-f', due_at_unix: null, id: 'fs-1', title: 'Essay' }],
   cells,
   users: names.map(user),
+  totals: names.map(name => ({ user_id: `u-${name}`, score: 75, missing: 0 })),
+  summary: null,
   next_cursor: null,
 })
 
@@ -88,6 +97,14 @@ describe('gradebook', () => {
     expect(reviewTarget(cell('u', 'x'))).toBe('sub-1')
     expect(reviewTarget(cell('u', 'x', { pending_attempt_id: 'newer' }))).toBe('newer')
     expect(reviewTarget(cell('u', 'x', { submission_id: null, attempt_id: 'att' }))).toBe('att')
+  })
+
+  test('B-GRD-37 each row carries its course total; the average row comes from the first page only', () => {
+    const first = { ...page(['a'], []), summary: { columns: [], course_average: 75 } }
+    const rows = gradebookRows([first, page(['b'], [])])
+    expect(rows.map(row => row.total?.score)).toEqual([75, 75])
+    expect(gradebookSummary([first, page(['b'], [])])?.course_average).toBe(75)
+    expect(gradebookSummary([])).toBe(null)
   })
 
   test('B-GRD-19 a newer waiting attempt is noted; the shown attempt waiting is not', () => {

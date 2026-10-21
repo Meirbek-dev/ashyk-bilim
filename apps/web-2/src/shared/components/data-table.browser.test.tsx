@@ -96,6 +96,24 @@ describe('DataTable', () => {
   })
 })
 
+describe('DataTable footer', () => {
+  test('wide: a footer row sums up each column under the rows', async () => {
+    await page.viewport(1280, 800)
+    const screen = await renderInRouter(
+      <DataTable
+        label={label}
+        rows={rows}
+        columns={columns}
+        getKey={row => row.id}
+        footer={column => (column.id === 'learners' ? 'Σ 15' : column.id === 'name' ? 'Total' : null)}
+      />,
+    )
+    const footer = screen.getByRole('row').last()
+    await expect.element(footer.getByRole('cell', { name: 'Total' })).toBeVisible()
+    await expect.element(footer.getByRole('cell', { name: 'Σ 15' })).toBeVisible()
+  })
+})
+
 describe('DataTable cards', () => {
   test('narrow: the value of a line with a long label starts at the left under it, not at the far right', async () => {
     await page.viewport(390, 800)

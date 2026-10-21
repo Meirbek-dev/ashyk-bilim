@@ -374,6 +374,8 @@ pub struct GradebookAssessmentRow {
     pub kind: AssessmentKind,
     pub due_at: Option<i64>,
     pub passing_score: f64,
+    /// Its share in the gradebook's course total.
+    pub weight: f64,
 }
 
 /// The gradebook's assessment columns, in curriculum order.
@@ -389,7 +391,7 @@ pub async fn gradebook_columns(
         GradebookAssessmentRow,
         r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
                   s.title, s.kind AS "kind: AssessmentKind",
-                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score
+                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score, s.weight
            FROM assessments s
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id

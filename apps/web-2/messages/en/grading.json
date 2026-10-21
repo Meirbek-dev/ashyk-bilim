@@ -140,6 +140,20 @@
   "grading_kind_matching": "Matching",
   "grading_gradebook_table": "Gradebook",
   "grading_gradebook_empty": "Course learners and their grades will appear here.",
+  "grading_col_total": "Course total",
+  "grading_average": "Average",
+  "grading_course_average": "Average course total: {value}.",
+  "grading_total_legend": "The total is the weighted average grade. A missing submission counts as 0 only after its deadline; submissions awaiting review do not count yet.",
+  "grading_total_missing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} missed the deadline, counted as 0",
+        "countPlural=other": "{count} missed the deadline, counted as 0"
+      }
+    }
+  ],
   "grading_pending_only": "Has submissions to review",
   "grading_cell_none": "No submission",
   "grading_cell_waiting": "A new attempt awaits review",

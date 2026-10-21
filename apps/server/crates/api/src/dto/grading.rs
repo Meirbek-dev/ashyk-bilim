@@ -467,6 +467,8 @@ pub struct GradebookAssessment {
     pub kind: AssessmentKind,
     pub due_at_unix: Option<i64>,
     pub passing_score: f64,
+    /// Its share in the course total (a file task weighs 1).
+    pub weight: f64,
 }
 
 /// A file-submission activity as a gradebook column.
@@ -486,7 +488,42 @@ pub struct GradebookPage {
     pub users: Vec<UserSummary>,
     pub assessments: Vec<GradebookAssessment>,
     pub file_submissions: Vec<GradebookFileSubmission>,
+    /// The course result of each learner on this page.
+    pub totals: Vec<GradebookTotal>,
+    /// The average row over every learner the filter matches; first page
+    /// only (`null` on later pages).
+    pub summary: Option<GradebookSummary>,
     pub next_cursor: Option<String>,
+}
+
+/// A learner's course result: the weight-averaged percent of the graded columns.
+///
+/// Graded work counts with its grade, work awaiting grading does not count
+/// yet, missing work counts as 0 once the learner's own due date has passed
+/// (not before it, nor without a due date).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GradebookTotal {
+    pub user_id: UserId,
+    /// Percent; `null` while nothing counts yet.
+    pub score: Option<f64>,
+    /// Columns counted as 0 (past due, no graded work).
+    pub missing: i32,
+}
+
+/// One column's mean grade over the graded work in it.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GradebookColumnAverage {
+    pub activity_id: ActivityId,
+    pub average: Option<f64>,
+    /// How many graded cells the average is over.
+    pub graded: i32,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GradebookSummary {
+    pub columns: Vec<GradebookColumnAverage>,
+    /// Mean of the learners' course totals that are set.
+    pub course_average: Option<f64>,
 }
 
 impl From<domain::GradebookPage> for GradebookPage {
@@ -526,6 +563,7 @@ impl From<domain::GradebookPage> for GradebookPage {
                     kind: a.kind,
                     due_at_unix: a.due_at,
                     passing_score: a.passing_score,
+                    weight: a.weight,
                 })
                 .collect(),
             file_submissions: p
@@ -538,6 +576,27 @@ impl From<domain::GradebookPage> for GradebookPage {
                     due_at_unix: f.due_at,
                 })
                 .collect(),
+            totals: p
+                .totals
+                .into_iter()
+                .map(|t| GradebookTotal {
+                    user_id: t.user_id,
+                    score: t.score,
+                    missing: t.missing,
+                })
+                .collect(),
+            summary: p.summary.map(|s| GradebookSummary {
+                columns: s
+                    .columns
+                    .into_iter()
+                    .map(|c| GradebookColumnAverage {
+                        activity_id: c.activity_id,
+                        average: c.average,
+                        graded: c.graded,
+                    })
+                    .collect(),
+                course_average: s.course_average,
+            }),
             next_cursor: p.next_cursor,
         }
     }

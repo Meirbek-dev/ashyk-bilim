@@ -1570,11 +1570,25 @@ export const vGradePublishedPayload = v.object({
 export const vGradeReleaseMode = v.picklist(['immediate', 'batch']);
 
 /**
+ * One column's mean grade over the graded work in it.
+ */
+export const vGradebookColumnAverage = v.object({
+    activity_id: vActivityId,
+    average: v.nullable(v.number()),
+    graded: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+});
+
+/**
  * Gradebook row filter: `needs_grading` keeps learners with work
  * awaiting the grader (a `pending` / `graded` submission or a
  * `submitted` / `graded` file attempt).
  */
 export const vGradebookStatus = v.picklist(['needs_grading']);
+
+export const vGradebookSummary = v.object({
+    columns: v.array(vGradebookColumnAverage),
+    course_average: v.nullable(v.number())
+});
 
 export const vGradingEntryId = v.pipe(v.string(), v.uuid());
 
@@ -3872,6 +3886,41 @@ export const vDrillThroughResponse = v.object({
     total: v.pipe(v.number(), v.integer())
 });
 
+/**
+ * What a course row of the learner's list shows.
+ */
+export const vEnrolledCourse = v.object({
+    archived_at_unix: v.nullable(vUnixTime),
+    id: vCourseId,
+    name: v.string(),
+    thumbnail_key: v.nullable(v.string())
+});
+
+/**
+ * One course the caller is enrolled in.
+ */
+export const vEnrollment = v.object({
+    course: vEnrolledCourse,
+    course_id: vCourseId,
+    course_total_steps: v.pipe(v.number(), v.integer()),
+    created_at_unix: vUnixTime,
+    id: vTrailRunId,
+    learning_status: vLearningStatus,
+    next_activity_id: v.nullable(vActivityId),
+    progress_pct: v.nullable(v.number()),
+    updated_at_unix: vUnixTime
+});
+
+/**
+ * `GET /enrollments`: the caller's courses with their progress, without
+ * the trail's per-activity steps and the long course texts (CONTRACT-REQ-E-2:
+ * 212 KB -> ~20 KB for a 33-course learner).
+ */
+export const vEnrollments = v.object({
+    next_cursor: v.nullable(v.string()),
+    runs: v.array(vEnrollment)
+});
+
 export const vEvalResult = v.object({
     created_at_unix: vUnixTime,
     dataset: v.string(),
@@ -3921,7 +3970,8 @@ export const vGradebookAssessment = v.object({
     id: vAssessmentId,
     kind: vAssessmentKind,
     passing_score: v.number(),
-    title: v.string()
+    title: v.string(),
+    weight: v.number()
 });
 
 /**
@@ -4909,6 +4959,18 @@ export const vGradebookCell = v.object({
     user_id: vUserId
 });
 
+/**
+ * A learner's course result: the weight-averaged percent of the graded
+ * columns. Graded work counts with its grade, work awaiting grading does
+ * not count yet, missing work counts as 0 once the learner's own due date
+ * has passed (not before it, nor without a due date).
+ */
+export const vGradebookTotal = v.object({
+    missing: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    score: v.nullable(v.number()),
+    user_id: vUserId
+});
+
 export const vGradingEntry = v.object({
     created_at_unix: vUnixTime,
     final_score: v.nullable(v.number()),
@@ -5465,6 +5527,8 @@ export const vGradebookPage = v.object({
     cells: v.array(vGradebookCell),
     file_submissions: v.array(vGradebookFileSubmission),
     next_cursor: v.nullable(v.string()),
+    summary: v.nullable(vGradebookSummary),
+    totals: v.array(vGradebookTotal),
     users: v.array(vUserSummary)
 });
 
@@ -8350,9 +8414,9 @@ export const vListEnrollmentsQuery = v.object({
 });
 
 /**
- * Trail
+ * The caller's courses
  */
-export const vListEnrollmentsResponse = vTrail;
+export const vListEnrollmentsResponse = vEnrollments;
 
 export const vLeaveCourseHeaders = v.object({
     Prefer: v.nullish(v.string())

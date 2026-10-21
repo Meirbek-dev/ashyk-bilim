@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { TrailRun } from '#/shared/api/gen/types.gen'
+import type { Enrollment } from '#/shared/api/gen/types.gen'
 import { renderInRouter } from '#/shared/components/testing'
 
 import { RunItem } from './run-item'
 
-const run: TrailRun = {
+const run: Enrollment = {
   id: 'r1',
   course_id: 'c1',
   course_total_steps: 2,
@@ -14,28 +14,11 @@ const run: TrailRun = {
   progress_pct: 40,
   learning_status: 'in_progress',
   next_activity_id: 'a1',
-  status: 'in_progress',
-  steps: [],
   course: {
     id: 'c1',
-    version: 1,
     name: 'Курс',
-    about: '',
-    description: '',
-    allowed_actions: [],
     archived_at_unix: null,
-    archived_by: null,
-    contributor_ids: [],
-    creator_id: null,
-    created_at_unix: 0,
-    updated_at_unix: 0,
-    learnings: [],
-    open_to_contributors: false,
-    assessments_require_enrollment: true,
-    public: true,
-    tags: [],
     thumbnail_key: null,
-    thumbnail_video_key: null,
   },
 }
 

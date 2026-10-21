@@ -16,6 +16,7 @@ export const GradebookAssessment = zod.object({
     .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
   passing_score: zod.number(),
   title: zod.string(),
+  weight: zod.number().describe('Its share in the course total (a file task weighs 1).'),
 })
 
 export type GradebookAssessment = zod.input<typeof GradebookAssessment>

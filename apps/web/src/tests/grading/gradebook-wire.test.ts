@@ -23,6 +23,7 @@ const exam = {
   kind: 'exam' as const,
   due_at_unix: null,
   passing_score: 60,
+  weight: 1,
 }
 const upload = { id: FILE_ID, activity_id: 'activity_upload', title: 'Project Upload', due_at_unix: null }
 
@@ -73,7 +74,15 @@ function fileCell(status: Cell['status'], final_score: number | null): Cell {
 }
 
 function page(cells: Cell[], withFile = false): GradebookPage {
-  return { cells, users: [user], assessments: [exam], file_submissions: withFile ? [upload] : [], next_cursor: null }
+  return {
+    cells,
+    users: [user],
+    assessments: [exam],
+    file_submissions: withFile ? [upload] : [],
+    totals: [],
+    summary: null,
+    next_cursor: null,
+  }
 }
 
 describe('gradebookFromWire (UX-013)', () => {

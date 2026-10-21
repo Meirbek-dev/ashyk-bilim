@@ -1978,11 +1978,12 @@ export const listReplies = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * The caller's trail: one run per course, one step per activity marked
- * done. Anonymous callers get an empty trail. With `limit` / `cursor` the
- * runs come in keyset pages (`next_cursor`).
+ * The caller's courses (trail runs without their steps). Anonymous callers
+ * get none. With `limit` / `cursor` the runs come in keyset pages
+ * (`next_cursor`).
  *
- * S-10 name of [`get_trail`] (that path is deprecated).
+ * S-10 name of [`get_trail`] (that path is deprecated; it still answers
+ * the full trail).
  */
 export const listEnrollments = <ThrowOnError extends boolean = false>(options?: Options<ListEnrollmentsData, ThrowOnError>): RequestResult<ListEnrollmentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEnrollmentsResponses, unknown, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vListEnrollmentsResponse, data),

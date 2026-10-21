@@ -19,8 +19,12 @@ const LANDING_COURSES = 6
 /** The platform's name and texts: public, the landing reads it before any session exists. */
 export const platformOptions = () => getPlatformOptions()
 
-/** The newest courses the caller may see (a guest: public ones). */
-export const landingCoursesOptions = () => listCoursesOptions({ query: { limit: LANDING_COURSES, sort: 'updated' } })
+/**
+ * The newest published courses the caller may see (a guest: public ones). Published only: the landing and an empty
+ * /home suggest courses to start, and staff would otherwise be offered their own drafts.
+ */
+export const landingCoursesOptions = () =>
+  listCoursesOptions({ query: { limit: LANDING_COURSES, sort: 'updated', preset: 'published' } })
 
 // Composed by hand: the generated listCoursesInfiniteOptions types its queryFn as skippable, which
 // useSuspenseInfiniteQuery rejects. Key and request still come from the generated client.

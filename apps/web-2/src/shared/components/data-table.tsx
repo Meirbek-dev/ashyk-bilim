@@ -1,6 +1,16 @@
 import { rowSortingFeature, tableFeatures, useTable, type RowData } from '@tanstack/react-table'
+import type { ReactNode } from 'react'
 
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '#/shared/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '#/shared/ui/table'
 
 import type { DataColumn, Sort } from './data-columns'
 import { DataTableCards } from './data-table-cards'
@@ -16,6 +26,8 @@ type DataTableProps<T extends RowData> = {
   sort?: Sort | undefined
   /** Writes the next sort to the URL: `navigate({ search: prev => ({ ...prev, sort }) })`. */
   onSortChange?: (sort: Sort | undefined) => void
+  /** A summary row (averages, totals) under the rows, one cell per column; table only, the cards leave it out. */
+  footer?: ((column: DataColumn<T>) => ReactNode) | undefined
 }
 
 const features = tableFeatures({ rowSortingFeature })
@@ -35,7 +47,15 @@ const ariaSort = (sort: Sort | undefined, id: string) =>
   sort?.id !== id ? undefined : sort.desc ? ('descending' as const) : ('ascending' as const)
 
 /** A table that becomes cards when its container is narrow, using column priority (DESIGN 6). */
-export function DataTable<T extends RowData>({ label, rows, columns, getKey, sort, onSortChange }: DataTableProps<T>) {
+export function DataTable<T extends RowData>({
+  label,
+  rows,
+  columns,
+  getKey,
+  sort,
+  onSortChange,
+  footer,
+}: DataTableProps<T>) {
   const table = useTable({
     features,
     // The caller's array as is (`data` is a ReadonlyArray): a copy per render would rebuild the row model each time.
@@ -79,6 +99,15 @@ export function DataTable<T extends RowData>({ label, rows, columns, getKey, sor
               </TableRow>
             ))}
           </TableBody>
+          {footer ? (
+            <TableFooter>
+              <TableRow>
+                {columns.map(column => (
+                  <TableCell key={column.id}>{footer(column)}</TableCell>
+                ))}
+              </TableRow>
+            </TableFooter>
+          ) : null}
         </Table>
       </div>
       <div className="@2xl:hidden">

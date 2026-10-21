@@ -36,5 +36,5 @@
 
 ## Не перенесено (контракт есть)
 
-- Состояние курса по `TrailRun.learning_status` (сейчас "Не начат" выводится из `status`).
+- Состояние курса по `Enrollment.learning_status` (сейчас "Не начат" выводится из `status`).
 - "Показать ещё" у курсов: `GET /enrollments` принимает `limit` и `cursor`.

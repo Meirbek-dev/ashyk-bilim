@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::Response;
 
 use crate::detach::detached;
-use crate::dto::progress::{LearnerCourseState, Trail};
+use crate::dto::progress::{Enrollments, LearnerCourseState, Trail};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, MaybeActor, Path, Query, idempotent, wants_representation};
 use crate::state::AppState;
@@ -392,25 +392,27 @@ pub async fn remove_course_learner(
 // The same handlers under the stage-2 paths; the old paths are marked
 // `deprecated` in the export (`openapi::RENAMED`) and go in phase 9.
 
-/// The caller's trail: one run per course, one step per activity marked
-/// done. Anonymous callers get an empty trail. With `limit` / `cursor` the
-/// runs come in keyset pages (`next_cursor`).
+/// The caller's courses (trail runs without their steps). Anonymous callers
+/// get none. With `limit` / `cursor` the runs come in keyset pages
+/// (`next_cursor`).
 ///
-/// S-10 name of [`get_trail`] (that path is deprecated).
+/// S-10 name of [`get_trail`] (that path is deprecated; it still answers
+/// the full trail).
 #[utoipa::path(
     get, path = "/enrollments", tag = "progress",
     params(
         ("cursor" = Option<String>, Query, description = "`next_cursor` of the previous page"),
         ("limit" = Option<i64>, Query, description = "Runs per page, 1..=100 (default: all; 20 with `cursor`)"),
     ),
-    responses((status = 200, description = "Trail", body = Trail)),
+    responses((status = 200, description = "The caller's courses", body = Enrollments)),
 )]
 pub async fn list_enrollments(
     State(state): State<AppState>,
     MaybeActor(actor): MaybeActor,
     Query(query): Query<TrailQuery>,
-) -> ApiResult<Json<Trail>> {
-    get_trail(State(state), MaybeActor(actor), Query(query)).await
+) -> ApiResult<Json<Enrollments>> {
+    let Json(trail) = get_trail(State(state), MaybeActor(actor), Query(query)).await?;
+    Ok(Json(trail.into()))
 }
 
 /// Start (or keep) a run for a course the caller can access.
