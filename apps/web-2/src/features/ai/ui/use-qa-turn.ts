@@ -38,7 +38,7 @@ export function useQaTurn({ courseId, activityId, threadId, onThread }: QaTurnOp
       const current = new AbortController()
       controller.current = current
       dispatch({ type: 'ask', clientTurnId, question })
-      const agent = qaChat(courseId)
+      const agent = await qaChat(courseId)
       agent.threadId = threadId ?? clientTurnId
       agent.setMessages([{ id: clientTurnId, role: 'user', content: question }])
       let failure: string | null = null

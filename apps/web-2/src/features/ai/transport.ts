@@ -1,4 +1,4 @@
-import { HttpAgent } from '@ag-ui/client'
+import type { HttpAgent } from '@ag-ui/client'
 
 import { client } from '#/shared/api/gen/client.gen'
 import type { AiRunId, CourseId, QaChatData, StreamRunData } from '#/shared/api/gen/types.gen'
@@ -27,9 +27,12 @@ function observeEventIds(body: ReadableStream<Uint8Array>, onId: (id: string) =>
 const QA_CHAT: QaChatData['url'] = '/api/v2/ai/qa/{course_id}/chat'
 const RUN_STREAM: StreamRunData['url'] = '/api/v2/ai/runs/{run_id}/stream'
 
-function agent(url: string, headers: Record<string, string>, onId?: (id: string) => void): HttpAgent {
+// The AG-UI client (with rxjs and its own schemas, ~320 KB) loads with the first question or run, not with every
+// player and course page that shows the AI panel.
+async function agent(url: string, headers: Record<string, string>, onId?: (id: string) => void): Promise<HttpAgent> {
   const send = client.getConfig().fetch
   if (!send) throw new Error('the SDK client has no fetch (shared/api/client.ts)')
+  const { HttpAgent } = await import('@ag-ui/client')
   return new HttpAgent({
     url,
     headers,

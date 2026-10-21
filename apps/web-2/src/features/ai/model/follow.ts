@@ -18,7 +18,11 @@ export type Connect = (
   runId: AiRunId,
   cursor: string | null,
   onId: (id: string) => void,
-) => { runAgent(parameters: { abortController: AbortController }, subscriber: RunEvents): Promise<unknown> }
+) => Promise<Connection> | Connection
+
+type Connection = {
+  runAgent(parameters: { abortController: AbortController }, subscriber: RunEvents): Promise<unknown>
+}
 
 /** `CUSTOM.value` of a run event (`ai.rs` `custom_event`): only its `state` is read. */
 const vCustomValue = v.object({ state: vRunEventState })
@@ -50,8 +54,8 @@ export async function follow(
     dispatch(action)
   }
   while (!isTerminal(state)) {
-    const connection = connect(runId, state.cursor, id => step({ type: 'cursor', id }))
     try {
+      const connection = await connect(runId, state.cursor, id => step({ type: 'cursor', id }))
       await connection.runAgent({ abortController: controller }, subscriber(step))
     } catch (error) {
       if (controller.signal.aborted) throw error
