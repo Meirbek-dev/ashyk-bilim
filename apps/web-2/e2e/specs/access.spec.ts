@@ -144,7 +144,7 @@ test('the first Tab offers a skip past the shell straight to the page', async ({
   await page.goto('/courses')
   await page.waitForFunction(() => !document.querySelector('[data-hydrating]'))
   await page.keyboard.press('Tab')
-  const skip = page.getByRole('link', { name: m.platform_skip_to_content({}, ru) })
+  const skip = page.getByRole('link', { name: m.ui_skip_to_content({}, ru) })
   await expect(skip).toBeFocused()
   await expect(skip).toBeInViewport()
   await page.keyboard.press('Enter')

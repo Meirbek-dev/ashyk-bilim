@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 
 import { IconButton } from '../icon-button'
 import { SheetPanel } from '../sheet-panel'
+import { SkipLink } from '../skip-link'
 
 type FocusPageProps = {
   /** A kit Link (variant ghost) back to where the user came from. */
@@ -56,6 +57,8 @@ export function FocusPage({
   const sheetContents = useRef<HTMLDivElement>(null)
   return (
     <div className="@container flex min-h-dvh flex-col">
+      {/* As in the app shell: past the bar and a contents list of dozens of lessons, straight to the page. */}
+      <SkipLink />
       <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background px-4 @3xl:px-6">
         {back}
         {contents ? (
@@ -103,7 +106,13 @@ export function FocusPage({
             </div>
           </nav>
         ) : null}
-        <main className={`mx-auto w-full px-4 py-gutter @3xl:px-6 ${wide ? '' : 'max-w-prose'}`}>{children}</main>
+        <main
+          id="main"
+          tabIndex={-1}
+          className={`mx-auto w-full px-4 py-gutter @3xl:px-6 ${wide ? '' : 'max-w-prose'}`}
+        >
+          {children}
+        </main>
         {aside ? (
           <aside aria-label={aside.label} className="hidden w-96 shrink-0 border-l @5xl:block">
             <div className="sticky top-14 max-h-dvh overflow-y-auto p-4 pb-18">{aside.content}</div>
