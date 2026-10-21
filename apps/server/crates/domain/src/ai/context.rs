@@ -212,17 +212,9 @@ async fn push_assessment_sources(
     assessment: &db::AssessmentContextRow,
     sources: &mut Vec<ContextSource>,
 ) -> Result<()> {
-    let settings = serde_json::json!({
-        "kind": assessment.kind,
-        "grading_mode": assessment.grading_mode,
-        "passing_score": assessment.passing_score,
-        "max_attempts": assessment.max_attempts,
-        "time_limit_seconds": assessment.time_limit_seconds,
-        "due_at": assessment.due_at,
-    });
     let assessment_lines = [
         format!("Assessment: {}", assessment.title),
-        format!("Assessment settings: {}", json_snippet(&settings, 1800)),
+        format!("Assessment settings: {}", settings_text(assessment)),
     ];
     sources.push(source(
         format!("assessment:{}", assessment.id),
@@ -254,6 +246,36 @@ async fn push_assessment_sources(
         ));
     }
     Ok(())
+}
+
+/// An assessment's policy in words, not JSON: the model quoted `auto_then_manual`, `passing_score: 60.0` and
+/// `time_limit_seconds` into teachers' reports and citations.
+fn settings_text(assessment: &db::AssessmentContextRow) -> String {
+    let grading = match assessment.grading_mode.as_str() {
+        "auto" => "graded automatically",
+        "manual" => "graded by the teacher",
+        "auto_then_manual" => "graded automatically, then reviewed by the teacher",
+        other => other,
+    };
+    let attempts = assessment.max_attempts.map_or_else(
+        || "unlimited attempts".to_owned(),
+        |n| format!("{n} attempt(s)"),
+    );
+    let time = assessment.time_limit_seconds.map_or_else(
+        || "no time limit".to_owned(),
+        |s| format!("time limit {} min", (s + 59) / 60),
+    );
+    let due = assessment
+        .due_at
+        .and_then(|at| jiff::Timestamp::from_second(at).ok())
+        .map_or_else(
+            || "no deadline".to_owned(),
+            |at| format!("due {}", at.strftime("%Y-%m-%d %H:%M UTC")),
+        );
+    format!(
+        "{} ({}); pass mark {}%; {attempts}; {time}; {due}",
+        assessment.kind, grading, assessment.passing_score
+    )
 }
 
 fn learnings_text(value: &serde_json::Value) -> String {
@@ -679,6 +701,25 @@ pub fn validate_citations(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn assessment_settings_read_as_words_not_json() {
+        let row = db::AssessmentContextRow {
+            id: ab_core::id::AssessmentId::new(),
+            activity_id: ActivityId::new(),
+            title: "Exam".into(),
+            kind: "exam".into(),
+            grading_mode: "auto_then_manual".into(),
+            passing_score: 60.0,
+            max_attempts: Some(1),
+            time_limit_seconds: Some(3600),
+            due_at: None,
+        };
+        assert_eq!(
+            settings_text(&row),
+            "exam (graded automatically, then reviewed by the teacher); pass mark 60%; 1 attempt(s); time limit 60 min; no deadline"
+        );
+    }
 
     #[test]
     fn citation_excerpts_drop_the_context_headers() {
