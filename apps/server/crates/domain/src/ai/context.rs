@@ -585,6 +585,24 @@ const CONTEXT_LABELS: &[&str] = &[
     "Grading:",
 ];
 
+/// Labels whose value is the course's own words (its description, about text, outcomes): quoted, the value stays and
+/// only the English label goes, also where the model ran two of them into one line ("Description: X About: Y").
+const CONTENT_LABELS: &[&str] = &[
+    "Description:",
+    "About:",
+    "Learning outcomes:",
+    "Learnings:",
+    "Details:",
+];
+
+fn without_content_labels(line: &str) -> String {
+    let mut text = line.to_owned();
+    for label in CONTENT_LABELS {
+        text = text.replace(&format!("{label} "), "");
+    }
+    text.trim().to_owned()
+}
+
 /// A citation's excerpt without the context headers it may quote.
 ///
 /// The text after a `Content: ` label when there is one, else every line that is not a header (a header joined to
@@ -597,16 +615,18 @@ pub fn clean_excerpt(raw: &str) -> String {
             return content.to_owned();
         }
     }
-    let kept: Vec<&str> = raw
+    let kept: Vec<String> = raw
         .lines()
         .map(str::trim)
         .filter_map(|line| {
-            if CONTEXT_LABELS.iter().any(|label| line.starts_with(label)) {
+            if CONTENT_LABELS.iter().any(|label| line.starts_with(label)) {
+                Some(without_content_labels(line))
+            } else if CONTEXT_LABELS.iter().any(|label| line.starts_with(label)) {
                 line.split_once(" ... ")
                     .or_else(|| line.split_once(" … "))
-                    .map(|(_, quote)| quote.trim())
+                    .map(|(_, quote)| quote.trim().to_owned())
             } else {
-                Some(line)
+                Some(line.to_owned())
             }
         })
         .filter(|line| !line.is_empty())
@@ -677,6 +697,18 @@ mod tests {
             "Введение в курс"
         );
         assert_eq!(clean_excerpt("Plain quote"), "Plain quote");
+        // The course's own words keep, their English labels go (OPEN-A-2), even run together on one line.
+        assert_eq!(
+            clean_excerpt("Description: Fixture course. About: One activity of every type."),
+            "Fixture course. One activity of every type."
+        );
+        assert_eq!(
+            clean_excerpt(
+                "Course: Python
+Learning outcomes: Циклы, функции"
+            ),
+            "Циклы, функции"
+        );
         // Nothing but a header: kept rather than an empty quote.
         assert_eq!(
             clean_excerpt("Activity: Page (dynamic)"),
