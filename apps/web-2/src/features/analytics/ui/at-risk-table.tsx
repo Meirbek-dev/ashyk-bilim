@@ -18,6 +18,19 @@ import { Pager } from './pager'
 
 const riskInk = { destructive: 'text-destructive', warning: 'text-warning', neutral: 'text-muted-foreground' }
 
+/** The learner (@username under the name: namesakes, B-ANL-42) and the course the risk is in. */
+const learnerCell = (row: AtRiskLearnerRow) => (
+  <span className="flex flex-col">
+    <Link variant="title" to="." search={prev => ({ ...prev, learnerId: row.user_id, courseId: row.course_id })}>
+      <span className="font-medium wrap-anywhere">{row.user_display_name}</span>
+    </Link>
+    {row.user_username ? (
+      <span className="text-xs wrap-anywhere text-muted-foreground">@{row.user_username}</span>
+    ) : null}
+    <span className="wrap-anywhere text-muted-foreground">{row.course_name}</span>
+  </span>
+)
+
 const columns = (): DataColumn<AtRiskLearnerRow>[] => [
   {
     id: 'name',
@@ -26,14 +39,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     sortable: true,
     // The panel opens from the URL: this link is the shareable address of the learner in this course.
     // The learner and, under the name, the course the risk is in: one cell, so long course names do not crowd the row.
-    cell: row => (
-      <span className="flex flex-col">
-        <Link variant="title" to="." search={prev => ({ ...prev, learnerId: row.user_id, courseId: row.course_id })}>
-          <span className="font-medium wrap-anywhere">{row.user_display_name}</span>
-        </Link>
-        <span className="wrap-anywhere text-muted-foreground">{row.course_name}</span>
-      </span>
-    ),
+    cell: row => learnerCell(row),
   },
   {
     id: 'risk',

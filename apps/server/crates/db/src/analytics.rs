@@ -445,13 +445,14 @@ pub struct UserInfoRow {
     pub id: UserId,
     pub username: String,
     pub display_name: String,
+    pub email: String,
 }
 
 pub async fn list_users(pool: &PgPool, user_ids: &[UserId]) -> Result<Vec<UserInfoRow>> {
     let ids = uuids(user_ids);
     let rows = sqlx::query_as!(
         UserInfoRow,
-        r#"SELECT id AS "id: UserId", username, display_name FROM users WHERE id = ANY($1)"#,
+        r#"SELECT id AS "id: UserId", username, display_name, email FROM users WHERE id = ANY($1)"#,
         &ids
     )
     .fetch_all(pool)

@@ -111,7 +111,11 @@ export const TeacherCourseDetailResponse = zod.object({
       risk_trend: zod.enum(['newly_at_risk', 'worsening', 'improving', 'recovered', 'stable']),
       top_contributing_factor: zod.string().nullable(),
       user_display_name: zod.string(),
+      user_email: zod
+        .string()
+        .describe("Where «Связаться» writes to: the course's graders see it in the\ngradebook too."),
       user_id: zod.uuid(),
+      user_username: zod.string().describe('Tells namesakes apart (`@username`).'),
       why_now: zod
         .enum([
           'grading_block_blocks_progress',

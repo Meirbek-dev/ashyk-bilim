@@ -873,7 +873,16 @@ export type AtRiskLearnerRow = {
     risk_trend: RiskTrend;
     top_contributing_factor: string | null;
     user_display_name: string;
+    /**
+     * Where «Связаться» writes to: the course's graders see it in the
+     * gradebook too.
+     */
+    user_email: string;
     user_id: UserId;
+    /**
+     * Tells namesakes apart (`@username`).
+     */
+    user_username: string;
     /**
      * Stable code explaining the strongest signal.
      */

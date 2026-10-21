@@ -2770,8 +2770,16 @@ expression: json
           "user_display_name": {
             "type": "string"
           },
+          "user_email": {
+            "description": "Where «Связаться» writes to: the course's graders see it in the\ngradebook too.",
+            "type": "string"
+          },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
+          },
+          "user_username": {
+            "description": "Tells namesakes apart (`@username`).",
+            "type": "string"
           },
           "why_now": {
             "$ref": "#/components/schemas/WhyNow",
@@ -2783,6 +2791,8 @@ expression: json
           "course_id",
           "course_name",
           "user_display_name",
+          "user_username",
+          "user_email",
           "progress_pct",
           "open_grading_blocks",
           "failed_assessments",

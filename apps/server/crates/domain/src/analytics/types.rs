@@ -679,6 +679,11 @@ pub struct AtRiskLearnerRow {
     pub course_id: CourseId,
     pub course_name: String,
     pub user_display_name: String,
+    /// Tells namesakes apart (`@username`).
+    pub user_username: String,
+    /// Where «Связаться» writes to: the course's graders see it in the
+    /// gradebook too.
+    pub user_email: String,
     pub cohort_name: Option<String>,
     pub progress_pct: f64,
     pub days_since_last_activity: Option<i64>,

@@ -5848,7 +5848,9 @@ export const vAtRiskLearnerRow = v.object({
     risk_trend: vRiskTrend,
     top_contributing_factor: v.nullable(v.string()),
     user_display_name: v.string(),
+    user_email: v.string(),
     user_id: vUserId,
+    user_username: v.string(),
     why_now: vWhyNow
 });
 

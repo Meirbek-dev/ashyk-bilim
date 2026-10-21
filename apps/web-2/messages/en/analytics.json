@@ -268,6 +268,7 @@
   "analytics_slo_overdue": "Overdue",
   "analytics_learner_components": "Risk made of",
   "analytics_learner_in_course": "Open in the course’s learners",
+  "analytics_write_email": "Send an email",
   "analytics_component_inactivity": "inactivity",
   "analytics_component_progress": "falling behind",
   "analytics_component_failures": "failed assessments",
