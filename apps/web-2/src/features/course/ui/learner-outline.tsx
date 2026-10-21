@@ -32,7 +32,7 @@ export function LearnerOutline({ course }: { course: Course }) {
               </p>
               <div className="flex flex-col">
                 <h2 id="course-progress" className="text-xl font-semibold">
-                  {m.course_progress_title()}
+                  {state.enrollment_state === 'completed' ? m.course_completed_title() : m.course_progress_title()}
                 </h2>
                 <p className="text-sm text-muted-foreground tabular-nums">{m.course_progress_count({ done, total })}</p>
               </div>

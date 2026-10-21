@@ -19,6 +19,7 @@
   "course_leave_consequence": "Өтілген сабақтардың белгілері мен ұзартылған мерзімдер жойылады, бағалар мен тапсырылған жұмыстар сақталады. Кез келген уақытта қайта тіркелуге болады.",
   "course_left": "Сіз курстан шықтыңыз",
   "course_progress_title": "Сіздің ілгерілеуіңіз",
+  "course_completed_title": "Курс аяқталды",
   "course_next_up": "Келесі:",
   "course_progress_count": "{total} ішінен {done} өтілді",
   "course_activity_opens": "{date} ашылады",
