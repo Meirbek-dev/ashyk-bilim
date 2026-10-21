@@ -53,6 +53,7 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
     <RouterLink
       to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
       params={{ courseId, activityId: cell.activity_id, submissionId: target }}
+      search={{ from: 'gradebook' }}
       className="rounded-sm"
     >
       <span className="sr-only">{m.grading_cell_link({ learner, activity })} </span>

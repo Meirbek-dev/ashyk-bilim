@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useParams, useSearch } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { useParams } from '@tanstack/react-router'
 import { Suspense, useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -8,13 +7,13 @@ import type { SubmissionStatus, FileAttemptStatus, UserSummary } from '#/shared/
 import { StatusBadge } from '#/shared/components/status-badge'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
-import { buttonVariants } from '#/shared/components/button-variants'
 
 import { lastCheck } from '../model/scoring'
 import { activityOptions, type Work } from '../queries'
 import { scoreText, statusMeta } from './labels'
 import { FeedbackDraft } from './feedback-draft'
 import type { ReviewAside } from './review-aside'
+import { ReviewBack } from './review-back'
 import { ReviewNav } from './review-nav'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
@@ -45,21 +44,10 @@ type ReviewFrameProps = {
  * which attempt and when (started, handed in, graded), prev / next.
  */
 export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
-  const { courseId, activityId, submissionId } = useParams({ from: ROUTE })
-  const search = useSearch({ from: ROUTE })
+  const { activityId, submissionId } = useParams({ from: ROUTE })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const name = head.user ? head.user.display_name || head.user.username : ''
-  const back = (
-    <RouterLink
-      to="/teach/courses/$courseId/activities/$activityId/submissions"
-      params={{ courseId, activityId }}
-      search={search}
-      className={buttonVariants({ variant: 'ghost' })}
-    >
-      <ArrowLeft aria-hidden />
-      {m.platform_back_to_submissions()}
-    </RouterLink>
-  )
+  const back = <ReviewBack />
   const status = statusMeta[head.status]
   const check = lastCheck(head)
   const draftTarget = useRef<((text: string) => void) | null>(null)

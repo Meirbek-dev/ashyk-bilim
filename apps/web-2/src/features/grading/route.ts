@@ -32,6 +32,8 @@ export const queueSearchSchema = v.object({
   group,
   sort: v.fallback(v.optional(v.picklist(SORTS)), undefined),
   order: v.fallback(v.optional(v.picklist(['asc', 'desc'])), undefined),
+  /** Where the review was opened from, so «back» returns there (B-GRD-38); never sent to the server. */
+  from: v.fallback(v.optional(v.picklist(['inbox', 'gradebook'])), undefined),
 })
 export type QueueSearch = v.InferOutput<typeof queueSearchSchema>
 

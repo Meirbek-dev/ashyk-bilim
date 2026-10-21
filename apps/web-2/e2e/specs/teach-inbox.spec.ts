@@ -94,7 +94,7 @@ const test = base.extend<{ handedIn: HandedIn }>({
 
 const row = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text })
 
-test('B-INB-01 B-INB-02 B-INB-03 a hand-in waits in the teacher queue and leads straight into its review', async ({
+test('B-INB-01 B-INB-02 B-INB-03 B-GRD-38 a hand-in waits in the teacher queue and leads straight into its review', async ({
   page,
   signInAs,
   handedIn,
@@ -108,8 +108,12 @@ test('B-INB-01 B-INB-02 B-INB-03 a hand-in waits in the teacher queue and leads 
   await expect(line).toContainText('E2E Account') // the learner (registerAccount's name)
   await expect(line.getByRole('link', { name: m.inbox_action_grade({}, ru) })).toHaveAttribute(
     'href',
-    `/teach/courses/${handedIn.courseId}/activities/${handedIn.activityId}/submissions/${handedIn.submissionId}`,
+    `/teach/courses/${handedIn.courseId}/activities/${handedIn.activityId}/submissions/${handedIn.submissionId}?from=inbox`,
   )
+  // B-GRD-38: the review opened from the inbox goes back to it.
+  await line.getByRole('link', { name: m.inbox_action_grade({}, ru) }).click()
+  await page.getByRole('link', { name: m.platform_back_to_inbox({}, ru) }).click()
+  await expect(page).toHaveURL(/\/teach$/)
 })
 
 test('B-INB-04 B-INB-05 B-INB-10 kind, course and order live in the URL and go to the server; nothing found offers a reset', async ({

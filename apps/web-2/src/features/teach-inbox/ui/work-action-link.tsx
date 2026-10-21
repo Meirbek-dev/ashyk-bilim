@@ -23,6 +23,7 @@ export function WorkActionLink({ item }: { item: WorkItem }) {
       className={className}
       to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
       params={{ ...params, submissionId }}
+      search={{ from: 'inbox' }}
     >
       {actionLabels[action]()}
     </RouterLink>

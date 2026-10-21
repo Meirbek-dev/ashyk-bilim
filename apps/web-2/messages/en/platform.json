@@ -71,6 +71,8 @@
   "platform_back": "Back",
   "platform_back_to_submissions": "Submissions",
   "platform_back_to_course": "Course",
+  "platform_back_to_inbox": "Inbox",
+  "platform_back_to_gradebook": "Gradebook",
   "platform_not_found_search": "Search for it",
   "platform_my_profile": "My profile",
   "platform_classic_ui": "Classic interface"
