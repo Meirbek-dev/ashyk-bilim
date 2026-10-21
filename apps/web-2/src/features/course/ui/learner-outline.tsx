@@ -15,7 +15,7 @@ import { Syllabus } from './syllabus'
 
 /**
  * A signed-in user's progress and syllabus, both straight from the learner state (spec 7.6: nothing is computed
- * here). Progress and "Leave" show only to an enrolled learner.
+ * here). Progress and "Leave" (at the end, after the programme) show only to an enrolled learner.
  */
 export function LearnerOutline({ course }: { course: Course }) {
   const { data: state } = useSuspenseQuery(learnerStateOptions(course.id))
@@ -37,7 +37,6 @@ export function LearnerOutline({ course }: { course: Course }) {
                 <p className="text-sm text-muted-foreground tabular-nums">{m.course_progress_count({ done, total })}</p>
               </div>
             </div>
-            <LeaveCourse course={course} />
           </div>
           <Progress value={percent} aria-labelledby="course-progress" className="progress-lg" />
           {next ? (
@@ -52,6 +51,12 @@ export function LearnerOutline({ course }: { course: Course }) {
         </section>
       ) : null}
       <Syllabus courseId={course.id} chapters={outlineSyllabus(state)} />
+      {/* Rare and destructive: after the programme, not between the progress and its bar (on a phone it split them). */}
+      {state.enrolled ? (
+        <div className="flex justify-end border-t pt-4">
+          <LeaveCourse course={course} />
+        </div>
+      ) : null}
     </>
   )
 }

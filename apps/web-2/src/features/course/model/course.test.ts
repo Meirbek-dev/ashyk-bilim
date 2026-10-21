@@ -6,6 +6,7 @@ import {
   application,
   authorNames,
   curriculumSyllabus,
+  inFlight,
   outlineSyllabus,
   primaryAction,
   nextActivity,
@@ -197,7 +198,17 @@ describe('syllabus and progress', () => {
       {
         id: 'ch1',
         title: 'One',
-        activities: [{ id: 'a1', title: 'a1', type: 'video', complete: false, available: false, opensAt: null }],
+        activities: [
+          {
+            id: 'a1',
+            title: 'a1',
+            type: 'video',
+            complete: false,
+            available: false,
+            opensAt: null,
+            work: 'not_started',
+          },
+        ],
       },
     ])
   })
@@ -210,6 +221,7 @@ describe('syllabus and progress', () => {
       complete: false,
       available: false,
       opensAt: null,
+      work: 'not_started',
     }
     expect(
       syllabusSize([
@@ -269,7 +281,15 @@ function activity(id: string): Activity {
   }
 }
 
-const of = (type: string, id: string) => ({ id, title: id, type, complete: false, available: false, opensAt: null })
+const of = (type: string, id: string) => ({
+  id,
+  title: id,
+  type,
+  complete: false,
+  available: false,
+  opensAt: null,
+  work: 'not_started' as const,
+})
 
 test('B-CRS-15 the composition counts each activity type the syllabus lists, in the type table order', () => {
   const chapters = [
@@ -300,4 +320,12 @@ test('B-CRS-17 «Далее» names the activity the server points at; none with
   expect(nextActivity(pointing('a1'))).toEqual({ id: 'a1', title: 'Page', type: 'dynamic' })
   expect(nextActivity(pointing(null))).toBeNull()
   expect(nextActivity(pointing('gone'))).toBeNull()
+})
+
+test('B-CRS-18 a syllabus row names work in flight; done and untouched rows say nothing', () => {
+  expect(inFlight({ complete: false, work: 'failed' })).toBe('failed')
+  expect(inFlight({ complete: false, work: 'needs_grading' })).toBe('needs_grading')
+  expect(inFlight({ complete: false, work: 'not_started' })).toBeNull()
+  expect(inFlight({ complete: true, work: 'passed' })).toBeNull()
+  expect(inFlight({ complete: false, work: 'locked' })).toBeNull()
 })

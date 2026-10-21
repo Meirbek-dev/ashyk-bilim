@@ -6,6 +6,7 @@ import type {
   Curriculum,
   LearnerCourseState,
   UserId,
+  WorkState,
 } from '#/shared/api/gen/types.gen'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
@@ -56,6 +57,8 @@ export type SyllabusActivity = {
   available: boolean
   /** A scheduled test: when it opens (listed, not openable until then). */
   opensAt: number | null
+  /** The learner's work on it (the server's): unfinished work in flight is named on the row. */
+  work: WorkState
 }
 export type SyllabusChapter = { id: string; title: string; activities: SyllabusActivity[] }
 
@@ -67,13 +70,14 @@ export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
       title: chapter.name,
       activities: chapter.activities
         .filter(activity => activity.published)
-        .map(activity => ({
+        .map((activity): SyllabusActivity => ({
           id: activity.id,
           title: activity.name,
           type: activity.activity_type,
           complete: false,
           available: false,
           opensAt: null,
+          work: 'not_started',
         })),
     }))
     .filter(chapter => chapter.activities.length > 0)
@@ -91,6 +95,7 @@ export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
       complete: activity.complete,
       available: state.enrolled && activity.available,
       opensAt: activity.opens_at_unix,
+      work: activity.state,
     })),
   }))
 
@@ -134,3 +139,17 @@ export function application(course: Course, roster: Contributor[], userId: UserI
   if (!own) return 'apply'
   return own.status === 'pending' ? 'pending' : null
 }
+
+/** Work in flight a syllabus row names (B-CRS-18): started, handed in, returned or failed; done and untouched rows say nothing. */
+export type InFlight = 'in_progress' | 'submitted' | 'needs_grading' | 'graded_hidden' | 'returned' | 'failed'
+const IN_FLIGHT = new Set<WorkState>([
+  'in_progress',
+  'submitted',
+  'needs_grading',
+  'graded_hidden',
+  'returned',
+  'failed',
+])
+const isInFlight = (work: WorkState): work is InFlight => IN_FLIGHT.has(work)
+export const inFlight = ({ complete, work }: Pick<SyllabusActivity, 'complete' | 'work'>): InFlight | null =>
+  !complete && isInFlight(work) ? work : null
