@@ -22,6 +22,17 @@ pub struct UserHit {
     pub avatar_key: Option<String>,
 }
 
+/// A lesson in search results: a published activity of a published course.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LessonHit {
+    pub activity_id: ab_core::id::ActivityId,
+    pub title: String,
+    #[schema(value_type = ab_domain::wire::ActivityType)]
+    pub activity_type: String,
+    pub course_id: ab_core::id::CourseId,
+    pub course_name: String,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SearchResults {
     /// With their authors and the caller's progress, like `GET /courses`.
@@ -29,6 +40,11 @@ pub struct SearchResults {
     pub collections: Vec<CollectionHit>,
     /// Empty for anonymous callers.
     pub users: Vec<UserHit>,
+    /// Published activities of published courses, by name (CONTRACT-REQ-G-6);
+    /// absent when none (and from servers before it).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[schema(required = false)]
+    pub lessons: Vec<LessonHit>,
     /// Set while any section has more hits: pass it back as `cursor` for
     /// the next page of every section.
     pub next_cursor: Option<String>,
@@ -51,6 +67,17 @@ impl SearchResults {
                 })
                 .collect(),
             users: r.users.into_iter().map(Into::into).collect(),
+            lessons: r
+                .lessons
+                .into_iter()
+                .map(|l| LessonHit {
+                    activity_id: l.activity_id,
+                    title: l.name,
+                    activity_type: l.activity_type,
+                    course_id: l.course_id,
+                    course_name: l.course_name,
+                })
+                .collect(),
             next_cursor: r.next_cursor,
         }
     }

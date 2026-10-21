@@ -182,6 +182,12 @@ pub(crate) async fn list_items(
     mine: bool,
 ) -> ApiResult<Vec<CourseListItem>> {
     let mut extras = state.courses.list_extras(actor, &courses, mine).await?;
+    let ids: Vec<CourseId> = courses.iter().map(|c| c.id).collect();
+    let offered: std::collections::HashSet<CourseId> =
+        ab_db::certifications::courses_offering_certificates(&state.pool, &ids)
+            .await?
+            .into_iter()
+            .collect();
     Ok(courses
         .into_iter()
         .map(|c| {
@@ -211,7 +217,10 @@ pub(crate) async fn list_items(
                     ungraded: t.ungraded,
                 }),
                 authors,
-                course: Course::for_actor(c, actor),
+                course: Course {
+                    certificate_offered: Some(offered.contains(&c.id)),
+                    ..Course::for_actor(c, actor)
+                },
             }
         })
         .collect())
@@ -475,7 +484,12 @@ pub async fn get_course(
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CourseId>,
 ) -> ApiResult<Response> {
-    let course = Course::for_actor(state.courses.get(&actor, id).await?, &actor);
+    let mut course = Course::for_actor(state.courses.get(&actor, id).await?, &actor);
+    course.certificate_offered = Some(
+        !ab_db::certifications::courses_offering_certificates(&state.pool, &[id])
+            .await?
+            .is_empty(),
+    );
     Ok(with_etag(StatusCode::OK, course.version, course))
 }
 

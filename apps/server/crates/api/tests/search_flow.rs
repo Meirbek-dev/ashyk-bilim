@@ -387,3 +387,71 @@ async fn search_pages_by_cursor(pool: PgPool) {
         .await;
     assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+/// A chapter with one dynamic page in `course_id`, published or not; returns the activity id.
+async fn lesson(
+    app: &TestApp,
+    session: &MintedSession,
+    course_id: &str,
+    name: &str,
+    publish: bool,
+) -> String {
+    let chapter = app
+        .post_as(
+            session,
+            &format!("/api/v2/courses/{course_id}/chapters"),
+            &serde_json::json!({ "name": "Week" }),
+        )
+        .await;
+    let chapter_id = chapter.json()["id"].as_str().unwrap().to_owned();
+    let activity = app
+        .post_as(
+            session,
+            &format!("/api/v2/chapters/{chapter_id}/activities"),
+            &serde_json::json!({ "name": name, "activity_type": "dynamic",
+                                  "activity_sub_type": "dynamic_page" }),
+        )
+        .await;
+    assert_eq!(activity.status, StatusCode::CREATED, "{}", activity.text());
+    let id = activity.json()["id"].as_str().unwrap().to_owned();
+    if publish {
+        let published = app
+            .patch_as(
+                session,
+                &format!("/api/v2/activities/{id}"),
+                &serde_json::json!({ "published": true }),
+            )
+            .await;
+        assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    }
+    id
+}
+
+/// CONTRACT-REQ-G-6: the «Уроки» group finds published lessons of published
+/// courses by name - never a draft lesson, never a lesson of a draft course,
+/// for a stranger and for the author alike.
+#[sqlx::test(migrations = "../../migrations")]
+async fn lessons_are_found_only_when_published_in_a_published_course(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "lessonauthor").await;
+    let open = course(&app, &teacher, "Botany", true).await;
+    let hidden = course(&app, &teacher, "Secret botany", false).await;
+    let live = lesson(&app, &teacher, &open, "Photosynthesis basics", true).await;
+    lesson(&app, &teacher, &open, "Photosynthesis draft", false).await;
+    lesson(&app, &teacher, &hidden, "Photosynthesis secret", true).await;
+    let stranger_id = app
+        .create_user("stranger", "stranger@example.com", &["user"])
+        .await;
+    let stranger = app.mint_session_for(stranger_id, &[]).await;
+    for who in [&stranger, &teacher] {
+        let found = app.get_as(who, "/api/v2/search?q=photosynthesis").await;
+        assert_eq!(found.status, StatusCode::OK, "{}", found.text());
+        let lessons = found.json()["lessons"].as_array().unwrap().clone();
+        assert_eq!(lessons.len(), 1, "{lessons:?}");
+        assert_eq!(lessons[0]["activity_id"], live.as_str());
+        assert_eq!(lessons[0]["course_name"], "Botany");
+        assert_eq!(lessons[0]["activity_type"], "dynamic");
+    }
+    let anonymous = app.get("/api/v2/search?q=photosynthesis").await;
+    assert_eq!(anonymous.json()["lessons"].as_array().unwrap().len(), 1);
+}

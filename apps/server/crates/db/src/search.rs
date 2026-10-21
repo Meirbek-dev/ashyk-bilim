@@ -9,7 +9,7 @@
 //! courses; a trigram index on the folded text if the catalogue grows.
 
 use ab_core::Result;
-use ab_core::id::{CollectionId, CourseId, UserId};
+use ab_core::id::{ActivityId, CollectionId, CourseId, UserId};
 use sqlx::PgPool;
 
 use crate::catalog::CourseRow;
@@ -202,6 +202,46 @@ pub async fn search_collections(
         &patterns.words,
         &patterns.letters,
         &patterns.excluded,
+        offset
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// A lesson hit: an activity and the course it is in.
+#[derive(Debug, Clone)]
+pub struct LessonHitRow {
+    pub activity_id: ActivityId,
+    pub name: String,
+    pub activity_type: String,
+    pub course_id: CourseId,
+    pub course_name: String,
+}
+
+/// Activities by name (CONTRACT-REQ-G-6): published activities of published
+/// (public), unarchived courses only - never a draft activity or a draft
+/// course, whoever asks.
+pub async fn search_lessons(
+    pool: &PgPool,
+    query: &str,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<LessonHitRow>> {
+    let patterns = word_patterns(query);
+    let rows = sqlx::query_as!(
+        LessonHitRow,
+        r#"SELECT a.id AS "activity_id: ActivityId", a.name, a.activity_type,
+                  c.id AS "course_id: CourseId", c.name AS course_name
+           FROM activities a JOIN courses c ON c.id = a.course_id
+           WHERE a.published AND c.public AND c.archived_at IS NULL
+             AND search_matches(a.name, $1, $2, $3)
+           ORDER BY lower(a.name), a.id
+           LIMIT $4 OFFSET $5"#,
+        &patterns.words,
+        &patterns.letters,
+        &patterns.excluded,
+        limit,
         offset
     )
     .fetch_all(pool)

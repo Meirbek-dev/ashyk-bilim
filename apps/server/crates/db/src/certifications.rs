@@ -80,6 +80,23 @@ pub async fn get_certification(
     Ok(row)
 }
 
+/// Of `course_ids`, the courses with a live (not retired) certification:
+/// finishing them issues a certificate.
+pub async fn courses_offering_certificates(
+    pool: &PgPool,
+    course_ids: &[CourseId],
+) -> Result<Vec<CourseId>> {
+    let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
+    let rows = sqlx::query_scalar!(
+        r#"SELECT DISTINCT course_id AS "course_id!: CourseId" FROM certifications
+           WHERE course_id = ANY($1) AND disabled_at IS NULL"#,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// The course's live certifications (retired ones issue nothing and are not shown as the course's).
 pub async fn list_course_certifications<'e>(
     db: impl sqlx::PgExecutor<'e>,

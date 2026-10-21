@@ -1862,6 +1862,17 @@ export const vFeedbackParams = v.object({
 });
 
 /**
+ * A lesson in search results: a published activity of a published course.
+ */
+export const vLessonHit = v.object({
+    activity_id: vActivityId,
+    activity_type: vActivityType,
+    course_id: vCourseId,
+    course_name: v.string(),
+    title: v.string()
+});
+
+/**
  * `low` / `medium` / `high`, tolerant of anything else (→ `medium`).
  */
 export const vLevel = v.picklist([
@@ -4665,6 +4676,7 @@ export const vCourse = v.object({
     archived_at_unix: v.nullable(vUnixTime),
     archived_by: v.nullable(vUserId),
     assessments_require_enrollment: v.boolean(),
+    certificate_offered: v.optional(v.boolean()),
     contributor_ids: v.array(vUserId),
     created_at_unix: vUnixTime,
     creator_id: v.nullable(vUserId),
@@ -5096,7 +5108,7 @@ export const vNotificationPayload = v.union([
     v.object({
         activity_id: vActivityId,
         activity_name: v.string(),
-        activity_type: v.nullable(vActivityType),
+        activity_type: v.optional(vActivityType),
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),
@@ -5108,7 +5120,7 @@ export const vNotificationPayload = v.union([
     v.object({
         activity_id: vActivityId,
         activity_name: v.string(),
-        activity_type: v.nullable(vActivityType),
+        activity_type: v.optional(vActivityType),
         attempt_id: v.nullable(vFileAttemptId),
         course_id: vCourseId,
         course_name: v.string(),
@@ -5385,6 +5397,7 @@ export const vUserHit = v.object({
 export const vSearchResults = v.object({
     collections: v.array(vCollectionHit),
     courses: v.array(vCourseListItem),
+    lessons: v.optional(v.array(vLessonHit)),
     next_cursor: v.nullable(v.string()),
     users: v.array(vUserHit)
 });

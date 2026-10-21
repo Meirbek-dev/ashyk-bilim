@@ -52,6 +52,12 @@ export const SearchResults = zod.object({
             .describe(
               'Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.',
             ),
+          certificate_offered: zod
+            .boolean()
+            .optional()
+            .describe(
+              'Finishing the course issues a certificate (a live certification\nexists). Sent by `GET /courses/{id}` and the `GET /courses` /\ncollection / search rows; absent elsewhere (CONTRACT-REQ-G-5).',
+            ),
           contributor_ids: zod
             .array(zod.uuid())
             .describe(
@@ -133,6 +139,24 @@ export const SearchResults = zod.object({
         .describe('A `GET /courses` item: the course plus who wrote it and how far the\ncaller got.'),
     )
     .describe("With their authors and the caller's progress, like `GET /courses`."),
+  lessons: zod
+    .array(
+      zod
+        .object({
+          activity_id: zod.uuid(),
+          activity_type: zod
+            .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+            .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
+          course_id: zod.uuid(),
+          course_name: zod.string(),
+          title: zod.string(),
+        })
+        .describe('A lesson in search results: a published activity of a published course.'),
+    )
+    .optional()
+    .describe(
+      'Published activities of published courses, by name (CONTRACT-REQ-G-6);\nabsent when none (and from servers before it).',
+    ),
   next_cursor: zod
     .string()
     .nullable()

@@ -42,6 +42,12 @@ pub struct Course {
     pub version: i32,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
+    /// Finishing the course issues a certificate (a live certification
+    /// exists). Sent by `GET /courses/{id}` and the `GET /courses` /
+    /// collection / search rows; absent elsewhere (CONTRACT-REQ-G-5).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub certificate_offered: Option<bool>,
 }
 
 impl Course {
@@ -70,6 +76,7 @@ impl Course {
             version: c.version,
             created_at_unix: c.created_at,
             updated_at_unix: c.updated_at,
+            certificate_offered: None,
         }
     }
 }

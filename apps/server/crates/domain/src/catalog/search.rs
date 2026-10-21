@@ -8,7 +8,7 @@ use ab_core::Result;
 use ab_core::permission::ResourceType;
 use sqlx::PgPool;
 
-pub use ab_db::search::UserHitRow as UserHit;
+pub use ab_db::search::{LessonHitRow as LessonHit, UserHitRow as UserHit};
 
 use crate::catalog::collections::Collection;
 use crate::catalog::courses::Course;
@@ -19,6 +19,8 @@ pub struct SearchResults {
     pub courses: Vec<Course>,
     pub collections: Vec<Collection>,
     pub users: Vec<UserHit>,
+    /// Published activities of published courses, by name.
+    pub lessons: Vec<LessonHit>,
     /// Set while any section has more hits: pass back as `cursor`.
     pub next_cursor: Option<String>,
 }
@@ -73,6 +75,7 @@ impl SearchService {
                 courses: Vec::new(),
                 collections: Vec::new(),
                 users: Vec::new(),
+                lessons: Vec::new(),
                 next_cursor: None,
             });
         }
@@ -103,16 +106,20 @@ impl SearchService {
         } else {
             ab_db::search::search_users(&self.pool, query, limit + 1, offset).await?
         };
+        let mut lessons =
+            ab_db::search::search_lessons(&self.pool, query, limit + 1, offset).await?;
         let more = [
             page(&mut courses, limit),
             page(&mut collections, limit),
             page(&mut users, limit),
+            page(&mut lessons, limit),
         ]
         .contains(&true);
         Ok(SearchResults {
             courses,
             collections,
             users,
+            lessons,
             next_cursor: more.then(|| (offset + limit).to_string()),
         })
     }

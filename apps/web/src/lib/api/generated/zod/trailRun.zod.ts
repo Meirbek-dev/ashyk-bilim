@@ -39,6 +39,12 @@ export const TrailRun = zod.object({
       .describe(
         'Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.',
       ),
+    certificate_offered: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Finishing the course issues a certificate (a live certification\nexists). Sent by `GET /courses/{id}` and the `GET /courses` /\ncollection / search rows; absent elsewhere (CONTRACT-REQ-G-5).',
+      ),
     contributor_ids: zod
       .array(zod.uuid())
       .describe(

@@ -199,6 +199,14 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(items[0]["instructor_name"], "teacher");
     let all = app.get_as(&alice, "/api/v2/me/certificates").await;
     assert_eq!(all.json().as_array().unwrap().len(), 1);
+    // CONTRACT-REQ-G-5: the course says it offers a certificate.
+    let course = app.get(&format!("/api/v2/courses/{course_id}")).await;
+    assert_eq!(
+        course.json()["certificate_offered"],
+        true,
+        "{}",
+        course.text()
+    );
     // CONTRACT-REQ-G-3: the public profile lists it only once alice opts in.
     let shown = app.get("/api/v2/users/alice/certificates").await;
     assert_eq!(shown.status, StatusCode::OK, "{}", shown.text());

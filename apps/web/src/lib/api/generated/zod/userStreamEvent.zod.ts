@@ -66,23 +66,21 @@ export const UserStreamEvent = zod
                 .object({
                   activity_id: zod.uuid(),
                   activity_name: zod.string(),
-                  activity_type: zod.union([
-                    zod
-                      .enum([
-                        'dynamic',
-                        'video',
-                        'document',
-                        'quiz',
-                        'exam',
-                        'code_challenge',
-                        'file_submission',
-                        'custom',
-                      ])
-                      .describe(
-                        "The activity's type, so the bell opens the work itself\n(CONTRACT-REQ-G-2b); `null` in rows stored before.",
-                      ),
-                    zod.null(),
-                  ]),
+                  activity_type: zod
+                    .enum([
+                      'dynamic',
+                      'video',
+                      'document',
+                      'quiz',
+                      'exam',
+                      'code_challenge',
+                      'file_submission',
+                      'custom',
+                    ])
+                    .optional()
+                    .describe(
+                      "The activity's type, so the bell opens the work itself\n(CONTRACT-REQ-G-2b); `null` in rows stored before.",
+                    ),
                   attempt_id: zod.union([zod.uuid(), zod.null()]),
                   course_id: zod.uuid(),
                   course_name: zod.string(),
@@ -101,21 +99,19 @@ export const UserStreamEvent = zod
                 .object({
                   activity_id: zod.uuid(),
                   activity_name: zod.string(),
-                  activity_type: zod.union([
-                    zod
-                      .enum([
-                        'dynamic',
-                        'video',
-                        'document',
-                        'quiz',
-                        'exam',
-                        'code_challenge',
-                        'file_submission',
-                        'custom',
-                      ])
-                      .describe("The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before."),
-                    zod.null(),
-                  ]),
+                  activity_type: zod
+                    .enum([
+                      'dynamic',
+                      'video',
+                      'document',
+                      'quiz',
+                      'exam',
+                      'code_challenge',
+                      'file_submission',
+                      'custom',
+                    ])
+                    .optional()
+                    .describe("The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before."),
                   attempt_id: zod.union([zod.uuid(), zod.null()]),
                   course_id: zod.uuid(),
                   course_name: zod.string(),

@@ -40,13 +40,12 @@ test('B-NOT-01 the badge counts up to 99, then "99+"', () => {
 
 test('B-NOT-05 each type leads to its own place, built from the payload ids', () => {
   const activity = { ...names, activity_id: ACTIVITY, activity_name: 'Тест' }
-  const graded: NotificationPayload = {
+  const graded: Extract<NotificationPayload, { type: 'grade_published' }> = {
     ...activity,
     type: 'grade_published',
     final_score: 90,
     submission_id: null,
     attempt_id: null,
-    activity_type: null,
   }
   expect(notificationTarget(graded)).toEqual({
     to: '/learn/$courseId/$activityId',
@@ -57,7 +56,6 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
     type: 'submission_returned',
     submission_id: null,
     attempt_id: '0190a5d2-0000-7000-8000-00000000000e',
-    activity_type: null,
   }
   expect(notificationTarget(returned).to).toBe('/learn/$courseId/$activityId/submission')
   // With the activity type a released grade opens the work itself: the test attempt, the code submission.

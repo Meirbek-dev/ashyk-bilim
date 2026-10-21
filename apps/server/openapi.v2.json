@@ -5054,6 +5054,10 @@
             "description": "Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.",
             "type": "boolean"
           },
+          "certificate_offered": {
+            "description": "Finishing the course issues a certificate (a live certification\nexists). Sent by `GET /courses/{id}` and the `GET /courses` /\ncollection / search rows; absent elsewhere (CONTRACT-REQ-G-5).",
+            "type": "boolean"
+          },
           "contributor_ids": {
             "description": "Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.",
             "items": {
@@ -11211,6 +11215,34 @@
         ],
         "type": "object"
       },
+      "LessonHit": {
+        "description": "A lesson in search results: a published activity of a published course.",
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "activity_type": {
+            "$ref": "#/components/schemas/ActivityType"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity_id",
+          "title",
+          "activity_type",
+          "course_id",
+          "course_name"
+        ],
+        "type": "object"
+      },
       "Level": {
         "description": "`low` / `medium` / `high`, tolerant of anything else (→ `medium`).",
         "enum": [
@@ -11784,15 +11816,8 @@
                 "type": "string"
               },
               "activity_type": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ActivityType",
-                    "description": "The activity's type, so the bell opens the work itself\n(CONTRACT-REQ-G-2b); `null` in rows stored before."
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "$ref": "#/components/schemas/ActivityType",
+                "description": "The activity's type, so the bell opens the work itself\n(CONTRACT-REQ-G-2b); `null` in rows stored before."
               },
               "attempt_id": {
                 "oneOf": [
@@ -11844,7 +11869,6 @@
               "activity_id",
               "activity_name",
               "type",
-              "activity_type",
               "attempt_id",
               "final_score",
               "submission_id"
@@ -11861,15 +11885,8 @@
                 "type": "string"
               },
               "activity_type": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ActivityType",
-                    "description": "The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before."
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "$ref": "#/components/schemas/ActivityType",
+                "description": "The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before."
               },
               "attempt_id": {
                 "oneOf": [
@@ -11914,7 +11931,6 @@
               "activity_id",
               "activity_name",
               "type",
-              "activity_type",
               "attempt_id",
               "submission_id"
             ],
@@ -16138,6 +16154,13 @@
             "description": "With their authors and the caller's progress, like `GET /courses`.",
             "items": {
               "$ref": "#/components/schemas/CourseListItem"
+            },
+            "type": "array"
+          },
+          "lessons": {
+            "description": "Published activities of published courses, by name (CONTRACT-REQ-G-6);\nabsent when none (and from servers before it).",
+            "items": {
+              "$ref": "#/components/schemas/LessonHit"
             },
             "type": "array"
           },

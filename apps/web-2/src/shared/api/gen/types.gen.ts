@@ -1683,6 +1683,12 @@ export type Course = {
      */
     assessments_require_enrollment: boolean;
     /**
+     * Finishing the course issues a certificate (a live certification
+     * exists). Sent by `GET /courses/{id}` and the `GET /courses` /
+     * collection / search rows; absent elsewhere (CONTRACT-REQ-G-5).
+     */
+    certificate_offered?: boolean;
+    /**
      * Active maintainers / contributors (`GET /courses/{id}/contributors`,
      * status `active`, role not `reporter`); they edit the course like the
      * creator without any role grant - authorship is the `:own` scope.
@@ -3854,6 +3860,17 @@ export type LegacyTestVerdict = {
 };
 
 /**
+ * A lesson in search results: a published activity of a published course.
+ */
+export type LessonHit = {
+    activity_id: ActivityId;
+    activity_type: ActivityType;
+    course_id: CourseId;
+    course_name: string;
+    title: string;
+};
+
+/**
  * `low` / `medium` / `high`, tolerant of anything else (→ `medium`).
  */
 export type Level = 'low' | 'medium' | 'high';
@@ -4094,7 +4111,11 @@ export type NotificationPage = {
 export type NotificationPayload = {
     activity_id: ActivityId;
     activity_name: string;
-    activity_type: ActivityType | null;
+    /**
+     * The activity's type, so the bell opens the work itself
+     * (CONTRACT-REQ-G-2b); `null` in rows stored before.
+     */
+    activity_type?: ActivityType;
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;
@@ -4109,7 +4130,10 @@ export type NotificationPayload = {
 } | {
     activity_id: ActivityId;
     activity_name: string;
-    activity_type: ActivityType | null;
+    /**
+     * The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before.
+     */
+    activity_type?: ActivityType;
     attempt_id: FileAttemptId | null;
     course_id: CourseId;
     course_name: string;
@@ -5564,6 +5588,11 @@ export type SearchResults = {
      * With their authors and the caller's progress, like `GET /courses`.
      */
     courses: Array<CourseListItem>;
+    /**
+     * Published activities of published courses, by name (CONTRACT-REQ-G-6);
+     * absent when none (and from servers before it).
+     */
+    lessons?: Array<LessonHit>;
     /**
      * Set while any section has more hits: pass it back as `cursor` for
      * the next page of every section.

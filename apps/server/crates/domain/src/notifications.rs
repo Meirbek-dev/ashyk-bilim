@@ -49,8 +49,8 @@ pub enum NotificationPayload {
         excerpt: String,
         /// The activity's type, so the bell opens the work itself
         /// (CONTRACT-REQ-G-2b); `null` in rows stored before.
-        #[serde(default)]
-        #[schema(value_type = Option<crate::wire::ActivityType>)]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[schema(value_type = Option<crate::wire::ActivityType>, nullable = false)]
         activity_type: Option<String>,
     },
     /// The recipient's work was returned for revision.
@@ -66,8 +66,8 @@ pub enum NotificationPayload {
         #[serde(default)]
         excerpt: String,
         /// The activity's type (CONTRACT-REQ-G-2b); `null` in rows stored before.
-        #[serde(default)]
-        #[schema(value_type = Option<crate::wire::ActivityType>)]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[schema(value_type = Option<crate::wire::ActivityType>, nullable = false)]
         activity_type: Option<String>,
     },
     /// A teacher extended the recipient's deadline: `assessment_id` for an
@@ -441,5 +441,29 @@ mod tests {
         assert_eq!(json["type"], payload.kind().as_str());
         let back: NotificationPayload = serde_json::from_value(json).unwrap();
         assert_eq!(back.kind(), NotificationType::CourseUpdate);
+    }
+
+    /// Rows stored before `excerpt` / `activity_type` (CONTRACT-REQ-G-2,
+    /// G-2b) still read, and go out without the new keys' values.
+    #[test]
+    fn grade_rows_stored_before_the_new_keys_still_read() {
+        let stored = serde_json::json!({
+            "type": "grade_published",
+            "course_id": CourseId::new(), "course_name": "C",
+            "activity_id": ActivityId::new(), "activity_name": "A",
+            "submission_id": null, "attempt_id": null, "final_score": 80.0
+        });
+        let payload: NotificationPayload = serde_json::from_value(stored).unwrap();
+        let out = serde_json::to_value(&payload).unwrap();
+        assert_eq!(out["excerpt"], "");
+        assert!(out.get("activity_type").is_none(), "{out}");
+        let returned = serde_json::json!({
+            "type": "submission_returned",
+            "course_id": CourseId::new(), "course_name": "C",
+            "activity_id": ActivityId::new(), "activity_name": "A",
+            "submission_id": null, "attempt_id": null
+        });
+        let payload: NotificationPayload = serde_json::from_value(returned).unwrap();
+        assert_eq!(payload.kind(), NotificationType::SubmissionReturned);
     }
 }
