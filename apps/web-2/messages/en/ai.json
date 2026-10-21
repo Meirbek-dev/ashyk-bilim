@@ -113,7 +113,7 @@
   "ai_finding_accepted": "Accept",
   "ai_finding_dismissed": "Dismiss",
   "ai_finding_task_created": "Create a task",
-  "ai_finding_saved": "Flag saved",
+  "ai_finding_saved": "Decision saved",
   "ai_publish": "Publish analysis",
   "ai_publish_title": "Publish the course analysis?",
   "ai_publish_consequence": "Learners of the course will see the score and the summary.",
