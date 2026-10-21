@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import type { ActivityProgressState, ResultKind } from '#/shared/api/gen/types.gen'
+import type { ActivityProgressState, RecentResult, ResultKind } from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
 
 import type { AttentionKind } from '../model/agenda'
@@ -22,6 +22,10 @@ export const resultKinds = {
   grade_published: { label: m.home_result_published, tone: 'success' },
   submission_returned: { label: m.home_result_returned, tone: 'warning' },
 } satisfies Record<ResultKind, Status>
+
+/** A graded test says passed or not (B-HOME-05): a green «Оценено» beside «0 %» read as a success. */
+export const resultStatus = (result: Pick<RecentResult, 'kind' | 'passed'>): Status =>
+  result.passed === null ? resultKinds[result.kind] : progressStates[result.passed ? 'passed' : 'failed']
 
 export const attentionKinds = {
   overdue: { label: m.home_kind_overdue, tone: 'destructive' },

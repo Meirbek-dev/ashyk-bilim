@@ -5,7 +5,7 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { HomeSection } from './home-section'
-import { resultKinds } from './labels'
+import { resultStatus } from './labels'
 import { PlayerLink } from './player-link'
 
 /** Grades released and work returned in the last 14 days, newest first; hidden when there are none. */
@@ -19,7 +19,7 @@ export function ResultsSection({ results }: { results: readonly RecentResult[] }
         getKey={result => `${result.kind}-${result.activity_id}-${result.at_unix}`}
       >
         {result => {
-          const kind = resultKinds[result.kind]
+          const kind = resultStatus(result)
           return (
             <div className="flex items-start gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
