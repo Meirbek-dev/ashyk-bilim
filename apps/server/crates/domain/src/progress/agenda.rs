@@ -142,7 +142,12 @@ fn result(row: RecentResultRow) -> RecentResult {
         activity_name: row.activity_name,
         submission_id: row.submission_id,
         score: if returned { None } else { row.score },
-        passed: (!returned).then_some(row.state == ActivityProgressState::Passed),
+        // Only a verdict says pass or fail: returned work and a grade with no passing score (`Graded`) are neither.
+        passed: match row.state {
+            ActivityProgressState::Passed => Some(true),
+            ActivityProgressState::Failed => Some(false),
+            _ => None,
+        },
         at_unix: row.at,
     }
 }
