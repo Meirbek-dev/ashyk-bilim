@@ -15,7 +15,9 @@ const requirement = (issue: Issue): string => {
 export function validationMessage(issue: Issue): string {
   // Whatever rule a blank field breaks (a pattern, a custom check: a new role's identifier), it reads "fill it in", as
   // every other required field does; «Проверьте это значение.» under an empty field was a riddle.
-  if (issue.input === '' && issue.type !== 'max_length') return m.validation_required()
+  // A check forwarded to a field (`v.forward`) carries the whole form as its input: the field's value is on its path.
+  const value = issue.path?.at(-1)?.value ?? issue.input
+  if (value === '' && issue.type !== 'max_length') return m.validation_required()
   switch (issue.type) {
     case 'min_length':
     case 'non_empty':

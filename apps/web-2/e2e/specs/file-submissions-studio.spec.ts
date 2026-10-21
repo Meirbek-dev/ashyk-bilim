@@ -173,7 +173,7 @@ test('B-FSB-17 deadline, late penalty, attempts and grade release are saved', as
   await deadlines.getByLabel(m.submission_field_due({}, ru), { exact: true }).fill('2030-05-01T18:00')
   await deadlines.getByRole('radio', { name: m.submission_late_kind_cutoff({}, ru) }).click()
   await save(page, m.submission_deadlines_title({}, ru))
-  await expect(deadlines.getByText(m.validation_invalid({}, ru))).toBeVisible()
+  await expect(deadlines.getByText(m.validation_required({}, ru))).toBeVisible()
   await deadlines.getByRole('radio', { name: m.submission_late_kind_penalty({}, ru) }).click()
   await deadlines.getByRole('textbox', { name: m.submission_field_percent({}, ru) }).fill('10')
   await deadlines.getByRole('textbox', { name: m.submission_field_max_days({}, ru) }).fill('3')

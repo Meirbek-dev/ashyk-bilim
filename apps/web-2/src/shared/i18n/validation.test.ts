@@ -35,6 +35,16 @@ describe('validationMessage', () => {
       ),
     ).toBe(m.validation_required())
     expect(firstMessage(v.pipe(v.string(), v.regex(/^[a-z-]+$/)), 'A B')).toBe(m.validation_format())
+    // A check on the whole form, forwarded to one of its fields: that field's value decides.
+    const cutoff = v.pipe(
+      v.object({ kind: v.string(), at: v.string() }),
+      v.forward(
+        v.check(form => form.kind !== 'cutoff' || /\d{4}-\d{2}/.test(form.at)),
+        ['at'],
+      ),
+    )
+    expect(firstMessage(cutoff, { kind: 'cutoff', at: '' })).toBe(m.validation_required())
+    expect(firstMessage(cutoff, { kind: 'cutoff', at: 'x' })).toBe(m.validation_invalid())
   })
 
   test('a server "invalid" on an email field says what an address looks like; elsewhere it stays generic', () => {
