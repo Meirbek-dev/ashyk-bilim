@@ -1,5 +1,4 @@
-import { createHighlighterCore, type HighlighterCore, type LanguageRegistration } from 'shiki/core'
-import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import type { HighlighterCore, LanguageRegistration } from 'shiki/core'
 
 type Grammar = () => Promise<{ default: LanguageRegistration[] }>
 
@@ -54,11 +53,15 @@ let core: Promise<HighlighterCore> | null = null
 
 /** The shared highlighter with `language` loaded (code blocks of the editor and the markdown renderer). */
 export async function highlighter(language: string): Promise<HighlighterCore> {
-  core ??= createHighlighterCore({
-    themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
-    langs: [],
-    engine: createJavaScriptRegexEngine(),
-  })
+  // shiki itself (~140 KB) loads with the first code block, not with every page that renders markdown.
+  core ??= Promise.all([import('shiki/core'), import('shiki/engine/javascript')]).then(
+    async ([{ createHighlighterCore }, { createJavaScriptRegexEngine }]) =>
+      createHighlighterCore({
+        themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
+        langs: [],
+        engine: createJavaScriptRegexEngine(),
+      }),
+  )
   const ready = await core
   const grammar = Object.hasOwn(GRAMMARS, language) ? GRAMMARS[language] : undefined
   if (grammar && !ready.getLoadedLanguages().includes(language)) await ready.loadLanguage(await grammar())
