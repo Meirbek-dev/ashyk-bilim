@@ -60,6 +60,16 @@ test('B-NOT-05 each type leads to its own place, built from the payload ids', ()
     activity_type: null,
   }
   expect(notificationTarget(returned).to).toBe('/learn/$courseId/$activityId/submission')
+  // With the activity type a released grade opens the work itself: the test attempt, the code submission.
+  const submission = '0190a5d2-0000-7000-8000-000000000020'
+  expect(notificationTarget({ ...graded, activity_type: 'exam', submission_id: submission })).toMatchObject({
+    to: '/learn/$courseId/$activityId/attempt',
+    search: { attempt: submission },
+  })
+  expect(notificationTarget({ ...graded, activity_type: 'code_challenge', submission_id: submission })).toMatchObject({
+    to: '/learn/$courseId/$activityId/code',
+    search: { submission },
+  })
   expect(notificationTarget({ ...activity, type: 'deadline_approaching', due_at_unix: 1 }).to).toBe(
     '/learn/$courseId/$activityId',
   )

@@ -74,13 +74,19 @@ export function notificationTarget(payload: NotificationPayload) {
   const course = { courseId: payload.course_id }
   switch (payload.type) {
     case 'grade_published':
-    case 'submission_returned':
+    case 'submission_returned': {
+      // Straight to the graded work (B-NOT-05): the test attempt, the code submission, the hand-in; the player card
+      // only for rows stored before `activity_type` (CONTRACT-REQ-G-2b).
+      const params = { ...course, activityId: payload.activity_id }
+      const submission = payload.submission_id
+      if (submission && (payload.activity_type === 'quiz' || payload.activity_type === 'exam'))
+        return linkOptions({ to: '/learn/$courseId/$activityId/attempt', params, search: { attempt: submission } })
+      if (submission && payload.activity_type === 'code_challenge')
+        return linkOptions({ to: '/learn/$courseId/$activityId/code', params, search: { submission } })
       return payload.attempt_id
-        ? linkOptions({
-            to: '/learn/$courseId/$activityId/submission',
-            params: { ...course, activityId: payload.activity_id },
-          })
-        : linkOptions({ to: '/learn/$courseId/$activityId', params: { ...course, activityId: payload.activity_id } })
+        ? linkOptions({ to: '/learn/$courseId/$activityId/submission', params })
+        : linkOptions({ to: '/learn/$courseId/$activityId', params })
+    }
     case 'deadline_approaching':
     case 'deadline_extended':
       return linkOptions({ to: '/learn/$courseId/$activityId', params: { ...course, activityId: payload.activity_id } })
