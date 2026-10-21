@@ -214,7 +214,7 @@ test('B-SET-11 theme and mode apply without a reload; B-SET-12 the language swit
 }) => {
   await page.goto('/settings/appearance')
   const appearance = form(page, m.settings_appearance_title({}, ru))
-  await appearance.getByText('T3 Chat', { exact: true }).click()
+  await appearance.getByText('Слива', { exact: true }).click() // t3-chat, named by its palette
   await appearance.getByText(m.ui_mode_dark({}, ru), { exact: true }).click()
   await save(appearance)
   await expect(page.getByText(m.settings_saved({}, ru))).toBeVisible()
