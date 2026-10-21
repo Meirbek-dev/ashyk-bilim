@@ -52,7 +52,6 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   }, [expired])
   return (
     <AttemptFrame
-      title={assessment.title}
       saveStatus={<SaveIndicator status={draft.status} />}
       actions={
         <RunnerActions

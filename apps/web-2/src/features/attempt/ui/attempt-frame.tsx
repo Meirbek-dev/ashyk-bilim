@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useParams } from '@tanstack/react-router'
+import { Link as RouterLink, useLoaderData, useParams } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
@@ -11,7 +11,10 @@ import { buttonVariants } from '#/shared/components/button-variants'
 export const ATTEMPT_ROUTE = '/_authed/learn/$courseId/$activityId_/attempt'
 export const ATTEMPT_PATH = '/learn/$courseId/$activityId/attempt'
 
-type FrameProps = Omit<ComponentProps<typeof FocusPage>, 'back'>
+type FrameProps = Omit<ComponentProps<typeof FocusPage>, 'back' | 'title'>
+
+/** The activity's name as the contents list it (B-ATT-28), not the test's own title, which teachers often set apart. */
+export const useActivityTitle = () => useLoaderData({ from: ATTEMPT_ROUTE, select: data => data.title })
 
 /**
  * Every attempt screen: the focus layout whose way out is the activity in the player. Staff previewing see a note
@@ -41,7 +44,7 @@ export function AttemptFrame({ children, ...props }: FrameProps) {
     </RouterLink>
   )
   return (
-    <FocusPage back={back} {...props}>
+    <FocusPage back={back} title={useActivityTitle()} {...props}>
       {preview ? (
         <div className="mb-gutter">
           <PreviewNote />

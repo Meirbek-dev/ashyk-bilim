@@ -87,7 +87,7 @@ export async function ensureAttempt(
     : null
   void reading.catch(() => null)
   void attempt?.catch(() => null)
-  await ensureEntry(queryClient, courseId, activityId)
+  const { entry } = await ensureEntry(queryClient, courseId, activityId)
   const assessment = await reading.catch(missing)
   if (assessment.kind === 'code_challenge') throw notFound()
   const [submission, state] = await Promise.all([
@@ -99,5 +99,6 @@ export async function ensureAttempt(
   if (!attemptId && state.can_continue && state.draft_id)
     await queryClient.query({ ...submissionOptions(state.draft_id), staleTime: 0 }).catch(() => null)
   if (submission && submission.assessment_id !== assessment.id) throw notFound()
-  return { title: assessment.title }
+  // The activity's name, as the learner clicked it in the contents (a test's own title often differs: B-ATT-28).
+  return { title: entry.title }
 }

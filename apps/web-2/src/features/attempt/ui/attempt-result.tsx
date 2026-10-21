@@ -39,7 +39,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
   const grading = attempt.grading
   const auto = autoPart(attempt, assessment.policy.review_visibility)
   return (
-    <AttemptFrame title={assessment.title}>
+    <AttemptFrame>
       <article className="flex flex-col gap-gutter">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold">{m.attempt_number({ number: attempt.attempt_number })}</h1>
