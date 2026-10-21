@@ -29,13 +29,13 @@ export function GroupPage() {
       }
       title={group.name}
       meta={`${m.admin_group_member_count({ count: group.member_count })} · ${m.admin_group_updated({ date: formatDate(group.updated_at_unix) })}`}
-      primaryAction={canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
     >
       {group.description ? <p className="max-w-prose wrap-anywhere">{group.description}</p> : null}
       <GroupCourses group={group} />
       <GroupMembers group={group} />
       {/* Renaming is rare: the courses and people the page is visited for come first. */}
       {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
+      {canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
     </DetailPage>
   )
 }

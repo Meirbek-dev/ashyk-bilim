@@ -10,7 +10,7 @@ import { toast } from '#/shared/ui/toast'
 
 import { deleteGroupOptions } from '../group-queries'
 
-/** Delete through the confirmation that names the group; then the list without it. */
+/** The page's danger zone, last on the page: delete through the confirmation that names the group; then the list. */
 export function DeleteGroup({ group }: { group: Usergroup }) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -27,19 +27,27 @@ export function DeleteGroup({ group }: { group: Usergroup }) {
       },
     )
   return (
-    <ConfirmDialog
-      open={open}
-      onOpenChange={next => {
-        setOpen(next)
-        if (!next) remove.reset()
-      }}
-      trigger={<Button variant="outline">{m.admin_delete()}</Button>}
-      title={m.admin_group_delete_title({ name: group.name })}
-      consequence={m.admin_group_delete_consequence()}
-      confirmLabel={m.admin_delete()}
-      onConfirm={confirm}
-      pending={remove.isPending}
-      error={remove.error}
-    />
+    <section aria-labelledby="admin_group_delete_section" className="flex max-w-prose flex-col items-start gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 id="admin_group_delete_section" className="text-xl font-semibold">
+          {m.admin_group_delete_section()}
+        </h2>
+        <p className="text-sm text-muted-foreground">{m.admin_group_delete_consequence()}</p>
+      </div>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={next => {
+          setOpen(next)
+          if (!next) remove.reset()
+        }}
+        trigger={<Button variant="outline">{m.admin_delete()}</Button>}
+        title={m.admin_group_delete_title({ name: group.name })}
+        consequence={m.admin_group_delete_consequence()}
+        confirmLabel={m.admin_delete()}
+        onConfirm={confirm}
+        pending={remove.isPending}
+        error={remove.error}
+      />
+    </section>
   )
 }

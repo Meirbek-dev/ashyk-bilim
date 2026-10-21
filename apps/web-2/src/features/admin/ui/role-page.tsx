@@ -35,7 +35,6 @@ export function RolePage() {
       title={roleName(role)}
       meta={m.admin_role_meta({ slug: role.slug, priority: role.priority })}
       status={<StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>}
-      primaryAction={canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
     >
       {description ? <p className="max-w-prose wrap-anywhere">{description}</p> : null}
       {canRole(role, 'update') ? <RoleEditSection role={role} base={base} /> : null}
@@ -49,6 +48,7 @@ export function RolePage() {
           <RolePermissionList permissions={role.permissions} />
         </section>
       )}
+      {canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
     </DetailPage>
   )
 }
