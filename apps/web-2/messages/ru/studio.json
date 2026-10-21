@@ -161,6 +161,8 @@
   "studio_groups_title": "Группы",
   "studio_groups_hint": "Участники связанной группы видят курс, даже пока он в черновике.",
   "studio_groups_empty": "Курс пока не связан ни с одной группой",
+  "studio_groups_none_yet": "Групп пока нет: создайте группу, чтобы записывать учащихся сразу всей группой.",
+  "studio_groups_create": "Создать группу",
   "studio_group_members": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

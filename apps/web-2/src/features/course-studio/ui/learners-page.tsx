@@ -59,7 +59,7 @@ export function LearnersPage() {
             <h2 className="text-xl font-semibold">{m.studio_groups_title()}</h2>
             <p className="text-sm text-muted-foreground">{m.studio_groups_hint()}</p>
           </div>
-          {editable ? <LinkGroups courseId={courseId} linked={groups.data} /> : null}
+          {editable ? <LinkGroups courseId={courseId} linked={groups.data} groupPages={groupPages} /> : null}
           <ListState
             pending={false}
             error={groups.error}

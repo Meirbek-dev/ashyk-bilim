@@ -147,6 +147,8 @@
   "studio_groups_title": "Groups",
   "studio_groups_hint": "Members of a linked group see the course even while it is a draft.",
   "studio_groups_empty": "The course is not linked to any group yet",
+  "studio_groups_none_yet": "No groups yet: create one to enroll a whole group of learners at once.",
+  "studio_groups_create": "Create a group",
   "studio_group_members": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
