@@ -65,6 +65,15 @@ export function citedActivity(citation: Pick<Citation, 'source_type' | 'source_u
 }
 
 /**
+ * A citation's quote as the reader sees it (B-AI-31): the model sometimes quotes the machine form of a source (an
+ * activity's settings as JSON, `"prompt":"..."`), which reads as noise next to its label; such an excerpt is dropped.
+ */
+export function readableExcerpt(excerpt: string | null | undefined): string {
+  const text = excerpt?.trim() ?? ''
+  return /^[{["]|"\w+"\s*:/.test(text) ? '' : text
+}
+
+/**
  * A feedback draft from a submission analysis (B-AI-29, the old web's text): the summary, then each knowledge gap
  * with what to work on (else its evidence), then the next step.
  */

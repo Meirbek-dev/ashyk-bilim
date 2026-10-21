@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { Citation } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
-import { citedActivity } from '../model/ai'
+import { citedActivity, readableExcerpt } from '../model/ai'
 
 /**
  * The sources an answer cites: label and the quoted excerpt; a cited activity of this course is a link into the
@@ -19,6 +19,7 @@ export function Citations({ citations }: { citations: Citation[] }) {
       <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
         {citations.map(citation => {
           const activityId = citedActivity(citation)
+          const excerpt = readableExcerpt(citation.excerpt)
           return (
             <li key={citation.citation_id} className="wrap-anywhere">
               {courseId && activityId ? (
@@ -28,7 +29,7 @@ export function Citations({ citations }: { citations: Citation[] }) {
               ) : (
                 <span className="text-foreground">{citation.label}</span>
               )}
-              {citation.excerpt ? ` - ${citation.excerpt}` : null}
+              {excerpt ? ` - ${excerpt}` : null}
             </li>
           )
         })}

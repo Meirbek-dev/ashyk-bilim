@@ -21,7 +21,7 @@ export function PublishAnalysis({ courseId, analysisId }: { courseId: CourseId; 
         setOpen(next)
         if (!next) publish.reset()
       }}
-      trigger={<Button>{m.ai_publish()}</Button>}
+      trigger={<Button className="self-start">{m.ai_publish()}</Button>}
       title={m.ai_publish_title()}
       consequence={m.ai_publish_consequence()}
       confirmLabel={m.ai_publish()}

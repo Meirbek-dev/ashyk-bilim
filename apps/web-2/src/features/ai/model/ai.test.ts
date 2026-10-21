@@ -4,7 +4,16 @@ import type { ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/valibot.gen'
 
 import { RUN_KINDS, RUN_STATUSES, runsFilter } from '../route'
-import { budgetUsed, gateHolds, panelTabs, pickTab, unavailableReason, citedActivity, feedbackDraft } from './ai'
+import {
+  budgetUsed,
+  gateHolds,
+  panelTabs,
+  pickTab,
+  unavailableReason,
+  citedActivity,
+  feedbackDraft,
+  readableExcerpt,
+} from './ai'
 import { runErrorText } from './labels'
 import { STREAM_LOST } from './run'
 
@@ -88,6 +97,14 @@ describe('remediation and admin helpers', () => {
     expect(runErrorText(STREAM_LOST)).toContain('Связь с запуском потеряна')
     expect(runErrorText('AI_RUN_FAILED')).toBe('Запуск ИИ не удался.')
   })
+})
+
+test('B-AI-31 a citation keeps a quote and drops an excerpt in machine form', () => {
+  expect(readableExcerpt('  «Welcome to the course.» ')).toBe('«Welcome to the course.»')
+  expect(readableExcerpt('{"due_at":null,"grading_mode":"auto"}')).toBe('')
+  expect(readableExcerpt('"prompt":"Print n squared."')).toBe('')
+  expect(readableExcerpt('Пустые ограничения: "constraints": []')).toBe('')
+  expect(readableExcerpt(null)).toBe('')
 })
 
 test('B-AI-27 a cited activity is found by source_uuid or by its activity:<id> citation id; other sources are not', () => {
