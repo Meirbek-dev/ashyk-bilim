@@ -20,9 +20,9 @@ async function start(page: Page, quiz: MadeQuiz, { consent = false } = {}) {
 }
 
 async function handIn(page: Page) {
-  await page.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
+  await page.getByRole('button', { name: m.attempt_submit({}, ru), exact: true }).click()
   await dialog(page)
-    .getByRole('button', { name: m.attempt_submit({}, ru) })
+    .getByRole('button', { name: m.attempt_submit({}, ru), exact: true })
     .click()
   await expect(page.getByRole('heading', { level: 1, name: m.attempt_number({ number: 1 }, ru) })).toBeVisible()
 }
@@ -261,9 +261,9 @@ test('B-ATT-17 a test changed under the draft: the hand-in reopens it on the new
   // return note reads.
   expectReread(page, `/api/v2/activities/${quiz.course.activityIds.at(-1)}/assessment`)
   expectReread(page, `/api/v2/assessments/${quiz.assessmentId}/submissions/me`)
-  await page.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
+  await page.getByRole('button', { name: m.attempt_submit({}, ru), exact: true }).click()
   await dialog(page)
-    .getByRole('button', { name: m.attempt_submit({}, ru) })
+    .getByRole('button', { name: m.attempt_submit({}, ru), exact: true })
     .click()
   // The confirmation steps aside for the notice, and the question is the changed one (not the page's old copy).
   await expect(page.getByText(m.attempt_changed({}, ru))).toBeVisible()
@@ -293,7 +293,7 @@ for (const locale of ['kk', 'en'] as const) {
     await page.goto(quiz.url)
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
     await page.getByRole('button', { name: m.attempt_start({}, { locale }) }).click()
-    await expect(page.getByRole('button', { name: m.attempt_submit({}, { locale }) })).toBeVisible()
+    await expect(page.getByRole('button', { name: m.attempt_submit({}, { locale }), exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: m.attempt_back({}, { locale }) })).toBeVisible()
   })
 }

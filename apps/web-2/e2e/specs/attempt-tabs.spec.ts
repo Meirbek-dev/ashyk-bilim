@@ -47,7 +47,7 @@ test('B-ATT-16 «Сдать» in a tab that missed another tab’s answer shows 
   await page.getByRole('radio', { name: 'Алматы' }).check()
   await expect(status(page)).toHaveText(m.attempt_saved({}, ru), { timeout: 20_000 })
   await expect(other.getByRole('radio', { name: 'Астана' })).toBeChecked()
-  await other.getByRole('button', { name: m.attempt_submit({}, ru) }).click()
+  await other.getByRole('button', { name: m.attempt_submit({}, ru), exact: true }).click()
   await expect(other.getByRole('radio', { name: 'Алматы', includeHidden: true }).first()).toHaveAttribute(
     'aria-checked',
     'true',
