@@ -37,7 +37,7 @@ export function ListState({ emptyText, emptyAction, onResetFilters, onRetry, chi
     )
   const noMatches = status === 'no-matches'
   return (
-    <div className="flex flex-col items-start gap-4 py-8">
+    <div className="flex flex-col items-start gap-4 py-2">
       <p className="text-muted-foreground">{noMatches ? m.ui_no_matches() : emptyText}</p>
       {noMatches && onResetFilters ? (
         <Button variant="outline" onClick={onResetFilters}>
