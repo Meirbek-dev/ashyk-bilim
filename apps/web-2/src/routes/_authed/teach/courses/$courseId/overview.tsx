@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { CourseAnalysis } from '#/features/ai'
 import { OverviewPage, readinessOptions } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
+import { ListSkeleton } from '#/shared/components/list-skeleton'
 
 // Readiness, then the AI course analysis (slice 6.3) under it.
 export const Route = createFileRoute('/_authed/teach/courses/$courseId/overview')({
@@ -14,7 +15,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/overview'
     return (
       <div className="flex flex-col gap-gutter">
         <OverviewPage />
-        <Suspense>
+        <Suspense fallback={<ListSkeleton />}>
           <CourseAnalysis courseId={Route.useParams().courseId} />
         </Suspense>
       </div>

@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router'
 import { Suspense, useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import { ListSkeleton } from '#/shared/components/list-skeleton'
 import type { SubmissionStatus, FileAttemptStatus, UserSummary } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { FocusPage } from '#/shared/components/templates/focus-page'
@@ -67,7 +68,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
             ? {
                 label: aside.label,
                 content: (
-                  <Suspense>
+                  <Suspense fallback={<ListSkeleton />}>
                     <aside.Panel
                       key={submissionId}
                       kind={work.kind}

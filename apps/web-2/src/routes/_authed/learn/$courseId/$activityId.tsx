@@ -5,6 +5,7 @@ import { AiPanel, prefetchPanel } from '#/features/ai'
 import { aiSearchSchema } from '#/features/ai/route'
 import { ensurePlayer, PlayerError, PlayerNotFound, PlayerPage } from '#/features/player'
 import { m } from '#/paraglide/messages'
+import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { documentTitle } from '#/shared/lib/document-title'
 
 // The activity player (spec 5.4): an enrolled learner only, anyone else gets a 403 in place. The AI panel is its
@@ -33,7 +34,7 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId')({
             : {
                 label: m.ai_panel_title(),
                 content: (
-                  <Suspense>
+                  <Suspense fallback={<ListSkeleton />}>
                     <AiPanel {...params} surface="student-activity" />
                   </Suspense>
                 ),
