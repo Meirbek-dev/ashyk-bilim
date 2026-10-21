@@ -245,6 +245,10 @@ describe('syllabus and progress', () => {
   })
 })
 
+test('B-CRS-19 the course staff previewing the page open the lessons, though never enrolled', () => {
+  expect(outlineSyllabus(state(), true)[0]?.activities[0]).toMatchObject({ available: true })
+})
+
 describe('authors and co-authorship', () => {
   test('B-CRS-02 authors: active rows, creator first, no reporters or pending applicants', () => {
     const roster = [

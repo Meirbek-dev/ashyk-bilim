@@ -83,8 +83,11 @@ export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
     .filter(chapter => chapter.activities.length > 0)
 }
 
-/** A signed-in user's syllabus with the server's per-activity state. */
-export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
+/**
+ * A signed-in user's syllabus with the server's per-activity state. Rows link into the player for an enrolled learner,
+ * and for the course's staff (`staff`), who reach this page by «Предпросмотр как у учащегося» (B-CRS-19).
+ */
+export const outlineSyllabus = (state: LearnerCourseState, staff = false): SyllabusChapter[] =>
   state.outline.map(chapter => ({
     id: chapter.id,
     title: chapter.title,
@@ -93,7 +96,7 @@ export const outlineSyllabus = (state: LearnerCourseState): SyllabusChapter[] =>
       title: activity.title,
       type: activity.activity_type,
       complete: activity.complete,
-      available: state.enrolled && activity.available,
+      available: (state.enrolled || staff) && activity.available,
       opensAt: activity.opens_at_unix,
       work: activity.state,
     })),
