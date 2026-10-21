@@ -41,8 +41,9 @@ export function getRouter() {
   guardViewTransitions(router)
   reloadOnLanguageChange(router)
   if (typeof document !== 'undefined')
-    router.subscribe('onRendered', ({ fromLocation, pathChanged }) => {
-      if (fromLocation && pathChanged) focusNewPage()
+    // A search change swaps screens too (a test's entry -> its running attempt, `?attempt=`); a hash alone does not.
+    router.subscribe('onRendered', ({ fromLocation, toLocation, pathChanged }) => {
+      if (fromLocation && (pathChanged || fromLocation.searchStr !== toLocation.searchStr)) focusNewPage()
     })
   return router
 }
