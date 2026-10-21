@@ -68,5 +68,7 @@
   "player_page_attempt": "Әрекет",
   "player_page_code": "Код есебі",
   "player_page_submission": "Жұмысты тапсыру",
-  "player_outline": "Осы бетте"
+  "player_outline": "Осы бетте",
+  "player_out_of_attempts": "Әрекеттер таусылды. Қайта тапсыру керек болса,",
+  "player_ask_teacher": "курс талқылауында оқытушыға жазыңыз."
 }

@@ -2,7 +2,8 @@ import { CalendarClock } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { ActivityState, WorkState } from '#/shared/api/gen/types.gen'
+import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.gen'
+import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
@@ -36,9 +37,19 @@ const fresh = new Set<WorkState>(['not_started', 'in_progress'])
  * Graded work's entry (B-PLY-11): the work state, the released grade large, the deadline, a line on how the work goes
  * before anything is handed in; the action sits below it.
  */
-export function EntryCard({ entry, action }: { entry: ActivityState; action: ReactNode }) {
+export function EntryCard({
+  courseId,
+  entry,
+  action,
+}: {
+  courseId: CourseId
+  entry: ActivityState
+  action: ReactNode
+}) {
   const status = workStates[entry.state]
   const kind = activityKind(entry.activity_type)
+  // Failed with no attempt left (B-PLY-19): the learner is not left at a dead end that «Продолжить» keeps leading to.
+  const outOfAttempts = entry.state === 'failed' && !entry.allowed_actions.includes('start')
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -61,6 +72,14 @@ export function EntryCard({ entry, action }: { entry: ActivityState; action: Rea
       ) : null}
       {kind !== 'lesson' && fresh.has(entry.state) && entry.score === null ? (
         <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
+      ) : null}
+      {outOfAttempts ? (
+        <p className="max-w-prose text-sm text-muted-foreground">
+          {m.player_out_of_attempts()}{' '}
+          <Link to="/courses/$courseId/discussions" params={{ courseId }}>
+            {m.player_ask_teacher()}
+          </Link>
+        </p>
       ) : null}
       {action}
     </div>

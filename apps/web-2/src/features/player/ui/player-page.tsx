@@ -73,7 +73,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         ) : lesson ? (
           <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (
-          <EntryCard entry={entry} action={action} />
+          <EntryCard courseId={courseId} entry={entry} action={action} />
         )}
         <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
           {lesson ? action : null}
