@@ -18,7 +18,9 @@ import { AuthSwitch } from './auth-switch'
 import { AuthPage } from './auth-page'
 import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
+import { EnrolNote } from './enrol-note'
 import { SessionEndedNote } from './session-ended-note'
+import { guestBack } from '../model/login-search'
 
 const defaultValues: LoginRequest = { login: '', password: '' }
 
@@ -52,8 +54,9 @@ export function LoginPage() {
     login.reset()
   }
   return (
-    <AuthPage title={m.auth_login_title()}>
+    <AuthPage title={m.auth_login_title()} back={guestBack(search.redirect)}>
       <SessionEndedNote />
+      <EnrolNote redirect={search.redirect} text={m.auth_login_enrol_note()} />
       {totpStep ? null : <GoogleSignIn redirect={redirect} />}
       <AuthForm onSubmit={() => form.handleSubmit()}>
         {totpStep ? (

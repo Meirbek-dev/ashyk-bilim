@@ -5,12 +5,12 @@ import { buttonVariants } from '#/shared/components/button-variants'
 import { googleStartHref } from '../model/login-search'
 
 /** "Sign in with Google": a full navigation into the API, which returns the browser to `redirect`. */
-export function GoogleSignIn({ redirect }: { redirect: string }) {
+export function GoogleSignIn({ redirect, label = m.auth_login_google() }: { redirect: string; label?: string }) {
   return (
     <div className="flex flex-col gap-4">
       <Anchor href={googleStartHref(redirect)} className={buttonVariants({ variant: 'outline' })}>
         <img src="/brand/google-g.svg" alt="" className="size-4" />
-        {m.auth_login_google()}
+        {label}
       </Anchor>
       <p className="flex items-center gap-3 text-sm text-muted-foreground">
         <span aria-hidden className="h-px flex-1 bg-border" />

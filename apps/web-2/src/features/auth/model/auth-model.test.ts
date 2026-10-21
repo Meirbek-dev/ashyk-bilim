@@ -6,13 +6,27 @@ import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
 import { loginSearchSchema, verifyEmailSearchSchema } from '../route'
 import { isResetCodeInvalid, isWrongCode, resetFormError, signupFieldOf } from './account-search'
-import { googleStartHref, retryMinutes } from './login-search'
+import { enrolsAfterAuth, googleStartHref, guestBack, retryMinutes } from './login-search'
 
 const redirectOf = (value: unknown) => v.parse(loginSearchSchema, { redirect: value }).redirect
 const apiError = (code: ErrorCode, fieldErrors: FieldError[] = []) =>
   new ApiError({ status: 422, code, fieldErrors, requestId: null, retryAfter: null })
 
 describe('auth model', () => {
+  test('B-AUTH-17 «Назад» returns to the public page the guest came from; «Записаться» there is announced', () => {
+    const enrol = '/courses/c1/about?enroll=1'
+    expect(guestBack(enrol)).toBe('/courses/c1/about')
+    expect(guestBack('/collections/x?q=1')).toBe('/collections/x?q=1')
+    expect(guestBack('/learn/c1/a1')).toBe('/')
+    expect(guestBack(undefined)).toBe('/')
+    expect(guestBack('//evil.example/courses')).toBe('/')
+    expect([enrolsAfterAuth(enrol), enrolsAfterAuth('/courses/c1/about'), enrolsAfterAuth(undefined)]).toEqual([
+      true,
+      false,
+      false,
+    ])
+  })
+
   test.each(['/home', '/collections?q=x', '/learn/1/2#top'])('B-AUTH-02 keeps the internal path %s', path => {
     expect(redirectOf(path)).toBe(path)
   })

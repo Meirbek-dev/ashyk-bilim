@@ -14,3 +14,19 @@ export const googleStartHref = (callback: string): string =>
 /** Whole minutes to wait after a 429, from `Retry-After` seconds; null when the server gave no time. */
 export const retryMinutes = (retryAfterSeconds: number | null): number | null =>
   retryAfterSeconds === null ? null : Math.max(1, Math.ceil(retryAfterSeconds / 60))
+
+/** Public pages a guest can be sent to sign in from; «Назад» goes back there instead of the landing (B-AUTH-17). */
+const PUBLIC_PAGE = /^\/(courses|collections|users|certificates|search)(\/|\?|$)/
+
+/** Where «Назад» on sign-in / sign-up leads: the public page the guest came from (without `enroll`), else the landing. */
+export function guestBack(redirect: string | undefined): string {
+  const target = safeRedirect(redirect)
+  if (!PUBLIC_PAGE.test(target)) return '/'
+  const url = new URL(target, 'http://internal.invalid')
+  url.searchParams.delete('enroll')
+  return url.pathname + url.search + url.hash
+}
+
+/** The guest pressed «Записаться» on a course: signing in (or up) enrols them at once (B-CRS-16, B-AUTH-17). */
+export const enrolsAfterAuth = (redirect: string | undefined): boolean =>
+  new URL(safeRedirect(redirect), 'http://internal.invalid').searchParams.get('enroll') === '1'

@@ -9,12 +9,21 @@ import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 /**
- * The focus layout of the guest pages (sign in, sign up, verify): back to the landing, one narrow column, and from
- * lg the platform's ornament beside it.
+ * The focus layout of the guest pages (sign in, sign up, verify): back to the landing (or to the public page the guest
+ * came from, `back`), one narrow column, and from lg the platform's ornament beside it.
  */
-export function AuthPage({ title, children }: { title: string; children: ReactNode }) {
+export function AuthPage({
+  title,
+  back: backHref = '/',
+  children,
+}: {
+  title: string
+  back?: string
+  children: ReactNode
+}) {
   const back = (
-    <RouterLink to="/" className={buttonVariants({ variant: 'ghost' })}>
+    // `href` wins over `to` (a built path with its search); `to` only satisfies the route types.
+    <RouterLink to="/" href={backHref} className={buttonVariants({ variant: 'ghost' })}>
       <ArrowLeft aria-hidden />
       {m.platform_back()}
     </RouterLink>

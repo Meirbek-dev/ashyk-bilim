@@ -8,6 +8,9 @@ import { presentError } from '#/shared/i18n/errors'
 import { AuthForm } from './auth-form'
 import { AuthSwitch } from './auth-switch'
 import { AuthPage } from './auth-page'
+import { EnrolNote } from './enrol-note'
+import { GoogleSignIn } from './google-sign-in'
+import { guestBack } from '../model/login-search'
 import { useSignupForm } from './use-signup-form'
 
 /** Self-registration; the new account is signed in at once, the email is confirmed from the shell's banner. */
@@ -15,7 +18,9 @@ export function SignupPage() {
   const { form, pending, formError } = useSignupForm()
   const { redirect } = useSearch({ from: '/_guest/signup' })
   return (
-    <AuthPage title={m.auth_signup_title()}>
+    <AuthPage title={m.auth_signup_title()} back={guestBack(redirect)}>
+      <EnrolNote redirect={redirect} text={m.auth_signup_enrol_note()} />
+      <GoogleSignIn redirect={redirect ?? '/home'} label={m.auth_signup_google()} />
       <AuthForm onSubmit={() => form.handleSubmit()}>
         <form.AppField name="first_name">
           {field => <field.TextField label={m.auth_signup_field_first_name()} autoComplete="given-name" required />}
