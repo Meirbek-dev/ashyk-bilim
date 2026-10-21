@@ -11,7 +11,8 @@ import { rolesOptions } from '../queries'
 export function CreateUserRoles() {
   const { data: roles } = useSuspenseQuery(rolesOptions())
   const options = roles
-    .filter(role => canRole(role, 'assign'))
+    // «Пользователь» is always given (the hint says so): offering it as an extra role only confused.
+    .filter(role => canRole(role, 'assign') && role.slug !== 'user')
     .map(role => ({ value: role.slug, label: roleName(role) }))
   return (
     <MultiSelectField
