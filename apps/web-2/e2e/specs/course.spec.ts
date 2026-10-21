@@ -219,7 +219,8 @@ test('B-CRS-10 progress and done marks come from the server', async ({ page, sig
   await signInAs('student')
   await page.goto(about(made))
   await expect(page.getByText(m.course_progress_count({ done: 1, total: 1 }, ru))).toBeVisible()
-  const bar = page.getByRole('progressbar', { name: m.course_progress_title({}, ru) })
+  // All done: the progress reads «Курс пройден».
+  const bar = page.getByRole('progressbar', { name: m.course_completed_title({}, ru) })
   await expect(bar).toHaveAttribute('aria-valuenow', '100')
   const row = page.getByRole('listitem').filter({ hasText: 'Вводная страница' })
   await expect(row.getByText(m.course_activity_done({}, ru))).toBeVisible()
