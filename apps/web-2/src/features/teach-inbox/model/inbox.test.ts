@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { WorkItem, WorkKind } from '#/shared/api/gen/types.gen'
 
-import { courseOptions, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
+import { courseOptions, emptyInbox, isInboxKind, nextWorkCursor, rowAction, submissionIdOf } from './inbox'
 import { inboxSearchSchema } from '../route'
 
 const COURSE_A = '7f0c1a2e-0000-4000-8000-00000000000a'
@@ -75,4 +75,12 @@ describe('teach inbox model', () => {
     expect(nextWorkCursor({ items: [], total: 3, next_cursor: 'abc', kind_counts: [] })).toBe('abc')
     expect(nextWorkCursor({ items: [], total: 3, next_cursor: null, kind_counts: [] })).toBeUndefined()
   })
+})
+
+test('B-INB-11 an empty queue before the first course invites to create one, or to wait for a team', () => {
+  expect(emptyInbox(0, true)).toBe('first')
+  expect(emptyInbox(0, false)).toBe('no-team')
+  expect(emptyInbox(3, true)).toBe('done')
+  // The loader did not ask (a filter was on, or the queue had work): the usual sentence.
+  expect(emptyInbox(undefined, true)).toBe('done')
 })

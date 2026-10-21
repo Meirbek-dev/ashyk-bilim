@@ -28,3 +28,10 @@ export const submissionIdOf = (item: Pick<WorkItem, 'submission_id' | 'attempt_i
 
 /** Keyset paging: the next request carries the previous page's opaque `next_cursor`. */
 export const nextWorkCursor = (page: WorkQueue): string | undefined => page.next_cursor ?? undefined
+
+/**
+ * What an empty, unfiltered queue says (B-INB-11): «all reviewed» once the teacher has a course; before the first one,
+ * create it (with the right to) or wait to join a team. `ownCourses` is unknown (undefined) when the loader did not ask.
+ */
+export const emptyInbox = (ownCourses: number | undefined, canCreate: boolean): 'done' | 'first' | 'no-team' =>
+  ownCourses !== 0 ? 'done' : canCreate ? 'first' : 'no-team'

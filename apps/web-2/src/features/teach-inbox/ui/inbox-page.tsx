@@ -1,8 +1,7 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
-import { buttonVariants } from '#/shared/components/button-variants'
 import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
@@ -10,6 +9,7 @@ import { ListPage } from '#/shared/components/templates/list-page'
 
 import { teachWorkOptions } from '../queries'
 import { CourseFilter } from './course-filter'
+import { EmptyInbox } from './empty-inbox'
 import { inboxColumns } from './inbox-columns'
 import { KindFilter } from './kind-filter'
 import { SortMenu } from './sort-menu'
@@ -37,30 +37,29 @@ export function InboxPage() {
       }
       activeFilters={active}
     >
-      <ListState
-        pending={false}
-        error={query.error}
-        count={items.length}
-        filtered={active > 0}
-        emptyText={m.inbox_empty()}
-        emptyAction={
-          <RouterLink to="/teach/courses" className={buttonVariants({ variant: 'outline' })}>
-            {m.inbox_empty_action()}
-          </RouterLink>
-        }
-        onResetFilters={() => void navigate({ search: {} })}
-        onRetry={() => void query.refetch()}
-      >
-        <DataTable
-          label={m.inbox_table()}
-          rows={items}
-          // No row with a due date: the empty «Срок» column goes.
-          columns={
-            items.some(item => item.due_at_unix !== null) ? inboxColumns : inboxColumns.filter(c => c.id !== 'due')
-          }
-          getKey={item => item.id}
-        />
-      </ListState>
+      {items.length === 0 && active === 0 && !query.error ? (
+        <EmptyInbox />
+      ) : (
+        <ListState
+          pending={false}
+          error={query.error}
+          count={items.length}
+          filtered={active > 0}
+          emptyText={m.inbox_empty()}
+          onResetFilters={() => void navigate({ search: {} })}
+          onRetry={() => void query.refetch()}
+        >
+          <DataTable
+            label={m.inbox_table()}
+            rows={items}
+            // No row with a due date: the empty «Срок» column goes.
+            columns={
+              items.some(item => item.due_at_unix !== null) ? inboxColumns : inboxColumns.filter(c => c.id !== 'due')
+            }
+            getKey={item => item.id}
+          />
+        </ListState>
+      )}
       <ShowMore
         hasMore={query.hasNextPage}
         pending={query.isFetchingNextPage}
