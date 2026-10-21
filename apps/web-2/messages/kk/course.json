@@ -2,6 +2,7 @@
   "course_not_found": "Курс табылмады",
   "course_catalog": "Барлық курстар",
   "course_authors": "Авторлар: {names}",
+  "course_author": "Авторы: {names}",
   "course_updated": "Жаңартылды: {date}",
   "course_archived": "Мұрағатта",
   "course_enroll": "Тіркелу",

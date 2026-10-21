@@ -2,6 +2,7 @@
   "course_not_found": "Course not found",
   "course_catalog": "All courses",
   "course_authors": "Authors: {names}",
+  "course_author": "Author: {names}",
   "course_updated": "Updated {date}",
   "course_archived": "Archived",
   "course_enroll": "Enroll",

@@ -32,7 +32,9 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const authors = authorNames(roster)
   const meta = [
-    authors.length > 0 ? m.course_authors({ names: authors.join(', ') }) : null,
+    authors.length > 0
+      ? (authors.length === 1 ? m.course_author : m.course_authors)({ names: authors.join(', ') })
+      : null,
     m.course_updated({ date: formatDate(course.updated_at_unix) }),
   ]
   return (

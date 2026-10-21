@@ -39,7 +39,7 @@ export function CourseItem({ course, level = 2 }: CourseItemProps) {
         </div>
         {authors ? (
           <p className="line-clamp-1 text-sm wrap-anywhere text-muted-foreground">
-            {m.catalog_course_authors({ names: authors })}
+            {(course.authors?.length === 1 ? m.catalog_course_author : m.catalog_course_authors)({ names: authors })}
           </p>
         ) : null}
         {course.description ? <p className="line-clamp-2 text-sm wrap-anywhere">{course.description}</p> : null}

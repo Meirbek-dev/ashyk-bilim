@@ -104,7 +104,7 @@ test('B-CRS-02 the header names the authors and the update date', async ({ page,
   const made = await course()
   await page.goto(about(made))
   await expect(page.getByRole('heading', { level: 1, name: made.course.name })).toBeVisible()
-  await expect(page.getByText(m.course_authors({ names: 'E2E teacher' }, ru), { exact: false })).toBeVisible()
+  await expect(page.getByText(m.course_author({ names: 'E2E teacher' }, ru), { exact: false })).toBeVisible()
 })
 
 test('B-CRS-03 B-CRS-16 a guest enrols after signing in', async ({ page, signInAs, course }) => {

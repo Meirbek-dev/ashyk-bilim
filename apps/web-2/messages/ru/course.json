@@ -2,6 +2,7 @@
   "course_not_found": "Курс не найден",
   "course_catalog": "Все курсы",
   "course_authors": "Авторы: {names}",
+  "course_author": "Автор: {names}",
   "course_updated": "Обновлено {date}",
   "course_archived": "В архиве",
   "course_enroll": "Записаться",

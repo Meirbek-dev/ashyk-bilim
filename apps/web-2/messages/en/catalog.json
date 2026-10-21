@@ -27,6 +27,7 @@
   "catalog_course_state_unpublished": "Not published",
   "catalog_course_state_archived": "Archived",
   "catalog_course_authors": "Authors: {names}",
+  "catalog_course_author": "Author: {names}",
   "catalog_course_progress": "{percent}% done",
   "catalog_search_title": "Search",
   "catalog_search_label": "What to find",
