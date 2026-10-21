@@ -25,8 +25,9 @@ export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activi
   const work = inFlight(activity)
   return (
     <li className={`relative border-l-2 py-0.5 ${activity.complete ? 'border-primary' : 'border-dashed border-input'}`}>
+      {/* py-1.5: a one-line row keeps its height; wrapped titles on a phone no longer run into the next one. */}
       <div
-        className={`-ml-4 flex min-h-row items-center gap-3 rounded-lg pr-3 ${activity.available ? 'transition-colors duration-150 hover:bg-accent hover:text-accent-foreground' : ''}`}
+        className={`-ml-4 flex min-h-row items-center gap-3 rounded-lg py-1.5 pr-3 ${activity.available ? 'transition-colors duration-150 hover:bg-accent hover:text-accent-foreground' : ''}`}
       >
         <span className="rounded-lg bg-background">
           <ActivityIcon type={type} size="sm" />
