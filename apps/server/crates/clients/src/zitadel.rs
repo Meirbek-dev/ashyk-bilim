@@ -141,8 +141,20 @@ fn password_policy_error(field: &str, message: &str) -> Error {
 
 impl ZitadelClient {
     pub fn new(config: ZitadelConfig) -> Result<Self> {
-        let http = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
+        let mut builder = reqwest::Client::builder().timeout(std::time::Duration::from_secs(10));
+        // Dev (`http://localhost:8081`): `localhost` resolves to ::1 first, and a container's IPv6 port forward can
+        // hang instead of refusing (Windows + podman), so every sign-in waited out the timeout. Connect to 127.0.0.1;
+        // the Host header stays `localhost`, the domain Zitadel routes its instance by.
+        if let Ok(url) = reqwest::Url::parse(&config.base_url)
+            && url.host_str() == Some("localhost")
+            && let Some(port) = url.port_or_known_default()
+        {
+            builder = builder.resolve(
+                "localhost",
+                std::net::SocketAddr::from(([127, 0, 0, 1], port)),
+            );
+        }
+        let http = builder
             .build()
             .map_err(|e| Error::internal("building zitadel http client", e))?;
         Ok(Self { http, config })
