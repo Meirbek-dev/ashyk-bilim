@@ -253,7 +253,7 @@
   "analytics_questions_title": "Качество вопросов",
   "analytics_col_question": "Вопрос",
   "analytics_col_accuracy": "Верно",
-  "analytics_col_discrimination": "Различение",
+  "analytics_col_discrimination": "Различающая сила",
   "analytics_col_strong_miss": "Ошибки сильных",
   "analytics_col_weak_correct": "Угадали слабые",
   "analytics_col_distractors": "Слабые варианты",

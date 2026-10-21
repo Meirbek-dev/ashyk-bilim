@@ -253,7 +253,7 @@
   "analytics_questions_title": "Сұрақтардың сапасы",
   "analytics_col_question": "Сұрақ",
   "analytics_col_accuracy": "Дұрыс",
-  "analytics_col_discrimination": "Ажырату",
+  "analytics_col_discrimination": "Ажырату күші",
   "analytics_col_strong_miss": "Күштілердің қатесі",
   "analytics_col_weak_correct": "Әлсіздер тапты",
   "analytics_col_distractors": "Әлсіз нұсқалар",

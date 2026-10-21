@@ -40,7 +40,7 @@
   "assessments_option_remove": "Удалить вариант {number}",
   "assessments_option_true": "Верно",
   "assessments_option_false": "Неверно",
-  "assessments_correct_legend": "Верный ответ",
+  "assessments_correct_legend": "Правильный ответ",
   "assessments_options_legend": "Варианты ответа",
   "assessments_options_hint_single": "Отметьте верный вариант кружком слева.",
   "assessments_options_hint_multiple": "Отметьте все верные варианты флажками слева.",
