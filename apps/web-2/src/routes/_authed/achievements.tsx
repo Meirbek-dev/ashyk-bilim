@@ -5,6 +5,6 @@ import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/achievements')({
   loader: ({ context }) => ensureAchievements(context.queryClient),
-  staticData: { title: m.platform_nav_achievements },
+  staticData: { title: m.platform_nav_achievements, skeleton: 'tiles' },
   component: AchievementsPage,
 })

@@ -17,6 +17,8 @@ declare module '@tanstack/react-router' {
     layout?: 'focus'
     /** A layout's tabs, one child route each; the English label is the URL segment (spec 5.2). */
     tabs?: readonly { to: AppPath; label: () => string }[]
+    /** The shape of the route's loading skeleton (PendingView) when it is not a list: card grid, object page, tiles. */
+    skeleton?: 'grid' | 'detail' | 'tiles'
   }
 }
 

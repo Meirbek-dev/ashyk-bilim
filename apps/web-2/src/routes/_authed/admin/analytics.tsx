@@ -8,6 +8,6 @@ export const Route = createFileRoute('/_authed/admin/analytics')({
   validateSearch: adminAnalyticsSearchSchema,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) => loadAdminAnalytics(context.queryClient, deps),
-  staticData: { title: m.platform_nav_analytics },
+  staticData: { title: m.platform_nav_analytics, skeleton: 'tiles' },
   component: AdminAnalyticsPage,
 })

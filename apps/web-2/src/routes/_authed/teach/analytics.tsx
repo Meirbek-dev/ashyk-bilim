@@ -15,6 +15,6 @@ export const Route = createFileRoute('/_authed/teach/analytics')({
   },
   loaderDeps: ({ search }) => pickFilters(search),
   loader: ({ context, deps }) => loadAnalytics(context.queryClient, deps),
-  staticData: { title: m.platform_nav_analytics },
+  staticData: { title: m.platform_nav_analytics, skeleton: 'tiles' },
   component: AnalyticsLayout,
 })

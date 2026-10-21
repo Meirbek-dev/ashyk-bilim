@@ -5,6 +5,6 @@ import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/home')({
   loader: ({ context }) => ensureHome(context.queryClient),
-  staticData: { title: m.home_title },
+  staticData: { title: m.home_title, skeleton: 'tiles' },
   component: HomePage,
 })
