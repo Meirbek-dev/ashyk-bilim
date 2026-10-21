@@ -30,7 +30,7 @@ async function stored(
 
 test.use({ as: 'teacher' })
 
-test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is published, unpublished and published again', async ({
+test('B-FSB-13 B-FSB-14 B-FSB-21 B-FSB-24 a draft task gets its instructions, is published, unpublished and published again', async ({
   page,
   makeCourse,
   tasks,
@@ -41,6 +41,10 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 a draft task gets its instructions, is publishe
   const publishing = page.getByRole('region', { name: m.submission_publishing({}, ru) })
   await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
   await expect(publishing.getByText(m.submission_draft_hint({}, ru))).toBeVisible()
+  // B-FSB-24: a draft ends with «Опубликовать», after the instructions and the rubric it needs.
+  const instructionsBox = await page.getByRole('heading', { name: m.submission_instructions({}, ru) }).boundingBox()
+  const publishingBox = await publishing.boundingBox()
+  expect(publishingBox?.y ?? 0).toBeGreaterThan(instructionsBox?.y ?? Infinity)
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
   await expect(publishing.getByText(m.submission_publish_needs_instructions({}, ru))).toBeVisible()
 
