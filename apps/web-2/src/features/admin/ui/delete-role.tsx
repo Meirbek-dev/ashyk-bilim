@@ -41,7 +41,7 @@ export function DeleteRole({ role }: { role: Role }) {
           setOpen(next)
           if (!next) remove.reset()
         }}
-        trigger={<Button variant="outline">{m.admin_delete()}</Button>}
+        trigger={<Button variant="destructive">{m.admin_delete()}</Button>}
         title={m.admin_role_delete_title({ name: roleName(role) })}
         consequence={m.admin_role_delete_consequence()}
         confirmLabel={m.admin_delete()}

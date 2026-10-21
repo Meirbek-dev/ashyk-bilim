@@ -40,7 +40,7 @@ export function DeleteGroup({ group }: { group: Usergroup }) {
           setOpen(next)
           if (!next) remove.reset()
         }}
-        trigger={<Button variant="outline">{m.admin_delete()}</Button>}
+        trigger={<Button variant="destructive">{m.admin_delete()}</Button>}
         title={m.admin_group_delete_title({ name: group.name })}
         consequence={m.admin_group_delete_consequence()}
         confirmLabel={m.admin_delete()}
