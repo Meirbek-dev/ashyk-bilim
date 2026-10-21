@@ -62,7 +62,7 @@ test('B-SET-18 a picked theme and mode show at once; leaving without Save puts b
   await page.goto('/settings/appearance')
   const html = page.locator('html')
   const before = await html.getAttribute('data-theme')
-  await page.getByText('T3 Chat', { exact: true }).click()
+  await page.getByText('Слива', { exact: true }).click() // t3-chat
   await page.getByText(m.ui_mode_dark({}, ru), { exact: true }).click()
   await expect(html).toHaveAttribute('data-theme', 't3-chat')
   await expect(html).toHaveAttribute('data-mode', 'dark')
