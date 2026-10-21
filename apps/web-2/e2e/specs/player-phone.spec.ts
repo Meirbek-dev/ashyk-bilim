@@ -19,7 +19,7 @@ test('B-PLY-06 on a phone the «Отмечено» toast stays clear of the play
   await page.getByRole('button', { name: m.player_mark({}, ru) }).click()
   const toast = page.locator('[data-slot="toast"]').filter({ hasText: m.player_marked({}, ru) })
   await expect(toast).toBeVisible()
-  const action = page.getByRole('link', { name: m.player_continue({}, ru) })
+  const action = page.getByRole('link', { name: m.player_next_step({ title: '' }, ru).trim() })
   const [toastBox, actionBox] = [await toast.boundingBox(), await action.boundingBox()]
   expect(toastBox && actionBox && toastBox.y + toastBox.height <= actionBox.y).toBe(true)
   expect(toastBox?.y).toBeLessThan(100)

@@ -137,8 +137,8 @@ test('B-PLY-03 B-PLY-05 B-PLY-06 B-PLY-07 B-PLY-08 a learner reads, marks a page
   await expect(page.getByText(m.player_marked({}, ru))).toBeVisible()
   await expect(contents(page).getByText(m.player_progress({ done: 1, total: 2 }, ru))).toBeVisible()
   await expect(contents(page).getByRole('link', { name: new RegExp(`Вторая.*${m.player_done({}, ru)}`) })).toBeVisible()
-  // The server's next step is the page left behind: its URL is built from the id.
-  await expect(page.getByRole('link', { name: m.player_continue({}, ru) })).toHaveAttribute('href', play(course))
+  const onward = page.getByRole('link', { name: m.player_next_step({ title: 'Page 1' }, ru) }) // server's next step
+  await expect(onward).toHaveAttribute('href', play(course))
 
   await neighbours(page)
     .getByRole('link', { name: `${m.player_prev({}, ru)}: Page 1` })

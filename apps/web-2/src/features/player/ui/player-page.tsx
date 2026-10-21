@@ -10,7 +10,7 @@ import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, locate, staffPreview } from '../model/player'
+import { activityKind, locate, playerAction, staffPreview } from '../model/player'
 import { learnerStateOptions, markOptions } from '../queries'
 import { ActivityHeader } from './activity-header'
 import { BackToCourse } from './back-to-course'
@@ -43,6 +43,8 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
     )
   const { entry, prev, next } = found
   const lesson = activityKind(entry.activity_type) === 'lesson'
+  const primary = playerAction(state, entry)
+  const continuesTo = primary?.kind === 'continue' ? primary.activityId : null
   const action = <PlayerAction key={entry.id} state={state} entry={entry} />
   // A hosted video watched to the end marks its lesson done, as on the old web (B-PLY-06).
   const videoEnded = () => {
@@ -75,7 +77,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         )}
         <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
           {lesson ? action : null}
-          <NeighbourLinks courseId={courseId} prev={prev} next={next} />
+          <NeighbourLinks courseId={courseId} prev={prev} next={next} nextShown={lesson && continuesTo === next?.id} />
         </footer>
       </article>
     </FocusPage>

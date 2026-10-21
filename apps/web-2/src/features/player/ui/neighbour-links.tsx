@@ -7,10 +7,16 @@ import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
 import { buttonVariants } from '#/shared/components/button-variants'
 
-type NeighbourProps = { courseId: CourseId; prev: ActivityState | null; next: ActivityState | null }
+type NeighbourProps = {
+  courseId: CourseId
+  prev: ActivityState | null
+  next: ActivityState | null
+  /** The primary «Далее: <next>» already leads there: no second link (→ still works). */
+  nextShown?: boolean
+}
 
 /** Previous and next activity in contents order (← and →); none past either end. */
-export function NeighbourLinks({ courseId, prev, next }: NeighbourProps) {
+export function NeighbourLinks({ courseId, prev, next, nextShown = false }: NeighbourProps) {
   const navigate = useNavigate()
   const go = (target: ActivityState | null) => {
     if (target) void navigate({ to: '/learn/$courseId/$activityId', params: { courseId, activityId: target.id } })
@@ -30,7 +36,7 @@ export function NeighbourLinks({ courseId, prev, next }: NeighbourProps) {
           {m.player_prev()}
         </RouterLink>
       ) : null}
-      {next ? (
+      {next && !nextShown ? (
         <RouterLink
           to="/learn/$courseId/$activityId"
           params={{ courseId, activityId: next.id }}

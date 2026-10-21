@@ -1,6 +1,7 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
+import { ArrowRight } from 'lucide-react'
 
 import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
@@ -11,7 +12,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, playerAction, type EntryAction } from '../model/player'
+import { activityKind, locate, playerAction, type EntryAction } from '../model/player'
 import { markOptions, unmarkOptions } from '../queries'
 
 const entryLabels = {
@@ -59,9 +60,13 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
           <RouterLink
             to="/learn/$courseId/$activityId"
             params={{ courseId, activityId: action.activityId }}
-            className={buttonVariants()}
+            className={buttonVariants({ className: 'max-w-full' })}
           >
-            {m.player_continue()}
+            {/* Names where it leads: «Следующая» beside it is the contents neighbour, which may already be done. */}
+            <span className="truncate">
+              {m.player_next_step({ title: locate(state, action.activityId)?.entry.title ?? '' })}
+            </span>
+            <ArrowRight aria-hidden />
           </RouterLink>
         ) : null}
         {action?.kind === 'finish' ? (
