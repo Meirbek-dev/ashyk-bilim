@@ -175,7 +175,7 @@
   "analytics_code_engagement_dropped": "“{course}”: learner activity fell by {delta}",
   "analytics_code_content_stale": "“{course}”: the course has not been updated for {days} days",
   "analytics_code_risk_spike": "Learners at risk: {count}",
-  "analytics_code_grading_slo_breached": "“{title}” ({course}): review deadline of {target} missed - {breaches} of {awaiting}, the oldest waited {oldest}",
+  "analytics_code_grading_slo_breached": "“{title}” ({course}): review deadline of {target} missed — {breaches} of {awaiting}, the oldest waited {oldest}",
   "analytics_code_grading_slo_watch": "“{title}” ({course}): a submission has waited {oldest} for review, the deadline is {target}",
   "analytics_code_completion_target_miss": "“{course}”: learners unlikely to finish the course by the deadline: {count}",
   "analytics_code_course_completion_deadline": "“{course}”: expected completion in two weeks: {expected}",

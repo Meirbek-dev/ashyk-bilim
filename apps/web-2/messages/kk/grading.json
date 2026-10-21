@@ -91,7 +91,7 @@
   "grading_item_score": "Ұпай ({max} ішінен)",
   "grading_item_feedback": "Сұраққа түсініктеме",
   "grading_items_total": "Сұрақтар бойынша: {percent}",
-  "grading_override": "Қорытынды баға, % (бос болса - сұрақтар бойынша)",
+  "grading_override": "Қорытынды баға, % (бос болса — сұрақтар бойынша)",
   "grading_feedback": "Білім алушыға пікір",
   "grading_score_range": "0-ден {max}-ге дейінгі сан",
   "grading_score_invalid": "0-ден ең жоғарыға дейінгі сан",

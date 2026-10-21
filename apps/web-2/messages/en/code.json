@@ -90,7 +90,7 @@
   "code_studio_title": "Code challenge",
   "code_studio_hint": "Problem, languages, test cases and limits. The header switch publishes it.",
   "code_read_only": "Read only: you cannot change this challenge.",
-  "code_lock_has_submissions": "Learners have already solved this challenge: only the statement can change - its text, input/output formats and constraints. Languages, examples and limits are locked; unpublish it to change them.",
+  "code_lock_has_submissions": "Learners have already solved this challenge: only the statement can change — its text, input/output formats and constraints. Languages, examples and limits are locked; unpublish it to change them.",
   "code_lock_archived": "The challenge is archived: the statement, languages and examples are read only. Return it to draft to edit.",
   "code_lock_scheduled": "Publishing is scheduled: the statement, languages and examples are read only. Cancel the schedule to edit.",
   "code_field_prompt": "Problem",

@@ -9,7 +9,7 @@
   "home_day_today": "Бүгін",
   "home_day_tomorrow": "Ертең",
   "home_due_time": "{time} дейін",
-  "home_cutoff": "кешіктіріп тапсыру - {date} дейін",
+  "home_cutoff": "кешіктіріп тапсыру — {date} дейін",
   "home_attention_title": "Назар аударыңыз",
   "home_kind_overdue": "Мерзімі өтті",
   "home_kind_returned": "Пысықтауға қайтарылды",

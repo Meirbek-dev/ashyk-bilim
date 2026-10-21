@@ -106,7 +106,7 @@
   "settings_totp_disabled": "Двухфакторная аутентификация отключена",
   "settings_totp_google": "Вход через Google код не спрашивает.",
   "settings_appearance_title": "Оформление",
-  "settings_appearance_hint": "Выбор сразу виден на странице. После «Сохранить» тема и язык будут такими на всех ваших устройствах, а режим - в этом браузере.",
+  "settings_appearance_hint": "Выбор сразу виден на странице. После «Сохранить» тема и язык будут такими на всех ваших устройствах, а режим — в этом браузере.",
   "settings_field_theme": "Тема",
   "settings_theme_search": "Найти тему",
   "settings_field_mode": "Режим",

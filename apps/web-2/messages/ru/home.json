@@ -9,7 +9,7 @@
   "home_day_today": "Сегодня",
   "home_day_tomorrow": "Завтра",
   "home_due_time": "до {time}",
-  "home_cutoff": "с опозданием - до {date}",
+  "home_cutoff": "с опозданием — до {date}",
   "home_attention_title": "Требует внимания",
   "home_kind_overdue": "Срок прошёл",
   "home_kind_returned": "Возвращено на исправление",

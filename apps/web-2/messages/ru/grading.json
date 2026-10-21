@@ -93,7 +93,7 @@
   "grading_item_score": "Баллы (из {max})",
   "grading_item_feedback": "Комментарий к вопросу",
   "grading_items_total": "По вопросам: {percent}",
-  "grading_override": "Итоговая оценка, % (пусто - по вопросам)",
+  "grading_override": "Итоговая оценка, % (пусто — по вопросам)",
   "grading_feedback": "Отзыв учащемуся",
   "grading_score_range": "Число от 0 до {max}",
   "grading_score_invalid": "Число от 0 до максимума",

@@ -49,7 +49,7 @@ describe('analytics signals', () => {
         oldest_hours: 50.5,
         target_hours: 72,
       }),
-    ).toBe('«Эссе» (C): работа ждёт проверки 50,5 ч, срок - 72 ч')
+    ).toBe('«Эссе» (C): работа ждёт проверки 50,5 ч, срок — 72 ч')
   })
 
   test('B-ANL-23 a content bottleneck names its signal; an unknown signal is shown as sent', () => {

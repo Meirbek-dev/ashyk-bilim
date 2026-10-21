@@ -102,7 +102,7 @@
   "submission_deadlines_title": "Мерзімдер мен әрекеттер",
   "submission_deadlines_hint": "Қашан тапсыру, кешігуді қалай есептеу және неше рет тапсыруға болады.",
   "submission_field_due": "Тапсыру мерзімі",
-  "submission_field_due_hint": "Платформа уақыты (Алматы). Бос болса - мерзімсіз.",
+  "submission_field_due_hint": "Платформа уақыты (Алматы). Бос болса — мерзімсіз.",
   "submission_field_allow_late": "Мерзімнен кейін қабылдау",
   "submission_field_late_policy": "Кешігу",
   "submission_late_kind_none": "Айыппұлсыз",

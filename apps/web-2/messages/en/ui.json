@@ -28,7 +28,7 @@
   "ui_file_drop": "or drop it here",
   "ui_files_choose": "Choose files",
   "ui_files_drop": "or drop them here",
-  "ui_files_over": "Files not added: {count} - no more fit.",
+  "ui_files_over": "Files not added: {count} — no more fit.",
   "ui_file_uploading": "Uploading the file",
   "ui_file_uploaded": "Uploaded: {name}",
   "ui_file_too_large": "The file is larger than {size}. Choose a smaller file.",

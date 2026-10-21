@@ -29,7 +29,7 @@ export function Citations({ citations }: { citations: Citation[] }) {
               ) : (
                 <span className="text-foreground">{citation.label}</span>
               )}
-              {excerpt ? ` - ${excerpt}` : null}
+              {excerpt ? ` — ${excerpt}` : null}
             </li>
           )
         })}

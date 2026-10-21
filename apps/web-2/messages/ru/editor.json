@@ -84,7 +84,7 @@
   "editor_preview_show_button": "Показать кнопку перехода на сайт",
   "editor_preview_button_label": "Текст кнопки",
   "editor_field_height": "Высота, px",
-  "editor_height_range": "Высота - целое число от 100 до 2000 px.",
+  "editor_height_range": "Высота — целое число от 100 до 2000 px.",
   "editor_math_templates": "Шаблоны формул",
   "editor_math_fraction": "Дробь",
   "editor_math_sqrt": "Квадратный корень",

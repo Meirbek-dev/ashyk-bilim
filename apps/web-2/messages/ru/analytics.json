@@ -175,8 +175,8 @@
   "analytics_code_engagement_dropped": "«{course}»: активность учащихся упала на {delta}",
   "analytics_code_content_stale": "«{course}»: курс не обновлялся {days} дн.",
   "analytics_code_risk_spike": "Учащихся в зоне риска: {count}",
-  "analytics_code_grading_slo_breached": "«{title}» ({course}): нарушен срок проверки {target} - {breaches} из {awaiting}, дольше всех ждут {oldest}",
-  "analytics_code_grading_slo_watch": "«{title}» ({course}): работа ждёт проверки {oldest}, срок - {target}",
+  "analytics_code_grading_slo_breached": "«{title}» ({course}): нарушен срок проверки {target} — {breaches} из {awaiting}, дольше всех ждут {oldest}",
+  "analytics_code_grading_slo_watch": "«{title}» ({course}): работа ждёт проверки {oldest}, срок — {target}",
   "analytics_code_completion_target_miss": "«{course}»: учащихся, которые вряд ли завершат курс в срок: {count}",
   "analytics_code_course_completion_deadline": "«{course}»: через две недели ожидается завершение {expected}",
   "analytics_code_grading_backlog_7d": "Очередь проверки через 7 дней: {count}",
@@ -298,6 +298,6 @@
   "analytics_admin_all": "все",
   "analytics_admin_roi": "Отдача контента",
   "analytics_admin_roi_hint": "Завершение и здоровье курса в расчёте на одну активность: чем выше, тем больше результата даёт каждая активность.",
-  "analytics_admin_courses_hint": "Здоровье - показатель курса от 0 до 100; курсы, которые ещё никто не начал, - в конце.",
+  "analytics_admin_courses_hint": "Здоровье — показатель курса от 0 до 100; курсы, которые ещё никто не начал, — в конце.",
   "analytics_program_unassigned": "Без автора"
 }
