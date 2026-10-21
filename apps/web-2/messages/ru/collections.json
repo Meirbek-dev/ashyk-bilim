@@ -48,5 +48,6 @@
   "collections_deleted": "Коллекция удалена",
   "collections_field_courses": "Курсы",
   "collections_field_courses_hint": "Найдите курс по названию и выберите его; в коллекции курсы идут в этом порядке.",
-  "collections_courses_placeholder": "Название курса"
+  "collections_courses_placeholder": "Название курса",
+  "collections_to_catalog": "Перейти в каталог курсов"
 }

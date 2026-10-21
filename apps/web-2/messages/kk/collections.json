@@ -46,5 +46,6 @@
   "collections_deleted": "Жинақ жойылды",
   "collections_field_courses": "Курстар",
   "collections_field_courses_hint": "Курсты атауы бойынша тауып, таңдаңыз; жинақта курстар осы ретпен тұрады.",
-  "collections_courses_placeholder": "Курс атауы"
+  "collections_courses_placeholder": "Курс атауы",
+  "collections_to_catalog": "Курстар каталогына өту"
 }

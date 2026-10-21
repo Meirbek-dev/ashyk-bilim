@@ -46,5 +46,6 @@
   "collections_deleted": "Collection deleted",
   "collections_field_courses": "Courses",
   "collections_field_courses_hint": "Find a course by name and pick it; the collection lists the courses in this order.",
-  "collections_courses_placeholder": "Course name"
+  "collections_courses_placeholder": "Course name",
+  "collections_to_catalog": "Browse the course catalog"
 }
