@@ -37,6 +37,7 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
   )
   const form = useAppForm(fileGradeSchema, {
     defaultValues: initial,
+    leaveGuard: true,
     onSubmit: values => grade.save(fileGradeRequest(values, action.current)),
   })
   useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))

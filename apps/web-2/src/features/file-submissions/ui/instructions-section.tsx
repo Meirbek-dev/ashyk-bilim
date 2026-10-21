@@ -21,6 +21,7 @@ export function InstructionsSection({ task }: { task: FileSubmission }) {
   const [defaultValues] = useState(() => ({ instructions: task.instructions }))
   const form = useAppForm(instructionsSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: body => write.save(body),
   })
   return (

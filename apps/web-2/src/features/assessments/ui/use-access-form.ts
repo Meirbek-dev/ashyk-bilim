@@ -43,6 +43,7 @@ export function useAccessForm(activityId: string, assessment: AssessmentDetail, 
     )
   const form = useAppForm(vSetAccessRequest, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: body => (locksOut(body) && !confirming ? setConfirming(true) : send(body)),
   })
   const reloadAndRetry = async () => {

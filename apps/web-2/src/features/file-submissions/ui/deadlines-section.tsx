@@ -22,6 +22,7 @@ export function DeadlinesSection({ task }: { task: FileSubmission }) {
   const [defaultValues] = useState(() => deadlinesForm(task))
   const form = useAppForm(deadlinesSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: values => write.save(deadlinesPatch(values)),
   })
   return (

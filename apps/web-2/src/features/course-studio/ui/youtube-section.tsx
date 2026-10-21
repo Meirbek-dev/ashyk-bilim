@@ -22,6 +22,7 @@ export function YoutubeSection({ courseId, activity }: { courseId: string; activ
   const source = mediaSource(activity)
   const form = useAppForm(youtubeSchema, {
     defaultValues: { uri: source.kind === 'youtube' ? source.uri : '' },
+    leaveGuard: true,
     onSubmit: ({ uri }) =>
       update.mutateAsync(
         {

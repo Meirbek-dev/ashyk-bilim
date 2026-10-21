@@ -37,6 +37,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
   // The diff base is the work as last saved (the cache holds every answer), so only what changed since goes out.
   const form = useAppForm(gradeFormSchema, {
     defaultValues: initial,
+    leaveGuard: true,
     onSubmit: values => grade.save(gradeRequest(values, gradeForm(submission, items), action.current)),
   })
   useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))

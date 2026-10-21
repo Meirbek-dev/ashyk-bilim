@@ -40,6 +40,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
   )
   const form = useAppForm(vCreateCourseUpdateRequest, {
     defaultValues: { title: update.title, content: update.content },
+    leaveGuard: true,
     onSubmit: body => write.save(body, update.version),
   })
   if (editing)

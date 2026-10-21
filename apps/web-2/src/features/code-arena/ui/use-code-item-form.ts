@@ -11,7 +11,7 @@ import { bodyChanged, codeBodyOf, codeForm, codeFormSchema, type CodeForm } from
 import { challengeOptions, referenceCheckOptions, updateCodeOptions } from '../queries'
 
 const useCodeForm = (defaultValues: CodeForm, onSubmit: (values: CodeForm) => unknown) =>
-  useAppForm(codeFormSchema, { defaultValues, onSubmit })
+  useAppForm(codeFormSchema, { defaultValues, onSubmit, leaveGuard: true })
 
 export type CodeFormApi = ReturnType<typeof useCodeForm>
 

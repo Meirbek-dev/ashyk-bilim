@@ -28,6 +28,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
   const [defaultValues] = useState(() => detailsForm(assessment))
   const form = useAppForm(detailsFormSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: values =>
       update.mutateAsync(
         { path: { assessment_id: assessment.id }, body: detailsBody(values), headers: version.headers() },

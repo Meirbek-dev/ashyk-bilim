@@ -18,6 +18,7 @@ export function usePolicyForm(activityId: string, assessment: AssessmentDetail) 
   const [defaultValues] = useState(() => policyForm(assessment.policy))
   const form = useAppForm(policyFormSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: values =>
       save.mutateAsync(
         {

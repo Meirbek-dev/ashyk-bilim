@@ -18,6 +18,7 @@ export function RubricSection({ task }: { task: FileSubmission }) {
   const [defaultValues] = useState(() => rubricForm(task.rubric))
   const form = useAppForm(rubricSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: values => write.save(rubricPatch(values)),
   })
   return (

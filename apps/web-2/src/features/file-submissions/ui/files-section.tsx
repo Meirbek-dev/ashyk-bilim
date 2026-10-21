@@ -18,6 +18,7 @@ export function FilesSection({ task }: { task: FileSubmission }) {
   const [defaultValues] = useState(() => filesForm(task))
   const form = useAppForm(filesSchema, {
     defaultValues,
+    leaveGuard: true,
     onSubmit: values => write.save(filesPatch(values, task)),
   })
   return (
