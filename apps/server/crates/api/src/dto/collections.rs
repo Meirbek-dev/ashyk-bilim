@@ -2,7 +2,7 @@ use ab_core::id::{CollectionId, CourseId, UserId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::dto::courses::Course;
+use crate::dto::courses::CourseListItem;
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Collection {
@@ -15,8 +15,9 @@ pub struct Collection {
     pub cover_key: Option<String>,
     /// Optimistic-lock version: echo it as `If-Match` on `PATCH` (UX-279).
     pub version: i32,
-    /// Member courses visible to the caller, in collection order.
-    pub courses: Vec<Course>,
+    /// Member courses visible to the caller, in collection order, with
+    /// their authors and the caller's progress like `GET /courses`.
+    pub courses: Vec<CourseListItem>,
     /// The caller may `DELETE /collections/{id}` (creator or `collection:delete:platform`).
     pub can_delete: bool,
     /// What the caller may do to this collection now.
@@ -26,9 +27,11 @@ pub struct Collection {
 }
 
 impl Collection {
-    pub fn for_actor(
+    /// The collection with its course rows (`courses`, built by
+    /// `routes::courses::list_items` from `c.courses`).
+    pub fn new(
         c: ab_domain::catalog::collections::CollectionWithCourses,
-        actor: &ab_domain::identity::Actor,
+        courses: Vec<CourseListItem>,
     ) -> Self {
         Self {
             id: c.collection.id,
@@ -38,11 +41,7 @@ impl Collection {
             creator_id: c.collection.creator_id,
             cover_key: c.collection.cover_key,
             version: c.collection.version,
-            courses: c
-                .courses
-                .into_iter()
-                .map(|course| Course::for_actor(course, actor))
-                .collect(),
+            courses,
             can_delete: c.can_delete,
             allowed_actions: c.allowed_actions,
             created_at_unix: c.collection.created_at,
@@ -62,7 +61,7 @@ pub struct CollectionPage {
 #[serde(deny_unknown_fields)]
 pub struct CreateCollectionRequest {
     #[garde(length(chars, max = 500))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
     #[schema(max_length = 5000)]
@@ -82,7 +81,7 @@ pub struct CreateCollectionRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateCollectionRequest {
     #[garde(inner(length(max = 500)))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     #[schema(max_length = 5000)]

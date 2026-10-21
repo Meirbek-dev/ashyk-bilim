@@ -16,7 +16,7 @@ export const updateRoleRequestPriorityMax = 99
 
 export const UpdateRoleRequest = zod.object({
   description: zod.string().max(updateRoleRequestDescriptionMax).optional(),
-  display_name: zod.string().max(updateRoleRequestDisplayNameMax).optional(),
+  display_name: zod.string().min(1).max(updateRoleRequestDisplayNameMax).optional(),
   priority: zod.int().min(updateRoleRequestPriorityMin).max(updateRoleRequestPriorityMax).optional(),
 })
 

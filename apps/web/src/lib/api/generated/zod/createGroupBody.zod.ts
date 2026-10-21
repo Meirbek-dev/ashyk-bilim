@@ -13,7 +13,7 @@ export const createGroupBodyNameMax = 500
 
 export const CreateGroupBody = zod.object({
   description: zod.string().max(createGroupBodyDescriptionMax).optional(),
-  name: zod.string().max(createGroupBodyNameMax).describe('Blank → 422 `required` (trimmed in the service).'),
+  name: zod.string().min(1).max(createGroupBodyNameMax).describe('Blank → 422 `required` (trimmed in the service).'),
 })
 
 export type CreateGroupBody = zod.input<typeof CreateGroupBody>

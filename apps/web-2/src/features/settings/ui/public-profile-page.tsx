@@ -11,7 +11,8 @@ import { ShowMore } from '#/shared/components/show-more'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { UserAvatar } from '#/shared/components/user-avatar'
 
-import { publicProfileOptions, userCoursesListOptions } from '../queries'
+import { profileCertificatesOptions, publicProfileOptions, userCoursesListOptions } from '../queries'
+import { ProfileCertificates } from './profile-certificates'
 import { PublicSections } from './public-sections'
 
 /**
@@ -25,7 +26,8 @@ export function PublicProfilePage() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   const courses = useSuspenseInfiniteQuery(userCoursesListOptions(username))
   const items = courses.data.pages.flatMap(page => page.items)
-  const empty = !user.bio && items.length === 0 && user.profile.sections.length === 0
+  const { data: certificates } = useSuspenseQuery(profileCertificatesOptions(username))
+  const empty = !user.bio && items.length === 0 && certificates.length === 0 && user.profile.sections.length === 0
   return (
     <DetailPage
       title={user.display_name}
@@ -80,6 +82,7 @@ export function PublicProfilePage() {
           </ListState>
         </section>
       ) : null}
+      <ProfileCertificates certificates={certificates} />
       <PublicSections sections={user.profile.sections} />
     </DetailPage>
   )

@@ -18,7 +18,7 @@ export const createCourseRequestTagsMax = 20
 export const CreateCourseRequest = zod.object({
   about: zod.string().max(createCourseRequestAboutMax).optional(),
   description: zod.string().max(createCourseRequestDescriptionMax).optional(),
-  name: zod.string().max(createCourseRequestNameMax),
+  name: zod.string().min(1).max(createCourseRequestNameMax),
   tags: zod.array(zod.string()).max(createCourseRequestTagsMax).optional(),
 })
 

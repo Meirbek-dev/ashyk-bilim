@@ -15,6 +15,7 @@ const vSwitches = v.object({
   showOnLeaderboard: v.boolean(),
   showGamification: v.boolean(),
   showStreaks: v.boolean(),
+  showCertificates: v.boolean(),
 })
 
 /** /settings/notifications: the gamification preferences the API has today (per-type notifications: S-07). */
@@ -25,12 +26,12 @@ export function NotificationsPage() {
   const form = useAppForm(vSwitches, {
     defaultValues,
     leaveGuard: true,
-    onSubmit: ({ xpGain, showOnLeaderboard, showGamification, showStreaks }) =>
+    onSubmit: ({ xpGain, showOnLeaderboard, showGamification, showStreaks, showCertificates }) =>
       update.mutateAsync(
         {
           body: {
             notifications: { xpGain },
-            privacy: { showOnLeaderboard },
+            privacy: { showOnLeaderboard, showCertificates },
             display: { showGamification, showStreaks },
           },
         },
@@ -50,6 +51,14 @@ export function NotificationsPage() {
       <form.AppField name="showOnLeaderboard">
         {field => (
           <field.SwitchField label={m.settings_field_leaderboard()} description={m.settings_field_leaderboard_hint()} />
+        )}
+      </form.AppField>
+      <form.AppField name="showCertificates">
+        {field => (
+          <field.SwitchField
+            label={m.settings_field_certificates()}
+            description={m.settings_field_certificates_hint()}
+          />
         )}
       </form.AppField>
       <form.AppField name="showGamification">

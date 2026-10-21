@@ -327,6 +327,9 @@ impl PreferencesPatch {
             p.show_on_leaderboard = p
                 .show_on_leaderboard
                 .or_else(|| p.show_on_leaderboard_v2.take());
+            p.show_certificates = p
+                .show_certificates
+                .or_else(|| p.show_certificates_v2.take());
         }
         if let Some(Some(n)) = &mut self.notifications {
             n.xp_gain = n.xp_gain.or_else(|| n.xp_gain_v2.take());
@@ -355,6 +358,8 @@ pub struct GamificationSettings {
 pub struct PrivacySettings {
     /// `false` hides the profile from the leaderboard.
     pub show_on_leaderboard: Option<bool>,
+    /// `true` lists the certificates on the public profile (off when never set).
+    pub show_certificates: Option<bool>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -382,6 +387,7 @@ impl GamificationSettings {
         Self {
             privacy: PrivacySettings {
                 show_on_leaderboard: flag("/privacy/showOnLeaderboard"),
+                show_certificates: flag("/privacy/showCertificates"),
             },
             notifications: XpNotificationSettings {
                 xp_gain: flag("/notifications/xpGain"),
@@ -462,6 +468,24 @@ pub struct PrivacyPreferences {
     )]
     #[schema(nullable = false)]
     pub show_on_leaderboard_v2: Option<bool>,
+    /// `true` lists the certificates on the public profile
+    /// (`GET /users/{username}/certificates`); off when absent.
+    #[serde(
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(nullable = false)]
+    pub show_certificates: Option<bool>,
+    /// snake_case twin (S-10).
+    #[serde(
+        rename = "show_certificates",
+        default,
+        deserialize_with = "bool_not_null",
+        skip_serializing
+    )]
+    #[schema(nullable = false)]
+    pub show_certificates_v2: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, ToSchema)]

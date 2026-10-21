@@ -141,6 +141,16 @@ pub struct IssuedCertificate {
     pub instructor_name: Option<String>,
 }
 
+/// A certificate as the holder's public profile lists it.
+#[derive(Debug, Clone)]
+pub struct ProfileCertificate {
+    pub course_id: CourseId,
+    pub course_name: String,
+    pub certificate_name: String,
+    pub verify_code: String,
+    pub issued_at: i64,
+}
+
 /// The public verification view.
 #[derive(Debug, Clone)]
 pub struct VerifiedCertificate {
@@ -466,6 +476,46 @@ impl CertificationsService {
             };
             out.push(self.issued(certificate, certification, course).await?);
         }
+        Ok(out)
+    }
+
+    /// A holder's certificates on their public profile (CONTRACT-REQ-G-3):
+    /// none unless they turned `privacy.showCertificates` on (off by default).
+    pub async fn on_profile(&self, user_id: UserId) -> Result<Vec<ProfileCertificate>> {
+        let shown = ab_db::gamification::get_profile(&self.pool, user_id)
+            .await?
+            .is_some_and(|p| {
+                p.preferences.pointer("/privacy/showCertificates")
+                    == Some(&serde_json::Value::Bool(true))
+            });
+        if !shown {
+            return Ok(Vec::new());
+        }
+        let mut out = Vec::new();
+        for certificate in
+            ab_db::certifications::list_user_certificates(&self.pool, user_id).await?
+        {
+            let Some(certification) =
+                ab_db::certifications::get_certification(&self.pool, certificate.certification_id)
+                    .await?
+            else {
+                continue;
+            };
+            let Some(course) =
+                ab_db::catalog::get_course(&self.pool, certification.course_id).await?
+            else {
+                continue;
+            };
+            out.push(ProfileCertificate {
+                certificate_name: config_text(&certification.config, "certification_name")
+                    .unwrap_or_else(|| course.name.clone()),
+                course_id: course.id,
+                course_name: course.name,
+                verify_code: certificate.verify_code,
+                issued_at: certificate.created_at,
+            });
+        }
+        out.sort_by_key(|c| std::cmp::Reverse(c.issued_at));
         Ok(out)
     }
 

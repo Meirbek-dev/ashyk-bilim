@@ -13,7 +13,11 @@ export const createUsergroupRequestNameMax = 500
 
 export const CreateUsergroupRequest = zod.object({
   description: zod.string().max(createUsergroupRequestDescriptionMax).optional(),
-  name: zod.string().max(createUsergroupRequestNameMax).describe('Blank → 422 `required` (trimmed in the service).'),
+  name: zod
+    .string()
+    .min(1)
+    .max(createUsergroupRequestNameMax)
+    .describe('Blank → 422 `required` (trimmed in the service).'),
 })
 
 export type CreateUsergroupRequest = zod.input<typeof CreateUsergroupRequest>

@@ -66,7 +66,7 @@ export const UpdateActivityBody = zod.object({
     .describe(
       '`activities.details`: player settings of video activities (camelCase as\nthe web writes them); `{}` for other kinds.',
     ),
-  name: zod.string().max(updateActivityBodyNameMax).optional(),
+  name: zod.string().min(1).max(updateActivityBodyNameMax).optional(),
   published: zod.boolean().optional(),
   settings: zod
     .object({

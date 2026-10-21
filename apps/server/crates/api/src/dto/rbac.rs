@@ -79,7 +79,7 @@ pub struct CreateRoleRequest {
     pub slug: String,
     /// Blank → 422 `required` (trimmed in the service).
     #[garde(length(chars, max = 200))]
-    #[schema(max_length = 200)]
+    #[schema(min_length = 1, max_length = 200)]
     pub display_name: String,
     #[garde(length(chars, max = 1000))]
     #[schema(max_length = 1000)]
@@ -94,7 +94,7 @@ pub struct CreateRoleRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateRoleRequest {
     #[garde(inner(length(max = 200)))]
-    #[schema(max_length = 200)]
+    #[schema(min_length = 1, max_length = 200)]
     pub display_name: Option<String>,
     #[garde(inner(length(max = 1000)))]
     #[schema(max_length = 1000)]

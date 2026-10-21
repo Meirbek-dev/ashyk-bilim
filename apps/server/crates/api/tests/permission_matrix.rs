@@ -683,6 +683,7 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("PATCH", "/api/v2/users/{user_id}/status", ADM),
     ("GET", "/api/v2/users/{username}", ALL),
     ("GET", "/api/v2/users/{username}/courses", ALL),
+    ("GET", "/api/v2/users/{username}/certificates", ALL),
     ("GET", "/api/v2/utils/link-preview", NONE),
     ("GET", "/api/v2/work", SIGNED),
 ];

@@ -21,7 +21,7 @@ export const CreateCollectionBody = zod.object({
     .describe('Course membership; every course must be readable by the caller.'),
   cover_upload_id: zod.uuid().optional().describe('A finalized `collection-cover` upload of the caller.'),
   description: zod.string().max(createCollectionBodyDescriptionMax).optional(),
-  name: zod.string().max(createCollectionBodyNameMax),
+  name: zod.string().min(1).max(createCollectionBodyNameMax),
   public: zod.boolean().optional(),
 })
 

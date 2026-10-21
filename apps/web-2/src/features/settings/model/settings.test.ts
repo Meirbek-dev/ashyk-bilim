@@ -12,7 +12,7 @@ const MB = 1024 * 1024
 const settings = (xp_gain: boolean | null, show_on_leaderboard: boolean | null) => ({
   display: { animated_effects: null, compact_mode: null },
   notifications: { xp_gain },
-  privacy: { show_on_leaderboard },
+  privacy: { show_on_leaderboard, show_certificates: null },
 })
 
 const session = (handle: string, current: boolean, seen: number): SessionSummary => ({
@@ -77,9 +77,15 @@ describe('settings model', () => {
   })
 
   test('B-SET-13 the switches read the stored preferences and are on when unset', () => {
-    const on = { showGamification: true, showStreaks: true }
+    const on = { showGamification: true, showStreaks: true, showCertificates: false }
     expect(readSwitches(settings(null, null))).toEqual({ xpGain: true, showOnLeaderboard: true, ...on })
     expect(readSwitches(settings(false, false))).toEqual({ xpGain: false, showOnLeaderboard: false, ...on })
+  })
+
+  test('B-SET-21 certificates on the public profile are off until turned on', () => {
+    expect(readSwitches(settings(null, null)).showCertificates).toBe(false)
+    const shown = { ...settings(null, null), privacy: { show_on_leaderboard: null, show_certificates: true } }
+    expect(readSwitches(shown).showCertificates).toBe(true)
   })
 
   test('B-SET-16 the gamification and streak switches read display and are on when never set', () => {

@@ -4393,9 +4393,9 @@
             "type": "boolean"
           },
           "courses": {
-            "description": "Member courses visible to the caller, in collection order.",
+            "description": "Member courses visible to the caller, in collection order, with\ntheir authors and the caller's progress like `GET /courses`.",
             "items": {
-              "$ref": "#/components/schemas/Course"
+              "$ref": "#/components/schemas/CourseListItem"
             },
             "type": "array"
           },
@@ -6136,6 +6136,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -6236,6 +6237,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -6266,6 +6268,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "public": {
@@ -6290,6 +6293,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "tags": {
@@ -6510,6 +6514,7 @@
           "display_name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
             "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "priority": {
@@ -6618,6 +6623,7 @@
           "name": {
             "description": "Blank → 422 `required` (trimmed in the service).",
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -12598,6 +12604,10 @@
       "PrivacyPreferences": {
         "additionalProperties": false,
         "properties": {
+          "showCertificates": {
+            "description": "`true` lists the certificates on the public profile\n(`GET /users/{username}/certificates`); off when absent.",
+            "type": "boolean"
+          },
           "showOnLeaderboard": {
             "description": "`false` hides the profile from the leaderboard (and its rank is `null`).",
             "type": "boolean"
@@ -12607,6 +12617,13 @@
       },
       "PrivacySettings": {
         "properties": {
+          "show_certificates": {
+            "description": "`true` lists the certificates on the public profile (off when never set).",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "show_on_leaderboard": {
             "description": "`false` hides the profile from the leaderboard.",
             "type": [
@@ -12616,6 +12633,7 @@
           }
         },
         "required": [
+          "show_certificates",
           "show_on_leaderboard"
         ],
         "type": "object"
@@ -12878,6 +12896,36 @@
           "name",
           "description",
           "logoUrl"
+        ],
+        "type": "object"
+      },
+      "ProfileCertificate": {
+        "description": "A certificate on the holder's public profile (`GET /users/{username}/certificates`).",
+        "properties": {
+          "certificate_name": {
+            "description": "The template's `certification_name`, else the course name.",
+            "type": "string"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "issued_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "verify_code": {
+            "description": "Opens `/certificates/{code}/verify`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_name",
+          "certificate_name",
+          "verify_code",
+          "issued_at_unix"
         ],
         "type": "object"
       },
@@ -16053,8 +16101,9 @@
             "type": "array"
           },
           "courses": {
+            "description": "With their authors and the caller's progress, like `GET /courses`.",
             "items": {
-              "$ref": "#/components/schemas/Course"
+              "$ref": "#/components/schemas/CourseListItem"
             },
             "type": "array"
           },
@@ -18470,6 +18519,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "published": {
@@ -18528,6 +18578,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -18559,6 +18610,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "public": {
@@ -18606,6 +18658,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           },
           "open_to_contributors": {
@@ -18833,6 +18886,7 @@
           },
           "display_name": {
             "maxLength": 200,
+            "minLength": 1,
             "type": "string"
           },
           "priority": {
@@ -18853,6 +18907,7 @@
           },
           "name": {
             "maxLength": 500,
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -37510,6 +37565,51 @@
           }
         },
         "summary": "Public profile card by username (legacy `GET /users/username/{username}`).",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v2/users/{username}/certificates": {
+      "get": {
+        "operationId": "user_certificates",
+        "parameters": [
+          {
+            "description": "Username (case-insensitive)",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProfileCertificate"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Shown certificates"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown user"
+          }
+        },
+        "summary": "The certificates a user chose to show on their public profile\n(`privacy.show_certificates`, off by default: an empty list), newest\nfirst. Readable anonymously, like the profile.",
         "tags": [
           "users"
         ]

@@ -71,7 +71,7 @@ impl From<ab_domain::identity::usergroups::Member> for UsergroupMember {
 pub struct CreateUsergroupRequest {
     /// Blank → 422 `required` (trimmed in the service).
     #[garde(length(chars, max = 500))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
     #[schema(max_length = 5000)]
@@ -82,7 +82,7 @@ pub struct CreateUsergroupRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateUsergroupRequest {
     #[garde(inner(length(max = 500)))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     #[schema(max_length = 5000)]

@@ -199,6 +199,34 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(items[0]["instructor_name"], "teacher");
     let all = app.get_as(&alice, "/api/v2/me/certificates").await;
     assert_eq!(all.json().as_array().unwrap().len(), 1);
+    // CONTRACT-REQ-G-3: the public profile lists it only once alice opts in.
+    let shown = app.get("/api/v2/users/alice/certificates").await;
+    assert_eq!(shown.status, StatusCode::OK, "{}", shown.text());
+    assert_eq!(shown.json(), serde_json::json!([]));
+    let settings = app
+        .mint_session_for(alice.user_id, &["user:update:own", "user:read:own"])
+        .await;
+    let opted = app
+        .patch_as(
+            &settings,
+            "/api/v2/gamification/preferences",
+            &serde_json::json!({ "privacy": { "show_certificates": true } }),
+        )
+        .await;
+    assert_eq!(opted.status, StatusCode::OK, "{}", opted.text());
+    assert_eq!(
+        opted.json()["settings"]["privacy"]["show_certificates"],
+        true
+    );
+    let shown = app.get("/api/v2/users/alice/certificates").await;
+    assert_eq!(shown.json()[0]["verify_code"], code.as_str());
+    assert_eq!(shown.json()[0]["course_name"], "Certified 101");
+    assert_eq!(
+        app.get("/api/v2/users/nobody-here/certificates")
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
     let state = app
         .get_as(
             &alice,

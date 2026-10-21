@@ -17,6 +17,7 @@ import {
   totpRemoveMutation,
   totpVerifyMutation,
   updatePreferencesMutation,
+  userCertificatesOptions,
   userCoursesInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { revokeSession, updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
@@ -161,11 +162,15 @@ export const updatePreferencesOptions = (queryClient: QueryClient) => ({
 
 export const publicProfileOptions = (username: string) => generatedPublicProfileOptions({ path: { username } })
 
+/** The certificates the person chose to show (none unless they turned it on, B-SET-21). */
+export const profileCertificatesOptions = (username: string) => userCertificatesOptions({ path: { username } })
+
 /** Route loader of /users/$username: an unknown user is "not found". */
 export async function ensurePublicProfile(queryClient: QueryClient, username: string) {
   const [profile] = await Promise.all([
     queryClient.query({ ...publicProfileOptions(username), staleTime: 'static' }),
     queryClient.infiniteQuery({ ...userCoursesListOptions(username), staleTime: 'static' }),
+    queryClient.query({ ...profileCertificatesOptions(username), staleTime: 'static' }),
   ]).catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) throw notFound()
     throw error

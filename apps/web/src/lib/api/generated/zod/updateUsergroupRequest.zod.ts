@@ -13,7 +13,7 @@ export const updateUsergroupRequestNameMax = 500
 
 export const UpdateUsergroupRequest = zod.object({
   description: zod.string().max(updateUsergroupRequestDescriptionMax).optional(),
-  name: zod.string().max(updateUsergroupRequestNameMax).optional(),
+  name: zod.string().min(1).max(updateUsergroupRequestNameMax).optional(),
 })
 
 export type UpdateUsergroupRequest = zod.input<typeof UpdateUsergroupRequest>

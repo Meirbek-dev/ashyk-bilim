@@ -13,7 +13,7 @@ export const createChapterRequestNameMax = 500
 
 export const CreateChapterRequest = zod.object({
   description: zod.string().max(createChapterRequestDescriptionMax).optional(),
-  name: zod.string().max(createChapterRequestNameMax),
+  name: zod.string().min(1).max(createChapterRequestNameMax),
 })
 
 export type CreateChapterRequest = zod.input<typeof CreateChapterRequest>

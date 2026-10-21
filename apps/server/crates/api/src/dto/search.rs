@@ -2,7 +2,7 @@ use ab_core::id::UserId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::dto::courses::Course;
+use crate::dto::courses::CourseListItem;
 
 /// Collections in search results are light - no embedded courses.
 #[derive(Debug, Serialize, ToSchema)]
@@ -24,7 +24,8 @@ pub struct UserHit {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SearchResults {
-    pub courses: Vec<Course>,
+    /// With their authors and the caller's progress, like `GET /courses`.
+    pub courses: Vec<CourseListItem>,
     pub collections: Vec<CollectionHit>,
     /// Empty for anonymous callers.
     pub users: Vec<UserHit>,
@@ -34,16 +35,11 @@ pub struct SearchResults {
 }
 
 impl SearchResults {
-    pub fn for_actor(
-        r: ab_domain::catalog::search::SearchResults,
-        actor: &ab_domain::identity::Actor,
-    ) -> Self {
+    /// The results with their course rows (`courses`, built by
+    /// `routes::courses::list_items` from `r.courses`).
+    pub fn new(r: ab_domain::catalog::search::SearchResults, courses: Vec<CourseListItem>) -> Self {
         Self {
-            courses: r
-                .courses
-                .into_iter()
-                .map(|c| Course::for_actor(c, actor))
-                .collect(),
+            courses,
             collections: r
                 .collections
                 .into_iter()

@@ -22,6 +22,7 @@ export const CreateRoleRequest = zod.object({
   description: zod.string().max(createRoleRequestDescriptionMax).optional(),
   display_name: zod
     .string()
+    .min(1)
     .max(createRoleRequestDisplayNameMax)
     .describe('Blank → 422 `required` (trimmed in the service).'),
   priority: zod

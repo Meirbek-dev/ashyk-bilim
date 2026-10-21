@@ -36,6 +36,8 @@ export type GamificationSwitches = {
   showOnLeaderboard: boolean
   showGamification: boolean
   showStreaks: boolean
+  /** Off unless turned on: certificates on the public profile are an opt-in (B-SET-21). */
+  showCertificates: boolean
 }
 
 /** The switches from the typed `Profile.settings` (null or absent = never set). */
@@ -44,6 +46,7 @@ export const readSwitches = ({ notifications, privacy, display }: GamificationSe
   showOnLeaderboard: privacy.show_on_leaderboard ?? true,
   showGamification: display.show_gamification ?? true,
   showStreaks: display.show_streaks ?? true,
+  showCertificates: privacy.show_certificates ?? false,
 })
 
 /** This device first, then the most recently seen. */

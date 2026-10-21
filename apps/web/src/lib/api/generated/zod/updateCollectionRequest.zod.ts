@@ -24,7 +24,7 @@ export const UpdateCollectionRequest = zod.object({
     .nullish()
     .describe('A finalized `collection-cover` upload of the caller; `null` removes\nthe cover.'),
   description: zod.string().max(updateCollectionRequestDescriptionMax).optional(),
-  name: zod.string().max(updateCollectionRequestNameMax).optional(),
+  name: zod.string().min(1).max(updateCollectionRequestNameMax).optional(),
   public: zod.boolean().optional(),
 })
 

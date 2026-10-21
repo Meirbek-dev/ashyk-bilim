@@ -23,7 +23,7 @@ const profile = (patch: Partial<Profile>): Profile => ({
   settings: {
     display: { animated_effects: null, compact_mode: null },
     notifications: { xp_gain: null },
-    privacy: { show_on_leaderboard: null },
+    privacy: { show_on_leaderboard: null, show_certificates: null },
   },
   total_activities_completed: 0,
   total_courses_completed: 0,

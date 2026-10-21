@@ -380,6 +380,39 @@ pub async fn public_profile_by_id(
     Ok(Json(user.into()))
 }
 
+/// The certificates a user chose to show on their public profile
+/// (`privacy.show_certificates`, off by default: an empty list), newest
+/// first. Readable anonymously, like the profile.
+#[utoipa::path(
+    get,
+    path = "/users/{username}/certificates",
+    tag = "users",
+    params(("username" = String, Path, description = "Username (case-insensitive)")),
+    responses(
+        (status = 200, description = "Shown certificates", body = [crate::dto::certifications::ProfileCertificate]),
+        (status = 404, description = "Unknown user", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn user_certificates(
+    State(state): State<AppState>,
+    MaybeActor(_actor): MaybeActor,
+    Path(username): Path<String>,
+) -> ApiResult<Json<Vec<crate::dto::certifications::ProfileCertificate>>> {
+    let user = ab_db::identity::find_user_id_by_username(&state.pool, &username)
+        .await?
+        .ok_or_else(|| ab_core::Error::not_found("user"))?;
+    Ok(Json(
+        state
+            .certifications
+            .on_profile(user)
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    ))
+}
+
 /// Courses a user created or actively co-authors, newest first (public
 /// profile, readable anonymously). Private ones are included only for the
 /// user themself and platform course managers.

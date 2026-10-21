@@ -30,6 +30,7 @@ import {
   CreateUserRequest,
   ListUsersParams,
   Problem,
+  ProfileCertificate,
   PublicProfile,
   SetUserStatusRequest,
   UpdateProfileRequest,
@@ -38,7 +39,7 @@ import {
   UserProfile,
 } from '../zod'
 
-import { orvalMutator, optionalParser, stringifyQueryParam } from '../../orval-mutator'
+import { orvalMutator, arrayParser, optionalParser, stringifyQueryParam } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -1290,6 +1291,214 @@ export function usePublicProfileSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getPublicProfileSuspenseQueryOptions(username, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUserCertificatesUrl = (username: string) => {
+  return `/api/v2/users/${username}/certificates`
+}
+
+/**
+ * @summary The certificates a user chose to show on their public profile
+(`privacy.show_certificates`, off by default: an empty list), newest
+first. Readable anonymously, like the profile.
+ */
+export const userCertificates = async (
+  username: string,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<ProfileCertificate[]> => {
+  return orvalMutator<ProfileCertificate[]>(
+    getUserCertificatesUrl(username),
+    {
+      ...options,
+      method: 'GET',
+    },
+    arrayParser(ProfileCertificate),
+  )
+}
+
+export const getUserCertificatesQueryKey = (username: string) => {
+  return [`/api/v2/users/${username}/certificates`] as const
+}
+
+export const getUserCertificatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getUserCertificatesQueryKey(username)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof userCertificates>>> = ({ signal }) =>
+    userCertificates(username, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: username !== null && username !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type UserCertificatesQueryResult = NonNullable<Awaited<ReturnType<typeof userCertificates>>>
+export type UserCertificatesQueryError = ErrorType<Problem>
+
+export function useUserCertificates<TData = Awaited<ReturnType<typeof userCertificates>>, TError = ErrorType<Problem>>(
+  username: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userCertificates>>,
+          TError,
+          Awaited<ReturnType<typeof userCertificates>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCertificates<TData = Awaited<ReturnType<typeof userCertificates>>, TError = ErrorType<Problem>>(
+  username: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof userCertificates>>,
+          TError,
+          Awaited<ReturnType<typeof userCertificates>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCertificates<TData = Awaited<ReturnType<typeof userCertificates>>, TError = ErrorType<Problem>>(
+  username: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The certificates a user chose to show on their public profile
+(`privacy.show_certificates`, off by default: an empty list), newest
+first. Readable anonymously, like the profile.
+ */
+
+export function useUserCertificates<TData = Awaited<ReturnType<typeof userCertificates>>, TError = ErrorType<Problem>>(
+  username: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getUserCertificatesQueryOptions(username, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getUserCertificatesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getUserCertificatesQueryKey(username)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof userCertificates>>> = ({ signal }) =>
+    userCertificates(username, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type UserCertificatesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof userCertificates>>>
+export type UserCertificatesSuspenseQueryError = ErrorType<Problem>
+
+export function useUserCertificatesSuspense<
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCertificatesSuspense<
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserCertificatesSuspense<
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary The certificates a user chose to show on their public profile
+(`privacy.show_certificates`, off by default: an empty list), newest
+first. Readable anonymously, like the profile.
+ */
+
+export function useUserCertificatesSuspense<
+  TData = Awaited<ReturnType<typeof userCertificates>>,
+  TError = ErrorType<Problem>,
+>(
+  username: string,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof userCertificates>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getUserCertificatesSuspenseQueryOptions(username, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

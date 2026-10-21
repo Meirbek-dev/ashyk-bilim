@@ -58,7 +58,7 @@ pub async fn create_collection(
                 .await?;
             Ok((
                 StatusCode::CREATED,
-                Collection::for_actor(collection, &actor),
+                present(&state, &actor, collection).await?,
             ))
         },
     )
@@ -95,13 +95,25 @@ pub async fn list_collections(
             query.limit.unwrap_or(20),
         )
         .await?;
-    Ok(Json(CollectionPage {
-        items: collections
-            .into_iter()
-            .map(|c| Collection::for_actor(c, &actor))
-            .collect(),
-        next_cursor,
-    }))
+    // ponytail: one course-extras read per collection on the page (<= 100); batch them if a page gets slow.
+    let mut items = Vec::with_capacity(collections.len());
+    for c in collections {
+        items.push(present(&state, &actor, c).await?);
+    }
+    Ok(Json(CollectionPage { items, next_cursor }))
+}
+
+/// A collection with its course rows as `GET /courses` gives them: the
+/// authors and the caller's progress (CONTRACT-REQ-G-4).
+async fn present(
+    state: &AppState,
+    actor: &ab_domain::identity::Actor,
+    mut c: ab_domain::catalog::collections::CollectionWithCourses,
+) -> ApiResult<Collection> {
+    let courses =
+        crate::routes::courses::list_items(state, actor, std::mem::take(&mut c.courses), false)
+            .await?;
+    Ok(Collection::new(c, courses))
 }
 
 /// One collection with its member courses (404 when invisible).
@@ -122,10 +134,8 @@ pub async fn get_collection(
     MaybeActor(actor): MaybeActor,
     Path(id): Path<CollectionId>,
 ) -> ApiResult<Response> {
-    Ok(with_etag(Collection::for_actor(
-        state.collections.get(&actor, id).await?,
-        &actor,
-    )))
+    let collection = state.collections.get(&actor, id).await?;
+    Ok(with_etag(present(&state, &actor, collection).await?))
 }
 
 /// The collection JSON with an `ETag` carrying its version (the `If-Match`
@@ -183,7 +193,7 @@ pub async fn update_collection(
             },
         )
         .await?;
-    Ok(with_etag(Collection::for_actor(collection, &actor)))
+    Ok(with_etag(present(&state, &actor, collection).await?))
 }
 
 /// Delete a collection (membership rows cascade; courses stay).

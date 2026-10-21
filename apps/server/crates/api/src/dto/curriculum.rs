@@ -116,7 +116,7 @@ pub struct Curriculum {
 #[serde(deny_unknown_fields)]
 pub struct CreateChapterRequest {
     #[garde(length(chars, max = 500))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
     #[schema(max_length = 5000)]
@@ -127,7 +127,7 @@ pub struct CreateChapterRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateChapterRequest {
     #[garde(inner(length(max = 500)))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     #[schema(max_length = 5000)]
@@ -148,7 +148,7 @@ pub struct MoveChapterRequest {
 #[serde(deny_unknown_fields)]
 pub struct CreateActivityRequest {
     #[garde(length(chars, max = 500))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: String,
     /// One of the closed activity-type set (e.g. `video`, `exam`).
     #[garde(length(min = 1, max = 64))]
@@ -212,7 +212,7 @@ fn json_object(value: &Option<serde_json::Value>, _ctx: &()) -> garde::Result {
 #[serde(deny_unknown_fields)]
 pub struct UpdateActivityRequest {
     #[garde(inner(length(max = 500)))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: Option<String>,
     #[garde(skip)]
     pub published: Option<bool>,

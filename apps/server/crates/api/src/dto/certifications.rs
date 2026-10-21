@@ -108,6 +108,30 @@ impl IssuedCertificate {
     }
 }
 
+/// A certificate on the holder's public profile (`GET /users/{username}/certificates`).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProfileCertificate {
+    pub course_id: CourseId,
+    pub course_name: String,
+    /// The template's `certification_name`, else the course name.
+    pub certificate_name: String,
+    /// Opens `/certificates/{code}/verify`.
+    pub verify_code: String,
+    pub issued_at_unix: i64,
+}
+
+impl From<domain::ProfileCertificate> for ProfileCertificate {
+    fn from(c: domain::ProfileCertificate) -> Self {
+        Self {
+            course_id: c.course_id,
+            course_name: c.course_name,
+            certificate_name: c.certificate_name,
+            verify_code: c.verify_code,
+            issued_at_unix: c.issued_at,
+        }
+    }
+}
+
 /// What a verifier learns about the holder: the name on the certificate.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CertificateHolder {

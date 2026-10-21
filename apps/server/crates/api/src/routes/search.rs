@@ -37,5 +37,13 @@ pub async fn search(
             query.cursor.as_deref(),
         )
         .await?;
-    Ok(Json(SearchResults::for_actor(results, &actor)))
+    let mut results = results;
+    let courses = crate::routes::courses::list_items(
+        &state,
+        &actor,
+        std::mem::take(&mut results.courses),
+        false,
+    )
+    .await?;
+    Ok(Json(SearchResults::new(results, courses)))
 }

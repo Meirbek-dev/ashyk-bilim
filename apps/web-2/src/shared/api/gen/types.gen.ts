@@ -1432,9 +1432,10 @@ export type Collection = {
      */
     can_delete: boolean;
     /**
-     * Member courses visible to the caller, in collection order.
+     * Member courses visible to the caller, in collection order, with
+     * their authors and the caller's progress like `GET /courses`.
      */
-    courses: Array<Course>;
+    courses: Array<CourseListItem>;
     /**
      * Storage key of the cover image, served at `/content/<key>`.
      */
@@ -4344,12 +4345,21 @@ export type PreferencesPatch = {
 
 export type PrivacyPreferences = {
     /**
+     * `true` lists the certificates on the public profile
+     * (`GET /users/{username}/certificates`); off when absent.
+     */
+    showCertificates?: boolean;
+    /**
      * `false` hides the profile from the leaderboard (and its rank is `null`).
      */
     showOnLeaderboard?: boolean;
 };
 
 export type PrivacySettings = {
+    /**
+     * `true` lists the certificates on the public profile (off when never set).
+     */
+    show_certificates: boolean | null;
     /**
      * `false` hides the profile from the leaderboard.
      */
@@ -4467,6 +4477,23 @@ export type ProfileAffiliation = {
      */
     logoUrl: string;
     name: string;
+};
+
+/**
+ * A certificate on the holder's public profile (`GET /users/{username}/certificates`).
+ */
+export type ProfileCertificate = {
+    /**
+     * The template's `certification_name`, else the course name.
+     */
+    certificate_name: string;
+    course_id: CourseId;
+    course_name: string;
+    issued_at_unix: UnixTime;
+    /**
+     * Opens `/certificates/{code}/verify`.
+     */
+    verify_code: string;
 };
 
 export type ProfileEducation = {
@@ -5522,7 +5549,10 @@ export type ScoringStrategy = 'partial_credit' | 'all_or_nothing' | 'best_submis
 
 export type SearchResults = {
     collections: Array<CollectionHit>;
-    courses: Array<Course>;
+    /**
+     * With their authors and the caller's progress, like `GET /courses`.
+     */
+    courses: Array<CourseListItem>;
     /**
      * Set while any section has more hits: pass it back as `cursor` for
      * the next page of every section.
@@ -16676,6 +16706,36 @@ export type PublicProfileResponses = {
 };
 
 export type PublicProfileResponse = PublicProfileResponses[keyof PublicProfileResponses];
+
+export type UserCertificatesData = {
+    body?: never;
+    path: {
+        /**
+         * Username (case-insensitive)
+         */
+        username: string;
+    };
+    query?: never;
+    url: '/api/v2/users/{username}/certificates';
+};
+
+export type UserCertificatesErrors = {
+    /**
+     * Unknown user
+     */
+    404: Problem;
+};
+
+export type UserCertificatesError = UserCertificatesErrors[keyof UserCertificatesErrors];
+
+export type UserCertificatesResponses = {
+    /**
+     * Shown certificates
+     */
+    200: Array<ProfileCertificate>;
+};
+
+export type UserCertificatesResponse = UserCertificatesResponses[keyof UserCertificatesResponses];
 
 export type UserCoursesData = {
     body?: never;

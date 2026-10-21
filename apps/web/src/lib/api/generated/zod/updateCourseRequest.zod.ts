@@ -38,7 +38,7 @@ export const UpdateCourseRequest = zod.object({
     .max(updateCourseRequestLearningsMax)
     .optional()
     .describe('Replaces the whole "What you\'ll learn" list (≤ 30 entries).'),
-  name: zod.string().max(updateCourseRequestNameMax).optional(),
+  name: zod.string().min(1).max(updateCourseRequestNameMax).optional(),
   open_to_contributors: zod.boolean().optional(),
   tags: zod.array(zod.string()).max(updateCourseRequestTagsMax).optional(),
   thumbnail_upload_id: zod

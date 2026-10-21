@@ -1003,7 +1003,7 @@ export const vCoursesSection = v.strictObject({
 export const vCreateActivityRequest = v.strictObject({
     activity_sub_type: vActivitySubType,
     activity_type: vActivityType,
-    name: v.pipe(v.string(), v.maxLength(500))
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
 });
 
 export const vCreateBlockRequest = v.strictObject({
@@ -1019,21 +1019,21 @@ export const vCreateCertificationRequest = v.strictObject({
 
 export const vCreateChapterRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.pipe(v.string(), v.maxLength(500))
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
 });
 
 export const vCreateCollectionRequest = v.strictObject({
     courses: v.optional(v.pipe(v.array(vCourseId), v.maxLength(100))),
     cover_upload_id: v.optional(v.pipe(v.string(), v.uuid())),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.pipe(v.string(), v.maxLength(500)),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
     public: v.optional(v.boolean())
 });
 
 export const vCreateCourseRequest = v.strictObject({
     about: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.pipe(v.string(), v.maxLength(500)),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
     tags: v.optional(v.pipe(v.array(v.string()), v.maxLength(20)))
 });
 
@@ -1044,7 +1044,7 @@ export const vCreateCourseUpdateRequest = v.strictObject({
 
 export const vCreateRoleRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(1000))),
-    display_name: v.pipe(v.string(), v.maxLength(200)),
+    display_name: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
     priority: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(99)),
     slug: v.pipe(v.string(), v.minLength(1), v.maxLength(64), v.regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/))
 });
@@ -1064,7 +1064,7 @@ export const vCreateUserRequest = v.strictObject({
 
 export const vCreateUsergroupRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.pipe(v.string(), v.maxLength(500))
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
 });
 
 /**
@@ -2263,6 +2263,7 @@ export const vPlatform = v.object({
 });
 
 export const vPrivacyPreferences = v.strictObject({
+    showCertificates: v.optional(v.boolean()),
     showOnLeaderboard: v.optional(v.boolean())
 });
 
@@ -2290,6 +2291,7 @@ export const vPreferencesPatch = v.strictObject({
 });
 
 export const vPrivacySettings = v.object({
+    show_certificates: v.nullable(v.boolean()),
     show_on_leaderboard: v.nullable(v.boolean())
 });
 
@@ -4142,6 +4144,17 @@ export const vCreateAssessmentRequest = v.strictObject({
     weight: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(100)))
 });
 
+/**
+ * A certificate on the holder's public profile (`GET /users/{username}/certificates`).
+ */
+export const vProfileCertificate = v.object({
+    certificate_name: v.string(),
+    course_id: vCourseId,
+    course_name: v.string(),
+    issued_at_unix: vUnixTime,
+    verify_code: v.string()
+});
+
 export const vProgressState = v.object({
     completed_at_unix: v.nullable(vUnixTime),
     completed_required_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
@@ -4352,7 +4365,7 @@ export const vUpdateActivityRequest = v.strictObject({
     activity_type: v.optional(vActivityType),
     content: v.optional(vActivityContent),
     details: v.optional(vActivityDetails),
-    name: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
     published: v.optional(v.boolean()),
     settings: v.optional(vActivitySettings)
 });
@@ -4370,14 +4383,14 @@ export const vUpdateCertificationRequest = v.strictObject({
 
 export const vUpdateChapterRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.optional(v.pipe(v.string(), v.maxLength(500)))
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500)))
 });
 
 export const vUpdateCollectionRequest = v.strictObject({
     courses: v.optional(v.pipe(v.array(vCourseId), v.maxLength(100))),
     cover_upload_id: v.nullish(v.pipe(v.string(), v.uuid())),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
     public: v.optional(v.boolean())
 });
 
@@ -4391,7 +4404,7 @@ export const vUpdateCourseRequest = v.strictObject({
     assessments_require_enrollment: v.optional(v.boolean()),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     learnings: v.optional(v.pipe(v.array(vLearningInput), v.maxLength(30))),
-    name: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
     open_to_contributors: v.optional(v.boolean()),
     tags: v.optional(v.pipe(v.array(v.string()), v.maxLength(20))),
     thumbnail_upload_id: v.nullish(v.pipe(v.string(), v.uuid()))
@@ -4451,13 +4464,13 @@ export const vUpdateProfileRequest = v.strictObject({
 
 export const vUpdateRoleRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(1000))),
-    display_name: v.optional(v.pipe(v.string(), v.maxLength(200))),
+    display_name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
     priority: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(99)))
 });
 
 export const vUpdateUsergroupRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
-    name: v.optional(v.pipe(v.string(), v.maxLength(500)))
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500)))
 });
 
 /**
@@ -4668,29 +4681,6 @@ export const vCourse = v.object({
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
-export const vCollection = v.object({
-    allowed_actions: v.array(vCollectionAction),
-    can_delete: v.boolean(),
-    courses: v.array(vCourse),
-    cover_key: v.nullable(v.string()),
-    created_at_unix: vUnixTime,
-    creator_id: v.nullable(vUserId),
-    description: v.string(),
-    id: vCollectionId,
-    name: v.string(),
-    public: v.boolean(),
-    updated_at_unix: vUnixTime,
-    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
-});
-
-/**
- * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
- */
-export const vCollectionPage = v.object({
-    items: v.array(vCollection),
-    next_cursor: v.nullable(vCollectionId)
-});
-
 export const vCourseAuthor = v.object({
     display_name: v.string(),
     user_id: vUserId,
@@ -4775,6 +4765,29 @@ export const vCourseListItem = v.intersect([vCourse, v.object({
         progress: v.nullable(vCourseListProgress),
         teaching: v.optional(vCourseTeachingStats)
     })]);
+
+export const vCollection = v.object({
+    allowed_actions: v.array(vCollectionAction),
+    can_delete: v.boolean(),
+    courses: v.array(vCourseListItem),
+    cover_key: v.nullable(v.string()),
+    created_at_unix: vUnixTime,
+    creator_id: v.nullable(vUserId),
+    description: v.string(),
+    id: vCollectionId,
+    name: v.string(),
+    public: v.boolean(),
+    updated_at_unix: vUnixTime,
+    version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+});
+
+/**
+ * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
+ */
+export const vCollectionPage = v.object({
+    items: v.array(vCollection),
+    next_cursor: v.nullable(vCollectionId)
+});
 
 /**
  * Keyset page (ARCHITECTURE §6): pass `next_cursor` back as `cursor`.
@@ -5369,7 +5382,7 @@ export const vUserHit = v.object({
 
 export const vSearchResults = v.object({
     collections: v.array(vCollectionHit),
-    courses: v.array(vCourse),
+    courses: v.array(vCourseListItem),
     next_cursor: v.nullable(v.string()),
     users: v.array(vUserHit)
 });
@@ -9541,6 +9554,15 @@ export const vPublicProfilePath = v.object({
  * Public profile
  */
 export const vPublicProfileResponse = vPublicProfile;
+
+export const vUserCertificatesPath = v.object({
+    username: v.string()
+});
+
+/**
+ * Shown certificates
+ */
+export const vUserCertificatesResponse = v.array(vProfileCertificate);
 
 export const vUserCoursesPath = v.object({
     username: v.string()

@@ -124,6 +124,11 @@
   "settings_user_courses_empty": "Курсов пока нет.",
   "settings_user_edit": "Редактировать профиль",
   "settings_user_empty": "В профиле пока пусто.",
+  "settings_field_certificates": "Показывать сертификаты в профиле",
+  "settings_field_certificates_hint": "Их увидит любой, кто откроет ваш профиль, и сможет убедиться в их подлинности.",
+  "settings_user_certificates": "Сертификаты",
+  "settings_user_certificate_line": "{course} · выдан {date}",
+  "settings_user_certificate_issued": "Выдан {date}",
   "settings_user_present": "настоящее время",
   "settings_user_period": "с {start} по {end}"
 }

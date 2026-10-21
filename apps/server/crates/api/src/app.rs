@@ -329,6 +329,7 @@ fn identity_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::users::public_profile_by_id))
         .routes(routes!(routes::users::get_admin_user))
         .routes(routes!(routes::users::user_courses))
+        .routes(routes!(routes::users::user_certificates))
         .routes(routes!(routes::rbac::list_roles))
         .routes(routes!(routes::rbac::get_role))
         .routes(routes!(routes::rbac::assign_role))

@@ -18,80 +18,121 @@ export const SearchResults = zod.object({
       })
       .describe('Collections in search results are light - no embedded courses.'),
   ),
-  courses: zod.array(
-    zod.object({
-      about: zod.string(),
-      allowed_actions: zod
-        .array(
-          zod
-            .enum([
-              'update',
-              'publish',
-              'unpublish',
-              'archive',
-              'restore',
-              'delete',
-              'manage_contributors',
-              'apply_contributor',
-            ])
+  courses: zod
+    .array(
+      zod
+        .object({
+          about: zod.string(),
+          allowed_actions: zod
+            .array(
+              zod
+                .enum([
+                  'update',
+                  'publish',
+                  'unpublish',
+                  'archive',
+                  'restore',
+                  'delete',
+                  'manage_contributors',
+                  'apply_contributor',
+                ])
+                .describe(
+                  'What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].',
+                ),
+            )
+            .describe('What the caller may do to this course now - draw only these actions.'),
+          archived_at_unix: zod
+            .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
             .describe(
-              'What the caller may do to a course right now (`Course.allowed_actions`).\nEach variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].',
+              'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
             ),
+          archived_by: zod.union([zod.uuid(), zod.null()]),
+          assessments_require_enrollment: zod
+            .boolean()
+            .describe(
+              'Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.',
+            ),
+          contributor_ids: zod
+            .array(zod.uuid())
+            .describe(
+              'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
+            ),
+          created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          creator_id: zod.union([zod.uuid(), zod.null()]),
+          description: zod.string(),
+          id: zod.uuid(),
+          learnings: zod
+            .array(
+              zod
+                .object({
+                  emoji: zod.string().nullable(),
+                  id: zod.string(),
+                  text: zod.string(),
+                })
+                .describe('One "What you\'ll learn" entry.'),
+            )
+            .describe('"What you\'ll learn", in display order.'),
+          name: zod.string(),
+          open_to_contributors: zod.boolean(),
+          public: zod.boolean(),
+          tags: zod.array(zod.string()),
+          thumbnail_key: zod
+            .string()
+            .nullable()
+            .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
+          thumbnail_video_key: zod
+            .string()
+            .nullable()
+            .describe(
+              'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
+            ),
+          updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+          version: zod
+            .int()
+            .describe(
+              'Optimistic lock: send it back as `If-Match` on `PATCH` and\nlifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.',
+            ),
+        })
+        .and(
+          zod.object({
+            authors: zod
+              .array(
+                zod.object({
+                  display_name: zod.string(),
+                  user_id: zod.uuid(),
+                  username: zod.string(),
+                }),
+              )
+              .describe(
+                'The creator first, then the active contributors (`contributor_ids`\norder); deleted accounts are left out.',
+              ),
+            progress: zod.union([
+              zod
+                .object({
+                  completed_at_unix: zod.union([
+                    zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+                    zod.null(),
+                  ]),
+                  progress_pct: zod.number().describe('0..=100.'),
+                })
+                .describe(
+                  "The signed-in caller's progress; `null` when not enrolled (or\nanonymous, or staff of the course).",
+                ),
+              zod.null(),
+            ]),
+            teaching: zod
+              .object({
+                activities: zod.int().describe('Activities, drafts included.'),
+                learners: zod.int().describe('Enrolled learners (course staff never count).'),
+                ungraded: zod.int().describe('Work awaiting a grade: pending submissions and submitted file attempts.'),
+              })
+              .optional()
+              .describe('Present only with `mine=true`: what the course holds for its teachers.'),
+          }),
         )
-        .describe('What the caller may do to this course now - draw only these actions.'),
-      archived_at_unix: zod
-        .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
-        .describe(
-          'Set while the course is archived: undiscoverable and read-only for\nevery role (writes answer 409 `course-archived`); enrolled learners\nkeep reading it. Orthogonal to `public`.',
-        ),
-      archived_by: zod.union([zod.uuid(), zod.null()]),
-      assessments_require_enrollment: zod
-        .boolean()
-        .describe(
-          'Only enrolled learners (a run on the course, or a linked usergroup)\ntake its quizzes, exams, code challenges and file tasks; anyone else\ngets `NOT_ENROLLED` in the attempt state and 403\n`enrollment-required` on start / save / submit. Default `true`.',
-        ),
-      contributor_ids: zod
-        .array(zod.uuid())
-        .describe(
-          'Active maintainers / contributors (`GET /courses/{id}/contributors`,\nstatus `active`, role not `reporter`); they edit the course like the\ncreator without any role grant - authorship is the `:own` scope.\nReporters are read-only and not listed.',
-        ),
-      created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
-      creator_id: zod.union([zod.uuid(), zod.null()]),
-      description: zod.string(),
-      id: zod.uuid(),
-      learnings: zod
-        .array(
-          zod
-            .object({
-              emoji: zod.string().nullable(),
-              id: zod.string(),
-              text: zod.string(),
-            })
-            .describe('One "What you\'ll learn" entry.'),
-        )
-        .describe('"What you\'ll learn", in display order.'),
-      name: zod.string(),
-      open_to_contributors: zod.boolean(),
-      public: zod.boolean(),
-      tags: zod.array(zod.string()),
-      thumbnail_key: zod
-        .string()
-        .nullable()
-        .describe('Storage key of the thumbnail image, served at `/content/<key>`.'),
-      thumbnail_video_key: zod
-        .string()
-        .nullable()
-        .describe(
-          'Storage key of the legacy video thumbnail (migrated courses only;\nread-only), served at `/content/<key>`.',
-        ),
-      updated_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
-      version: zod
-        .int()
-        .describe(
-          'Optimistic lock: send it back as `If-Match` on `PATCH` and\nlifecycle writes (stale â†’ 412). Also the `ETag` of `GET`.',
-        ),
-    }),
-  ),
+        .describe('A `GET /courses` item: the course plus who wrote it and how far the\ncaller got.'),
+    )
+    .describe("With their authors and the caller's progress, like `GET /courses`."),
   next_cursor: zod
     .string()
     .nullable()

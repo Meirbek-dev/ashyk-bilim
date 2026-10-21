@@ -254,7 +254,7 @@ pub struct DuplicateCourseRequest {
 #[serde(deny_unknown_fields)]
 pub struct CreateCourseRequest {
     #[garde(length(chars, max = 500))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: String,
     #[garde(length(chars, max = 5000))]
     #[schema(max_length = 5000)]
@@ -271,7 +271,7 @@ pub struct CreateCourseRequest {
 #[serde(deny_unknown_fields)]
 pub struct UpdateCourseRequest {
     #[garde(inner(length(max = 500)))]
-    #[schema(max_length = 500)]
+    #[schema(min_length = 1, max_length = 500)]
     pub name: Option<String>,
     #[garde(inner(length(max = 5000)))]
     #[schema(max_length = 5000)]

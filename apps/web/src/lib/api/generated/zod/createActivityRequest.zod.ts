@@ -28,7 +28,7 @@ export const CreateActivityRequest = zod.object({
   activity_type: zod
     .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
     .describe('One of the closed activity-type set (e.g. `video`, `exam`).'),
-  name: zod.string().max(createActivityRequestNameMax),
+  name: zod.string().min(1).max(createActivityRequestNameMax),
 })
 
 export type CreateActivityRequest = zod.input<typeof CreateActivityRequest>

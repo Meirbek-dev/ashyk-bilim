@@ -13,7 +13,7 @@ export const updateChapterRequestNameMax = 500
 
 export const UpdateChapterRequest = zod.object({
   description: zod.string().max(updateChapterRequestDescriptionMax).optional(),
-  name: zod.string().max(updateChapterRequestNameMax).optional(),
+  name: zod.string().min(1).max(updateChapterRequestNameMax).optional(),
 })
 
 export type UpdateChapterRequest = zod.input<typeof UpdateChapterRequest>

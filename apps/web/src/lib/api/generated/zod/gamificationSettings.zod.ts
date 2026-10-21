@@ -19,6 +19,10 @@ export const GamificationSettings = zod
       xp_gain: zod.boolean().nullable(),
     }),
     privacy: zod.object({
+      show_certificates: zod
+        .boolean()
+        .nullable()
+        .describe('`true` lists the certificates on the public profile (off when never set).'),
       show_on_leaderboard: zod.boolean().nullable().describe('`false` hides the profile from the leaderboard.'),
     }),
   })

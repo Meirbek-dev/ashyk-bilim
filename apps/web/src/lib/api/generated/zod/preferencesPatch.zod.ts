@@ -34,6 +34,12 @@ export const PreferencesPatch = zod
     privacy: zod
       .union([
         zod.object({
+          showCertificates: zod
+            .boolean()
+            .optional()
+            .describe(
+              '`true` lists the certificates on the public profile\n(`GET /users/{username}/certificates`); off when absent.',
+            ),
           showOnLeaderboard: zod
             .boolean()
             .optional()

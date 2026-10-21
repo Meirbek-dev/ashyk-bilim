@@ -80,6 +80,12 @@ export const Dashboard = zod.object({
           .optional(),
         privacy: zod
           .object({
+            showCertificates: zod
+              .boolean()
+              .optional()
+              .describe(
+                '`true` lists the certificates on the public profile\n(`GET /users/{username}/certificates`); off when absent.',
+              ),
             showOnLeaderboard: zod
               .boolean()
               .optional()
@@ -100,6 +106,10 @@ export const Dashboard = zod.object({
           xp_gain: zod.boolean().nullable(),
         }),
         privacy: zod.object({
+          show_certificates: zod
+            .boolean()
+            .nullable()
+            .describe('`true` lists the certificates on the public profile (off when never set).'),
           show_on_leaderboard: zod.boolean().nullable().describe('`false` hides the profile from the leaderboard.'),
         }),
       })

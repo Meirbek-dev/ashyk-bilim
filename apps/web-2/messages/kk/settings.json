@@ -124,6 +124,11 @@
   "settings_user_courses_empty": "Әзірге курс жоқ.",
   "settings_user_edit": "Профильді өңдеу",
   "settings_user_empty": "Профиль әзірге бос.",
+  "settings_field_certificates": "Профильде сертификаттарды көрсету",
+  "settings_field_certificates_hint": "Профиліңізді ашқан кез келген адам оларды көріп, түпнұсқа екеніне көз жеткізе алады.",
+  "settings_user_certificates": "Сертификаттар",
+  "settings_user_certificate_line": "{course} · берілді {date}",
+  "settings_user_certificate_issued": "Берілді {date}",
   "settings_user_present": "қазіргі уақыт",
   "settings_user_period": "{start} – {end} аралығы"
 }

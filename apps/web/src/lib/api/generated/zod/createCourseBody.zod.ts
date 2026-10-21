@@ -18,7 +18,7 @@ export const createCourseBodyTagsMax = 20
 export const CreateCourseBody = zod.object({
   about: zod.string().max(createCourseBodyAboutMax).optional(),
   description: zod.string().max(createCourseBodyDescriptionMax).optional(),
-  name: zod.string().max(createCourseBodyNameMax),
+  name: zod.string().min(1).max(createCourseBodyNameMax),
   tags: zod.array(zod.string()).max(createCourseBodyTagsMax).optional(),
 })
 
