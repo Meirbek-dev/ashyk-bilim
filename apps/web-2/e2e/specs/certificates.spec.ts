@@ -36,7 +36,7 @@ test(
       /^\/courses\//,
     )
     await expect(page.getByText(issued.code)).toBeVisible()
-    await expect(page.getByText(formatDate(Date.now() / 1000, 'ru'))).toBeVisible()
+    await expect(page.getByText(formatDate(Date.now() / 1000, 'ru', { withYear: true }))).toBeVisible()
     await expect(page).toHaveTitle(`${title} · ${m.platform_brand({}, ru)}`)
   },
 )
