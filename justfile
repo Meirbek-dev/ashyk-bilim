@@ -101,7 +101,7 @@ ci-web2:
 # Regression checks for this development workflow; no containers required.
 test-dev:
     JUST_EXECUTABLE={{ just_bin }} node --test infra/tests/development.test.mjs
-    bun test infra/dev
+    bun test ./infra/dev
 
 # Server dependencies (db redis zitadel rustfs) + init jobs; prints the Zitadel PAT path.
 dev-up:
@@ -146,6 +146,18 @@ e2e *args:
 # Playwright against a running slot's dev servers: `just e2e-dev [web2|web] [--slot N] [playwright args]`.
 e2e-dev *args:
     @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts --dev "$@"
+
+# One long-lived watcher; emits changes only, exits with the run's result.
+ci-watch run:
+    @bun infra/dev/ci-watch.ts {{ run }}
+
+# Preserve successful jobs/shards; retry only failed/cancelled jobs and their dependents.
+ci-retry run:
+    @gh run rerun {{ run }} --failed
+
+# Bounded log/trace excerpts; complete originals stay on disk.
+diagnose *args:
+    @bun infra/dev/diagnose.ts "$@"
 
 # Idempotent init of the stack in $STACK (dev|prod|smoke, default prod).
 bootstrap:
@@ -198,9 +210,10 @@ web2-e2e *args:
         pw=$(sed -n 's/.*"@playwright\/test": "\(.*\)".*/\1/p' apps/web-2/package.json)
         e2e_env+=(E2E_API_LOG=/stand/web2/server.log E2E_LEARNERS_DIR=/learners
             NODE_EXTRA_CA_CERTS=/stand/smoke/certs/cert.pem)
-        "$CTR" run --rm --network "${COMPOSE_PROJECT_NAME}_edge-net" --ipc host \
+        "$CTR" run --rm --init --network "${COMPOSE_PROJECT_NAME}_edge-net" --ipc host \
             -v "$root/apps/web-2:/app" -v "$root/tmp:/stand:ro" -v "$root/tmp/web2/learners:/learners" -w /app \
             $(printf -- '-e %s ' "${e2e_env[@]}") \
+            -e CI -e PWTEST_SHARD_WEIGHTS -e PLAYWRIGHT_HTML_OPEN \
             "mcr.microsoft.com/playwright:v$pw-noble" \
             node node_modules/@playwright/test/cli.js test -c e2e/playwright.config.ts "$@"
     fi

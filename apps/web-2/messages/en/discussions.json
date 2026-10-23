@@ -2,6 +2,7 @@
   "discussions_title": "Course discussions",
   "discussions_guest": "Discussions are visible after you sign in.",
   "discussions_empty": "No discussions yet. Start the first one.",
+  "discussions_empty_readonly": "No discussions yet.",
   "discussions_members_only": "Course members can post, reply and react here. Enroll in the course to join the discussion.",
   "discussions_new": "New post",
   "discussions_start": "Ask a question or start a discussion",

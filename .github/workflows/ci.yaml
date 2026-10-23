@@ -40,15 +40,18 @@ jobs:
       lint-tools: ${{ steps.tools.outputs.lint-tools }}
       test-tools: ${{ steps.tools.outputs.test-tools }}
       just-tool: ${{ steps.tools.outputs.just-tool }}
+      playwright-image: ${{ steps.tools.outputs.playwright-image }}
     steps:
       - uses: actions/checkout@v7
       - id: tools
         run: |
           source apps/server/tools.env
+          pw=$(jq -r '.devDependencies["@playwright/test"]' apps/web-2/package.json)
           {
             echo "lint-tools=$LINT_TOOLS,$JUST_TOOL"
             echo "test-tools=$TEST_TOOLS,$JUST_TOOL"
             echo "just-tool=$JUST_TOOL"
+            echo "playwright-image=mcr.microsoft.com/playwright:v$pw-noble"
           } >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v4
         id: filter
@@ -256,6 +259,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.web2 == 'true'
     runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.changes.outputs.playwright-image }}
+      options: --ipc=host
     timeout-minutes: 30
     defaults:
       run:
@@ -275,9 +281,6 @@ jobs:
 
       - name: Install
         run: bun install --frozen-lockfile
-
-      - name: Playwright chromium (vitest browser project)
-        run: bunx playwright install --with-deps chromium
 
       # The committed client and route tree are checked once, by verify's codegen gate (G-09).
       - name: Messages (gitignored paraglide output)
@@ -473,22 +476,27 @@ jobs:
       - name: Resolve the stand host
         run: echo '127.0.0.1 ashyq.test' | sudo tee -a /etc/hosts
 
-      # The stand comes up while Playwright installs (~1 min saved); its log and exit code are
+      # The stand comes up while the official browser image is pulled; its log and exit code are
       # collected by "Stand up" below.
       - name: Stand up in the background (from scratch, bootstrap included)
         run: (set +e; just web2-stand-up >"$RUNNER_TEMP/stand.log" 2>&1; echo $? >"$RUNNER_TEMP/stand.rc") </dev/null >/dev/null 2>&1 &
 
       - name: Playwright dependencies
+        timeout-minutes: 5
         working-directory: apps/web-2
         run: |
+          SECONDS=0
+          trap 'echo "Browser setup: ${SECONDS}s (exit $?)" >> "$GITHUB_STEP_SUMMARY"' EXIT
           bun install --frozen-lockfile
           bun run codegen messages
-          bunx playwright install --with-deps
+          pw=$(node -p 'require("./package.json").devDependencies["@playwright/test"]')
+          docker pull "mcr.microsoft.com/playwright:v$pw-noble"
 
       - name: Stand up
+        timeout-minutes: 5
         run: |
           until [[ -f $RUNNER_TEMP/stand.rc ]]; do sleep 2; done
-          cat "$RUNNER_TEMP/stand.log"
+          tail -c 12000 "$RUNNER_TEMP/stand.log"
           exit "$(<"$RUNNER_TEMP/stand.rc")"
 
       # Also the learner pool (E2E_LEARNERS, default 250): the stand caps self-registration at 10/h.
@@ -500,14 +508,22 @@ jobs:
       # Shards split by test count and the cheap access.spec matrix comes first: weights 9:6:5
       # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446; 4:3:2 4.6/6.4/4.8).
       - name: e2e
+        timeout-minutes: 15
         env:
+          WEB2_E2E_IN_NETWORK: '1'
           PLAYWRIGHT_HTML_OPEN: never
           PWTEST_SHARD_WEIGHTS: '9:6:5'
-        run: just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
+        run: |
+          SECONDS=0
+          trap 'echo "Browser tests (shard ${{ matrix.shard }}): ${SECONDS}s (exit $?)" >> "$GITHUB_STEP_SUMMARY"' EXIT
+          just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
 
       - name: Compose logs
         if: failure()
-        run: bash -c 'source infra/scripts/lib.sh && use_web2 && compose ps -a && compose logs --no-color --timestamps --tail 500'
+        run: |
+          mkdir -p tmp/web2
+          bash -c 'source infra/scripts/lib.sh && use_web2 && compose ps -a && compose logs --no-color --timestamps --tail 500' > tmp/web2/compose.log 2>&1
+          tail -c 12000 tmp/web2/compose.log
 
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -517,6 +533,8 @@ jobs:
             apps/web-2/playwright-report/
             apps/web-2/test-results/
             tmp/web2/server.log
+            tmp/web2/compose.log
+            ${{ runner.temp }}/stand.log
           retention-days: 7
 
       - name: Stand down

@@ -122,6 +122,8 @@ export interface ServiceSpec {
 }
 
 export interface Manifest {
+  e2eEnv?: Record<string, string>
+  sourceStamp?: string
   slot: string
   db: string
   ports: Record<string, number>
@@ -225,7 +227,9 @@ export function tail(path: string, lines = 15): string {
   return readFileSync(path, 'utf8')
     .split(/\r?\n/)
     .slice(-lines - 1)
+    .map(line => (line.length > 500 ? `${line.slice(0, 500)} … [line truncated; see full log]` : line))
     .join('\n')
+    .slice(-12_000)
 }
 
 export function removeQuietly(path: string): void {

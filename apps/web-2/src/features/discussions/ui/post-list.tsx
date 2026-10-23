@@ -14,6 +14,8 @@ import { PostRow } from './post-row'
 export function PostList({ courseId, thread }: { courseId: CourseId; thread: string | undefined }) {
   const query = useSuspenseInfiniteQuery(postsOptions(courseId))
   const posts = query.data.pages.flatMap(page => page.items)
+  // Someone who cannot post (not enrolled) is not asked to start the first discussion.
+  const canPost = query.data.pages[0]?.can_post ?? false
   const linked = thread && !posts.some(post => post.id === thread) ? thread : null
   // The thread the page opened on: scrolled to once; one opened later by «Ответить» is already in view.
   const [landing] = useState(thread)
@@ -23,7 +25,7 @@ export function PostList({ courseId, thread }: { courseId: CourseId; thread: str
       error={query.error}
       count={posts.length}
       filtered={false}
-      emptyText={m.discussions_empty()}
+      emptyText={canPost ? m.discussions_empty() : m.discussions_empty_readonly()}
       onRetry={() => void query.refetch()}
     >
       <ul className="flex flex-col gap-3">

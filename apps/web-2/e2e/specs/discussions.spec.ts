@@ -50,10 +50,14 @@ test('B-DSC-02 posts come newest first, twenty at a time, then "Show more"', asy
 }) => {
   const made = await course()
   const empty = await course()
+  const unjoined = await course(false)
   for (let index = 1; index <= 21; index += 1) await post(made, `Пост номер ${index}.`)
   await signInAs('student')
   await page.goto(tab(empty))
   await expect(page.getByText(m.discussions_empty({}, ru))).toBeVisible()
+  // Not a member: not asked to start the first one.
+  await page.goto(tab(unjoined))
+  await expect(page.getByText(m.discussions_empty_readonly({}, ru), { exact: true })).toBeVisible()
   await page.goto(tab(made))
   await expect(page.locator('main article')).toHaveCount(20)
   await expect(page.locator('main article').first()).toContainText('Пост номер 21.')

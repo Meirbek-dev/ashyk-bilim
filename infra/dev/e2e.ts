@@ -36,8 +36,9 @@ import {
 
 type App = 'web2' | 'web'
 const children: Subprocess[] = []
+const services: Record<string, { pid: number; log: string; restarts: number; since: string }> = {}
 
-function parse(argv: string[]) {
+export function parse(argv: string[]) {
   const o = {
     dev: false,
     app: 'web2' as App,
@@ -45,6 +46,7 @@ function parse(argv: string[]) {
     keep: false,
     build: true,
     changed: false,
+    session: '',
     args: [] as string[],
   }
   for (let i = 0; i < argv.length; i++) {
@@ -53,11 +55,15 @@ function parse(argv: string[]) {
     else if (arg === '--changed') o.changed = true
     else if (arg === '--keep') o.keep = true
     else if (arg === '--no-build') o.build = false
-    else if (arg === '--slot') o.slot = argv[++i] ?? '0'
+    else if (['--serve', '--reuse', '--stop'].includes(arg)) {
+      if (o.session) throw new Error('choose only one of --serve, --reuse, --stop')
+      o.session = arg
+    } else if (arg === '--slot') o.slot = argv[++i] ?? '0'
     else if ((arg === 'web2' || arg === 'web') && o.args.length === 0) o.app = arg
     else o.args.push(arg)
   }
   if (!/^\d$/.test(o.slot)) throw new Error(`--slot must be 0-9 (got ${o.slot})`)
+  if (o.dev && o.session) throw new Error('persistent sessions use production builds, not --dev')
   if (o.changed) {
     if (o.app !== 'web2') throw new Error('--changed picks web-2 specs only')
     const selection = selectSpecs(changedFiles(false, process.env['CHECK_BASE'] || undefined), web2Tree(root))
@@ -88,6 +94,7 @@ function start(name: string, cmd: string[], cwd: string, env: Record<string, str
   void pipeToLog(child.stdout, log)
   void pipeToLog(child.stderr, log)
   children.push(child)
+  services[name] = { pid: child.pid, log, restarts: 0, since: new Date().toISOString() }
 }
 
 function stopAll(): void {
@@ -121,7 +128,7 @@ function sourcesMtime(app: string): number {
   return listed.stdout
     .toString()
     .split('\n')
-    .filter(f => f && !/\/(e2e|src\/tests)\/|\.test\.tsx?$|routeTree\.gen\.ts$/.test(f))
+    .filter(f => f && !/\/(e2e|tests)\/|\.test\.tsx?$|routeTree\.gen\.ts$/.test(f))
     .reduce((newest, f) => {
       try {
         return Math.max(newest, statSync(join(root, f)).mtimeMs)
@@ -132,7 +139,18 @@ function sourcesMtime(app: string): number {
 }
 
 /** Runs `build` unless the stamp says the same sources (and `key`) were built already. */
-function buildIfChanged(app: string, key: string, output: string, dir: string, build: () => void): void {
+function buildIfChanged(
+  app: string,
+  key: string,
+  output: string,
+  dir: string,
+  build: () => void,
+  enabled = true,
+): void {
+  if (!enabled && existsSync(output)) {
+    say(`${app}: using existing build (--no-build)`)
+    return
+  }
   const stamp = join(root, `tmp/e2e/${app.replace('apps/', '')}-build.stamp`)
   const current = `${sourcesMtime(app)} ${key}`
   if (existsSync(output) && existsSync(stamp) && readFileSync(stamp, 'utf8') === current) {
@@ -220,6 +238,28 @@ const judge0Up = async (env: Record<string, string>) =>
   Boolean(env['AB__JUDGE0__BASE_URL']) && httpUp(`${env['AB__JUDGE0__BASE_URL']}/languages`)
 
 async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): Promise<number> {
+  const sessionName = `e2e-${o.app}-${o.slot}`
+  const existing = readManifest(sessionName)
+  if (o.session === '--stop') {
+    if (!existing) throw new Error(`no session ${sessionName}`)
+    for (const service of Object.values(existing.services)) killTree(service.pid)
+    killTree(existing.supervisor)
+    rmSync(manifestPath(sessionName), { force: true })
+    say(`stopped ${sessionName}; database retained (next --serve resets it)`)
+    return 0
+  }
+  if (o.session === '--reuse') {
+    if (!existing || !alive(existing.supervisor) || !existing.e2eEnv)
+      throw new Error(`no ready session: just e2e ${o.app} --slot ${o.slot} --serve`)
+    if (existing.sourceStamp !== sourceStamp(o.app))
+      throw new Error('application sources changed: --stop, then --serve to rebuild; test edits need no restart')
+    if (!(await httpUp(existing.origins[0]!))) throw new Error('session is unhealthy: inspect its logs or restart it')
+    const dir = join(root, `tmp/e2e/${sessionName}-runs/${Date.now()}-${process.pid}`)
+    mkdirSync(dir, { recursive: true })
+    const appEnv = o.app === 'web' ? legacyEnv(existing.origins[0]!, existing.ports.api!, env) : existing.e2eEnv
+    return playwright(o, { ...appEnv, E2E_PASSWORD: env['E2E_PASSWORD'] ?? '' }, dir)
+  }
+  if (existing && alive(existing.supervisor)) throw new Error(`session is already running: use --reuse or --stop`)
   const n = Number(o.slot)
   const ports = { api: 8005 + 10 * n, stand: 3105 + 10 * n, serve: 3106 + 10 * n, web: 3205 + 10 * n }
   const used = o.app === 'web2' ? [ports.api, ports.stand, ports.serve] : [ports.api, ports.web]
@@ -264,13 +304,19 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     let appEnv: Record<string, string>
     if (o.app === 'web2') {
       const app = join(root, 'apps/web-2')
-      buildIfChanged('apps/web-2', '', join(app, 'dist/server/server.js'), dir, () =>
-        // Messages compile outside src/paraglide, which the running dev servers import (vite.config.ts).
-        run([process.execPath, 'x', 'vp', 'build'], {
-          cwd: app,
-          env: { AB_PARAGLIDE_OUTDIR: join(root, 'tmp/e2e/web2-build/paraglide') },
-          log: join(dir, 'build.log'),
-        }),
+      buildIfChanged(
+        'apps/web-2',
+        '',
+        join(app, 'dist/server/server.js'),
+        dir,
+        () =>
+          // Messages compile outside src/paraglide, which the running dev servers import (vite.config.ts).
+          run([process.execPath, 'x', 'vp', 'build'], {
+            cwd: app,
+            env: { AB_PARAGLIDE_OUTDIR: join(root, 'tmp/e2e/web2-build/paraglide') },
+            log: join(dir, 'build.log'),
+          }),
+        o.build,
       )
       const web = { PUBLIC_ORIGIN: origin, INTERNAL_API_URL: `http://127.0.0.1:${ports.api}` }
       start('serve', [node, 'serve.ts'], app, { ...web, PORT: String(ports.serve), HOST: '127.0.0.1' }, dir)
@@ -304,25 +350,45 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
         NEXT_TELEMETRY_DISABLED: '1',
       }
       // NEXT_PUBLIC_* are baked into the build: the ports are part of the stamp.
-      buildIfChanged('apps/web', JSON.stringify(ports), join(app, '.next/BUILD_ID'), dir, () =>
-        run([process.execPath, 'x', 'next', 'build'], { cwd: app, env: web, log: join(dir, 'build.log') }),
+      buildIfChanged(
+        'apps/web',
+        JSON.stringify(ports),
+        join(app, '.next/BUILD_ID'),
+        dir,
+        () => run([process.execPath, 'x', 'next', 'build'], { cwd: app, env: web, log: join(dir, 'build.log') }),
+        o.build,
       )
       start('web', [process.execPath, 'x', 'next', 'start', '-p', String(ports.web)], app, web, dir)
       appEnv = legacyEnv(origin, ports.api, env)
     }
     await waitFor('api', () => httpUp(`http://127.0.0.1:${ports.api}/api/v2/health`), 90)
     await waitFor(o.app, () => httpUp(origin), 120)
+    if (o.session === '--serve') {
+      const e2eEnv = Object.fromEntries(Object.entries(appEnv).filter(([key]) => !/PASSWORD|TOKEN/.test(key)))
+      writeJson(manifest, { ...readManifest(sessionName), services, e2eEnv, sourceStamp: sourceStamp(o.app) })
+      say(`ready: just e2e ${o.app} --slot ${o.slot} --reuse [playwright args]; --stop ends the session`)
+      await new Promise<void>(() => {})
+    }
     return await playwright(o, { ...appEnv, E2E_PASSWORD: env['E2E_PASSWORD'] ?? '' }, dir)
   } finally {
     stopAll()
     rmSync(manifest, { force: true })
-    if (!o.keep) {
+    if (!o.keep && o.session !== '--serve') {
       Bun.spawnSync([process.execPath, join(root, 'infra/dev/db.ts'), 'drop', db], {
         cwd: root,
         env: { ...process.env, DATABASE_URL: databaseUrl(env, 'ashyq_dev') },
       })
     }
   }
+}
+
+function sourceStamp(app: App): string {
+  // Tests do not affect a build. Include server sources and shared workspace inputs too.
+  return JSON.stringify([
+    sourcesMtime('apps/server'),
+    sourcesMtime(app === 'web2' ? 'apps/web-2' : 'apps/web'),
+    ...['package.json', 'bun.lock', '.node-version'].map(file => statSync(join(root, file)).mtimeMs),
+  ])
 }
 
 if (import.meta.main) {

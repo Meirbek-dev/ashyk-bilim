@@ -507,6 +507,13 @@ follows the running slots.
 
 ### 5.4 e2e
 
+- Debug loop: `just e2e web2 --serve` builds and starts a production stand once (leave it running), then
+  `just e2e web2 --reuse --project chromium --grep B-COL-09` runs only that scenario. Reuse keeps the same API,
+  worker and database; fixtures remove their own test data. Logs/results go into a separate directory per run.
+  Test edits need no restart. Application/server/toolchain changes are detected and refuse reuse: run
+  `just e2e web2 --stop`, then `--serve` to rebuild and reset the stand. Stop retains the disposable database;
+  the next start resets it. `--slot N` selects an independent stand. Run the full suite after focused fixes pass.
+
 - `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`: Playwright against a production build
   (web-2: `vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand; legacy: `next build` +
   `next start`, beside slot 0's `next dev`) with its own API + worker on a fresh database `e2e_<app>_<slot>` cloned from
@@ -520,6 +527,15 @@ follows the running slots.
   pool; nothing to export by hand.
 
 ### 5.5 Checks and the contract
+
+- `just ci-watch <run-id>` watches one GitHub run, prints job/step changes and one warning for a step over five
+  minutes, then exits with the result. Raw status and failed logs stay in `tmp/ci/<run-id>/`. It never retries or
+  cancels automatically. `just ci-retry <run-id>` retries failed/cancelled jobs and their dependents, preserving successes.
+- `just diagnose <log>` prints bounded failure context (or a tail); `just diagnose --trace <extracted.trace>`
+  prints action/error timestamps, excluding snapshots and resources. Full originals stay on disk. Limits:
+  40 lines, 500 characters per line, 12,000 characters total.
+- CI browser setup has a five-minute step limit. E2E uses the official Playwright image matching the package pin
+  (browsers/system dependencies included); setup and test durations appear separately in the run summary.
 
 - `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--staged`,
   `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and their dependents (all

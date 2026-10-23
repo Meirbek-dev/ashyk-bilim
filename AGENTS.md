@@ -50,6 +50,19 @@
 
 ## Working with agents
 
+- For repeated browser debugging, start `just e2e web2 --serve` once and run focused tests with
+  `just e2e web2 --reuse <playwright args>`. Test edits reuse the build and database; application edits
+  require `--stop`, then `--serve`. Fixtures clean up their own data. Run the full suite after focused fixes pass.
+  `--keep` alone retains only the database, not the servers.
+- Watch CI with one `just ci-watch <run>` process. Read its output when it changes; do not launch parallel
+  polling loops. Use `just ci-retry <run>` after a completed failed run to preserve successful shards.
+  Report changes or a wait lasting a few minutes; remain quiet between them where host instructions permit
+  (higher-priority heartbeat requirements still apply).
+- Save full diagnostic output under `tmp/`, then use `just diagnose <log>` or `just diagnose --trace <extracted.trace>`.
+  Excerpts are capped at 40 lines / 12,000 characters, with 500 characters per line. Never print raw trace snapshots,
+  minified matches, complete CI logs or cleanup logs. For minified bundles print filenames/counts or bounded excerpts.
+  For pulls use `git pull --quiet --ff-only` and report the old/new revision. Test tools print summaries and retain logs.
+
 - QA/fix sweeps: hand each agent `docs/agents/QA.md` plus its lane; it covers roles, accounts, testing,
   fixing, report format and orchestration (max 3 agents per checkout, one lane owns contract changes,
   commit per finished item, never leave files staged, progress in a report file).
