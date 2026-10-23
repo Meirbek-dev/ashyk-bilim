@@ -1,11 +1,9 @@
 # Build context: repository root (compose: `context: ., dockerfile: apps/server/Dockerfile`).
 # cargo-chef caches the dependency layer; SQLX_OFFLINE builds against .sqlx.
 #
-# Base images come from Amazon's Docker Hub mirror (public.ecr.aws) — CI runs
-# #24/#25 died on Docker Hub's anonymous pull rate limit on shared GitHub
-# runner IPs; the mirror serves the same official images without the limit.
+# Pull the official images directly: the ECR mirror's anonymous data quota blocks CI.
 
-FROM public.ecr.aws/docker/library/rust:1.99.1-slim-trixie AS chef
+FROM docker.io/library/rust:1.99.1-slim-trixie AS chef
 RUN cargo install cargo-chef --version 0.1.78 --locked
 WORKDIR /build
 
@@ -23,7 +21,7 @@ ENV SQLX_OFFLINE=true
 RUN cargo build --locked --release -p ashyq-server \
     && mv target/release/ashyq /usr/local/bin/ashyq && rm -rf target
 
-FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
+FROM docker.io/library/debian:trixie-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
