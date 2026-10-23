@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { createCourseUpdate } from '#/shared/api/gen/sdk.gen'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
-import { gotoLive } from '../fixtures/test'
+import { clickUntil, gotoLive } from '../fixtures/test'
 import { expect, ru, test } from './file-submissions-fixture'
 
 // /home "Today" (slice 3.1): a fresh learner in a made course with file tasks; the teacher grades and announces.
@@ -135,13 +135,16 @@ for (const locale of ['kk', 'en'] as const) {
 test('B-AUTH-16 a session that ends under the page brings the sign-in page with a note', async ({ page, learner }) => {
   await learner.signIn()
   await gotoLive(page, '/home')
+  await expect(page.getByRole('heading', { level: 1, name: m.home_title({}, ru) })).toBeVisible()
   // The session ends behind the tab (expired, or signed out in another one).
   await page.request.post('/api/v2/auth/logout', { headers: { origin: new URL(page.url()).origin } })
-  await page
-    .getByRole('navigation')
-    .getByRole('link', { name: m.platform_nav_learning({}, ru) })
-    .first()
-    .click()
+  await clickUntil(
+    page
+      .getByRole('navigation')
+      .getByRole('link', { name: m.platform_nav_learning({}, ru) })
+      .first(),
+    () => expect(page).toHaveURL(/\/login\?redirect=/, { timeout: 1000 }),
+  )
   await expect(page).toHaveURL(/\/login\?redirect=/)
   await expect(page.getByText(m.auth_session_ended({}, ru))).toBeVisible()
 })

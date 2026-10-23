@@ -246,7 +246,7 @@ test('B-SET-13 the gamification switches are saved and read back', async ({ page
   await expect(xp).not.toBeChecked()
   await expect(leaderboard).not.toBeChecked()
   const { data } = await dashboard({ client: me.client, headers: me.headers })
-  expect(data?.profile.preferences['privacy']).toEqual({ showOnLeaderboard: false })
+  expect(data?.profile.preferences['privacy']).toEqual({ showOnLeaderboard: false, showCertificates: false })
 })
 
 test('B-SET-14 the public profile comes in the server document with the courses; an unknown user is not found', async ({

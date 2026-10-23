@@ -176,7 +176,7 @@ test('B-GRD-24 the group filter narrows the queue and the gradebook (URL)', asyn
   await expect(cells).toHaveCount(2)
   await page.getByLabel(m.grading_group({}, ru)).selectOption({ label: group })
   await expect(cells).toHaveCount(1)
-  await expect(cells).toHaveAttribute('href', review(graded, graded.ana.submissionId))
+  await expect(cells).toHaveAttribute('href', `${review(graded, graded.ana.submissionId)}?from=gradebook`)
 })
 
 test('B-GRD-25 the file queue: server counts, publish-all, extension', async ({ page, signInAs, fileTask }) => {
@@ -252,7 +252,7 @@ test('B-GRD-19 B-GRD-20 the gradebook leads each cell into its review; search an
   await expect(cells).toHaveCount(2)
   const hrefs = await cells.evaluateAll(links => links.map(link => link.getAttribute('href')))
   expect(new Set(hrefs)).toEqual(
-    new Set([review(graded, graded.ana.submissionId), review(graded, graded.boris.submissionId)]),
+    new Set([graded.ana, graded.boris].map(learner => `${review(graded, learner.submissionId)}?from=gradebook`)),
   )
   await expect(page.getByRole('link', { name: m.grading_export_csv({}, ru) })).toHaveAttribute(
     'href',
@@ -263,7 +263,7 @@ test('B-GRD-19 B-GRD-20 the gradebook leads each cell into its review; search an
   await search.press('Enter')
   await expect(page).toHaveURL(new RegExp(`q=${graded.ana.name}`))
   await expect(cells).toHaveCount(1)
-  await expect(cells).toHaveAttribute('href', review(graded, graded.ana.submissionId))
+  await expect(cells).toHaveAttribute('href', `${review(graded, graded.ana.submissionId)}?from=gradebook`)
   await page.getByRole('link', { name: m.grading_pending_only({}, ru) }).click()
   await expect(page).toHaveURL(/pending=true/)
   await expect(cells).toHaveCount(1)

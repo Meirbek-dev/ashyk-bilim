@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 
+import { m } from '#/paraglide/messages'
 import type { ConfigPatch, FileRubric, FileSubmission, LatePolicy } from '#/shared/api/gen/types.gen'
 import { vRubricLevel } from '#/shared/api/gen/valibot.gen'
 import { fromDateTimeInput, toDateTimeInput } from '#/shared/i18n/format'
@@ -67,7 +68,10 @@ export const deadlinesSchema = v.pipe(
   deadlinesObject,
   v.forward(v.check(filled('penalty', 'percent_per_day', DECIMAL)), ['late_policy', 'percent_per_day']),
   v.forward(v.check(filled('penalty', 'max_days', /^\d+$/)), ['late_policy', 'max_days']),
-  v.forward(v.check(filled('cutoff', 'cutoff_at', /./)), ['late_policy', 'cutoff_at']),
+  v.forward(
+    v.check(filled('cutoff', 'cutoff_at', /./), () => m.validation_required()),
+    ['late_policy', 'cutoff_at'],
+  ),
 )
 export type DeadlinesForm = v.InferOutput<typeof deadlinesSchema>
 

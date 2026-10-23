@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { Attempt, FileSubmission } from '#/shared/api/gen/types.gen'
 
 import {
@@ -261,6 +262,8 @@ describe('studio forms', () => {
     expect(issuePaths(form)).toEqual([])
     expect(issuePaths(late({ kind: 'penalty' }))).toEqual(['late_policy.percent_per_day', 'late_policy.max_days'])
     expect(issuePaths(late({ kind: 'cutoff' }))).toEqual(['late_policy.cutoff_at'])
+    const cutoff = v.safeParse(deadlinesSchema, late({ kind: 'cutoff' }))
+    expect(cutoff.issues?.[0]?.message).toBe(m.validation_required())
     expect(issuePaths(late({ kind: 'none', percent_per_day: 'x' }))).toEqual([])
   })
 

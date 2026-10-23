@@ -117,7 +117,7 @@ test('B-FSB-15 rubric criteria are added, checked, saved and removed', async ({ 
   const points = rubric.getByRole('textbox', { name: m.submission_criterion_max({}, ru) })
   await add.click()
   await save(page, m.submission_rubric_title({}, ru))
-  await expect(rubric.getByText(m.validation_required({}, ru))).toBeVisible()
+  await expect(rubric.getByText(m.validation_required({}, ru))).toHaveCount(2)
   await name(1).fill('Структура')
   await points.nth(0).fill('10')
   await add.click()
