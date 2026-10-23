@@ -1,11 +1,15 @@
-import { describe, expect, test, vi } from 'vite-plus/test'
+import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
+import { getLocale, setLocale } from '#/paraglide/runtime'
 import type { ThemeManifest } from '#/shared/api/themes'
 import { renderInRouter } from '#/shared/components/testing'
 
 import { ThemePicker } from './theme-picker'
+
+const initialLocale = getLocale()
+afterEach(() => setLocale(initialLocale, { reload: false }))
 
 const themes: ThemeManifest = Array.from({ length: 63 }, (_, index) => ({
   slug: `theme-${index}`,
@@ -18,6 +22,7 @@ const themes: ThemeManifest = Array.from({ length: 63 }, (_, index) => ({
 
 describe('ThemePicker', () => {
   test('B-SET-11 on a phone the 63 themes scroll in a box that opens on the chosen one; names and search use the UI language', async () => {
+    await setLocale('ru', { reload: false })
     const screen = await renderInRouter(
       <div className="w-96">
         <ThemePicker themes={themes} value="theme-62" onChange={vi.fn<(slug: string) => void>()} />
