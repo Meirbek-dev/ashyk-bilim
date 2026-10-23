@@ -1,11 +1,11 @@
-FROM oven/bun:1.4.3-alpine AS deps
+FROM oven/bun:1.4.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/package.json
 RUN --mount=type=cache,target=/root/.bun/install/cache \
   bun install --frozen-lockfile
 
-FROM node:26.11.1-alpine AS builder
+FROM node:26.12.1-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
@@ -27,7 +27,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
 RUN rm -f apps/web/.env*
 RUN npm --prefix apps/web run build
 
-FROM node:26.11.1-alpine AS runner
+FROM node:26.12.1-alpine AS runner
 WORKDIR /app
 
 RUN apk add --no-cache dumb-init curl

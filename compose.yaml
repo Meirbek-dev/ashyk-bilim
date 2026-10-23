@@ -111,7 +111,7 @@ services:
 
   # --- Cache
   redis:
-    image: docker.io/library/redis:8.10-alpine
+    image: docker.io/library/redis:8.10.2-alpine
     restart: unless-stopped
     command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?}']
     environment:
@@ -143,7 +143,7 @@ services:
 
   # The only place holding the Postgres admin credentials for Zitadel.
   zitadel-init:
-    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:90a3045b80a2b5b395e1e770302076906af3a5911225af7c464b4f3bd00d0a1b # v4.19.4
+    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:9ea0e9ecfdc43115da871242e40a0320f2ece864c7cd8b5d41a863a7f4902499 # v4.20.0
     command: ['init']
     environment:
       <<: *zitadel-db
@@ -199,7 +199,7 @@ services:
 
   # --- Object storage (S3)
   rustfs:
-    image: docker.io/rustfs/rustfs:1.0.1
+    image: docker.io/rustfs/rustfs:1.0.3
     restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
@@ -219,7 +219,7 @@ services:
 
   # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
   storage-init:
-    image: docker.io/amazon/aws-cli:2.37.12
+    image: docker.io/amazon/aws-cli:2.38.5
     entrypoint: ['bash', '/storage/init.sh']
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
@@ -269,7 +269,7 @@ services:
     logging: *logging
 
   judge0-redis:
-    image: docker.io/library/redis:8.10-alpine
+    image: docker.io/library/redis:8.10.2-alpine
     profiles: [judge0]
     restart: unless-stopped
     command: ['redis-server', '--requirepass', '${JUDGE0_REDIS_PASSWORD:?}']

@@ -34,7 +34,7 @@ const profile = {
   settings: {
     display: { animated_effects: null, compact_mode: null },
     notifications: { xp_gain: null },
-    privacy: { show_on_leaderboard: false },
+    privacy: { show_certificates: null, show_on_leaderboard: false },
   },
 }
 

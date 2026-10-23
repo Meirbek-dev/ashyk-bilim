@@ -33,7 +33,7 @@ const dashboard = {
     settings: {
       display: { animated_effects: null, compact_mode: null },
       notifications: { xp_gain: null },
-      privacy: { show_on_leaderboard: null },
+      privacy: { show_certificates: null, show_on_leaderboard: null },
     },
   },
   leaderboard: {

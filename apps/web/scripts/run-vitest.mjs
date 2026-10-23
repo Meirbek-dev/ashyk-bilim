@@ -4,13 +4,13 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 
 const require = createRequire(import.meta.url)
-const vitestPackagePath = require.resolve('vitest/package.json')
-const vitestPackage = require(vitestPackagePath)
-const vitestBin = path.resolve(path.dirname(vitestPackagePath), vitestPackage.bin.vitest)
+const vitePlusPackagePath = require.resolve('vite-plus/package.json')
+const vitePlusPackage = require(vitePlusPackagePath)
+const vitePlusBin = path.resolve(path.dirname(vitePlusPackagePath), vitePlusPackage.bin.vp)
 
 const result = spawnSync(
   process.execPath,
-  ['--env-file-if-exists=.env', '--env-file-if-exists=.env.local', vitestBin, ...process.argv.slice(2)],
+  ['--env-file-if-exists=.env', '--env-file-if-exists=.env.local', vitePlusBin, 'test', ...process.argv.slice(2)],
   {
     cwd: process.cwd(),
     env: process.env,

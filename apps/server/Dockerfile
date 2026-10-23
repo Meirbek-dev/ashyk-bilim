@@ -5,7 +5,7 @@
 # #24/#25 died on Docker Hub's anonymous pull rate limit on shared GitHub
 # runner IPs; the mirror serves the same official images without the limit.
 
-FROM public.ecr.aws/docker/library/rust:1.99.0-slim-trixie AS chef
+FROM public.ecr.aws/docker/library/rust:1.99.1-slim-trixie AS chef
 RUN cargo install cargo-chef --version 0.1.78 --locked
 WORKDIR /build
 

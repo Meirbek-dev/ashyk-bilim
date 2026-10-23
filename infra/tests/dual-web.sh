@@ -4,6 +4,8 @@
 # shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/../scripts/lib.sh"
 use_smoke
+# Every probe below uses this host, including when Bun inherited the production .env.
+export NGINX_SERVER_NAME=ashyq.test
 export COMPOSE_PROJECT_NAME=ashyq-dual-$$ IMAGE_TAG=ci
 export COMPOSE_FILE=$COMPOSE_FILE:infra/compose.dual-check.yaml
 trap 'compose down -v >/dev/null 2>&1' EXIT

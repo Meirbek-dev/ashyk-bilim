@@ -3,7 +3,7 @@
 # Build context is the repository root: podman build -f apps/web-2/Dockerfile .
 # The root .dockerignore keeps host node_modules out of the context.
 
-FROM oven/bun:1.4.3-alpine AS deps
+FROM oven/bun:1.4.4-alpine AS deps
 WORKDIR /app
 COPY apps/web-2/package.json apps/web-2/bun.lock ./
 RUN bun install --frozen-lockfile --ignore-scripts
@@ -16,7 +16,7 @@ RUN bun run build
 FROM deps AS runtime-deps
 RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
-FROM node:26.11.1-alpine
+FROM node:26.12.1-alpine
 # The heap is capped for the 512m container (compose WEB_MEMORY): V8 sized it from the host (2 GiB) and collects
 # lazily, so RSS reached ~480 MiB at 50 rps; capped, it stayed under 300 MiB (docs/DECISIONS.md).
 ENV NODE_ENV=production \

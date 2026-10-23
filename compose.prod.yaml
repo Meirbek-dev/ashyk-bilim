@@ -55,7 +55,7 @@ services:
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: docker.io/library/nginx:1.31.6-alpine
+    image: docker.io/library/nginx:1.31.8-alpine
     restart: unless-stopped
     ports:
       - '${HTTP_PORT:-80}:80'
@@ -253,7 +253,7 @@ services:
   # are), judge0 (ephemeral), nginx cache.
   # ---------------------------------------------------------------------------
   backup:
-    image: docker.io/offen/docker-volume-backup:v2.49.1
+    image: docker.io/offen/docker-volume-backup:v2.49.3
     restart: unless-stopped
     environment:
       BACKUP_CRON_EXPRESSION: '0 2 * * *'

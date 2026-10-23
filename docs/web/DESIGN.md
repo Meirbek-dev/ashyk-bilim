@@ -151,7 +151,7 @@ Every data region renders exactly one of the kit's four states:
 
 ## 8. Kit: shadcn base-nova + our composites
 
-- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI): `bunx shadcn@4.22.0 add <name>` when a
+- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI): `bunx shadcn@4.22.1 add <name>` when a
   feature needs a primitive, `shadcn diff` shows registry drift. No hand edits beyond those listed in docs/DECISIONS.md.
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status

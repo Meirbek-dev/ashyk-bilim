@@ -9,7 +9,7 @@ services:
       resources: !reset {}
 
   web:
-    image: docker.io/library/nginx:1.31.6-alpine
+    image: docker.io/library/nginx:1.31.8-alpine
     user: '101'
     healthcheck:
       disable: true
@@ -21,7 +21,7 @@ services:
       - printf 'pid /tmp/nginx.pid; events {} http { access_log off; client_body_temp_path /tmp/b; proxy_temp_path /tmp/p; fastcgi_temp_path /tmp/f; uwsgi_temp_path /tmp/u; scgi_temp_path /tmp/s; server { listen 3000; location / { return 200 "classic $$uri"; } } }' >/tmp/stub.conf && exec nginx -c /tmp/stub.conf -g 'daemon off;'
 
   web2:
-    image: docker.io/library/nginx:1.31.6-alpine
+    image: docker.io/library/nginx:1.31.8-alpine
     user: '101'
     healthcheck:
       disable: true
