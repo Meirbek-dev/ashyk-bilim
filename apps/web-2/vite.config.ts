@@ -1,4 +1,5 @@
 import { Agent } from 'node:http'
+import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
@@ -6,7 +7,7 @@ import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
-import { defineConfig, lazyPlugins } from 'vite-plus'
+import { defineConfig, lazyPlugins, searchForWorkspaceRoot } from 'vite-plus'
 import type { OxlintConfig } from 'vite-plus/lint'
 import { playwright } from 'vite-plus/test/browser-playwright'
 
@@ -14,7 +15,8 @@ import { fmt } from './fmt.config.ts'
 import { paraglideOptions } from './gates/codegen.ts'
 import { CODE_SPLITTING, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
-// Dev is same-origin like prod: the API (`just dev-up`) and storage sit behind the dev server's proxy.
+const app = import.meta.dirname
+const fs = { allow: [searchForWorkspaceRoot(app), realpathSync(resolve(app, 'node_modules'))] }
 const apiTarget = process.env['API_PROXY_TARGET'] ?? 'http://127.0.0.1:8000'
 // Storage as nginx serves it (buckets, `/content/<key>`); kept-alive sockets (one per request exhausted ports in e2e).
 const agent = new Agent({ keepAlive: true })
@@ -56,9 +58,7 @@ const chromium = {
 }
 // 30 s: a file's first test loads lazy chunks (Tiptap, shiki) while other worktrees verify; 15 s timed out.
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
-// G-15 runs separately in CI and `just ci-web2`: `bun run g15` selects all theme/mode combinations.
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
-// ---- Lint (G-01, spec 7.2-7.3). Every rule is an error; each message names the one allowed way. ----
 const SDK = 'HTTP to the API goes through the generated SDK (#/shared/api/gen) on top of #/shared/api/client.ts.'
 const ROUTER_URL = 'URL state: validateSearch (Valibot) + Link / navigate({ search }); navigation via the router.'
 const FORMAT = 'Format dates and numbers with #/shared/i18n/format.ts (platform time zone Asia/Almaty).'
@@ -272,9 +272,10 @@ const formatStaged = (files: readonly string[]) => {
 }
 
 export default defineConfig({
+  cacheDir: resolve(app, '../../tmp/vite/web2'),
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
-  server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy },
+  server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy, fs },
   resolve: { dedupe: ['zod'], alias: paraglideDir ? [{ find: /^#\/paraglide\//, replacement: paraglideDir }] : [] }, // one Zod: @ag-ui/client's own 3.25 copy hides its config from disableZodJit (CSP)
   build: {
     manifest: true,
@@ -287,7 +288,6 @@ export default defineConfig({
   test: {
     // Use the browser port: Windows can reserve the API default (51204); allow parallel worktrees to advance.
     api: { port: 63315, strictPort: false },
-    // Inline projects inherit this config (Vitest 5 default).
     projects: [
       { test: unit },
       // The browser project's Vite server inherits `server.strictPort` (the dev server's): free it for parallel runs.

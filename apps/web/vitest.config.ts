@@ -1,9 +1,12 @@
+import { resolve } from 'node:path'
+
 import { defineConfig } from 'vite-plus'
 import { playwright } from 'vite-plus/test/browser-playwright'
 import react from '@vitejs/plugin-react'
 import { inlangToIcu } from './src/i18n/inlang-to-icu'
 
 export default defineConfig({
+  cacheDir: resolve(import.meta.dirname, '../../tmp/vite/web'),
   plugins: [
     // eslint-disable-next-line typescript/no-explicit-any
     react() as any,
