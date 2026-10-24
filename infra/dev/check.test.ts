@@ -1,6 +1,9 @@
 import { expect, test } from 'bun:test'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
-import { plan } from './check.ts'
+import { plan, runGate } from './check.ts'
 
 const gates = (files: string[], all = false) =>
   Object.fromEntries(Object.entries(plan(files, all)).map(([area, list]) => [area, list.map(g => g.name)]))
@@ -28,7 +31,36 @@ test('docs alone run nothing; --all runs every area', () => {
   expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web', 'web2'])
 })
 
-test('server gates compile against the committed .sqlx cache, never a live database', () => {
+test('server gates bound compilation and use the committed .sqlx cache', () => {
   for (const gate of plan(['apps/server/crates/api/src/app.rs'], false).server ?? [])
-    if (gate.name !== 'server:fmt') expect(gate.env?.['SQLX_OFFLINE']).toBe('true')
+    if (gate.name !== 'server:fmt') {
+      expect(gate.env?.['SQLX_OFFLINE']).toBe('true')
+      expect(gate.env?.['CARGO_BUILD_JOBS']).toBe(process.env['CARGO_BUILD_JOBS'] ?? '4')
+    }
+})
+
+test('a gate log is readable before the child exits', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-check-'))
+  const release = join(dir, 'release')
+  const script = join(dir, 'child.ts')
+  writeFileSync(
+    script,
+    `console.log('started'); while (!(await Bun.file(${JSON.stringify(release)}).exists())) await Bun.sleep(10); console.error('finished')`,
+  )
+  const result = runGate({ name: 'test:live', cwd: dir, cmd: [process.execPath, script] }, dir)
+  try {
+    const log = join(dir, 'test-live.log')
+    const deadline = Date.now() + 5000
+    while (!readFileSync(log, 'utf8').includes('started') && Date.now() < deadline) await Bun.sleep(10)
+    expect(readFileSync(log, 'utf8')).toContain('started')
+  } finally {
+    writeFileSync(release, '')
+    const completed = await result
+    try {
+      expect(completed.ok).toBe(true)
+      expect(readFileSync(completed.log, 'utf8')).toContain('finished')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
 })

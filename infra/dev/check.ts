@@ -7,7 +7,7 @@
 // it on the snapshot you mean to push. Areas run in parallel, gates within one in order.
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { databaseUrl, devEnv } from './lib.ts'
@@ -33,7 +33,7 @@ const LOADED = ['--testTimeout=30000']
 
 // The sqlx macros compile against the committed .sqlx cache: online they would check every query against whatever
 // DATABASE_URL names (the tests' half-built ashyq_test failed with 638 errors). Only `prepare`/`sqlx-check` go online.
-const OFFLINE = { SQLX_OFFLINE: 'true' }
+const OFFLINE = { SQLX_OFFLINE: 'true', CARGO_BUILD_JOBS: process.env['CARGO_BUILD_JOBS'] ?? '4' }
 
 const isServer = (f: string) => f.startsWith('apps/server/')
 const isLegacy = (f: string) => f.startsWith('apps/web/') || f === 'package.json' || f === 'bun.lock'
@@ -185,9 +185,11 @@ export function changedFiles(staged: boolean, base?: string): string[] {
 
 type Result = { gate: Gate; ok: boolean; seconds: number; log: string }
 
-function runGate(gate: Gate): Promise<Result> {
-  const log = resolve(logDir, `${gate.name.replace(':', '-')}.log`)
+export function runGate(gate: Gate, directory = logDir): Promise<Result> {
+  mkdirSync(directory, { recursive: true })
+  const log = resolve(directory, `${gate.name.replace(':', '-')}.log`)
   const started = performance.now()
+  writeFileSync(log, `$ ${gate.cmd.join(' ')}  (in ${gate.cwd})\n`)
   return new Promise(done => {
     const child = spawn(gate.cmd[0], gate.cmd.slice(1), {
       cwd: gate.cwd,
@@ -195,11 +197,9 @@ function runGate(gate: Gate): Promise<Result> {
       // No shell: a nextest filter's `|` would become a pipe in cmd.exe (every tool here is an .exe).
       shell: false,
     })
-    let output = `$ ${gate.cmd.join(' ')}  (in ${gate.cwd})\n`
-    child.stdout.on('data', chunk => (output += chunk))
-    child.stderr.on('data', chunk => (output += chunk))
+    child.stdout.on('data', chunk => appendFileSync(log, chunk))
+    child.stderr.on('data', chunk => appendFileSync(log, chunk))
     child.on('close', code => {
-      writeFileSync(log, output)
       done({ gate, ok: code === 0, seconds: (performance.now() - started) / 1000, log })
     })
   })
@@ -234,6 +234,7 @@ async function main(): Promise<void> {
             `${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`,
           )
           out.push(result)
+          if (!result.ok) break
         }
         return out
       }),
