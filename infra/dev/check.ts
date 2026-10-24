@@ -11,6 +11,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { resolve } from 'node:path'
 
 import { databaseUrl, devEnv } from './lib.ts'
+import { checkDatabase } from './check-db.ts'
 
 const root = resolve(import.meta.dir, '../..')
 const logDir = resolve(root, 'tmp/check')
@@ -224,34 +225,46 @@ async function main(): Promise<void> {
   console.log(
     `check: ${all ? 'all gates' : `${files.length} changed file(s)`} -> ${names.join(', ')} (logs: tmp/check/)`,
   )
-  const results = (
-    await Promise.all(
-      Object.values(areas).map(async gates => {
-        const out: Result[] = []
-        for (const gate of gates) {
-          const result = await runGate(gate)
-          console.log(
-            `${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`,
-          )
-          out.push(result)
-          if (!result.ok) break
-        }
-        return out
-      }),
-    )
-  ).flat()
-  const failed = results.filter(r => !r.ok)
-  for (const r of failed.slice(0, 2)) {
-    const tail = readFileSync(r.log, 'utf8').trim().split('\n').slice(-8)
-    console.log(`--- ${r.gate.name}: ${r.log}\n${tail.join('\n')}`)
+  const database =
+    args.includes('--isolated-db') && areas.server?.some(gate => gate.name === 'server:test')
+      ? await checkDatabase()
+      : undefined
+  if (database) {
+    const gate = areas.server?.find(gate => gate.name === 'server:test')
+    if (gate) gate.env = { ...gate.env, DATABASE_URL: database.url }
   }
-  if (failed.length > 2) console.log(`--- and ${failed.length - 2} more failed gate(s): see tmp/check/`)
-  console.log(
-    failed.length === 0
-      ? `check: ${results.length} gate(s) passed`
-      : `check: ${failed.length} of ${results.length} failed`,
-  )
-  process.exitCode = failed.length === 0 ? 0 : 1
+  try {
+    const results = (
+      await Promise.all(
+        Object.values(areas).map(async gates => {
+          const out: Result[] = []
+          for (const gate of gates) {
+            const result = await runGate(gate)
+            console.log(
+              `${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`,
+            )
+            out.push(result)
+            if (!result.ok) break
+          }
+          return out
+        }),
+      )
+    ).flat()
+    const failed = results.filter(r => !r.ok)
+    for (const r of failed.slice(0, 2)) {
+      const tail = readFileSync(r.log, 'utf8').trim().split('\n').slice(-8)
+      console.log(`--- ${r.gate.name}: ${r.log}\n${tail.join('\n')}`)
+    }
+    if (failed.length > 2) console.log(`--- and ${failed.length - 2} more failed gate(s): see tmp/check/`)
+    console.log(
+      failed.length === 0
+        ? `check: ${results.length} gate(s) passed`
+        : `check: ${failed.length} of ${results.length} failed`,
+    )
+    process.exitCode = failed.length === 0 ? 0 : 1
+  } finally {
+    await database?.stop()
+  }
 }
 
 if (import.meta.main) await main()

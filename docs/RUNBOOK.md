@@ -555,7 +555,12 @@ follows the running slots.
   `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and their dependents (all
   tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest `related`; web-2
   `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` + `test-dev`.
-  One line per gate, logs in `tmp/check/<gate>.log`. Server tests use 127.0.0.1 (Windows: `localhost` hangs).
+  One line per gate, live logs in `tmp/check/<gate>.log`; an area's first failure stops its later gates.
+  Server tests use 127.0.0.1 (Windows: `localhost` hangs). Pre-push adds `--isolated-db`: a disposable Postgres
+  container with the pinned pgvector image and memory-backed data, removed after the checks. Run the same mode
+  locally with `just check --isolated-db`. Shared development data and its durability settings are unchanged.
+  For one integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated
+  executables. Hook checkouts share installed frontend dependencies but keep their own Vite caches in `tmp/vite/`.
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
   its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and
   the error codes still missing a message. Generated files are `linguist-generated` (.gitattributes):

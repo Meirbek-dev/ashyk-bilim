@@ -308,7 +308,7 @@ async function prePush(): Promise<number> {
     const dir = pushCheckout(local)
     prepare(dir, local, true)
     console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
-    const p = Bun.spawn(['bun', 'infra/dev/check.ts', '--base', base], {
+    const p = Bun.spawn(['bun', 'infra/dev/check.ts', '--base', base, '--isolated-db'], {
       cwd: dir,
       env: toolEnv, // check.ts picks this checkout's own CARGO_TARGET_DIR (infra/dev/cargo-target.ts)
       stdout: 'inherit',
