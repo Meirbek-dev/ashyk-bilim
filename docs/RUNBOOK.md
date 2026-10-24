@@ -203,6 +203,12 @@ On the prod host it runs a second stack (up to ~6 GB of memory limits): run it
 when the host has the headroom, or on another machine with the archive
 copied over. Monthly, and after infra changes.
 
+The drill fails if the restored database has no users or courses. CI also runs `just restore-test` on the isolated
+production browser stand: synthetic learner work, a grade, a certificate and an image are backed up with the real
+backup hooks, restored, and compared by stable table counts/hashes and object SHA-256. The restored learner must
+also sign in through the restored identity provider. Archives and secrets stay
+outside uploaded diagnostics; only logs and hash manifests are retained. This check never opens production archives.
+
 ### 3.6 Bootstrap a fresh host from zero
 
 ```bash
@@ -527,6 +533,14 @@ follows the running slots.
   pool; nothing to export by hand.
 
 ### 5.5 Checks and the contract
+
+- Production image gate: set `E2E_WEB_HOST` to the image's baked public domain and `IMAGE_TAG` to its image tag;
+  `just web-release-e2e up`, `just web-release-e2e seed`, `just web-release-e2e test release.spec.ts --project=chromium`
+  and `just web-release-e2e down` use an isolated Compose project and network alias for that domain. Browser/API
+  traffic stays inside that stand. CI also selects auth/public smoke and video upload and requires it before publish.
+- Web-2 CI has three regular E2E shards and a separate real-Judge0 shard (`--grep @judge0` with the executor profile).
+  Accepted, wrong-answer, compilation-error and time-limit verdicts are exercised against the real sandbox.
+  All 63 themes in both modes run through `g15` in CI and `just ci-web2`.
 
 - `just ci-watch <run-id>` watches one GitHub run, prints job/step changes and one warning for a step over five
   minutes, then exits with the result. Raw status and failed logs stay in `tmp/ci/<run-id>/`. It never retries or

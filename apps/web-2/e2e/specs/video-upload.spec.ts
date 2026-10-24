@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { createActivity, getActivity, listBlocks } from '#/shared/api/gen/sdk.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
-import { expectOutage, expectReread } from '../fixtures/test'
+import { expectFailure, expectReread } from '../fixtures/test'
 
 // A 0.5 s H.264 MP4 made with ffmpeg's color source: real metadata and bytes, no external media service.
 const video = {
@@ -14,6 +14,8 @@ const video = {
 }
 
 test.use({ as: 'teacher' })
+
+test.beforeEach(({ page }) => expectFailure(page, /^\/ab-public\//, 413))
 
 test('B-CST-29 a hosted video uploads, is attached, plays, and can be replaced after reload', async ({
   page,
@@ -53,7 +55,7 @@ test('B-CST-29 a hosted video uploads, is attached, plays, and can be replaced a
   }, href ?? '')
   expect(playable).toBe(true)
   await page.reload()
-  expectOutage(page)
+  expectFailure(page, new RegExp(`^/api/v2/activities/${activity.id}$`), 503)
   expectReread(page, `/api/v2/activities/${activity.id}/blocks`)
   let claims = 0
   page.on('request', request => {

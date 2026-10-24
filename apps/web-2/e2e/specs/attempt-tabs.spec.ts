@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { expectFailure } from '../fixtures/test'
 
 import { m } from '#/paraglide/messages'
 
@@ -40,6 +41,7 @@ test('B-ATT-16 «Сдать» in a tab that missed another tab’s answer shows 
     .toEqual([])
   const other = await context.newPage()
   // The other tab misses the live event of the first tab's save (another device offline, a dropped stream).
+  expectFailure(other, /^\/api\/v2\/me\/events$/, 0)
   await other.route('**/api/v2/me/events', route => route.abort())
   await other.goto(page.url())
   await expect(other.getByRole('radio', { name: 'Астана' })).toBeChecked()

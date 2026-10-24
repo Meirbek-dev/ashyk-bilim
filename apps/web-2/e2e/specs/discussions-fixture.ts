@@ -1,3 +1,4 @@
+import { finishPages } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -30,7 +31,7 @@ export const test = base.extend<{
   post: (course: Course, text: string, author?: Author, parent?: DiscussionId) => Promise<Discussion>
 }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  course: async ({ api, seed }, use) => {
+  course: async ({ api, seed, page }, use, info) => {
     const made: string[] = []
     const headers = cookieOf(seed, 'teacher')
     await use(async (enrolStudent = true) => {
@@ -57,7 +58,11 @@ export const test = base.extend<{
       if (enrolStudent) await enroll({ client: api, path, headers: cookieOf(seed, 'student'), throwOnError: true })
       return course
     })
-    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+    }
   },
   post: async ({ api, seed }, use) =>
     use(async (course, text, author = 'student', parent) => {

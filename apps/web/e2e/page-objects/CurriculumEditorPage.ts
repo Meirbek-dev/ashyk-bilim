@@ -34,7 +34,6 @@ export class CurriculumEditorPage {
 
   public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/curriculum`)
-    await this.page.waitForLoadState('networkidle')
     await expect(this.addChapterButton).toBeVisible({ timeout: 15_000 })
   }
 
@@ -185,7 +184,6 @@ export class CurriculumEditorPage {
     expect(href).toMatch(/^\/en\/dash\/courses\/[^/]+\/activity\/[^/]+\/studio$/)
 
     await this.page.goto(href as string)
-    await this.page.waitForLoadState('networkidle')
     return match[1]
   }
 }

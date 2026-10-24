@@ -56,7 +56,7 @@ const chromium = {
 }
 // 30 s: a file's first test loads lazy chunks (Tiptap, shiki) while other worktrees verify; 15 s timed out.
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
-// G-15 (spec 9) is a phase gate, not part of `vp test run`: `bun run g15` sets G15.
+// G-15 runs separately in CI and `just ci-web2`: `bun run g15` selects all theme/mode combinations.
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
 // ---- Lint (G-01, spec 7.2-7.3). Every rule is an error; each message names the one allowed way. ----
 const SDK = 'HTTP to the API goes through the generated SDK (#/shared/api/gen) on top of #/shared/api/client.ts.'

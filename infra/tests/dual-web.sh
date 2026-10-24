@@ -8,7 +8,7 @@ use_smoke
 export NGINX_SERVER_NAME=ashyq.test
 export COMPOSE_PROJECT_NAME=ashyq-dual-$$ IMAGE_TAG=ci
 export COMPOSE_FILE=$COMPOSE_FILE:infra/compose.dual-check.yaml
-trap 'compose down -v >/dev/null 2>&1' EXIT
+trap 'COMPOSE_PROFILES=dual-web compose down -v --remove-orphans >/dev/null 2>&1' EXIT
 
 fails=0
 # expect <web> <path> [cookie]: the body names the web that answered.

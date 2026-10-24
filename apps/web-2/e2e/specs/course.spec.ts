@@ -1,5 +1,5 @@
+import { finishPages, expectFailure, clickUntil } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import {
@@ -16,26 +16,20 @@ import {
   updateCourse,
 } from '#/shared/api/gen/sdk.gen'
 import type { Activity, Course, UpdateCourseRequest } from '#/shared/api/gen/types.gen'
-
 import { expect, type Seed, test as base } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
-
 const ru = { locale: 'ru' } as const
-
 const cookie = (seed: Seed, role: 'teacher' | 'student') => {
   const { name, value } = seed.accounts[role].cookie
   return { cookie: `${name}=${value}` }
 }
-
 type Made = { course: Course; activity: Activity | null }
-
 // Each test gets fresh courses of the teacher (published, one chapter with a published page unless `empty`).
 const test = base.extend<{
   api: ReturnType<typeof createClient>
   course: (patch?: UpdateCourseRequest & { empty?: boolean }) => Promise<Made>
 }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  course: async ({ api, seed }, use) => {
+  course: async ({ api, seed, page }, use, info) => {
     const made: string[] = []
     const teacher = cookie(seed, 'teacher')
     await use(async ({ empty = false, ...patch } = {}) => {
@@ -80,12 +74,14 @@ const test = base.extend<{
       const updated = await updateCourse({ client: api, path: { course_id: course.id }, body: patch, headers: teacher })
       return { course: updated.data ?? course, activity }
     })
-    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers: teacher })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers: teacher })
+    }
   },
 })
-
 const about = (made: Made) => `/courses/${made.course.id}/about`
-
 test('B-CRS-01 a guest gets the course in the server-rendered document; an unknown id is not found', async ({
   page,
   course,
@@ -96,6 +92,7 @@ test('B-CRS-01 a guest gets the course in the server-rendered document; an unkno
   expect(document).toContain('Глава первая')
   // A shared link previews the course by its name (messengers, social).
   expect(document).toContain(`property="og:title" content="${made.course.name}"`)
+  expectFailure(page, /^\/courses\/[^/]+\/about$/, 404)
   await page.goto(`/courses/${randomUUID()}/about`)
   await expect(page.getByRole('heading', { name: m.course_not_found({}, ru) })).toBeVisible()
 })
@@ -250,6 +247,7 @@ test('B-CRS-11 a user applies to co-author, withdraws, and learns when it was al
   await expect(page.getByRole('button', { name: m.course_withdraw({}, ru) })).toBeVisible()
   // The creator turns the application down in another tab; this page still offers to withdraw it.
   const studentId = seed.accounts.student.session.user_id
+  expectFailure(page, new RegExp(`^/api/v2/courses/${made.course.id}/contributors/${studentId}$`), 404)
   await removeContributor({
     client: api,
     path: { course_id: made.course.id, user_id: studentId },

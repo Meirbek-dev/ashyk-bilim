@@ -73,12 +73,23 @@ use_web2() {
   export E2E_PASSWORD
 }
 
+# Production browser gate: match the image's baked NEXT_PUBLIC_* domain without contacting production.
+use_web_e2e() {
+  export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-web-e2e}
+  use_web2
+  export COMPOSE_FILE=$COMPOSE_FILE:compose.web-e2e.yaml
+  export NGINX_SERVER_NAME=${E2E_WEB_HOST:?set E2E_WEB_HOST to the image build domain}
+  export TLS_DIR=./tmp/web-e2e/certs WEB_LINKS=legacy STACK_ENV_FILE=./infra/env/smoke.env
+  export BACKUP_DIR=./tmp/restore-test-archives
+}
+
 use_stack() {
   case "${STACK:-prod}" in
     prod) use_prod ;;
     dev) use_dev ;;
     smoke) use_smoke ;;
     web2) use_web2 ;;
+    web-e2e) use_web_e2e ;;
     *) die "STACK must be dev, prod, smoke or web2 (got '$STACK')" ;;
   esac
 }

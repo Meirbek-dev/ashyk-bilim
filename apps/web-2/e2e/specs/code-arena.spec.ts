@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -273,3 +274,10 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.getByRole('button', { name: m.code_start({}, { locale }) })).toBeVisible()
   })
 }
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/activities/[^/]+/assessment$'), 404)
+  allowFailure(page, new RegExp('^/api/v2/assessment-items/[^/]+/runs$'), 429)
+  allowFailure(page, new RegExp('^/learn/[^/]+/[^/]+/code$'), 403, 404)
+})

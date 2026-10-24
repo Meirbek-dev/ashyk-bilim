@@ -29,18 +29,18 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## Commands (run in apps/web-2)
 
-| Command                          | Does                                                                                                       |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                            |
-| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                  |
-| `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                 |
-| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                    |
-| `bun run g15`                    | G-15 phase gate: kit contrast (axe) in all 63 themes x light/dark; not part of `verify`                    |
-| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs |
-| `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)              |
-| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs          |
-| `bun run build`                  | `vp build`; `bun run start` serves `dist/`                                                                 |
-| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                           |
+| Command                          | Does                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                             |
+| `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                   |
+| `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                  |
+| `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                     |
+| `bun run g15`                    | Kit contrast (axe) in all 63 themes x light/dark; required by CI and `just ci-web2`, separate from `verify` |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip api-coverage under-construction contract codegen trace tokens suppressions freeze docs  |
+| `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)               |
+| `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs           |
+| `bun run build`                  | `vp build`; `bun run start` serves `dist/`                                                                  |
+| `vp run e2e`                     | Playwright; `E2E_BASE_URL` targets the stand, otherwise `vp dev`                                            |
 
 ## One way to do each thing (lint and gates reject the alternatives)
 

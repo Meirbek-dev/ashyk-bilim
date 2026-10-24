@@ -1,3 +1,4 @@
+import { finishPages } from './test'
 import { randomUUID } from 'node:crypto'
 
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -50,7 +51,7 @@ export const test = base.extend<{
   learner: Learner
 }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  makeCourse: async ({ api, seed }, use) => {
+  makeCourse: async ({ api, seed, page }, use, info) => {
     const { name: cookieName, value } = seed.accounts.teacher.cookie
     const headers = { cookie: `${cookieName}=${value}` }
     const made: CourseId[] = []
@@ -112,7 +113,11 @@ export const test = base.extend<{
         },
       }
     })
-    for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+    }
   },
   learner: async ({ api, baseURL, context }, use) => {
     const account = await registerAccount(String(baseURL))

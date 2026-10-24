@@ -65,6 +65,11 @@ jobs:
               - 'apps/web/**'
               - 'package.json'
               - 'bun.lock'
+              - 'compose.web-e2e.yaml'
+              - 'infra/scripts/web-e2e.sh'
+              - 'infra/scripts/restore*.sh'
+              - 'infra/tests/restore*'
+              - '.github/workflows/ci.yaml'
               # web-gates: check:contracts and check:error-codes read the contract
               - 'apps/server/openapi.v2.json'
             web2:
@@ -294,6 +299,9 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Contrast across every theme and mode
+        run: bun run g15
+
   # Built in parallel with the gates (CI-OPT): a ci-<sha> tag is "built, not verified";
   # publish still requires every gate (and stack-smoke) before any <sha>/latest tag.
   images:
@@ -440,17 +448,22 @@ jobs:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.shard == 'judge0' && 45 || 30 }}
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
+        include:
+          - shard: judge0
     permissions:
       contents: read
       packages: read
     env:
       IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      COMPOSE_PROFILES: ${{ matrix.shard == 'judge0' && 'judge0' || '' }}
+      WEB2_JUDGE0_URL: ${{ matrix.shard == 'judge0' && 'http://judge0-server:2358' || '' }}
+      E2E_LEARNERS: ${{ matrix.shard == 'judge0' && '8' || '250' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -493,7 +506,7 @@ jobs:
           docker pull "mcr.microsoft.com/playwright:v$pw-noble"
 
       - name: Stand up
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           until [[ -f $RUNNER_TEMP/stand.rc ]]; do sleep 2; done
           tail -c 12000 "$RUNNER_TEMP/stand.log"
@@ -503,7 +516,8 @@ jobs:
       - name: Seed
         run: just web2-seed
 
-      # No Judge0 on the stand (privileged); AI specs answer from page.route fixtures.
+      # Standard shards exclude Judge0; its dedicated stand runs the real privileged service.
+      # AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
       # Shards split by test count and the cheap access.spec matrix comes first: weights 9:6:5
       # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446; 4:3:2 4.6/6.4/4.8).
@@ -516,7 +530,11 @@ jobs:
         run: |
           SECONDS=0
           trap 'echo "Browser tests (shard ${{ matrix.shard }}): ${SECONDS}s (exit $?)" >> "$GITHUB_STEP_SUMMARY"' EXIT
-          just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
+          if [[ '${{ matrix.shard }}' == judge0 ]]; then
+            just web2-e2e --grep @judge0 --project chromium --reporter=dot,github,html
+          else
+            just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
+          fi
 
       - name: Compose logs
         if: failure()
@@ -541,15 +559,68 @@ jobs:
         if: always()
         run: just web2-stand-down
 
+  web-release-e2e:
+    needs: [changes, images]
+    if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
+      E2E_WEB_HOST: ${{ vars.PROD_DOMAIN }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: ${{ needs.changes.outputs.just-tool }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: bun install --frozen-lockfile
+      - name: Isolated production image and synthetic accounts
+        run: |
+          just web-release-e2e up
+          just web-release-e2e seed
+      - name: Production browser release gate
+        run: just web-release-e2e test 00-smoke.spec.ts 01-auth.spec.ts release.spec.ts 11-video-upload.spec.ts --project=chromium --reporter=dot,github,html
+      - name: Backup and restore integrity
+        run: just restore-test
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: web-release-${{ needs.changes.outputs.sha }}
+          path: |
+            apps/web/reports/
+            apps/web/playwright-report/
+            apps/web/test-results/
+            tmp/restore-test/*.log
+            tmp/restore-test/*.manifest
+          retention-days: 7
+      - name: Stand down
+        if: always()
+        run: just web-release-e2e down
+
   # Production images (server, old web). Not web2-e2e: the replacement web's suite gates only
   # ashyq-web-2 (publish-web2). Any red gate here withholds everything.
   publish:
-    needs: [changes, server-lint, server-test, web-gates, web2-gates, infra-gates, stack-smoke]
+    needs: [changes, server-lint, server-test, web-gates, web2-gates, infra-gates, stack-smoke, web-release-e2e]
     if: >-
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && !cancelled() &&
       needs.server-lint.result == 'success' && needs.server-test.result == 'success' &&
       needs.web-gates.result == 'success' && needs.web2-gates.result == 'success' &&
-      needs.infra-gates.result == 'success' && needs.stack-smoke.result == 'success'
+      needs.infra-gates.result == 'success' && needs.stack-smoke.result == 'success' &&
+      needs.web-release-e2e.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

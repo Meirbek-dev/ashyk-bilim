@@ -28,26 +28,26 @@ Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over
 deploys an outage, a failed nightly backup or a filling disk goes unnoticed
 until someone looks.
 
-### 13. Production frontend E2E runs only by hand
-Lint, typecheck, unit tests, API contract and error-code checks run in CI.
-The replacement frontend has a `web2-e2e` CI job; production Next.js Playwright
-coverage still runs by hand. `apps/web/scripts/run-vitest.mjs` also pins Vitest
-over the vite-plus bundle; remove the wrapper when the bundled version works.
+### 13. Production release gate awaits its first hosted run
+The `web-release-e2e` CI job now gates production publication on browser checks
+against the built image and a synthetic backup/restore integrity drill. Focused
+production browser and fixture checks pass; the complete image/restore lane still needs
+its first hosted validation. The real Judge0 shard likewise needs hosted
+validation. The longer production journey remains a local regression suite.
+
+### 35. Production journey stalls after successful enrollment
+On the local production build, the serial `journey.spec.ts` creates and
+publishes a fresh course, then its learner's Start Course request returns
+HTTP 200 without navigating to the first activity. The enrollment test keeps
+its navigation assertion and fails; later serial stages do not run. Reproduce
+with `just e2e web journey.spec.ts --project=chromium`. Investigate the landing
+CTA after the enrollment response before treating the whole journey as green.
 
 ### 31. University proxy response-header limit (operating constraint)
 The university proxy answers 502 when response headers overflow its 4 KiB buffer.
 The edge hides `Link` on web responses and deployment smoke checks require headers
 below 3500 bytes. Preserve both guards when switching frontends: the Stage 2 web
 contract forbids preload `Link` headers. See `docs/INFRA.md` for the proxy contract.
-
-### 29. Login-test fix awaits validation
-`ab-api::mfa_flow::fenced_totp_login_retries_without_replaying_the_code` now
-completes the session rewrite inside the mock authentication response, replacing
-the fixed delays that caused the intermittent "the retry ran" failure.
-Validation remains open: local successful-login tests (including unchanged tests)
-return HTTP 408, and `just ci-server` stops before coverage on the Rustls 0.23.45
-dependency advisory. Resolve those blockers and verify the test under coverage
-before closing this finding.
 
 ### 32. University proxy rejects large single PUTs (multipart workaround)
 Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { expectFailure } from '../fixtures/test'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -46,6 +47,7 @@ test('B-ADM-13 the platform texts save and survive a reload; a blank name is ref
     await expect(general.getByLabel(m.admin_platform_about({}, ru))).toHaveValue(about)
 
     await general.getByLabel(m.admin_field_name({}, ru)).fill('')
+    expectFailure(page, /^\/api\/v2\/platform$/, 422)
     await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
     await expect(general.getByText(m.validation_required({}, ru))).toBeVisible()
   } finally {
@@ -74,6 +76,7 @@ test("B-ADM-23 a platform save over someone else's change opens the conflict dia
       throwOnError: true,
     })
     const sent = page.waitForRequest(request => request.method() === 'PATCH')
+    expectFailure(page, /^\/api\/v2\/platform$/, 412)
     await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
     expect((await sent).headers()['if-match']).toBe(String(before.version))
     const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
@@ -129,6 +132,7 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
     // Each field names the platform default it falls back to when left blank.
     await expect(course).toHaveAccessibleDescription(m.admin_gamification_default({ value: '200' }, ru))
     await course.fill('250')
+    expectFailure(page, /^\/api\/v2\/gamification\/config$/, 412)
     // Someone saves the rules after this page read them: the page's version is stale (412). The retry sends the
     // input over the newer version, with the overrides the form does not show as that save left them.
     await updateConfig({

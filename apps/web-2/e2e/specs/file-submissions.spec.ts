@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure, gotoLive } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -6,7 +7,6 @@ import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import type { MadeCourse } from '../fixtures/learning'
-import { gotoLive } from '../fixtures/test'
 import { expect, PDF, ru, test } from './file-submissions-fixture'
 
 // The learner's hand-in (slice 5.4): /learn/$courseId/$activityId/submission.
@@ -261,6 +261,7 @@ test('B-FSB-12 a change over a draft changed elsewhere asks, then applies to the
   await page.goto(handIn(course, task))
   await expect(page.getByRole('button', { name: 'essay-1.pdf', exact: true })).toBeVisible()
   // Another tab attaches a second file: the page still holds the older version of the draft.
+  allowFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}/draft$`), 412)
   await tasks.attach(task, headers, [first, await tasks.upload(headers)])
   await page.getByRole('button', { name: m.submission_remove_file({ name: 'essay-1.pdf' }, ru) }).click()
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
@@ -283,3 +284,9 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.getByRole('button', { name: m.submission_submit({}, { locale }) })).toBeDisabled()
   })
 }
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/activities/[^/]+/file-submission$'), 404)
+  allowFailure(page, new RegExp('^/learn/[^/]+/[^/]+/submission$'), 403, 404)
+})

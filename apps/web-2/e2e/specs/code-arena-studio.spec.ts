@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -202,3 +203,8 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.getByText(m.code_languages({}, { locale }), { exact: true })).toBeVisible()
   })
 }
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/assessment-items/[^/]+$'), 409)
+})

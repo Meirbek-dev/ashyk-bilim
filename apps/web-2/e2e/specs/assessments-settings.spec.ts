@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -58,6 +59,7 @@ test('B-ASM-16 B-ASM-17 B-ASM-18 an exam saves its basics and rules, with its pr
   expect(saved.policy.due_at_unix).toBe(Date.UTC(2030, 0, 15, 5, 0) / 1000)
   expect(saved.policy.copy_paste_protection).toBe(!assessment.policy.copy_paste_protection)
   // Someone else saves the assessment meanwhile: the next rules save is stale (412) and is retried over it.
+  allowFailure(page, new RegExp(`^/api/v2/assessments/${assessment.id}/policy$`), 412)
   // (A fresh page: each rules save reads readiness again.)
   await page.reload()
   const path = { assessment_id: assessment.id }
@@ -87,6 +89,7 @@ test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the
   const path = { assessment_id: assessment.id }
   await expect.poll(async () => (await getAccess({ client: studio.api, path, headers })).data?.mode).toBe('restricted')
   // Someone else opens it to everyone meanwhile.
+  allowFailure(page, new RegExp(`^/api/v2/assessments/${assessment.id}/access$`), 412)
   const current = await getActivityAssessment({
     client: studio.api,
     path: { activity_id: assessment.activity_id },
@@ -166,6 +169,7 @@ test('B-ASM-22 B-ASM-24 readiness links to the question; the header switch publi
   const issue = `${m.assessments_blockers({}, ru)}: ${m.assessments_issue_choice_prompt_missing({}, ru)}`
   await expect(publishing(page).getByText(issue)).toBeVisible()
   const published = page.getByRole('switch', { name: m.assessments_published_switch({}, ru) })
+  allowFailure(page, new RegExp(`^/api/v2/assessments/${assessment.id}/lifecycle$`), 422)
   await published.click()
   await expect(page.getByRole('alert').filter({ hasText: m.assessments_not_ready({}, ru) })).toBeVisible()
   await expect(published).not.toBeChecked()
@@ -284,4 +288,9 @@ test('B-ASM-27 the builder and settings work in kk and en', async ({ page, studi
     await expect(page.getByRole('heading', { name: m.assessments_settings_title({}, { locale }) })).toBeVisible()
     await expect(page.getByText(m.assessments_ready({}, { locale }))).toBeVisible()
   }
+})
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/assessments/[^/]+/overrides/[^/]+$'), 412)
 })

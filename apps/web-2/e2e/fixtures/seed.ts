@@ -43,6 +43,7 @@ export type Seed = {
    * staff previewing it as a learner (`denial_reason: staff_preview`).
    */
   opensPlayer: Record<SignedIn, boolean>
+  activities: Record<'quiz' | 'code_challenge' | 'file_submission', string>
   /** Values for the route params of spec 5.3. */
   params: Record<
     'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId' | 'roleSlug' | 'groupId',
@@ -111,7 +112,8 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
     headers: cookieOf(teacher),
     throwOnError: true,
   })
-  const activity = curriculum.data.chapters.flatMap(chapter => chapter.activities)[0]
+  const activities = curriculum.data.chapters.flatMap(chapter => chapter.activities)
+  const activity = activities[0]
   if (!activity) throw new Error('the seed course has no activity')
   const collectionId = await seedCollection(client, teacher, course.id)
   const actionsOf = async (account: Account) =>
@@ -132,10 +134,20 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
     })
     return data.enrolled || data.permissions.denial_reason === 'staff_preview'
   }
-  // No seeded certificate or submission yet: the routes are stubs, any well-formed id renders them.
+  const activityOf = (kind: 'quiz' | 'code_challenge' | 'file_submission') => {
+    const found = activities.find(item => item.activity_type === kind)
+    if (!found) throw new Error(`the seed course has no ${kind}`)
+    return found.id
+  }
+  // These missing objects exercise resource-not-found screens after the role guard.
   const placeholder = '00000000-0000-4000-8000-000000000000'
   return {
     accounts: { student, teacher, admin },
+    activities: {
+      quiz: activityOf('quiz'),
+      code_challenge: activityOf('code_challenge'),
+      file_submission: activityOf('file_submission'),
+    },
     collectionActions: {
       student: await actionsOf(student),
       teacher: await actionsOf(teacher),
@@ -151,7 +163,7 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
       activityId: activity.id,
       collectionId,
       username: 'e2e-teacher',
-      certificateId: placeholder,
+      certificateId: 'NOPE-0000-0000-0000',
       submissionId: placeholder,
       // A seeded system role (migration 20260816000003) and the seed group.
       roleSlug: 'instructor',
@@ -181,7 +193,10 @@ export const test = base.extend<{ as: Role; seed: Seed; signInAs: (role: Role) =
   /** Switches the browser to another role mid-test (the same per-worker session, no sign-in). */
   signInAs: async ({ context, seed, baseURL }, use) => {
     await use(async role => {
-      if (role === 'guest') return
+      if (role === 'guest') {
+        await context.clearCookies({ name: seed.accounts.student.cookie.name })
+        return
+      }
       await context.addCookies(storageStateOf(seed.accounts[role], String(baseURL)).cookies)
     })
   },

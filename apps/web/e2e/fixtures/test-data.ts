@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 /**
  * Shared constants used across E2E test specs.
  * All secrets are read from environment variables - never hardcoded here.
@@ -34,7 +35,7 @@ export const USERS = {
 
 /** Course metadata used in the "ultimate course" fixture. */
 export const COURSE = {
-  title: 'E2E Ultimate Course',
+  title: `E2E Ultimate Course ${randomUUID().slice(0, 8)}`,
   description: 'Comprehensive end-to-end test course covering all block and activity types.',
   /** Chapter names */
   chapters: {

@@ -45,6 +45,18 @@ helper('B-COL-06')`),
   ).toEqual([])
 })
 
+test('skipped tests and suites never satisfy behavior traceability', () => {
+  const skip = 'skip'
+  expect(ids(`test.${skip}('B-COL-02 ignored', () => {})`)).toEqual([])
+  expect(ids(`describe.${skip}('ignored', () => { test('B-COL-03 nested', () => {}) })`)).toEqual([])
+  expect(ids(`test.todo('B-COL-04 missing')`)).toEqual([])
+  expect(ids(`const sample = "test('B-COL-05 fake', () => {})"`)).toEqual([])
+  expect(ids(`items('B-COL-08 helper'); testData('B-COL-09 helper')`)).toEqual([])
+  expect(ids(`test2('B-COL-10 extended fixture', () => {})`)).toEqual(['B-COL-10'])
+  expect(ids(`test.for([1, 2])('B-COL-06 live', () => {})`)).toEqual(['B-COL-06'])
+  expect(ids('test(`B-COL-07 speaks ${locale}`, () => {})')).toEqual(['B-COL-07'])
+})
+
 test('an unsafe cast is caught in every spelling', () => {
   const unsafe = SUPPRESSIONS.find(([, rule]) => rule === 'unsafe-cast')?.[0]
   // Built from parts so this file does not match itself.

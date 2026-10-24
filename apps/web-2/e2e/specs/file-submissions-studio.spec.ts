@@ -1,3 +1,4 @@
+import { expectFailure } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -37,6 +38,7 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 B-FSB-24 a draft task gets its instructions, is
 }) => {
   const course = await makeCourse({ activities: 1 })
   const task = await tasks.make(course, { publish: false, instructions: '' })
+  expectFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}/publish$`), 422)
   await page.goto(studio(course, task))
   const publishing = page.getByRole('region', { name: m.submission_publishing({}, ru) })
   await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
@@ -72,6 +74,7 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 B-FSB-24 a draft task gets its instructions, is
     await text.fill('')
     await expect(text).toHaveText('', { timeout: 1000 })
   }).toPass()
+  expectFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}$`), 409)
   await save(page, m.submission_instructions({}, ru))
   await expect(instructions.getByText(m.errors_conflict({}, ru))).toBeVisible()
 })
@@ -83,6 +86,7 @@ test('B-FSB-13 the header switch publishes and unpublishes the task, not the bar
 }) => {
   const course = await makeCourse({ activities: 1 })
   const task = await tasks.make(course, { publish: false, instructions: '' })
+  expectFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}/publish$`), 422)
   await page.goto(studio(course, task))
   const publishing = page.getByRole('region', { name: m.submission_publishing({}, ru) })
   const toggle = page.getByRole('switch', { name: m.studio_published_switch({}, ru) })
@@ -147,6 +151,7 @@ test('B-FSB-16 file rules: count, size and types; a number out of range is refus
   const files = form(page, m.submission_files_title({}, ru))
   const count = files.getByRole('textbox', { name: m.submission_field_max_files({}, ru) })
   await count.fill('30')
+  expectFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}$`), 422)
   await save(page, m.submission_files_title({}, ru))
   await expect(files.getByText(m.validation_out_of_range({}, ru))).toBeVisible()
   await count.fill('3')
@@ -215,6 +220,7 @@ test('B-FSB-20 a save over a change made elsewhere opens the conflict dialog; th
   const instructions = form(page, m.submission_instructions({}, ru))
   await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('Новое условие')
   // Someone changes the task after this page read it: the page's version is stale (412).
+  expectFailure(page, new RegExp(`^/api/v2/file-submissions/${task.id}$`), 412)
   await updateFileSubmission({
     client: api,
     path: { file_submission_id: task.id },

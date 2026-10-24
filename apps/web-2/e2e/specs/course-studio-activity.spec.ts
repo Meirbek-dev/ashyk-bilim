@@ -1,4 +1,5 @@
 import { m } from '#/paraglide/messages'
+import { expectFailure } from '../fixtures/test'
 import { createActivity, createAssessment, getActivity, updateActivity } from '#/shared/api/gen/sdk.gen'
 import type { ActivityContent, CreateActivityRequest } from '#/shared/api/gen/types.gen'
 
@@ -37,6 +38,7 @@ test('B-CST-26 the header switch publishes at once and asks before unpublishing;
   const body = { chapter_id: made.chapters[0]?.chapter.id ?? '', kind: 'quiz' as const, title: 'Тест' }
   const quiz = await createAssessment({ client: studio.api, body, headers, throwOnError: true })
   await page.goto(studioUrl(made.course.id, quiz.data.activity_id))
+  expectFailure(page, new RegExp(`^/api/v2/assessments/${quiz.data.id}/lifecycle$`), 422)
   await page.getByRole('switch', { name: m.studio_published_switch({}, ru) }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).not.toBeChecked()
@@ -82,6 +84,7 @@ test('B-CST-28 a save over someone else’s opens the conflict dialog and keeps 
     content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Чужая правка' }] }],
   }
   const path = { activity_id: activity?.id ?? '' }
+  expectFailure(page, new RegExp(`^/api/v2/activities/${path.activity_id}$`), 412)
   await updateActivity({ client: studio.api, path, body: { content }, headers, throwOnError: true })
   await editor.click()
   await page.keyboard.type('Моя правка')

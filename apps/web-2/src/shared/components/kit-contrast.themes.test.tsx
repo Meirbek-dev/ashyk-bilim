@@ -1,4 +1,4 @@
-// G-15 (phase gate, not in `vp test run`): the reference set of the stock kit and our composites passes axe
+// G-15 (CI and `just ci-web2`): the reference set of the stock kit and our composites passes axe
 // color-contrast in every theme and both modes. Run: `bun run g15`. A failure names the theme, the mode and the element.
 import axe from 'axe-core'
 import { describe, expect, test } from 'vite-plus/test'

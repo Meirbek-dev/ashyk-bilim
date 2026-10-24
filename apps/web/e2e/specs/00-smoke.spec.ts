@@ -66,9 +66,15 @@ test.describe('Smoke – Authenticated dashboard (Teacher)', () => {
   test.use({ storageState: STORAGE_STATE.teacher })
 
   test('teacher can reach the courses dashboard', async ({ page }) => {
-    await page.goto('/en/dash/courses')
+    const response = await page.goto('/en/dash/courses')
+    expect(response?.status()).toBe(200)
     await expect(page).not.toHaveURL(/\/login/)
-    // Some content from the courses dashboard should be visible
-    await expect(page.locator('body')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /courses/i })).toBeVisible()
+    await expect(
+      page
+        .getByRole('link', { name: /new course|create course/i })
+        .or(page.getByRole('button', { name: /new course|create course/i }))
+        .first(),
+    ).toBeVisible()
   })
 })

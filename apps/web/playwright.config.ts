@@ -61,6 +61,7 @@ export default defineConfig({
     video: 'retain-on-failure',
     // Always use the English locale for tests - stable text selectors
     locale: 'en-US',
+    ignoreHTTPSErrors: process.env.E2E_INSECURE === '1',
   },
 
   projects: [
@@ -98,12 +99,14 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   // ── Dev server ────────────────────────────────────────────────────────────
-  webServer: {
-    command: 'bun run dev',
-    url: BASE_URL,
-    reuseExistingServer: !isCi,
-    stdout: 'ignore',
-    stderr: 'pipe',
-    timeout: 120 * 1000,
-  },
+  webServer: process.env.E2E_BASE_URL
+    ? []
+    : {
+        command: 'bun run dev',
+        url: BASE_URL,
+        reuseExistingServer: !isCi,
+        stdout: 'ignore',
+        stderr: 'pipe',
+        timeout: 120 * 1000,
+      },
 })

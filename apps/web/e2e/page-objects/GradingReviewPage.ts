@@ -38,7 +38,6 @@ export class GradingReviewPage {
 
   public async goto(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/review`)
-    await this.page.waitForLoadState('networkidle')
   }
 
   /** The queue button for a learner (by name / email fragment). */

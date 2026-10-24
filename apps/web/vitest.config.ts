@@ -28,9 +28,27 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    setupFiles: ['./src/tests/setup.ts'],
-    environment: 'jsdom',
-    include: ['src/tests/**/*.test.{ts,tsx}'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'node',
+          setupFiles: ['./src/tests/setup-node.ts'],
+          include: ['src/tests/**/*.test.ts'],
+          exclude: ['src/tests/editor/**', 'src/tests/lib/api-client.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'components',
+          environment: 'jsdom',
+          setupFiles: ['./src/tests/setup.ts'],
+          include: ['src/tests/**/*.test.tsx', 'src/tests/editor/**/*.test.ts', 'src/tests/lib/api-client.test.ts'],
+        },
+      },
+    ],
     testTimeout: 10_000,
     maxWorkers: 4,
     server: {

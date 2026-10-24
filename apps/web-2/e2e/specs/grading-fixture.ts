@@ -1,3 +1,4 @@
+import { finishPages } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import type { Page } from '@playwright/test'
 
@@ -94,7 +95,7 @@ async function course(api: Client, teacher: Headers, name: string) {
 }
 
 export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
-  graded: async ({ baseURL, seed }, use) => {
+  graded: async ({ baseURL, seed, page }, use, info) => {
     const api = createClient(createConfig({ baseUrl: String(baseURL) }))
     const teacher = { cookie: `${seed.accounts.teacher.cookie.name}=${seed.accounts.teacher.cookie.value}` }
     const quiz = `Проверка ${randomUUID().slice(0, 8)}`
@@ -145,8 +146,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
         await logout({ client: api, headers: learner.headers })
         return { name: learner.username, submissionId: draft.data.id }
       }
-      const ana = await handIn('ana', 'a')
-      const boris = await handIn('boris', 'b')
+      const [ana, boris] = [await handIn('ana', 'a'), await handIn('boris', 'b')]
       await use({
         courseId,
         activityId: assessment.data.activity_id,
@@ -169,12 +169,13 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
           return group.data.name
         },
       })
+      if (info.status === 'passed') await finishPages(page.context())
     } finally {
       for (const id of groups) await deleteGroup({ client: api, path: { group_id: id }, headers: teacher })
       await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
     }
   },
-  fileTask: async ({ baseURL, seed, page }, use) => {
+  fileTask: async ({ baseURL, seed, page }, use, info) => {
     const api = createClient(createConfig({ baseUrl: String(baseURL) }))
     const teacher = { cookie: `${seed.accounts.teacher.cookie.name}=${seed.accounts.teacher.cookie.value}` }
     const { courseId, chapterId, call } = await course(api, teacher, `E2E grading files ${randomUUID().slice(0, 8)}`)
@@ -219,6 +220,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
           await gradeAttempt({ ...call, path, body, headers: { ...teacher, 'If-Match': version } })
         },
       })
+      if (info.status === 'passed') await finishPages(page.context())
     } finally {
       await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
     }

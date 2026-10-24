@@ -1,26 +1,21 @@
+import { finishPages } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
-
 import type { Locator, Page } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { createCourse, deleteCourse, getPlatform } from '#/shared/api/gen/sdk.gen'
 import type { Course } from '#/shared/api/gen/types.gen'
-
 import { expect, type Seed, test as base } from '../fixtures/seed'
-
 const ru = { locale: 'ru' } as const
 const SEED_COURSE = 'E2E seed course'
-
 const cookie = (seed: Seed, role: 'teacher' | 'student') => {
   const { name, value } = seed.accounts[role].cookie
   return { cookie: `${name}=${value}` }
 }
-
 // A course made through the SDK is the teacher's private draft: visible to the teacher only. Deleted after the test.
 const test = base.extend<{ api: ReturnType<typeof createClient>; draftCourse: () => Promise<Course> }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  draftCourse: async ({ api, seed }, use) => {
+  draftCourse: async ({ api, seed, page }, use, info) => {
     const made: string[] = []
     await use(async () => {
       const name = `E2E draft ${randomUUID().slice(0, 8)}`
@@ -33,8 +28,12 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; draftCourse: ()
       made.push(data.id)
       return data
     })
-    for (const id of made)
-      await deleteCourse({ client: api, path: { course_id: id }, headers: cookie(seed, 'teacher') })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const id of made)
+        await deleteCourse({ client: api, path: { course_id: id }, headers: cookie(seed, 'teacher') })
+    }
   },
 })
 

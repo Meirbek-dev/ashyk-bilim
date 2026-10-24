@@ -96,6 +96,7 @@ ci-web:
 
 ci-web2:
     {{ just_bin }} web2 verify
+    {{ just_bin }} web2 g15
     {{ just_bin }} web2 build
 
 # Regression checks for this development workflow; no containers required.
@@ -221,6 +222,10 @@ web2-e2e *args:
 web2-stand-down:
     {{ lib }} && use_web2 && compose down -v --remove-orphans && rm -rf tmp/web2
 
+# Exact production image, isolated at its baked domain (E2E_WEB_HOST).
+web-release-e2e action *args:
+    {{ bash_bin }} infra/scripts/web-e2e.sh "$@"
+
 # What the infra-gates CI job runs: compose config for every stack, bash -n, nginx -t, dual-web routing.
 [script]
 ci-infra:
@@ -230,7 +235,8 @@ ci-infra:
         IMAGE_TAG=ci compose config -q)
     (use_smoke; IMAGE_TAG=ci compose config -q)
     (use_web2; IMAGE_TAG=ci compose config -q)
-    log "compose config ok: dev, prod, smoke, web2"
+    (export E2E_WEB_HOST=ashyq.test; use_web_e2e; IMAGE_TAG=ci compose config -q)
+    log "compose config ok: dev, prod, smoke, web2, web-e2e"
     for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
@@ -265,6 +271,10 @@ restore archive:
 
 restore-drill *archive:
     {{ bash_bin }} infra/scripts/restore-drill.sh "$@"
+
+# Synthetic backup integrity on the isolated production browser stand; never uses production archives.
+restore-test:
+    {{ bash_bin }} infra/scripts/restore-test.sh
 
 # Recipes of apps/server/justfile against the dev stack (just server test).
 server *args:

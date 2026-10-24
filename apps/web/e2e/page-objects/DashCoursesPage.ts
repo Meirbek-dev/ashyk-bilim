@@ -23,7 +23,6 @@ export class DashCoursesPage {
 
   public async goto(): Promise<void> {
     await this.page.goto('/en/dash/courses')
-    await this.page.waitForLoadState('networkidle')
   }
 
   public async clickNewCourse(): Promise<void> {
@@ -34,6 +33,5 @@ export class DashCoursesPage {
   /** Navigate directly to a specific course workspace page */
   public async gotoCoursePage(courseUuid: string, stage = 'details'): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/${stage}`)
-    await this.page.waitForLoadState('networkidle')
   }
 }

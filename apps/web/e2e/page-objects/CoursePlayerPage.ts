@@ -34,18 +34,19 @@ export class CoursePlayerPage {
 
   public async gotoCourseLanding(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/course/${courseUuid}`)
-    await this.page.waitForLoadState('networkidle')
   }
 
   public async gotoActivity(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/course/${courseUuid}/activity/${activityId}`)
-    await this.page.waitForLoadState('networkidle')
   }
 
   public async enroll(): Promise<void> {
+    const enrolled = this.page.waitForResponse(
+      response => response.request().method() === 'POST' && /\/trail\/courses\/[^/]+$/u.test(response.url()),
+    )
     await this.enrollButton.click()
-    // v2: "Start Course" runs `POST trail/courses/{id}` through a server action
-    // (no API response to observe) and then routes to the first activity.
+    const response = await enrolled
+    expect(response.ok(), `enroll: ${response.status()} ${await response.text()}`).toBe(true)
     await this.page.waitForURL(/\/course\/[^/]+\/activity\//, { timeout: 15_000 })
   }
 
@@ -94,7 +95,6 @@ export class CoursePlayerPage {
 
   public async gotoTrail(): Promise<void> {
     await this.page.goto('/en/trail')
-    await this.page.waitForLoadState('networkidle')
   }
 
   /** Assert the certificate download link is visible on the course's trail card */

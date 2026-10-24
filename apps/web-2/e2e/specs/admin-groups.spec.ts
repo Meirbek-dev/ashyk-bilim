@@ -1,3 +1,4 @@
+import { finishPages, expectFailure, gotoLive } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -6,7 +7,6 @@ import { addGroupMembers, createGroup, deleteGroup, listGroups, listUsers, updat
 import type { Usergroup } from '#/shared/api/gen/types.gen'
 
 import { expect, type Seed, test as base } from '../fixtures/seed'
-import { gotoLive } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 type Owner = 'teacher' | 'admin'
@@ -18,7 +18,7 @@ const cookie = (seed: Seed, role: Owner) => {
 // Groups made through the SDK (as the teacher unless told), deleted after each test.
 const test = base.extend<{ api: ReturnType<typeof createClient>; group: (owner?: Owner) => Promise<Usergroup> }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  group: async ({ api, seed }, use) => {
+  group: async ({ api, seed, page }, use, info) => {
     const made: [string, Owner][] = []
     await use(async (owner = 'teacher') => {
       const name = `E2E группа ${randomUUID().slice(0, 8)}`
@@ -31,8 +31,12 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; group: (owner?:
       made.push([data.id, owner])
       return data
     })
-    for (const [id, owner] of made)
-      await deleteGroup({ client: api, path: { group_id: id }, headers: cookie(seed, owner) })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const [id, owner] of made)
+        await deleteGroup({ client: api, path: { group_id: id }, headers: cookie(seed, owner) })
+    }
   },
 })
 
@@ -73,6 +77,7 @@ test('B-ADM-18 the group page edits its name; an unknown group is not found', as
   await page.reload()
   await expect(page.getByRole('heading', { level: 1, name: renamed })).toBeVisible()
   for (const id of ['00000000-0000-4000-8000-000000000000', 'nope']) {
+    expectFailure(page, new RegExp(`^/teach/groups/${id}$`), 404)
     await page.goto(`/teach/groups/${id}`)
     await expect(page.getByRole('heading', { name: m.admin_group_not_found({}, ru) })).toBeVisible()
   }
@@ -91,6 +96,7 @@ test("B-ADM-23 a group save over someone else's change opens the conflict dialog
   const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
   const description = general.getByLabel(m.admin_field_description({}, ru))
   await description.fill('Мой вариант описания')
+  expectFailure(page, new RegExp(`^/api/v2/groups/${own.id}$`), 412)
   await updateGroup({
     client: api,
     path: { group_id: own.id },

@@ -1,20 +1,15 @@
+import { expectFailure, clickUntil } from '../fixtures/test'
 import type { Locator, Page } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { dashboard, login, myProfile, userCourses } from '#/shared/api/gen/sdk.gen'
-
 import { type NewAccount, registerAccount, totp } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
-
 const ru = { locale: 'ru' } as const
 const FIREFOX_WINDOWS = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0'
 const SAFARI_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15'
-
 type Client = ReturnType<typeof createClient>
 type Me = { account: NewAccount; headers: { cookie: string }; client: Client }
-
 /** One more session of the account (another device when `userAgent` says so); returns its cookie pair. */
 async function signIn(client: Client, account: NewAccount, userAgent?: string): Promise<[string, string]> {
   const { response } = await login({
@@ -27,7 +22,6 @@ async function signIn(client: Client, account: NewAccount, userAgent?: string): 
   if (!pair?.[1] || pair[2] === undefined) throw new Error('sign-in set no session cookie')
   return [pair[1], pair[2]]
 }
-
 // Tests that change an account get a fresh one (registered, signed in through the SDK); read-only ones the student.
 const test = base.extend<{ me: Me }>({
   me: async ({ baseURL, context }, use) => {
@@ -38,11 +32,9 @@ const test = base.extend<{ me: Me }>({
     await use({ account, headers: { cookie: `${name}=${value}` }, client })
   },
 })
-
 const profileOf = async (me: Me) => (await myProfile({ client: me.client, headers: me.headers })).data
 const form = (page: Page, title: string) => page.getByRole('form', { name: title })
 const save = (section: Locator) => section.getByRole('button', { name: m.ui_save({}, ru) }).click()
-
 test('B-SET-01 /settings opens the profile; its sections are route tabs; a guest signs in first', async ({
   page,
   signInAs,
@@ -62,7 +54,6 @@ test('B-SET-01 /settings opens the profile; its sections are route tabs; a guest
   await tabs.getByRole('link', { name: m.platform_tab_security({}, ru) }).click()
   await expect(page).toHaveURL(/\/settings\/security$/)
 })
-
 test('B-SET-02 the profile saves name and bio, shows them in the shell, and keeps input on a server error', async ({
   page,
   me,
@@ -85,6 +76,7 @@ test('B-SET-02 the profile saves name and bio, shows them in the shell, and keep
   await page.keyboard.press('Escape')
 
   await details.getByLabel(m.settings_field_organization({}, ru)).fill('')
+  expectFailure(page, /^\/api\/v2\/users\/me$/, 422)
   await save(details)
   await expect(details.getByText(m.validation_required({}, ru))).toBeVisible()
   await expect(name).toHaveValue('Айгерим Тестова')
@@ -165,6 +157,7 @@ test('B-SET-08 this device is marked and another session ends; B-SET-07 a passwo
   const password = form(page, m.settings_password_title({}, ru))
   const current = password.getByLabel(m.settings_field_current_password({}, ru))
   await current.fill('not-the-password')
+  expectFailure(page, /^\/api\/v2\/auth\/password$/, 401)
   await password.getByLabel(m.settings_field_new_password({}, ru)).fill('Nov-Parol-2026!')
   await save(password)
   await expect(password.getByText(m.settings_current_password_wrong({}, ru))).toBeVisible()
@@ -193,6 +186,7 @@ test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off
   const secret = /([A-Z2-7]{16,})/.exec((keyLine ?? '').replaceAll(' ', ''))?.[1] ?? ''
   const code = section.getByLabel(m.settings_totp_code({}, ru))
   await code.fill(totp(secret) === '000000' ? '111111' : '000000')
+  expectFailure(page, /^\/api\/v2\/auth\/mfa\/totp\/verify$/, 400)
   await section.getByRole('button', { name: m.settings_totp_confirm({}, ru) }).click()
   await expect(section.getByText(m.errors_invalid_totp_code({}, ru))).toBeVisible()
   await code.fill(totp(secret))
@@ -268,6 +262,7 @@ test('B-SET-14 the public profile comes in the server document with the courses;
   await expect(page.getByText(`@${seed.params.username}`)).toBeVisible()
   const link = page.getByRole('link', { name: course.name, exact: true }).first()
   await expect(link).toHaveAttribute('href', `/courses/${course.id}`)
+  expectFailure(page, /^\/users\/nobody-e2e-unknown$/, 404)
   await page.goto('/users/nobody-e2e-unknown')
   await expect(page.getByRole('heading', { level: 1, name: m.settings_user_not_found({}, ru) })).toBeVisible()
 })

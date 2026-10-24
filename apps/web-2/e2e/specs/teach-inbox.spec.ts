@@ -1,3 +1,4 @@
+import { finishPages, expectReread } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import type { Page } from '@playwright/test'
@@ -21,7 +22,6 @@ import {
 
 import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
-import { expectReread } from '../fixtures/test'
 
 // The teacher inbox (slice 6.2). Each test makes a course of e2e-teacher with one quiz (an open-text item, so the
 // hand-in waits for a grade) and a fresh learner who hands it in, all through the generated SDK.
@@ -31,7 +31,7 @@ const ru = { locale: 'ru' } as const
 type HandedIn = { courseId: string; courseName: string; activityId: string; quiz: string; submissionId: string }
 
 const test = base.extend<{ handedIn: HandedIn }>({
-  handedIn: async ({ baseURL, seed }, use) => {
+  handedIn: async ({ baseURL, seed, page }, use, info) => {
     const api = createClient(createConfig({ baseUrl: String(baseURL) }))
     const { name, value } = seed.accounts.teacher.cookie
     const teacher = { cookie: `${name}=${value}` }
@@ -86,6 +86,7 @@ const test = base.extend<{ handedIn: HandedIn }>({
         quiz,
         submissionId: draft.data.id,
       })
+      if (info.status === 'passed') await finishPages(page.context())
     } finally {
       await deleteCourse({ client: api, path: { course_id: course.id }, headers: teacher })
     }

@@ -1,3 +1,4 @@
+import { expectFailure } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { adminOverview } from '#/shared/api/gen/sdk.gen'
@@ -14,6 +15,7 @@ test('B-ANL-20 B-ANL-41 the admin overview ranks the platform; a teacher has no 
   baseURL,
   seed,
 }) => {
+  expectFailure(page, /^\/admin\/analytics$/, 403)
   await page.goto('/admin/analytics')
   await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
   await page.context().clearCookies()

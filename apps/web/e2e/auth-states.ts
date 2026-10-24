@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export const STORAGE_STATE_DIR = path.join(__dirname, '.auth')
+export const STORAGE_STATE_DIR = process.env.E2E_OUTPUT_DIR
+  ? path.join(process.env.E2E_OUTPUT_DIR, 'auth')
+  : path.join(__dirname, '.auth')
 
 export const STORAGE_STATE = {
   admin: path.join(STORAGE_STATE_DIR, 'admin.json'),

@@ -13,7 +13,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 import { expect as baseExpect, type MadeCourse, test as base } from '../fixtures/learning'
-import { expectOutage, expectReread } from '../fixtures/test'
+import { expectFailure, expectReread } from '../fixtures/test'
 
 // Data of the code-arena specs through the generated SDK: a code challenge in a made course (the teacher's), its code
 // item filled and published. Judge0 is not part of the local stack: the language list, runs and reference checks
@@ -27,7 +27,7 @@ const LANGUAGES: LanguageInfo[] = [
   { id: 63, name: 'JavaScript (Node.js 12.14.0)', monaco_language: 'javascript' },
 ]
 
-const SUM: CodeBody = {
+export const SUM: CodeBody = {
   prompt: 'Прочитайте два числа и выведите их **сумму**.',
   input_spec: 'Два целых числа через пробел.',
   output_spec: 'Одно число.',
@@ -111,7 +111,7 @@ export const routeLanguages = (page: Page) =>
 
 /** The runner answers that it is configured but down (B-COD-23); "Retry" and a remount read it again. */
 export async function routeRunnerDown(page: Page) {
-  expectOutage(page)
+  expectFailure(page, /^\/api\/v2\/code\/runner$/, 503)
   expectReread(page, '/api/v2/code/runner')
   await page.route('**/api/v2/code/runner', route => route.fulfill(runnerDown))
 }

@@ -1,13 +1,10 @@
+import { expectFailure, expectReread } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
-
-import { expectReread } from '../fixtures/test'
 import { expect, queue, review, row, ru, test, toast } from './grading-fixture'
-
 // Slice 6.1: the queue, one review, the results and the gradebook. Each test gets its own course (grading-fixture).
 // The fixture registers and signs in two learners and hands in their work: more than the default 30 s on a busy stand.
 test.describe.configure({ timeout: 90_000 })
-
 test('B-GRD-01 B-GRD-02 B-GRD-03 B-GRD-05 B-GRD-06 the queue lists the hand-ins with server counts; filters and sort live in the URL', async ({
   page,
   signInAs,
@@ -25,25 +22,21 @@ test('B-GRD-01 B-GRD-02 B-GRD-03 B-GRD-05 B-GRD-06 the queue lists the hand-ins 
     'href',
     `/api/v2/assessments/${graded.assessmentId}/submissions/export?lang=ru`,
   )
-
   const search = page.getByLabel(m.grading_search_label({}, ru))
   await search.fill(graded.ana.name)
   await search.press('Enter')
   await expect(page).toHaveURL(new RegExp(`q=${graded.ana.name}`))
   await expect(row(page, graded.boris.name)).toHaveCount(0)
   await expect(row(page, graded.ana.name)).toBeVisible()
-
   await statuses.getByRole('link', { name: new RegExp(`^${m.grading_filter_published({}, ru)}`) }).click()
   await expect(page).toHaveURL(/status=published/)
   await expect(page.getByText(m.ui_no_matches({}, ru))).toBeVisible()
   await page.getByRole('button', { name: m.ui_reset_filters({}, ru) }).click()
   await expect(page).toHaveURL(/\/submissions$/)
-
   await page.getByRole('button', { name: m.grading_col_score({}, ru) }).click()
   await expect(page).toHaveURL(/sort=final_score&order=asc/)
   await expect(row(page, graded.ana.name)).toBeVisible()
 })
-
 test('B-GRD-10 B-GRD-11 B-GRD-12 B-GRD-13 B-GRD-14 B-GRD-34 a review shows answers, key and verdict, scores on the item scale, publishes, then opens the next work', async ({
   page,
   signInAs,
@@ -90,6 +83,7 @@ test('B-GRD-15 a grade saved meanwhile by a colleague opens the conflict dialog;
   const points = page.getByLabel(m.grading_item_score({ max: 10 }, ru))
   await points.fill('3')
   // The colleague's save reaches the open page as an event: the review is read again (B-NOT-14), by design.
+  expectFailure(page, new RegExp(`^/api/v2/submissions/${graded.boris.submissionId}/grade$`), 412)
   expectReread(page, `/api/v2/submissions/${graded.boris.submissionId}/review`)
   await graded.grade(graded.boris.submissionId, { action: 'save', feedback: 'Коллега' })
   await page.getByRole('button', { name: m.grading_save({}, ru) }).click()
@@ -154,6 +148,7 @@ test('B-GRD-09 B-GRD-27 a deadline extension takes a future date (a past one is 
   const dialog = page.getByRole('dialog')
   const due = dialog.getByLabel(m.grading_extend_due({}, ru))
   await due.fill('2020-01-01T10:00')
+  expectFailure(page, new RegExp(`^/api/v2/assessments/${graded.assessmentId}/deadline-extensions$`), 422)
   await dialog.getByRole('button', { name: m.grading_extend({}, ru) }).click()
   await expect(due).toHaveAttribute('aria-invalid', 'true')
   await due.fill(toDateTimeInput(Math.floor(Date.now() / 1000) + 7 * 86_400))

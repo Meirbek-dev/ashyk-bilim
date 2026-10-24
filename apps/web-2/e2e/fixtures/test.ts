@@ -1,5 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import { test as base, expect, type Locator, type Page } from '@playwright/test'
+import { test as base, expect, type BrowserContext, type Locator, type Page } from '@playwright/test'
+import { matchesFailure, type ExpectedFailure } from './http-failures'
 
 // The shared fixture of every spec (spec 9): a test fails on any console error or CSP violation, on a
 // repeated GET of the same URL within one navigation, on serious/critical axe findings, and on
@@ -31,12 +32,16 @@ const LIVE_READS = [
   /^\/api\/v2\/submissions\/[^/]+$/,
 ]
 
-/** Pages answered 5xx on purpose (a routed outage, B-COD-23): Chromium logs each such answer as a resource error. */
-const outage = new WeakSet<Page>()
+const failures = new WeakMap<Page, ExpectedFailure[]>()
+const watched = new WeakMap<BrowserContext, Map<Page, string[]>>()
 
-/** Declares that `page` is answered 5xx on purpose; the app shows the outage in place. */
-export function expectOutage(page: Page): void {
-  outage.add(page)
+/** Declare a negative scenario's endpoint and statuses; 0 means an intentionally aborted request. */
+export function expectFailure(page: Page, path: RegExp, ...statuses: number[]): void {
+  failures.set(page, [...(failures.get(page) ?? []), { path, statuses }])
+}
+
+function expectedFailure(page: Page, url: string, status: number): boolean {
+  return matchesFailure(failures.get(page) ?? [], url, status)
 }
 
 function watch(page: Page, problems: string[]): void {
@@ -58,21 +63,31 @@ function watch(page: Page, problems: string[]): void {
   })
   // How the first read ended: a retried network failure or 5xx reads differently from a second fetch by the app.
   const outcome = new Map<string, string>()
-  page.on('response', response => outcome.set(response.url(), String(response.status())))
+  page.on('response', response => {
+    const status = response.status()
+    outcome.set(response.url(), String(status))
+    if (status >= 400 && !expectedFailure(page, response.url(), status))
+      problems.push(`unexpected HTTP ${status} ${response.request().method()} ${response.url()}`)
+  })
   page.on('requestfailed', request => outcome.set(request.url(), request.failure()?.errorText ?? 'failed'))
   page.on('console', message => {
-    // A 4xx answer is shown in place by the app; Chromium still logs it as a resource error.
-    const status = /^Failed to load resource: the server responded with a status of (\d)/.exec(message.text())?.[1]
-    const expected = status === '4' || (status === '5' && outage.has(page))
-    if (message.type() === 'error' && !expected) problems.push(`console: ${message.text()}`)
+    // HTTP failures are checked above with their endpoint and exact status.
+    const resource = /^Failed to load resource: the server responded with a status of \d+/.test(message.text())
+    const expectedNetwork =
+      message.text().startsWith('Failed to load resource: net::') &&
+      message.location().url.startsWith('http') &&
+      expectedFailure(page, message.location().url, 0)
+    if (message.type() === 'error' && !resource && !expectedNetwork) problems.push(`console: ${message.text()}`)
   })
   page.on('pageerror', error => problems.push(`page error: ${error.message}`))
   page.on('crash', () => problems.push(`page crashed on ${page.url()}`))
   // Against a built server (E2E_BASE_URL) every document carries the CSP the violations above are checked against.
   page.on('response', response => {
     const document = response.request().isNavigationRequest() && response.frame() === page.mainFrame()
-    if (document && process.env['E2E_BASE_URL'] && response.ok() && !response.headers()['content-security-policy'])
-      problems.push(`no Content-Security-Policy on ${response.url()}`)
+    const headers = response.headers()
+    const html = headers['content-type']?.startsWith('text/html')
+    if (document && html && process.env['E2E_BASE_URL'] && response.ok() && !headers['content-security-policy'])
+      problems.push(`no Content-Security-Policy on ${new URL(response.url()).pathname}`)
   })
 }
 
@@ -106,23 +121,55 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   }
 }
 
+/** Check a transient dialog/menu while it is open, before the test dismisses it. */
+export async function inspectPage(page: Page): Promise<void> {
+  const problems: string[] = []
+  await inspect(page, problems)
+  expect(problems, `page health on ${page.url()}`).toEqual([])
+}
+
 export const test = base.extend({
-  page: async ({ page }, use) => {
-    const problems: string[] = []
-    watch(page, problems)
-    // CSP is enforced on the stand: a violation fails the test.
-    await page.exposeFunction('reportCspViolation', (violation: string) => problems.push(`CSP violation: ${violation}`))
-    await page.addInitScript(() => {
+  page: async ({ page, context }, use, info) => {
+    await use(page)
+    if (info.status === 'passed') await finishPages(context)
+  },
+  context: async ({ context }, use, info) => {
+    const pages = new Map<Page, string[]>()
+    watched.set(context, pages)
+    const attach = (page: Page) => {
+      if (pages.has(page)) return
+      const problems: string[] = []
+      pages.set(page, problems)
+      watch(page, problems)
+    }
+    context.on('page', attach)
+    for (const page of context.pages()) attach(page)
+    await context.exposeBinding('reportCspViolation', ({ page }, violation: string) => {
+      pages.get(page)?.push(`CSP violation: ${violation}`)
+    })
+    await context.addInitScript(() => {
       document.addEventListener('securitypolicyviolation', event => {
         void Reflect.get(window, 'reportCspViolation')(`${event.violatedDirective} blocked ${event.blockedURI}`)
       })
     })
-    await use(page)
-    // A page the test closed itself has nothing left to inspect; a crash is in `problems` (watch).
-    if (!page.isClosed() && page.url().startsWith('http')) await inspect(page, problems)
-    expect(problems, 'page health (e2e/fixtures/test.ts)').toEqual([])
+    await use(context)
+    if (info.status === 'passed') await finishPages(context)
   },
 })
+
+/** Inspect before deleting test data, then stop live readers before cleanup emits events. */
+export async function finishPages(context: BrowserContext): Promise<void> {
+  for (const page of context.pages()) {
+    if (page.isClosed() || !page.url().startsWith('http')) continue
+    await inspectPage(page)
+  }
+  for (const problems of watched.get(context)?.values() ?? []) {
+    expect(problems, 'page health (e2e/fixtures/test.ts)').toEqual([])
+  }
+  for (const page of context.pages()) {
+    if (!page.isClosed() && page.url().startsWith('http')) await page.goto('about:blank')
+  }
+}
 
 export { expect }
 

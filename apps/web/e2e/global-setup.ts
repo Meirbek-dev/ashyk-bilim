@@ -119,7 +119,7 @@ async function assignRole(adminCookie: string, userId: string, roleSlug: string)
 /** Log in through the UI and persist the browser storage state. */
 async function captureStorageState(login: string, password: string, outputPath: string): Promise<void> {
   const browser = await chromium.launch()
-  const context = await browser.newContext({ baseURL: BASE_URL })
+  const context = await browser.newContext({ baseURL: BASE_URL, ignoreHTTPSErrors: process.env.E2E_INSECURE === '1' })
   const page = await context.newPage()
 
   await page.goto('/en/login')

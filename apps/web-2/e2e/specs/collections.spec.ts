@@ -1,13 +1,10 @@
+import { expectFailure, finishPages, clickUntil } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
-
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
 import { createCollection, deleteCollection, getCollection, updateCollection } from '#/shared/api/gen/sdk.gen'
 import type { Collection, CreateCollectionRequest } from '#/shared/api/gen/types.gen'
-
 import { expect, type Seed, test as base } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
-
 const ru = { locale: 'ru' } as const
 
 type Owner = 'teacher' | 'admin'
@@ -22,7 +19,7 @@ const test = base.extend<{
   collection: (body?: Partial<CreateCollectionRequest>, owner?: Owner) => Promise<Collection>
 }>({
   api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-  collection: async ({ api, seed }, use) => {
+  collection: async ({ api, seed, page }, use, info) => {
     const made: [string, Owner][] = []
     await use(async (body = {}, owner = 'teacher') => {
       const name = `E2E ${randomUUID().slice(0, 8)}`
@@ -35,8 +32,12 @@ const test = base.extend<{
       made.push([data.id, owner])
       return data
     })
-    for (const [id, owner] of made)
-      await deleteCollection({ client: api, path: { collection_id: id }, headers: cookie(seed, owner) })
+    try {
+      if (info.status === 'passed') await finishPages(page.context())
+    } finally {
+      for (const [id, owner] of made)
+        await deleteCollection({ client: api, path: { collection_id: id }, headers: cookie(seed, owner) })
+    }
   },
 })
 
@@ -57,6 +58,7 @@ test(
     await expect(page.getByText(m.ui_no_matches({}, ru))).toBeVisible()
     // WebKit reports the lazy chunks of a page left mid-load as a page error: let this one finish first.
     await page.waitForLoadState('networkidle')
+    expectFailure(page, new RegExp(`^/collections/${hidden.id}$`), 404)
     await page.goto(`/collections/${hidden.id}`)
     await expect(page.getByRole('heading', { name: m.collections_not_found({}, ru) })).toBeVisible()
   },
@@ -132,6 +134,7 @@ test('B-COL-06 a teacher creates a collection in the dialog and lands on its pag
   await expect(page.getByText(m.collections_created({}, ru))).toBeVisible()
   await expect(page.getByText(m.collections_visibility_private({}, ru))).toBeVisible()
   const path = { collection_id: new URL(page.url()).pathname.split('/').at(-1) ?? '' }
+  await finishPages(page.context())
   await deleteCollection({ client: api, path, headers: cookie(seed, 'teacher'), throwOnError: true })
 })
 
@@ -198,6 +201,7 @@ test("B-COL-10 a save over someone else's change asks, keeps the input and retri
   await page.goto(`/collections/${own.id}/edit`)
   const description = page.getByLabel(m.collections_field_description({}, ru))
   await description.fill('Мой вариант описания')
+  expectFailure(page, new RegExp(`^/api/v2/collections/${own.id}$`), 412)
   await updateCollection({
     client: api,
     path: { collection_id: own.id },
@@ -227,6 +231,7 @@ test('B-COL-11 editing without the right is "no access" in place; a guest signs 
   await page.goto(path)
   await expect(page).toHaveURL(/\/login\?redirect=/)
   await signInAs('student')
+  expectFailure(page, new RegExp(`^${path}$`), 403)
   await page.goto(path)
   await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
   expect(new URL(page.url()).pathname).toBe(path)
@@ -247,6 +252,7 @@ test('B-COL-12 delete asks with the name, starts on Cancel, then shows the list'
     expect(confirm).toBeVisible({ timeout: 1000 }),
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
+  expectFailure(page, new RegExp(`^/api/v2/collections/${own.id}$`), 404)
   await confirm.getByRole('button', { name: m.collections_action_delete({}, ru) }).click()
   await expect(page).toHaveURL(/\/collections$/)
   await expect(page.getByText(m.collections_deleted({}, ru))).toBeVisible()

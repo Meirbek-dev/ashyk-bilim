@@ -1,0 +1,19 @@
+# Test the exact production web image at its baked public origin, on an isolated network.
+services:
+  web:
+    image: ${IMAGE_REPO:-ghcr.io/meirbek-dev}/ashyq-web:${IMAGE_TAG:?}
+    build: !reset null
+    environment: !override
+      PUBLIC_ORIGIN: https://${E2E_WEB_HOST:?}
+      INTERNAL_API_URL: http://server:8000/api/v2/
+      APP_URL: https://${E2E_WEB_HOST:?}
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?}
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
+  nginx:
+    networks:
+      edge-net:
+        aliases:
+          - ${E2E_WEB_HOST:?}

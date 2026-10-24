@@ -25,7 +25,6 @@ export class CourseDetailsPage {
 
   public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/details`)
-    await this.page.waitForLoadState('networkidle')
   }
 
   public async updateTitle(newTitle: string): Promise<void> {

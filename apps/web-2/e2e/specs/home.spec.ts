@@ -1,10 +1,10 @@
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
+import { expectFailure, clickUntil, gotoLive } from '../fixtures/test'
 import { createCourseUpdate } from '#/shared/api/gen/sdk.gen'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
-import { clickUntil, gotoLive } from '../fixtures/test'
 import { expect, ru, test } from './file-submissions-fixture'
 
 // /home "Today" (slice 3.1): a fresh learner in a made course with file tasks; the teacher grades and announces.
@@ -137,6 +137,11 @@ test('B-AUTH-16 a session that ends under the page brings the sign-in page with 
   await gotoLive(page, '/home')
   await expect(page.getByRole('heading', { level: 1, name: m.home_title({}, ru) })).toBeVisible()
   // The session ends behind the tab (expired, or signed out in another one).
+  expectFailure(
+    page,
+    /^\/api\/v2\/(me\/(events|agenda|notifications\/unread-count|certificates\/page)|gamification|work)$/,
+    401,
+  )
   await page.request.post('/api/v2/auth/logout', { headers: { origin: new URL(page.url()).origin } })
   await clickUntil(
     page

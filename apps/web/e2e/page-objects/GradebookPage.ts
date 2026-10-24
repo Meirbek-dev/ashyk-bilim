@@ -27,7 +27,6 @@ export class GradebookPage {
 
   public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/gradebook`)
-    await this.page.waitForLoadState('networkidle')
     await expect(this.table).toBeVisible({ timeout: 15_000 })
   }
 
@@ -46,6 +45,5 @@ export class GradebookPage {
    */
   public async gotoActivityReview(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/review`)
-    await this.page.waitForLoadState('networkidle')
   }
 }

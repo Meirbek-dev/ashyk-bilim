@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -128,6 +129,7 @@ test('B-ANL-12 B-ANL-13 performance: courses and assessments; a course opens its
   await expect(page.getByRole('heading', { name: m.analytics_dropoff_table({}, ru) })).toBeVisible()
   await page.getByRole('link', { name: m.analytics_back({}, ru) }).click()
   await expect(page).not.toHaveURL(/courseId=/)
+  allowFailure(page, /^\/teach\/analytics\/performance$/, 404)
   await page.goto(`/teach/analytics/performance?courseId=${NO_SUCH}`)
   await expect(page.getByRole('heading', { name: m.analytics_not_found_title({}, ru) })).toBeVisible()
 })
@@ -141,6 +143,7 @@ test('B-ANL-14 an assessment drill-down: summary, score spread, each learner', a
   await expect(asOf(page)).toBeVisible()
   await expect(page.getByRole('figure', { name: m.analytics_score_distribution({}, ru) })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: m.analytics_pass_rows({}, ru) })).toBeVisible()
+  allowFailure(page, /^\/teach\/analytics\/performance$/, 404)
   await page.goto(`/teach/analytics/performance?assessmentType=quiz&assessmentId=${NO_SUCH}`)
   await expect(page.getByRole('heading', { name: m.analytics_not_found_title({}, ru) })).toBeVisible()
 })
@@ -184,6 +187,7 @@ test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is dele
     await page.goto('/teach/analytics/operations?window=90d')
     await page.getByRole('button', { name: m.analytics_view_save({}, ru) }).click()
     const dialog = page.getByRole('dialog', { name: m.analytics_view_save({}, ru) })
+    allowFailure(page, /^\/api\/v2\/analytics\/teacher\/saved-views$/, 422)
     await dialog.getByRole('button', { name: m.ui_save({}, ru) }).click()
     await expect(dialog.getByText(m.validation_required({}, ru))).toBeVisible()
     await dialog.getByLabel(m.analytics_view_name({}, ru)).fill(name)
@@ -276,3 +280,8 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.getByRole('heading', { level: 1, name: m.analytics_admin_title({}, { locale }) })).toBeVisible()
   })
 }
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/analytics/teacher/interventions/[^/]+$'), 412)
+})

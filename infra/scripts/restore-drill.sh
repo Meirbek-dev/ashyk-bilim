@@ -30,6 +30,7 @@ export TLS_DIR=$work/certs ACME_WEBROOT=$work/acme
 # Archived production paths must never be mounted by the throwaway stack.
 export RUSTFS_DATA_DIR=rustfs_data BACKUP_DIR=$work/backups
 domain=$(sed -n 's/^NGINX_SERVER_NAME=//p' "$COMPOSE_ENV_FILES" | tail -n 1)
+export NGINX_SERVER_NAME=$domain
 export SMOKE_ORIGIN=http://$domain:$HTTP_PORT
 
 use_prod
@@ -40,4 +41,23 @@ bash "$ROOT/infra/scripts/restore.sh" "$archive"
 count() { compose exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d ashyq -tAc 'SELECT count(*) FROM $1'"; }
 log "users:   $(count users)"
 log "courses: $(count courses)"
+[[ $(count users) -gt 0 && $(count courses) -gt 0 ]] || die "restored database has no users or courses"
+if [[ -n ${EXPECTED_RESTORE_MANIFEST:-} ]]; then
+  actual=$ROOT/tmp/restore-test/actual.manifest
+  compose exec -T db sh -c 'psql -XAtq -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' \
+    <"$ROOT/infra/tests/restore-manifest.sql" >"$actual"
+  diff -u "$EXPECTED_RESTORE_MANIFEST" "$actual" || die "restored user data differs from the source"
+fi
+if [[ -n ${RESTORE_OBJECT_KEY:-} ]]; then
+  hash=$(curl -fsS --resolve "$domain:$HTTP_PORT:127.0.0.1" \
+    "$SMOKE_ORIGIN/content/$RESTORE_OBJECT_KEY" | sha256sum | cut -d' ' -f1)
+  [[ $hash == "${RESTORE_OBJECT_SHA256:?expected object hash required}" ]] || die "restored object bytes differ"
+fi
+if [[ -n ${RESTORE_TEST_PASSWORD:-} ]]; then
+  login_status=$(node -e 'process.stdout.write(JSON.stringify({login:"e2e-student1",password:process.env.RESTORE_TEST_PASSWORD}))' |
+    curl -fsS --resolve "$domain:$HTTP_PORT:127.0.0.1" -H 'Content-Type: application/json' \
+      --data-binary @- -o /dev/null -w '%{http_code}' "$SMOKE_ORIGIN/api/v2/auth/login")
+  [[ $login_status == 200 ]] || die "restored learner sign-in returned HTTP $login_status"
+  log "restored learner sign-in ok"
+fi
 log "drill passed in $((SECONDS - start)) s (restore + start + smoke)"

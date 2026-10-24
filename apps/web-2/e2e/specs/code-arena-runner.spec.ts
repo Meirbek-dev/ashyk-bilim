@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 
 import {
@@ -50,4 +51,9 @@ test('B-COD-23 a runner that is down leaves the statement, the saved code and th
   await run.click()
   await expect(down).toBeVisible()
   await expect(editor(page)).toContainText('print(3)')
+})
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/assessment-items/[^/]+/runs$'), 503)
 })

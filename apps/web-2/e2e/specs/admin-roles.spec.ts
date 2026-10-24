@@ -1,3 +1,4 @@
+import { finishPages, expectFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -27,7 +28,7 @@ const cookie = (seed: Seed) => {
 const test = base.extend<{ api: ReturnType<typeof createClient>; role: () => Promise<{ slug: string; name: string }> }>(
   {
     api: async ({ baseURL }, use) => use(createClient(createConfig({ baseUrl: String(baseURL) }))),
-    role: async ({ api, seed, signInAs }, use) => {
+    role: async ({ api, seed, signInAs, page }, use, info) => {
       await signInAs('admin')
       const made: string[] = []
       await use(async () => {
@@ -42,7 +43,11 @@ const test = base.extend<{ api: ReturnType<typeof createClient>; role: () => Pro
         made.push(slug)
         return { slug, name }
       })
-      for (const slug of made) await deleteRole({ client: api, path: { slug }, headers: cookie(seed) })
+      try {
+        if (info.status === 'passed') await finishPages(page.context())
+      } finally {
+        for (const slug of made) await deleteRole({ client: api, path: { slug }, headers: cookie(seed) })
+      }
     },
   },
 )
@@ -68,6 +73,7 @@ test('B-ADM-09 a role page groups its permissions by resource; an unknown slug i
   await expect(page.getByRole('term').getByText('course', { exact: true })).toBeVisible()
   // A system role has no edits: no form to save.
   await expect(page.getByRole('button', { name: m.ui_save({}, ru) })).toHaveCount(0)
+  expectFailure(page, /^\/admin\/roles\/nope-/, 404)
   await page.goto(`/admin/roles/nope-${randomUUID().slice(0, 8)}`)
   await expect(page.getByRole('heading', { name: m.admin_role_not_found({}, ru) })).toBeVisible()
 })
@@ -78,6 +84,7 @@ test('B-ADM-10 a role is made in the dialog; a taken slug lands under its field'
   await page.getByRole('button', { name: m.admin_role_new({}, ru) }).click()
   const dialog = page.getByRole('dialog', { name: m.admin_role_new({}, ru) })
   await dialog.getByLabel(m.admin_role_slug({}, ru)).fill('admin')
+  expectFailure(page, /^\/api\/v2\/rbac\/roles$/, 409)
   await dialog.getByLabel(m.admin_field_name({}, ru)).fill('E2E дубль')
   await dialog.getByRole('button', { name: m.admin_create_submit({}, ru) }).click()
   await expect(dialog.getByText(m.errors_role_slug_taken({}, ru))).toBeVisible()
@@ -101,6 +108,7 @@ test('B-ADM-11 a custom role saves its name and its permissions, line by line', 
   const grants = page.getByRole('form', { name: m.admin_role_permissions({}, ru) })
   const field = grants.getByLabel(m.admin_role_permissions({}, ru))
   await field.fill('course:read:all\nnot-a-grant')
+  expectFailure(page, new RegExp(`^/api/v2/rbac/roles/${slug}/permissions$`), 422)
   await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
   // The server names the refused line; the field says which one and selects it.
   await expect(grants.getByText(m.admin_role_permissions_refused({ lines: '2' }, ru))).toBeVisible()
@@ -139,6 +147,7 @@ test("B-ADM-23 a role save over someone else's change asks, keeps the input and 
     throwOnError: true,
   })
   const sent = page.waitForRequest(request => request.method() === 'PATCH')
+  expectFailure(page, new RegExp(`^/api/v2/rbac/roles/${slug}$`), 412)
   await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
   expect((await sent).headers()['if-match']).toBe(String(loaded.version))
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })

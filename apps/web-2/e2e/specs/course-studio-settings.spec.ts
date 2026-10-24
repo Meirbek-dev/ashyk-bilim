@@ -1,3 +1,4 @@
+import { expectFailure } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import { createCertification, createUpload, finalizeUpload, getCourse, updateCourse } from '#/shared/api/gen/sdk.gen'
 import type { CreateUploadRequest } from '#/shared/api/gen/types.gen'
@@ -68,6 +69,7 @@ test('B-CST-32 a details save over someone else’s opens the conflict dialog; r
     throwOnError: true,
   })
   await about.fill('Моя правка')
+  expectFailure(page, new RegExp(`^/api/v2/courses/${course.id}$`), 412)
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
   const dialog = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await dialog.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()

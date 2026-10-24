@@ -1,6 +1,8 @@
 // Source-tree gates: G-07 api-coverage, G-10 trace, G-11 tokens, G-12 suppressions, doc sizes (8.2).
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { titleIds } from './test-titles.ts'
+export { titleIds } from './test-titles.ts'
 
 import {
   allowlist,
@@ -74,25 +76,6 @@ export function underConstruction(phaseOverride?: number): { findings: Finding[]
 }
 
 const TEST_FILE = /(\.test\.tsx?|\.spec\.ts)$/
-const BEHAVIOR_ID = /\bB-[A-Z]+-\d+\b/
-
-// A behavior id counts only inside a test or describe title: the first string argument of test/it/describe (or an extended test2,
-// `test.each(rows)(...)`, `test.describe(...)`), never a comment, a helper or a fixture.
-const TITLE_START = /\b(?:test|it|describe)\w*(?:\.\w+)*\s*(?:\([\s\S]*?\)\s*)?\(\s*$/
-const QUOTES = new Set(["'", '"', '`'])
-
-/** The behavior ids that stand in a test title, with their lines. */
-export function titleIds(source: string): { text: string; line: number }[] {
-  const found: { text: string; line: number }[] = []
-  for (const match of source.matchAll(new RegExp(BEHAVIOR_ID.source, 'g'))) {
-    let start = match.index
-    while (start > 0 && !QUOTES.has(source[start - 1] ?? '') && source[start - 1] !== '\n') start -= 1
-    const opened = QUOTES.has(source[start - 1] ?? '')
-    if (opened && TITLE_START.test(source.slice(Math.max(0, start - 601), start - 1)))
-      found.push({ text: match[0], line: source.slice(0, match.index).split('\n').length })
-  }
-  return found
-}
 
 export function trace(): Finding[] {
   const findings: Finding[] = []

@@ -6,73 +6,16 @@
  * `SubmissionAnalysis`, `QaThreadSummary`, `QaMessage`; AG-UI SSE for
  * `runs/{id}/stream` and `qa/{course}/chat`).
  *
- * Ids come from `process.env.E2E_*` (set by specs 03/04 in the full suite, or
- * exported by hand for a standalone run) and are read lazily so the skip
- * guards see the values the earlier specs wrote.
+ * Ids come from the earlier stages of this serial journey and are read lazily.
  */
 
 import type { Page, Route } from '@playwright/test'
 import { expect, testAsStudent, testAsTeacher } from '../fixtures'
-import { getEnv } from '../env'
+import { getEnv } from './state'
 
 const courseUuid = () => getEnv('E2E_COURSE_UUID') ?? ''
 const activityId = () => getEnv('E2E_EXAM_ACTIVITY_ID') ?? ''
 const submissionUuid = () => getEnv('E2E_SUBMISSION_UUID') ?? ''
-
-testAsTeacher.beforeEach(async ({ page }) => {
-  await mockAI(page)
-})
-
-testAsStudent.beforeEach(async ({ page }) => {
-  await mockAI(page)
-})
-
-testAsTeacher('teacher can run and publish course analysis', async ({ page }) => {
-  testAsTeacher.skip(!courseUuid(), 'Set E2E_COURSE_UUID first.')
-
-  await page.goto(`/en/course/${courseUuid()}`)
-  await page.getByRole('tab', { name: 'Review' }).click()
-  await page.getByRole('button', { name: /^(analyze|rerun)$/i }).click()
-
-  await expect(page.getByText('Course quality score 82')).toBeVisible()
-  await expect(page.getByText('Add assessment coverage')).toBeVisible()
-  // The publish button stays disabled until the teacher confirms the evidence review.
-  await page.getByRole('checkbox', { name: /reviewed them before publishing/i }).check()
-  await page.getByRole('button', { name: 'Publish score' }).click()
-  await page.getByRole('button', { name: 'Publish reviewed score' }).click()
-
-  await expect(page.getByText('Published', { exact: true })).toBeVisible()
-})
-
-testAsStudent('student can ask course Q&A with citations', async ({ page }) => {
-  testAsStudent.skip(!courseUuid(), 'Set E2E_COURSE_UUID first.')
-
-  await page.goto(`/en/course/${courseUuid()}`)
-  await page.getByRole('tab', { name: 'Q&A' }).click()
-  await page.getByPlaceholder(/ask about this course/i).fill('What should I review before the quiz?')
-  await page.getByRole('button', { name: 'Ask', exact: true }).click()
-
-  await expect(page.getByText('Review the worked example before the quiz.')).toBeVisible()
-  await expect(page.getByRole('link', { name: /Lesson 1/ })).toBeVisible()
-})
-
-testAsTeacher('teacher can analyze a submission and generate a remediation gate', async ({ page }) => {
-  testAsTeacher.skip(
-    !courseUuid() || !activityId() || !submissionUuid(),
-    'Set E2E_COURSE_UUID, E2E_EXAM_ACTIVITY_ID, and E2E_SUBMISSION_UUID first.',
-  )
-
-  await page.goto(`/en/dash/courses/${courseUuid()}/activity/${activityId()}/review?submission=${submissionUuid()}`)
-  await page.getByRole('button', { name: 'Analyze', exact: true }).click()
-
-  await expect(page.getByText('Knowledge gaps: 1')).toBeVisible()
-  await expect(page.getByText('Loop condition')).toBeVisible()
-  await page.getByRole('button', { name: 'Generate remediation gate' }).click()
-  // UX-139: a gate locks the learner out, so the button asks first.
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Assign', exact: true }).click()
-  await expect(page.getByText('Trace the loop exit')).toBeVisible()
-  await expect(page.getByText('Gate mode is active until the learner passes.')).toBeVisible()
-})
 
 // ── v2 fixtures ─────────────────────────────────────────────────────────────
 
@@ -391,5 +334,61 @@ async function mockAI(page: Page) {
 
     // capabilities, study companion, usage, … - the local server answers those itself.
     return route.fallback()
+  })
+}
+export function registerAi() {
+  testAsTeacher.beforeEach(async ({ page }) => {
+    await mockAI(page)
+  })
+
+  testAsStudent.beforeEach(async ({ page }) => {
+    await mockAI(page)
+  })
+
+  testAsTeacher('teacher can run and publish course analysis', async ({ page }) => {
+    expect(!courseUuid(), 'Set E2E_COURSE_UUID first.').toBe(false)
+
+    await page.goto(`/en/course/${courseUuid()}`)
+    await page.getByRole('tab', { name: 'Review' }).click()
+    await page.getByRole('button', { name: /^(analyze|rerun)$/i }).click()
+
+    await expect(page.getByText('Course quality score 82')).toBeVisible()
+    await expect(page.getByText('Add assessment coverage')).toBeVisible()
+    // The publish button stays disabled until the teacher confirms the evidence review.
+    await page.getByRole('checkbox', { name: /reviewed them before publishing/i }).check()
+    await page.getByRole('button', { name: 'Publish score' }).click()
+    await page.getByRole('button', { name: 'Publish reviewed score' }).click()
+
+    await expect(page.getByText('Published', { exact: true })).toBeVisible()
+  })
+
+  testAsStudent('student can ask course Q&A with citations', async ({ page }) => {
+    expect(!courseUuid(), 'Set E2E_COURSE_UUID first.').toBe(false)
+
+    await page.goto(`/en/course/${courseUuid()}`)
+    await page.getByRole('tab', { name: 'Q&A' }).click()
+    await page.getByPlaceholder(/ask about this course/i).fill('What should I review before the quiz?')
+    await page.getByRole('button', { name: 'Ask', exact: true }).click()
+
+    await expect(page.getByText('Review the worked example before the quiz.')).toBeVisible()
+    await expect(page.getByRole('link', { name: /Lesson 1/ })).toBeVisible()
+  })
+
+  testAsTeacher('teacher can analyze a submission and generate a remediation gate', async ({ page }) => {
+    expect(
+      !courseUuid() || !activityId() || !submissionUuid(),
+      'Set E2E_COURSE_UUID, E2E_EXAM_ACTIVITY_ID, and E2E_SUBMISSION_UUID first.',
+    ).toBe(false)
+
+    await page.goto(`/en/dash/courses/${courseUuid()}/activity/${activityId()}/review?submission=${submissionUuid()}`)
+    await page.getByRole('button', { name: 'Analyze', exact: true }).click()
+
+    await expect(page.getByText('Knowledge gaps: 1')).toBeVisible()
+    await expect(page.getByText('Loop condition')).toBeVisible()
+    await page.getByRole('button', { name: 'Generate remediation gate' }).click()
+    // UX-139: a gate locks the learner out, so the button asks first.
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Assign', exact: true }).click()
+    await expect(page.getByText('Trace the loop exit')).toBeVisible()
+    await expect(page.getByText('Gate mode is active until the learner passes.')).toBeVisible()
   })
 }

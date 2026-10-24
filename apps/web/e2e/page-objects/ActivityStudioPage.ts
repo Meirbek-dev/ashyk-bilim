@@ -50,7 +50,6 @@ export class ActivityStudioPage {
 
   public async goto(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/studio`)
-    await this.page.waitForLoadState('networkidle')
   }
 
   // ── Lecture / dynamic page helpers ────────────────────────────────────
@@ -172,7 +171,6 @@ export class ActivityStudioPage {
    */
   public async publishAssessment(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/studio?view=publish`)
-    await this.page.waitForLoadState('networkidle')
     await this.page.getByRole('button', { name: /publish now/i }).click()
 
     const dialog = this.page.getByRole('dialog')

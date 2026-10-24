@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure, gotoLive } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 import * as v from 'valibot'
 
@@ -7,7 +8,6 @@ import { formatPercent } from '#/shared/i18n/format'
 import { vQaChatRequest } from '#/shared/api/gen/valibot.gen'
 
 import { expect as baseExpect, type MadeCourse, test } from '../fixtures/learning'
-import { gotoLive } from '../fixtures/test'
 import { caps, fulfillSse, json, mockCapabilities, mockRun, problem, RUN, ru, runStatus, THREAD } from './ai-fixture'
 
 // The learner's AI (slice 6.3) with every model answer replaced by `page.route` (tag @ai: these would need the live
@@ -104,7 +104,6 @@ test(
     await expect(aside.getByRole('button', { name: 'А что такое while?' })).toBeVisible()
   },
 )
-
 test(
   'B-AI-07 B-AI-08 "Stop" cancels the run; a refused queue shows its code with "Retry"',
   { tag: '@ai' },
@@ -142,7 +141,6 @@ test(
     await expect(aside.getByRole('button', { name: m.ui_retry({}, ru) })).toBeVisible()
   },
 )
-
 const saved = (clientTurnId: string, courseId: string): QaMessage[] =>
   (['user', 'assistant'] as const).map((role, index) => ({
     id: `0190a5d2-0000-7000-8000-00000000a02${index}`,
@@ -157,7 +155,6 @@ const saved = (clientTurnId: string, courseId: string): QaMessage[] =>
     thread_id: THREAD,
     user_id: null,
   }))
-
 test(
   'B-AI-08 B-AI-09 B-AI-10 B-AI-11 B-AI-12 course Q&A streams, retries the same turn, keeps the thread in the URL',
   { tag: '@ai' },
@@ -226,7 +223,6 @@ test(
     await expect(page).not.toHaveURL(/aiThread=/)
   },
 )
-
 const session = (activityId: string): RemediationSession => ({
   activity_id: activityId,
   analysis_id: null,
@@ -251,7 +247,6 @@ const session = (activityId: string): RemediationSession => ({
   test: { questions: [{ prompt: 'Когда цикл while останавливается?', answer: '', explanation: '' }] },
   updated_at_unix: 1_760_000_000,
 })
-
 test(
   'B-AI-19 the learner answers a remediation session and the server scores it',
   { tag: '@ai' },
@@ -296,3 +291,7 @@ test(
     await expect(aside.getByText('Проверка идёт перед каждым шагом.')).toBeVisible()
   },
 )
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/api/v2/ai/study/[^/]+/ask/queue$'), 429)
+})

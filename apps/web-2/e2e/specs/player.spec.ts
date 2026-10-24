@@ -1,7 +1,6 @@
+import { expectFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
-
 import type { Page } from '@playwright/test'
-
 import { m } from '#/paraglide/messages'
 import {
   createActivity,
@@ -11,18 +10,14 @@ import {
   updateActivity,
 } from '#/shared/api/gen/sdk.gen'
 import type { ActivityContent, ActivityId, ActivitySubType, ActivityType } from '#/shared/api/gen/types.gen'
-
 import { expect as baseExpect, type MadeCourse, test as base } from '../fixtures/learning'
-
 // Under `vp dev` six browsers pull the player's modules (editor, palette, hotkeys) unbundled at once: the first
 // render after the SSR pending view can take longer than the default 5 s. The built image is far below that.
 const expect = baseExpect.configure({ timeout: 15_000 })
 base.describe.configure({ timeout: 60_000 })
-
 const ru = { locale: 'ru' } as const
 const PAGE_TEXT = 'Текст первой страницы'
 const YOUTUBE = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-
 type Extra = { name: string; type: ActivityType; subType: ActivitySubType; content?: ActivityContent }
 
 // A made course (pages) plus activities of other types, added to its chapter by the teacher through the SDK.
@@ -86,6 +81,7 @@ test('B-PLY-01 a learner who is not enrolled gets 403 in place with the way to t
   const course = await makeCourse({ activities: 1 })
   await learner.signIn()
   for (const path of [play(course), `/learn/${course.id}/complete`]) {
+    expectFailure(page, new RegExp(`^${path}$`), 403)
     await page.goto(path)
     await expect(page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })).toBeVisible()
     await expect(page.getByText(m.player_forbidden_text({}, ru))).toBeVisible()
@@ -102,6 +98,7 @@ test('B-PLY-02 an activity outside the course is not found', async ({ page, lear
   await learner.enroll(course)
   await learner.signIn()
   for (const id of [randomUUID(), other.activityIds[0]]) {
+    expectFailure(page, new RegExp(`^/learn/${course.id}/${id}$`), 404)
     await page.goto(`/learn/${course.id}/${id}`)
     await expect(page.getByRole('heading', { level: 1, name: m.player_not_found({}, ru) })).toBeVisible()
     await expect(page.getByRole('link', { name: m.player_course_page({}, ru) })).toBeVisible()

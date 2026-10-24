@@ -1,3 +1,4 @@
+import { expectFailure as allowFailure } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import { formatDate } from '#/shared/i18n/format'
 
@@ -93,6 +94,7 @@ test('B-CRT-06 the URL printed on the PDF opens the page in the certificate lang
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expect(page.getByText(m.certificates_holder({}, { locale: 'en' }))).toBeVisible()
 
+  allowFailure(page, new RegExp(`^/de/certificates/${issued.code}/verify$`), 404)
   await page.goto(`/de/certificates/${issued.code}/verify`)
   await expect(page.getByRole('heading', { level: 1, name: m.platform_not_found_title({}, ru) })).toBeVisible()
 })
@@ -107,3 +109,8 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(page.locator('body')).not.toContainText(/\b(certificates|platform|ui)_[a-z_]+/)
   })
 }
+
+// Expected failures are scoped to the endpoints exercised by these negative scenarios.
+test.beforeEach(({ page }) => {
+  allowFailure(page, new RegExp('^/certificates/NOPE-0000-0000-0000/verify$'), 404)
+})

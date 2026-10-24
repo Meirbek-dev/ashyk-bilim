@@ -51,6 +51,8 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - e2e from the repo root: `just e2e web [args]` (production `next build` + own API on a fresh database) or
   `just e2e-dev web [args]` (the running `just stack up` slot); both set the seed accounts and password.
 - Vitest runs at most four workers; use its `--maxWorkers` flag to override deliberately.
+  Pure `.test.ts` files run in the `unit` Node project; UI/editor tests run in `components` with jsdom.
+  A hook test in a `.ts` file can select jsdom with `@vitest-environment jsdom`.
 - `bunx knip` reports dead files/exports (generated code is ignored).
 
 ## The contract and the generated client
@@ -149,6 +151,9 @@ reduced motion. Preserve keyboard access, focus states and responsive layouts.
   `just web check:messages`. The existing Next.js consumers still need migration.
 - Tests: `src/tests/**/*.test.ts(x)` (vitest + testing-library), Playwright in
   `e2e/` (page objects in `e2e/page-objects`, specs in `e2e/specs`).
+  `journey.spec.ts` registers the author/learner/grader/archive scenario from `e2e/journey/` in one serial worker;
+  its state is in memory and a retry starts from authoring. Other specs create and remove their own prerequisites.
+  CI gates the exact production image with public/auth smoke, isolated release journeys and video upload.
 
 ## Not in v2 (do not re-add without a contract change)
 

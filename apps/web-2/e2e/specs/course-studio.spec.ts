@@ -1,3 +1,4 @@
+import { expectFailure, inspectPage } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -44,6 +45,7 @@ test('B-CST-03 a new course: the name is required, then its overview opens', asy
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
   await expect(dialog.getByText(m.validation_required({}, ru))).toBeVisible()
   const name = `E2E studio ${randomUUID().slice(0, 8)}`
+  await inspectPage(page)
   await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill(name)
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
   await expect(page.getByText(m.studio_course_created({}, ru))).toBeVisible()
@@ -80,9 +82,11 @@ test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacher�
   const tabs = page.getByRole('navigation', { name: m.ui_sections({}, ru) }).getByRole('link')
   await expect(tabs).toHaveCount(7)
   await expect(tabs.first()).toHaveAttribute('aria-current', 'page')
+  expectFailure(page, /^\/teach\/courses\/[^/]+\/overview$/, 404)
   await page.goto(tab(randomUUID(), 'overview'))
   await expect(page.getByRole('heading', { name: m.course_not_found({}, ru) })).toBeVisible()
   const foreign = await studio.course({ owner: 'admin', chapters: [{ pages: [{ published: true }] }], publish: true })
+  expectFailure(page, new RegExp(`^/teach/courses/${foreign.course.id}/overview$`), 403)
   await page.goto(tab(foreign.course.id, 'overview'))
   // UX-F-38: a teacher off the team is told so, with the course page and «Мои курсы» as the ways on.
   await expect(page.getByRole('heading', { name: m.studio_not_on_team_title({}, ru) })).toBeVisible()

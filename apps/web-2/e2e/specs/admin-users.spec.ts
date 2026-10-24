@@ -1,3 +1,4 @@
+import { expectFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import type { Page } from '@playwright/test'
@@ -77,6 +78,7 @@ test('B-ADM-03 the panel is a shareable address that survives a reload', async (
   await sheet.getByRole('button', { name: m.ui_close({}, ru) }).click()
   await expect(page).not.toHaveURL(/user=/)
   for (const id of [randomUUID(), 'nobody']) {
+    expectFailure(page, new RegExp(`^/api/v2/users/${id}$`), 404)
     await page.goto(`/admin/users?user=${id}`)
     await expect(panel(page, m.admin_user_not_found({}, ru))).toBeVisible()
   }
@@ -156,6 +158,7 @@ test('B-ADM-07 a new user is made in the dialog with extra roles; a taken userna
   await firstName.fill('Новый')
   await dialog.getByLabel(m.admin_user_field_last_name({}, ru)).fill('Пользователь')
   await dialog.getByLabel(m.admin_user_username({}, ru)).fill('e2e-teacher')
+  expectFailure(page, /^\/api\/v2\/users$/, 409)
   await dialog.getByLabel(m.admin_user_field_email({}, ru)).fill(`${username}@e2e.test`)
   await create.click()
   await expect(dialog.getByText(m.errors_username_taken({}, ru))).toBeVisible()
