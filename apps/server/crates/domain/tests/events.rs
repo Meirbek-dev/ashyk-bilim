@@ -12,6 +12,19 @@ async fn events() -> GradingEvents {
     events_and_redis().await.0
 }
 
+async fn wait_for_slots(events: &GradingEvents, user: UserId, expected: i64) {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if events.slots_in_use(user).await.unwrap() == expected {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("asynchronous slot release did not finish within 5s");
+}
+
 async fn events_and_redis() -> (GradingEvents, redis::aio::ConnectionManager) {
     let url = std::env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://localhost:6380".into());
     let store = SessionStore::connect(&url)
@@ -95,7 +108,7 @@ async fn connection_slots_are_capped_per_user() {
     );
     drop(held.pop());
     // The release runs on a spawned task.
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    wait_for_slots(&events, user, MAX_CONNECTIONS_PER_USER - 1).await;
     assert_eq!(
         events.slots_in_use(user).await.unwrap(),
         MAX_CONNECTIONS_PER_USER - 1
@@ -119,7 +132,7 @@ async fn late_release_never_erases_another_connection() {
     let new = events.acquire_slot(user).await.unwrap().expect("slot");
     drop(old);
     // The release runs on a spawned task.
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    wait_for_slots(&events, user, 1).await;
     assert_eq!(events.slots_in_use(user).await.unwrap(), 1);
     drop(new);
 }

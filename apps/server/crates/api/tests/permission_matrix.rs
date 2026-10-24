@@ -80,7 +80,7 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("POST", "/api/v2/activities/{activity_id}/move", STAFF),
     ("GET", "/api/v2/ai/admin/evals", ADM),
     ("GET", "/api/v2/ai/admin/runs", ADM),
-    ("GET", "/api/v2/ai/admin/runs/{run_id}", NONE),
+    ("GET", "/api/v2/ai/admin/runs/{run_id}", ADM),
     ("GET", "/api/v2/ai/admin/settings", ADM),
     ("PUT", "/api/v2/ai/admin/settings/features/{key}", ADM),
     // A course the caller cannot see answers "unavailable: course-not-found",
@@ -163,11 +163,11 @@ const MATRIX: &[(&str, &str, u8)] = &[
         "/api/v2/ai/remediation/{submission_id}/latest",
         SUBJECT,
     ),
-    ("GET", "/api/v2/ai/runs/{run_id}", NONE),
-    ("GET", "/api/v2/ai/runs/{run_id}/artifacts", NONE),
-    ("POST", "/api/v2/ai/runs/{run_id}/cancel", NONE),
-    ("GET", "/api/v2/ai/runs/{run_id}/events", NONE),
-    ("POST", "/api/v2/ai/runs/{run_id}/stream", NONE),
+    ("GET", "/api/v2/ai/runs/{run_id}", LRN | ADM),
+    ("GET", "/api/v2/ai/runs/{run_id}/artifacts", LRN | ADM),
+    ("POST", "/api/v2/ai/runs/{run_id}/cancel", LRN | ADM),
+    ("GET", "/api/v2/ai/runs/{run_id}/events", LRN | ADM),
+    ("POST", "/api/v2/ai/runs/{run_id}/stream", LRN | ADM),
     ("POST", "/api/v2/ai/study/{course_id}/ask", MEMBER),
     ("POST", "/api/v2/ai/study/{course_id}/ask/queue", MEMBER),
     (
@@ -688,18 +688,10 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("GET", "/api/v2/work", SIGNED),
 ];
 
-/// GETs that hold an event stream open: only the refused callers are sent
-/// (an accepted one would never finish).
-const STREAMS: &[&str] = &[
-    "/api/v2/courses/{course_id}/grading/events",
-    "/api/v2/me/events",
-    "/api/v2/submissions/{submission_id}/events",
-];
-
 /// Required query strings.
 const QUERIES: &[(&str, &str)] = &[
     ("/api/v2/search", "q=E2E"),
-    ("/api/v2/utils/link-preview", "url=http://127.0.0.1:9/"),
+    ("/api/v2/utils/link-preview", "url=http://10.0.0.1:9/"),
 ];
 
 /// Writes whose body names the resource: a valid body, so the probe meets
@@ -786,6 +778,7 @@ impl World {
         for segment in path.split('/').filter(|s| !s.is_empty()) {
             uri.push('/');
             let value = match segment {
+                "{run_id}" if path.starts_with("/api/v2/ai/") => self.id("ai_run_id"),
                 "{activity_id}" => self.id(activity),
                 "{item_id}" => self.id(item),
                 "{assessment_type}" => "quiz".to_owned(),
@@ -825,13 +818,13 @@ async fn send(
     } else {
         Body::from(body)
     };
-    // An accepted event stream never ends: a timeout is a 2xx.
+    // Only headers are needed, including for SSE. A hung handler must fail, never masquerade as 200.
     tokio::time::timeout(
         Duration::from_secs(10),
-        app.send(request.body(body).unwrap()),
+        app.status(request.body(body).unwrap()),
     )
     .await
-    .map_or(StatusCode::OK, |res| res.status)
+    .expect("permission probe did not produce HTTP headers within 10s")
 }
 
 async fn mount_zitadel(app: &TestApp) {
@@ -1133,6 +1126,17 @@ async fn world(app: &TestApp) -> World {
         "code run",
     );
     ids.insert("run_id", run["id"].as_str().unwrap().to_owned());
+    // A real learner-owned AI run: a missing id cannot prove ownership enforcement.
+    let ai_run = ok(
+        &app.post_as(
+            &learner,
+            &format!("/api/v2/ai/study/{course}/ask/queue"),
+            &json!({ "question": "Explain the first lesson", "language": "en" }),
+        )
+        .await,
+        "learner AI run",
+    );
+    ids.insert("ai_run_id", ai_run["id"].as_str().unwrap().to_owned());
     let post = ok(
         &app.post_as(
             &learner,
@@ -1334,21 +1338,28 @@ async fn every_route_answers_only_the_callers_it_should(pool: PgPool) {
     // 2. Reads: the callers answering 2xx are exactly the listed ones.
     for (method, path, allowed) in MATRIX.iter().filter(|(m, _, _)| *m == "GET") {
         let uri = world.uri(path);
-        let stream = STREAMS.contains(path);
         let mut answered = 0u8;
         let mut statuses = Vec::new();
         for (bit, name) in CALLERS {
-            if stream && allowed & bit != 0 {
-                continue;
-            }
             let status = send(&app, method, &uri, world.sessions.get(&bit), String::new()).await;
             statuses.push(format!("{name}={}", status.as_u16()));
+            // The link-preview probe deliberately names a private URL: signed-in callers reach its SSRF validator.
+            let denied = if *path == "/api/v2/utils/link-preview" && bit != ANON {
+                status == StatusCode::UNPROCESSABLE_ENTITY
+            } else {
+                matches!(status.as_u16(), 401 | 403 | 404)
+            };
+            if allowed & bit == 0 && !denied {
+                failures.push(format!(
+                    "GET {path}: refused {name} got {status}, expected 401/403/404"
+                ));
+            }
             // A redirect to the resource (a download's 303) grants it too.
             if status.is_success() || status.is_redirection() {
                 answered |= bit;
             }
         }
-        let expected = if stream { 0 } else { *allowed };
+        let expected = *allowed;
         if answered != expected {
             failures.push(format!(
                 "GET {path}: 2xx for {} - listed {} ({})",

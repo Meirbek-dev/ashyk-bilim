@@ -302,3 +302,33 @@ async fn legacy_code_statement_moves_into_an_empty_prompt_only(pool: PgPool) {
     assert_eq!(prompt_of(&pool, written).await, "The teacher's statement");
     assert_eq!(prompt_of(&pool, bare).await, "");
 }
+
+/// Apply the real migration chain to a populated previous schema, preserving a teacher's newer text.
+#[sqlx::test(migrations = false)]
+async fn populated_previous_schema_upgrades_without_replacing_authored_prompts(pool: PgPool) {
+    let mut previous = sqlx::migrate!("../../migrations");
+    previous.migrations = std::borrow::Cow::Owned(
+        previous
+            .iter()
+            .filter(|migration| migration.version < 20_261_018_000_000)
+            .cloned()
+            .collect(),
+    );
+    previous.run(&pool).await.unwrap();
+    let imported = seed_code_challenge(&pool, "Imported statement", "").await;
+    let authored = seed_code_challenge(&pool, "Old statement", "Teacher's current statement").await;
+    let empty = seed_code_challenge(&pool, "  ", "").await;
+    let current = sqlx::migrate!("../../migrations");
+    current.run(&pool).await.unwrap();
+    assert_eq!(prompt_of(&pool, imported).await, "Imported statement");
+    assert_eq!(
+        prompt_of(&pool, authored).await,
+        "Teacher's current statement"
+    );
+    assert_eq!(prompt_of(&pool, empty).await, "");
+    current.run(&pool).await.unwrap();
+    assert_eq!(
+        prompt_of(&pool, authored).await,
+        "Teacher's current statement"
+    );
+}

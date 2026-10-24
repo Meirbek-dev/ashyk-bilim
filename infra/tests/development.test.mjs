@@ -178,3 +178,20 @@ test('compiler versions match Docker and local CI executes the backend suite onc
   assert.equal(result.status, 0, result.stderr)
   assert.equal((result.stderr.match(/cargo (?:llvm-cov )?nextest run|cargo llvm-cov nextest/g) ?? []).length, 1)
 })
+
+test('server setup loads pinned tools in the POSIX recipe shell', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-tools-'))
+  try {
+    writeFileSync(join(dir, 'justfile'), readFileSync(join(root, 'apps/server/justfile')))
+    writeFileSync(join(dir, 'tools.env'), 'LINT_TOOLS=lint@1\nTEST_TOOLS=test@2\nDEV_TOOLS=dev@3\n')
+    writeFileSync(join(dir, 'cargo'), '#!/bin/sh\nprintf "%s\\n" "$@"\n', { mode: 0o755 })
+    const result = run(just, ['setup'], {
+      cwd: dir,
+      env: { ...process.env, PATH: `${dir}${delimiter}${process.env.PATH}` },
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.includes('binstall\n-y\nlint@1\ntest@2\ndev@3'), result.stdout)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

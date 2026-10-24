@@ -1,0 +1,12 @@
+[
+  {"name":"legacy HTML discussion","document":"<p>A lesson in Қазақша, Русский and English.</p>","violations":0},
+  {"name":"legacy media activity","document":{"filename":"documents/lesson.pdf","file_name":"lesson.pdf"},"violations":0},
+  {"name":"paragraph with old HTTP link","document":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Reference","marks":[{"type":"link","attrs":{"href":"http://example.org/reference"}}]}]}]},"violations":0},
+  {"name":"legacy embed provider id","document":{"type":"doc","content":[{"type":"embedBlock","attrs":{"url":"dQw4w9WgXcQ"}}]},"violations":0},
+  {"name":"legacy block embed","document":{"type":"doc","content":[{"type":"blockEmbed","attrs":{"embedUrl":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}}]},"violations":0},
+  {"name":"legacy PDF key","document":{"type":"doc","content":[{"type":"blockPDF","attrs":{"blockObject":{"content":{"file_key":"documents/lesson.pdf"}}}}]},"violations":0},
+  {"name":"new public image","document":{"type":"doc","content":[{"type":"image","attrs":{"src":"/content/images/lesson.png"}}]},"violations":0},
+  {"name":"custom imported node","document":{"type":"doc","content":[{"type":"custom","attrs":{"legacy_id":"kept-as-data"}}]},"violations":0},
+  {"name":"unsafe link is still rejected","document":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Unsafe","marks":[{"type":"link","attrs":{"href":"javascript:alert(1)"}}]}]}]},"violations":1},
+  {"name":"path traversal is still rejected","document":{"type":"doc","content":[{"type":"image","attrs":{"src":"../private.png"}}]},"violations":1}
+]

@@ -406,6 +406,17 @@ impl TestApp {
     }
 
     /// Escape hatch for custom requests (headers, methods, raw bodies).
+    /// Inspect headers without draining the body; safe for accepted SSE streams.
+    pub async fn status(&self, request: Request<Body>) -> StatusCode {
+        self.router
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("infallible")
+            .status()
+    }
+
+    /// Escape hatch for custom requests, including the complete finite body.
     pub async fn send(&self, request: Request<Body>) -> TestResponse {
         let response = self
             .router

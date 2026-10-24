@@ -16,6 +16,24 @@
 use ab_domain::rich_text::violations;
 use serde_json::Value;
 
+/// Sanitized examples of the old and new stored shapes run without a restored production database.
+#[test]
+fn sanitized_legacy_documents_keep_the_write_contract() {
+    #[derive(serde::Deserialize)]
+    struct Case {
+        name: String,
+        document: Value,
+        violations: usize,
+    }
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("fixtures/legacy-rich-text.json")).unwrap();
+    assert!(cases.len() >= 10);
+    for case in cases {
+        let errors = violations("content", &case.document, &["learning.example".to_owned()]);
+        assert_eq!(errors.len(), case.violations, "{}: {errors:?}", case.name);
+    }
+}
+
 #[tokio::test]
 #[ignore = "needs CORPUS_DATABASE_URL (a restored production copy)"]
 async fn stored_documents_pass_the_write_check() {
