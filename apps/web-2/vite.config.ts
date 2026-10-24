@@ -286,8 +286,8 @@ export default defineConfig({
     rolldownOptions: { treeshake: { manualPureFunctions: ['v'] }, output: { codeSplitting: CODE_SPLITTING } },
   },
   test: {
-    // Use the browser port: Windows can reserve the API default (51204); allow parallel worktrees to advance.
-    api: { port: 63315, strictPort: false },
+    // Stay below Windows' dynamic port range (49152+), where Hyper-V reserves whole blocks.
+    api: { port: 31315, strictPort: false },
     projects: [
       { test: unit },
       // The browser project's Vite server inherits `server.strictPort` (the dev server's): free it for parallel runs.
