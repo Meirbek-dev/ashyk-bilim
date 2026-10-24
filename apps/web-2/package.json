@@ -14,7 +14,7 @@
     "dev": "vp dev",
     "build": "vp build",
     "start": "node serve.ts",
-    "codegen": "bun gates/codegen.ts",
+    "codegen": "node --import ./gates/ts6-register.mjs gates/codegen.ts",
     "check": "vp check",
     "test": "vp test run",
     "e2e": "playwright test -c e2e/playwright.config.ts",

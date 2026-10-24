@@ -157,11 +157,16 @@ function prepare(dir: string, tree: string, paraglide: boolean): void {
     if (exists(real) && exists(dirname(link)) && !exists(link)) symlinkSync(real, link, 'junction')
   }
   const messages = git('rev-parse', '-q', '--verify', `${tree}:apps/web-2/messages`).out
-  const stamp = join(dir, 'apps/web-2/src/paraglide/.hook-stamp')
+  // The Vite plugin replaces its generated directory; keep our input stamp outside it.
+  const stamp = join(dir, 'tmp/paraglide-hook-stamp')
   const stale = !exists(stamp) || readFileSync(stamp, 'utf8') !== messages
   if (paraglide && messages && stale) {
-    const gen = sync(['bun', 'gates/codegen.ts', 'messages'], join(dir, 'apps/web-2'))
+    const gen = sync(
+      ['node', '--import', './gates/ts6-register.mjs', 'gates/codegen.ts', 'messages'],
+      join(dir, 'apps/web-2'),
+    )
     if (gen.code !== 0) throw new Error(`web-2 codegen messages: ${gen.out}`)
+    mkdirSync(dirname(stamp), { recursive: true })
     writeFileSync(stamp, messages)
   }
 }
