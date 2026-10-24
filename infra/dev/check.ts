@@ -8,9 +8,9 @@
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { spawn, spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { delimiter, dirname, resolve } from 'node:path'
 
-import { databaseUrl, devEnv } from './lib.ts'
+import { databaseUrl, devEnv, machineEnv } from './lib.ts'
 import { checkDatabase } from './check-db.ts'
 
 const root = resolve(import.meta.dir, '../..')
@@ -126,13 +126,13 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
         ? { name: 'web2:check', cwd: web2, cmd: ['bunx', 'vp', 'check'] }
         : { name: 'web2:check', cwd: web2, cmd: ['bunx', 'vp', 'check', ...checkable] },
       ...(all
-        ? [{ name: 'web2:test', cwd: web2, cmd: ['bunx', 'vp', 'test', 'run'] }]
+        ? [{ name: 'web2:test', cwd: web2, cmd: ['bunx', 'vp', 'test', 'run', '--maxWorkers=2'] }]
         : tests.length > 0
           ? [
               {
                 name: 'web2:test',
                 cwd: web2,
-                cmd: ['bunx', 'vp', 'test', 'related', '--run', '--passWithNoTests', ...tests],
+                cmd: ['bunx', 'vp', 'test', 'related', '--run', '--passWithNoTests', '--maxWorkers=2', ...tests],
               },
             ]
           : []),
@@ -192,15 +192,31 @@ export function runGate(gate: Gate, directory = logDir): Promise<Result> {
   const started = performance.now()
   writeFileSync(log, `$ ${gate.cmd.join(' ')}  (in ${gate.cwd})\n`)
   return new Promise(done => {
-    const child = spawn(gate.cmd[0], gate.cmd.slice(1), {
-      cwd: gate.cwd,
-      env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', CARGO_TERM_COLOR: 'never', ...gate.env },
-      // No shell: a nextest filter's `|` would become a pipe in cmd.exe (every tool here is an .exe).
-      shell: false,
-    })
+    const [command, ...args] = gate.cmd
+    const child = spawn(
+      command === 'bun' || command === 'bunx' ? process.execPath : command,
+      command === 'bunx' ? ['x', ...args] : args,
+      {
+        cwd: gate.cwd,
+        env: {
+          ...machineEnv(),
+          ...process.env,
+          NO_COLOR: '1',
+          FORCE_COLOR: '0',
+          CARGO_TERM_COLOR: 'never',
+          ...gate.env,
+          PATH: `${dirname(process.execPath)}${delimiter}${process.env['PATH'] ?? ''}`,
+        },
+        // No shell: a nextest filter's `|` would become a pipe in cmd.exe (every tool here is an .exe).
+        shell: false,
+        windowsHide: true,
+      },
+    )
     child.stdout.on('data', chunk => appendFileSync(log, chunk))
     child.stderr.on('data', chunk => appendFileSync(log, chunk))
-    child.on('close', code => {
+    child.on('error', error => appendFileSync(log, `\ncheck: spawn ${error.message}\n`))
+    child.on('close', (code, signal) => {
+      appendFileSync(log, `\ncheck: exit ${code ?? signal ?? 'unknown'}\n`)
       done({ gate, ok: code === 0, seconds: (performance.now() - started) / 1000, log })
     })
   })

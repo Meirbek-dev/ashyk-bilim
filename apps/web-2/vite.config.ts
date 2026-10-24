@@ -272,7 +272,7 @@ const formatStaged = (files: readonly string[]) => {
 }
 
 export default defineConfig({
-  cacheDir: resolve(app, '../../tmp/vite/web2'),
+  cacheDir: resolve(app, '../../tmp/node_modules/.vite/web2'),
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
   server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy, fs },

@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 import { inlangToIcu } from './src/i18n/inlang-to-icu'
 
 export default defineConfig({
-  cacheDir: resolve(import.meta.dirname, '../../tmp/vite/web'),
+  cacheDir: resolve(import.meta.dirname, '../../tmp/node_modules/.vite/web'),
   plugins: [
     // eslint-disable-next-line typescript/no-explicit-any
     react() as any,

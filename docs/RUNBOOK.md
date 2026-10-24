@@ -560,7 +560,10 @@ follows the running slots.
   container with the pinned pgvector image and memory-backed data, removed after the checks. Run the same mode
   locally with `just check --isolated-db`. Shared development data and its durability settings are unchanged.
   For one integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated
-  executables. Hook checkouts share installed frontend dependencies but keep their own Vite caches in `tmp/vite/`.
+  executables. Hook checkouts share installed frontend dependencies but keep their own Vite caches in
+  `tmp/node_modules/.vite/` so application compiler plugins still exclude generated dependency code.
+  Browser checks use two workers alongside the other areas. Child commands reuse the active Bun runtime and
+  hide Windows consoles; logs record the exit status for diagnosing native process-start failures.
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
   its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and
   the error codes still missing a message. Generated files are `linguist-generated` (.gitattributes):

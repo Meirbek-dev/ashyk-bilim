@@ -8,7 +8,7 @@
 //   server: rustfmt --check of the staged .rs files; refuses edits to migrations already on origin/main
 // pre-push runs `just check --base <remote tip>` on a checkout of the pushed commit; only CI (env CI) skips it.
 import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { delimiter, dirname, join } from 'node:path'
 
 const MAX_LINES = 30
 const WEB2_GATES = ['i18n', 'tokens', 'suppressions', 'trace', 'docs']
@@ -19,7 +19,13 @@ const win = process.platform === 'win32'
 type Result = { name: string; code: number; out: string; fix?: string }
 
 function sync(cmd: string[], cwd?: string, env: Record<string, string> = {}): { code: number; out: string } {
-  const p = Bun.spawnSync(cmd, { cwd, env: { ...process.env, ...env }, stdout: 'pipe', stderr: 'pipe' })
+  const p = Bun.spawnSync(cmd, {
+    cwd,
+    env: { ...process.env, PATH: `${dirname(process.execPath)}${delimiter}${process.env['PATH'] ?? ''}`, ...env },
+    stdout: 'pipe',
+    stderr: 'pipe',
+    windowsHide: true,
+  })
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}`.trim() }
 }
 
@@ -28,6 +34,7 @@ const toolEnv = {
   ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))),
   NO_COLOR: '1',
   FORCE_COLOR: '0',
+  PATH: `${dirname(process.execPath)}${delimiter}${process.env['PATH'] ?? ''}`,
 }
 
 async function run(name: string, cmd: string[], cwd: string, fix?: string): Promise<Result> {
@@ -36,6 +43,7 @@ async function run(name: string, cmd: string[], cwd: string, fix?: string): Prom
     env: toolEnv,
     stdout: 'pipe',
     stderr: 'pipe',
+    windowsHide: true,
   })
   const [stdout, stderr, code] = await Promise.all([
     new Response(p.stdout).text(),
@@ -135,7 +143,7 @@ function pushCheckout(sha: string): string {
   const cmd = exists(join(dir, '.git'))
     ? ['git', '-C', dir, 'checkout', '--detach', '--force', '--quiet', sha]
     : ['git', 'worktree', 'add', '--detach', '--force', dir, sha]
-  const step = Bun.spawnSync(cmd, { cwd: top, env: toolEnv, stdout: 'pipe', stderr: 'pipe' })
+  const step = Bun.spawnSync(cmd, { cwd: top, env: toolEnv, stdout: 'pipe', stderr: 'pipe', windowsHide: true })
   if (step.exitCode !== 0) throw new Error(`${cmd.join(' ')}: ${step.stderr.toString()}`)
   return dir
 }
@@ -308,11 +316,12 @@ async function prePush(): Promise<number> {
     const dir = pushCheckout(local)
     prepare(dir, local, true)
     console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
-    const p = Bun.spawn(['bun', 'infra/dev/check.ts', '--base', base, '--isolated-db'], {
+    const p = Bun.spawn([process.execPath, 'infra/dev/check.ts', '--base', base, '--isolated-db'], {
       cwd: dir,
       env: toolEnv, // check.ts picks this checkout's own CARGO_TARGET_DIR (infra/dev/cargo-target.ts)
       stdout: 'inherit',
       stderr: 'inherit',
+      windowsHide: true,
     })
     return await p.exited
   } finally {

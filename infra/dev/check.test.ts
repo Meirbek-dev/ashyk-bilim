@@ -31,6 +31,11 @@ test('docs alone run nothing; --all runs every area', () => {
   expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web', 'web2'])
 })
 
+test('browser checks bound worker concurrency while other areas run', () => {
+  const gate = plan(['apps/web-2/src/shared/components/testing.tsx'], false).web2.find(g => g.name === 'web2:test')
+  expect(gate?.cmd).toContain('--maxWorkers=2')
+})
+
 test('server gates bound compilation and use the committed .sqlx cache', () => {
   for (const gate of plan(['apps/server/crates/api/src/app.rs'], false).server ?? [])
     if (gate.name !== 'server:fmt') {
@@ -45,9 +50,9 @@ test('a gate log is readable before the child exits', async () => {
   const script = join(dir, 'child.ts')
   writeFileSync(
     script,
-    `console.log('started'); while (!(await Bun.file(${JSON.stringify(release)}).exists())) await Bun.sleep(10); console.error('finished')`,
+    `console.log('started'); while (!(await Bun.file(${JSON.stringify(release)}).exists())) await Bun.sleep(10); console.error('finished'); process.exit(7)`,
   )
-  const result = runGate({ name: 'test:live', cwd: dir, cmd: [process.execPath, script] }, dir)
+  const result = runGate({ name: 'test:live', cwd: dir, cmd: ['bun', script] }, dir)
   try {
     const log = join(dir, 'test-live.log')
     const deadline = Date.now() + 5000
@@ -57,10 +62,23 @@ test('a gate log is readable before the child exits', async () => {
     writeFileSync(release, '')
     const completed = await result
     try {
-      expect(completed.ok).toBe(true)
+      expect(completed.ok).toBe(false)
       expect(readFileSync(completed.log, 'utf8')).toContain('finished')
+      expect(readFileSync(completed.log, 'utf8')).toContain('check: exit 7')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  }
+})
+
+test('a failed native process start is logged and completes the gate', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-check-'))
+  try {
+    const result = await runGate({ name: 'test:missing', cwd: dir, cmd: [join(dir, 'missing-command')] }, dir)
+    expect(result.ok).toBe(false)
+    expect(readFileSync(result.log, 'utf8')).toContain('check: spawn')
+    expect(readFileSync(result.log, 'utf8')).toContain('missing-command')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })
