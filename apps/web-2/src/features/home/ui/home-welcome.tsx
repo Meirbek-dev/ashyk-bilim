@@ -20,12 +20,19 @@ export function HomeWelcome() {
   const courses = data.items.slice(0, 3)
   // A teacher's first sign-in lands here, in «Учёба»: the way to their own space, not only the catalog (B-HOME-12).
   const teaches = hasCapability(useSuspenseQuery(sessionOptions()).data, 'teach')
+  const lead = teaches && !finished ? 'teach' : 'learn'
   return (
     <div className="flex w-full flex-col items-start gap-10 py-2">
       <div className="flex flex-col items-start gap-4">
         <p className="text-muted-foreground">{finished ? m.home_all_done() : m.home_empty()}</p>
         <div className="flex flex-wrap gap-2">
-          <RouterLink to="/courses" className={buttonVariants()}>
+          {/* A teacher who learns nothing yet came to teach: that is the one primary action (B-HOME-12). */}
+          {lead === 'teach' ? (
+            <RouterLink to="/teach" className={buttonVariants()}>
+              {m.home_go_teach()}
+            </RouterLink>
+          ) : null}
+          <RouterLink to="/courses" className={buttonVariants({ variant: lead === 'teach' ? 'outline' : 'default' })}>
             {finished ? m.home_find_next_course() : m.home_find_course()}
           </RouterLink>
           {finished ? (
@@ -33,7 +40,7 @@ export function HomeWelcome() {
               {m.home_my_courses()}
             </RouterLink>
           ) : null}
-          {teaches ? (
+          {teaches && lead !== 'teach' ? (
             <RouterLink to="/teach" className={buttonVariants({ variant: 'outline' })}>
               {m.home_go_teach()}
             </RouterLink>
