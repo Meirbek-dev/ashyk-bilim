@@ -28,7 +28,7 @@ default: check
 
 # Install the required cargo tooling (one-time per machine).
 setup:
-    cargo install cargo-binstall --version 1.26.0 --locked
+    cargo install cargo-binstall --version 1.26.1 --locked
     source ./tools.env && cargo binstall -y ${LINT_TOOLS//,/ } ${TEST_TOOLS//,/ } ${DEV_TOOLS//,/ }
 
 # Refresh the workspace lockfile to the latest compatible registry releases.

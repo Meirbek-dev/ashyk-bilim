@@ -81,7 +81,7 @@ shadcn drops the affected dependency or a compatible patched version becomes ava
 
 ### 34. Tiptap mathematics has not declared KaTeX 0.19 compatibility
 
-`apps/web-2` pins `katex@0.19.0`, but `@tiptap/extension-mathematics@3.32.0` declares
+`apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.32.0` declares
 `^0.16.4 || ^0.17.0 || ^0.18.0` as its peer range. The markdown round-trip and browser math tests pass with
 the pinned version; this is an upstream compatibility declaration gap, not an observed rendering failure.
 Keep those tests when updating either package. Remove this finding when the extension's peer range includes

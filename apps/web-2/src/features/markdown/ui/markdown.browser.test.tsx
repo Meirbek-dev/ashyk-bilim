@@ -1,5 +1,5 @@
 import { Suspense, useState, type ReactNode } from 'react'
-import { describe, expect, test, vi } from 'vite-plus/test'
+import { beforeAll, describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
@@ -7,6 +7,10 @@ import { renderInRouter } from '#/shared/components/testing'
 
 import { sanitize } from '../model/sanitize'
 import { MarkdownEditor, MarkdownView } from '../index'
+import { highlighter } from './shiki'
+
+// As in code-block.browser.test.tsx, load the grammar before the full suite competes for cold chunks.
+beforeAll(() => highlighter('python'), 120_000)
 
 const CODE = '```\nx = 1\n```'
 const render = (ui: ReactNode) => renderInRouter(<Suspense>{ui}</Suspense>)

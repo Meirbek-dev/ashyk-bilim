@@ -285,8 +285,8 @@ export default defineConfig({
     rolldownOptions: { treeshake: { manualPureFunctions: ['v'] }, output: { codeSplitting: CODE_SPLITTING } },
   },
   test: {
-    // Several worktrees run verify at once: the fixed default port (63315) collides.
-    api: { strictPort: false },
+    // Use the browser port: Windows can reserve the API default (51204); allow parallel worktrees to advance.
+    api: { port: 63315, strictPort: false },
     // Inline projects inherit this config (Vitest 5 default).
     projects: [
       { test: unit },
