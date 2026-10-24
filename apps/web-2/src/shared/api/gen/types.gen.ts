@@ -1267,6 +1267,18 @@ export type CertificationId = string;
 export type CertificationType = 'completion' | 'achievement' | 'assessment' | 'participation' | 'mastery' | 'professional' | 'continuing' | 'workshop' | 'specialization';
 
 /**
+ * Change the account's e-mail: a code goes to the new address. No `Debug` -
+ * carries a password.
+ */
+export type ChangeEmailRequest = {
+    email: string;
+    /**
+     * The current password; required unless the account signs in with Google only.
+     */
+    password?: string;
+};
+
+/**
  * Password change; the current password is checked by Zitadel.
  */
 export type ChangePasswordRequest = {
@@ -1544,6 +1556,13 @@ export type ConfigPatch = {
     rubric?: FileRubric;
     settings?: FileSubmissionSettings;
     title?: string;
+};
+
+/**
+ * The code emailed to the new address.
+ */
+export type ConfirmEmailChangeRequest = {
+    code: string;
 };
 
 export type ContentBottleneckRow = {
@@ -2410,6 +2429,16 @@ export type DeadlineExtensionRequest = {
 };
 
 /**
+ * Delete the own account. No `Debug` - carries a password.
+ */
+export type DeleteAccountRequest = {
+    /**
+     * The current password; required unless the account signs in with Google only.
+     */
+    password?: string;
+};
+
+/**
  * Why the caller cannot enrol (`CoursePermissions.denial_reason`).
  */
 export type DenialReason = 'course_archived' | 'staff_preview';
@@ -2768,7 +2797,7 @@ export type Enrollments = {
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -4301,11 +4330,19 @@ export type PasswordResetRequest = {
 
 export type Platform = {
     about: string;
+    about_en?: string;
+    about_kk?: string;
     /**
      * What the caller may do to the settings (empty for anonymous readers).
      */
     allowed_actions: Array<PlatformAction>;
     description: string;
+    description_en?: string;
+    /**
+     * Kazakh / English `description` and `about` (blank = not translated: show the
+     * Russian one). Always sent by this server; optional on the wire for older ones.
+     */
+    description_kk?: string;
     email: string;
     label: string | null;
     /**
@@ -6419,7 +6456,14 @@ export type UpdateItemRequest = {
 
 export type UpdatePlatformRequest = {
     about?: string;
+    about_en?: string;
+    about_kk?: string;
     description?: string;
+    description_en?: string;
+    /**
+     * Kazakh / English versions; blank clears the translation.
+     */
+    description_kk?: string;
     email?: string;
     /**
      * `null` clears the label; blank is stored as cleared too (UX-135).
@@ -6433,6 +6477,10 @@ export type UpdatePlatformRequest = {
      * Blank → 422 `required` (trimmed in the service).
      */
     name?: string;
+    /**
+     * `true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.
+     */
+    remove_logo?: boolean;
     /**
      * Finalized `platform-thumbnail` upload to claim.
      */
@@ -10643,6 +10691,74 @@ export type StatsResponses = {
 };
 
 export type StatsResponse = StatsResponses[keyof StatsResponses];
+
+export type ChangeEmailData = {
+    body: ChangeEmailRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/auth/email';
+};
+
+export type ChangeEmailErrors = {
+    /**
+     * `invalid-credentials`: password wrong or missing
+     */
+    401: Problem;
+    /**
+     * `email-taken`
+     */
+    409: Problem;
+    /**
+     * `email`/`unchanged`: already the account's address
+     */
+    422: Problem;
+    /**
+     * Too many attempts or code mails
+     */
+    429: Problem;
+};
+
+export type ChangeEmailError = ChangeEmailErrors[keyof ChangeEmailErrors];
+
+export type ChangeEmailResponses = {
+    /**
+     * Code sent to the new address
+     */
+    202: unknown;
+};
+
+export type ConfirmEmailChangeData = {
+    body: ConfirmEmailChangeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/auth/email/confirm';
+};
+
+export type ConfirmEmailChangeErrors = {
+    /**
+     * `email-taken` meanwhile
+     */
+    409: Problem;
+    /**
+     * `code`/`invalid`: wrong or expired code
+     */
+    422: Problem;
+    /**
+     * Too many wrong codes
+     */
+    429: Problem;
+};
+
+export type ConfirmEmailChangeError = ConfirmEmailChangeErrors[keyof ConfirmEmailChangeErrors];
+
+export type ConfirmEmailChangeResponses = {
+    /**
+     * Address changed
+     */
+    204: void;
+};
+
+export type ConfirmEmailChangeResponse = ConfirmEmailChangeResponses[keyof ConfirmEmailChangeResponses];
 
 export type GoogleStartData = {
     body?: never;
@@ -16577,6 +16693,39 @@ export type UpdateMyProfileResponses = {
 
 export type UpdateMyProfileResponse = UpdateMyProfileResponses[keyof UpdateMyProfileResponses];
 
+export type DeleteAccountData = {
+    body: DeleteAccountRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/users/me/deletion';
+};
+
+export type DeleteAccountErrors = {
+    /**
+     * `invalid-credentials`: password wrong or missing
+     */
+    401: Problem;
+    /**
+     * `account-has-roles`: staff accounts are closed by an admin
+     */
+    409: Problem;
+    /**
+     * Too many attempts
+     */
+    429: Problem;
+};
+
+export type DeleteAccountError = DeleteAccountErrors[keyof DeleteAccountErrors];
+
+export type DeleteAccountResponses = {
+    /**
+     * Account deleted, cookie cleared
+     */
+    204: void;
+};
+
+export type DeleteAccountResponse = DeleteAccountResponses[keyof DeleteAccountResponses];
+
 export type AssignRoleData = {
     body: AssignRoleRequest;
     headers?: {
@@ -16697,7 +16846,7 @@ export type SetUserStatusErrors = {
      */
     403: Problem;
     /**
-     * `self-disable` / `last-admin`
+     * `self-disable` / `last-admin` / `account-deleted` (re-enabling an account its owner deleted)
      */
     409: Problem;
 };

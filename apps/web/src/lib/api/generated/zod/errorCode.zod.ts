@@ -38,6 +38,8 @@ export const ErrorCode = zod
     'username-taken',
     'email-taken',
     'reset-code-invalid',
+    'account-has-roles',
+    'account-deleted',
     'role-slug-taken',
     'last-admin',
     'self-disable',

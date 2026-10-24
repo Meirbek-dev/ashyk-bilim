@@ -25,6 +25,9 @@ const PUBLIC: &[(&str, &str)] = &[
 const AUTH_ONLY: &[(&str, &str)] = &[
     ("POST", "/api/v2/auth/logout"),
     ("POST", "/api/v2/auth/password"),
+    ("POST", "/api/v2/auth/email"),
+    ("POST", "/api/v2/auth/email/confirm"),
+    ("POST", "/api/v2/users/me/deletion"),
     ("DELETE", "/api/v2/auth/sessions/{handle}"),
     ("POST", "/api/v2/auth/mfa/totp"),
     ("POST", "/api/v2/auth/mfa/totp/verify"),

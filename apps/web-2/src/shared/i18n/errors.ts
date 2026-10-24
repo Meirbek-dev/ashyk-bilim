@@ -53,6 +53,8 @@ const messages: Record<ErrorCode, () => string> = {
   'ai-run-cancelled': m.errors_ai_run_cancelled,
   'ai-provider-unavailable': m.errors_ai_provider_unavailable,
   'reset-code-invalid': m.errors_reset_code_invalid,
+  'account-has-roles': m.errors_account_has_roles,
+  'account-deleted': m.errors_account_deleted,
 }
 
 /** The user-facing text of any thrown error: the code's text for an ApiError, "no connection" otherwise. */

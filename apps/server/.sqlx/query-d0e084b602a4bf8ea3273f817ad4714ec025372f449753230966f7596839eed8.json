@@ -1,0 +1,158 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, description, about, description_kk, description_en, about_kk, about_en,\n                email, label, logo_key, thumbnail_key, version\n         FROM platforms WHERE singleton",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description_kk",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "description_kk"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "description_en",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "description_en"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "about_kk",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "about_kk"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "about_en",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "about_en"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "logo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "logo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "thumbnail_key"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "d0e084b602a4bf8ea3273f817ad4714ec025372f449753230966f7596839eed8"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET\n               username = $2, email = $2 || '@deleted.invalid', display_name = '',\n               bio = '', avatar_key = NULL, organization = '', theme = NULL,\n               profile = '{\"sections\": []}'::jsonb, profile_version = profile_version + 1,\n               email_verified = true, status = 'disabled', deleted_at = now(),\n               rbac_version = rbac_version + 1\n           WHERE id = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b355bf9740e3cbb4a0018bf0a8e3f3fa77b3bd4be8690bde06664f674de32c51"
+}

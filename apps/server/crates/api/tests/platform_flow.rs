@@ -221,6 +221,50 @@ async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
             .unwrap();
     assert!(expiring, "replaced branding must re-enter the reaper queue");
 
+    // OPEN-C-1: `remove_logo` brings the wordmark back and releases the upload.
+    let removed = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "remove_logo": true }),
+        )
+        .await;
+    assert_eq!(removed.status, StatusCode::OK, "{}", removed.text());
+    assert!(removed.json()["logo_key"].is_null());
+    let expiring: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&second_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(expiring, "a removed logo re-enters the reaper queue");
+
+    // OPEN-G-4: Kazakh / English texts are stored trimmed; blank clears one.
+    let texts = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "description_kk": " Оқу платформасы ", "about_en": "About us" }),
+        )
+        .await;
+    assert_eq!(texts.status, StatusCode::OK, "{}", texts.text());
+    let body = texts.json();
+    assert_eq!(body["description_kk"], "Оқу платформасы");
+    assert_eq!(body["about_en"], "About us");
+    assert_eq!(body["description_en"], "");
+    let cleared = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "about_en": "  " }),
+        )
+        .await;
+    assert_eq!(cleared.json()["about_en"], "");
+    assert_eq!(
+        app.get("/api/v2/platform").await.json()["description_kk"],
+        "Оқу платформасы"
+    );
+
     // Wrong-purpose claims are refused.
     let avatar = {
         let created = app

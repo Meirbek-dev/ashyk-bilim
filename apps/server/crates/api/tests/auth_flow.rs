@@ -2930,3 +2930,258 @@ async fn dev_login_does_not_exist_in_production(pool: PgPool) {
         .await;
     assert!(refused.is_err(), "the domain refuses production on its own");
 }
+
+/// The six-digit code in the `n`-th mail Resend received.
+async fn mailed_code(app: &TestApp, n: usize) -> String {
+    let mails = app.resend.received_requests().await.unwrap();
+    let html = mails[n].body_json::<serde_json::Value>().unwrap()["html"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let start = html.find("<strong>").unwrap() + "<strong>".len();
+    html[start..start + 6].to_owned()
+}
+
+async fn mock_resend_ok(app: &TestApp) {
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({ "id": "em-1" })))
+        .mount(&app.resend)
+        .await;
+}
+
+async fn mock_password_check(app: &TestApp) {
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "checks": { "password": { "password": "right horse" } }
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-check-1", "sessionToken": "zit-check-token", "details": {}
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "checks": { "password": { "password": "wrong horse" } }
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3,
+            "message": "Password is invalid (COMMAND-3M0fs)",
+            "details": [{ "failedAttempts": 1 }]
+        })))
+        .mount(&app.zitadel)
+        .await;
+    // The check session is not kept.
+    Mock::given(method("DELETE"))
+        .and(path("/v2/sessions/zit-check-1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .mount(&app.zitadel)
+        .await;
+}
+
+/// OPEN-G-1: an e-mail change needs the password, then the code mailed to
+/// the NEW address; until then nothing changes. A wrong code, the current
+/// address or one another account holds are refused; on success the account
+/// (and Zitadel) use the new verified address and the old one is told.
+#[sqlx::test(migrations = "../../migrations")]
+async fn email_change_is_confirmed_from_the_new_address(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("mover", "mover@example.com", &["user"])
+        .await;
+    app.create_user("holder", "taken@example.com", &["user"])
+        .await;
+    let me = app.mint_session_for(user, &[]).await;
+    mock_resend_ok(&app).await;
+    mock_password_check(&app).await;
+    Mock::given(method("POST"))
+        .and(path(format!("/v2/users/z-{user}/email")))
+        .and(wiremock::matchers::body_json(
+            serde_json::json!({ "email": "new@example.com", "isVerified": true }),
+        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    let ask = |email: &str, password: &str| {
+        let body = serde_json::json!({ "email": email, "password": password });
+        let app = &app;
+        let me = &me;
+        async move { app.post_as(me, "/api/v2/auth/email", &body).await }
+    };
+
+    let wrong = ask("new@example.com", "wrong horse").await;
+    assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(wrong.json()["code"], "invalid-credentials");
+    let same = ask("MOVER@example.com", "right horse").await;
+    assert_eq!(same.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(same.json()["field_errors"][0]["code"], "unchanged");
+    let taken = ask("taken@example.com", "right horse").await;
+    assert_eq!(taken.status, StatusCode::CONFLICT);
+    assert_eq!(taken.json()["code"], "email-taken");
+
+    let ok = ask("New@Example.com", "right horse").await;
+    assert_eq!(ok.status, StatusCode::ACCEPTED, "{}", ok.text());
+    let mails = app.resend.received_requests().await.unwrap();
+    assert_eq!(mails.len(), 1);
+    assert!(String::from_utf8_lossy(&mails[0].body).contains("new@example.com"));
+    let code = mailed_code(&app, 0).await;
+    let me_email = || async {
+        app.get_as(&me, "/api/v2/users/me").await.json()["email"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    assert_eq!(
+        me_email().await,
+        "mover@example.com",
+        "nothing changes before the code"
+    );
+
+    let bad = app
+        .post_as(
+            &me,
+            "/api/v2/auth/email/confirm",
+            &serde_json::json!({ "code": "000000x" }),
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(bad.json()["field_errors"][0]["field"], "code");
+    let good = app
+        .post_as(
+            &me,
+            "/api/v2/auth/email/confirm",
+            &serde_json::json!({ "code": code }),
+        )
+        .await;
+    assert_eq!(good.status, StatusCode::NO_CONTENT, "{}", good.text());
+    assert_eq!(me_email().await, "new@example.com");
+    let profile = app.get_as(&me, "/api/v2/users/me").await.json();
+    assert_eq!(profile["email_verified"], true);
+    // The old address is told; the code is single-use.
+    let mails = app.resend.received_requests().await.unwrap();
+    assert!(String::from_utf8_lossy(&mails[1].body).contains("mover@example.com"));
+    let again = app
+        .post_as(
+            &me,
+            "/api/v2/auth/email/confirm",
+            &serde_json::json!({ "code": code }),
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+/// OPEN-G-1: a learner deletes their own account with the password. The row
+/// stays (work and grades keep their owner) with every personal field
+/// cleared; sessions end, the Zitadel user goes, the cookie is cleared, an
+/// admin cannot re-enable it. Staff accounts are refused.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_learner_deletes_their_account_and_the_work_stays(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let user = app
+        .create_user("leaver", "leaver@example.com", &["user"])
+        .await;
+    let staff = app
+        .create_user("teachy", "teachy@example.com", &["instructor"])
+        .await;
+    let admin = app
+        .create_user("boss", "boss@example.com", &["admin"])
+        .await;
+    let me = app.mint_session_for(user, &[]).await;
+    let other = app.mint_session_for(user, &[]).await;
+    mock_password_check(&app).await;
+    Mock::given(method("DELETE"))
+        .and(path(format!("/v2/users/z-{user}")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
+        )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+
+    let staff_session = app.mint_session_for(staff, &[]).await;
+    let refused = app
+        .post_as(
+            &staff_session,
+            "/api/v2/users/me/deletion",
+            &serde_json::json!({ "password": "right horse" }),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT);
+    assert_eq!(refused.json()["code"], "account-has-roles");
+
+    let wrong = app
+        .post_as(
+            &me,
+            "/api/v2/users/me/deletion",
+            &serde_json::json!({ "password": "wrong horse" }),
+        )
+        .await;
+    assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    let missing = app
+        .post_as(&me, "/api/v2/users/me/deletion", &serde_json::json!({}))
+        .await;
+    assert_eq!(missing.status, StatusCode::UNAUTHORIZED);
+
+    let ok = app
+        .post_as(
+            &me,
+            "/api/v2/users/me/deletion",
+            &serde_json::json!({ "password": "right horse" }),
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT, "{}", ok.text());
+    assert!(
+        ok.headers
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .any(|c| c.to_str().unwrap().contains("Max-Age=0")),
+        "the cookie is cleared"
+    );
+    for session in [&me, &other] {
+        assert_eq!(
+            app.get_as(session, "/api/v2/auth/session").await.status,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    let row: (String, String, String, String, bool) = sqlx::query_as(
+        "SELECT username, email, display_name, status, deleted_at IS NOT NULL FROM users WHERE id = $1",
+    )
+    .bind(user.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!(row.0.starts_with("deleted-"), "{}", row.0);
+    assert!(row.1.ends_with("@deleted.invalid"), "{}", row.1);
+    assert_eq!(
+        (row.2.as_str(), row.3.as_str(), row.4),
+        ("", "disabled", true)
+    );
+    // The address is free for a new account.
+    assert!(
+        ab_db::identity::find_user_id_by_email(&app.pool, "leaver@example.com")
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    let admin_session = app
+        .mint_session_for(
+            admin,
+            &["platform:read:platform", "platform:manage:platform"],
+        )
+        .await;
+    let reenable = app
+        .patch_as(
+            &admin_session,
+            &format!("/api/v2/users/{user}/status"),
+            &serde_json::json!({ "disabled": false }),
+        )
+        .await;
+    assert_eq!(reenable.status, StatusCode::CONFLICT, "{}", reenable.text());
+    assert_eq!(reenable.json()["code"], "account-deleted");
+}

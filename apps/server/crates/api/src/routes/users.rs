@@ -301,7 +301,7 @@ pub(crate) async fn user_or_no_content(
         (status = 204, description = "Status changed"),
         (status = 403, description = "Missing permission", body = Problem,
          content_type = "application/problem+json"),
-        (status = 409, description = "`self-disable` / `last-admin`", body = Problem,
+        (status = 409, description = "`self-disable` / `last-admin` / `account-deleted` (re-enabling an account its owner deleted)", body = Problem,
          content_type = "application/problem+json"),
     )
 )]

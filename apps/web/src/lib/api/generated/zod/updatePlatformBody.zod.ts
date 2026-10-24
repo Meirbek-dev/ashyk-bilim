@@ -9,7 +9,15 @@ import * as zod from 'zod'
 
 export const updatePlatformBodyAboutMax = 20000
 
+export const updatePlatformBodyAboutEnMax = 20000
+
+export const updatePlatformBodyAboutKkMax = 20000
+
 export const updatePlatformBodyDescriptionMax = 5000
+
+export const updatePlatformBodyDescriptionEnMax = 5000
+
+export const updatePlatformBodyDescriptionKkMax = 5000
 
 export const updatePlatformBodyEmailMax = 320
 
@@ -19,7 +27,15 @@ export const updatePlatformBodyNameMax = 500
 
 export const UpdatePlatformBody = zod.object({
   about: zod.string().max(updatePlatformBodyAboutMax).optional(),
+  about_en: zod.string().max(updatePlatformBodyAboutEnMax).optional(),
+  about_kk: zod.string().max(updatePlatformBodyAboutKkMax).optional(),
   description: zod.string().max(updatePlatformBodyDescriptionMax).optional(),
+  description_en: zod.string().max(updatePlatformBodyDescriptionEnMax).optional(),
+  description_kk: zod
+    .string()
+    .max(updatePlatformBodyDescriptionKkMax)
+    .optional()
+    .describe('Kazakh / English versions; blank clears the translation.'),
   email: zod.string().max(updatePlatformBodyEmailMax).optional(),
   label: zod
     .string()
@@ -32,6 +48,10 @@ export const UpdatePlatformBody = zod.object({
     .max(updatePlatformBodyNameMax)
     .optional()
     .describe('Blank → 422 `required` (trimmed in the service).'),
+  remove_logo: zod
+    .boolean()
+    .optional()
+    .describe('`true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.'),
   thumbnail_upload_id: zod.uuid().optional().describe('Finalized `platform-thumbnail` upload to claim.'),
 })
 

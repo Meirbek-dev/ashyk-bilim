@@ -71,6 +71,39 @@ pub struct ChangePasswordRequest {
     pub new_password: String,
 }
 
+/// Change the account's e-mail: a code goes to the new address. No `Debug` -
+/// carries a password.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ChangeEmailRequest {
+    #[garde(email, length(max = 320))]
+    #[schema(max_length = 320)]
+    pub email: String,
+    /// The current password; required unless the account signs in with Google only.
+    #[garde(inner(length(min = 1, max = 200)))]
+    #[schema(min_length = 1, max_length = 200)]
+    pub password: Option<String>,
+}
+
+/// The code emailed to the new address.
+#[derive(Debug, Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ConfirmEmailChangeRequest {
+    #[garde(length(min = 1, max = 32))]
+    #[schema(min_length = 1, max_length = 32)]
+    pub code: String,
+}
+
+/// Delete the own account. No `Debug` - carries a password.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteAccountRequest {
+    /// The current password; required unless the account signs in with Google only.
+    #[garde(inner(length(min = 1, max = 200)))]
+    #[schema(min_length = 1, max_length = 200)]
+    pub password: Option<String>,
+}
+
 /// Ask for a password reset code (S-08).
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]

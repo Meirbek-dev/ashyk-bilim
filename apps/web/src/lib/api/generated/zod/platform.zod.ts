@@ -9,12 +9,21 @@ import * as zod from 'zod'
 
 export const Platform = zod.object({
   about: zod.string(),
+  about_en: zod.string().optional(),
+  about_kk: zod.string().optional(),
   allowed_actions: zod
     .array(
       zod.enum(['update']).describe('What the caller may do to the platform settings (`Platform.allowed_actions`).'),
     )
     .describe('What the caller may do to the settings (empty for anonymous readers).'),
   description: zod.string(),
+  description_en: zod.string().optional(),
+  description_kk: zod
+    .string()
+    .optional()
+    .describe(
+      'Kazakh / English `description` and `about` (blank = not translated: show the\nRussian one). Always sent by this server; optional on the wire for older ones.',
+    ),
   email: zod.string(),
   label: zod.string().nullable(),
   logo_key: zod.string().nullable().describe('Public-bucket storage keys (served via the CDN /content route).'),

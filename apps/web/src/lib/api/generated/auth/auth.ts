@@ -24,7 +24,9 @@ import type {
 } from '@tanstack/react-query'
 
 import {
+  ChangeEmailRequest,
   ChangePasswordRequest,
+  ConfirmEmailChangeRequest,
   GoogleCallbackParams,
   GoogleStartParams,
   LoginRequest,
@@ -61,6 +63,190 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result
 }
 
+export const getChangeEmailUrl = () => {
+  return `/api/v2/auth/email`
+}
+
+/**
+ * @summary Start an e-mail change: the password is checked and a six-digit code goes
+to the new address (valid one hour). Nothing changes until it is confirmed.
+ */
+export const changeEmail = async (
+  changeEmailRequest: ChangeEmailRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getChangeEmailUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(changeEmailRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getChangeEmailMutationKey = () => ['changeEmail'] as const
+
+export const getChangeEmailMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof changeEmail>>, TError, ChangeEmailMutationVariables, TContext>
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof changeEmail>>, TError, ChangeEmailMutationVariables, TContext> => {
+  const mutationKey = getChangeEmailMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeEmail>>, ChangeEmailMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return changeEmail(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ChangeEmailMutationResult = NonNullable<Awaited<ReturnType<typeof changeEmail>>>
+export type ChangeEmailMutationBody = BodyType<ChangeEmailRequest>
+export type ChangeEmailMutationError = ErrorType<Problem>
+export type ChangeEmailMutationVariables = { data: BodyType<ChangeEmailRequest> }
+
+/**
+ * @summary Start an e-mail change: the password is checked and a six-digit code goes
+to the new address (valid one hour). Nothing changes until it is confirmed.
+ */
+export const useChangeEmail = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof changeEmail>>,
+      TError,
+      ChangeEmailMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof changeEmail>>, TError, ChangeEmailMutationVariables, TContext> => {
+  return useMutation(getChangeEmailMutationOptions(options), queryClient)
+}
+export const getConfirmEmailChangeUrl = () => {
+  return `/api/v2/auth/email/confirm`
+}
+
+/**
+ * @summary Confirm an e-mail change with the emailed code: the account switches to
+the new (verified) address and the old one is told.
+ */
+export const confirmEmailChange = async (
+  confirmEmailChangeRequest: ConfirmEmailChangeRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getConfirmEmailChangeUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(confirmEmailChangeRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getConfirmEmailChangeMutationKey = () => ['confirmEmailChange'] as const
+
+export const getConfirmEmailChangeMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmEmailChange>>,
+    TError,
+    ConfirmEmailChangeMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmEmailChange>>,
+  TError,
+  ConfirmEmailChangeMutationVariables,
+  TContext
+> => {
+  const mutationKey = getConfirmEmailChangeMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmEmailChange>>,
+    ConfirmEmailChangeMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return confirmEmailChange(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type ConfirmEmailChangeMutationResult = NonNullable<Awaited<ReturnType<typeof confirmEmailChange>>>
+export type ConfirmEmailChangeMutationBody = BodyType<ConfirmEmailChangeRequest>
+export type ConfirmEmailChangeMutationError = ErrorType<Problem>
+export type ConfirmEmailChangeMutationVariables = { data: BodyType<ConfirmEmailChangeRequest> }
+
+/**
+ * @summary Confirm an e-mail change with the emailed code: the account switches to
+the new (verified) address and the old one is told.
+ */
+export const useConfirmEmailChange = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof confirmEmailChange>>,
+      TError,
+      ConfirmEmailChangeMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof confirmEmailChange>>,
+  TError,
+  ConfirmEmailChangeMutationVariables,
+  TContext
+> => {
+  return useMutation(getConfirmEmailChangeMutationOptions(options), queryClient)
+}
 export const getGoogleStartUrl = (params?: GoogleStartParams) => {
   const normalizedParams = new URLSearchParams()
 

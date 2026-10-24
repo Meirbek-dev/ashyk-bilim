@@ -28,6 +28,7 @@ import {
   AdminUserPage,
   CoursePage,
   CreateUserRequest,
+  DeleteAccountRequest,
   ListUsersParams,
   Problem,
   ProfileCertificate,
@@ -39,7 +40,7 @@ import {
   UserProfile,
 } from '../zod'
 
-import { orvalMutator, arrayParser, optionalParser, stringifyQueryParam } from '../../orval-mutator'
+import { orvalMutator, arrayParser, optionalParser, stringifyQueryParam, voidParser } from '../../orval-mutator'
 import type { ErrorType, BodyType } from '../../orval-mutator'
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1]
@@ -1001,6 +1002,99 @@ export const useUpdateMyProfile = <TError = ErrorType<Problem>, TContext = unkno
   TContext
 > => {
   return useMutation(getUpdateMyProfileMutationOptions(options), queryClient)
+}
+export const getDeleteAccountUrl = () => {
+  return `/api/v2/users/me/deletion`
+}
+
+/**
+ * @summary Delete the caller's own account (password-confirmed). Personal fields are
+cleared, submissions and grades stay; every session ends and the cookie
+is cleared. Staff accounts are closed by an admin.
+ */
+export const deleteAccount = async (
+  deleteAccountRequest: DeleteAccountRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
+  return orvalMutator<void>(
+    getDeleteAccountUrl(),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(deleteAccountRequest),
+    },
+    voidParser,
+  )
+}
+
+export const getDeleteAccountMutationKey = () => ['deleteAccount'] as const
+
+export const getDeleteAccountMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAccount>>,
+    TError,
+    DeleteAccountMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof orvalMutator>
+}): UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError, DeleteAccountMutationVariables, TContext> => {
+  const mutationKey = getDeleteAccountMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAccount>>,
+    DeleteAccountMutationVariables
+  > = props => {
+    const { data } = props ?? {}
+
+    return deleteAccount(data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type DeleteAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAccount>>>
+export type DeleteAccountMutationBody = BodyType<DeleteAccountRequest>
+export type DeleteAccountMutationError = ErrorType<Problem>
+export type DeleteAccountMutationVariables = { data: BodyType<DeleteAccountRequest> }
+
+/**
+ * @summary Delete the caller's own account (password-confirmed). Personal fields are
+cleared, submissions and grades stay; every session ends and the cookie
+is cleared. Staff accounts are closed by an admin.
+ */
+export const useDeleteAccount = <TError = ErrorType<Problem>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteAccount>>,
+      TError,
+      DeleteAccountMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof deleteAccount>>, TError, DeleteAccountMutationVariables, TContext> => {
+  return useMutation(getDeleteAccountMutationOptions(options), queryClient)
 }
 export const getSetUserStatusUrl = (userId: UserId) => {
   return `/api/v2/users/${userId}/status`

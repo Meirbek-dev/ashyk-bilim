@@ -36,9 +36,17 @@ pub struct PlatformChanges<'a> {
     pub name: Option<&'a str>,
     pub description: Option<&'a str>,
     pub about: Option<&'a str>,
+    /// Kazakh / English versions of `description` and `about` (OPEN-G-4);
+    /// blank = not translated.
+    pub description_kk: Option<&'a str>,
+    pub description_en: Option<&'a str>,
+    pub about_kk: Option<&'a str>,
+    pub about_en: Option<&'a str>,
     pub email: Option<&'a str>,
     /// `Some(None)` clears the label.
     pub label: Option<Option<&'a str>>,
+    /// Remove the logo (a new `logo_upload_id` wins).
+    pub clear_logo: bool,
 }
 
 #[derive(Clone)]
@@ -93,12 +101,14 @@ impl PlatformService {
             .transpose()?;
         // UX-135: free-text fields are stored trimmed; a blank label is no label.
         // UX-184: and without control / bidi characters, like the name.
-        let description = changes
-            .description
-            .map(|d| ab_core::strip_controls_multiline(d).trim().to_owned());
-        let about = changes
-            .about
-            .map(|a| ab_core::strip_controls_multiline(a).trim().to_owned());
+        let text =
+            |t: Option<&str>| t.map(|t| ab_core::strip_controls_multiline(t).trim().to_owned());
+        let description = text(changes.description);
+        let about = text(changes.about);
+        let description_kk = text(changes.description_kk);
+        let description_en = text(changes.description_en);
+        let about_kk = text(changes.about_kk);
+        let about_en = text(changes.about_en);
         let label = changes.label.map(|l| {
             l.map(|l| ab_core::strip_controls(l).trim().to_owned())
                 .filter(|l| !l.is_empty())
@@ -131,9 +141,14 @@ impl PlatformService {
                 name: name.as_deref(),
                 description: description.as_deref(),
                 about: about.as_deref(),
+                description_kk: description_kk.as_deref(),
+                description_en: description_en.as_deref(),
+                about_kk: about_kk.as_deref(),
+                about_en: about_en.as_deref(),
                 email: changes.email,
                 label: label.as_ref().map(Option::as_deref),
                 logo_key: logo_key.as_deref(),
+                clear_logo: changes.clear_logo,
                 thumbnail_key: thumbnail_key.as_deref(),
             },
         )
@@ -141,7 +156,9 @@ impl PlatformService {
         .ok_or_else(|| Error::app(ab_core::ErrorCode::Internal, "platform row is missing"))?;
         // Release exactly the keys the UPDATE replaced, for reaping.
         let released = [
-            logo_key.and(replaced.logo_key),
+            (logo_key.is_some() || changes.clear_logo)
+                .then_some(replaced.logo_key)
+                .flatten(),
             thumbnail_key.and(replaced.thumbnail_key),
         ];
         for old in released.iter().flatten() {

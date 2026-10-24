@@ -77,6 +77,8 @@ error_codes! {
     UsernameTaken => ("username-taken", 409, "Username is already taken"),
     EmailTaken => ("email-taken", 409, "Email is already registered"),
     ResetCodeInvalid => ("reset-code-invalid", 422, "Password reset code is invalid or expired"),
+    AccountHasRoles => ("account-has-roles", 409, "Accounts with staff roles are closed by an admin"),
+    AccountDeleted => ("account-deleted", 409, "The account was deleted by its owner"),
     // RBAC administration
     RoleSlugTaken => ("role-slug-taken", 409, "Role slug is already taken"),
     LastAdmin => ("last-admin", 409, "The platform must keep at least one active admin"),

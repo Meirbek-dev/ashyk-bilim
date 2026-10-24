@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE gamification_profiles\n           SET preferences = jsonb_set(\n                   preferences || jsonb_build_object('privacy', COALESCE(preferences -> 'privacy', '{}'::jsonb)),\n                   '{privacy,showOnLeaderboard}', 'false'::jsonb)\n           WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "61ba71cf6553721d4feef523827ca9fb3352f04500194bac192c76d707e07376"
+}

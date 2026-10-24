@@ -3888,6 +3888,26 @@ expression: json
         ],
         "type": "string"
       },
+      "ChangeEmailRequest": {
+        "additionalProperties": false,
+        "description": "Change the account's e-mail: a code goes to the new address. No `Debug` -\ncarries a password.",
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "type": "string"
+          },
+          "password": {
+            "description": "The current password; required unless the account signs in with Google only.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
       "ChangePasswordRequest": {
         "additionalProperties": false,
         "description": "Password change; the current password is checked by Zitadel.",
@@ -4688,6 +4708,21 @@ expression: json
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "ConfirmEmailChangeRequest": {
+        "additionalProperties": false,
+        "description": "The code emailed to the new address.",
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
         "type": "object"
       },
       "ContentBottleneckRow": {
@@ -6910,6 +6945,19 @@ expression: json
         ],
         "type": "object"
       },
+      "DeleteAccountRequest": {
+        "additionalProperties": false,
+        "description": "Delete the own account. No `Debug` - carries a password.",
+        "properties": {
+          "password": {
+            "description": "The current password; required unless the account signs in with Google only.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "DenialReason": {
         "description": "Why the caller cannot enrol (`CoursePermissions.denial_reason`).",
         "enum": [
@@ -7908,6 +7956,8 @@ expression: json
           "username-taken",
           "email-taken",
           "reset-code-invalid",
+          "account-has-roles",
+          "account-deleted",
           "role-slug-taken",
           "last-admin",
           "self-disable",
@@ -12417,6 +12467,12 @@ expression: json
           "about": {
             "type": "string"
           },
+          "about_en": {
+            "type": "string"
+          },
+          "about_kk": {
+            "type": "string"
+          },
           "allowed_actions": {
             "description": "What the caller may do to the settings (empty for anonymous readers).",
             "items": {
@@ -12425,6 +12481,13 @@ expression: json
             "type": "array"
           },
           "description": {
+            "type": "string"
+          },
+          "description_en": {
+            "type": "string"
+          },
+          "description_kk": {
+            "description": "Kazakh / English `description` and `about` (blank = not translated: show the\nRussian one). Always sent by this server; optional on the wire for older ones.",
             "type": "string"
           },
           "email": {
@@ -18858,7 +18921,24 @@ expression: json
             "maxLength": 20000,
             "type": "string"
           },
+          "about_en": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "about_kk": {
+            "maxLength": 20000,
+            "type": "string"
+          },
           "description": {
+            "maxLength": 5000,
+            "type": "string"
+          },
+          "description_en": {
+            "maxLength": 5000,
+            "type": "string"
+          },
+          "description_kk": {
+            "description": "Kazakh / English versions; blank clears the translation.",
             "maxLength": 5000,
             "type": "string"
           },
@@ -18884,6 +18964,10 @@ expression: json
             "description": "Blank → 422 `required` (trimmed in the service).",
             "maxLength": 500,
             "type": "string"
+          },
+          "remove_logo": {
+            "description": "`true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.",
+            "type": "boolean"
           },
           "thumbnail_upload_id": {
             "description": "Finalized `platform-thumbnail` upload to claim.",
@@ -27296,6 +27380,124 @@ expression: json
         "summary": "Counts, average, pass rate and a ten-bucket score distribution.",
         "tags": [
           "grading"
+        ]
+      }
+    },
+    "/api/v2/auth/email": {
+      "post": {
+        "operationId": "change_email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Code sent to the new address"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`invalid-credentials`: password wrong or missing"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`email-taken`"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`email`/`unchanged`: already the account's address"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many attempts or code mails"
+          }
+        },
+        "summary": "Start an e-mail change: the password is checked and a six-digit code goes\nto the new address (valid one hour). Nothing changes until it is confirmed.",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v2/auth/email/confirm": {
+      "post": {
+        "operationId": "confirm_email_change",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEmailChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Address changed"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`email-taken` meanwhile"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`code`/`invalid`: wrong or expired code"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many wrong codes"
+          }
+        },
+        "summary": "Confirm an e-mail change with the emailed code: the account switches to\nthe new (verified) address and the old one is told.",
+        "tags": [
+          "auth"
         ]
       }
     },
@@ -37348,6 +37550,60 @@ expression: json
         ]
       }
     },
+    "/api/v2/users/me/deletion": {
+      "post": {
+        "operationId": "delete_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Account deleted, cookie cleared"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`invalid-credentials`: password wrong or missing"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`account-has-roles`: staff accounts are closed by an admin"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many attempts"
+          }
+        },
+        "summary": "Delete the caller's own account (password-confirmed). Personal fields are\ncleared, submissions and grades stay; every session ends and the cookie\nis cleared. Staff accounts are closed by an admin.",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/api/v2/users/{user_id}/roles": {
       "post": {
         "operationId": "assign_role",
@@ -37579,7 +37835,7 @@ expression: json
                 }
               }
             },
-            "description": "`self-disable` / `last-admin`"
+            "description": "`self-disable` / `last-admin` / `account-deleted` (re-enabling an account its owner deleted)"
           }
         },
         "summary": "Disable (revokes every live session) or re-enable an account\n(requires `platform:manage:platform`; self-disable is refused).",

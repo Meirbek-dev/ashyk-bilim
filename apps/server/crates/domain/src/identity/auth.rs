@@ -32,6 +32,8 @@ use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
 use crate::identity::sessions::{NewSession, SessionStore};
 
+mod account;
+
 /// Default counts: `ab_core::config::AuthLimits` (`AB__AUTH__LIMITS__*`).
 /// Failed logins per IP. Every attempt is counted up front (before the
 /// Zitadel round-trip) and released once Zitadel accepts the password, so

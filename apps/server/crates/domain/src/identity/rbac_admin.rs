@@ -438,6 +438,13 @@ impl RbacAdminService {
                 "cannot disable your own account",
             ));
         }
+        // OPEN-G-1: the owner deleted it - its names are placeholders now.
+        if !disabled && ab_db::identity::user_deleted(&self.pool, user_id).await? {
+            return Err(Error::app(
+                ErrorCode::AccountDeleted,
+                "a deleted account cannot be re-enabled",
+            ));
+        }
         // BUG-377: read before the transaction takes its connection.
         let roles = if disabled {
             ab_db::identity::load_user_grants(&self.pool, user_id)

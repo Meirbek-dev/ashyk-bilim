@@ -3,6 +3,10 @@ source: crates/core/src/error/code.rs
 expression: registry
 ---
 {
+  "account-deleted": [
+    409,
+    "The account was deleted by its owner"
+  ],
   "account-disabled": [
     403,
     "Account is disabled"
@@ -10,6 +14,10 @@ expression: registry
   "account-exists": [
     409,
     "An account with this email already exists"
+  ],
+  "account-has-roles": [
+    409,
+    "Accounts with staff roles are closed by an admin"
   ],
   "activity-has-learner-work": [
     409,

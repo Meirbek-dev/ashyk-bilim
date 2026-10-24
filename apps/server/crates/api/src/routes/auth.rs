@@ -12,8 +12,9 @@ use serde::Deserialize;
 
 use crate::detach::detached;
 use crate::dto::auth::{
-    ChangePasswordRequest, LoginRequest, PasswordResetConfirmRequest, PasswordResetRequest,
-    RegisterRequest, ResendVerificationRequest, SessionInfo, SessionSummary, VerifyEmailRequest,
+    ChangeEmailRequest, ChangePasswordRequest, ConfirmEmailChangeRequest, DeleteAccountRequest,
+    LoginRequest, PasswordResetConfirmRequest, PasswordResetRequest, RegisterRequest,
+    ResendVerificationRequest, SessionInfo, SessionSummary, VerifyEmailRequest,
 };
 use crate::dto::users::UserProfile;
 use crate::error::{ApiResult, Problem};
@@ -398,6 +399,110 @@ pub async fn change_password(
         Ok(StatusCode::NO_CONTENT)
     })
     .await
+}
+
+/// Start an e-mail change: the password is checked and a six-digit code goes
+/// to the new address (valid one hour). Nothing changes until it is confirmed.
+#[utoipa::path(
+    post,
+    path = "/auth/email",
+    tag = "auth",
+    request_body = ChangeEmailRequest,
+    responses(
+        (status = 202, description = "Code sent to the new address"),
+        (status = 401, description = "`invalid-credentials`: password wrong or missing", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "`email-taken`", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "`email`/`unchanged`: already the account's address", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts or code mails", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn change_email(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<ChangeEmailRequest>,
+) -> ApiResult<StatusCode> {
+    detached(async move {
+        let password = request.password.map(SecretString::from);
+        state
+            .identity
+            .request_email_change(&actor, &request.email, password.as_ref())
+            .await?;
+        Ok(StatusCode::ACCEPTED)
+    })
+    .await
+}
+
+/// Confirm an e-mail change with the emailed code: the account switches to
+/// the new (verified) address and the old one is told.
+#[utoipa::path(
+    post,
+    path = "/auth/email/confirm",
+    tag = "auth",
+    request_body = ConfirmEmailChangeRequest,
+    responses(
+        (status = 204, description = "Address changed"),
+        (status = 409, description = "`email-taken` meanwhile", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 422, description = "`code`/`invalid`: wrong or expired code", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many wrong codes", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn confirm_email_change(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<ConfirmEmailChangeRequest>,
+) -> ApiResult<StatusCode> {
+    detached(async move {
+        state
+            .identity
+            .confirm_email_change(&actor, &request.code)
+            .await?;
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
+}
+
+/// Delete the caller's own account (password-confirmed). Personal fields are
+/// cleared, submissions and grades stay; every session ends and the cookie
+/// is cleared. Staff accounts are closed by an admin.
+#[utoipa::path(
+    post,
+    path = "/users/me/deletion",
+    tag = "users",
+    request_body = DeleteAccountRequest,
+    responses(
+        (status = 204, description = "Account deleted, cookie cleared"),
+        (status = 401, description = "`invalid-credentials`: password wrong or missing", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 409, description = "`account-has-roles`: staff accounts are closed by an admin", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn delete_account(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<DeleteAccountRequest>,
+) -> ApiResult<(CookieJar, StatusCode)> {
+    let cookie = removal_cookie(&state);
+    detached(async move {
+        let password = request.password.map(SecretString::from);
+        state
+            .identity
+            .delete_own_account(&actor, password.as_ref())
+            .await?;
+        Ok(())
+    })
+    .await?;
+    Ok((jar.add(cookie), StatusCode::NO_CONTENT))
 }
 
 /// Logout: revoke the current session and clear the cookie. Idempotent.

@@ -7,6 +7,16 @@ pub struct Platform {
     pub name: String,
     pub description: String,
     pub about: String,
+    /// Kazakh / English `description` and `about` (blank = not translated: show the
+    /// Russian one). Always sent by this server; optional on the wire for older ones.
+    #[schema(required = false)]
+    pub description_kk: String,
+    #[schema(required = false)]
+    pub description_en: String,
+    #[schema(required = false)]
+    pub about_kk: String,
+    #[schema(required = false)]
+    pub about_en: String,
     pub email: String,
     pub label: Option<String>,
     /// Public-bucket storage keys (served via the CDN /content route).
@@ -26,6 +36,10 @@ impl Platform {
             name: p.name,
             description: p.description,
             about: p.about,
+            description_kk: p.description_kk,
+            description_en: p.description_en,
+            about_kk: p.about_kk,
+            about_en: p.about_en,
             email: p.email,
             label: p.label,
             logo_key: p.logo_key,
@@ -47,6 +61,19 @@ pub struct UpdatePlatformRequest {
     #[garde(inner(length(max = 20_000)))]
     #[schema(max_length = 20_000)]
     pub about: Option<String>,
+    /// Kazakh / English versions; blank clears the translation.
+    #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
+    pub description_kk: Option<String>,
+    #[garde(inner(length(max = 5000)))]
+    #[schema(max_length = 5000)]
+    pub description_en: Option<String>,
+    #[garde(inner(length(max = 20_000)))]
+    #[schema(max_length = 20_000)]
+    pub about_kk: Option<String>,
+    #[garde(inner(length(max = 20_000)))]
+    #[schema(max_length = 20_000)]
+    pub about_en: Option<String>,
     #[garde(inner(email, length(max = 320)))]
     #[schema(max_length = 320)]
     pub email: Option<String>,
@@ -59,6 +86,10 @@ pub struct UpdatePlatformRequest {
     /// Finalized `platform-logo` upload to claim as the new logo.
     #[garde(skip)]
     pub logo_upload_id: Option<uuid::Uuid>,
+    /// `true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.
+    #[garde(skip)]
+    #[serde(default)]
+    pub remove_logo: bool,
     /// Finalized `platform-thumbnail` upload to claim.
     #[garde(skip)]
     pub thumbnail_upload_id: Option<uuid::Uuid>,

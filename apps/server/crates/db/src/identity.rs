@@ -800,3 +800,79 @@ pub async fn find_user_id_by_username(pool: &PgPool, username: &str) -> Result<O
     .await?;
     Ok(id)
 }
+
+/// Email change (OPEN-G-1): the confirmed new address, verified. `false`
+/// when another account took the address meanwhile (unique index).
+pub async fn set_user_email(pool: &PgPool, user_id: UserId, email: &str) -> Result<bool> {
+    let updated = sqlx::query!(
+        "UPDATE users SET email = $2, email_verified = true WHERE id = $1",
+        user_id.0,
+        email
+    )
+    .execute(pool)
+    .await;
+    match updated {
+        Ok(_) => Ok(true),
+        Err(err)
+            if err
+                .as_database_error()
+                .is_some_and(sqlx::error::DatabaseError::is_unique_violation) =>
+        {
+            Ok(false)
+        }
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Self-service deletion (OPEN-G-1): personal fields cleared, row kept.
+///
+/// The row stays for the work that points at it; the login names become
+/// `deleted-<id>` placeholders, the account is disabled and hidden from the
+/// leaderboard. `false` when it was deleted already.
+pub async fn anonymise_user(
+    tx: &mut sqlx::PgConnection,
+    user_id: UserId,
+    placeholder: &str,
+) -> Result<bool> {
+    let updated = sqlx::query!(
+        r#"UPDATE users SET
+               username = $2, email = $2 || '@deleted.invalid', display_name = '',
+               bio = '', avatar_key = NULL, organization = '', theme = NULL,
+               profile = '{"sections": []}'::jsonb, profile_version = profile_version + 1,
+               email_verified = true, status = 'disabled', deleted_at = now(),
+               rbac_version = rbac_version + 1
+           WHERE id = $1 AND deleted_at IS NULL"#,
+        user_id.0,
+        placeholder
+    )
+    .execute(&mut *tx)
+    .await?;
+    if updated.rows_affected() == 0 {
+        return Ok(false);
+    }
+    sqlx::query!("DELETE FROM google_accounts WHERE user_id = $1", user_id.0)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!(
+        r#"UPDATE gamification_profiles
+           SET preferences = jsonb_set(
+                   preferences || jsonb_build_object('privacy', COALESCE(preferences -> 'privacy', '{}'::jsonb)),
+                   '{privacy,showOnLeaderboard}', 'false'::jsonb)
+           WHERE user_id = $1"#,
+        user_id.0
+    )
+    .execute(&mut *tx)
+    .await?;
+    Ok(true)
+}
+
+/// Whether the account was deleted by its owner (never re-enabled).
+pub async fn user_deleted(pool: &PgPool, user_id: UserId) -> Result<bool> {
+    let deleted = sqlx::query_scalar!(
+        r#"SELECT deleted_at IS NOT NULL AS "deleted!" FROM users WHERE id = $1"#,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(deleted.unwrap_or(false))
+}

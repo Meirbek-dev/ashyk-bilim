@@ -620,6 +620,15 @@ export const vCertificationConfig = v.object({
 });
 
 /**
+ * Change the account's e-mail: a code goes to the new address. No `Debug` -
+ * carries a password.
+ */
+export const vChangeEmailRequest = v.strictObject({
+    email: v.pipe(v.string(), v.maxLength(320)),
+    password: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200)))
+});
+
+/**
  * Password change; the current password is checked by Zitadel.
  */
 export const vChangePasswordRequest = v.strictObject({
@@ -780,6 +789,13 @@ export const vConfidence = v.picklist([
     'medium',
     'high'
 ]);
+
+/**
+ * The code emailed to the new address.
+ */
+export const vConfirmEmailChangeRequest = v.strictObject({
+    code: v.pipe(v.string(), v.minLength(1), v.maxLength(32))
+});
 
 export const vContentBottleneckSignal = v.picklist([
     'high_time_low_completion',
@@ -1106,6 +1122,13 @@ export const vDeadlineExtendedPayload = v.object({
 });
 
 /**
+ * Delete the own account. No `Debug` - carries a password.
+ */
+export const vDeleteAccountRequest = v.strictObject({
+    password: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200)))
+});
+
+/**
  * Why the caller cannot enrol (`CoursePermissions.denial_reason`).
  */
 export const vDenialReason = v.picklist(['course_archived', 'staff_preview']);
@@ -1310,6 +1333,8 @@ export const vErrorCode = v.picklist([
     'username-taken',
     'email-taken',
     'reset-code-invalid',
+    'account-has-roles',
+    'account-deleted',
     'role-slug-taken',
     'last-admin',
     'self-disable',
@@ -2263,8 +2288,12 @@ export const vPlatformAction = v.picklist(['update']);
 
 export const vPlatform = v.object({
     about: v.string(),
+    about_en: v.optional(v.string()),
+    about_kk: v.optional(v.string()),
     allowed_actions: v.array(vPlatformAction),
     description: v.string(),
+    description_en: v.optional(v.string()),
+    description_kk: v.optional(v.string()),
     email: v.string(),
     label: v.nullable(v.string()),
     logo_key: v.nullable(v.string()),
@@ -4452,11 +4481,16 @@ export const vUpdateItemRequest = v.strictObject({
 
 export const vUpdatePlatformRequest = v.strictObject({
     about: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    about_en: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    about_kk: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
+    description_en: v.optional(v.pipe(v.string(), v.maxLength(5000))),
+    description_kk: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     email: v.optional(v.pipe(v.string(), v.maxLength(320))),
     label: v.nullish(v.pipe(v.string(), v.maxLength(500))),
     logo_upload_id: v.optional(v.pipe(v.string(), v.uuid())),
     name: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    remove_logo: v.optional(v.boolean()),
     thumbnail_upload_id: v.optional(v.pipe(v.string(), v.uuid()))
 });
 
@@ -7583,6 +7617,15 @@ export const vStatsQuery = v.object({
  */
 export const vStatsResponse = vStats;
 
+export const vChangeEmailBody = vChangeEmailRequest;
+
+export const vConfirmEmailChangeBody = vConfirmEmailChangeRequest;
+
+/**
+ * Address changed
+ */
+export const vConfirmEmailChangeResponse = v.void();
+
 export const vGoogleStartQuery = v.object({
     callback: v.optional(v.string())
 });
@@ -9527,6 +9570,13 @@ export const vUpdateMyProfileHeaders = v.object({
  * Updated profile
  */
 export const vUpdateMyProfileResponse = vUserProfile;
+
+export const vDeleteAccountBody = vDeleteAccountRequest;
+
+/**
+ * Account deleted, cookie cleared
+ */
+export const vDeleteAccountResponse = v.void();
 
 export const vAssignRoleBody = vAssignRoleRequest;
 

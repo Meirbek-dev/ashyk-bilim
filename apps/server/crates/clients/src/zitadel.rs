@@ -816,6 +816,39 @@ impl ZitadelClient {
         ))
     }
 
+    /// `POST /v2/users/{id}/email` with `isVerified`: the address the user
+    /// already confirmed with our own emailed code (email change, OPEN-G-1).
+    pub async fn set_verified_email(&self, user_id: &str, email: &str) -> Result<()> {
+        let response = self
+            .auth(
+                self.http
+                    .post(self.url(&format!("/v2/users/{user_id}/email"))),
+            )
+            .json(&serde_json::json!({ "email": email, "isVerified": true }))
+            .send()
+            .await
+            .map_err(unavailable("set email"))?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        let status = response.status();
+        let err: Option<ZitadelErrorBody> = response.json().await.ok();
+        // 6 = AlreadyExists: another Zitadel user holds the address.
+        if err.as_ref().is_some_and(|e| e.code == 6) {
+            return Err(Error::app(
+                ErrorCode::EmailTaken,
+                "email is already registered",
+            ));
+        }
+        Err(Error::app(
+            ErrorCode::ServiceUnavailable,
+            format!(
+                "zitadel set email failed: {status} {}",
+                err.map(|e| e.message).unwrap_or_default()
+            ),
+        ))
+    }
+
     /// `DELETE /v2/users/{id}` — compensation when our side of an account
     /// creation fails after Zitadel's succeeded. Idempotent.
     pub async fn delete_user(&self, user_id: &str) -> Result<()> {
