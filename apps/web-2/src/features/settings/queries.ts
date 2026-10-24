@@ -3,10 +3,13 @@ import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
+  changeEmailMutation,
   changePasswordMutation,
+  confirmEmailChangeMutation,
   currentSessionQueryKey,
   dashboardOptions,
   dashboardQueryKey,
+  deleteAccountMutation,
   listSessionsOptions,
   listSessionsQueryKey,
   myProfileOptions,
@@ -80,6 +83,18 @@ export const changePasswordOptions = (queryClient: QueryClient) => ({
       list?.filter(session => session.current),
     ),
 })
+
+/** Sends the code to the new address; nothing changes until it is confirmed (B-SET-22). */
+export const changeEmailOptions = () => changeEmailMutation()
+
+/** The address changed: the profile and the session (the shell shows it) are read again. */
+export const confirmEmailChangeOptions = () => ({
+  ...confirmEmailChangeMutation(),
+  meta: { invalidates: [myProfileQueryKey(), currentSessionQueryKey()] },
+})
+
+/** Deletes the own account (B-SET-23); the caller leaves with a full page load. */
+export const deleteAccountOptions = () => deleteAccountMutation()
 
 export const sessionsOptions = () => listSessionsOptions()
 

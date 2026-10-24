@@ -17,6 +17,8 @@ type SettingsSectionProps = {
   error: unknown
   /** `false` when the section saves by itself (a picked cover): no Save button. */
   saveButton?: boolean
+  /** The button's verb when it is not «Сохранить» («Отправить код»). */
+  submitLabel?: string
   /** An anchor other pages link to (`hash`); the section lands under the sticky top bar. */
   id?: string
   children: ReactNode
@@ -30,6 +32,7 @@ export function SettingsSection({
   pending,
   error,
   saveButton = true,
+  submitLabel,
   id,
   children,
 }: SettingsSectionProps) {
@@ -58,7 +61,7 @@ export function SettingsSection({
       {saveButton ? (
         <div>
           <SubmitButton type="submit" variant="secondary" pending={pending}>
-            {m.ui_save()}
+            {submitLabel ?? m.ui_save()}
           </SubmitButton>
         </div>
       ) : null}

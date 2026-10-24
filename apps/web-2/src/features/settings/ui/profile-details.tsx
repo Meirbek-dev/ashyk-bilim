@@ -11,7 +11,7 @@ import { toast } from '#/shared/ui/toast'
 
 import { updateProfileOptions } from '../queries'
 
-/** Name, organization and bio; login and email are shown, not edited. */
+/** Name, organization and bio; login and email are shown (the email changes on «Безопасность», B-SET-22). */
 export function ProfileDetails({ profile }: { profile: UserProfile }) {
   const update = useMutation(updateProfileOptions(useQueryClient()))
   // Captured once: a refetch must not reset what the user typed.
@@ -37,7 +37,12 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
         <dt className="text-muted-foreground">{m.settings_field_username()}</dt>
         <dd className="wrap-anywhere">{profile.username}</dd>
         <dt className="text-muted-foreground">{m.settings_field_email()}</dt>
-        <dd className="wrap-anywhere">{profile.email}</dd>
+        <dd className="wrap-anywhere">
+          {profile.email}{' '}
+          <Link to="/settings/security" hash="email">
+            {m.settings_email_change_link()}
+          </Link>
+        </dd>
       </dl>
       <p className="text-sm">
         <Link to="/users/$username" params={{ username: profile.username }}>
