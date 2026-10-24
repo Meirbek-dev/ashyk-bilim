@@ -82,6 +82,28 @@ export function neighbours(ids: readonly string[], id: string): { prev?: string;
   return { ...(prev ? { prev } : {}), ...(next ? { next } : {}) }
 }
 
+type KeyLike = Pick<KeyboardEvent, 'code' | 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'repeat'> & {
+  target: EventTarget | null
+}
+
+/**
+ * The submission J (next) or K (previous) opens in a review (B-GRD-39): by key position (`KeyJ`, any layout), never
+ * while typing in a field or the editor, never with a modifier.
+ */
+export function pileKey(event: KeyLike, around: { prev?: string; next?: string }): string | undefined {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return undefined
+  const target = event.target
+  if (
+    typeof HTMLElement !== 'undefined' &&
+    target instanceof HTMLElement &&
+    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+  )
+    return undefined
+  if (event.code === 'KeyJ') return around.next
+  if (event.code === 'KeyK') return around.prev
+  return undefined
+}
+
 /**
  * The work to open after a publish or a return (B-GRD-34): the next row of the loaded queue that still waits for
  * grading, wrapping around to the top; none when `id` was the last one.

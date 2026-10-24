@@ -178,5 +178,6 @@
   "grading_cell_attempts": "попыток: {count}",
   "grading_started_at": "Начата {date}",
   "grading_graded_at": "Проверена {date}",
-  "grading_returned_at": "Возвращена на исправление {date}"
+  "grading_returned_at": "Возвращена на исправление {date}",
+  "grading_keys_hint": "J — следующая, K — предыдущая"
 }

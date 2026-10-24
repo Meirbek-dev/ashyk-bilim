@@ -174,5 +174,6 @@
   "grading_cell_attempts": "әрекеттер: {count}",
   "grading_started_at": "Басталды {date}",
   "grading_graded_at": "Тексерілді {date}",
-  "grading_returned_at": "Пысықтауға қайтарылды {date}"
+  "grading_returned_at": "Пысықтауға қайтарылды {date}",
+  "grading_keys_hint": "J — келесі, K — алдыңғы"
 }

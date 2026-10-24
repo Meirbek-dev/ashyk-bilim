@@ -174,5 +174,6 @@
   "grading_cell_attempts": "attempts: {count}",
   "grading_started_at": "Started {date}",
   "grading_graded_at": "Graded {date}",
-  "grading_returned_at": "Returned for revision {date}"
+  "grading_returned_at": "Returned for revision {date}",
+  "grading_keys_hint": "J next, K previous"
 }

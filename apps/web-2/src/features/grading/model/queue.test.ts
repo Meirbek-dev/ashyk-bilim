@@ -10,6 +10,7 @@ import {
   extensionTargets,
   fileQuery,
   neighbours,
+  pileKey,
   nextToGrade,
   nextQueueCursor,
   returnable,
@@ -174,4 +175,25 @@ describe('bulk and walking', () => {
     expect(nextToGrade([fileRow('x'), fileRow('y')], 'x')).toBe('y')
     expect(nextToGrade([row('a')], 'gone')).toBe('a')
   })
+})
+
+const key = (code: string, extra: Partial<KeyboardEvent> = {}) => ({
+  code,
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false,
+  repeat: false,
+  target: null,
+  ...extra,
+})
+
+test('B-GRD-39 J opens the next work and K the previous one, by key position; modifiers and repeats do nothing', () => {
+  const around = { prev: 'a', next: 'c' }
+  expect(pileKey(key('KeyJ'), around)).toBe('c')
+  expect(pileKey(key('KeyK'), around)).toBe('a')
+  expect(pileKey(key('KeyJ'), { prev: 'a' })).toBeUndefined()
+  expect(pileKey(key('KeyJ', { ctrlKey: true }), around)).toBeUndefined()
+  expect(pileKey(key('KeyK', { repeat: true }), around)).toBeUndefined()
+  expect(pileKey(key('KeyL'), around)).toBeUndefined()
 })
