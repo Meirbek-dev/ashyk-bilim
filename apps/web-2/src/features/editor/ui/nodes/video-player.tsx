@@ -1,5 +1,5 @@
 import { Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { use, useId, useRef, useState } from 'react'
+import { use, useEffect, useId, useRef, useState, type RefObject } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
@@ -21,6 +21,19 @@ function fullscreen(
   }
 }
 
+// Metadata or an error can arrive before the player mounts behind its stylesheet.
+function useVideoMetadata(
+  video: RefObject<HTMLVideoElement | null>,
+  setFailed: (failed: boolean) => void,
+  setDuration: (duration: number) => void,
+) {
+  useEffect(() => {
+    const element = video.current
+    if (element?.error) setFailed(true)
+    if (element && element.readyState >= HTMLMediaElement.HAVE_METADATA) setDuration(element.duration)
+  }, [video, setFailed, setDuration])
+}
+
 /** Why the frame is empty, and what to do: a learner tells the teacher, the author uploads again (B-EDT-19). */
 const failedText = (author: boolean) => (author ? m.editor_video_failed_author() : m.editor_video_failed())
 
@@ -38,9 +51,9 @@ export function VideoPlayer({ src }: { src: string }) {
   const [duration, setDuration] = useState(0)
   const [failed, setFailed] = useState(false)
   const ended = use(VideoEndedContext)
+  useVideoMetadata(video, setFailed, setDuration)
   const toggle = () => {
     const element = video.current
-    // play() rejects when the browser blocks it or the source fails; the button state follows the media events.
     if (element?.paused) void element.play().catch(() => null)
     else element?.pause()
   }

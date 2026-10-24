@@ -137,9 +137,8 @@
   "admin_platform_label_hint": "Атаудың жанындағы қысқа белгі; бос болса — белгісіз.",
   "admin_platform_about": "Платформа туралы",
   "admin_platform_email": "Қолдау поштасы",
-  "admin_platform_branding": "Логотип пен мұқаба",
+  "admin_platform_branding": "Сілтеме мұқабасы",
   "admin_platform_branding_hint": "Мұқаба — мессенджерлер мен әлеуметтік желілердегі платформа сілтемесінің суреті. 10 МБ-қа дейінгі суреттер: JPEG, PNG, GIF, WebP немесе AVIF.",
-  "admin_platform_logo": "Платформа логотипі",
   "admin_platform_thumbnail": "Мұқаба",
   "admin_platform_no_image": "Сурет жоқ.",
   "admin_gamification_title": "Геймификация баптаулары",
@@ -202,5 +201,11 @@
   "admin_user_field_roles": "Қосымша рөлдер",
   "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады.",
   "admin_gamification_xp": "XP",
-  "admin_gamification_rewards": "Марапаттар"
+  "admin_gamification_rewards": "Марапаттар",
+  "admin_platform_translations": "Қазақша және ағылшынша",
+  "admin_platform_translations_hint": "Интерфейсі қазақша немесе ағылшынша қонақтар осы мәтіндерді көреді; бос өріс — орысша мәтін.",
+  "admin_platform_description_kk": "Қазақша сипаттама",
+  "admin_platform_about_kk": "Платформа туралы қазақша",
+  "admin_platform_description_en": "Ағылшынша сипаттама",
+  "admin_platform_about_en": "Платформа туралы ағылшынша"
 }

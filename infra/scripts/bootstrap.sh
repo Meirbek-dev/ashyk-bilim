@@ -7,6 +7,7 @@
 source "$(dirname "$0")/lib.sh"
 use_stack
 stack=${STACK:-prod}
+prepare_redis_volume
 
 services=(db redis zitadel rustfs)
 judge0=false

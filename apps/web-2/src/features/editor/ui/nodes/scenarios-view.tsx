@@ -1,5 +1,4 @@
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
-import { useState } from 'react'
+import { use, useState } from 'react'
 
 import { safeImageUrl } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
@@ -7,6 +6,7 @@ import { Button } from '#/shared/ui/button'
 
 import { isRecord } from '../../model/document'
 import { stringAttr } from './align'
+import { NodeParts, type ViewProps } from './parts'
 
 type Option = { id: string; text: string; next: string | null }
 type Step = { id: string; text: string; imageUrl: string | undefined; options: Option[] }
@@ -24,13 +24,14 @@ const readSteps = (value: unknown): Step[] =>
   }))
 
 /** scenarios: a branching story; each choice leads to the next step until a step without choices. */
-export function ScenariosView({ node }: ReactNodeViewProps) {
+export function ScenariosView({ node }: ViewProps) {
+  const { Wrapper } = use(NodeParts)
   const steps = readSteps(node.attrs['scenarios'])
   const first = stringAttr(node.attrs['currentScenarioId']) || steps[0]?.id || ''
   const [current, setCurrent] = useState(first)
   const step = steps.find(candidate => candidate.id === current)
   return (
-    <NodeViewWrapper className="my-4 flex flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground">
+    <Wrapper className="my-4 flex flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground">
       {node.attrs['title'] ? <p className="text-lg font-semibold">{stringAttr(node.attrs['title'])}</p> : null}
       <div aria-live="polite" className="flex flex-col gap-4">
         {step?.imageUrl ? <img src={step.imageUrl} alt="" className="h-auto max-w-full rounded-lg" /> : null}
@@ -48,6 +49,6 @@ export function ScenariosView({ node }: ReactNodeViewProps) {
           </Button>
         ) : null}
       </div>
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

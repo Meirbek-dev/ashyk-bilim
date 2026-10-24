@@ -3,12 +3,6 @@ import { ThemeScript } from '@/components/providers/theme-script'
 import { defaultLocale } from '@/i18n/config'
 import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme } from '@/lib/themes'
 import { getPublicConfig } from '@/services/config/env'
-import {
-  THEME_FONT_FAMILIES_ATTRIBUTE,
-  THEME_FONT_LINK_ATTRIBUTE,
-  getThemeFontStylesheetHref,
-  resolveThemeFontFamilies,
-} from '@/lib/theme-fonts'
 import type { Metadata, Viewport } from 'next'
 import { APP_NAME, APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants'
 import { getStaticMetadataMessages } from '@/lib/localized-metadata'
@@ -26,8 +20,6 @@ function getThemeStyle(theme: ReturnType<typeof getTheme>): CSSProperties {
 }
 
 const initialTheme = getTheme(DEFAULT_THEME_NAME, DEFAULT_THEME_MODE)
-const initialThemeFontHref = getThemeFontStylesheetHref(initialTheme.tokens)
-const initialThemeFontFamilies = resolveThemeFontFamilies(initialTheme.tokens)
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicConfig().siteUrl),
@@ -71,16 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {initialThemeFontHref && (
-          <link
-            rel="stylesheet"
-            href={initialThemeFontHref}
-            {...{
-              [THEME_FONT_LINK_ATTRIBUTE]: 'true',
-              [THEME_FONT_FAMILIES_ATTRIBUTE]: initialThemeFontFamilies.join('|'),
-            }}
-          />
-        )}
+        {/* ThemeScript loads fonts dynamically so an unavailable provider cannot block page hydration. */}
         <ThemeScript initialTheme={initialTheme} />
       </head>
 

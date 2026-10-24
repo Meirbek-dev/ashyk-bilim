@@ -1,0 +1,6 @@
+# Persistence and volume ownership test; production limits are validated by compose config.
+# Rootless WSL Podman may not have delegated memory or CPU controllers.
+services:
+  redis:
+    deploy:
+      resources: !reset {}

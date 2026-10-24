@@ -23,6 +23,28 @@ test.describe('Smoke – Public pages', () => {
     await expect(page.locator('form button[type="submit"]')).toBeVisible()
   })
 
+  test('login remains usable while the font stylesheet is pending', async ({ page }) => {
+    let releaseFonts = () => {}
+    const fontsReady = new Promise<void>(resolve => {
+      releaseFonts = resolve
+    })
+    await page.route('https://fonts.googleapis.com/**', async route => {
+      await fontsReady
+      await route.fulfill({ contentType: 'text/css', body: '' })
+    })
+    try {
+      await page.goto('/en/login', { waitUntil: 'domcontentloaded' })
+      await expect(page.locator('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]').first()).toBeAttached()
+      const password = page.locator('input[name="password"]')
+      await expect(page.locator('input[name="login"]')).toBeVisible()
+      await page.getByRole('button', { name: 'Show password', exact: true }).click()
+      await expect(password).toHaveAttribute('type', 'text')
+    } finally {
+      releaseFonts()
+      await page.unrouteAll({ behavior: 'wait' })
+    }
+  })
+
   test('signup page renders the registration form', async ({ page }) => {
     await page.goto('/en/signup')
     await expect(page.locator('input[name="firstName"]')).toBeVisible()

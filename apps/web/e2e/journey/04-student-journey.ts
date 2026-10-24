@@ -62,10 +62,8 @@ export function registerLearning() {
     test('student can enroll in the course', async ({ page, coursePlayerPage }) => {
       await coursePlayerPage.gotoCourseLanding(courseUuid)
 
-      // If an Enroll button exists, click it
-      if (await coursePlayerPage.enrollButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await coursePlayerPage.enroll()
-      }
+      await expect(coursePlayerPage.enrollButton).toBeVisible()
+      await coursePlayerPage.enroll()
 
       // After enroll, the course content / activity list should be accessible
       await expect(page.locator('nav, aside, [aria-label*="activities"]').first()).toBeVisible({

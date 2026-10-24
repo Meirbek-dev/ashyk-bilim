@@ -1,5 +1,4 @@
 import { Extension } from '@tiptap/core'
-import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 import { createContext } from 'react'
@@ -15,7 +14,7 @@ export const ActivityContext = createContext<string | null>(null)
  * Files pasted or dropped onto the editor, keyed by the empty block inserted for them: the block's view takes its
  * file on mount and uploads it with progress in place. ProseMirror keeps a node object until its attributes change.
  */
-export const queuedFiles = new WeakMap<PMNode, File>()
+export const queuedFiles = new WeakMap<object, File>()
 
 function insertFile(view: EditorView, file: File, at: number): boolean {
   const type = fileBlockFor(file.type)

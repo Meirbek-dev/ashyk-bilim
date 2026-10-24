@@ -16,7 +16,7 @@ Learning platform: Rust API, production Next.js app, and a replacement TanStack 
 
 ## Quick start
 
-Needs Git, `just` 1.58.0, Bun 1.4.3, Node from `.node-version`, Rustup and Docker or Podman.
+Needs Git, `just` 1.59.0, Bun 1.4.4, Node from `.node-version`, Rustup and Docker or Podman.
 On Windows, put Git Bash's `sh` on PATH; recipes use it rather than WSL's `bash.exe`.
 
 ```sh

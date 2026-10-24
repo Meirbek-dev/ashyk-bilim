@@ -143,9 +143,8 @@
   "admin_platform_label_hint": "Короткая подпись рядом с названием; пусто — без подписи.",
   "admin_platform_about": "О платформе",
   "admin_platform_email": "Почта поддержки",
-  "admin_platform_branding": "Логотип и обложка",
+  "admin_platform_branding": "Обложка ссылки",
   "admin_platform_branding_hint": "Обложка — картинка ссылки на платформу в мессенджерах и соцсетях. Изображения до 10 МБ: JPEG, PNG, GIF, WebP или AVIF.",
-  "admin_platform_logo": "Логотип",
   "admin_platform_thumbnail": "Обложка",
   "admin_platform_no_image": "Изображения нет.",
   "admin_gamification_title": "Геймификация",
@@ -210,5 +209,11 @@
   "admin_user_field_roles": "Дополнительные роли",
   "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда.",
   "admin_gamification_xp": "XP",
-  "admin_gamification_rewards": "Награды"
+  "admin_gamification_rewards": "Награды",
+  "admin_platform_translations": "На казахском и английском",
+  "admin_platform_translations_hint": "Гости с казахским или английским интерфейсом видят эти тексты; пустое поле — русский текст.",
+  "admin_platform_description_kk": "Описание на казахском",
+  "admin_platform_about_kk": "О платформе на казахском",
+  "admin_platform_description_en": "Описание на английском",
+  "admin_platform_about_en": "О платформе на английском"
 }

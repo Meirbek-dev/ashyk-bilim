@@ -1,5 +1,5 @@
-// Synthetic user work only; invoked inside the isolated stand's browser container by restore-test.sh.
-import { writeFileSync } from 'node:fs'
+// Synthetic user work only; invoked inside the isolated stand's Node container by restore-test.sh.
+import { mkdirSync, writeFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 
 const origin = process.env.E2E_BASE_URL
@@ -51,5 +51,7 @@ const stored = await fetch(upload.put_url, {
 assert(stored.ok, `image PUT: ${stored.status} ${(await stored.text()).slice(0, 500)}`)
 await api(teacher, 'POST', `uploads/${upload.id}/finalize`, {})
 await api(teacher, 'POST', `activities/${lesson.id}/blocks`, { block_type: 'image', upload_id: upload.id })
+mkdirSync(new URL('../../tmp/restore-test/', import.meta.url), { recursive: true })
 writeFileSync(new URL('../../tmp/restore-test/object-key', import.meta.url), upload.key)
+writeFileSync(new URL('../../tmp/restore-test/course-id', import.meta.url), course.id)
 console.log('Synthetic course, learner submission, discussion, certificate template and image created')

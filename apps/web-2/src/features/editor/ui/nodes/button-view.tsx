@@ -1,4 +1,4 @@
-import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import { use } from 'react'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { safeUrl } from '#/features/markdown'
@@ -7,21 +7,22 @@ import { buttonVariants } from '#/shared/components/button-variants'
 
 import { linkHref } from '../../model/link'
 import { justify, stringAttr } from './align'
-import { AttrForm } from './attr-form'
+import { NodeParts, type ViewProps } from './parts'
 
 /** button: a link styled as a button; its label is the node's text, editable in place. */
-export function ButtonView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
+export function ButtonView({ node, editor, selected, updateAttributes }: ViewProps) {
+  const { Wrapper, Content, Authoring } = use(NodeParts)
   const link = stringAttr(node.attrs['link'])
   const href = safeUrl(link)
   const emoji = stringAttr(node.attrs['emoji'])
   const label = (
     <>
       {emoji ? <span aria-hidden>{emoji}</span> : null}
-      <NodeViewContent<'span'> as="span" />
+      <Content as="span" />
     </>
   )
   return (
-    <NodeViewWrapper className="my-4 flex flex-col gap-2">
+    <Wrapper className="my-4 flex flex-col gap-2">
       <div className={`flex ${justify(node.attrs['alignment'])}`}>
         {href && !editor.isEditable ? (
           <RouterLink
@@ -38,13 +39,13 @@ export function ButtonView({ node, editor, selected, updateAttributes }: ReactNo
           </span>
         )}
       </div>
-      {editor.isEditable && (selected || !href) ? (
-        <AttrForm
+      {editor.isEditable && Authoring && (selected || !href) ? (
+        <Authoring.AttrForm
           fields={[{ name: 'link', label: m.editor_field_link(), check: value => linkHref(value) !== undefined }]}
           values={{ link }}
           onApply={({ link: next = '' }) => updateAttributes({ link: linkHref(next) ?? next })}
         />
       ) : null}
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { test } from 'node:test'
@@ -8,6 +8,36 @@ import { test } from 'node:test'
 const root = resolve(import.meta.dirname, '../..')
 const just = process.env.JUST_EXECUTABLE ?? 'just'
 const run = (command, args, options = {}) => spawnSync(command, args, { encoding: 'utf8', ...options })
+
+test('production release and replacement stands keep separate identity configuration', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ashyq-stands-'))
+  try {
+    mkdirSync(join(dir, 'infra/scripts'), { recursive: true })
+    mkdirSync(join(dir, 'infra/env'), { recursive: true })
+    writeFileSync(join(dir, 'infra/scripts/lib.sh'), readFileSync(join(root, 'infra/scripts/lib.sh')))
+    writeFileSync(join(dir, 'infra/scripts/web-e2e.sh'), readFileSync(join(root, 'infra/scripts/web-e2e.sh')))
+    writeFileSync(join(dir, 'infra/env/smoke.server.env'), 'template\n')
+    writeFileSync(join(dir, 'compose.yaml'), 'image: &pg-image test-postgres\n')
+    writeFileSync(join(dir, '.node-version'), readFileSync(join(root, '.node-version')))
+    const shell = process.platform === 'win32' ? 'sh' : 'bash'
+    const options = { cwd: dir, env: { ...process.env, E2E_WEB_HOST: 'release.test', E2E_PASSWORD: 'fixture-password', PATH: `${dir}${delimiter}${process.env.PATH}` } }
+    const result = run(shell, ['-c', 'source infra/scripts/lib.sh; use_web2; printf "old-stand\\n" > "$SERVER_ENV_FILE"; use_web_e2e; cat "$SERVER_ENV_FILE"; cat tmp/web2/server.env'], options)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stdout.replaceAll('\r\n', '\n'), 'template\nold-stand\n')
+    writeFileSync(join(dir, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+    const stopped = run(shell, ['infra/scripts/web-e2e.sh', 'down'], options)
+    assert.equal(stopped.status, 0, stopped.stderr)
+    assert.equal(existsSync(join(dir, 'tmp/web-e2e/server.env')), false)
+    assert.equal(readFileSync(join(dir, 'tmp/web2/server.env'), 'utf8'), 'old-stand\n')
+    writeFileSync(join(dir, 'docker'), '#!/bin/sh\ncase "$1" in compose) echo edge-fixture; exit;; inspect) echo 192.0.2.1; exit;; esac\nprintf "%s\\n" "$@" > run-args\nfor arg do case "$arg" in docker.io/library/node:*) printf "%s\\n" "$arg";; esac; done\n', { mode: 0o755 })
+    const fixture = run(shell, ['infra/scripts/web-e2e.sh', 'fixture'], options)
+    assert.equal(fixture.status, 0, fixture.stderr)
+    assert.equal(fixture.stdout.trim(), `docker.io/library/node:${readFileSync(join(root, '.node-version'), 'utf8').trim()}-alpine`)
+    assert.match(readFileSync(join(dir, 'run-args'), 'utf8'), /--add-host\nrelease\.test:192\.0\.2\.1\n/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
 
 test('failed OpenAPI export preserves the contract and successful export replaces it', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ashyq-openapi-'))

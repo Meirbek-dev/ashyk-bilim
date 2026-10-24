@@ -88,7 +88,10 @@ test("B-ADM-23 a platform save over someone else's change opens the conflict dia
   }
 })
 
-test('B-ADM-14 a logo uploads with its purpose and becomes the logo at once', async ({ page, signInAs }) => {
+test('B-ADM-14 a link cover uploads with its purpose and becomes the cover at once; no logo picker', async ({
+  page,
+  signInAs,
+}) => {
   await signInAs('admin')
   await page.goto('/admin/platform')
   const branding = page.getByRole('form', { name: m.admin_platform_branding({}, ru) })
@@ -98,16 +101,18 @@ test('B-ADM-14 a logo uploads with its purpose and becomes the logo at once', as
   const finalized = page.waitForResponse(answer => /\/api\/v2\/uploads\/[^/]+\/finalize$/.test(answer.url()))
   // No «Сохранить»: the picked image is claimed as soon as it is uploaded.
   const saved = page.waitForRequest(sent => sent.method() === 'PATCH' && sent.url().endsWith('/api/v2/platform'))
-  await branding.getByLabel(m.admin_platform_logo({}, ru)).setInputFiles({
-    name: 'logo.png',
+  await branding.getByLabel(m.admin_platform_thumbnail({}, ru)).setInputFiles({
+    name: 'cover.png',
     mimeType: 'image/png',
     buffer: PIXEL,
   })
-  expect((await created).postDataJSON()).toMatchObject({ purpose: 'platform-logo', mime: 'image/png' })
+  expect((await created).postDataJSON()).toMatchObject({ purpose: 'platform-thumbnail', mime: 'image/png' })
   expect((await finalized).ok()).toBe(true)
-  expect((await saved).postDataJSON()).toMatchObject({ logo_upload_id: expect.stringMatching(/^[0-9a-f-]{36}$/) })
+  expect((await saved).postDataJSON()).toMatchObject({ thumbnail_upload_id: expect.stringMatching(/^[0-9a-f-]{36}$/) })
   await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
-  await expect(branding.getByRole('img', { name: m.admin_platform_logo({}, ru) })).toBeVisible()
+  await expect(branding.getByRole('img', { name: m.admin_platform_thumbnail({}, ru) })).toBeVisible()
+  // OPEN-C-1: the shell keeps the fixed artwork, so no logo is offered.
+  await expect(branding.getByText('Логотип')).toHaveCount(0)
 })
 
 test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflict dialog, survive a reload and keep the overrides the form does not show', async ({

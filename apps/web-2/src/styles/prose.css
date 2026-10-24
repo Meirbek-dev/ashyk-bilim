@@ -9,6 +9,12 @@
 
 /* A layer, so a utility on the same element (max-w-none in editors) still wins. */
 @layer components {
+  /* B-EDT-34 mirrors the editing engine's text shaping for stored documents. */
+  .ab-prose-static {
+    white-space: break-spaces;
+    font-variant-ligatures: none;
+    font-feature-settings: 'liga' 0;
+  }
   .ab-prose {
     --prose-gap: 0.75rem;
     max-width: 65ch;

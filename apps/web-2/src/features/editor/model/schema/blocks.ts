@@ -1,5 +1,7 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 
+import { BLOCK_ATTRS } from './attrs'
+
 /**
  * The custom block nodes of the stored document, ported from apps/web/src/components/Objects/Editor/Extensions
  * with the same names, tags, content expressions and attribute defaults (the JSON contract, D-01 aside).
@@ -34,7 +36,7 @@ export const CalloutInfo = block({
   tag: 'callout-info',
   content: 'block+',
   draggable: true,
-  attrs: {},
+  attrs: BLOCK_ATTRS.calloutInfo,
 })
 
 export const CalloutWarning = block({
@@ -42,7 +44,7 @@ export const CalloutWarning = block({
   tag: 'callout-warning',
   content: 'block+',
   draggable: true,
-  attrs: {},
+  attrs: BLOCK_ATTRS.calloutWarning,
 })
 
 export const Badge = block({
@@ -50,7 +52,7 @@ export const Badge = block({
   tag: 'badge',
   content: 'block+',
   draggable: true,
-  attrs: { color: 'sky', emoji: '💡' },
+  attrs: BLOCK_ATTRS.badge,
 })
 
 export const ButtonBlock = block({
@@ -58,7 +60,7 @@ export const ButtonBlock = block({
   tag: 'button-block',
   content: 'text*',
   draggable: true,
-  attrs: { emoji: '🔗', link: '', color: 'blue', alignment: 'left' },
+  attrs: BLOCK_ATTRS.button,
 })
 
 export const Flipcard = block({
@@ -66,53 +68,40 @@ export const Flipcard = block({
   tag: 'flipcard-block',
   content: 'text*',
   selectable: false,
-  attrs: { question: '', answer: '', color: 'blue', alignment: 'center', size: 'medium' },
+  attrs: BLOCK_ATTRS.flipcard,
 })
 
 export const ImageBlock = block({
   name: 'blockImage',
   tag: 'block-image',
-  attrs: { blockObject: null, size: { width: 300 }, alignment: 'center' },
+  attrs: BLOCK_ATTRS.blockImage,
 })
 
 export const PdfBlock = block({
   name: 'blockPDF',
   tag: 'block-pdf',
-  attrs: { blockObject: null, size: { width: 720, height: 540 } },
+  attrs: BLOCK_ATTRS.blockPDF,
 })
 
-export const VideoBlock = block({ name: 'blockVideo', tag: 'block-video', attrs: { blockObject: null } })
+export const VideoBlock = block({ name: 'blockVideo', tag: 'block-video', attrs: BLOCK_ATTRS.blockVideo })
 
 export const MathBlock = block({
   name: 'blockMathEquation',
   tag: 'block-math-equation',
-  attrs: { math_equation: '', html: '' },
+  attrs: BLOCK_ATTRS.blockMathEquation,
 })
 
 export const Scenarios = block({
   name: 'scenarios',
   tag: 'scenarios-block',
   draggable: true,
-  attrs: { title: '', scenarios: [], currentScenarioId: '1' },
+  attrs: BLOCK_ATTRS.scenarios,
 })
 
-export const UserBlock = block({ name: 'blockUser', tag: 'block-user', attrs: { user_id: '' } })
+export const UserBlock = block({ name: 'blockUser', tag: 'block-user', attrs: BLOCK_ATTRS.blockUser })
 
 export const WebPreview = block({
   name: 'blockWebPreview',
   tag: 'web-preview',
-  attrs: {
-    url: null,
-    title: null,
-    description: null,
-    og_image: null,
-    favicon: null,
-    og_type: null,
-    og_url: null,
-    site_name: null,
-    alignment: 'left',
-    buttonLabel: '',
-    showButton: false,
-    openInPopup: false,
-  },
+  attrs: BLOCK_ATTRS.blockWebPreview,
 })

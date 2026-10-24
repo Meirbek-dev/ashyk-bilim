@@ -24,7 +24,7 @@ export class CoursePlayerPage {
     this.page = page
     this.activityList = page.locator('nav[aria-label*="activities"], aside ul, .activity-list').first()
     this.markCompleteButton = page.getByRole('button', { name: /^mark as complete$/i }).first()
-    this.enrollButton = page.getByRole('button', { name: /enroll|start course|get started/i }).first()
+    this.enrollButton = page.getByRole('button', { name: /^start course$/i })
     this.downloadCertButton = page
       .getByRole('link', { name: /download certificate|certificate/i })
       .or(page.getByRole('button', { name: /download certificate|certificate/i }))

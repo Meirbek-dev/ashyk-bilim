@@ -1,4 +1,4 @@
-import type { ReactNodeViewProps } from '@tiptap/react'
+import type { ViewProps } from './parts'
 import { useId } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -16,7 +16,7 @@ const ALIGNMENTS = [
 ] as const
 
 /** A link card's display options (B-EDT-28), applied as they change: alignment, an "open" button and its label. */
-export function PreviewOptions({ node, updateAttributes }: Pick<ReactNodeViewProps, 'node' | 'updateAttributes'>) {
+export function PreviewOptions({ node, updateAttributes }: Pick<ViewProps, 'node' | 'updateAttributes'>) {
   const id = useId()
   const showButton = node.attrs['showButton'] === true
   return (

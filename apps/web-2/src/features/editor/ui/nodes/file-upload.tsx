@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query'
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { use, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -9,6 +8,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { FILE_BLOCKS, fileBlockObject, isFileBlock, type FileBlock } from '../../model/file-blocks'
 import { createBlockOptions } from '../../queries'
 import { ActivityContext, queuedFiles } from '../file-drop'
+import { NodeParts, type ViewProps } from './parts'
 
 const LOOKS: Record<FileBlock, { label: () => string; hint: () => string }> = {
   blockImage: { label: m.editor_block_image, hint: m.editor_image_hint },
@@ -21,22 +21,23 @@ const LOOKS: Record<FileBlock, { label: () => string; hint: () => string }> = {
  * the editor uploads at once. Progress and errors stay in the block; the upload is claimed for the activity and
  * the block then stores its key.
  */
-export function FileUpload({ node, updateAttributes }: ReactNodeViewProps) {
+export function FileUpload({ node, updateAttributes }: ViewProps) {
+  const { Wrapper } = use(NodeParts)
   const activityId = use(ActivityContext)
   const [queued] = useState(() => queuedFiles.get(node))
   const claim = useMutation(createBlockOptions())
   const name = node.type.name
   if (!activityId || !isFileBlock(name))
     return (
-      <NodeViewWrapper className="my-4">
+      <Wrapper className="my-4">
         <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
           {m.editor_file_missing()}
         </p>
-      </NodeViewWrapper>
+      </Wrapper>
     )
   const { purpose, blockType } = FILE_BLOCKS[name]
   return (
-    <NodeViewWrapper className="my-4" contentEditable={false}>
+    <Wrapper className="my-4" contentEditable={false}>
       <FileInput
         label={LOOKS[name].label()}
         description={LOOKS[name].hint()}
@@ -55,6 +56,6 @@ export function FileUpload({ node, updateAttributes }: ReactNodeViewProps) {
           )
         }
       />
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

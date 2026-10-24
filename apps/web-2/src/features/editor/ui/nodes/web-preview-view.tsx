@@ -1,5 +1,5 @@
+import { use } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
@@ -11,8 +11,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 import { textAttr } from '../../model/document'
 import { linkHref } from '../../model/link'
 import { justify } from './align'
-import { AttrForm } from './attr-form'
-import { PreviewOptions } from './preview-options'
+import { NodeParts, type ViewProps } from './parts'
 
 // A preview needs a web page: `example.com` is read as https (B-EDT-23).
 const webUrl = (value: string) => {
@@ -21,7 +20,8 @@ const webUrl = (value: string) => {
 }
 
 /** blockWebPreview: a link card (title, description, site) filled from the server's page preview. */
-export function WebPreviewView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
+export function WebPreviewView({ node, editor, selected, updateAttributes }: ViewProps) {
+  const { Wrapper, Authoring } = use(NodeParts)
   const queryClient = useQueryClient()
   const url = textAttr(node.attrs['url'])
   const href = url && webUrl(url) === url ? url : null
@@ -42,7 +42,7 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
     })
   }
   return (
-    <NodeViewWrapper className="my-4 flex flex-col gap-2">
+    <Wrapper className="my-4 flex flex-col gap-2">
       {href ? (
         <div className={`flex ${justify(node.attrs['alignment'])}`}>
           <div className="flex max-w-xl flex-col gap-1 rounded-lg border border-border bg-card p-4 text-card-foreground">
@@ -53,7 +53,7 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
               {textAttr(node.attrs['title']) ?? href}
             </Link>
             {node.attrs['description'] ? (
-              <p className="text-sm text-muted-foreground">{String(node.attrs['description'])}</p>
+              <p className="text-sm text-muted-foreground">{textAttr(node.attrs['description'])}</p>
             ) : null}
             {node.attrs['showButton'] ? (
               <div className="pt-2">
@@ -70,16 +70,16 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Rea
           </div>
         </div>
       ) : null}
-      {editor.isEditable && selected && href ? (
-        <PreviewOptions node={node} updateAttributes={updateAttributes} />
+      {editor.isEditable && Authoring && selected && href ? (
+        <Authoring.PreviewOptions node={node} updateAttributes={updateAttributes} />
       ) : null}
-      {editor.isEditable && (selected || !href) ? (
-        <AttrForm
+      {editor.isEditable && Authoring && (selected || !href) ? (
+        <Authoring.AttrForm
           fields={[{ name: 'url', label: m.editor_field_url(), check: value => webUrl(value) !== undefined }]}
           values={{ url: url ?? '' }}
           onApply={apply}
         />
       ) : null}
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

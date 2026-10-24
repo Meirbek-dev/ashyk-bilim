@@ -32,16 +32,9 @@ until someone looks.
 The `web-release-e2e` CI job now gates production publication on browser checks
 against the built image and a synthetic backup/restore integrity drill. Focused
 production browser and fixture checks pass; the complete image/restore lane still needs
-its first hosted validation. The real Judge0 shard likewise needs hosted
-validation. The longer production journey remains a local regression suite.
-
-### 35. Production journey stalls after successful enrollment
-On the local production build, the serial `journey.spec.ts` creates and
-publishes a fresh course, then its learner's Start Course request returns
-HTTP 200 without navigating to the first activity. The enrollment test keeps
-its navigation assertion and fails; later serial stages do not run. Reproduce
-with `just e2e web journey.spec.ts --project=chromium`. Investigate the landing
-CTA after the enrollment response before treating the whole journey as green.
+its first hosted validation. The four real Judge0 verdict, reload and graded-hand-in
+checks pass locally; their hosted shard still needs validation. The longer production
+journey remains a local regression suite.
 
 ### 31. University proxy response-header limit (operating constraint)
 The university proxy answers 502 when response headers overflow its 4 KiB buffer.

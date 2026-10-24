@@ -2,10 +2,11 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { getLocale } from '#/paraglide/runtime'
 import { ListState } from '#/shared/components/list-state'
 import { buttonVariants } from '#/shared/components/button-variants'
 
-import { landingLead } from '../model/catalog'
+import { landingLead, localizedPlatform } from '../model/catalog'
 import { landingCoursesOptions, platformOptions } from '../queries'
 import { CourseGrid } from './course-grid'
 import { CoverWall } from './cover-wall'
@@ -20,7 +21,8 @@ const FILL = ['ashyq', 'bilim', 'oqu', 'jol']
  * steps, a few courses; the catalog itself is `/courses`.
  */
 export function LandingPage() {
-  const { data: platform } = useSuspenseQuery(platformOptions())
+  const { data } = useSuspenseQuery(platformOptions())
+  const platform = localizedPlatform(data, getLocale())
   const courses = useSuspenseQuery(landingCoursesOptions())
   // Uploaded pictures first: they show what the courses are about; ornaments fill the rest.
   const wall = [

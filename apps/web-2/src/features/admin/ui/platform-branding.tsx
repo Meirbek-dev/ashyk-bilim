@@ -20,7 +20,7 @@ const defaultValues: UpdatePlatformRequest = {}
 const contentUrl = (key: string) => `/content/${key}`
 
 /**
- * Logo and cover: a picked image uploads at once (`platform-logo` / `platform-thumbnail`) and becomes the platform's
+ * The link cover: a picked image uploads at once (`platform-thumbnail`) and becomes the platform's
  * right away, like a course cover (it was left unclaimed when the admin missed «Сохранить»). An empty field leaves
  * the current image as it is. Saved with `If-Match`; a 412 opens the conflict dialog.
  */
@@ -47,15 +47,9 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
     leaveGuard: true,
     onSubmit: body => write.save({ body, reset: () => form.reset() }),
   })
-  // Each image beside its picker, at its own shape: the logo square, the cover 16:9 like every course picture.
+  // The cover at its own shape, 16:9 like every course picture. The logo picker is gone (OPEN-C-1): the shell, sign-in
+  // and certificates carry the fixed «Ashyq» artwork (DESIGN.md), so an uploaded logo was shown nowhere.
   const images = [
-    {
-      key: platform.logo_key,
-      label: m.admin_platform_logo(),
-      name: 'logo_upload_id',
-      purpose: 'platform-logo',
-      shape: 'size-20',
-    },
     {
       key: platform.thumbnail_key,
       label: m.admin_platform_thumbnail(),

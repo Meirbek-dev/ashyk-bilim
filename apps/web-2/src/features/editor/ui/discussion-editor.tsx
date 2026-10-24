@@ -1,5 +1,3 @@
-import { EditorContent } from '@tiptap/react'
-
 import { m } from '#/paraglide/messages'
 import { uploadAccept } from '#/shared/api/upload'
 import { FileButton } from '#/shared/components/file-button'
@@ -8,6 +6,7 @@ import { useUpload } from '#/shared/hooks/use-upload'
 import type { EditorDocument } from '../model/document'
 import { ContentStyles } from './content-styles'
 import { EditorToolbar } from './toolbar/editor-toolbar'
+import { DocumentContent } from './tiptap-parts'
 import { useDocumentEditor } from './use-document-editor'
 
 type DiscussionEditorProps = {
@@ -43,7 +42,7 @@ export function DiscussionEditor({ content, onChange, onImage, focusOnMount = fa
     <div className="flex flex-col gap-2">
       <ContentStyles />
       {editor ? <EditorToolbar editor={editor} /> : null}
-      <EditorContent editor={editor} />
+      <DocumentContent editor={editor} />
       <div className="flex flex-wrap items-center gap-2">
         <FileButton
           label={m.editor_image_add()}

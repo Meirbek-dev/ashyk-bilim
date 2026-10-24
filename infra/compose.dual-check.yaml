@@ -4,6 +4,8 @@
 # own: they never switch user, so the services' `cap_drop: ALL` and no-new-privileges stay as in production.
 services:
   nginx:
+    # Probes run inside nginx; rootless checks need no published host ports.
+    ports: !reset []
     depends_on: !reset {}
     deploy:
       resources: !reset {}

@@ -71,6 +71,30 @@ export function paletteSections(
     .filter(group => group.sections.length > 0)
 }
 
+type PlatformTexts = {
+  description: string
+  about: string
+  description_kk?: string | undefined
+  description_en?: string | undefined
+  about_kk?: string | undefined
+  about_en?: string | undefined
+}
+
+/**
+ * The platform's description and about text in the interface language (OPEN-G-4): the Kazakh or English version when
+ * the admin wrote one, else the Russian (base) text.
+ */
+const translatedOr = (base: string, translated: string | undefined) => (translated?.trim() ? translated : base)
+
+export function localizedPlatform<T extends PlatformTexts>(platform: T, locale: string): T {
+  if (locale !== 'kk' && locale !== 'en') return platform
+  return {
+    ...platform,
+    description: translatedOr(platform.description, platform[`description_${locale}`]),
+    about: translatedOr(platform.about, platform[`about_${locale}`]),
+  }
+}
+
 /**
  * The line under the platform's name on the landing: its description, else its about text, skipping one that only
  * repeats the name (prod has description = name) and the name it opens with («Ashyq Bilim - Образовательная

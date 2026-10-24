@@ -8,6 +8,7 @@ import {
   coursesFilter,
   courseState,
   landingLead,
+  localizedPlatform,
   nextCoursesCursor,
   paletteCourseTarget,
   paletteSections,
@@ -116,4 +117,19 @@ test('B-CAT-12 a palette course hit opens the workspace of a course the user may
   expect(paletteCourseTarget({ allowed_actions: ['update', 'publish'] })).toBe('/teach/courses/$courseId')
   expect(paletteCourseTarget({ allowed_actions: ['apply_contributor'] })).toBe('/courses/$courseId')
   expect(paletteCourseTarget({ allowed_actions: [] })).toBe('/courses/$courseId')
+})
+
+test('B-CAT-29 the landing texts follow the interface language and fall back to Russian', () => {
+  const platform = {
+    description: 'Курсы',
+    about: 'О нас',
+    description_kk: 'Курстар',
+    about_kk: ' ',
+    about_en: 'About',
+  }
+  expect(localizedPlatform(platform, 'kk')).toMatchObject({ description: 'Курстар', about: 'О нас' })
+  expect(localizedPlatform(platform, 'en')).toMatchObject({ description: 'Курсы', about: 'About' })
+  expect(localizedPlatform(platform, 'ru')).toMatchObject({ description: 'Курсы', about: 'О нас' })
+  // An older server sends no translations.
+  expect(localizedPlatform({ description: 'Курсы', about: '' }, 'en')).toMatchObject({ description: 'Курсы' })
 })

@@ -1,4 +1,4 @@
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import { use } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
@@ -6,7 +6,7 @@ import { cn } from '#/shared/lib/utils'
 
 import { numberAttr, textAttr } from '../../model/document'
 import { embedSandbox, embedSrc, embedTypeForUrl, isOwnSite, youTubeId } from '../../model/embed'
-import { AttrForm } from './attr-form'
+import { NodeParts, type ViewProps } from './parts'
 
 // Height in px, as the old editor's resize handle allowed (B-EDT-28).
 const isHeight = (value: string) => /^\d+$/.test(value) && Number(value) >= 100 && Number(value) <= 2000
@@ -19,14 +19,15 @@ const isHeight = (value: string) => /^\d+$/.test(value) && Number(value) >= 100 
  * that is off the catalog would otherwise leave the learner with nothing (B-EDT-24). A YouTube video keeps 16:9 at
  * the stored width whatever height was stored (B-EDT-31): a fixed 480 px left black bands, and a phone a tall box.
  */
-export function EmbedView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
+export function EmbedView({ node, editor, selected, updateAttributes }: ViewProps) {
+  const { Wrapper, Authoring } = use(NodeParts)
   const type = textAttr(node.attrs['type'])
   const url = textAttr(node.attrs['url'])
   const src = embedSrc(type, url)
   const page = url?.trim() ?? ''
   const external = /^https:\/\//i.test(page) && type !== 'youtube' && !youTubeId(page) ? page : null
-  const form = editor.isEditable && (selected || !src) && (
-    <AttrForm
+  const form = editor.isEditable && Authoring && (selected || !src) && (
+    <Authoring.AttrForm
       fields={[
         {
           name: 'url',
@@ -49,7 +50,7 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
     />
   )
   return (
-    <NodeViewWrapper className="my-4 flex flex-col items-center gap-2">
+    <Wrapper className="my-4 flex flex-col items-center gap-2">
       {src ? (
         <iframe
           src={src}
@@ -71,6 +72,6 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ReactNod
         </Link>
       ) : null}
       {form || null}
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

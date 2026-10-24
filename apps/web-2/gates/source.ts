@@ -144,7 +144,12 @@ const TOKEN_RULES: [RegExp, string, string][] = [
     'tokens-arbitrary-value',
     'use the Tailwind scale or a token, not an arbitrary [value]',
   ],
-  [/\bstyle=\{/, 'tokens-inline-style', 'use Tailwind classes on tokens instead of style={}'],
+  // CSS custom-property literals are checked key by key by mandatory shadcn/no-inline-styles in vp check.
+  [
+    /\bstyle=\{(?!\{\s*['"]--)/,
+    'tokens-inline-style',
+    'use token classes or CSS custom properties instead of style={}',
+  ],
   [/#[0-9a-fA-F]{3,8}\b/, 'tokens-hex', 'colors live in src/styles/ tokens and public/themes/'],
 ]
 
@@ -157,7 +162,17 @@ export function tokens(): Finding[] {
   )
   return files.flatMap(file =>
     TOKEN_RULES.flatMap(([pattern, rule, fix]) =>
-      matches(read(file), pattern).map(({ line }) => ({ file, line, rule, fix })),
+      matches(read(file), pattern)
+        // Shiki projects four CSS fields and two named theme custom properties, never an arbitrary spread.
+        .filter(
+          ({ line }) =>
+            !(
+              rule === 'tokens-inline-style' &&
+              file === 'src/features/editor/ui/static/code-block.tsx' &&
+              read(file).split(/\r?\n/)[line - 1]?.includes('style={token.style}')
+            ),
+        )
+        .map(({ line }) => ({ file, line, rule, fix })),
     ),
   )
 }

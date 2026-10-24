@@ -31,6 +31,7 @@ dumps=$dir/backup/db_dumps
 [[ -f $dumps/ashyq.dump ]] || die "$archive has no backup/db_dumps/ashyq.dump (old-format archive?)"
 
 log "databases"
+prepare_redis_volume
 compose up -d --wait db
 # Globals first (roles + passwords); "role already exists" for the superuser is expected.
 compose exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres' <"$dumps/globals.sql" || true

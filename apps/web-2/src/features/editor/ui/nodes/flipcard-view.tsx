@@ -1,22 +1,22 @@
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
 import { RotateCcw } from 'lucide-react'
-import { useState } from 'react'
+import { use, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Button } from '#/shared/ui/button'
 
 import { justify, stringAttr } from './align'
-import { AttrForm } from './attr-form'
+import { NodeParts, type ViewProps } from './parts'
 
 /** flipcard: a question card that turns over to its answer (self-check). Authoring edits both sides. */
-export function FlipcardView({ node, editor, updateAttributes }: ReactNodeViewProps) {
+export function FlipcardView({ node, editor, updateAttributes }: ViewProps) {
+  const { Wrapper, Authoring } = use(NodeParts)
   const [flipped, setFlipped] = useState(false)
   const question = stringAttr(node.attrs['question'])
   const answer = stringAttr(node.attrs['answer'])
-  if (editor.isEditable)
+  if (editor.isEditable && Authoring)
     return (
-      <NodeViewWrapper className="my-4">
-        <AttrForm
+      <Wrapper className="my-4">
+        <Authoring.AttrForm
           fields={[
             { name: 'question', label: m.editor_field_question(), multiline: true },
             { name: 'answer', label: m.editor_field_answer(), multiline: true },
@@ -24,10 +24,10 @@ export function FlipcardView({ node, editor, updateAttributes }: ReactNodeViewPr
           values={{ question, answer }}
           onApply={values => updateAttributes(values)}
         />
-      </NodeViewWrapper>
+      </Wrapper>
     )
   return (
-    <NodeViewWrapper className={`my-4 flex ${justify(node.attrs['alignment'])}`}>
+    <Wrapper className={`my-4 flex ${justify(node.attrs['alignment'])}`}>
       <div className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground">
         <p aria-live="polite" className="text-base whitespace-pre-line">
           {flipped ? answer : question}
@@ -39,6 +39,6 @@ export function FlipcardView({ node, editor, updateAttributes }: ReactNodeViewPr
           </Button>
         </div>
       </div>
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

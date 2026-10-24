@@ -12,6 +12,7 @@ import type { OxlintConfig } from 'vite-plus/lint'
 import { playwright } from 'vite-plus/test/browser-playwright'
 
 import { fmt } from './fmt.config.ts'
+import { forbiddenElements, forbiddenExceptA, LINK_COMPOSITES, rendererOverrides } from './gates/lint-elements.ts'
 import { paraglideOptions } from './gates/codegen.ts'
 import { CODE_SPLITTING, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
 
@@ -152,13 +153,6 @@ const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricte
   { paths, patterns: [...layerPatterns.any, ...(layer === 'any' ? [] : layerPatterns[layer])] },
 ]
 
-const forbiddenElements = ['button', 'input', 'select', 'textarea', 'dialog', 'table', 'a'].map(element => ({
-  element,
-  message: `Use the stock component from #/shared/ui or a composite from #/shared/components (Link / Anchor for <a>), not raw <${element}>.`,
-}))
-const LINK_COMPOSITES = ['src/shared/components/link.tsx', 'src/shared/components/anchor.tsx']
-const forbiddenExceptA = forbiddenElements.filter(entry => entry.element !== 'a')
-
 const lint: OxlintConfig = {
   plugins: ['eslint', 'typescript', 'oxc', 'react', 'jsx-a11y', 'import', 'promise', 'unicorn', 'vitest'],
   jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, './gates/lint-plugin.ts', '@shadcn/lint'],
@@ -230,6 +224,7 @@ const lint: OxlintConfig = {
       files: ['src/shared/api/query-client.ts', 'src/shared/api/events.ts'],
       rules: { 'no-restricted-properties': restrictProperties('invalidateQueries') },
     },
+    ...rendererOverrides,
     // The two link composites are the one place that renders <a> (routes through createLink, other URLs plainly).
     { files: LINK_COMPOSITES, rules: { 'react/forbid-elements': ['error', { forbid: forbiddenExceptA }] } },
     {

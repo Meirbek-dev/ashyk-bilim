@@ -26,6 +26,18 @@ compose() {
   "$CTR" compose "$@"
 }
 
+# Pin Podman's shared-volume owner: mounting an empty Redis volume into the root-owned backup otherwise chowns it.
+prepare_redis_volume() {
+  if "$CTR" --version | grep -qi podman; then
+    local project=${COMPOSE_PROJECT_NAME:-}
+    [[ -n $project ]] || project=$(compose config | sed -n 's/^name: //p' | head -n 1)
+    [[ -n $project ]] || die "cannot determine the compose project name"
+    "$CTR" volume create --ignore --uid 999 --gid 999 \
+      --label "com.docker.compose.project=$project" --label com.docker.compose.volume=redis_data \
+      "${project}_redis_data" >/dev/null
+  fi
+}
+
 export COMPOSE_PATH_SEPARATOR=:
 # The db image (pinned in compose.yaml) doubles as the toolbox: zstd, GNU tar, psql.
 # shellcheck disable=SC2034 # used by the sourcing scripts
@@ -80,6 +92,9 @@ use_web_e2e() {
   export COMPOSE_FILE=$COMPOSE_FILE:compose.web-e2e.yaml
   export NGINX_SERVER_NAME=${E2E_WEB_HOST:?set E2E_WEB_HOST to the image build domain}
   export TLS_DIR=./tmp/web-e2e/certs WEB_LINKS=legacy STACK_ENV_FILE=./infra/env/smoke.env
+  export SERVER_ENV_FILE=./tmp/web-e2e/server.env
+  mkdir -p tmp/web-e2e
+  [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
   export BACKUP_DIR=./tmp/restore-test-archives
 }
 

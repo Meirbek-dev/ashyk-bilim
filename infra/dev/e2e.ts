@@ -222,12 +222,15 @@ async function playwright(o: ReturnType<typeof parse>, env: Record<string, strin
   const logPath = join(dir, 'playwright.log')
   say(`playwright (${o.app}${o.dev ? ', dev servers' : ', production build'}): log ${logPath}`)
   writeFileSync(logPath, '')
-  const child = Bun.spawn([process.execPath, 'x', 'playwright', 'test', ...config, ...o.args], {
-    cwd,
-    env: { ...process.env, NO_COLOR: '1', ...machineEnv(), E2E_OUTPUT_DIR: join(dir, 'test-results'), ...env },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  })
+  const child = Bun.spawn(
+    ['node', join(cwd, 'node_modules/@playwright/test/cli.js'), 'test', ...config, ...o.args],
+    {
+      cwd,
+      env: { ...process.env, NO_COLOR: '1', ...machineEnv(), E2E_OUTPUT_DIR: join(dir, 'test-results'), ...env },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  )
   children.push(child)
   const [code] = await Promise.all([child.exited, pipeToLog(child.stdout, logPath), pipeToLog(child.stderr, logPath)])
   say(tail(logPath, 25))

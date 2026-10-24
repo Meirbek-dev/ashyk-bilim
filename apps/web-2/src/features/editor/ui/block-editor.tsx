@@ -1,4 +1,3 @@
-import { EditorContent } from '@tiptap/react'
 import { useState } from 'react'
 
 import type { EditorDocument } from '../model/document'
@@ -7,6 +6,7 @@ import { ActivityContext } from './file-drop'
 import { EditorToolbar } from './toolbar/editor-toolbar'
 import type { MenuAnchor } from './toolbar/insert-items'
 import { InsertMenu } from './toolbar/insert-menu'
+import { DocumentContent } from './tiptap-parts'
 import { useDocumentEditor } from './use-document-editor'
 
 type BlockEditorProps = {
@@ -28,7 +28,7 @@ export function BlockEditor({ activityId, content, onChange }: BlockEditorProps)
       <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs [&>[role=toolbar]]:rounded-t-xl [&>[role=toolbar]]:bg-card [&>[role=toolbar]]:px-2">
         <ContentStyles />
         {editor ? <EditorToolbar editor={editor} onInsert={setMenu} /> : null}
-        <EditorContent editor={editor} />
+        <DocumentContent editor={editor} />
         {editor ? <InsertMenu editor={editor} anchor={menu} onClose={() => setMenu(null)} /> : null}
       </div>
     </ActivityContext>

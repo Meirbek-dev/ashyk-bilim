@@ -35,6 +35,10 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
     label: platform.label ?? '',
     description: platform.description,
     about: platform.about,
+    description_kk: platform.description_kk ?? '',
+    about_kk: platform.about_kk ?? '',
+    description_en: platform.description_en ?? '',
+    about_en: platform.about_en ?? '',
     email: platform.email,
   }))
   const form = useAppForm(vUpdatePlatformRequest, {
@@ -59,6 +63,23 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
           {field => <field.TextField label={m.admin_field_description()} />}
         </form.AppField>
         <form.AppField name="about">{field => <field.TextareaField label={m.admin_platform_about()} />}</form.AppField>
+        {/* OPEN-G-4: the landing in the visitor's language; blank falls back to the Russian text above. */}
+        <fieldset className="flex flex-col gap-4 rounded-lg border p-4">
+          <legend className="px-1 text-sm font-medium">{m.admin_platform_translations()}</legend>
+          <p className="text-sm text-muted-foreground">{m.admin_platform_translations_hint()}</p>
+          <form.AppField name="description_kk">
+            {field => <field.TextField label={m.admin_platform_description_kk()} />}
+          </form.AppField>
+          <form.AppField name="about_kk">
+            {field => <field.TextareaField label={m.admin_platform_about_kk()} />}
+          </form.AppField>
+          <form.AppField name="description_en">
+            {field => <field.TextField label={m.admin_platform_description_en()} />}
+          </form.AppField>
+          <form.AppField name="about_en">
+            {field => <field.TextareaField label={m.admin_platform_about_en()} />}
+          </form.AppField>
+        </fieldset>
         <form.AppField name="email">
           {field => <field.TextField label={m.admin_platform_email()} type="email" />}
         </form.AppField>

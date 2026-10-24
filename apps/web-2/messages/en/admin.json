@@ -137,9 +137,8 @@
   "admin_platform_label_hint": "A short label next to the name; blank means none.",
   "admin_platform_about": "About",
   "admin_platform_email": "Support email",
-  "admin_platform_branding": "Logo and cover",
+  "admin_platform_branding": "Link cover",
   "admin_platform_branding_hint": "The cover is the picture of a link to the platform in messengers and social networks. Images up to 10 MB: JPEG, PNG, GIF, WebP or AVIF.",
-  "admin_platform_logo": "Logo",
   "admin_platform_thumbnail": "Cover",
   "admin_platform_no_image": "No image.",
   "admin_gamification_title": "Gamification",
@@ -202,5 +201,11 @@
   "admin_user_field_roles": "Extra roles",
   "admin_user_field_roles_hint": "The User role is always assigned.",
   "admin_gamification_xp": "XP",
-  "admin_gamification_rewards": "Rewards"
+  "admin_gamification_rewards": "Rewards",
+  "admin_platform_translations": "In Kazakh and English",
+  "admin_platform_translations_hint": "Visitors using the Kazakh or English interface see these texts; an empty field shows the Russian text.",
+  "admin_platform_description_kk": "Description in Kazakh",
+  "admin_platform_about_kk": "About in Kazakh",
+  "admin_platform_description_en": "Description in English",
+  "admin_platform_about_en": "About in English"
 }

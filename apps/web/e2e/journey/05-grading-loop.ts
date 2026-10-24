@@ -15,6 +15,7 @@
 import { testAsTeacher as test, expect } from '../fixtures'
 import { getEnv, setEnv } from './state'
 import { USERS } from '../fixtures/test-data'
+import { apiAs } from '../fixtures/api'
 
 // ---------------------------------------------------------------------------
 // Phase 4: Student confirms certificate is now available
@@ -26,6 +27,7 @@ export function registerGrading() {
     let courseUuid: string
     let fileSubmissionActivityId: string
     let examActivityId: string
+    let learner: string
 
     test.beforeAll(async () => {
       courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
@@ -34,6 +36,16 @@ export function registerGrading() {
 
       if (!courseUuid) {
         throw new Error('E2E_COURSE_UUID not set. Run spec 03 (course creation) first.')
+      }
+      const api = await apiAs('student')
+      try {
+        const response = await api.get('users/me')
+        expect(response.ok()).toBe(true)
+        const profile = await response.json()
+        expect(profile.username).toBeTruthy()
+        learner = profile.display_name || `@${profile.username}`
+      } finally {
+        await api.dispose()
       }
     })
 
@@ -89,7 +101,7 @@ export function registerGrading() {
       await gradebookPage.gotoActivityReview(courseUuid, fileSubmissionActivityId)
 
       // The queue (v2: learner buttons "<name> Attempt N · …") should show the student's attempt
-      await expect(gradingReviewPage.submissionItem(new RegExp(USERS.student.firstName, 'i'))).toBeVisible({
+      await expect(gradingReviewPage.submissionItem(learner)).toBeVisible({
         timeout: 15_000,
       })
     })
@@ -100,7 +112,7 @@ export function registerGrading() {
       }
       await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
 
-      await gradingReviewPage.selectSubmission(USERS.student.firstName)
+      await gradingReviewPage.selectSubmission(learner)
 
       // The uploaded file name should be visible in the inspector pane
       await expect(page.getByText(/sample\.pdf|\.pdf/i).first()).toBeVisible({
@@ -113,7 +125,7 @@ export function registerGrading() {
         throw new Error('File submission activity ID not captured - run student journey first')
       }
       await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
-      await gradingReviewPage.selectSubmission(USERS.student.firstName)
+      await gradingReviewPage.selectSubmission(learner)
 
       await gradingReviewPage.gradeSubmission({
         score: 85,
@@ -126,8 +138,8 @@ export function registerGrading() {
         throw new Error('File submission activity ID not captured - run student journey first')
       }
       await gradingReviewPage.goto(courseUuid, fileSubmissionActivityId)
-      await gradingReviewPage.selectSubmission(USERS.student.firstName)
-      await gradingReviewPage.assertGradedStatus(USERS.student.firstName)
+      await gradingReviewPage.selectSubmission(learner)
+      await gradingReviewPage.assertGradedStatus(learner)
     })
 
     // ── 3. Grade the exam submission ──────────────────────────────────────────
@@ -149,7 +161,6 @@ export function registerGrading() {
       // The student's auto-graded attempt must be in the queue (BUG PROTOCOL: if
       // it is missing despite the learner submitting, this fails - do not skip)
       // The assessment queue labels entries by display name or "@username"
-      const learner = new RegExp(`${USERS.student.firstName}|@${USERS.student.email.split('@')[0]}`, 'i')
       await gradingReviewPage.selectSubmission(learner)
       // The workspace mirrors the selection into `?submission=`; spec 07 reuses it.
       await expect(page).toHaveURL(/[?&]submission=/)

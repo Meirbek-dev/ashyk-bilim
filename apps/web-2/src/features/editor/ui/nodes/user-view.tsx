@@ -1,11 +1,12 @@
 import { CatchBoundary } from '@tanstack/react-router'
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
-import { lazy, Suspense } from 'react'
+import { use, lazy, Suspense } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Skeleton } from '#/shared/ui/skeleton'
 
+import { textAttr } from '../../model/document'
 import { UserCard } from './user-card'
+import { NodeParts, type ViewProps } from './parts'
 
 // Authoring only: the people search (and the admin slice behind it) stays out of the viewer's chunk.
 const PeoplePicker = lazy(() => import('#/features/admin').then(module => ({ default: module.PeoplePicker })))
@@ -14,11 +15,12 @@ const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i
 const missing = <p className="text-sm text-muted-foreground">{m.editor_user_missing()}</p>
 
 /** blockUser: a person's public card (a teacher, a guest lecturer). Authoring picks the person by name (B-EDT-27). */
-export function UserView({ node, editor, selected, updateAttributes }: ReactNodeViewProps) {
-  const userId = String(node.attrs['user_id'] ?? '').trim()
+export function UserView({ node, editor, selected, updateAttributes }: ViewProps) {
+  const { Wrapper } = use(NodeParts)
+  const userId = textAttr(node.attrs['user_id'])?.trim() ?? ''
   const valid = UUID.test(userId)
   return (
-    <NodeViewWrapper className="my-4 flex max-w-md flex-col gap-2">
+    <Wrapper className="my-4 flex max-w-md flex-col gap-2">
       {valid ? (
         <CatchBoundary getResetKey={() => userId} errorComponent={() => missing}>
           <Suspense fallback={<Skeleton className="h-row w-full" />}>
@@ -40,6 +42,6 @@ export function UserView({ node, editor, selected, updateAttributes }: ReactNode
           />
         </Suspense>
       ) : null}
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }

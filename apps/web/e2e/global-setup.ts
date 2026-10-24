@@ -122,7 +122,7 @@ async function captureStorageState(login: string, password: string, outputPath: 
   const context = await browser.newContext({ baseURL: BASE_URL, ignoreHTTPSErrors: process.env.E2E_INSECURE === '1' })
   const page = await context.newPage()
 
-  await page.goto('/en/login')
+  await page.goto('/en/login', { waitUntil: 'domcontentloaded' })
 
   const passwordInput = page.locator('input[name="password"]')
   await page.getByRole('button', { name: 'Show password', exact: true }).click()

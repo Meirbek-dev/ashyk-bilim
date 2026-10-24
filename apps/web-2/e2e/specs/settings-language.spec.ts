@@ -4,7 +4,7 @@ import { login, myProfile } from '#/shared/api/gen/sdk.gen'
 
 import { registerAccount } from '../fixtures/accounts'
 import { expect, test } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
+import { clickUntil, finishPages } from '../fixtures/test'
 
 // The language of a signed-in user lives in the profile (ROUND3 decision 20): a fresh account per test.
 const ru = { locale: 'ru' } as const
@@ -36,6 +36,7 @@ test('B-SET-12 the profile menu saves the language to the profile; a sign-in els
   await expect.poll(language).toBe('en')
 
   // Another device, set to Russian, signs in: the next page is in the profile's language.
+  await finishPages(context)
   await context.clearCookies()
   await context.addCookies([{ name: 'ab_locale', value: 'ru', url: String(baseURL) }])
   await page.goto('/login?redirect=%2Fcollections')

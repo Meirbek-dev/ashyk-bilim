@@ -226,7 +226,10 @@ web2-stand-down:
 web-release-e2e action *args:
     {{ bash_bin }} infra/scripts/web-e2e.sh "$@"
 
-# What the infra-gates CI job runs: compose config for every stack, bash -n, nginx -t, dual-web routing.
+redis-test:
+    {{ bash_bin }} infra/tests/redis-persistence.sh
+
+# Infra gates: compose config, shell syntax, nginx, dual-web routing and Redis persistence with backup mounted.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -252,6 +255,7 @@ ci-infra:
     "$CTR" rm "$check_id" >/dev/null
     [[ $status == 0 ]]
     {{ bash_bin }} infra/tests/dual-web.sh
+    {{ bash_bin }} infra/tests/redis-persistence.sh
 
 preflight *args:
     {{ bash_bin }} infra/scripts/preflight.sh "$@"

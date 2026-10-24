@@ -139,7 +139,7 @@ test('B-AUTH-16 a session that ends under the page brings the sign-in page with 
   // The session ends behind the tab (expired, or signed out in another one).
   expectFailure(
     page,
-    /^\/api\/v2\/(me\/(events|agenda|notifications\/unread-count|certificates\/page)|gamification|work)$/,
+    /^\/api\/v2\/(me\/(events|agenda|notifications\/unread-count|certificates\/page)|gamification\/streaks\/login|work)$/,
     401,
   )
   await page.request.post('/api/v2/auth/logout', { headers: { origin: new URL(page.url()).origin } })

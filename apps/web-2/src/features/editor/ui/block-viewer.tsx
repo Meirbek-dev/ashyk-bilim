@@ -1,13 +1,16 @@
-import { EditorContent } from '@tiptap/react'
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 
+import { normalizeDocument } from '../model/normalize'
 import { ContentStyles } from './content-styles'
-import { useDocumentEditor } from './use-document-editor'
+import { StaticDocument } from './static/document'
+
+// Only legacy HTML still needs the editor to be read (none in production since D-01): it loads with such a page.
+const HtmlViewer = lazy(() => import('./html-viewer').then(module => ({ default: module.HtmlViewer })))
 
 /**
- * A lesson page or a post, read-only: flip cards flip, scenarios play, embeds and media load. `discussion`: a post,
- * read with the post schema (no lesson blocks, embeds as links). `fallback`: what shows until the editor exists (it is
- * created after the first render), e.g. the post's plain text, so the content never flashes empty.
+ * A lesson page or a post, read-only: flip cards flip, scenarios play, embeds and media load. A stored document is
+ * drawn without the editor (B-EDT-34). `discussion`: a post, read with the post schema (no lesson blocks, embeds as
+ * links). `fallback`: what shows while legacy HTML content waits for the editor, e.g. the post's plain text.
  */
 export function BlockViewer({
   content,
@@ -18,11 +21,17 @@ export function BlockViewer({
   discussion?: boolean
   fallback?: ReactNode
 }) {
-  const editor = useDocumentEditor({ preset: discussion ? 'discussion-view' : 'view', content })
+  const doc = normalizeDocument(content)
   return (
     <>
       <ContentStyles />
-      {editor ? <EditorContent editor={editor} /> : fallback}
+      {typeof doc === 'string' ? (
+        <Suspense fallback={fallback}>
+          <HtmlViewer html={doc} discussion={discussion} fallback={fallback} />
+        </Suspense>
+      ) : (
+        <StaticDocument doc={doc} discussion={discussion} />
+      )}
     </>
   )
 }

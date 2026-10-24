@@ -16,7 +16,7 @@ start=$SECONDS
 
 work=${RESTORE_DIR:-${TMPDIR:-/tmp}/ashyq-restore}/drill
 rm -rf "$work"
-mkdir -p "$work/certs" "$work/acme"
+mkdir -p "$work/certs" "$work/acme" "$work/backups"
 "$CTR" run --rm -i "$PG_IMAGE" zstd -dc <"$archive" | tar -xf - --no-anchored -C "$work" backup/secrets
 cp "$work/backup/secrets/server.env" "$work/server.env"
 MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=drill \
@@ -56,7 +56,7 @@ fi
 if [[ -n ${RESTORE_TEST_PASSWORD:-} ]]; then
   login_status=$(node -e 'process.stdout.write(JSON.stringify({login:"e2e-student1",password:process.env.RESTORE_TEST_PASSWORD}))' |
     curl -fsS --resolve "$domain:$HTTP_PORT:127.0.0.1" -H 'Content-Type: application/json' \
-      --data-binary @- -o /dev/null -w '%{http_code}' "$SMOKE_ORIGIN/api/v2/auth/login")
+      --data-binary @- -o "$work/login-response.json" -w '%{http_code}' "$SMOKE_ORIGIN/api/v2/auth/login")
   [[ $login_status == 200 ]] || die "restored learner sign-in returned HTTP $login_status"
   log "restored learner sign-in ok"
 fi

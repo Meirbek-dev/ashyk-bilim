@@ -1,14 +1,13 @@
-import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
-import { useEffect, useRef, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 
 import { stringAttr } from './align'
-import { AttrForm } from './attr-form'
-import { MathTemplates } from './math-templates'
+import { NodeParts, type ViewProps } from './parts'
 
 /** blockMathEquation: a display formula rendered by KaTeX (loaded with the first formula); authoring edits LaTeX. */
-export function MathView({ node, editor, updateAttributes }: ReactNodeViewProps) {
+export function MathView({ node, editor, updateAttributes }: ViewProps) {
+  const { Wrapper, Authoring } = use(NodeParts)
   const latex = stringAttr(node.attrs['math_equation'])
   const target = useRef<HTMLDivElement>(null)
   const [invalid, setInvalid] = useState(false)
@@ -30,13 +29,15 @@ export function MathView({ node, editor, updateAttributes }: ReactNodeViewProps)
     }
   }, [latex])
   return (
-    <NodeViewWrapper className="my-4 flex flex-col gap-2">
+    <Wrapper className="my-4 flex flex-col gap-2">
       {/* KaTeX writes MathML next to the visual formula: screen readers read the MathML. */}
       <div ref={target} className="overflow-x-auto" />
       {invalid ? <p className="text-sm text-destructive">{m.editor_math_invalid()}</p> : null}
-      {editor.isEditable ? <MathTemplates onPick={next => updateAttributes({ math_equation: next })} /> : null}
-      {editor.isEditable ? (
-        <AttrForm
+      {editor.isEditable && Authoring ? (
+        <Authoring.MathTemplates onPick={next => updateAttributes({ math_equation: next })} />
+      ) : null}
+      {editor.isEditable && Authoring ? (
+        <Authoring.AttrForm
           // A picked template is the new value of the field.
           key={latex}
           fields={[{ name: 'math_equation', label: m.editor_field_latex(), multiline: true }]}
@@ -44,6 +45,6 @@ export function MathView({ node, editor, updateAttributes }: ReactNodeViewProps)
           onApply={values => updateAttributes(values)}
         />
       ) : null}
-    </NodeViewWrapper>
+    </Wrapper>
   )
 }
