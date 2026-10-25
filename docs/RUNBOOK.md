@@ -157,12 +157,15 @@ Rollback switches image tags only. If the bad release also changed compose or
 ### 3.3 Manual backup
 
 ```bash
-just backup
+just backup-db        # daily job: dumps, Redis, Zitadel key, secrets (~15 MB)
+just backup           # weekly job: the same plus RustFS content (~23 GB)
 ls -lt backups | head -n 3
 ```
 
-Runs the nightly job now: dumps, then the archive
+`backup-db` writes `backups/db-<timestamp>.tar.zst`, `backup` writes
 `backups/backup-<timestamp>.tar.zst`. Contents: INFRA "Backup and restore".
+Restoring the database state of a `db-*` archive: `just restore db-<ts>.tar.zst
+backup-<ts>.tar.zst` takes the content from the full archive.
 Archives hold `.env` and `server.env` in clear: keep `backups/` mode 700.
 
 ### 3.4 Restore on a clean host

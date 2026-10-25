@@ -252,21 +252,43 @@ services:
   # Restore: infra/scripts/restore.sh. Not archived: postgres_data (the dumps
   # are), judge0 (ephemeral), nginx cache.
   # ---------------------------------------------------------------------------
+  # Weekly full archive, RustFS content included (restore.sh and restore-drill.sh use it).
   backup:
     image: docker.io/offen/docker-volume-backup:v2.49.3
     restart: unless-stopped
     environment:
-      BACKUP_CRON_EXPRESSION: '0 2 * * *'
-      BACKUP_RETENTION_DAYS: '7'
+      BACKUP_CRON_EXPRESSION: '0 3 * * 0'
+      BACKUP_RETENTION_DAYS: '15'
       BACKUP_COMPRESSION: zst
       BACKUP_FILENAME: 'backup-%Y-%m-%dT%H-%M-%S.{{ .Extension }}'
       BACKUP_PRUNING_PREFIX: backup-
     volumes:
       - db_dumps:/backup/db_dumps:ro
       # ponytail: live copy of the whole bucket volume (object keys are immutable);
-      # fine up to ~20 GB, beyond that switch to an incremental `rclone sync`.
+      # weekly because it is ~23 GB; the next step is an incremental `rclone sync`.
       - ${RUSTFS_DATA_DIR:-rustfs_data}:/backup/rustfs:ro
       # Preserve the live volume's ownership when Redis has not saved its first snapshot yet.
+      - redis_data:/backup/redis:ro,nocopy
+      - zitadel_machinekey:/backup/zitadel_machinekey:ro
+      - ${STACK_ENV_FILE:-./.env}:/backup/secrets/.env:ro
+      - ${SERVER_ENV_FILE:-./server.env}:/backup/secrets/server.env:ro
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ${BACKUP_DIR:-./backups}:/archive
+    network_mode: none
+    logging: *logging
+
+  # Daily archive without the RustFS content: dumps, Redis, Zitadel key, secrets (~15 MB).
+  backup-db:
+    image: docker.io/offen/docker-volume-backup:v2.49.3
+    restart: unless-stopped
+    environment:
+      BACKUP_CRON_EXPRESSION: '0 2 * * *'
+      BACKUP_RETENTION_DAYS: '14'
+      BACKUP_COMPRESSION: zst
+      BACKUP_FILENAME: 'db-%Y-%m-%dT%H-%M-%S.{{ .Extension }}'
+      BACKUP_PRUNING_PREFIX: db-
+    volumes:
+      - db_dumps:/backup/db_dumps:ro
       - redis_data:/backup/redis:ro,nocopy
       - zitadel_machinekey:/backup/zitadel_machinekey:ro
       - ${STACK_ENV_FILE:-./.env}:/backup/secrets/.env:ro

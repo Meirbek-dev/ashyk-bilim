@@ -2,6 +2,9 @@
 # Restore a backup archive (layout backup/{db_dumps,rustfs,redis,zitadel_machinekey,secrets})
 # into an EMPTY project of the STACK (default prod), then start it and run smoke:
 #   restore.sh <backup-*.tar.zst>
+#   restore.sh <db-*.tar.zst> [backup-*.tar.zst]
+# A db-* archive has no backup/rustfs: the content comes from the optional full archive,
+# otherwise the RustFS data directory is left as it is.
 # On a new host, first copy backup/secrets/{.env,server.env} next to the compose files.
 # The archive is decompressed inside the db image (zstd + GNU tar there, nothing on the host)
 # and volume data is unpacked as root straight into the volumes: owners and modes survive.
@@ -11,10 +14,15 @@
 # shellcheck disable=SC2016 # $POSTGRES_USER expands inside the db container
 archive=${1:?usage: restore.sh <archive>}
 archive="$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")"
+content_archive=${2:-}
+[[ -z $content_archive ]] || content_archive="$(cd "$(dirname "$content_archive")" && pwd)/$(basename "$content_archive")"
+db_only=false
+[[ $(basename "$archive") == db-* ]] && db_only=true
 # shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 use_stack
 [[ -f $archive ]] || die "no such archive: $archive"
+[[ -z $content_archive || -f $content_archive ]] || die "no such archive: $content_archive"
 
 project=$(compose config | sed -n 's/^name: //p' | head -n 1)
 [[ -n $project ]] || die "cannot determine the compose project name"
@@ -44,12 +52,25 @@ log "volumes"
 compose up --no-start rustfs redis zitadel
 content=$("$CTR" inspect "$(compose ps -aq rustfs)" --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Source}}{{end}}{{end}}')
 [[ -n $content ]] || die "cannot determine the RustFS data mount"
-"$CTR" run --rm -i \
-  -v "$content:/v/rustfs" \
-  -v "${project}_redis_data:/v/redis" \
-  -v "${project}_zitadel_machinekey:/v/zitadel_machinekey" \
-  "$PG_IMAGE" sh -c 'zstd -dc | tar -xpf - --numeric-owner --no-anchored -C /v --strip-components=1 \
-    backup/rustfs backup/redis backup/zitadel_machinekey' <"$archive"
+unpack() { # <archive> <member>...
+  local from=$1
+  shift
+  "$CTR" run --rm -i \
+    -v "$content:/v/rustfs" \
+    -v "${project}_redis_data:/v/redis" \
+    -v "${project}_zitadel_machinekey:/v/zitadel_machinekey" \
+    "$PG_IMAGE" sh -c 'zstd -dc | tar -xpf - --numeric-owner --no-anchored -C /v --strip-components=1 "$@"' sh "$@" <"$from"
+}
+if $db_only; then
+  unpack "$archive" backup/redis backup/zitadel_machinekey
+  if [[ -n $content_archive ]]; then
+    unpack "$content_archive" backup/rustfs
+  else
+    log "$(basename "$archive") has no RustFS content; $content left as it is"
+  fi
+else
+  unpack "$archive" backup/rustfs backup/redis backup/zitadel_machinekey
+fi
 
 log "starting the stack"
 compose up -d --wait

@@ -361,9 +361,15 @@ self-signed cert. Not covered: presigned PUT/GET.
 
 ## Backup and restore
 
-`backup` service, daily at 02:00, `./backups/backup-<timestamp>.tar.zst`,
-retention 7 days, local only and unencrypted (owner decision 2026-10-02). No
-service is stopped. Pre-archive hooks (`docker-volume-backup.archive-pre`
+Two offen services, local only and unencrypted (owner decision 2026-10-02):
+
+- `backup-db`: daily at 02:00, `./backups/db-<timestamp>.tar.zst` (~15 MB, no
+  RustFS content), retention 14 days.
+- `backup`: weekly, Sunday 03:00, `./backups/backup-<timestamp>.tar.zst` (full,
+  ~23 GB), retention 15 days, so 2-3 are kept. Weekly since 2026-10-25: the
+  content is ~99.9% of the archive and its object keys are immutable.
+
+No service is stopped. Both run the pre-archive hooks (`docker-volume-backup.archive-pre`
 labels):
 
 - db: `pg_dump -Fc` of `ashyq` and `zitadel` plus `pg_dumpall --globals-only`
@@ -376,18 +382,20 @@ service mount the same content directory; other stacks default to a named volume
 Restore drills override both paths to keep production storage isolated.
 
 Archive layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
-`backup/rustfs` (live copy of the whole volume; object keys are immutable;
-switch to an incremental `rclone sync` beyond about 20 GB),
+`backup/rustfs` (full archives only; live copy of the whole volume; object keys
+are immutable; the next step is an incremental `rclone sync`),
 `backup/redis`, `backup/zitadel_machinekey` (includes `pat.txt`),
 `backup/secrets/{.env,server.env}`. Not archived: `postgres_data` (the dumps
 are), Judge0, nginx cache, the legacy `cs_mooc` database and `app_content`
 volume. `backups/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
-`restore.sh <archive>` (`just restore`): refuses if the project already has a
+`restore.sh <archive> [full-archive]` (`just restore`): refuses if the project already has a
 `postgres_data` volume. Unpacks the dumps (zstd and GNU tar run inside the db
 image), starts `db`, loads `globals.sql`, `pg_restore --create` of `ashyq` and
 `zitadel`, unpacks rustfs, redis and zitadel_machinekey into their volumes as
-root (owners and modes kept), starts the stack, runs smoke. On a new host the
+root (owners and modes kept), starts the stack, runs smoke. A `db-*` archive
+restores everything but the content, which comes from the optional full archive
+or stays as it is in `RUSTFS_DATA_DIR`. On a new host the
 archive's `backup/secrets` files go next to the compose files first.
 
 `restore-drill.sh [archive]` (`just restore-drill`, default the newest

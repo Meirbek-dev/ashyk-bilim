@@ -266,9 +266,13 @@ deploy *args:
 rollback *args:
     {{ bash_bin }} infra/scripts/rollback.sh "$@"
 
-# Run the nightly backup now.
+# Run the weekly full backup now (dumps + RustFS content, ~23 GB).
 backup:
     {{ lib }} && use_prod && compose exec backup backup
+
+# Run the daily database backup now (no RustFS content, ~15 MB).
+backup-db:
+    {{ lib }} && use_prod && compose exec backup-db backup
 
 restore archive:
     {{ bash_bin }} infra/scripts/restore.sh "$@"
