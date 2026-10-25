@@ -4,7 +4,7 @@ source "$(dirname "$0")/lib.sh"
 use_web_e2e
 case "${1:?up|seed|test|down}" in
   up)
-    mkdir -p "$TLS_DIR" "$BACKUP_DIR" tmp/smoke/acme
+    mkdir -p "$TLS_DIR" "$BACKUP_DIR/restic" tmp/smoke/acme
     if ! { openssl x509 -in "$TLS_DIR/cert.pem" -noout -checkend 86400 &&
       openssl x509 -in "$TLS_DIR/cert.pem" -noout -checkhost "$E2E_WEB_HOST"; } >/dev/null 2>&1; then
       openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=$E2E_WEB_HOST" \

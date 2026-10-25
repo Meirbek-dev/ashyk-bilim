@@ -276,6 +276,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # setup-bun extracts its zip with unzip, which the Playwright image lacks.
+      - name: unzip
+        working-directory: .
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends unzip
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: apps/web-2/package.json

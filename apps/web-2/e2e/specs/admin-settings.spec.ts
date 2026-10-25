@@ -40,11 +40,11 @@ test('B-ADM-13 the platform texts save and survive a reload; a blank name is ref
     const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
     await expect(general.getByLabel(m.admin_field_name({}, ru))).toHaveValue(before.name)
     const about = `E2E о платформе ${randomUUID().slice(0, 8)}`
-    await general.getByLabel(m.admin_platform_about({}, ru)).fill(about)
+    await general.getByLabel(m.admin_platform_about({}, ru), { exact: true }).fill(about)
     await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
     await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
     await page.reload()
-    await expect(general.getByLabel(m.admin_platform_about({}, ru))).toHaveValue(about)
+    await expect(general.getByLabel(m.admin_platform_about({}, ru), { exact: true })).toHaveValue(about)
 
     await general.getByLabel(m.admin_field_name({}, ru)).fill('')
     expectFailure(page, /^\/api\/v2\/platform$/, 422)
@@ -66,7 +66,7 @@ test("B-ADM-23 a platform save over someone else's change opens the conflict dia
   try {
     await page.goto('/admin/platform')
     const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
-    const about = general.getByLabel(m.admin_platform_about({}, ru))
+    const about = general.getByLabel(m.admin_platform_about({}, ru), { exact: true })
     await expect(about).toHaveValue(before.about)
     await about.fill('E2E мой вариант')
     await updatePlatform({

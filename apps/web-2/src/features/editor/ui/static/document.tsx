@@ -185,8 +185,12 @@ function blocks(nodes: EditorNode[] | undefined, surface: Surface): ReactNode[] 
  */
 export function StaticDocument({ doc, discussion = false }: { doc: EditorDocument; discussion?: boolean }) {
   return (
-    <article aria-label={m.editor_label()} className={`ab-prose relative max-w-none ${PROSEMIRROR}`}>
+    <div
+      role="article"
+      aria-label={discussion ? m.editor_label_post() : m.editor_label()}
+      className={`ab-prose relative max-w-none ${PROSEMIRROR}`}
+    >
       {blocks(doc.content, discussion ? POST : LESSON)}
-    </article>
+    </div>
   )
 }

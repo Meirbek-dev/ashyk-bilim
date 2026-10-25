@@ -18,6 +18,7 @@ test('production release and replacement stands keep separate identity configura
     writeFileSync(join(dir, 'infra/scripts/web-e2e.sh'), readFileSync(join(root, 'infra/scripts/web-e2e.sh')))
     writeFileSync(join(dir, 'infra/env/smoke.server.env'), 'template\n')
     writeFileSync(join(dir, 'compose.yaml'), 'image: &pg-image test-postgres\n')
+    writeFileSync(join(dir, 'compose.prod.yaml'), 'image: &restic-image test-restic\n')
     writeFileSync(join(dir, '.node-version'), readFileSync(join(root, '.node-version')))
     const shell = process.platform === 'win32' ? 'sh' : 'bash'
     const options = { cwd: dir, env: { ...process.env, E2E_WEB_HOST: 'release.test', E2E_PASSWORD: 'fixture-password', PATH: `${dir}${delimiter}${process.env.PATH}` } }

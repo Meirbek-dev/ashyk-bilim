@@ -18,7 +18,7 @@ bash_bin := if os() == "windows" { "/usr/bin/bash" } else { "bash" }
 lib := "source infra/scripts/lib.sh"
 # Self-signed end-entity cert (CA:FALSE: rustls rejects a CA cert as the server's own, web2 stand);
 # regenerated when missing, a CA, or expiring within a day.
-smoke_cert := "mkdir -p tmp/smoke/certs tmp/smoke/acme tmp/smoke/backups && { { openssl x509 -in tmp/smoke/certs/cert.pem -noout -checkend 86400 && openssl x509 -in tmp/smoke/certs/cert.pem -noout -ext basicConstraints | grep -q CA:FALSE; } >/dev/null 2>&1 || MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj /CN=ashyq.test -addext subjectAltName=DNS:ashyq.test -addext basicConstraints=critical,CA:FALSE -addext extendedKeyUsage=serverAuth -keyout tmp/smoke/certs/key.pem -out tmp/smoke/certs/cert.pem 2>/dev/null; }"
+smoke_cert := "mkdir -p tmp/smoke/certs tmp/smoke/acme tmp/smoke/backups/restic && { { openssl x509 -in tmp/smoke/certs/cert.pem -noout -checkend 86400 && openssl x509 -in tmp/smoke/certs/cert.pem -noout -ext basicConstraints | grep -q CA:FALSE; } >/dev/null 2>&1 || MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj /CN=ashyq.test -addext subjectAltName=DNS:ashyq.test -addext basicConstraints=critical,CA:FALSE -addext extendedKeyUsage=serverAuth -keyout tmp/smoke/certs/key.pem -out tmp/smoke/certs/cert.pem 2>/dev/null; }"
 
 default:
     @{{ just_bin }} --list

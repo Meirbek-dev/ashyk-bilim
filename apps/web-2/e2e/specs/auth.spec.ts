@@ -30,6 +30,8 @@ async function signIn(page: Page, login: string, password: string): Promise<void
   // Settled once the API answered: a sign-in under load can take longer than an assertion's wait (webkit, CI).
   const answered = page.waitForResponse(response => response.url().endsWith('/api/v2/auth/login'))
   await page.getByRole('button', { name: m.auth_login_submit({}, ru) }).click()
+  // Off the page before /home renders: hover-preloading a course another worker just deleted is a 404.
+  await page.mouse.move(-1, -1)
   await answered
 }
 
@@ -41,6 +43,7 @@ test('B-AUTH-01 B-AUTH-09 a student signs in, lands on /home and signs out', { t
 
   await page.getByRole('button', { name: m.platform_profile_menu({}, ru) }).click()
   await page.getByRole('menuitem', { name: m.auth_logout({}, ru) }).click()
+  await page.mouse.move(-1, -1)
   await expect(page).toHaveURL(/\/$/)
   await page.goto('/home')
   await expect(page).toHaveURL(/\/login\?redirect=/)

@@ -14,6 +14,8 @@ export const rendererOverrides: NonNullable<OxlintConfig['overrides']> = [
     files: ['src/features/editor/ui/static/document.tsx'],
     rules: {
       'react/forbid-elements': ['error', { forbid: forbiddenElements.filter(entry => entry.element !== 'table') }],
+      // Tiptap's read-only root is a div with role=article; a nested <article> doubles every post's article.
+      'jsx-a11y/prefer-tag-over-role': 'off',
     },
   },
   {
