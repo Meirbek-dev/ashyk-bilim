@@ -74,13 +74,6 @@ describe('MarkdownContent', () => {
 
   // ── Math ────────────────────────────────────────────────────────────────────
 
-  it('renders math in prompt mode', async () => {
-    // KaTeX transforms $..$ into .katex elements
-    const { container } = render(<MarkdownContent content="The formula $E=mc^2$ is famous." mode="prompt" />)
-    // We don't fully assert KaTeX output (not loaded), but check content is there
-    expect(container).toBeInTheDocument()
-  })
-
   // ── Heading anchors ──────────────────────────────────────────────────────────
 
   it('renders heading anchors in courseDescription mode', () => {

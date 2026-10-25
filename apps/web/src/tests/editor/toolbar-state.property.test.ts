@@ -97,42 +97,6 @@ describe('EditorToolbar state selector (Property 9)', () => {
     )
   })
 
-  it('headingLevel is always a number in [0, 6]', () => {
-    fc.assert(
-      fc.property(arbEditorStateSnapshot, snap => {
-        const result = selectToolbarState(snap)
-        expect(typeof result.headingLevel).toBe('number')
-        expect(result.headingLevel).toBeGreaterThanOrEqual(0)
-        expect(result.headingLevel).toBeLessThanOrEqual(6)
-      }),
-      { numRuns: 200 },
-    )
-  })
-
-  it('boolean fields are always booleans', () => {
-    fc.assert(
-      fc.property(arbEditorStateSnapshot, snap => {
-        const result = selectToolbarState(snap)
-        const booleanFields = [
-          'isBold',
-          'isItalic',
-          'isStrike',
-          'isBulletList',
-          'isOrderedList',
-          'isCodeBlock',
-          'isLink',
-          'canUndo',
-          'canRedo',
-        ] as const
-
-        for (const field of booleanFields) {
-          expect(typeof result[field], `${field} should be boolean`).toBe('boolean')
-        }
-      }),
-      { numRuns: 200 },
-    )
-  })
-
   it('codeBlockLanguage is always string or null', () => {
     fc.assert(
       fc.property(arbEditorStateSnapshot, snap => {

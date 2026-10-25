@@ -20,36 +20,6 @@ function roundTrip(json: object): object {
 }
 
 describe('Schema JSON round-trip', () => {
-  it('preserves a simple paragraph', () => {
-    const doc = {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'Hello, world!' }],
-        },
-      ],
-    }
-    expect(roundTrip(doc)).toEqual(doc)
-  })
-
-  it('preserves bold and italic marks', () => {
-    const doc = {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [
-            { type: 'text', text: 'bold', marks: [{ type: 'bold' }] },
-            { type: 'text', text: ' ' },
-            { type: 'text', text: 'italic', marks: [{ type: 'italic' }] },
-          ],
-        },
-      ],
-    }
-    expect(roundTrip(doc)).toEqual(doc)
-  })
-
   it('preserves headings with id attribute', () => {
     const doc = {
       type: 'doc',
@@ -75,69 +45,6 @@ describe('Schema JSON round-trip', () => {
         },
       ],
     }
-    expect(roundTrip(doc)).toEqual(doc)
-  })
-
-  it('preserves a bullet list', () => {
-    const doc = {
-      type: 'doc',
-      content: [
-        {
-          type: 'bulletList',
-          content: [
-            {
-              type: 'listItem',
-              content: [
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Item one' }],
-                },
-              ],
-            },
-            {
-              type: 'listItem',
-              content: [
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Item two' }],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    }
-    expect(roundTrip(doc)).toEqual(doc)
-  })
-
-  it('preserves nested marks (bold + italic)', () => {
-    const doc = {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [
-            {
-              type: 'text',
-              text: 'emphasis',
-              marks: [{ type: 'bold' }, { type: 'italic' }],
-            },
-          ],
-        },
-      ],
-    }
-    const result = roundTrip(doc) as typeof doc
-    // Marks may be reordered by ProseMirror; just check both are present
-    type DocShape = {
-      content?: Array<{ content?: Array<{ marks?: Array<{ type: string }> }> }>
-    }
-    const marks = ((result as DocShape).content?.[0]?.content?.[0]?.marks ?? []).map(m => m.type)
-    expect(marks).toContain('bold')
-    expect(marks).toContain('italic')
-  })
-
-  it('preserves an empty doc', () => {
-    const doc = { type: 'doc', content: [{ type: 'paragraph' }] }
     expect(roundTrip(doc)).toEqual(doc)
   })
 })

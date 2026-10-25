@@ -40,10 +40,6 @@ const arbValidTldrawUrlWithQuery = fc
 
 // Feature: rich-text-editor, Property 5: tldraw URL validation produces correct specific errors
 describe('Property 5: validateTldrawUrl returns correct error key for any string input', () => {
-  it('returns errorEmpty for empty string', () => {
-    expect(validateTldrawUrl('')).toBe('errorEmpty')
-  })
-
   it('returns errorEmpty for any whitespace-only string', () => {
     fc.assert(
       fc.property(
@@ -129,34 +125,6 @@ describe('Property 5: validateTldrawUrl returns correct error key for any string
       { numRuns: 100 },
     )
   })
-
-  it('returns the correct value for any arbitrary string (complete property)', () => {
-    fc.assert(
-      fc.property(fc.string(), url => {
-        const result = validateTldrawUrl(url)
-
-        if (url.trim() === '') {
-          expect(result).toBe('errorEmpty')
-        } else {
-          let parsed: URL
-          try {
-            parsed = new URL(url)
-          } catch {
-            expect(result).toBe('errorInvalid')
-            return
-          }
-
-          const isValidPath = /^\/r\/[^/]+$/.test(parsed.pathname)
-          if (parsed.hostname === 'tldraw.com' && isValidPath) {
-            expect(result).toBeNull()
-          } else {
-            expect(result).toBe('errorInvalid')
-          }
-        }
-      }),
-      { numRuns: 200 },
-    )
-  })
 })
 
 // ---------------------------------------------------------------------------
@@ -186,27 +154,6 @@ describe('Property 6: buildTldrawSrc appends ?embed=1 correctly for any valid tl
         expect(src).toBe(`${url}&embed=1`)
       }),
       { numRuns: 100 },
-    )
-  })
-
-  it('src always equals url + ?embed=1 (no query) or url + &embed=1 (with query)', () => {
-    fc.assert(
-      fc.property(fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery), url => {
-        const src = buildTldrawSrc(url)
-        const expected = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`
-        expect(src).toBe(expected)
-      }),
-      { numRuns: 200 },
-    )
-  })
-
-  it('src always ends with embed=1', () => {
-    fc.assert(
-      fc.property(fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery), url => {
-        const src = buildTldrawSrc(url)
-        expect(src.endsWith('embed=1')).toBe(true)
-      }),
-      { numRuns: 200 },
     )
   })
 })

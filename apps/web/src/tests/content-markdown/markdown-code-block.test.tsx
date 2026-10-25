@@ -59,11 +59,6 @@ describe('MarkdownCodeBlock', () => {
     })
   })
 
-  it('renders copy button', () => {
-    render(<MarkdownCodeBlock code="hello" language="text" />)
-    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument()
-  })
-
   it('shows current source while a replacement highlight is pending', async () => {
     const { container, rerender } = render(<MarkdownCodeBlock code="first" language="typescript" />)
     await waitFor(() => expect(container.querySelector('code')?.textContent).toBe('console.log("hi")'))

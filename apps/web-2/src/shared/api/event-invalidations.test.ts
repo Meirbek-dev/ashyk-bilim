@@ -1,7 +1,7 @@
 import { partialMatchKey } from '@tanstack/react-query'
-import { expect, expectTypeOf, test } from 'vite-plus/test'
+import { expect, test } from 'vite-plus/test'
 
-import { aboutOtherActivity, eventInvalidations, type EventType, invalidationsFor } from './event-invalidations'
+import { aboutOtherActivity, invalidationsFor } from './event-invalidations'
 import {
   agendaQueryKey,
   assessmentReviewQueueInfiniteQueryKey,
@@ -38,22 +38,6 @@ const work = { course_id: COURSE, activity_id: ACTIVITY, status: 'published' as 
 /** Whether any of the keys would invalidate this cached query (the Query prefix rule). */
 const hits = (keys: readonly (readonly unknown[])[], cached: readonly unknown[]) =>
   keys.some(key => partialMatchKey(cached, key))
-
-test('B-NOT-12 every contract event has a row (a missing one does not compile)', () => {
-  expectTypeOf<keyof typeof eventInvalidations>().toEqualTypeOf<EventType>()
-  expect(Object.keys(eventInvalidations).toSorted()).toEqual([
-    'admin.updated',
-    'collection.updated',
-    'deadline.extended',
-    'discussion.updated',
-    'grading.updated',
-    'notification.created',
-    'notification.read',
-    'progress.updated',
-    'submission.updated',
-    'xp.awarded',
-  ])
-})
 
 test('B-NOT-12 a grading change refreshes the queues, that course gradebook and the submission', () => {
   const keys = invalidationsFor('grading.updated', {

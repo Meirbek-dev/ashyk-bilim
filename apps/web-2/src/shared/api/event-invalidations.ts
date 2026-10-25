@@ -39,9 +39,9 @@ import type { UserStreamEvent } from './gen/types.gen'
 /** A data event of `GET /me/events` (the `connected` and `closed` control messages carry none). */
 export type UserEvent = Extract<UserStreamEvent, { event_id: string }>
 /** The closed set of user events (contract `UserStreamEvent`). */
-export type EventType = UserEvent['event']
+type EventType = UserEvent['event']
 type Payloads = { [E in UserEvent as E['event']]: E['payload'] }
-export type EventInvalidations = { [T in EventType]: (payload: Payloads[T]) => QueryKey[] }
+type EventInvalidations = { [T in EventType]: (payload: Payloads[T]) => QueryKey[] }
 
 /**
  * Every cached variant of an operation (any path, query or page): its generated key cut to the operation id. For
@@ -55,7 +55,7 @@ const UNKNOWN = ''
  * compile. Notification events change the cache themselves (the payload is the item or the count): a refetch would
  * only repeat what the event says.
  */
-export const eventInvalidations = {
+const eventInvalidations = {
   // A grader's copy of the course grading stream: the queues, the gradebook, the results and the work itself.
   'grading.updated': ({ course_id, submission_id, attempt_id }) => [
     workQueueInfiniteQueryKey(),

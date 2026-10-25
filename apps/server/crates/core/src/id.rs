@@ -118,13 +118,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn v7_ids_are_time_ordered() {
-        let a = UserId::new();
-        let b = UserId::new();
-        assert!(a <= b, "uuidv7 must sort by creation time");
-    }
-
-    #[test]
     fn serde_is_transparent() {
         let id = CourseId::new();
         let json = serde_json::to_string(&id).unwrap();

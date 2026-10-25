@@ -618,17 +618,4 @@ mod tests {
             assert!(line.y >= 175.0, "{}", line.y);
         }
     }
-
-    #[test]
-    fn writes_reference_sample_for_visual_review() {
-        let Some(path) = std::env::var_os("CERTIFICATE_SAMPLE_PATH") else {
-            return;
-        };
-        let mut input = sample(Language::Ru);
-        input.certificate_name = "Технологии дополненной и виртуальной реальности".into();
-        input.course_start = Some("2026-09-01".into());
-        input.course_end = Some("2026-09-30".into());
-        input.training_hours = Some(72);
-        std::fs::write(path, render(&input).unwrap()).unwrap();
-    }
 }

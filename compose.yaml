@@ -199,7 +199,7 @@ services:
 
   # --- Object storage (S3)
   rustfs:
-    image: docker.io/rustfs/rustfs:1.0.3
+    image: docker.io/rustfs/rustfs:1.0.4
     restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}

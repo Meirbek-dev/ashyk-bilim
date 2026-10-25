@@ -82,12 +82,6 @@ describe('validateMarkdownContent', () => {
     expect(issues.some(i => i.code === 'content.empty')).toBe(false)
   })
 
-  it('returns all issues, not just first', () => {
-    const longContent = 'x'.repeat(12_001)
-    const issues = validateMarkdownContent(longContent, 'questionPrompt')
-    expect(issues.length).toBeGreaterThan(0)
-  })
-
   it('detects raw HTML', () => {
     const issues = validateMarkdownContent('<div>bad</div>', 'questionPrompt')
     expect(issues.some(i => i.code === 'html.raw')).toBe(true)

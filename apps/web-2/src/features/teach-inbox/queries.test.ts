@@ -6,15 +6,11 @@ import { learnerWorkOptions, teachWorkOptions } from './index'
 const COURSE = '7f0c1a2e-0000-4000-8000-00000000000a'
 
 describe('work queue options', () => {
-  test('B-INB-09 the learner queue is the same request with role=learner, cached apart from the teacher one', () => {
+  test('B-INB-01 B-INB-09 the learner queue is the same request with role=learner, cached apart from the teacher one', () => {
     const learner = learnerWorkOptions().queryKey[0]
     const teacher = teachWorkOptions().queryKey[0]
     expect(learner.query).toEqual({ role: 'learner', limit: 100 })
     expect(teacher.query).toEqual({ role: 'teacher', limit: 100 })
-  })
-
-  test('B-INB-01 the inbox asks for the teacher queue', () => {
-    expect(teachWorkOptions().queryKey[0].query?.role).toBe('teacher')
   })
 
   test('B-INB-04 B-INB-05 B-INB-10 the URL filters and order go to the server, each its own cache entry', () => {

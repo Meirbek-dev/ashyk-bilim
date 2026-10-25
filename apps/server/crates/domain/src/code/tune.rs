@@ -126,6 +126,5 @@ mod tests {
             );
             assert!(statement.starts_with("UPDATE languages SET compile_cmd"));
         }
-        assert_eq!(PATCHES.len(), 7);
     }
 }

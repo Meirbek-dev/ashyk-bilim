@@ -38,9 +38,12 @@ impl Drop for TelemetryGuard {
 
 /// Parse `OTEL_EXPORTER_OTLP_HEADERS` (`k=v,k2=v2`).
 fn otlp_headers_from_env() -> std::collections::HashMap<String, String> {
-    std::env::var("OTEL_EXPORTER_OTLP_HEADERS")
-        .unwrap_or_default()
-        .split(',')
+    parse_otlp_headers(&std::env::var("OTEL_EXPORTER_OTLP_HEADERS").unwrap_or_default())
+}
+
+/// `k=v,k2=v2` (the OTLP env format); pairs without `=` are skipped.
+fn parse_otlp_headers(raw: &str) -> std::collections::HashMap<String, String> {
+    raw.split(',')
         .filter_map(|pair| {
             let (k, v) = pair.split_once('=')?;
             Some((k.trim().to_owned(), v.trim().to_owned()))
@@ -117,21 +120,14 @@ pub fn init(config: &TelemetryConfig) -> TelemetryGuard {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
+    use super::parse_otlp_headers;
+
     #[test]
     fn header_parsing() {
-        // Not using the env var itself (parallel tests); test the parser shape
-        // via a local reimplementation guard: the format is k=v,k2=v2.
-        let parse = |s: &str| -> Vec<(String, String)> {
-            s.split(',')
-                .filter_map(|pair| {
-                    let (k, v) = pair.split_once('=')?;
-                    Some((k.trim().to_owned(), v.trim().to_owned()))
-                })
-                .collect()
-        };
-        let parsed = parse("Authorization=Bearer abc, X-Extra=1");
+        let parsed = parse_otlp_headers("Authorization=Bearer abc, X-Extra=1,junk");
         assert_eq!(parsed.len(), 2);
-        assert_eq!(parsed[0].1, "Bearer abc");
-        assert!(parse("").is_empty());
+        assert_eq!(parsed["Authorization"], "Bearer abc");
+        assert_eq!(parsed["X-Extra"], "1");
+        assert!(parse_otlp_headers("").is_empty());
     }
 }

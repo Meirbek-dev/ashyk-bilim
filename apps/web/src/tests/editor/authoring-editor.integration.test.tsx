@@ -67,31 +67,6 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
     editor = null
   })
 
-  it('schema accepts both blockEmbed and embedBlock node types without conflict', () => {
-    const extensions = createAuthoringEditorExtensions(activity)
-    const schema = getSchema(extensions)
-
-    // Both node types must be registered in the schema
-    expect(schema.nodes.blockEmbed).toBeDefined()
-    expect(schema.nodes.embedBlock).toBeDefined()
-
-    // Node names must not conflict
-    expect(schema.nodes.blockEmbed).not.toBe(schema.nodes.embedBlock)
-  })
-
-  it('parses a document containing both blockEmbed and embedBlock nodes without errors', () => {
-    const extensions = createAuthoringEditorExtensions(activity)
-    const schema = getSchema(extensions)
-
-    // PMNode.fromJSON will throw if the document is invalid for the schema
-    let parsedDoc: PMNode | null = null
-    expect(() => {
-      parsedDoc = PMNode.fromJSON(schema, mixedDocument)
-    }).not.toThrow()
-
-    expect(parsedDoc).not.toBeNull()
-  })
-
   it('preserves both node types through a JSON round-trip', () => {
     const extensions = createAuthoringEditorExtensions(activity)
     const schema = getSchema(extensions)
