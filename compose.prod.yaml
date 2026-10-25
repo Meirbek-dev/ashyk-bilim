@@ -245,7 +245,7 @@ services:
   # are), judge0 (ephemeral), nginx cache. Never started by `up` (profile).
   # ---------------------------------------------------------------------------
   backup:
-    image: &restic-image docker.io/restic/restic:0.18.1
+    image: &restic-image docker.io/restic/restic:0.19.1
     profiles: [backup]
     environment:
       RESTIC_REPOSITORY: /repo
