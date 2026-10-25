@@ -266,13 +266,13 @@ deploy *args:
 rollback *args:
     {{ bash_bin }} infra/scripts/rollback.sh "$@"
 
-# Run the weekly full backup now (dumps + RustFS content, ~23 GB).
+# Run the nightly backup now: dumps, then an incremental restic snapshot.
 backup:
-    {{ lib }} && use_prod && compose exec backup backup
+    {{ bash_bin }} infra/scripts/backup.sh
 
-# Run the daily database backup now (no RustFS content, ~15 MB).
-backup-db:
-    {{ lib }} && use_prod && compose exec backup-db backup
+# restic on the production repository, e.g. `just restic snapshots`, `just restic stats latest`.
+restic *args:
+    {{ lib }} && use_prod && compose run --rm -T --no-deps backup "$@"
 
 restore archive:
     {{ bash_bin }} infra/scripts/restore.sh "$@"

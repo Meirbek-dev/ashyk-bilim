@@ -76,7 +76,7 @@ makes it non-internal to publish ports), `exec-net` (`internal`).
 | storage-init | shared | data-net | one-shot `infra/storage/init.sh` |
 | judge0-server, judge0-workers | shared, profile `judge0` | exec-net | `judge0/judge0:1.13.1`, privileged, `AUTHN_TOKEN` |
 | judge0-db, judge0-redis | shared, profile `judge0` | exec-net | Judge0's own Postgres and Redis (passwords set); not backed up |
-| backup | prod | none | `offen/docker-volume-backup`; reaches containers through the Docker socket |
+| backup | prod | none | `restic/restic`, profile `backup`: run by `infra/scripts/backup.sh`, never by `up`; no Docker socket |
 
 Trust zones:
 
@@ -361,18 +361,20 @@ self-signed cert. Not covered: presigned PUT/GET.
 
 ## Backup and restore
 
-Two offen services, local only and unencrypted (owner decision 2026-10-02):
+restic, local only (owner decision 2026-10-02: no offsite): one repository in
+`${BACKUP_DIR}/restic` (prod `/data/cs-mooc/backups/restic`, the data disk),
+encrypted with `BACKUP_PASSWORD` from `.env`. `infra/scripts/backup.sh` (`just
+backup`) runs nightly at 02:00 from the host timer `infra/host/backup.timer`
+(since 2026-10-26; it replaced `offen/docker-volume-backup`, whose nightly 23 GB
+archives were ~99.9% unchanged RustFS objects). Each run is one snapshot, and
+only new chunks are written: unchanged objects cost a metadata read, the
+uncompressed dumps dedupe day to day, restic compresses. Sundays also `forget`
+(14 daily, 8 weekly, 12 monthly snapshots), `prune` and `check
+--read-data-subset=5%`. `just restic <args>` runs restic on the prod repository
+(`snapshots`, `stats`, `diff`). No service is stopped. Before each snapshot
+backup.sh:
 
-- `backup-db`: daily at 02:00, `./backups/db-<timestamp>.tar.zst` (~15 MB, no
-  RustFS content), retention 14 days.
-- `backup`: weekly, Sunday 03:00, `./backups/backup-<timestamp>.tar.zst` (full,
-  ~23 GB), retention 15 days, so 2-3 are kept. Weekly since 2026-10-25: the
-  content is ~99.9% of the archive and its object keys are immutable.
-
-No service is stopped. Both run the pre-archive hooks (`docker-volume-backup.archive-pre`
-labels):
-
-- db: `pg_dump -Fc` of `ashyq` and `zitadel` plus `pg_dumpall --globals-only`
+- db: `pg_dump -Fc -Z0` of `ashyq` and `zitadel` plus `pg_dumpall --globals-only`
   into the `db_dumps` volume (written to `.tmp`, then renamed).
 - redis: `redis-cli SAVE`.
 
@@ -381,26 +383,25 @@ and `BACKUP_DIR=/data/cs-mooc/backups` in `.env`. RustFS and the backup
 service mount the same content directory; other stacks default to a named volume.
 Restore drills override both paths to keep production storage isolated.
 
-Archive layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
-`backup/rustfs` (full archives only; live copy of the whole volume; object keys
-are immutable; the next step is an incremental `rclone sync`),
+Snapshot layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
+`backup/rustfs` (the whole content directory),
 `backup/redis`, `backup/zitadel_machinekey` (includes `pat.txt`),
-`backup/secrets/{.env,server.env}`. Not archived: `postgres_data` (the dumps
+`backup/secrets/{.env,server.env}`. Not backed up: `postgres_data` (the dumps
 are), Judge0, nginx cache, the legacy `cs_mooc` database and `app_content`
 volume. `backups/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
-`restore.sh <archive> [full-archive]` (`just restore`): refuses if the project already has a
-`postgres_data` volume. Unpacks the dumps (zstd and GNU tar run inside the db
-image), starts `db`, loads `globals.sql`, `pg_restore --create` of `ashyq` and
+`restore.sh [snapshot]` (`just restore`, default `latest`; a legacy offen
+`backup-*.tar.zst` archive also works): refuses if the project already has a
+`postgres_data` volume. Restores the dumps (restic in its own container; legacy
+archives: zstd and GNU tar inside the db image), starts `db`, loads `globals.sql`, `pg_restore --create` of `ashyq` and
 `zitadel`, unpacks rustfs, redis and zitadel_machinekey into their volumes as
-root (owners and modes kept), starts the stack, runs smoke. A `db-*` archive
-restores everything but the content, which comes from the optional full archive
-or stays as it is in `RUSTFS_DATA_DIR`. On a new host the
-archive's `backup/secrets` files go next to the compose files first.
+root (owners and modes kept), starts the stack, runs smoke. On a new host the
+snapshot's `backup/secrets` files go next to the compose files first.
 
-`restore-drill.sh [archive]` (`just restore-drill`, default the newest
-archive): restore.sh into project `ashyq-drill` with the archive's own secrets,
-plain http on port 18080 (`DRILL_HTTP_PORT`), self-signed cert, no Judge0;
+`restore-drill.sh [snapshot]` (`just restore-drill`, default the latest
+snapshot): restore.sh into project `ashyq-drill` with the snapshot's own secrets,
+plain http on port 18080 (`DRILL_HTTP_PORT`; the prod host needs 28080/28443,
+its 18080/18443 are taken), self-signed cert, no Judge0;
 prints `users`/`courses` counts and elapsed time, then tears everything down.
 `RESTORE_DIR` sets the scratch dir (default `${TMPDIR:-/tmp}/ashyq-restore`).
 

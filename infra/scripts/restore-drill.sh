@@ -2,22 +2,32 @@
 # Restore drill: restore.sh into the throwaway project ashyq-drill (prod files, the
 # archive's own secrets, plain http on alternate ports, no Judge0), print row counts
 # and elapsed time, tear everything down.
-#   restore-drill.sh [archive]      default: newest ./backups/backup-*.tar.zst
+#   restore-drill.sh [snapshot]     restic snapshot in ${BACKUP_DIR}/restic, default latest
+#   restore-drill.sh <backup-*.tar.zst>   legacy offen archive
 # IMAGE_TAG comes from the archived .env unless set in the shell.
 # RESTORE_DIR scratch space (default ${TMPDIR:-/tmp}/ashyq-restore); DRILL_HTTP_PORT (18080).
 # shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 
-# shellcheck disable=SC2012 # names are backup-<timestamp>
-archive=${1:-$(ls -1t backups/backup-*.tar.zst 2>/dev/null | head -n 1)}
-[[ -n $archive && -f $archive ]] || die "no archive given and none in ./backups"
-archive="$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")"
+src=${1:-latest}
+if [[ $src == *.tar.zst ]]; then
+  [[ -f $src ]] || die "no such archive: $src"
+  src="$(cd "$(dirname "$src")" && pwd)/$(basename "$src")"
+else
+  # The repository of the current stack; restore.sh inherits it after the env is re-pointed below.
+  restic_env
+fi
 start=$SECONDS
 
 work=${RESTORE_DIR:-${TMPDIR:-/tmp}/ashyq-restore}/drill
 rm -rf "$work"
 mkdir -p "$work/certs" "$work/acme" "$work/backups"
-"$CTR" run --rm -i "$PG_IMAGE" zstd -dc <"$archive" | tar -xf - --no-anchored -C "$work" backup/secrets
+if [[ $src == *.tar.zst ]]; then
+  "$CTR" run --rm -i "$PG_IMAGE" zstd -dc <"$src" | tar -xf - --no-anchored -C "$work" backup/secrets
+else
+  restic_run -v "$work:/out" -- restore "$src" --target /out --include /backup/secrets
+  "$CTR" run --rm -v "$work:/out" --entrypoint chown "$RESTIC_IMAGE" -R "$(id -u):$(id -g)" /out
+fi
 cp "$work/backup/secrets/server.env" "$work/server.env"
 MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=drill \
   -keyout "$work/certs/key.pem" -out "$work/certs/cert.pem" 2>/dev/null
@@ -36,7 +46,7 @@ export SMOKE_ORIGIN=http://$domain:$HTTP_PORT
 use_prod
 trap 'log "tearing down"; compose down -v --remove-orphans >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 
-bash "$ROOT/infra/scripts/restore.sh" "$archive"
+bash "$ROOT/infra/scripts/restore.sh" "$src"
 
 count() { compose exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d ashyq -tAc 'SELECT count(*) FROM $1'"; }
 log "users:   $(count users)"

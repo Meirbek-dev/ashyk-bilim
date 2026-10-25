@@ -7,15 +7,15 @@ constraint or are cited by code. Historical reports are in Git.
 ## Critical
 
 ### 3. Backups never leave the machine (accepted risk)
-`offen/docker-volume-backup` writes nightly archives to `./backups` **on the same
-disk** it is backing up, with 7-day retention. A disk failure, host compromise, or
-`rm` mistake loses the application *and* every backup of it.
+The nightly restic snapshots live in `${BACKUP_DIR}/restic` **on the same disk**
+they back up. A disk failure, host compromise, or `rm` mistake loses the
+application *and* every backup of it.
 
 **Owner decision 2026-10-02: no offsite backups.** Kept here as an accepted
-risk. Stage 1 reduced what it can: archives are logical dumps plus volumes and
+risk. Stage 1 reduced what it can: snapshots are logical dumps plus volumes and
 secrets, restorable by one script and checked by `just restore-drill`
-(RUNBOOK 3.5). Copying an archive off the host by hand before risky work is
-the only offsite protection left.
+(RUNBOOK 3.5). Copying the repository off the host by hand before risky work is
+the only offsite protection left (`restic copy` to any second repository).
 
 ## Medium
 

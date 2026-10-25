@@ -157,46 +157,57 @@ Rollback switches image tags only. If the bad release also changed compose or
 ### 3.3 Manual backup
 
 ```bash
-just backup-db        # daily job: dumps, Redis, Zitadel key, secrets (~15 MB)
-just backup           # weekly job: the same plus RustFS content (~23 GB)
-ls -lt backups | head -n 3
+just backup                       # the nightly job now: dumps + incremental snapshot
+just restic snapshots             # list; `just restic stats latest`, `just restic diff <a> <b>`
 ```
 
-`backup-db` writes `backups/db-<timestamp>.tar.zst`, `backup` writes
-`backups/backup-<timestamp>.tar.zst`. Contents: INFRA "Backup and restore".
-Restoring the database state of a `db-*` archive: `just restore db-<ts>.tar.zst
-backup-<ts>.tar.zst` takes the content from the full archive.
-Archives hold `.env` and `server.env` in clear: keep `backups/` mode 700.
+restic runs as root in its container, so the `docker` group is enough; the
+repository directory itself stays mode 700.
+Contents: INFRA "Backup and restore". `BACKUP_PASSWORD` in `.env` encrypts the
+repository; keep a copy outside the server, without it no backup can be read.
+
+Nightly timer (once per host; check with `systemctl list-timers cs-mooc-backup.timer`):
+
+```bash
+sudo cp infra/host/backup.service /etc/systemd/system/cs-mooc-backup.service
+sudo cp infra/host/backup.timer /etc/systemd/system/cs-mooc-backup.timer
+sudo systemctl daemon-reload && sudo systemctl enable --now cs-mooc-backup.timer
+journalctl -u cs-mooc-backup.service -n 30      # last run
+```
 
 ### 3.4 Restore on a clean host
 
 ```bash
 git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
-archive=/path/to/backup-<timestamp>.tar.zst
-img=$(sed -n 's/.*image: &pg-image //p' compose.yaml)
-docker run --rm -i "$img" zstd -dc < "$archive" | tar -xf - --no-anchored backup/secrets
+repo=/data/cs-mooc/backups/restic      # the repository (or a copy) at BACKUP_DIR/restic
+read -rs RESTIC_PASSWORD && export RESTIC_PASSWORD   # BACKUP_PASSWORD, from outside the server
+img=$(sed -n 's/.*image: &restic-image //p' compose.prod.yaml)
+docker run --rm -e RESTIC_PASSWORD -v "$repo:/repo:ro" -v "$PWD:/out" "$img" -r /repo --no-lock \
+  restore latest --target /out --include /backup/secrets
+sudo chown -R "$(id -u):$(id -g)" backup
 cp -p backup/secrets/.env .env && cp -p backup/secrets/server.env server.env && chmod 600 .env server.env && rm -r backup
 git checkout "$(sed -n 's/^IMAGE_TAG=//p' .env)"
 mkdir -p certs        # place cert.pem and key.pem in TLS_DIR (3.7)
-just restore "$archive"
+just restore          # latest snapshot; `just restore <snapshot-id>` for an older one
 just bootstrap        # judge0-tune (restore.sh skips it); PAT and migrations are no-ops
 just deploy           # records .deploy-history so rollback works
 ```
 
 `restore.sh` only restores into a project without a `postgres_data` volume.
 On the existing prod host that means `dc down -v` first, which deletes every
-data volume of the project: do it only with an archive that passed
-`just restore-drill`.
+data volume of the project: do it only with a snapshot that passed
+`just restore-drill`. Legacy offen archives (`backup-*.tar.zst`, before
+2026-10-26) still restore: `just restore <archive>`.
 
 ### 3.5 Restore drill
 
 ```bash
-just restore-drill                                   # newest backups/backup-*.tar.zst
-just restore-drill backups/backup-<timestamp>.tar.zst
+DRILL_HTTP_PORT=28080 DRILL_HTTPS_PORT=28443 just restore-drill                 # latest snapshot
+DRILL_HTTP_PORT=28080 DRILL_HTTPS_PORT=28443 just restore-drill <snapshot-id>
 ```
 
-Project `ashyq-drill`, ports 18080/18443 (`DRILL_HTTP_PORT`,
-`DRILL_HTTPS_PORT`), no Judge0. Prints `users`, `courses` and `drill passed in
+Project `ashyq-drill`, ports 18080/18443 by default (`DRILL_HTTP_PORT`,
+`DRILL_HTTPS_PORT`; on the prod host other stacks hold them), no Judge0. Prints `users`, `courses` and `drill passed in
 N s` (the RTO), then tears down. Compare the counts with prod:
 
 ```bash

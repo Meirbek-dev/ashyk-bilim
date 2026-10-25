@@ -229,72 +229,40 @@ services:
   # ---------------------------------------------------------------------------
   db:
     volumes:
+      # infra/scripts/backup.sh writes the nightly dumps here.
       - db_dumps:/dumps
-    labels:
-      # Run by the backup service before archiving; no service is stopped.
-      docker-volume-backup.archive-pre: >-
-        /bin/sh -c 'set -e; cd /dumps;
-        for d in ashyq zitadel; do pg_dump -U "$$POSTGRES_USER" -Fc -f $$d.dump.tmp $$d; mv $$d.dump.tmp $$d.dump; done;
-        pg_dumpall -U "$$POSTGRES_USER" --globals-only -f globals.sql.tmp; mv globals.sql.tmp globals.sql'
-
-  redis:
-    labels:
-      # Fresh dump.rdb for the live copy of redis_data (sessions).
-      docker-volume-backup.archive-pre: redis-cli SAVE
 
   storage-init:
     environment:
       STORAGE_CORS_ORIGINS: ${PUBLIC_SCHEME:-https}://${NGINX_SERVER_NAME:?}
 
   # ---------------------------------------------------------------------------
-  # Backup: daily 02:00, ./backups, 7 days (offsite declined by the owner).
-  # Archive layout: backup/{db_dumps,rustfs,redis,zitadel_machinekey,secrets}.
-  # Restore: infra/scripts/restore.sh. Not archived: postgres_data (the dumps
-  # are), judge0 (ephemeral), nginx cache.
+  # Backup: restic repository in ${BACKUP_DIR}/restic (same disk; offsite declined
+  # by the owner). infra/scripts/backup.sh (`just backup`, host timer infra/host/)
+  # dumps, then snapshots backup/{db_dumps,rustfs,redis,zitadel_machinekey,secrets}.
+  # Incremental and deduplicated: unchanged RustFS objects are never written again.
+  # Restore: infra/scripts/restore.sh. Not backed up: postgres_data (the dumps
+  # are), judge0 (ephemeral), nginx cache. Never started by `up` (profile).
   # ---------------------------------------------------------------------------
-  # Weekly full archive, RustFS content included (restore.sh and restore-drill.sh use it).
   backup:
-    image: docker.io/offen/docker-volume-backup:v2.49.3
-    restart: unless-stopped
+    image: &restic-image docker.io/restic/restic:0.18.1
+    profiles: [backup]
     environment:
-      BACKUP_CRON_EXPRESSION: '0 3 * * 0'
-      BACKUP_RETENTION_DAYS: '15'
-      BACKUP_COMPRESSION: zst
-      BACKUP_FILENAME: 'backup-%Y-%m-%dT%H-%M-%S.{{ .Extension }}'
-      BACKUP_PRUNING_PREFIX: backup-
+      RESTIC_REPOSITORY: /repo
+      RESTIC_PASSWORD: ${BACKUP_PASSWORD:-}
+      RESTIC_CACHE_DIR: /cache
     volumes:
       - db_dumps:/backup/db_dumps:ro
-      # ponytail: live copy of the whole bucket volume (object keys are immutable);
-      # weekly because it is ~23 GB; the next step is an incremental `rclone sync`.
+      # ponytail: the whole bucket directory; object keys are immutable, so restic
+      # only reads metadata of unchanged files and writes new objects.
       - ${RUSTFS_DATA_DIR:-rustfs_data}:/backup/rustfs:ro
       # Preserve the live volume's ownership when Redis has not saved its first snapshot yet.
       - redis_data:/backup/redis:ro,nocopy
       - zitadel_machinekey:/backup/zitadel_machinekey:ro
       - ${STACK_ENV_FILE:-./.env}:/backup/secrets/.env:ro
       - ${SERVER_ENV_FILE:-./server.env}:/backup/secrets/server.env:ro
-      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
-      - ${BACKUP_DIR:-./backups}:/archive
-    network_mode: none
-    logging: *logging
-
-  # Daily archive without the RustFS content: dumps, Redis, Zitadel key, secrets (~15 MB).
-  backup-db:
-    image: docker.io/offen/docker-volume-backup:v2.49.3
-    restart: unless-stopped
-    environment:
-      BACKUP_CRON_EXPRESSION: '0 2 * * *'
-      BACKUP_RETENTION_DAYS: '14'
-      BACKUP_COMPRESSION: zst
-      BACKUP_FILENAME: 'db-%Y-%m-%dT%H-%M-%S.{{ .Extension }}'
-      BACKUP_PRUNING_PREFIX: db-
-    volumes:
-      - db_dumps:/backup/db_dumps:ro
-      - redis_data:/backup/redis:ro,nocopy
-      - zitadel_machinekey:/backup/zitadel_machinekey:ro
-      - ${STACK_ENV_FILE:-./.env}:/backup/secrets/.env:ro
-      - ${SERVER_ENV_FILE:-./server.env}:/backup/secrets/server.env:ro
-      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
-      - ${BACKUP_DIR:-./backups}:/archive
+      - ${BACKUP_DIR:-./backups}/restic:/repo
+      - restic_cache:/cache
     network_mode: none
     logging: *logging
 
@@ -302,3 +270,4 @@ volumes:
   nginx_cache:
   nginx_content_cache:
   db_dumps:
+  restic_cache:

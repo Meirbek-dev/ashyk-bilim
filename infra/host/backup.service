@@ -1,0 +1,13 @@
+# Nightly backup of the production stack (infra/scripts/backup.sh). Install: RUNBOOK 3.3.
+[Unit]
+Description=cs-mooc nightly backup (dumps + incremental restic snapshot)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/meirbek/cs-mooc
+Environment=STACK=prod
+ExecStart=/usr/bin/bash infra/scripts/backup.sh
+Nice=10
+IOSchedulingClass=idle

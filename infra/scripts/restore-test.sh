@@ -30,12 +30,10 @@ curl -fsS --cacert "$TLS_DIR/cert.pem" --resolve "$E2E_WEB_HOST:$https_port:127.
 compose stop worker server web >/dev/null
 compose exec -T db sh -c 'psql -XAtq -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' \
   <infra/tests/restore-manifest.sql >tmp/restore-test/expected.manifest
-compose exec -T backup backup >tmp/restore-test/backup.log 2>&1
-archive=$(find tmp/restore-test-archives -maxdepth 1 -name 'backup-*.tar.zst' | sort | tail -n 1)
-[[ -n $archive ]] || die "backup produced no archive"
+STACK=web-e2e bash infra/scripts/backup.sh >tmp/restore-test/backup.log 2>&1
 export EXPECTED_RESTORE_MANIFEST=$ROOT/tmp/restore-test/expected.manifest
 export RESTORE_OBJECT_KEY=$key RESTORE_OBJECT_SHA256
 export RESTORE_TEST_PASSWORD=$E2E_PASSWORD
 RESTORE_OBJECT_SHA256=$(<tmp/restore-test/object.sha256)
-bash infra/scripts/restore-drill.sh "$archive" >tmp/restore-test/drill.log 2>&1
+bash infra/scripts/restore-drill.sh latest >tmp/restore-test/drill.log 2>&1
 log "restore integrity: user data hashes, identities, grades, certificates and object bytes match"

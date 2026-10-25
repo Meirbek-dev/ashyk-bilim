@@ -42,6 +42,36 @@ export COMPOSE_PATH_SEPARATOR=:
 # The db image (pinned in compose.yaml) doubles as the toolbox: zstd, GNU tar, psql.
 # shellcheck disable=SC2034 # used by the sourcing scripts
 PG_IMAGE=$(sed -n 's/.*image: &pg-image //p' compose.yaml)
+RESTIC_IMAGE=$(sed -n 's/.*image: &restic-image //p' compose.prod.yaml)
+
+# Value of $1 from the shell, else from the stack's env file (./.env unless COMPOSE_ENV_FILES).
+envval() {
+  local v=${!1:-}
+  [[ -n $v ]] || v=$(sed -n "s/^$1=//p" "${COMPOSE_ENV_FILES:-.env}" 2>/dev/null | tail -n 1)
+  printf '%s' "$v"
+}
+
+# Pin the restic repository (host path) and password of the current stack; values already
+# exported win, so the restore drill keeps them after re-pointing the env at an archived .env.
+restic_env() {
+  local dir
+  dir=$(envval BACKUP_DIR)
+  export RESTIC_HOST_REPO=${RESTIC_HOST_REPO:-$(realpath -m "${dir:-./backups}")/restic}
+  export RESTIC_PASSWORD=${RESTIC_PASSWORD:-$(envval BACKUP_PASSWORD)}
+  [[ -n $RESTIC_PASSWORD ]] || die "BACKUP_PASSWORD is not set"
+}
+
+# restic_run [docker run options] -- <restic args>: one-off restic container on $RESTIC_HOST_REPO.
+restic_run() {
+  local opts=()
+  while [[ $# -gt 0 && $1 != -- ]]; do
+    opts+=("$1")
+    shift
+  done
+  shift
+  "$CTR" run --rm -i -e RESTIC_PASSWORD -e RESTIC_REPOSITORY=/repo -v "$RESTIC_HOST_REPO:/repo" \
+    "${opts[@]}" "$RESTIC_IMAGE" "$@"
+}
 
 # ./.env (interpolation) + ./server.env; project name pinned inside .env.
 use_prod() {
