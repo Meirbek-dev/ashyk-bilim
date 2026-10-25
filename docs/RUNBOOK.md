@@ -1,13 +1,13 @@
 # Runbook
 
 Operations for the stack described in `docs/INFRA.md`. Prod host: deploy dir
-`~/openu-prod`, compose project `openu-prod`, domain `cs-mooc.tou.edu.kz`,
+`~/cs-mooc`, compose project `cs-mooc`, domain `cs-mooc.tou.edu.kz`,
 TLS-terminating university proxy in front. The Rust stack is live; the
 Next.js frontend remains in production. Frontend replacement: `docs/STAGE-2-CUTOVER.md`.
 
 ## 0. Conventions
 
-- Run everything from the checkout (`cd ~/openu-prod`) as a user in the
+- Run everything from the checkout (`cd ~/cs-mooc`) as a user in the
   `docker` group, in bash.
 - `dc` below is this helper (paste once per shell). It is the same file and env
   selection the scripts use:
@@ -32,15 +32,16 @@ Next.js frontend remains in production. Frontend replacement: `docs/STAGE-2-CUTO
   printf "ALTER ROLE <role> PASSWORD '%s';\n" "$new" | dc exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres'
   ```
 
-Keep the legacy `openu` database, `app_content` volume and `backups/legacy-final-*`
+Keep the legacy `cs_mooc` database, `app_content` volume and `backups/legacy-final-*`
 (owner decision). They are outside the new backups. Never run `docker volume prune`.
 
-Production content is bind-mounted from `/data/openu-prod/content`
-(`RUSTFS_DATA_DIR` in `.env`). Archives use `/data/openu-prod/backups`
-(`BACKUP_DIR`); `~/openu-prod/backups` is a compatibility symlink there.
-Pre-deploy dumps use `/data/openu-prod/dumps` through the `dumps` symlink.
-The former `openu-prod_rustfs_data` volume is retained as a pre-move rollback
-copy; it receives no new writes. Restore drills use their own content volume.
+Production content is bind-mounted from `/data/cs-mooc/content`
+(`RUSTFS_DATA_DIR` in `.env`). Archives use `/data/cs-mooc/backups`
+(`BACKUP_DIR`); `~/cs-mooc/backups` is a compatibility symlink there.
+Pre-deploy dumps use `/data/cs-mooc/dumps` through the `dumps` symlink.
+The pre-move rollback copy of the former `openu-prod_rustfs_data` volume is a
+tar under `/data/server-maintenance-20261019/cleanup-20261019T173732Z/`; it
+receives no new writes. Restore drills use their own content volume.
 
 ## 2. Database hardening
 
@@ -105,7 +106,7 @@ new=$(openssl rand -hex 32)
 printf "ALTER ROLE %s PASSWORD '%s';\n" "$(sed -n 's/^POSTGRES_USER=//p' .env)" "$new" | dc exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres'
 sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$new/" .env
 # Only while the server still connects as the superuser (2.1 not done):
-sed -i "s|^\(AB__DATABASE__URL=postgres://openu:\)[^@]*@|\1$new@|" server.env
+sed -i "s|^\(AB__DATABASE__URL=postgres://cs_mooc:\)[^@]*@|\1$new@|" server.env
 unset new
 dc up -d --wait
 SMOKE_RESOLVE_IP=127.0.0.1 bash infra/scripts/smoke.sh https://cs-mooc.tou.edu.kz
@@ -167,7 +168,7 @@ Archives hold `.env` and `server.env` in clear: keep `backups/` mode 700.
 ### 3.4 Restore on a clean host
 
 ```bash
-git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/openu-prod && cd ~/openu-prod
+git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
 archive=/path/to/backup-<timestamp>.tar.zst
 img=$(sed -n 's/.*image: &pg-image //p' compose.yaml)
 docker run --rm -i "$img" zstd -dc < "$archive" | tar -xf - --no-anchored backup/secrets
@@ -212,7 +213,7 @@ outside uploaded diagnostics; only logs and hash manifests are retained. This ch
 ### 3.6 Bootstrap a fresh host from zero
 
 ```bash
-git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/openu-prod && cd ~/openu-prod
+git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
 cp infra/env/prod.env.example .env && cp infra/env/server.env.example server.env && chmod 600 .env server.env
 for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ZITADEL_DB_PASSWORD RUSTFS_ACCESS_KEY RUSTFS_SECRET_KEY \
   REDIS_PASSWORD JUDGE0_AUTHN_TOKEN JUDGE0_DB_PASSWORD JUDGE0_REDIS_PASSWORD; do
@@ -382,7 +383,7 @@ one; their `ab_ui` cookie does nothing until it is on again. Later deploys need 
 | `server.env: empty values: ...` | delete the line or set a value (an empty `AB__` key counts as configured) |
 | `server.env: AB__RESEND__API_KEY is set without AB__RESEND__FROM` | add `AB__RESEND__FROM=Ashyq Bilim <noreply@cs-mooc.tou.edu.kz>` (or remove the key) |
 | `server.env: AB__ZITADEL__PAT is not set` | `just bootstrap` appends it |
-| `COMPOSE_PROJECT_NAME is not set` | `COMPOSE_PROJECT_NAME=openu-prod` in `.env` |
+| `COMPOSE_PROJECT_NAME is not set` | `COMPOSE_PROJECT_NAME=cs-mooc` in `.env` |
 | `ZITADEL_MASTERKEY must be exactly 32 characters` | restore the original from `.env.pre-split` or a backup; never generate a new one on an existing install |
 | `ZITADEL_PAT_EXPIRATION is missing or not a date` / `Zitadel PAT expired` | 3.9 |
 | `volume <proj>_postgres_data is missing on a host that already ran the stack` | wrong `COMPOSE_PROJECT_NAME`. Stop: continuing boots an empty site. `docker volume ls \| grep _postgres_data` shows the right prefix |

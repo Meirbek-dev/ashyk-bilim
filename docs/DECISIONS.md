@@ -1819,7 +1819,7 @@ Owner decisions:
 - **A TLS-terminating university proxy sits in front of the host** (Q3). Port
   80 serves the routes for it; `TRUSTED_PROXY_CIDR` names it for real-ip.
 - **GHCR packages are public** (Q4): the host pulls without credentials.
-- **The legacy `openu` database and the `app_content` volume stay** (Q5).
+- **The legacy `cs_mooc` database and the `app_content` volume stay** (Q5).
   Not used, not in the new backups, never dropped by a script.
 - **No external monitoring services** (Q6): no uptime check, no dead-man
   ping. preflight covers PAT/cert expiry and disk at deploy time.

@@ -1,7 +1,7 @@
 # Stage 2 cutover: old web -> `ashyq-web-2` (pending)
 
 Scope: `docs/MODERNIZATION-STAGE-2.md`; acceptance: `docs/web/ACCEPTANCE.md`. Host facts, `dc` helper, smoke
-command: `docs/RUNBOOK.md` section 0. Run on the host in `~/openu-prod`, bash. `<sha>` = 8-char
+command: `docs/RUNBOOK.md` section 0. Run on the host in `~/cs-mooc`, bash. `<sha>` = 8-char
 release commit. The switch is configuration only (`.env`), no compose edits:
 
 | `.env` key | Before (unset = default) | After switch |

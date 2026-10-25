@@ -40,7 +40,7 @@ if [[ -n $(env_get AB__RESEND__API_KEY server.env) && -z $(env_get AB__RESEND__F
 fi
 
 proj=$(env_get COMPOSE_PROJECT_NAME)
-[[ -n $proj ]] || fail ".env: COMPOSE_PROJECT_NAME is not set (prod: openu-prod)"
+[[ -n $proj ]] || fail ".env: COMPOSE_PROJECT_NAME is not set (prod: cs-mooc)"
 
 mk=$(env_get ZITADEL_MASTERKEY)
 ((${#mk} == 32)) || fail ".env: ZITADEL_MASTERKEY must be exactly 32 characters"

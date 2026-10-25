@@ -2,7 +2,7 @@
 # One-off host migration to the two-file env layout (docs/INFRA.md, Secrets and config):
 #   AB__*, OTEL_* -> server.env        (mode 600; the server reads both)
 #   PLATFORM_* -> .env.legacy-removed  (mode 600)
-#   the rest stays in .env, plus COMPOSE_PROJECT_NAME=openu-prod if absent.
+#   the rest stays in .env, plus COMPOSE_PROJECT_NAME=cs-mooc if absent.
 # The original is kept as .env.pre-split. Usage: split-env.sh [--dry-run] [path/to/.env]
 set -euo pipefail
 
@@ -20,7 +20,7 @@ grep -q '^COMPOSE_PROJECT_NAME=' "$src" && add_project=0 || add_project=1
 
 echo "-> server.env:           ${ab:-(nothing)}"
 echo "-> .env.legacy-removed:  ${platform:-(nothing)}"
-((add_project)) && echo "-> .env: add COMPOSE_PROJECT_NAME=openu-prod"
+((add_project)) && echo "-> .env: add COMPOSE_PROJECT_NAME=cs-mooc"
 ((dry)) && exit 0
 if [[ -z $ab$platform ]] && ((!add_project)); then echo "split-env: nothing to do"; exit 0; fi
 
@@ -42,7 +42,7 @@ fi
 grep -vE '^(AB__|OTEL_|PLATFORM_)' "$src" >"$src.tmp" || true
 if ((add_project)); then
   [[ -z $(tail -c 1 "$src.tmp") ]] || echo >>"$src.tmp"
-  echo 'COMPOSE_PROJECT_NAME=openu-prod' >>"$src.tmp"
+  echo 'COMPOSE_PROJECT_NAME=cs-mooc' >>"$src.tmp"
 fi
 mv "$src.tmp" "$src"
 for f in "$src" "$server" "$legacy"; do [[ ! -e $f ]] || chmod 600 "$f"; done

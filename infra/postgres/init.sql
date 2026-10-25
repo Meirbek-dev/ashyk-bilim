@@ -1,7 +1,7 @@
 -- Roles and databases, run by the db-init job as the bootstrap superuser:
 --   psql -v ashyq_password=.. -v zitadel_password=.. -v databases=ashyq[,..] -v createdb=true|false -f init.sql
 -- Idempotent and additive only: existing roles and databases are left as they are
--- (prod: `ashyq` and `zitadel` exist, owned by the legacy superuser `openu`).
+-- (prod: `ashyq` and `zitadel` exist, owned by the legacy superuser `cs_mooc`).
 -- Object ownership hand-over is a separate, rehearsed step: transfer-ownership.sql.
 
 -- pgvector is not a trusted extension: the app role cannot create it. Installing it

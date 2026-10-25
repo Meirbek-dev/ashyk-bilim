@@ -367,7 +367,7 @@ pub struct Judge0Config {
     pub base_url: String,
     /// Sent as `X-Auth-Token` when set (Judge0 `AUTHN_TOKEN`).
     pub api_key: Option<SecretString>,
-    /// Judge0's own Postgres database (the legacy `openu` DB in the shared
+    /// Judge0's own Postgres database (the legacy `cs_mooc` DB in the shared
     /// cluster) - only `ashyq admin judge0-tune` connects to it.
     pub database_url: Option<SecretString>,
     /// Per-HTTP-call timeout.

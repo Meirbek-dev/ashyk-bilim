@@ -1,7 +1,7 @@
 # Infrastructure (as built)
 
 Production runs the Rust API and Next.js frontend at `cs-mooc.tou.edu.kz`
-from `~/openu-prod`, behind the university TLS proxy. The replacement
+from `~/cs-mooc`, behind the university TLS proxy. The replacement
 TanStack frontend is pending cutover (`docs/STAGE-2-CUTOVER.md`).
 Operations: `docs/RUNBOOK.md`; design rationale: `docs/DECISIONS.md`.
 
@@ -43,7 +43,7 @@ selectors below. `use_stack` maps `STACK=dev|prod|smoke` (default `prod`).
 | --- | --- | --- | --- | --- | --- |
 | dev | `compose.yaml:compose.dev.yaml` | `infra/env/dev.env` (`COMPOSE_ENV_FILES`) | none: the server runs on the host with `apps/server/.env` | `ashyq-dev` | `dev-up`, `dev-down`, `dev-reset` |
 | smoke | `compose.yaml:compose.prod.yaml:compose.smoke.yaml` | `infra/env/smoke.env` | `tmp/smoke/server.env` (copied from `infra/env/smoke.server.env`) | `ashyq-smoke` | `stack-up`, `smoke`, `stack-down` |
-| prod | `compose.yaml:compose.prod.yaml` | `./.env` (compose default) | `./server.env` | from `.env`: `openu-prod` | `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restore` |
+| prod | `compose.yaml:compose.prod.yaml` | `./.env` (compose default) | `./server.env` | from `.env`: `cs-mooc` | `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restore` |
 | drill | prod files | the archive's `.env` | the archive's `server.env` | `ashyq-drill` | `restore-drill` |
 
 A `COMPOSE_PROJECT_NAME` in the shell overrides the dev and smoke defaults
@@ -99,23 +99,23 @@ Nginx uses two workers with its one-CPU quota (infra/nginx/nginx.conf),
 Volumes (`<project>_<name>`; the names are load-bearing, a rename means empty
 volumes): `postgres_data`, `redis_data`, `rustfs_data`, `zitadel_machinekey`,
 `judge0_box` (shared); `nginx_cache`, `db_dumps` (prod). Prod also keeps the
-legacy `app_content` volume and the legacy `openu` database (owner decision
+legacy `app_content` volume and the legacy `cs_mooc` database (owner decision
 2026-10-02: do not drop); nothing in the new stack uses or backs them up.
 
 ## Postgres roles and databases
 
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |
-| `${POSTGRES_USER}` (`openu` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup hook and dumps (local socket); prod server until the ownership transfer |
+| `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup hook and dumps (local socket); prod server until the ownership transfer |
 | `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for `#[sqlx::test]`) | server, worker, server-migrate (dev, smoke, new installs; prod after RUNBOOK 2.1) |
 | `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing | zitadel |
 | `judge0` | yes, in `judge0-db` only | judge0-db image | Judge0 |
 
 | Database | Owner | Notes |
 | --- | --- | --- |
-| `ashyq` (`ASHYQ_DATABASES`; dev: `ashyq_dev,ashyq_test`) | `ashyq` on new installs; prod: `openu` until `transfer-ownership.sql` | |
+| `ashyq` (`ASHYQ_DATABASES`; dev: `ashyq_dev,ashyq_test`) | `ashyq` on new installs; prod: `cs_mooc` until `transfer-ownership.sql` | |
 | `zitadel` | `zitadel` | |
-| `openu` | `openu` | prod only, legacy; kept, unused, not in new backups |
+| `cs_mooc` (`openu` until 2026-10-25) | `cs_mooc` | prod only, legacy; kept, unused, not in new backups |
 | `judge0` (in judge0-db) | `judge0` | |
 
 `init.sql` is idempotent and additive: it never alters an existing role or
@@ -146,7 +146,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 
 | Group | Variable | Consumers |
 | --- | --- | --- |
-| Project | `COMPOSE_PROJECT_NAME=openu-prod` | compose (volume prefix); preflight checks it is set and its `postgres_data` volume exists |
+| Project | `COMPOSE_PROJECT_NAME=cs-mooc` | compose (volume prefix); preflight checks it is set and its `postgres_data` volume exists |
 | | `COMPOSE_PROFILES=judge0` | compose; bootstrap detects Judge0 from it |
 | Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `APP_URL` and build args; storage-init CORS origin; deploy smoke target |
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
@@ -270,8 +270,8 @@ under 14 days (`TLS_DIR/cert.pem`, else `/etc/letsencrypt/live/<domain>/fullchai
 - **TLS files.** `TLS_DIR` (default `./certs`) is a directory mount holding
   `cert.pem` + `key.pem`. `renew-certificate.sh` (certbot deploy hook) installs
   the renewed lineage there and reloads nginx. The legacy root-owned hook
-  (`/etc/letsencrypt/renewal-hooks/deploy/openu-prod.sh`) does the same and
-  keeps working as long as the project is `openu-prod`.
+  (`/etc/letsencrypt/renewal-hooks/deploy/cs-mooc.sh`) does the same and
+  keeps working as long as the project is `cs-mooc`.
 
 ## Bootstrap
 
@@ -370,8 +370,8 @@ labels):
   into the `db_dumps` volume (written to `.tmp`, then renamed).
 - redis: `redis-cli SAVE`.
 
-Production storage lives on the data disk: `RUSTFS_DATA_DIR=/data/openu-prod/content`
-and `BACKUP_DIR=/data/openu-prod/backups` in `.env`. RustFS and the backup
+Production storage lives on the data disk: `RUSTFS_DATA_DIR=/data/cs-mooc/content`
+and `BACKUP_DIR=/data/cs-mooc/backups` in `.env`. RustFS and the backup
 service mount the same content directory; other stacks default to a named volume.
 Restore drills override both paths to keep production storage isolated.
 
@@ -380,7 +380,7 @@ Archive layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
 switch to an incremental `rclone sync` beyond about 20 GB),
 `backup/redis`, `backup/zitadel_machinekey` (includes `pat.txt`),
 `backup/secrets/{.env,server.env}`. Not archived: `postgres_data` (the dumps
-are), Judge0, nginx cache, the legacy `openu` database and `app_content`
+are), Judge0, nginx cache, the legacy `cs_mooc` database and `app_content`
 volume. `backups/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
 `restore.sh <archive>` (`just restore`): refuses if the project already has a

@@ -29,8 +29,8 @@ try docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}
 section "volumes"
 try docker volume ls
 
-section "images (ashyq/openu)"
-docker images --format '{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}' 2>/dev/null | grep -E 'ashyq|openu' || echo "(none)"
+section "images (ashyq/cs-mooc)"
+docker images --format '{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}' 2>/dev/null | grep -E 'ashyq|cs-mooc' || echo "(none)"
 
 section "repo"
 try git log -1 --format='%h %ci %s'

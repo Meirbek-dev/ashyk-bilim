@@ -1,6 +1,6 @@
 -- Hand every object of the current database to role `ashyq` (spec 5.3, step 4.6).
 -- Run as superuser, only after a drill rehearsal, with a fresh pg_dump at hand:
---   psql -v ON_ERROR_STOP=1 -U openu -d ashyq -f transfer-ownership.sql
+--   psql -v ON_ERROR_STOP=1 -U cs_mooc -d ashyq -f transfer-ownership.sql
 -- REASSIGN OWNED BY <bootstrap superuser> is refused by PostgreSQL, hence per-object ALTERs.
 -- Idempotent: only objects not yet owned by ashyq are touched. One transaction.
 -- Not covered (none exist today): extensions (no ALTER EXTENSION .. OWNER; they stay

@@ -818,7 +818,7 @@ score distribution, completion funnel by activity.
 - VM `judge` (if kept): Judge0 server, 2 workers, its Postgres and Redis, with CPU and
   memory limits; its port is reachable from VM `ashyq` only, with `AUTHN_TOKEN` set.
 - Until phase 2 lands, on `cs01` directly: no agent or editor sessions in
-  `~/openu-prod`, no commits there, no ad-hoc `docker compose` runs from it.
+  `~/cs-mooc`, no commits there, no ad-hoc `docker compose` runs from it.
 
 ### 11.2 Compose and config
 
@@ -925,9 +925,9 @@ phase starts while the previous one has open items.
   restore drill passes there.
 - Alerting: dead-man check (11.5) live.
 - Prod host: stray `ashyq-dual-*` containers removed; agents and editors out of
-  `~/openu-prod`; deploys only through `just deploy`; the leftover databases
+  `~/cs-mooc`; deploys only through `just deploy`; the leftover databases
   `ashyq_backup_verify_20260930`, `ashyq_final_backup_verify_20260930` and
-  `zitadel_bootstrap_failed_20260930` dropped (`openu` stays, owner decision); IT asked to
+  `zitadel_bootstrap_failed_20260930` dropped (`cs_mooc`, ex-`openu`, stays, owner decision); IT asked to
   turn off SSH password auth and the proxy's duplicate headers.
 - The slow `activities … is_course_staff` query fixed.
 - Dev box: `temp-restore/` deleted, `git gc`.
@@ -972,7 +972,7 @@ changes (section 8) and its permission-matrix slice; the crates collapse into
 checked.
 
 **Phase 6 — removal.** After a final archived dump: Zitadel, Redis and RustFS volumes, the
-v2 tables left only for rollback, the `openu` database if the owner agrees. Docs rewritten
+v2 tables left only for rollback, the `cs_mooc` database if the owner agrees. Docs rewritten
 per section 14.
 
 ## 16. Owner decisions
