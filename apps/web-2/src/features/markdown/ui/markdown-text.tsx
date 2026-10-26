@@ -1,16 +1,10 @@
 import { lazy, Suspense, type ComponentProps } from 'react'
 
+import { loadRenderer } from './load-renderer'
 import { MarkdownDraft } from './markdown-draft'
 import type { MarkdownView as Rendered } from './markdown-view'
 
-// The network lost before the renderer came in (a test started on a weak connection) keeps the plain words in place
-// (B-MD-10): a failed chunk threw to the route, and the learner lost the question for an error page.
-const LazyMarkdownView = lazy(() =>
-  import('./markdown-view').then(
-    module => ({ default: module.MarkdownView }),
-    () => ({ default: MarkdownDraft }),
-  ),
-)
+const LazyMarkdownView = lazy(() => loadRenderer())
 
 /**
  * Rendered markdown (react-markdown, loaded on first use). Until the renderer is in, the plain text stands in its place
