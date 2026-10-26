@@ -7,6 +7,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { AssessmentDetail, AttemptState, DisabledReason } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { Link } from '#/shared/components/link'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDateTime } from '#/shared/i18n/format'
 import { presentError } from '#/shared/i18n/errors'
@@ -60,6 +61,15 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
           ))}
           {state.opens_at_unix ? <li>{m.attempt_opens_at({ date: formatDateTime(state.opens_at_unix) })}</li> : null}
         </ul>
+        {/* As the player's card says it (B-PLY-19): a retake is the teacher's call, not a dead end. */}
+        {action.reasons.includes('MAX_ATTEMPTS_REACHED') ? (
+          <p className="text-sm text-muted-foreground">
+            {m.attempt_retake_if()}{' '}
+            <Link to="/courses/$courseId/discussions" params={{ courseId: params.courseId }}>
+              {m.attempt_retake_ask()}
+            </Link>
+          </p>
+        ) : null}
       </section>
     )
   const begin = () => {

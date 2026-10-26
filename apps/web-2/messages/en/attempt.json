@@ -39,6 +39,8 @@
   "attempt_reason_remediation": "Review the mistakes of your last attempt first",
   "attempt_reason_access": "This quiz is not assigned to you",
   "attempt_reason_not_enrolled": "Enroll in the course to take this quiz",
+  "attempt_retake_if": "If you need a retake,",
+  "attempt_retake_ask": "ask the teacher in the course discussions.",
   "attempt_opens_at": "Opens {date}",
   "attempt_remediation_heading": "Mistake review",
   "attempt_history_heading": "Your attempts",

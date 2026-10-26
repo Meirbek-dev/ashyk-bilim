@@ -39,6 +39,8 @@
   "attempt_reason_remediation": "Алдымен өткен әрекеттегі қателерді талдаңыз",
   "attempt_reason_access": "Тест сізге тағайындалмаған",
   "attempt_reason_not_enrolled": "Тестті тапсыру үшін курсқа жазылыңыз",
+  "attempt_retake_if": "Қайта тапсыру керек болса,",
+  "attempt_retake_ask": "курс талқылауында оқытушыға жазыңыз.",
   "attempt_opens_at": "{date} ашылады",
   "attempt_remediation_heading": "Қателерді талдау",
   "attempt_history_heading": "Сіздің әрекеттеріңіз",
