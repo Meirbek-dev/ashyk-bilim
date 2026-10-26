@@ -7,7 +7,7 @@ import { aiSearchSchema } from '#/features/ai/route'
 import { CourseNotFound, CoursePage, ensureCoursePage } from '#/features/course'
 import { markdownSummary } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import { pageMeta } from '#/shared/lib/document-title'
+import { pageMeta, tabTitle } from '#/shared/lib/document-title'
 
 // The course page (spec 5.4): header with one primary action; tabs are child routes. The AI panel opens in a side
 // sheet from the header (slice 6.3); `?ai=` keeps it open. `?enroll=1`: a guest's «Записаться» came back signed in,
@@ -19,8 +19,17 @@ export const Route = createFileRoute('/_public/courses/$courseId')({
     return { name: course.name, summary: markdownSummary(course.description), image: course.thumbnail_key }
   },
   staticData: { title: m.platform_page_course, notFoundTitle: m.course_not_found },
-  head: ({ loaderData }) => ({
-    meta: loaderData ? pageMeta(loaderData.name, loaderData.summary, { imageKey: loaderData.image }) : [],
+  // «Объявления · Python» in the tab and the history; «О курсе», the page a link opens, keeps the bare course name.
+  head: ({ loaderData, match, matches }) => ({
+    meta: loaderData
+      ? pageMeta(loaderData.name, loaderData.summary, {
+          imageKey: loaderData.image,
+          title:
+            matches.at(-1)?.staticData.title === m.platform_tab_about
+              ? undefined
+              : tabTitle(loaderData.name, match, matches),
+        })
+      : [],
   }),
   component: function Course() {
     const ai = (
