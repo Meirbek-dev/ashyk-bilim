@@ -1,7 +1,9 @@
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { Skeleton } from '#/shared/ui/skeleton'
 
-type Shape = 'grid' | 'detail' | 'tiles' | undefined
+import { MediaRowsSkeleton } from './media-rows-skeleton'
+
+type Shape = 'grid' | 'detail' | 'tiles' | 'media' | undefined
 
 /** The deepest `staticData.skeleton` at or under the match `from` (its id); the same on the server and the client. */
 export function skeletonShape(
@@ -15,8 +17,12 @@ export function skeletonShape(
   return matches.slice(start).findLast(match => match.staticData.skeleton)?.staticData.skeleton
 }
 
-/** A shell page's loading shape (PendingView): rows, a card grid, an object page with tabs, or tiles over rows. */
+/**
+ * A shell page's loading shape (PendingView): rows, a card grid, an object page with tabs, tiles over rows, or
+ * thumbnail rows that are cards from @xl.
+ */
 export function PageSkeleton({ shape }: { shape: Shape }) {
+  if (shape === 'media') return <MediaRowsSkeleton />
   if (shape === 'grid')
     return (
       <div className="@container flex flex-col gap-gutter">
