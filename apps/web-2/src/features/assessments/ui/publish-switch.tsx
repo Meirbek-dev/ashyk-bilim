@@ -41,7 +41,8 @@ export function AssessmentPublishSwitch({ activity }: { activity: ActivityDetail
     )
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span id={labelId} className="text-sm">
+      {/* Text only when wide, as the header's back and preview links: a phone keeps its room for the title. */}
+      <span id={labelId} className="sr-only text-sm @md:not-sr-only">
         {m.assessments_published_switch()}
       </span>
       <Switch

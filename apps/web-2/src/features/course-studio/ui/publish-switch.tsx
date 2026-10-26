@@ -48,7 +48,8 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
     )
   return (
     <div className="flex items-center gap-2">
-      <span id={labelId} className="text-sm">
+      {/* Text only when wide, as the header's back and preview links: a phone keeps its room for the title. */}
+      <span id={labelId} className="sr-only text-sm @md:not-sr-only">
         {m.studio_published_switch()}
       </span>
       <Switch
