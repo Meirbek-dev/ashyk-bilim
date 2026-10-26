@@ -37,7 +37,7 @@ export function EnrollReport({ result, preview = false }: { result: EnrollLearne
           <ul className="flex flex-col gap-1">
             {problems.map((problem, index) => (
               <li key={`${index}-${problem.identifier}`} className="wrap-anywhere">
-                {problem.identifier} - {outcomeLabels[problem.outcome]()}
+                {problem.identifier} — {outcomeLabels[problem.outcome]()}
               </li>
             ))}
           </ul>

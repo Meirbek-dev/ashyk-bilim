@@ -18,11 +18,18 @@ test('B-CST-50 with no group at all the section leads to making one', async () =
   const screen = await renderInRouter(
     <QueryClientProvider client={createQueryClient(async () => undefined)}>
       <Suspense>
-        <LinkGroups courseId="0190a5d2-0000-7000-8000-000000000061" linked={[]} groupPages />
+        <LinkGroups
+          courseId="0190a5d2-0000-7000-8000-000000000061"
+          linked={[]}
+          groupPages
+          list={<p>{m.studio_groups_empty()}</p>}
+        />
       </Suspense>
     </QueryClientProvider>,
   )
   await expect
     .element(screen.getByRole('link', { name: m.studio_groups_create() }))
     .toHaveAttribute('href', '/teach/groups')
+  // The linked list's own «not linked yet» would only repeat it.
+  await expect.element(screen.getByText(m.studio_groups_empty())).not.toBeInTheDocument()
 })

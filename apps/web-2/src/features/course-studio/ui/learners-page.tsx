@@ -41,6 +41,38 @@ export function LearnersPage() {
         <EnrollLearners courseId={courseId} />
       </SheetPanel>
     ) : null
+  const linkedList = (
+    <ListState
+      pending={false}
+      error={groups.error}
+      count={groups.data.length}
+      filtered={false}
+      emptyText={m.studio_groups_empty()}
+      onRetry={() => void groups.refetch()}
+    >
+      <DataList items={groups.data} getKey={group => group.id} variant="rows">
+        {group => (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 grow basis-48 flex-col gap-1">
+              <h3 className="text-base font-medium wrap-anywhere">
+                {groupPages ? (
+                  <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
+                    {group.name}
+                  </Link>
+                ) : (
+                  group.name
+                )}
+              </h3>
+              <p className="text-sm text-muted-foreground">{m.studio_group_members({ count: group.member_count })}</p>
+            </div>
+            {editable && group.allowed_actions.includes('manage_courses') ? (
+              <UnlinkGroup courseId={courseId} group={group} />
+            ) : null}
+          </div>
+        )}
+      </DataList>
+    </ListState>
+  )
   return (
     <div className="flex flex-col gap-12">
       <LearnersSection courseId={courseId} courseName={course.name} add={add} />
@@ -59,39 +91,11 @@ export function LearnersPage() {
             <h2 className="text-xl font-semibold">{m.studio_groups_title()}</h2>
             <p className="text-sm text-muted-foreground">{m.studio_groups_hint()}</p>
           </div>
-          {editable ? <LinkGroups courseId={courseId} linked={groups.data} groupPages={groupPages} /> : null}
-          <ListState
-            pending={false}
-            error={groups.error}
-            count={groups.data.length}
-            filtered={false}
-            emptyText={m.studio_groups_empty()}
-            onRetry={() => void groups.refetch()}
-          >
-            <DataList items={groups.data} getKey={group => group.id} variant="rows">
-              {group => (
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex min-w-0 grow basis-48 flex-col gap-1">
-                    <h3 className="text-base font-medium wrap-anywhere">
-                      {groupPages ? (
-                        <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
-                          {group.name}
-                        </Link>
-                      ) : (
-                        group.name
-                      )}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {m.studio_group_members({ count: group.member_count })}
-                    </p>
-                  </div>
-                  {editable && group.allowed_actions.includes('manage_courses') ? (
-                    <UnlinkGroup courseId={courseId} group={group} />
-                  ) : null}
-                </div>
-              )}
-            </DataList>
-          </ListState>
+          {editable ? (
+            <LinkGroups courseId={courseId} linked={groups.data} groupPages={groupPages} list={linkedList} />
+          ) : (
+            linkedList
+          )}
         </section>
       </div>
     </div>

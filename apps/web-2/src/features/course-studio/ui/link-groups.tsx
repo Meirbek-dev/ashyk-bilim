@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Usergroup } from '#/shared/api/gen/types.gen'
@@ -16,16 +16,19 @@ const option = (group: Usergroup): ComboboxOption => ({ value: group.id, label: 
 
 /**
  * "Link groups": pick from the groups the caller may link courses to (`manage_courses`) and not linked yet. With no
- * group at all, the way to make one (`groupPages`: the caller has the «Группы» section; B-CST-50).
+ * group at all, the way to make one (`groupPages`: the caller has the «Группы» section; B-CST-50) instead of `list`
+ * (the linked groups, whose empty state would only repeat it).
  */
 export function LinkGroups({
   courseId,
   linked,
   groupPages,
+  list,
 }: {
   courseId: string
   linked: readonly Usergroup[]
   groupPages: boolean
+  list: ReactNode
 }) {
   const { data: linkable } = useSuspenseQuery(linkableGroupsOptions())
   const link = useMutation(linkGroupsOptions(useQueryClient(), courseId))
@@ -36,8 +39,10 @@ export function LinkGroups({
       <p className="text-sm">
         {m.studio_groups_none_yet()} <Link to="/teach/groups">{m.studio_groups_create()}</Link>
       </p>
-    ) : null
-  if (choices.length === 0 && picked.length === 0) return null
+    ) : (
+      list
+    )
+  if (choices.length === 0 && picked.length === 0) return list
   const submit = () =>
     link.mutate(
       choices.filter(group => picked.some(chosen => chosen.value === group.id)),
@@ -49,26 +54,29 @@ export function LinkGroups({
       },
     )
   return (
-    <form
-      noValidate
-      className="flex flex-col items-start gap-2"
-      onSubmit={event => {
-        event.preventDefault()
-        submit()
-      }}
-    >
-      <div className="w-full">
-        <MultiCombobox
-          label={m.studio_group_link()}
-          options={choices.map(option)}
-          value={picked}
-          onValueChange={setPicked}
-        />
-      </div>
-      <SubmitButton type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
-        {m.studio_group_link_submit()}
-      </SubmitButton>
-      {link.error ? <ErrorAlert>{presentError(link.error)}</ErrorAlert> : null}
-    </form>
+    <>
+      <form
+        noValidate
+        className="flex flex-col items-start gap-2"
+        onSubmit={event => {
+          event.preventDefault()
+          submit()
+        }}
+      >
+        <div className="w-full">
+          <MultiCombobox
+            label={m.studio_group_link()}
+            options={choices.map(option)}
+            value={picked}
+            onValueChange={setPicked}
+          />
+        </div>
+        <SubmitButton type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
+          {m.studio_group_link_submit()}
+        </SubmitButton>
+        {link.error ? <ErrorAlert>{presentError(link.error)}</ErrorAlert> : null}
+      </form>
+      {list}
+    </>
   )
 }
