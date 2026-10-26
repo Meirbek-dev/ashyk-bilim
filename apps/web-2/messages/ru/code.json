@@ -80,7 +80,7 @@
   "code_attempt_code": "Код попытки {number}",
   "code_result_pending": "Решение ждёт проверки.",
   "code_result_later": "Оценка появится после публикации.",
-  "code_result_returned": "Работа возвращена на доработку.",
+  "code_result_returned": "Работа возвращена на исправление.",
   "code_result_score": "Балл: {score}",
   "code_result_cases": "Пройдено примеров: {passed} из {total}",
   "code_passed": "Зачтено",
