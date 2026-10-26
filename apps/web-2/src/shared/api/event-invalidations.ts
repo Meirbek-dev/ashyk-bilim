@@ -20,6 +20,7 @@ import {
   leaderboardInfiniteQueryKey,
   learnerCourseStateQueryKey,
   listCollectionsQueryKey,
+  listCourseUpdatesPageInfiniteQueryKey,
   listDiscussionsQueryKey,
   listGroupsQueryKey,
   listRepliesQueryKey,
@@ -105,8 +106,14 @@ const eventInvalidations = {
     anyOf(attemptStateQueryKey({ path: { assessment_id: UNKNOWN } })),
   ],
   // Joining a course team gives the `teach` space: the session's capabilities are read again, so the notification's
-  // link into the course workspace does not answer 403 until the next sign-in.
-  'notification.created': ({ type }) => (type === 'course_team_added' ? [currentSessionQueryKey()] : []),
+  // link into the course workspace does not answer 403 until the next sign-in. A new course announcement shows on
+  // "Today" and on the course's updates tab while they are open.
+  'notification.created': ({ payload }) =>
+    payload.type === 'course_team_added'
+      ? [currentSessionQueryKey()]
+      : payload.type === 'course_update'
+        ? [agendaQueryKey(), listCourseUpdatesPageInfiniteQueryKey({ path: { course_id: payload.course_id } })]
+        : [],
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
   // LIVE (S-GAPS-2): a collection the user owns was changed by someone else - the lists and that collection.

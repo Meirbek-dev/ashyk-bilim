@@ -4,6 +4,7 @@ import { expect, test } from 'vite-plus/test'
 import { aboutOtherActivity, invalidationsFor } from './event-invalidations'
 import {
   agendaQueryKey,
+  listCourseUpdatesPageInfiniteQueryKey,
   assessmentReviewQueueInfiniteQueryKey,
   attemptStateQueryKey,
   currentSessionQueryKey,
@@ -136,7 +137,7 @@ const note = (type: 'course_team_added' | 'course_update', payload: Notification
   read_at_unix: null,
 })
 
-test('B-NOT-12 joining a course team reads the session again (the teach space); other notifications refresh nothing', () => {
+test('B-NOT-12 joining a course team reads the session again (the teach space); an announcement refreshes "Today" and the course updates', () => {
   const joined = invalidationsFor(
     'notification.created',
     note('course_team_added', { type: 'course_team_added', course_id: COURSE, course_name: 'C', role: 'contributor' }),
@@ -149,5 +150,10 @@ test('B-NOT-12 joining a course team reads the session again (the teach space); 
     update_id: '0190a5d2-0000-7000-8000-000000000052',
     title: 'T',
   })
-  expect(invalidationsFor('notification.created', update)).toEqual([])
+  const announced = invalidationsFor('notification.created', update)
+  expect(hits(announced, agendaQueryKey({ query: { days: 14 } }))).toBe(true)
+  expect(
+    hits(announced, listCourseUpdatesPageInfiniteQueryKey({ path: { course_id: COURSE }, query: { limit: 20 } })),
+  ).toBe(true)
+  expect(hits(announced, currentSessionQueryKey())).toBe(false)
 })
