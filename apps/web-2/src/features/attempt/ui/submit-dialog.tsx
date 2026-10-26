@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '#/shared/ui/alert-dialog'
 
+import { gateCode } from '../model/attempt'
 import { ATTEMPT_PATH } from './attempt-frame'
 
 type SubmitDialogProps = {
@@ -55,7 +56,12 @@ export function SubmitDialog({ open, onOpenChange, unanswered, onSubmit, pending
         ) : (
           <p className="text-sm">{m.attempt_all_answered()}</p>
         )}
-        {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
+        {error ? (
+          <ErrorAlert>
+            {/* The shared text asks to restore the course: a learner cannot, so the attempt's own words. */}
+            {gateCode(error) === 'course-archived' ? m.attempt_closed_archived() : presentError(error)}
+          </ErrorAlert>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
           <SubmitButton onClick={onSubmit} pending={pending}>
