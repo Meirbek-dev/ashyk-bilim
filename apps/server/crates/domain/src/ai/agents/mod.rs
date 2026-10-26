@@ -290,8 +290,9 @@ impl AiService {
         self.ensure_not_cancelled(run_id).await?;
         let outcome = self.structured_or_draft::<T>(exec, schema, draft).await?;
         self.emit_validation_event(run_id).await?;
-        let artifact = serde_json::to_value(&outcome.value)
+        let mut artifact = serde_json::to_value(&outcome.value)
             .map_err(|e| Error::internal("serialising ai artifact", e))?;
+        super::context::clean_report_citations(&mut artifact);
         let citations = citations_of(&outcome.value)
             .iter()
             .map(|c| {

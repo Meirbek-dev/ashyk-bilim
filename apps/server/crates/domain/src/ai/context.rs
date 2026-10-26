@@ -676,8 +676,28 @@ fn without_content_labels(line: &str) -> String {
     let mut text = line.to_owned();
     for label in CONTENT_LABELS {
         text = text.replace(&format!("{label} "), "");
+        // An empty field quoted at the end ("... Learning outcomes:").
+        if let Some(rest) = text.trim_end().strip_suffix(label) {
+            text = rest.to_owned();
+        }
     }
     text.trim().to_owned()
+}
+
+/// The report's own `citations` (what the teacher's «Источники» list shows) cleaned like the trusted evidence: the
+/// stored artifact kept the model's raw excerpts («About: … Learning outcomes:»).
+pub fn clean_report_citations(artifact: &mut serde_json::Value) {
+    let Some(citations) = artifact
+        .get_mut("citations")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for citation in citations {
+        if let Some(excerpt) = citation.get_mut("excerpt").filter(|e| e.is_string()) {
+            *excerpt = clean_excerpt(excerpt.as_str().unwrap_or_default()).into();
+        }
+    }
 }
 
 /// A citation's excerpt without the context headers it may quote.
@@ -686,6 +706,11 @@ fn without_content_labels(line: &str) -> String {
 /// the quote with " ... " keeps the quote).
 #[must_use]
 pub fn clean_excerpt(raw: &str) -> String {
+    // An assessment's settings line (`settings_text`) is the model's English summary, not a quote for a reader:
+    // the citation keeps its label only.
+    if raw.contains("; pass mark ") {
+        return String::new();
+    }
     if let Some(at) = raw.rfind("Content: ") {
         let content = raw[at + "Content: ".len()..].trim();
         if !content.is_empty() {
@@ -831,6 +856,17 @@ Learning outcomes: Циклы, функции"
             ),
             "Циклы, функции"
         );
+        assert_eq!(
+            clean_excerpt("About: Квадратные уравнения. Learning outcomes:"),
+            "Квадратные уравнения."
+        );
+        assert_eq!(
+            clean_excerpt("quiz (graded automatically); pass mark 60%; unlimited attempts"),
+            ""
+        );
+        let mut report = serde_json::json!({ "citations": [{ "excerpt": "Description: Курс. About: Для 9 класса." }] });
+        clean_report_citations(&mut report);
+        assert_eq!(report["citations"][0]["excerpt"], "Курс. Для 9 класса.");
         // Nothing but a header: kept rather than an empty quote.
         assert_eq!(
             clean_excerpt("Activity: Page (dynamic)"),
