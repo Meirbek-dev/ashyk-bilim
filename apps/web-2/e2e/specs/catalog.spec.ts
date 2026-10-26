@@ -97,7 +97,8 @@ test("B-CAT-03 B-CAT-15 the catalog is public, server-rendered, names the author
   signInAs,
   draftCourse,
 }) => {
-  const document = await (await page.request.get('/courses')).text()
+  // By name (also after a reset below): on a shared dev stack newer courses push the seed course off page one.
+  const document = await (await page.request.get(`/courses?q=${encodeURIComponent(SEED_COURSE)}`)).text()
   expect(document).toContain(SEED_COURSE)
   const draft = await draftCourse()
   await page.goto(`/courses?q=${encodeURIComponent(draft.name)}`)
@@ -141,7 +142,9 @@ test('B-CAT-05 the catalog search lives in the URL', async ({ page }) => {
     () => page.getByRole('button', { name: m.ui_reset_filters({}, ru) }).click(),
     () => expect(page).toHaveURL(/\/courses$/, { timeout: 1000 }),
   )
-  await expect(page.getByRole('link', { name: SEED_COURSE })).toBeVisible()
+  await expect(box).toHaveValue('')
+  await expect(page.getByRole('listitem').first()).toBeVisible()
+  await expect(page.getByText(m.ui_no_matches({}, ru))).toHaveCount(0)
 })
 
 test('B-CAT-06 the sort is in the URL and offers "in progress first" only to a signed-in user', async ({
