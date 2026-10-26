@@ -50,7 +50,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const reread = async () => {
     await queryClient.query({ ...stateOptions(assessment.id), staleTime: 0 }).catch(() => null)
   }
-  if (action.kind === 'continue') return <ContinueDraft draftId={action.draftId} />
+  if (action.kind === 'continue') return <ContinueDraft draftId={action.draftId} items={assessment.items} />
   if (action.kind === 'blocked')
     return (
       <section className="flex flex-col gap-2">
