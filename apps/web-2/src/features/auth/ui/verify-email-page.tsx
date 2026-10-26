@@ -60,7 +60,16 @@ export function VerifyEmailPage() {
         <SubmitButton type="submit" className="w-full" pending={verify.isPending}>
           {m.auth_verify_submit()}
         </SubmitButton>
-        <ResendCode email={() => form.getFieldValue('email')} />
+        <ResendCode
+          email={() => form.getFieldValue('email')}
+          onBadEmail={() =>
+            form.setFieldMeta('email', meta => ({
+              ...meta,
+              isTouched: true,
+              errorMap: { ...meta.errorMap, onSubmit: m.validation_email() },
+            }))
+          }
+        />
       </AuthForm>
       <Link to="/login">{m.auth_verify_to_login()}</Link>
     </AuthPage>

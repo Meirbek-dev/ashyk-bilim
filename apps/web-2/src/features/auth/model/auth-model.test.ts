@@ -5,7 +5,7 @@ import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
 import { loginSearchSchema, verifyEmailSearchSchema } from '../route'
-import { isResetCodeInvalid, isWrongCode, resetFormError, signupFieldOf } from './account-search'
+import { isBadEmail, isResetCodeInvalid, isWrongCode, resetFormError, signupFieldOf } from './account-search'
 import { enrolsAfterAuth, googleStartHref, guestBack, retryMinutes } from './login-search'
 
 const redirectOf = (value: unknown) => v.parse(loginSearchSchema, { redirect: value }).redirect
@@ -68,6 +68,12 @@ describe('auth model', () => {
     expect(isWrongCode(apiError('validation-failed', [{ field: 'code', code: 'invalid', message: '' }]))).toBe(true)
     expect(isWrongCode(apiError('validation-failed', [{ field: 'email', code: 'invalid', message: '' }]))).toBe(false)
     expect(isWrongCode(apiError('rate-limited'))).toBe(false)
+  })
+
+  test('B-AUTH-14 a 422 on the address of a resend goes under the email field', () => {
+    expect(isBadEmail(apiError('validation-failed', [{ field: 'email', code: 'invalid', message: '' }]))).toBe(true)
+    expect(isBadEmail(apiError('validation-failed', [{ field: 'code', code: 'invalid', message: '' }]))).toBe(false)
+    expect(isBadEmail(apiError('rate-limited'))).toBe(false)
   })
 
   test('B-AUTH-13 reset-code-invalid goes under the code, a policy error under its field, the rest to the form', () => {

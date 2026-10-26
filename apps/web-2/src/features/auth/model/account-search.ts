@@ -13,6 +13,10 @@ export function signupFieldOf(error: unknown): keyof RegisterRequest | null {
 export const isWrongCode = (error: unknown): boolean =>
   error instanceof ApiError && error.fieldErrors.some(fieldError => fieldError.field === 'code')
 
+/** A 422 on the address (empty or not an address): "send the code again" marks the email field, not the form. */
+export const isBadEmail = (error: unknown): boolean =>
+  error instanceof ApiError && error.fieldErrors.some(fieldError => fieldError.field === 'email')
+
 /** The reset code is wrong, used or expired, or the login is unknown (one answer: no enumeration). */
 export const isResetCodeInvalid = (error: unknown): boolean =>
   error instanceof ApiError && error.code === 'reset-code-invalid'
