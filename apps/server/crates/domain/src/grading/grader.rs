@@ -201,6 +201,21 @@ fn correct_answer(body: &ItemBody) -> serde_json::Value {
     }
 }
 
+/// The author's explanation of an auto-graded item; blank is none.
+fn explanation(body: &ItemBody) -> Option<String> {
+    let text = match body {
+        ItemBody::Choice(b) => b.explanation.as_deref(),
+        ItemBody::Matching(b) => b.explanation.as_deref(),
+        ItemBody::OpenText(_)
+        | ItemBody::Form(_)
+        | ItemBody::Code(_)
+        | ItemBody::MatchingLearner(_) => None,
+    };
+    text.map(str::trim)
+        .filter(|t| !t.is_empty())
+        .map(str::to_owned)
+}
+
 /// Grade quiz/exam answers. Code items never appear here (kind rules keep
 /// them in code challenges).
 #[must_use]
@@ -247,6 +262,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
             needs_manual_review,
             user_answer,
             correct_answer: correct_answer(&item.body),
+            explanation: explanation(&item.body),
         });
     }
     // BUG-169: one normalisation over the rounded breakdown (same formula as
@@ -319,6 +335,7 @@ pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer
                 needs_manual_review: false,
                 user_answer: serde_json::to_value(answer).unwrap_or_default(),
                 correct_answer: serde_json::Value::Null,
+                explanation: None,
             }],
             needs_manual_review: false,
             auto_graded: true,
@@ -453,6 +470,28 @@ mod tests {
             grade.breakdown.items[1].feedback_params,
             Some(serde_json::json!({ "correct": 1, "total": 2 }))
         );
+    }
+
+    #[test]
+    fn explanations_travel_with_the_graded_items() {
+        let mut body = choice(&["a"], &["b"], false);
+        if let ItemBody::Choice(b) = &mut body {
+            b.explanation = Some("  Because a.  ".into());
+        }
+        let blank = match choice(&["a"], &["b"], false) {
+            ItemBody::Choice(mut b) => {
+                b.explanation = Some("   ".into());
+                ItemBody::Choice(b)
+            }
+            other => other,
+        };
+        let items = [item(body, 1.0), item(blank, 1.0)];
+        let grade = grade_quiz(&items, &Answers::new(), POLICY);
+        assert_eq!(
+            grade.breakdown.items[0].explanation.as_deref(),
+            Some("Because a.")
+        );
+        assert_eq!(grade.breakdown.items[1].explanation, None);
     }
 
     #[test]

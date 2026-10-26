@@ -62,3 +62,22 @@ test('B-ATT-26 an empty answer reads «not answered», and the review opens with
   expect(screen.getByText(m.attempt_verdict_unanswered(), { exact: true }).elements()).toHaveLength(1)
   expect(screen.getByText(m.attempt_incorrect(), { exact: true }).elements()).toHaveLength(1)
 })
+
+test('B-ATT-18 the author’s explanation follows the correct answer when the server sends it', async () => {
+  const items = [item('Q1', 'Q1'), item('Q2', 'Q2')]
+  const graded = [
+    {
+      item_id: 'Q1',
+      score: 0,
+      max_score: 1,
+      correct: false,
+      correct_answer: ['o1'],
+      explanation: 'Кавычки делают **строку**.',
+      user_answer: { kind: 'choice' as const, selected: [] },
+    },
+    { item_id: 'Q2', score: 1, max_score: 1, correct: true, correct_answer: ['o1'], user_answer: null },
+  ]
+  const screen = await renderInRouter(<ResultBreakdown items={items} graded={graded} />)
+  await expect.element(screen.getByText('строку')).toBeInTheDocument()
+  expect(screen.getByText(m.attempt_explanation(), { exact: true }).elements()).toHaveLength(1)
+})

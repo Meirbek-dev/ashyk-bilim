@@ -103,6 +103,7 @@
   "attempt_partly": "Частично верно",
   "attempt_item_points": "{score} из {max}",
   "attempt_correct_answer": "Правильный ответ",
+  "attempt_explanation": "Пояснение",
   "attempt_no_answer": "Нет ответа",
   "attempt_verdict_unanswered": "Без ответа",
   "attempt_feedback_heading": "Отзыв преподавателя",

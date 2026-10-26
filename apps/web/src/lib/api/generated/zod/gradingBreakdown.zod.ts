@@ -34,6 +34,12 @@ export const GradingBreakdown = zod.object({
             ),
           zod.null(),
         ]),
+        explanation: zod
+          .string()
+          .optional()
+          .describe(
+            "The author's explanation of the answer (choice, matching), copied\nwhen graded; shown with the correct answer (`review_visibility`\n`full`), dropped with it.",
+          ),
         feedback: zod.string().optional().describe('English text (compatibility); the auto-grader also sets a code.'),
         feedback_code: zod
           .enum([

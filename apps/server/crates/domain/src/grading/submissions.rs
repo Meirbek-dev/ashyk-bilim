@@ -282,6 +282,7 @@ pub(crate) fn redact_grading(
             for item in &mut grading.items {
                 item.correct = None;
                 item.correct_answer = serde_json::Value::Null;
+                item.explanation = None;
                 // An auto verdict (coded) says right/wrong; teacher prose stays.
                 // The code runner's «n/m tests passed» is the result itself, not a key.
                 if item.feedback_code.as_deref() != Some("tests-passed") {
@@ -1459,5 +1460,49 @@ impl SubmissionsService {
             .reproject_submission(assessment_id, user_id)
             .await;
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ab_core::assessments::ReviewVisibility;
+    use ab_core::id::AssessmentItemId;
+
+    use super::redact_grading;
+    use crate::grading::breakdown::{GradedItem, GradingBreakdown};
+
+    fn graded() -> GradingBreakdown {
+        GradingBreakdown {
+            items: vec![GradedItem {
+                item_id: AssessmentItemId::new(),
+                item_text: "q".into(),
+                score: 0.0,
+                max_score: 100.0,
+                correct: Some(false),
+                feedback: "Incorrect".into(),
+                feedback_code: Some("incorrect".into()),
+                feedback_params: None,
+                needs_manual_review: false,
+                user_answer: serde_json::json!({ "kind": "choice", "selected": ["b"] }),
+                correct_answer: serde_json::json!(["a"]),
+                explanation: Some("Because a.".into()),
+            }],
+            ..GradingBreakdown::default()
+        }
+    }
+
+    #[test]
+    fn the_explanation_shows_with_the_answer_key_only() {
+        let full = redact_grading(graded(), ReviewVisibility::Full);
+        let explanation = |g: &Option<GradingBreakdown>| {
+            g.as_ref()
+                .and_then(|g| g.items.first())
+                .and_then(|i| i.explanation.clone())
+        };
+        assert_eq!(explanation(&full).as_deref(), Some("Because a."));
+        let scores = redact_grading(graded(), ReviewVisibility::ScoreOnly);
+        assert!(scores.is_some());
+        assert_eq!(explanation(&scores), None);
+        assert!(redact_grading(graded(), ReviewVisibility::None).is_none());
     }
 }

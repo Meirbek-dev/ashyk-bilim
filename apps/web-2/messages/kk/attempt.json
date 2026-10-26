@@ -103,6 +103,7 @@
   "attempt_partly": "Ішінара дұрыс",
   "attempt_item_points": "{max} ішінен {score}",
   "attempt_correct_answer": "Дұрыс жауап",
+  "attempt_explanation": "Түсініктеме",
   "attempt_no_answer": "Жауап жоқ",
   "attempt_verdict_unanswered": "Жауапсыз",
   "attempt_feedback_heading": "Оқытушының пікірі",

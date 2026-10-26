@@ -86,6 +86,12 @@ pub struct GradedItem {
     #[serde(default)]
     #[schema(value_type = Option<crate::wire::CorrectAnswer>)]
     pub correct_answer: serde_json::Value,
+    /// The author's explanation of the answer (choice, matching), copied
+    /// when graded; shown with the correct answer (`review_visibility`
+    /// `full`), dropped with it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub explanation: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -197,6 +203,7 @@ mod tests {
                 needs_manual_review: false,
                 user_answer: serde_json::json!(["a"]),
                 correct_answer: serde_json::json!(["b"]),
+                explanation: Some("why".into()),
             }],
             needs_manual_review: false,
             score_override: None,
@@ -221,6 +228,7 @@ mod tests {
             needs_manual_review: false,
             user_answer: serde_json::Value::Null,
             correct_answer: serde_json::Value::Null,
+            explanation: None,
         };
         let b = GradingBreakdown {
             items: vec![item(100.0 / 3.0), item(0.0), item(0.0)],

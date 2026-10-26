@@ -3402,6 +3402,12 @@ export type GradedItem = {
     correct: boolean | null;
     correct_answer: CorrectAnswer | null;
     /**
+     * The author's explanation of the answer (choice, matching), copied
+     * when graded; shown with the correct answer (`review_visibility`
+     * `full`), dropped with it.
+     */
+    explanation?: string;
+    /**
      * English text (compatibility); the auto-grader also sets a code.
      */
     feedback?: string;

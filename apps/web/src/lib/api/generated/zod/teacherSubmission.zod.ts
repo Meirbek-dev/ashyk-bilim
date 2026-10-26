@@ -96,6 +96,12 @@ export const TeacherSubmission = zod
                 ),
               zod.null(),
             ]),
+            explanation: zod
+              .string()
+              .optional()
+              .describe(
+                "The author's explanation of the answer (choice, matching), copied\nwhen graded; shown with the correct answer (`review_visibility`\n`full`), dropped with it.",
+              ),
             feedback: zod
               .string()
               .optional()

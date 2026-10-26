@@ -2300,6 +2300,7 @@ fn merge_item_grades(
                 .and_then(|a| serde_json::to_value(a).ok())
                 .unwrap_or(serde_json::Value::Null),
             correct_answer: serde_json::Value::Null,
+            explanation: None,
         });
     }
     if pushed {

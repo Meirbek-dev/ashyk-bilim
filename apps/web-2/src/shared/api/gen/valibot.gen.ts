@@ -2067,6 +2067,7 @@ export const vCorrectAnswer = v.union([v.array(v.string()), v.array(vMatchingPai
 export const vGradedItem = v.object({
     correct: v.nullable(v.boolean()),
     correct_answer: v.nullable(vCorrectAnswer),
+    explanation: v.optional(v.string()),
     feedback: v.optional(v.string()),
     feedback_code: v.optional(vFeedbackCode),
     feedback_params: v.optional(vFeedbackParams),

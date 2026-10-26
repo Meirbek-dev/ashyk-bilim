@@ -90,6 +90,15 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
                   {m.attempt_correct_answer()}: {correctText(item.body, entry.correct_answer)}
                 </p>
               ) : null}
+              {/* The author's «why», sent with the answer key only (review_visibility full). */}
+              {entry.explanation ? (
+                <div className="flex flex-col gap-1 border-l-2 border-border pl-3">
+                  <p className="text-muted-foreground">{m.attempt_explanation()}</p>
+                  <Suspense fallback={null}>
+                    <MarkdownView content={entry.explanation} />
+                  </Suspense>
+                </div>
+              ) : null}
               {entry.feedback && !entry.feedback_code ? (
                 <p className="wrap-anywhere text-muted-foreground">{entry.feedback}</p>
               ) : null}
