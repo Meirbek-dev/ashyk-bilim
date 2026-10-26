@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
-import { loginSearchSchema, opensVerifyLink, verifyEmailSearchSchema } from '../route'
+import { loginSearchSchema, opensEmailLink, opensVerifyLink, verifyEmailSearchSchema } from '../route'
 import {
   isBadEmail,
   isResetCodeInvalid,
@@ -119,4 +119,15 @@ test('B-AUTH-05 a Google return error says what happened, never «check the high
   expect(googleErrorText('google-cancelled')).toBe(m.auth_login_error_google_cancelled())
   expect(googleErrorText('validation-failed')).toBe(m.auth_login_error_google_failed())
   expect(googleErrorText('account-disabled')).not.toBe(m.auth_login_error_google_failed())
+})
+
+test('B-AUTH-10 a reset link opened while signed in keeps its code instead of going home', () => {
+  const link = { pathname: '/reset-password', search: { email: 'a@b.kz', code: 'KC1N0A' } }
+  const signedIn = { user: { email_verified: true } }
+  expect(opensEmailLink(link, signedIn)).toBe(true)
+  expect(opensEmailLink({ pathname: '/reset-password', search: {} }, signedIn)).toBe(false)
+  expect(opensEmailLink({ pathname: '/login', search: { code: 'x' } }, signedIn)).toBe(false)
+  expect(
+    opensEmailLink({ pathname: '/verify-email', search: { code: 'x' } }, { user: { email_verified: false } }),
+  ).toBe(true)
 })

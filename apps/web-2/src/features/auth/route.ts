@@ -40,6 +40,18 @@ export const opensVerifyLink = (
   location.pathname === '/verify-email' &&
   typeof location.search?.['code'] === 'string'
 
+/**
+ * The guest pages an emailed link may open while some account is signed in on this browser: the confirmation link
+ * above, and a password reset link (a forgotten password on a phone that is still signed in, or a shared computer),
+ * which the guest redirect home used to drop with its code.
+ */
+export const opensEmailLink = (
+  location: { pathname: string; search?: Record<string, unknown> },
+  session: { user: { email_verified: boolean } } | null,
+): boolean =>
+  opensVerifyLink(location, session) ||
+  (session !== null && location.pathname === '/reset-password' && typeof location.search?.['code'] === 'string')
+
 const Banner = lazy(() => import('./ui/email-banner').then(module => ({ default: module.EmailBanner })))
 
 /** The shell's «Подтвердите email» banner: browser only (it reads session storage), its module loaded on demand. */
