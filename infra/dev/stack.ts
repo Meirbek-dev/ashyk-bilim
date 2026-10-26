@@ -268,7 +268,7 @@ function services(o: UpOptions, env: Record<string, string>): ServiceSpec[] {
     {
       name: 'web',
       command: bun,
-      args: ['x', 'next', 'dev', '--turbopack', '-p', String(ports.web)],
+      args: ['x', 'next', 'dev', '--turbopack', '-H', '127.0.0.1', '-p', String(ports.web)],
       cwd: join(root, 'apps/web'),
       env: {
         NEXT_PUBLIC_API_URL: `http://localhost:${ports.api}/api/v2/`,
