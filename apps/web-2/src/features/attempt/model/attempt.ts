@@ -179,6 +179,9 @@ const GATE_CODES: readonly ErrorCode[] = [
 export const gateCode = (error: unknown): ErrorCode | null =>
   error instanceof ApiError && GATE_CODES.includes(error.code) ? error.code : null
 
+/** A 404 on the attempt itself: the test was unpublished or archived under it, so nothing saves or hands in any more. */
+export const attemptGone = (error: unknown) => error instanceof ApiError && error.status === 404
+
 /** The one save indicator has exactly three states (B-ATT-09): no network wins, then anything still queued. */
 export type SaveStatus = 'saved' | 'saving' | 'offline'
 export const saveStatus = (online: boolean, problem: SaveOutcome | null, queued: number): SaveStatus =>

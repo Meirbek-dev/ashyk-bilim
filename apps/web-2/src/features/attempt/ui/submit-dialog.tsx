@@ -14,8 +14,9 @@ import {
   AlertDialogTitle,
 } from '#/shared/ui/alert-dialog'
 
-import { gateCode } from '../model/attempt'
+import { attemptGone, gateCode } from '../model/attempt'
 import { ATTEMPT_PATH } from './attempt-frame'
+import { closedText } from './closed-text'
 
 type SubmitDialogProps = {
   open: boolean
@@ -58,8 +59,8 @@ export function SubmitDialog({ open, onOpenChange, unanswered, onSubmit, pending
         )}
         {error ? (
           <ErrorAlert>
-            {/* The shared text asks to restore the course: a learner cannot, so the attempt's own words. */}
-            {gateCode(error) === 'course-archived' ? m.attempt_closed_archived() : presentError(error)}
+            {/* The shared texts ask to restore the course or name a missing object: the attempt's own words instead. */}
+            {gateCode(error) || attemptGone(error) ? closedText(error) : presentError(error)}
           </ErrorAlert>
         ) : null}
         <AlertDialogFooter>

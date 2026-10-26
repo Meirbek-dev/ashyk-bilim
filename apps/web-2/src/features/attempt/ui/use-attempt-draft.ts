@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ItemAnswer, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { sessionOptions } from '#/shared/auth/session'
 
-import { retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
+import { attemptGone, retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
 import { ack, enqueue, overlay, patchOf, type Entry, type Queue } from '../model/queue'
 import { saveOptions, submissionOptions } from '../queries'
 import { draftStore, loadQueue, queueOf, updateQueue } from './draft-store'
@@ -25,6 +25,20 @@ const adding = (entry: Entry) => (queue: Queue) => enqueue(queue, entry)
 async function stillDraft(queryClient: QueryClient, attempt: StudentSubmission) {
   const fresh = await queryClient.query({ ...submissionOptions(attempt.id), staleTime: 0 }).catch(() => null)
   return fresh?.status === 'draft'
+}
+
+/**
+ * A failed save's outcome. A 409 or 404 reads the attempt again: still a draft - a `conflict` to resolve; a 404 too -
+ * `closed`, the attempt went with its test (unpublished or archived under the learner); handed in - `gone`, the page
+ * turns to the result.
+ */
+async function settled(error: unknown, queryClient: QueryClient, attempt: StudentSubmission): Promise<SaveOutcome> {
+  const outcome = saveOutcome(error)
+  if (outcome !== 'conflict' && outcome !== 'gone') return outcome
+  return queryClient.query({ ...submissionOptions(attempt.id), staleTime: 0 }).then(
+    fresh => (fresh.status === 'draft' ? 'conflict' : 'gone'),
+    (reread: unknown) => (attemptGone(reread) ? 'closed' : 'gone'),
+  )
 }
 
 /**
@@ -53,12 +67,12 @@ export function useAttemptDraft(attempt: StudentSubmission) {
 
   async function failed(error: unknown) {
     sending.current = false
-    const outcome = saveOutcome(error)
+    const outcome = await settled(error, queryClient, attempt)
     setFailure({ outcome, error })
     if (outcome === 'network' || outcome === 'throttled') {
       waitMs.current = retryDelayMs(error)
       retry.maybeExecute()
-    } else if ((outcome === 'conflict' || outcome === 'gone') && (await stillDraft(queryClient, attempt))) {
+    } else if (outcome === 'conflict') {
       stopped.current = 'conflict'
       setConflict(true)
     } else if (outcome === 'closed') stopped.current = 'closed'
@@ -108,7 +122,7 @@ export function useAttemptDraft(attempt: StudentSubmission) {
     answers: overlay(attempt.answers, queue),
     change,
     status: saveStatus(online, failure?.outcome ?? null, queue.length),
-    closed: failure?.outcome === 'closed' ? failure.error : null, // the 403 that shut saving: its code says why
+    closed: failure?.outcome === 'closed' ? failure.error : null, // the refusal that shut saving: it says why
     conflict,
     setConflict,
     reloadAndRetry,

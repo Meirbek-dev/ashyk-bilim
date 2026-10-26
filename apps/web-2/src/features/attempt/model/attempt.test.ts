@@ -7,6 +7,7 @@ import type { AssessmentItem, AttemptState, ErrorCode, ItemBody, Policy } from '
 import { attemptSearchSchema } from '../route'
 import { answerText, correctText } from './answer-text'
 import {
+  attemptGone,
   clock,
   clockEndsAt,
   DAY_SECONDS,
@@ -274,5 +275,11 @@ describe('archived course', () => {
     expect(saveOutcome(apiError(409, 'course-archived'))).toBe('closed')
     expect(submitOutcome(apiError(409, 'course-archived'))).toBe('closed')
     expect(gateCode(apiError(409, 'course-archived'))).toBe('course-archived')
+  })
+
+  test('B-ATT-15 a 404 on the attempt means the test went from the course; other refusals do not', () => {
+    expect(attemptGone(apiError(404, 'not-found'))).toBe(true)
+    expect(attemptGone(apiError(403, 'forbidden'))).toBe(false)
+    expect(attemptGone(new Error('offline'))).toBe(false)
   })
 })

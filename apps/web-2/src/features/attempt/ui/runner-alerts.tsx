@@ -3,16 +3,16 @@ import { useQueryClient } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import type { SubmissionId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
-import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
-import { gateCode } from '../model/attempt'
+import { attemptGone } from '../model/attempt'
 import { submissionOptions } from '../queries'
+import { closedText } from './closed-text'
 import type { useExamGuard } from './use-exam-guard'
 
 type RunnerAlertsProps = {
   guard: ReturnType<typeof useExamGuard>
-  /** The 403 that shut saving, or null. */
+  /** The refusal that shut saving (a gate's 403, the archive's 409, the test's 404), or null. */
   closed: unknown
   /** The clock ran out: the time limit or the due date. */
   expired: 'time' | 'due' | null
@@ -48,19 +48,14 @@ export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: Run
       {closed !== null || expired !== null ? (
         <div className="flex flex-col items-start gap-2">
           <ErrorAlert>
-            {expired === 'due'
-              ? m.attempt_due_up()
-              : expired === 'time'
-                ? m.attempt_time_up()
-                : gateCode(closed) === 'course-archived'
-                  ? m.attempt_closed_archived()
-                  : gateCode(closed)
-                    ? presentError(closed)
-                    : m.attempt_closed()}
+            {expired === 'due' ? m.attempt_due_up() : expired === 'time' ? m.attempt_time_up() : closedText(closed)}
           </ErrorAlert>
-          <Button variant="outline" size="sm" onClick={refresh}>
-            {m.attempt_refresh()}
-          </Button>
+          {/* A test gone from the course has nothing to reread: the way out is «К активности» above. */}
+          {attemptGone(closed) ? null : (
+            <Button variant="outline" size="sm" onClick={refresh}>
+              {m.attempt_refresh()}
+            </Button>
+          )}
         </div>
       ) : null}
     </div>
