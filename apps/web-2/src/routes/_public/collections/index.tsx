@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CollectionsPage, collectionsListOptions, collectionsSearchOptions } from '#/features/collections'
 import { collectionsSearchSchema } from '#/features/collections/route'
 import { m } from '#/paraglide/messages'
+import { pageMeta } from '#/shared/lib/document-title'
 
 export const Route = createFileRoute('/_public/collections/')({
   validateSearch: collectionsSearchSchema,
@@ -12,5 +13,6 @@ export const Route = createFileRoute('/_public/collections/')({
       ? context.queryClient.query({ ...collectionsSearchOptions(deps.q), staleTime: 'static' })
       : context.queryClient.infiniteQuery({ ...collectionsListOptions(), staleTime: 'static' }),
   staticData: { title: m.collections_title, skeleton: 'grid' },
+  head: () => ({ meta: pageMeta(m.collections_title(), m.collections_lead()) }),
   component: CollectionsPage,
 })
