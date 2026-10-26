@@ -43,6 +43,7 @@
   "grading_action_grade": "Проверить",
   "grading_action_open": "Открыть",
   "grading_select_row": "Выбрать: {name}",
+  "grading_select_all": "Выбрать все работы в списке",
   "grading_no_score": "Нет оценки",
   "grading_percent": "{value} %",
   "grading_export_csv": "Скачать CSV",

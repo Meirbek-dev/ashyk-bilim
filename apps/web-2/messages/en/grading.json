@@ -41,6 +41,7 @@
   "grading_action_grade": "Review",
   "grading_action_open": "Open",
   "grading_select_row": "Select {name}",
+  "grading_select_all": "Select every submission in the list",
   "grading_no_score": "No grade",
   "grading_percent": "{value}%",
   "grading_export_csv": "Download CSV",

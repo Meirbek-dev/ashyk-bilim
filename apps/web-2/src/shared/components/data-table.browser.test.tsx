@@ -96,6 +96,29 @@ describe('DataTable', () => {
   })
 })
 
+const pickAll = 'Pick all'
+
+describe('DataTable header cell', () => {
+  test('wide: a header cell (select all) takes the column header in the table', async () => {
+    await page.viewport(1280, 800)
+    const picked: DataColumn<Row>[] = [
+      {
+        id: 'pick',
+        header: 'Select',
+        headerCell: <Checkbox aria-label={pickAll} />,
+        cell: row => <Checkbox aria-label={`Pick ${row.name}`} />,
+        priority: 2,
+        select: true,
+      },
+      { id: 'name', header: 'Name', cell: row => row.name, priority: 1 },
+    ]
+    const screen = await renderInRouter(<DataTable label={label} rows={rows} columns={picked} getKey={row => row.id} />)
+    const header = screen.getByRole('columnheader').first()
+    await expect.element(header.getByRole('checkbox', { name: pickAll })).toBeVisible()
+    await expect.element(header).not.toHaveTextContent('Select')
+  })
+})
+
 describe('DataTable footer', () => {
   test('wide: a footer row sums up each column under the rows', async () => {
     await page.viewport(1280, 800)

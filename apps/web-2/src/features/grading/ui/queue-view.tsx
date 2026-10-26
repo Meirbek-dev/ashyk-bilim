@@ -46,6 +46,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
       if (!next.delete(id)) next.add(id)
       return next
     })
+  const picked = rows.filter(row => selected.has(row.id)).length
   const active = activeFilters(search)
   return (
     <ListPage
@@ -86,7 +87,12 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
         <DataTable
           label={m.grading_queue_table()}
           rows={rows}
-          columns={queueColumns(ids, search, { has: id => selected.has(id), toggle })}
+          columns={queueColumns(ids, search, {
+            has: id => selected.has(id),
+            toggle,
+            all: rows.length > 0 && picked === rows.length,
+            toggleAll: () => setSelected(picked === rows.length ? new Set() : new Set(rows.map(row => row.id))),
+          })}
           getKey={row => row.id}
           sort={tableSort(search)}
           onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}

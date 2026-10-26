@@ -11,6 +11,8 @@ export type DataColumn<T> = {
   action?: boolean
   /** The row's selection checkbox: on a card it sits before the title, without the column's label. */
   select?: boolean
+  /** Drawn in the table's header instead of `header` (a select-all checkbox); `header` still labels the column on cards. */
+  headerCell?: ReactNode
   /** Long text (a course name) wraps in the table instead of widening it; the title column (priority 1) always does. */
   wrap?: boolean
 }

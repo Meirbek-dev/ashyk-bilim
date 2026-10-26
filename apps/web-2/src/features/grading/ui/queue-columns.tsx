@@ -12,7 +12,13 @@ import type { QueueSearch } from '../route'
 import { scoreText, statusMeta } from './labels'
 
 type Ids = { courseId: string; activityId: string }
-type Selection = { has: (id: string) => boolean; toggle: (id: string) => void }
+type Selection = {
+  has: (id: string) => boolean
+  toggle: (id: string) => void
+  /** Every loaded row is selected: the header checkbox then clears the choice, else selects them all. */
+  all: boolean
+  toggleAll: () => void
+}
 
 const learnerName = (row: QueueRow) => row.user.display_name || row.user.username
 
@@ -31,6 +37,9 @@ function Learner({ row }: { row: QueueRow }) {
 const selectColumn = (selection: Selection): DataColumn<QueueRow> => ({
   id: 'select',
   header: m.grading_col_select(),
+  headerCell: (
+    <Checkbox aria-label={m.grading_select_all()} checked={selection.all} onCheckedChange={selection.toggleAll} />
+  ),
   priority: 2,
   select: true,
   cell: row => (

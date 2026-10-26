@@ -75,7 +75,9 @@ export function DataTable<T extends RowData>({
               <TableRow key={group.id}>
                 {columns.map(column => (
                   <TableHead key={column.id} scope="col" aria-sort={ariaSort(sort, column.id)}>
-                    {column.sortable && onSortChange ? (
+                    {column.headerCell ? (
+                      column.headerCell
+                    ) : column.sortable && onSortChange ? (
                       <SortHeader id={column.id} label={column.header} sort={sort} onSortChange={onSortChange} />
                     ) : (
                       column.header

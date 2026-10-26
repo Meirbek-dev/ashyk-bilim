@@ -41,6 +41,7 @@
   "grading_action_grade": "Тексеру",
   "grading_action_open": "Ашу",
   "grading_select_row": "Таңдау: {name}",
+  "grading_select_all": "Тізімдегі барлық жұмысты таңдау",
   "grading_no_score": "Баға жоқ",
   "grading_percent": "{value} %",
   "grading_export_csv": "CSV жүктеп алу",
