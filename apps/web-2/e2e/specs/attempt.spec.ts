@@ -117,8 +117,8 @@ test('B-ATT-11 B-ATT-09 offline answers wait in the queue and go out when the ne
   await learner.enroll(quiz.course)
   await learner.signIn()
   await start(page, quiz)
-  // The question's lazy parts are loaded before the network goes.
-  await expect(page.getByText('Выберите город.')).toBeVisible()
+  // The question's lazy parts are loaded before the network goes: the rendered prompt, not its plain-text stand-in.
+  await expect(page.locator('.ab-prose').getByText('Выберите город.')).toBeVisible()
   await expect(status(page)).toHaveText(m.attempt_saved({}, ru))
   await context.setOffline(true)
   await page.getByRole('radio', { name: 'Алматы' }).check()
