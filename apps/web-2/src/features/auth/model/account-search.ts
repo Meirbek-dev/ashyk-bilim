@@ -1,5 +1,8 @@
+import * as v from 'valibot'
+
 import { ApiError } from '#/shared/api/errors'
 import type { RegisterRequest } from '#/shared/api/gen/types.gen'
+import { vRegisterRequest } from '#/shared/api/gen/valibot.gen'
 
 /** The sign-up field a contract code names (`username-taken`, `email-taken`): shown under it, not as a form message. */
 export function signupFieldOf(error: unknown): keyof RegisterRequest | null {
@@ -24,3 +27,12 @@ export const isResetCodeInvalid = (error: unknown): boolean =>
 /** The error the reset form shows as its message: not the code's (under the code) nor one with field errors. */
 export const resetFormError = (error: unknown): unknown =>
   isResetCodeInvalid(error) || (error instanceof ApiError && error.fieldErrors.length > 0) ? null : error
+
+/**
+ * Sign-up's body schema with the address checked here too: the contract leaves its format to the server, so an empty
+ * or malformed address came back alone after every other field had been fixed.
+ */
+export const vSignupForm = v.strictObject({
+  ...vRegisterRequest.entries,
+  email: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.email(), v.maxLength(320)),
+})

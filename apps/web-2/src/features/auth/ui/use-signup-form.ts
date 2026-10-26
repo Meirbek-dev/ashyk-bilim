@@ -4,13 +4,12 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { RegisterRequest } from '#/shared/api/gen/types.gen'
-import { vRegisterRequest } from '#/shared/api/gen/valibot.gen'
 import { useIdempotencyKey } from '#/shared/api/idempotency'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { presentError } from '#/shared/i18n/errors'
 import { toast } from '#/shared/ui/toast'
 
-import { signupFieldOf } from '../model/account-search'
+import { signupFieldOf, vSignupForm } from '../model/account-search'
 import { loginOptions, registerOptions } from '../queries'
 
 const defaultValues: RegisterRequest = {
@@ -23,7 +22,7 @@ const defaultValues: RegisterRequest = {
 }
 
 /**
- * Sign-up: the generated body schema; a taken username or email lands under its field. The new account is signed in
+ * Sign-up: the generated body schema (the address checked here too); a taken username or email lands under its field. The new account is signed in
  * at once and goes where the guest was headed (`redirect`, else /home; an unconfirmed address gets the shell's banner).
  * Only if that sign-in fails: the code step (unconfirmed) or the sign-in page.
  */
@@ -33,7 +32,7 @@ export function useSignupForm() {
   const register = useMutation(registerOptions())
   const login = useMutation(loginOptions())
   const idempotency = useIdempotencyKey()
-  const form = useAppForm(vRegisterRequest, {
+  const form = useAppForm(vSignupForm, {
     defaultValues,
     onSubmit: body =>
       register
