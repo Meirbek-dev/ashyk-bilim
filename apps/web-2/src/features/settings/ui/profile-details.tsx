@@ -33,15 +33,17 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
       pending={update.isPending}
       error={update.error}
     >
-      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm @md:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm @md:grid-cols-3">
         <dt className="text-muted-foreground">{m.settings_field_username()}</dt>
-        <dd className="wrap-anywhere">{profile.username}</dd>
+        <dd className="wrap-anywhere @md:col-span-2">{profile.username}</dd>
         <dt className="text-muted-foreground">{m.settings_field_email()}</dt>
-        <dd className="wrap-anywhere">
+        <dd className="wrap-anywhere @md:col-span-2">
           {profile.email}{' '}
-          <Link to="/settings/security" hash="email">
-            {m.settings_email_change_link()}
-          </Link>
+          <span className="whitespace-nowrap">
+            <Link to="/settings/security" hash="email">
+              {m.settings_email_change_link()}
+            </Link>
+          </span>
         </dd>
       </dl>
       <p className="text-sm">
