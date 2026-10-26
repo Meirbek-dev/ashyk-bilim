@@ -35,13 +35,25 @@ type FileInputProps = {
   disabled?: boolean
 }
 
-/** Uploads a file handed over at mount once (a ref: effects may run twice under StrictMode). */
+/**
+ * Uploads a file handed over at mount once, by the mount that stays: under StrictMode the first mount is unmounted
+ * at once and its unmount aborts a started upload (`useUpload`) - a pasted image became an empty block in dev. The
+ * take waits a microtask, and an unmount before then leaves the file for the next mount.
+ */
 function useHandedFile(file: File | undefined, take: (file: File) => Promise<void>) {
   const queued = useRef(file)
   useEffect(() => {
+    let mounted = true
     const next = queued.current
-    queued.current = undefined
-    if (next) void take(next)
+    if (next)
+      queueMicrotask(() => {
+        if (!mounted || queued.current !== next) return
+        queued.current = undefined
+        void take(next)
+      })
+    return () => {
+      mounted = false
+    }
   })
 }
 

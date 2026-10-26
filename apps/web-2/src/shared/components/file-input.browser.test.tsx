@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { StrictMode } from 'react'
 import * as v from 'valibot'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
@@ -282,5 +283,29 @@ describe('an upload across a lost session', () => {
       'finalize',
       'finalize',
     ])
+  })
+})
+
+describe('FileInput handed file', () => {
+  test('a file handed over at mount (pasted into the editor) uploads once, also under StrictMode', async () => {
+    // As the browser's fetch does: an aborted request (the StrictMode unmount's) never reaches the server.
+    const api = vi.fn<(request: Request) => Promise<Response>>(async request => {
+      if (request.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+      return request.url.endsWith('/finalize') ? json({ id: SLOT.id, key: SLOT.key, size_bytes: 4 }) : json(SLOT)
+    })
+    vi.stubGlobal('fetch', api)
+    vi.stubGlobal('XMLHttpRequest', FakeStorage)
+    const onUploaded = vi.fn<(upload: FinalizedUpload) => void>()
+    const pasted = new File(['abcd'], 'pasted.png', { type: 'image/png' })
+    const screen = await renderInRouter(
+      <StrictMode>
+        <QueryClientProvider client={new QueryClient()}>
+          <FileInput label={label} purpose="course-thumbnail" onUploaded={onUploaded} file={pasted} />
+        </QueryClientProvider>
+      </StrictMode>,
+    )
+    await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'pasted.png' }))).toBeVisible()
+    expect(onUploaded).toHaveBeenCalledTimes(1)
+    expect(api.mock.calls.filter(([request]) => request.url.endsWith('/finalize'))).toHaveLength(1)
   })
 })
