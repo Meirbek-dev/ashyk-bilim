@@ -217,7 +217,8 @@ impl AgendaService {
     }
 
     /// In-progress trail runs with a next activity, most recently touched
-    /// first (the trail decides visibility and the next activity).
+    /// first (the trail decides visibility and the next activity). An
+    /// archived course takes no more work: «Продолжить» there led nowhere.
     async fn continue_learning(&self, actor: &Actor) -> Result<Vec<ContinueLearning>> {
         let mut runs: Vec<_> = self
             .trail
@@ -225,7 +226,9 @@ impl AgendaService {
             .await?
             .runs
             .into_iter()
-            .filter(|r| r.row.status == TrailRunStatus::InProgress)
+            .filter(|r| {
+                r.row.status == TrailRunStatus::InProgress && r.course.archived_at.is_none()
+            })
             .filter_map(|r| r.next_activity_id.map(|next| (r, next)))
             .collect();
         runs.sort_by_key(|(r, _)| std::cmp::Reverse(r.row.updated_at));

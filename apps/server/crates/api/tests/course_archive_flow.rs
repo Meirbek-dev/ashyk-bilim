@@ -436,6 +436,16 @@ async fn enrolled_learners_keep_a_private_archived_course(pool: PgPool) {
     let published = lifecycle(&app, &teacher, &course_id, "publish").await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
     enrol(&app, &alice, &course_id).await;
+    let continues = |agenda: serde_json::Value| {
+        agenda["continue_learning"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| row["course_id"] == course_id.as_str())
+    };
+    assert!(continues(
+        app.get_as(&alice, "/api/v2/me/agenda").await.json()
+    ));
 
     // BUG-183 as it is: an unpublished course hides from its learners.
     let unpublished = lifecycle(&app, &teacher, &course_id, "unpublish").await;
@@ -457,6 +467,10 @@ async fn enrolled_learners_keep_a_private_archived_course(pool: PgPool) {
     assert_eq!(runs.len(), 1);
     assert_eq!(runs[0]["course_id"], course_id);
     assert!(runs[0]["course"]["archived_at_unix"].is_i64());
+    // Kept, but no longer offered on /home as work to continue.
+    assert!(!continues(
+        app.get_as(&alice, "/api/v2/me/agenda").await.json()
+    ));
     assert_eq!(
         app.get_as(&carol, &path).await.status,
         StatusCode::NOT_FOUND
