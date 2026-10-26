@@ -70,7 +70,9 @@ export function FilesList({ files }: { files: readonly AttachedFile[] }) {
       </ul>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {shown?.pdf ? <PdfFrame src={shown.path} title={shown.name} /> : null}
-      {shown && !shown.pdf ? <img src={shown.path} alt={shown.name} className="max-w-full rounded-lg border" /> : null}
+      {shown && !shown.pdf ? (
+        <img src={shown.path} alt={shown.name} className="max-h-svh max-w-full rounded-lg border" />
+      ) : null}
       {!shown && first ? (
         <Suspense fallback={<Skeleton className="aspect-video w-full rounded-lg" />}>
           <FirstFilePreview file={first} />
