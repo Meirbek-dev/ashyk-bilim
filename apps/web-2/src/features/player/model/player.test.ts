@@ -129,3 +129,16 @@ describe('player model', () => {
     }
   })
 })
+
+describe('staff preview', () => {
+  test('B-PLY-01 course staff previewing a lesson get no mark: the server never enrols them', () => {
+    const entry = activity('a')
+    const state = course([[entry]])
+    const preview = {
+      ...state,
+      enrolled: false,
+      permissions: { ...state.permissions, denial_reason: 'staff_preview' as const },
+    }
+    expect(playerAction(preview, entry)).toBeNull()
+  })
+})

@@ -20,6 +20,7 @@ import { LessonContent } from './lesson-content'
 import { NeighbourLinks } from './neighbour-links'
 import { PlayerAction } from './player-action'
 import { PlayerNotFound } from './player-not-found'
+import { PreviewNote } from './preview-note'
 import { UnlistedLesson } from './unlisted-lesson'
 
 /**
@@ -54,7 +55,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   const action = <PlayerAction key={entry.id} state={state} entry={entry} />
   // A hosted video watched to the end marks its lesson done, as on the old web (B-PLY-06).
   const videoEnded = () => {
-    if (entry.complete || mark.isPending) return
+    if (entry.complete || mark.isPending || staffPreview(state)) return
     mark.mutate({ path: { activity_id: entry.id } }, { onSuccess: () => toast.add({ title: m.player_marked() }) })
   }
   return (
@@ -70,6 +71,8 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
     >
       <article className="flex flex-col gap-gutter">
         <ActivityHeader type={entry.activity_type} title={entry.title} />
+        {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
+        {lesson && staffPreview(state) ? <PreviewNote /> : null}
         {entry.blocked_reason ? (
           <p className="text-muted-foreground">
             {entry.opens_at_unix

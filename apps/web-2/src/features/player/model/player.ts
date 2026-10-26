@@ -71,6 +71,8 @@ export function playerAction(state: LearnerCourseState, entry: ActivityState): P
     const action = entry.allowed_actions.find(isEntryAction)
     return action ? { kind: 'open', route: kind, action } : null
   }
+  // Course staff preview: the server never enrols them (409), so a mark would only fail.
+  if (staffPreview(state)) return null
   if (!entry.complete) return { kind: 'mark' }
   const next = state.next_action
   if (!next?.enabled) return null
