@@ -76,9 +76,11 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
           </p>
         )}
       </form.Subscribe>
-      <form.AppField name="final_score">
-        {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
-      </form.AppField>
+      <div className="max-w-xs">
+        <form.AppField name="final_score">
+          {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
+        </form.AppField>
+      </div>
       <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
       {unscored.length > 0 ? (
         <ErrorAlert>{m.grading_manual_unscored({ numbers: unscored.join(', ') })}</ErrorAlert>

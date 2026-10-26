@@ -51,23 +51,28 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
         <fieldset className="flex flex-col gap-4">
           <legend className="mb-2 text-xl font-semibold">{m.grading_rubric()}</legend>
           {initial.criteria.map((criterion, index) => (
-            <form.AppField key={criterion.criterion_id} name={`criteria[${index}].score`}>
-              {field => (
-                <field.TextField
-                  label={m.grading_criterion_score({ label: criterion.label, max: criterion.max })}
-                  inputMode="decimal"
-                />
-              )}
-            </form.AppField>
+            // A score is a few digits: a field the width of the page read as a text box.
+            <div key={criterion.criterion_id} className="max-w-xs">
+              <form.AppField name={`criteria[${index}].score`}>
+                {field => (
+                  <field.TextField
+                    label={m.grading_criterion_score({ label: criterion.label, max: criterion.max })}
+                    inputMode="decimal"
+                  />
+                )}
+              </form.AppField>
+            </div>
           ))}
           <form.Subscribe selector={state => state.values.criteria}>
             {rows => <RubricTotal rows={rows} onApply={total => form.setFieldValue('final_score', String(total))} />}
           </form.Subscribe>
         </fieldset>
       ) : null}
-      <form.AppField name="final_score">
-        {field => <field.TextField label={m.grading_final_score()} inputMode="decimal" />}
-      </form.AppField>
+      <div className="max-w-xs">
+        <form.AppField name="final_score">
+          {field => <field.TextField label={m.grading_final_score()} inputMode="decimal" />}
+        </form.AppField>
+      </div>
       <form.Subscribe selector={state => state.values.final_score}>
         {score => <LatePenaltyNote score={score} penaltyPct={attempt.late_penalty_pct} />}
       </form.Subscribe>
