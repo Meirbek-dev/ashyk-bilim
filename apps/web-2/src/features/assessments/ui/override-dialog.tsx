@@ -12,6 +12,12 @@ import { blankOverride, overrideBody, overrideForm, overrideFormSchema, type Ove
 import { createOverrideOptions, overrideVersion, reloadOverrides, updateOverrideOptions } from '../queries'
 import { isStale } from './use-version'
 
+/** «Добавить исключение», or «Изменить исключение: Name» for an existing one. */
+const dialogTitle = (row: StudentOverride | undefined) =>
+  row
+    ? m.assessments_exception_edit({ name: row.user_display_name ?? m.assessments_learner_unknown() })
+    : m.assessments_exception_add()
+
 type OverrideDialogProps = {
   assessmentId: string
   trigger: ReactElement
@@ -65,7 +71,7 @@ export function OverrideDialog({ assessmentId, trigger, row, learners }: Overrid
           if (!next) save.reset()
         }}
         trigger={trigger}
-        title={m.assessments_nav_exceptions()}
+        title={dialogTitle(row)}
         submitLabel={m.ui_save()}
         onSubmit={() => form.handleSubmit()}
         pending={save.isPending}
