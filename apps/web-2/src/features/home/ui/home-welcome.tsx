@@ -7,6 +7,7 @@ import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
 
+import { suggestedCourses } from '../model/suggestions'
 import { anyEnrollmentOptions } from '../queries'
 
 /**
@@ -17,7 +18,7 @@ import { anyEnrollmentOptions } from '../queries'
 export function HomeWelcome() {
   const { data } = useSuspenseQuery(landingCoursesOptions())
   const finished = useSuspenseQuery(anyEnrollmentOptions()).data.runs.length > 0
-  const courses = data.items.slice(0, 3)
+  const courses = suggestedCourses(data.items)
   // A teacher's first sign-in lands here, in «Учёба»: the way to their own space, not only the catalog (B-HOME-12).
   const teaches = hasCapability(useSuspenseQuery(sessionOptions()).data, 'teach')
   const lead = teaches && !finished ? 'teach' : 'learn'
