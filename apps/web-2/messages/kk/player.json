@@ -72,6 +72,7 @@
   "player_page_submission": "Жұмысты тапсыру",
   "player_outline": "Осы бетте",
   "player_out_of_attempts": "Әрекеттер таусылды. Қайта тапсыру керек болса,",
+  "player_past_due_retake": "Тапсыру мерзімі өтті. Қайта тапсыру керек болса,",
   "player_ask_teacher": "курс талқылауында оқытушыға жазыңыз.",
   "player_remediation_hint": "Жаңа әрекет алдында оқытушы өткен әрекеттің қателерін талдауды сұрайды.",
   "player_hours_left": "{hours} сағ қалды"

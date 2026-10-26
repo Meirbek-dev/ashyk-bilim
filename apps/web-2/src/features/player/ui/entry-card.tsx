@@ -59,6 +59,8 @@ export function EntryCard({
   // A retake behind the teacher's remediation (`remediate`) is not out of attempts: the card leads to it.
   const remediate = entry.allowed_actions.includes('remediate')
   const outOfAttempts = entry.state === 'failed' && !entry.allowed_actions.includes('start') && !remediate
+  // No retake past the due date with attempts left too: the card names that reason, not «no attempts left».
+  const pastDue = entry.due_at_unix !== null && entry.due_at_unix <= nowUnix
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -86,7 +88,7 @@ export function EntryCard({
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}
       {outOfAttempts ? (
         <p className="max-w-prose text-sm text-muted-foreground">
-          {m.player_out_of_attempts()}{' '}
+          {pastDue ? m.player_past_due_retake() : m.player_out_of_attempts()}{' '}
           <Link to="/courses/$courseId/discussions" params={{ courseId }}>
             {m.player_ask_teacher()}
           </Link>

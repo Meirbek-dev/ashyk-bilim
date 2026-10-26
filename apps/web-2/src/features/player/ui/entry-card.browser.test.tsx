@@ -59,4 +59,12 @@ describe('EntryCard', () => {
     await expect.element(screen.getByText(m.player_remediation_hint())).toBeVisible()
     expect(screen.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
   })
+
+  test('B-PLY-19 failed past the due date names the due date, not «no attempts left»', async () => {
+    const screen = await renderInRouter(
+      <EntryCard courseId="c" entry={exam({ due_at_unix: 100 })} action={null} nowUnix={200} />,
+    )
+    await expect.element(screen.getByText(m.player_past_due_retake(), { exact: false })).toBeVisible()
+    expect(screen.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
+  })
 })
