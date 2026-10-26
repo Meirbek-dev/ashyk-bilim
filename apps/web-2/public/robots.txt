@@ -1,2 +1,16 @@
 User-agent: *
 Allow: /
+# Signed-in areas: a crawler only meets their sign-in detour (/login?redirect=...).
+Disallow: /home
+Disallow: /learning
+Disallow: /learn/
+Disallow: /teach
+Disallow: /admin
+Disallow: /settings
+Disallow: /notifications
+Disallow: /achievements
+Disallow: /collections/*/edit
+# Search results and links that carry a one-time code.
+Disallow: /search
+Disallow: /verify-email
+Disallow: /reset-password
