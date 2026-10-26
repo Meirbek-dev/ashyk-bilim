@@ -5,7 +5,15 @@ import { locales } from '#/paraglide/runtime'
 import type { SessionSummary } from '#/shared/api/gen/types.gen'
 import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 
-import { avatarProblem, deviceLabel, orderSessions, pendingEmailFor, readSwitches, startTheme } from './settings'
+import {
+  avatarProblem,
+  deviceLabel,
+  orderSessions,
+  pendingEmailFor,
+  readSwitches,
+  startTheme,
+  vEmailChangeForm,
+} from './settings'
 
 const MB = 1024 * 1024
 
@@ -100,4 +108,12 @@ test('B-SET-24 a sent address change waits for its code for this account only, u
   expect(pendingEmailFor(pending, 'u1', 1_000)).toBeNull()
   expect(pendingEmailFor(pending, 'u2', 999)).toBeNull()
   expect(pendingEmailFor(null, 'u1', 0)).toBeNull()
+})
+
+const emailIssue = (email: string) => v.safeParse(vEmailChangeForm, { email, password: 'x' }).issues?.[0]?.type
+
+test('B-SET-22 the new address is checked before the code is requested', () => {
+  expect(emailIssue('')).toBe('non_empty')
+  expect(emailIssue('new.example.com')).toBe('email')
+  expect(emailIssue('new@example.com')).toBeUndefined()
 })

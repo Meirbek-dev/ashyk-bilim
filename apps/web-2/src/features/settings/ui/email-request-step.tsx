@@ -2,18 +2,17 @@ import { useMutation } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { ChangeEmailRequest, UserProfile } from '#/shared/api/gen/types.gen'
-import { vChangeEmailRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 
-import { hasCode } from '../model/settings'
+import { hasCode, vEmailChangeForm } from '../model/settings'
 import { changeEmailOptions } from '../queries'
 
 /** Step 1 of B-SET-22: the new address and the password; the server mails a code there. */
 export function EmailRequestStep({ profile, onSent }: { profile: UserProfile; onSent: (email: string) => void }) {
   const change = useMutation(changeEmailOptions())
   const defaultValues: ChangeEmailRequest = profile.has_password ? { email: '', password: '' } : { email: '' }
-  const form = useAppForm(vChangeEmailRequest, {
+  const form = useAppForm(vEmailChangeForm, {
     defaultValues,
     onSubmit: async body => {
       try {

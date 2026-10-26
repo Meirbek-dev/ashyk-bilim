@@ -3,6 +3,7 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
+import { vChangeEmailRequest } from '#/shared/api/gen/valibot.gen'
 import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
@@ -96,3 +97,9 @@ export type PendingEmail = v.InferOutput<typeof vPendingEmail>
 /** The address waiting for its code: only this account's and only while the code still works (B-SET-24). */
 export const pendingEmailFor = (pending: PendingEmail | null, user: string, now: number): string | null =>
   pending && pending.user === user && pending.until > now ? pending.email : null
+
+/** The address change's body with the new address checked here as well (the contract leaves its format to the server). */
+export const vEmailChangeForm = v.strictObject({
+  ...vChangeEmailRequest.entries,
+  email: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.email(), v.maxLength(320)),
+})
