@@ -46,6 +46,8 @@
   "grading_percent": "{value} %",
   "grading_export_csv": "CSV жүктеп алу",
   "grading_selected": "Таңдалды: {count}",
+  "grading_select_every": "Барлығын таңдау ({count})",
+  "grading_select_none": "Таңдауды алып тастау",
   "grading_publish_all": "Бағаларды жариялау",
   "grading_publish_all_title": "Бағаларды жариялау керек пе?",
   "grading_publish_all_text": "Жариялауды күтетін тексерілген жұмыстар: {count}. Білім алушылар өз бағаларын көреді.",

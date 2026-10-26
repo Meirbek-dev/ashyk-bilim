@@ -46,6 +46,8 @@
   "grading_percent": "{value}%",
   "grading_export_csv": "Download CSV",
   "grading_selected": "Selected: {count}",
+  "grading_select_every": "Select all ({count})",
+  "grading_select_none": "Clear selection",
   "grading_publish_all": "Publish grades",
   "grading_publish_all_title": "Publish grades?",
   "grading_publish_all_text": "Reviewed submissions awaiting publication: {count}. Learners will see their grades.",

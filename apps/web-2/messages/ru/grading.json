@@ -48,6 +48,8 @@
   "grading_percent": "{value} %",
   "grading_export_csv": "Скачать CSV",
   "grading_selected": "Выбрано: {count}",
+  "grading_select_every": "Выбрать все ({count})",
+  "grading_select_none": "Снять выбор",
   "grading_publish_all": "Опубликовать оценки",
   "grading_publish_all_title": "Опубликовать оценки?",
   "grading_publish_all_text": "Проверенные работы, ждущие публикации: {count}. Учащиеся увидят свои оценки.",

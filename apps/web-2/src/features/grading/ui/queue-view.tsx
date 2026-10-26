@@ -73,6 +73,8 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
         work={work}
         courseId={courseId}
         rows={rows.filter(row => selected.has(row.id))}
+        total={rows.length}
+        onAll={() => setSelected(new Set(rows.map(row => row.id)))}
         onDone={() => setSelected(new Set())}
       />
       <ListState
