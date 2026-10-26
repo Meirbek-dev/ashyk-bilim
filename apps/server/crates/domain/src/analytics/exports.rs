@@ -253,7 +253,7 @@ const fn assessment_outcomes_header(language: CsvLanguage) -> [&'static str; 10]
             "Атауы",
             "Тапсыру үлесі, %",
             "Өту үлесі, %",
-            "Медианалық балл",
+            "Медианалық ұпай",
             "Күрделілік",
             "Сигналдар",
         ],

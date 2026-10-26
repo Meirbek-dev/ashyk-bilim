@@ -519,7 +519,7 @@ impl CsvLanguage {
 
     const fn learner(self) -> &'static str {
         match self {
-            Self::Ru => "Студент",
+            Self::Ru => "Учащийся",
             Self::Kk => "Білім алушы",
             Self::En => "Learner",
         }
@@ -544,7 +544,7 @@ impl CsvLanguage {
     const fn submission_header(self) -> [&'static str; 8] {
         match self {
             Self::Ru => [
-                "Студент",
+                "Учащийся",
                 "Email",
                 "Попытка",
                 "Статус",
@@ -561,7 +561,7 @@ impl CsvLanguage {
                 "Кеш",
                 "Тапсырылған",
                 "Автобаға",
-                "Қорытынды балл",
+                "Қорытынды ұпай",
             ],
             Self::En => [
                 "Learner",
@@ -590,7 +590,7 @@ impl CsvLanguage {
         use SubmissionStatus as S;
         match (self, status) {
             (Self::Ru, S::Draft) => "Черновик",
-            (Self::Kk, S::Draft) => "Жоба",
+            (Self::Kk, S::Draft) => "Нобай",
             (Self::En, S::Draft) => "Draft",
             (Self::Ru, S::Pending) => "На проверке",
             (Self::Kk, S::Pending) => "Тексеру керек",
@@ -612,7 +612,7 @@ impl CsvLanguage {
         match self {
             Self::Ru => [
                 "ID попытки",
-                "Студент",
+                "Учащийся",
                 "Email",
                 "Статус",
                 "Попытка",
@@ -631,7 +631,7 @@ impl CsvLanguage {
                 "Тапсырылған",
                 "Кеш",
                 "Кешігу айыппұлы, %",
-                "Қорытынды балл",
+                "Қорытынды ұпай",
                 "Файлдар",
             ],
             Self::En => [
@@ -654,7 +654,7 @@ impl CsvLanguage {
         use FileAttemptStatus as S;
         match (self, status) {
             (Self::Ru, S::Draft) => "Черновик",
-            (Self::Kk, S::Draft) => "Жоба",
+            (Self::Kk, S::Draft) => "Нобай",
             (Self::En, S::Draft) => "Draft",
             (Self::Ru, S::Submitted) => "На проверке",
             (Self::Kk, S::Submitted) => "Тексеру керек",

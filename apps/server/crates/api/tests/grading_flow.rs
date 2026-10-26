@@ -585,7 +585,7 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
     let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
     assert_eq!(
         lines[0],
-        "Студент;Email;Попытка;Статус;Просрочено;Отправлено;Автооценка;Итоговый балл;Задание: Q1;Задание: Essay"
+        "Учащийся;Email;Попытка;Статус;Просрочено;Отправлено;Автооценка;Итоговый балл;Задание: Q1;Задание: Essay"
     );
     assert_eq!(lines.len(), 4);
     assert!(
@@ -2906,7 +2906,7 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
     let text = csv.text();
     assert!(text.starts_with('\u{feff}'), "BOM first");
     let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();
-    assert_eq!(lines[0], "Студент;Email;Quiz;Project Upload;Итог курса");
+    assert_eq!(lines[0], "Учащийся;Email;Quiz;Project Upload;Итог курса");
     assert_eq!(lines[1], "alice;alice@example.com;95;77;86");
     assert_eq!(lines.len(), 2);
     let english = app

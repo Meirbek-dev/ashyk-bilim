@@ -718,7 +718,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
     let text = csv.text();
     // UX-108: BOM + Russian by default, like the grading exports.
     assert!(
-        text.starts_with("\u{feff}ID попытки;Студент;Email;Статус"),
+        text.starts_with("\u{feff}ID попытки;Учащийся;Email;Статус"),
         "{text}"
     );
     assert!(text.contains("alice@example.com;Опубликовано;1;"), "{text}");
