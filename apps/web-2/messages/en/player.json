@@ -75,5 +75,7 @@
   "player_past_due_retake": "The due date has passed. If you need a retake,",
   "player_ask_teacher": "ask the teacher in the course discussions.",
   "player_remediation_hint": "Before another attempt, your teacher asks you to review the mistakes of the last one.",
-  "player_hours_left": "{hours} h left"
+  "player_hours_left": "{hours} h left",
+  "player_archived_title": "Course archived",
+  "player_archived_text": "The materials and your results stay readable. New attempts, hand-ins and marks are no longer accepted."
 }

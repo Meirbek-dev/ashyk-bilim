@@ -144,3 +144,12 @@ describe('staff preview', () => {
     expect(playerAction(preview, entry)).toBeNull()
   })
 })
+
+describe('archived course', () => {
+  test('B-PLY-22 a lesson of an archived course offers no mark: the course takes no more writes', () => {
+    const entry = activity('a')
+    const state = course([[entry]])
+    const archived = { ...state, permissions: { ...state.permissions, denial_reason: 'course_archived' as const } }
+    expect(playerAction(archived, entry)).toBeNull()
+  })
+})

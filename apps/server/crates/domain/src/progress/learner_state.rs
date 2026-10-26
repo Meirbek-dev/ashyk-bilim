@@ -415,7 +415,9 @@ impl LearnerStateService {
                 (a.chapter_id, state)
             })
             .collect();
-        if !guest && !staff && !archived {
+        if archived {
+            read_only(&mut states);
+        } else if !guest && !staff {
             self.offer_retakes(actor, course.id, &mut states).await?;
         }
         let outline = build_outline(&chapters, &states);
@@ -465,6 +467,14 @@ impl LearnerStateService {
             next_action,
             outline,
         })
+    }
+}
+
+/// An archived course is read-only: no start, continue or revise leads to a
+/// page that can only say «Курс в архиве»; results stay readable.
+fn read_only(states: &mut [(ChapterId, ActivityState)]) {
+    for (_, state) in states {
+        state.allowed_actions.retain(|a| a.starts_with("view_"));
     }
 }
 

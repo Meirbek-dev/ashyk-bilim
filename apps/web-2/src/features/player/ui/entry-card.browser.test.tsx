@@ -67,4 +67,13 @@ describe('EntryCard', () => {
     await expect.element(screen.getByText(m.player_past_due_retake(), { exact: false })).toBeVisible()
     expect(screen.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
   })
+
+  test('B-PLY-22 work in an archived course sends no one to the teacher for a retake, nor counts hours', async () => {
+    const failed = await renderInRouter(<EntryCard courseId="c" entry={exam({})} action={null} nowUnix={0} archived />)
+    await expect.element(failed.getByText(m.player_state_failed())).toBeVisible()
+    expect(failed.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
+    const due = exam({ state: 'not_started', score: null, allowed_actions: [], due_at_unix: 3600 })
+    const open = await renderInRouter(<EntryCard courseId="c" entry={due} action={null} nowUnix={0} archived />)
+    expect(open.getByText(m.player_hours_left({ hours: 1 })).query()).toBeNull()
+  })
 })

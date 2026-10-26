@@ -23,6 +23,9 @@ export const activityKind = (type: ActivityType): ActivityKind => KINDS[type]
 export const staffPreview = (state: LearnerCourseState) =>
   !state.enrolled && state.permissions.denial_reason === 'staff_preview'
 
+/** The course went to the archive (the server's `course_archived`): read-only, no marks and no new work. */
+export const courseArchived = (state: LearnerCourseState) => state.permissions.denial_reason === 'course_archived'
+
 /** The activity in the learner's outline with its neighbours in outline order; null = not in this course. */
 export function locate(state: LearnerCourseState, id: ActivityId) {
   const flat = state.outline.flatMap(chapter => chapter.activities)
@@ -71,8 +74,8 @@ export function playerAction(state: LearnerCourseState, entry: ActivityState): P
     const action = entry.allowed_actions.find(isEntryAction)
     return action ? { kind: 'open', route: kind, action } : null
   }
-  // Course staff preview: the server never enrols them (409), so a mark would only fail.
-  if (staffPreview(state)) return null
+  // Course staff preview: the server never enrols them (409), so a mark would only fail; an archived course neither.
+  if (staffPreview(state) || courseArchived(state)) return null
   if (!entry.complete) return { kind: 'mark' }
   const next = state.next_action
   if (!next?.enabled) return null

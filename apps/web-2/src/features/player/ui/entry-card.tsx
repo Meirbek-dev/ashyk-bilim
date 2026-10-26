@@ -43,22 +43,26 @@ export function EntryCard({
   entry,
   action,
   nowUnix,
+  archived = false,
 }: {
   courseId: CourseId
   entry: ActivityState
   action: ReactNode
   /** When the learner state was read: the clock the hours left are counted from. */
   nowUnix: number
+  /** An archived course (the note above says so): no hours left, no how-to, no retake to ask for. */
+  archived?: boolean
 }) {
   const status = workStates[entry.state]
   const kind = activityKind(entry.activity_type)
   // Failed with no attempt left (B-PLY-19): the learner is not left at a dead end that «Продолжить» keeps leading to.
   // Due within 48 h and not handed in (B-PLY-21): the hours left in the warning tone, as /home says it.
   const left = entry.due_at_unix === null ? 0 : entry.due_at_unix - nowUnix
-  const soon = open.has(entry.state) && left > 0 && left <= 48 * 3600 ? Math.max(1, Math.ceil(left / 3600)) : null
+  const soon =
+    !archived && open.has(entry.state) && left > 0 && left <= 48 * 3600 ? Math.max(1, Math.ceil(left / 3600)) : null
   // A retake behind the teacher's remediation (`remediate`) is not out of attempts: the card leads to it.
   const remediate = entry.allowed_actions.includes('remediate')
-  const outOfAttempts = entry.state === 'failed' && !entry.allowed_actions.includes('start') && !remediate
+  const outOfAttempts = !archived && entry.state === 'failed' && !entry.allowed_actions.includes('start') && !remediate
   // No retake past the due date with attempts left too: the card names that reason, not «no attempts left».
   const pastDue = entry.due_at_unix !== null && entry.due_at_unix <= nowUnix
   return (
@@ -82,7 +86,7 @@ export function EntryCard({
           {m.player_due({ date: formatDateTime(entry.due_at_unix) })}
         </p>
       ) : null}
-      {kind !== 'lesson' && fresh.has(entry.state) && entry.score === null ? (
+      {!archived && kind !== 'lesson' && fresh.has(entry.state) && entry.score === null ? (
         <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}

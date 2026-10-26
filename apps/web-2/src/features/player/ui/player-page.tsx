@@ -10,9 +10,10 @@ import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, locate, playerAction, staffPreview } from '../model/player'
+import { activityKind, courseArchived, locate, playerAction, staffPreview } from '../model/player'
 import { learnerStateOptions, markOptions } from '../queries'
 import { ActivityHeader } from './activity-header'
+import { ArchivedNote } from './archived-note'
 import { BackToCourse } from './back-to-course'
 import { Contents } from './contents'
 import { EntryCard } from './entry-card'
@@ -73,6 +74,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
         {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
         {lesson && staffPreview(state) ? <PreviewNote lesson /> : null}
+        {courseArchived(state) ? <ArchivedNote /> : null}
         {entry.blocked_reason ? (
           <p className="text-muted-foreground">
             {entry.opens_at_unix
@@ -82,7 +84,13 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         ) : lesson ? (
           <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (
-          <EntryCard courseId={courseId} entry={entry} action={action} nowUnix={Math.floor(dataUpdatedAt / 1000)} />
+          <EntryCard
+            courseId={courseId}
+            entry={entry}
+            action={action}
+            nowUnix={Math.floor(dataUpdatedAt / 1000)}
+            archived={courseArchived(state)}
+          />
         )}
         <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
           {lesson ? action : null}

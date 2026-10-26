@@ -12,7 +12,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, locate, playerAction, type EntryAction } from '../model/player'
+import { activityKind, courseArchived, locate, playerAction, type EntryAction } from '../model/player'
 import { markOptions, unmarkOptions } from '../queries'
 
 const entryLabels = {
@@ -48,7 +48,10 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   }
   useHotkey(shortcuts.mark.hotkey, submit)
   const error = mark.error ?? unmark.error
-  const unmarkable = entry.complete && !entry.blocked_reason && activityKind(entry.activity_type) === 'lesson'
+  const unmarkable =
+    entry.complete && !entry.blocked_reason && activityKind(entry.activity_type) === 'lesson' && !courseArchived(state)
+  // Nothing to offer (an archived course): no empty box that the card's gap would still space out.
+  if (!action && !unmarkable && !error) return null
   return (
     <div className="flex flex-col items-start gap-2 empty:hidden">
       <div className="flex flex-wrap items-center gap-2 empty:hidden">

@@ -1583,6 +1583,19 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
     );
     assert!(learner_state.json()["next_action"].is_null());
     assert_eq!(learner_state.json()["enrolled"], true);
+    // Alice's open quiz draft offers no «Продолжить» into a closed attempt.
+    let offered: Vec<String> = learner_state.json()["outline"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|chapter| chapter["activities"].as_array().unwrap().clone())
+        .flat_map(|activity| activity["allowed_actions"].as_array().unwrap().clone())
+        .map(|action| action.as_str().unwrap().to_owned())
+        .collect();
+    assert!(
+        offered.iter().all(|action| action.starts_with("view_")),
+        "{offered:?}"
+    );
     let carol_state = app
         .get_as(
             &carol,
