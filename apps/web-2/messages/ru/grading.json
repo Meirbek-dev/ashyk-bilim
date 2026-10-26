@@ -140,7 +140,7 @@
   "grading_col_correct": "Верно",
   "grading_col_discrimination": "Различающая сила",
   "grading_discrimination_few": "Мало данных",
-  "grading_kind_choice": "Выбор",
+  "grading_kind_choice": "Выбор ответа",
   "grading_kind_open_text": "Развёрнутый ответ",
   "grading_kind_form": "Форма",
   "grading_kind_code": "Код",
