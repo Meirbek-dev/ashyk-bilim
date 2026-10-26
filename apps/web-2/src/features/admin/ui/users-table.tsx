@@ -38,7 +38,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     id: 'email',
     header: m.admin_users_col_email(),
     priority: 2,
-    cell: user => <span className="text-muted-foreground">{user.email}</span>,
+    cell: user => <span className="wrap-anywhere text-muted-foreground">{user.email}</span>,
   },
   {
     id: 'roles',
