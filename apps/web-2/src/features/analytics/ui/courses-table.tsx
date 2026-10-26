@@ -12,6 +12,7 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { activeFilters, COURSE_SORTS, type CourseSort, type Filters, tableSort } from '../model/filters'
 import { coursesOptions } from '../queries'
+import { score } from './kpi'
 import { Pager } from './pager'
 
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
@@ -54,7 +55,8 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
     sortable: true,
     header: m.analytics_col_health(),
     priority: 3,
-    cell: row => count(row.content_health_score),
+    // A 0..100 score, as on the admin ranking (B-ANL-36): a bare «61,4» did not say out of what.
+    cell: row => <ScoreBar value={row.content_health_score} text={score(row.content_health_score)} />,
   },
   { id: 'ungraded', header: m.analytics_col_ungraded(), priority: 3, cell: row => count(row.ungraded_submissions) },
 ]

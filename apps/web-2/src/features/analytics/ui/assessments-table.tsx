@@ -73,7 +73,7 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     header: m.analytics_col_outliers(),
     priority: 3,
     wrap: true,
-    cell: row => row.outlier_reason_codes.map(code => outlierLabels[code]()).join(', '),
+    cell: row => row.outlier_reason_codes.map(code => outlierLabels[code]()).join(', ') || '—',
   },
 ]
 
