@@ -6,6 +6,7 @@ import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/v
 import { RUN_KINDS, RUN_STATUSES, runsFilter } from '../route'
 import {
   budgetUsed,
+  byPriority,
   gateHolds,
   panelTabs,
   pickTab,
@@ -135,4 +136,17 @@ test('B-AI-29 the feedback draft is the summary, each gap with what to work on, 
     'Ошибки в циклах.\n\n- **Условие выхода**: Повторить while\n- **Счётчик**: i не растёт\n\nРешить задачу 2 заново',
   )
   expect(feedbackDraft({ summary: 'Хорошо.' })).toBe('Хорошо.')
+})
+
+describe('byPriority', () => {
+  test('puts high first, keeps the model order within a priority and the original index', () => {
+    const items = [
+      { title: 'a', priority: 'low' as const },
+      { title: 'b', priority: 'high' as const },
+      { title: 'c', priority: null },
+      { title: 'd', priority: 'medium' as const },
+      { title: 'e', priority: 'high' as const },
+    ]
+    expect(byPriority(items).map(({ item, index }) => `${item.title}${index}`)).toEqual(['b1', 'e4', 'd3', 'a0', 'c2'])
+  })
 })

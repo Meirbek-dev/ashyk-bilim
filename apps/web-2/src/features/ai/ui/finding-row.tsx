@@ -8,7 +8,7 @@ import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDate } from '#/shared/i18n/format'
 import { toast } from '#/shared/ui/toast'
 
-import { findingLabels, findingStateLabels, levelLabels } from '../model/labels'
+import { findingLabels, findingStateLabels, levelLabels, levelTones } from '../model/labels'
 import { reviewFindingOptions } from '../queries'
 
 type FindingRowProps = {
@@ -29,7 +29,7 @@ export function FindingRow({ courseId, analysisId, findingId, recommendation, re
     <li className="flex flex-col gap-2 rounded-md border p-3">
       <div className="flex flex-wrap items-center gap-2">
         {recommendation.priority ? (
-          <StatusBadge tone="info">{levelLabels[recommendation.priority]()}</StatusBadge>
+          <StatusBadge tone={levelTones[recommendation.priority]}>{levelLabels[recommendation.priority]()}</StatusBadge>
         ) : null}
         <h4 className="font-medium wrap-anywhere">{recommendation.title}</h4>
       </div>

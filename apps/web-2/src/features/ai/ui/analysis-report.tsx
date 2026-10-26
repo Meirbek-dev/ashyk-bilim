@@ -7,6 +7,7 @@ import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { StatusBadge, type StatusTone } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
 
+import { byPriority } from '../model/ai'
 import { analysisStatusLabels } from '../model/labels'
 import { Citations } from './citations'
 import { FindingRow } from './finding-row'
@@ -46,7 +47,7 @@ export function AnalysisReport({ courseId, analysis }: { courseId: CourseId; ana
         <h3 className="font-medium">{m.ai_recommendations()}</h3>
         {report.recommendations && report.recommendations.length > 0 ? (
           <ol className="flex flex-col gap-3">
-            {report.recommendations.map((recommendation, index) => (
+            {byPriority(report.recommendations).map(({ item: recommendation, index }) => (
               <FindingRow
                 key={recommendation.title}
                 courseId={courseId}

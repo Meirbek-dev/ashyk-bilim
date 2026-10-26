@@ -13,6 +13,7 @@ import type {
   StudyMode,
 } from '#/shared/api/gen/types.gen'
 import { vErrorCode } from '#/shared/api/gen/valibot.gen'
+import type { StatusTone } from '#/shared/components/status-badge'
 import { presentError } from '#/shared/i18n/errors'
 
 import type { PanelTab } from '../route'
@@ -57,6 +58,9 @@ export const levelLabels: Record<Level, () => string> = {
   medium: m.ai_level_medium,
   high: m.ai_level_high,
 }
+
+/** A priority or severity badge's colour: what to fix first stands out, a minor note stays quiet. */
+export const levelTones: Record<Level, StatusTone> = { high: 'warning', medium: 'info', low: 'neutral' }
 
 export const analysisStatusLabels: Record<CourseAnalysisStatus, () => string> = {
   draft: m.ai_analysis_draft,

@@ -1,5 +1,6 @@
 import type {
   Citation,
+  Level,
   RemediationSession,
   RemediationStatus,
   ScopeCapabilities,
@@ -7,6 +8,17 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 import type { PanelTab } from '../route'
+
+const LEVEL_RANK: Record<Level, number> = { high: 0, medium: 1, low: 2 }
+
+/**
+ * Suggestions and findings with the most important first (the model lists them in its own order); equal priorities
+ * keep that order, and one without a priority goes last. Each keeps its original index (a finding's id is positional).
+ */
+export function byPriority<T extends { priority?: Level | null }>(items: readonly T[]): { item: T; index: number }[] {
+  const rank = (item: T) => (item.priority ? LEVEL_RANK[item.priority] : 3)
+  return items.map((item, index) => ({ item, index })).toSorted((a, b) => rank(a.item) - rank(b.item))
+}
 
 const featureOn = (caps: ScopeCapabilities, key: string) =>
   caps.features.some(feature => feature.key === key && feature.enabled)

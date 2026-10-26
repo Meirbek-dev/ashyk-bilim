@@ -4,7 +4,7 @@ import type { SubmissionAnalysis } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate } from '#/shared/i18n/format'
 
-import { levelLabels } from '../model/labels'
+import { levelLabels, levelTones } from '../model/labels'
 import { Citations } from './citations'
 
 /** The typed `SubmissionAnalysis.analysis` (B-AI-16): summary, knowledge gaps with severity, the next step. */
@@ -21,7 +21,9 @@ export function SubmissionAnalysisView({ analysis }: { analysis: SubmissionAnaly
             {report.knowledge_gaps.map(gap => (
               <li key={gap.concept} className="flex flex-col gap-1 rounded-md border p-2 text-sm">
                 <span className="flex flex-wrap items-center gap-2">
-                  {gap.severity ? <StatusBadge tone="warning">{levelLabels[gap.severity]()}</StatusBadge> : null}
+                  {gap.severity ? (
+                    <StatusBadge tone={levelTones[gap.severity]}>{levelLabels[gap.severity]()}</StatusBadge>
+                  ) : null}
                   <span className="font-medium wrap-anywhere">{gap.concept}</span>
                 </span>
                 {gap.evidence ? <span className="text-muted-foreground">{gap.evidence}</span> : null}

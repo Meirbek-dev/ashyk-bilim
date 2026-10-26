@@ -10,7 +10,8 @@ import { SubmitButton } from '#/shared/components/submit-button'
 import { formatDate } from '#/shared/i18n/format'
 import { toast } from '#/shared/ui/toast'
 
-import { levelLabels } from '../model/labels'
+import { byPriority } from '../model/ai'
+import { levelLabels, levelTones } from '../model/labels'
 import { dismissOptions } from '../queries'
 import { Citations } from './citations'
 
@@ -19,7 +20,9 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
   const queryClient = useQueryClient()
   const dismiss = useMutation(dismissOptions(queryClient, courseId))
   const report = review.suggestions
-  const open = (report.suggestions ?? []).filter(item => !review.dismissed_suggestion_ids.includes(item.suggestion_id))
+  const open = byPriority(
+    (report.suggestions ?? []).filter(item => !review.dismissed_suggestion_ids.includes(item.suggestion_id)),
+  ).map(({ item }) => item)
   return (
     <article className="flex flex-col gap-3 border-t pt-4">
       <p className="text-xs text-muted-foreground">
@@ -31,7 +34,9 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
           {open.map(item => (
             <li key={item.suggestion_id} className="flex flex-col gap-2 rounded-md border p-3">
               <div className="flex flex-wrap items-center gap-2">
-                {item.priority ? <StatusBadge tone="info">{levelLabels[item.priority]()}</StatusBadge> : null}
+                {item.priority ? (
+                  <StatusBadge tone={levelTones[item.priority]}>{levelLabels[item.priority]()}</StatusBadge>
+                ) : null}
                 <h4 className="font-medium wrap-anywhere">{item.title}</h4>
               </div>
               {item.location ? (
@@ -48,7 +53,7 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
                 <SubmitButton
                   variant="ghost"
                   size="sm"
-                  pending={dismiss.isPending}
+                  pending={dismiss.isPending && dismiss.variables.body.suggestion_id === item.suggestion_id}
                   onClick={() =>
                     dismiss.mutate(
                       { path: { review_id: review.id }, body: { suggestion_id: item.suggestion_id } },
