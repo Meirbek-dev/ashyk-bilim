@@ -37,7 +37,8 @@ export function RubricSection({ task }: { task: FileSubmission }) {
                 <p className="text-sm text-muted-foreground">{m.submission_rubric_empty()}</p>
               ) : null}
               {list.state.value.map((criterion, index) => (
-                <div key={criterion.criterion_id} className="flex flex-wrap items-end gap-2">
+                // Top-aligned: a refusal under one field (two lines in the narrow one) must not shift the other.
+                <div key={criterion.criterion_id} className="flex flex-wrap items-start gap-2">
                   <div className="min-w-48 flex-1">
                     <form.AppField name={`criteria[${index}].label`}>
                       {field => <field.TextField label={m.submission_criterion_name({ number: index + 1 })} required />}
@@ -48,11 +49,17 @@ export function RubricSection({ task }: { task: FileSubmission }) {
                       {field => <field.TextField label={m.submission_criterion_max()} inputMode="decimal" required />}
                     </form.AppField>
                   </div>
-                  <IconButton
-                    label={m.submission_criterion_remove({ number: index + 1 })}
-                    icon={<X aria-hidden />}
-                    onClick={() => list.removeValue(index)}
-                  />
+                  {/* A blank line the height of a field label, so the button sits level with the inputs. */}
+                  <div className="flex flex-col gap-2">
+                    <span aria-hidden className="text-sm leading-snug">
+                      {'\u00A0'}
+                    </span>
+                    <IconButton
+                      label={m.submission_criterion_remove({ number: index + 1 })}
+                      icon={<X aria-hidden />}
+                      onClick={() => list.removeValue(index)}
+                    />
+                  </div>
                 </div>
               ))}
               <div>
