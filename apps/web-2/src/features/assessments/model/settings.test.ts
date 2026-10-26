@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { AuditEvent, Policy, ReadinessIssueCode, StudentOverride } from '#/shared/api/gen/types.gen'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
@@ -64,6 +65,17 @@ describe('rules', () => {
     const cutoff = { ...form, late_kind: 'cutoff' as const, cutoff_at: '2026-02-01T14:30' }
     expect(policyBody(cutoff, policy, 'quiz').late_policy).toEqual({ kind: 'cutoff', cutoff_at_unix: FEB_1_1430 })
     expect(v.is(policyFormSchema, { ...form, max_attempts: 'two' })).toBe(false)
+  })
+
+  test('B-ASM-17 the server ranges are named under their fields, minutes included', () => {
+    const form = policyForm(policy)
+    const message = (patch: Partial<typeof form>) =>
+      v.safeParse(policyFormSchema, { ...form, ...patch }).issues?.[0]?.message
+    expect(message({ passing_score: '150' })).toBe(m.validation_max_value({ max: '100' }))
+    expect(message({ time_limit_minutes: '0' })).toBe(m.validation_min_value({ min: '1' }))
+    expect(message({ max_attempts: '11' })).toBe(m.validation_max_value({ max: '10' }))
+    expect(message({ negative_marking_percent: '100' })).toBeUndefined()
+    expect(message({ max_attempts: '', time_limit_minutes: '' })).toBeUndefined()
   })
 
   test('B-ASM-18 anti-cheat is written for an exam only; a quiz keeps the stored values', () => {

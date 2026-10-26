@@ -1,12 +1,14 @@
 import * as v from 'valibot'
 
 import type { AssessmentKind, GradeReleaseMode, LatePolicy, Policy, ReviewVisibility } from '#/shared/api/gen/types.gen'
+import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
 import { momentOf } from './moment'
 
 // The "Rules" form: the policy block as typed text (numbers, minutes, platform-zone dates) and back. The PUT replaces
-// the whole block, so what the form does not show goes back as it was. Ranges are the server's (422 per field).
+// the whole block, so what the form does not show goes back as it was. The server's ranges are checked here too: its
+// 422 names `time_limit_seconds` or `late_policy.max_days`, fields this form does not have, and says only «invalid».
 
 export type LateKind = LatePolicy['kind']
 
@@ -114,11 +116,21 @@ export function policyBody(form: PolicyForm, stored: Policy, kind: AssessmentKin
   }
 }
 
-// UI parsing only (number fields are typed text); ranges stay with the server.
+// Number fields are typed text: the format, then the server's range (AssessmentPolicy::validate) with its bounds named.
 const whole = v.pipe(v.string(), v.trim(), v.regex(/^\d+$/u))
 const optionalWhole = v.pipe(v.string(), v.trim(), v.regex(/^\d*$/u))
 const number = v.pipe(v.string(), v.trim(), v.regex(/^\d+([.,]\d+)?$/u))
 const optionalNumberText = v.pipe(v.string(), v.trim(), v.regex(/^(\d+([.,]\d+)?)?$/u))
+const within = (min: number, max?: number) =>
+  v.rawCheck<string>(({ dataset, addIssue }) => {
+    if (!dataset.typed || dataset.value.trim() === '') return
+    const value = decimal(dataset.value)
+    if (Number.isNaN(value)) return
+    if (value < min) addIssue({ message: m.validation_min_value({ min: String(min) }) })
+    else if (max !== undefined && value > max) addIssue({ message: m.validation_max_value({ max: String(max) }) })
+  })
+/** The server's cap on attempts (MAX_ATTEMPTS). */
+const MAX_ATTEMPTS = 10
 const moment = v.pipe(
   v.string(),
   v.check(value => value === '' || momentOf(value) !== null),
@@ -127,20 +139,20 @@ const moment = v.pipe(
 /** The form's schema; a late policy needs its own fields filled. */
 export const policyFormSchema = v.pipe(
   v.object({
-    max_attempts: optionalWhole,
-    time_limit_minutes: optionalNumberText,
+    max_attempts: v.pipe(optionalWhole, within(1, MAX_ATTEMPTS)),
+    time_limit_minutes: v.pipe(optionalNumberText, within(1)),
     due_at: moment,
     allow_late: v.boolean(),
     late_kind: v.picklist(['none', 'penalty', 'cutoff']),
-    percent_per_day: optionalNumberText,
-    max_days: optionalWhole,
+    percent_per_day: v.pipe(optionalNumberText, within(0, 100)),
+    max_days: v.pipe(optionalWhole, within(1)),
     cutoff_at: moment,
     grace_period_minutes: whole,
-    passing_score: number,
+    passing_score: v.pipe(number, within(0, 100)),
     randomize_questions: v.boolean(),
     randomize_options: v.boolean(),
     partial_credit: v.boolean(),
-    negative_marking_percent: number,
+    negative_marking_percent: v.pipe(number, within(0, 100)),
     grade_release_mode: v.picklist(['immediate', 'batch']),
     review_visibility: v.picklist(['none', 'score_only', 'full']),
     required: v.boolean(),
@@ -149,7 +161,7 @@ export const policyFormSchema = v.pipe(
     devtools_detection: v.boolean(),
     right_click_disabled: v.boolean(),
     fullscreen_required: v.boolean(),
-    violation_threshold: whole,
+    violation_threshold: v.pipe(whole, within(1)),
   }),
   v.forward(
     v.partialCheck(
