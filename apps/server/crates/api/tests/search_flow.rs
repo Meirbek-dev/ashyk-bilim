@@ -391,6 +391,28 @@ async fn search_folds_kazakh_letters_and_yo(pool: PgPool) {
             assert_eq!(names, [expected], "{path} ({typed})");
         }
     }
+    // People too: «Айгерим» typed on a Russian keyboard finds «Әйгерім».
+    let aigerim = app
+        .create_user("aigerim.s", "aigerim@example.com", &[])
+        .await;
+    sqlx::query("UPDATE users SET display_name = 'Әйгерім Сапарова' WHERE id = $1")
+        .bind(aigerim.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let people = app
+        .get_as(
+            &teacher,
+            "/api/v2/search?q=%D0%B0%D0%B9%D0%B3%D0%B5%D1%80%D0%B8%D0%BC",
+        )
+        .await;
+    let people: Vec<_> = people.json()["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|u| u["username"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(people, ["aigerim.s"]);
 }
 
 /// `cursor` pages every section by the same offset; `next_cursor` is set

@@ -263,6 +263,8 @@ pub struct UserHitRow {
 /// (Privacy upgrade over legacy: email is NOT searchable - FINDINGS #16.)
 /// A one-character word matches only a whole word of the username or
 /// display name, as in course search (UX-238: `c` is not every «…c…»).
+/// Both sides go through `search_fold`, so «Айгерим» typed on a Russian
+/// keyboard finds «Әйгерім».
 pub async fn search_users(
     pool: &PgPool,
     query: &str,
@@ -278,9 +280,11 @@ pub async fn search_users(
         r#"SELECT id AS "id: UserId", username, display_name, avatar_key
            FROM users
            WHERE status = 'active'
-             AND (username ILIKE $1 ESCAPE '\' OR display_name ILIKE $1 ESCAPE '\')
+             AND (search_fold(username) LIKE search_fold($1) ESCAPE '\'
+                  OR search_fold(display_name) LIKE search_fold($1) ESCAPE '\')
              AND search_matches(username || ' ' || display_name, ARRAY[]::text[], $4, ARRAY[]::text[])
-           ORDER BY (username ILIKE $2 ESCAPE '\' OR display_name ILIKE $2 ESCAPE '\') DESC, username, id
+           ORDER BY (search_fold(username) LIKE search_fold($2) ESCAPE '\'
+                     OR search_fold(display_name) LIKE search_fold($2) ESCAPE '\') DESC, username, id
            LIMIT $3 OFFSET $5"#,
         substring,
         prefix,
