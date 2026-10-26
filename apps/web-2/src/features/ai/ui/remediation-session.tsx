@@ -53,8 +53,9 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
       ) : null}
       {session.status === 'passed' ? (
         <ol className="flex flex-col gap-4">
-          {questions.map(question => (
-            <li key={question.prompt} className="flex flex-col gap-2">
+          {questions.map((question, index) => (
+            // Generated questions may repeat a prompt (other options): the position keeps each one.
+            <li key={`${index}:${question.prompt}`} className="flex flex-col gap-2">
               <MarkdownView content={question.prompt} />
               <AnswerKey question={question} />
             </li>
@@ -66,7 +67,7 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
           <ol className="flex flex-col gap-4">
             {questions.map((question, index) => (
               <RemediationAnswer
-                key={question.prompt}
+                key={`${index}:${question.prompt}`}
                 question={question}
                 number={index + 1}
                 value={answers[index] ?? ''}

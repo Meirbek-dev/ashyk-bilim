@@ -65,7 +65,10 @@ function Host({ reads }: { reads: () => number }) {
   return <RemediationGate activityId={ACTIVITY} invalidates={[HOST_KEY]} />
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 describe('RemediationGate (where the gate blocks the learner)', () => {
   test("B-AI-26 the blocked page shows this activity's session in place; passing it re-reads the host state", async () => {
@@ -95,5 +98,27 @@ describe('RemediationGate (where the gate blocks the learner)', () => {
     await userEvent.click(screen.getByRole('button', { name: m.ai_remediation_complete() }))
     await expect.element(screen.getByText(m.ai_remediation_result_passed({ score: formatPercent(100) }))).toBeVisible()
     await expect.poll(() => reads).toBeGreaterThan(before)
+  })
+
+  test('B-AI-26 two generated questions with the same prompt are both asked', async () => {
+    const errors = vi.spyOn(console, 'error')
+    const twice = session(ACTIVITY)
+    twice.test.questions = [0, 1].map(() => ({ prompt: 'Вопрос', answer: '', explanation: '' }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json([twice])),
+    )
+    const client = createQueryClient(async () => undefined)
+    client.setQueryData(sessionOptions().queryKey, user)
+    const screen = await renderInRouter(
+      <QueryClientProvider client={client}>
+        <Suspense fallback={null}>
+          <RemediationGate activityId={ACTIVITY} invalidates={[]} />
+        </Suspense>
+      </QueryClientProvider>,
+    )
+    await expect.element(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 2 }) })).toBeVisible()
+    await expect.element(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }) })).toBeVisible()
+    expect(errors.mock.calls.flat().join(' ')).not.toContain('same key')
   })
 })
