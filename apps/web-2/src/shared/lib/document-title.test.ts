@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 
-import { pageTitle } from './document-title'
+import { ogLocale, pageTitle, pageUrl } from './document-title'
 
 const ok = (title?: () => string) => ({ status: 'success', staticData: { title } })
 const apiError = (status: number) =>
@@ -31,4 +31,14 @@ describe('pageTitle', () => {
     expect(pageTitle([ok(), missing(notFound())])).toBe(m.platform_not_found_title())
     expect(pageTitle([ok(), { ...missing(apiError(403)), status: 'error' }])).toBe(m.platform_forbidden_title())
   })
+})
+
+test('a shared or indexed page names its path without the query, on the public origin, with its language', () => {
+  expect(pageUrl('https://bilim.kz', '/courses')).toBe('https://bilim.kz/courses')
+  expect(pageUrl('https://bilim.kz', '/courses/')).toBe('https://bilim.kz/courses')
+  expect(pageUrl('https://bilim.kz', '/')).toBe('https://bilim.kz/')
+  expect(pageUrl('https://bilim.kz', '')).toBe('https://bilim.kz/')
+  expect(pageUrl('https://bilim.kz', undefined)).toBe('https://bilim.kz/')
+  expect(ogLocale('kk')).toBe('kk_KZ')
+  expect(ogLocale('ru')).toBe('ru_RU')
 })

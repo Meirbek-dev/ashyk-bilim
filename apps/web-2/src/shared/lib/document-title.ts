@@ -56,6 +56,19 @@ export const siteOrigin = createIsomorphicFn()
   .server(() => serverEnv.publicOrigin)
   .client(() => new URL(document.baseURI).origin)
 
+/**
+ * The address a shared or indexed page goes by (`og:url`, `<link rel=canonical>`): the path without its query, so a
+ * catalog with filters or a page opened from a tracked link names one address. The language is not in URLs (cookie).
+ */
+export const pageUrl = (origin: string, pathname: string | undefined): string =>
+  // An index route's match path ends in «/» («/courses/»); the address the app serves has none.
+  `${origin}${pathname?.replace(/(.)\/$/, '$1') || '/'}`
+
+const OG_LOCALES = { ru: 'ru_RU', kk: 'kk_KZ', en: 'en_US' } as const
+
+/** `og:locale` of the interface language the page was rendered in. */
+export const ogLocale = (locale: keyof typeof OG_LOCALES): string => OG_LOCALES[locale]
+
 type PageMetaOptions = {
   /** The landing's own title (the platform name alone); else `documentTitle(name)`. */
   title?: string
