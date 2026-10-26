@@ -5,10 +5,16 @@ import { Link } from '#/shared/components/link'
 import { type SearchKind, searchCount } from '../model/catalog'
 import { searchKindLabels } from './kind-labels'
 
-type SearchKindsProps = { q: string; kinds: readonly SearchKind[]; results: SearchResults }
+type SearchKindsProps = {
+  q: string
+  kinds: readonly SearchKind[]
+  results: SearchResults
+  /** Sections with more hits than loaded: their count reads «50+». */
+  more: readonly SearchKind[]
+}
 
 /** The result sections as links (`?kind=`), each with its hit count: a filter in the URL, not tabs in state. */
-export function SearchKinds({ q, kinds, results }: SearchKindsProps) {
+export function SearchKinds({ q, kinds, results, more }: SearchKindsProps) {
   return (
     <nav aria-label={m.catalog_search_kinds_label()} className="flex overflow-x-auto border-b">
       <Link to="/search" search={{ q }} variant="tab" activeOptions={{ exact: true }}>
@@ -17,7 +23,7 @@ export function SearchKinds({ q, kinds, results }: SearchKindsProps) {
       {kinds.map(kind => (
         <Link key={kind} to="/search" search={{ q, kind }} variant="tab" activeOptions={{ exact: true }}>
           {searchKindLabels[kind]()}
-          <span className="ml-2 text-muted-foreground tabular-nums">{String(searchCount(results, kind))}</span>
+          <span className="ml-2 text-muted-foreground tabular-nums">{`${searchCount(results, kind)}${more.includes(kind) ? '+' : ''}`}</span>
         </Link>
       ))}
     </nav>

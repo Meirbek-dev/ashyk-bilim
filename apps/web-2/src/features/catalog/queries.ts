@@ -5,10 +5,11 @@ import {
   getPlatformOptions,
   listCoursesInfiniteQueryKey,
   listCoursesOptions,
+  searchInfiniteQueryKey,
   searchOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { listCourses } from '#/shared/api/gen/sdk.gen'
-import type { CourseId, CoursePage } from '#/shared/api/gen/types.gen'
+import { listCourses, search } from '#/shared/api/gen/sdk.gen'
+import type { CourseId, CoursePage, SearchResults } from '#/shared/api/gen/types.gen'
 
 import { type CoursesFilter, nextCoursesCursor, SEARCH_LIMIT } from './model/catalog'
 
@@ -51,5 +52,29 @@ export const coursesListOptions = (filter: CoursesFilter) => {
   })
 }
 
-/** One `search` answer holds every section; the full page and the palette differ only in the per-section cap. */
-export const searchResultsOptions = (q: string, limit: number = SEARCH_LIMIT) => searchOptions({ query: { q, limit } })
+/** One `search` answer holds every section: the palette's few hits per section. */
+export const searchResultsOptions = (q: string, limit: number) => searchOptions({ query: { q, limit } })
+
+/** The search page: every section a page at a time, the next page by the answer's `next_cursor` (B-CAT-07). */
+export const searchPagesOptions = (q: string) => {
+  const options = { query: { q, limit: SEARCH_LIMIT } }
+  return infiniteQueryOptions<
+    SearchResults,
+    ApiError,
+    InfiniteData<SearchResults>,
+    ReturnType<typeof searchInfiniteQueryKey>,
+    string | undefined
+  >({
+    queryKey: searchInfiniteQueryKey(options),
+    queryFn: async ({ pageParam, signal }) => {
+      const { data } = await search({
+        query: { ...options.query, ...(pageParam ? { cursor: pageParam } : {}) },
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    initialPageParam: undefined,
+    getNextPageParam: page => page.next_cursor ?? undefined,
+  })
+}

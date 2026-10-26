@@ -39,6 +39,7 @@
   "catalog_search_kind_lessons": "Lessons",
   "catalog_search_kind_collections": "Collections",
   "catalog_search_kind_users": "People",
+  "catalog_search_section_all": "All results in {section}",
   "catalog_palette_title": "Search or jump to",
   "catalog_palette_input": "Type a page or what you are looking for",
   "catalog_palette_empty": "Nothing found.",

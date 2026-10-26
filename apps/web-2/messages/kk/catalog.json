@@ -39,6 +39,7 @@
   "catalog_search_kind_lessons": "Сабақтар",
   "catalog_search_kind_collections": "Жинақтар",
   "catalog_search_kind_users": "Адамдар",
+  "catalog_search_section_all": "«{section}» бөліміндегі барлық нәтиже",
   "catalog_palette_title": "Іздеу және өту",
   "catalog_palette_input": "Қайда өту немесе не іздеу керек",
   "catalog_palette_empty": "Ештеңе табылмады.",

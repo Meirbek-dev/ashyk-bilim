@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { SearchResults } from '#/shared/api/gen/types.gen'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
@@ -8,8 +10,10 @@ import { CourseGrid } from './course-grid'
 import { LessonHits } from './lesson-hits'
 import { searchKindLabels } from './kind-labels'
 
-/** One section of the search answer: its heading and its hits, each a link to the object's page. */
-export function SearchSection({ kind, results }: { kind: SearchKind; results: SearchResults }) {
+type SearchSectionProps = { kind: SearchKind; results: SearchResults; footer?: ReactNode }
+
+/** One section of the search answer: its heading, its hits (each a link to the object's page), then `footer`. */
+export function SearchSection({ kind, results, footer }: SearchSectionProps) {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-xl font-semibold">{searchKindLabels[kind]()}</h2>
@@ -46,6 +50,7 @@ export function SearchSection({ kind, results }: { kind: SearchKind; results: Se
           )}
         </DataList>
       ) : null}
+      {footer}
     </section>
   )
 }

@@ -34,8 +34,27 @@ export const searchKinds = (signedIn: boolean): readonly SearchKind[] =>
 /** How many hits a section of the answer has: `lessons` is absent when there are none (CONTRACT-REQ-G-6). */
 export const searchCount = (results: SearchResults, kind: SearchKind) => results[kind]?.length ?? 0
 
-/** `search` answers at most this many hits per section, without a cursor. */
+/** The search page asks for this many hits per section a page (the server's cap). */
 export const SEARCH_LIMIT = 50
+
+/**
+ * The pages of one search, merged: each section's hits in order, and the sections that may have more (their last page
+ * was full while the server still offers a cursor). Every section pages by the same cursor (hits shown per section).
+ */
+export function mergeSearchPages(pages: readonly SearchResults[], limit: number) {
+  const last = pages.at(-1)
+  const results: SearchResults = {
+    courses: pages.flatMap(page => page.courses),
+    lessons: pages.flatMap(page => page.lessons ?? []),
+    collections: pages.flatMap(page => page.collections),
+    users: pages.flatMap(page => page.users),
+    next_cursor: last?.next_cursor ?? null,
+  }
+  const more: readonly SearchKind[] = SEARCH_KINDS.filter(
+    kind => last?.next_cursor != null && searchCount(last, kind) >= limit,
+  )
+  return { results, more }
+}
 /** The palette shows a few hits per section and a link to the full search. */
 export const PALETTE_LIMIT = 5
 

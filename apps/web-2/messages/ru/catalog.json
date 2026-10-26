@@ -39,6 +39,7 @@
   "catalog_search_kind_lessons": "Уроки",
   "catalog_search_kind_collections": "Коллекции",
   "catalog_search_kind_users": "Люди",
+  "catalog_search_section_all": "Все результаты в разделе «{section}»",
   "catalog_palette_title": "Поиск и переходы",
   "catalog_palette_input": "Куда перейти или что найти",
   "catalog_palette_empty": "Ничего не найдено.",

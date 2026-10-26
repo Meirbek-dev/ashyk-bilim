@@ -9,6 +9,7 @@ import {
   courseState,
   landingLead,
   localizedPlatform,
+  mergeSearchPages,
   nextCoursesCursor,
   paletteCourseTarget,
   paletteSections,
@@ -146,4 +147,28 @@ test('B-CAT-07 lessons found by name are a section, counted as none when the ans
     title: 'JOIN',
   } as const
   expect(searchCount({ ...results, lessons: [lesson] }, 'lessons')).toBe(1)
+})
+
+const user = (id: string) => ({ id, username: id, display_name: id, avatar_key: null })
+
+test('B-CAT-07 a search pages every section: hits add up per section, and only a full last page has more', () => {
+  const lesson = {
+    activity_id: 'a',
+    activity_type: 'video',
+    course_id: 'c',
+    course_name: 'SQL',
+    title: 'JOIN',
+  } as const
+  const first = { courses: [], collections: [], users: [user('u1'), user('u2')], lessons: [lesson], next_cursor: '2' }
+  const merged = mergeSearchPages([first], 2)
+  expect(merged.more).toEqual(['users'])
+  expect(searchCount(merged.results, 'users')).toBe(2)
+  // The next page: one more person, no lessons (the section is absent), no cursor.
+  const second = { courses: [], collections: [], users: [user('u3')], next_cursor: null }
+  const all = mergeSearchPages([first, second], 2)
+  expect(all.results.users.map(each => each.id)).toEqual(['u1', 'u2', 'u3'])
+  expect(searchCount(all.results, 'lessons')).toBe(1)
+  expect(all.more).toEqual([])
+  // A full section on the last page of all is not "more".
+  expect(mergeSearchPages([{ ...first, next_cursor: null }], 2).more).toEqual([])
 })
