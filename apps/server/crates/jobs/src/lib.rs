@@ -23,6 +23,7 @@ use futures::future::BoxFuture;
 use sqlx::PgPool;
 use sqlx::postgres::PgListener;
 use tokio_util::sync::CancellationToken;
+use tracing::Instrument;
 
 /// A typed job handler. Implementations live in `ab-jobs::handlers` (one
 /// module per domain) and are registered in [`Worker::register`].
@@ -222,9 +223,15 @@ fn finished(
 /// failed resolution leaves the row `running`: this task ending stops its
 /// heartbeat, and the reaper recovers the job.
 async fn execute(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: ClaimedJob) {
+    // `instrument`, never `span.enter()` across an await: a guard held while
+    // the task moves between runtime threads corrupts the span stacks, and a
+    // later log line panics in tracing-subscriber ("tried to clone Id(..),
+    // but no span exists") - it stopped the dev worker's job loop for hours.
     let span = tracing::info_span!("job", id = %job.id, kind = %job.kind, attempt = job.attempts);
-    let _guard = span.enter();
+    run(pool, handler, job).instrument(span).await;
+}
 
+async fn run(pool: &PgPool, handler: Option<Arc<dyn JobHandler>>, job: ClaimedJob) {
     let Some(handler) = handler else {
         tracing::error!("no handler registered - dead-lettering");
         let resolved = queue::mark_dead(pool, &job, "no handler registered for kind").await;

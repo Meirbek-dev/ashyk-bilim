@@ -572,11 +572,20 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::ai::ExecuteRunHandler::new(ai))?;
     let cancel = CancellationToken::new();
-    let handle = tokio::spawn(worker.run(cancel.clone()));
-    shutdown_signal().await;
-    cancel.cancel();
-    handle.await??;
-    Ok(())
+    let mut handle = tokio::spawn(worker.run(cancel.clone()));
+    tokio::select! {
+        () = shutdown_signal() => {
+            cancel.cancel();
+            handle.await??;
+            Ok(())
+        }
+        // The job loop ended on its own (a panic): exit so the supervisor
+        // restarts the worker, instead of an idle process that runs no jobs.
+        ended = &mut handle => {
+            ended??;
+            anyhow::bail!("the job loop stopped without a shutdown signal")
+        }
+    }
 }
 
 /// `admin analytics-rollup`: rebuild every UTC day in `[from, to]`
