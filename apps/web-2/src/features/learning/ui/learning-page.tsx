@@ -28,7 +28,8 @@ export function LearningPage() {
   return (
     <ListPage
       title={m.learning_title()}
-      count={m.learning_course_count({ count: runs.length })}
+      // No courses: the empty state says so, a «0 курсов» beside the title would repeat it.
+      count={runs.length > 0 ? m.learning_course_count({ count: runs.length }) : undefined}
       primaryAction={
         held > 0 ? (
           <RouterLink
