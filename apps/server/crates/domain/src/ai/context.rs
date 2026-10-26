@@ -336,11 +336,12 @@ pub async fn submission_bundle(
                 .as_ref()
                 .map_or_else(|| "unknown".to_owned(), |a| a.kind.to_string())
         ),
-        format!("Final score: {}", shown(submission.final_score)),
-        format!("Auto score: {}", shown(submission.auto_score)),
+        format!("Final score: {} (percent)", shown(submission.final_score)),
+        format!("Auto score: {} (percent)", shown(submission.auto_score)),
         format!("Status: {}", submission.status),
         format!("Answers: {}", json_snippet(&submission.answers, 1800)),
     ];
+    lines.extend(question_scores(pool, assessment.as_ref(), grading.as_ref()).await?);
     lines.extend(grading.map(|g| format!("Grading: {}", json_snippet(&g, 1800))));
     let mut sources = vec![source(
         format!("submission:{}", submission.id),
@@ -558,6 +559,59 @@ fn file_line(file: &FileRow, text: Option<&str>) -> String {
     line
 }
 
+/// The «Question scores» line of a graded submission; `None` without an assessment or a grading to read.
+async fn question_scores(
+    pool: &PgPool,
+    assessment: Option<&ab_db::assessments::AssessmentRow>,
+    grading: Option<&serde_json::Value>,
+) -> Result<Option<String>> {
+    let (Some(assessment), Some(grading)) = (assessment, grading) else {
+        return Ok(None);
+    };
+    let scales = ab_db::assessments::list_items(pool, assessment.id).await?;
+    Ok(item_points_line(
+        &GradingBreakdown::from_value(grading),
+        &scales,
+    ))
+}
+
+/// Each question's score as the teacher grades it, «0.5 of 1 points»: the grading JSON keeps an item's share of the
+/// 100-point final score («7.14 of 14.29»), which the model quoted to teachers whose review form reads «(из 1)».
+fn item_points_line(
+    grading: &GradingBreakdown,
+    items: &[ab_db::assessments::ItemRow],
+) -> Option<String> {
+    let points = |v: f64| format!("{}", (v * 100.0).round() / 100.0);
+    let parts: Vec<String> = items
+        .iter()
+        .filter_map(|item| {
+            let graded = grading.items.iter().find(|g| g.item_id == item.id)?;
+            let earned = if graded.max_score > 0.0 {
+                graded.score / graded.max_score * item.max_score
+            } else {
+                0.0
+            };
+            let waiting = if graded.needs_manual_review {
+                " (awaiting the teacher's score)"
+            } else {
+                ""
+            };
+            Some(format!(
+                "«{}»: {} of {} points{waiting}",
+                item.title,
+                points(earned),
+                points(item.max_score)
+            ))
+        })
+        .collect();
+    (!parts.is_empty()).then(|| {
+        format!(
+            "Question scores: {} (each on the question's own scale: quote these, not the Grading shares of 100)",
+            parts.join("; ")
+        )
+    })
+}
+
 fn opt_num(value: Option<f64>) -> String {
     value.map_or_else(|| "None".to_owned(), |v| v.to_string())
 }
@@ -604,6 +658,7 @@ const CONTEXT_LABELS: &[&str] = &[
     "Final score:",
     "Auto score:",
     "Status:",
+    "Question scores:",
     "Grading:",
 ];
 
@@ -701,6 +756,32 @@ pub fn validate_citations(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn question_scores_are_on_each_questions_own_scale() {
+        let item = |title: &str, max_score: f64| ab_db::assessments::ItemRow {
+            id: ab_core::id::AssessmentItemId::new(),
+            assessment_id: ab_core::id::AssessmentId::new(),
+            position: 0,
+            kind: ab_core::assessments::ItemKind::OpenText,
+            title: title.into(),
+            body: serde_json::Value::Null,
+            max_score,
+            section_label: None,
+            difficulty: None,
+            tags: vec![],
+            outcome_ids: vec![],
+            estimated_minutes: None,
+        };
+        let items = [item("Discriminant", 2.0), item("Explain", 1.0)];
+        let grading = GradingBreakdown::from_value(&serde_json::json!({ "items": [
+            { "item_id": items[0].id, "score": 0.0, "max_score": 28.57 },
+            { "item_id": items[1].id, "score": 7.14, "max_score": 14.29, "needs_manual_review": true },
+        ]}));
+        let line = item_points_line(&grading, &items).unwrap();
+        assert!(line.starts_with("Question scores: «Discriminant»: 0 of 2 points; «Explain»: 0.5 of 1 points (awaiting"), "{line}");
+        assert!(item_points_line(&GradingBreakdown::default(), &items).is_none());
+    }
 
     #[test]
     fn assessment_settings_read_as_words_not_json() {
