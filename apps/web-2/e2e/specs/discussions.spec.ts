@@ -105,13 +105,10 @@ test('B-DSC-15 a draft with text asks before the page is left; an editor emptied
   const editor = (await openComposer(page)).getByRole('textbox')
   await editor.fill('Черновик вопроса')
   const about = page.getByRole('link', { name: m.platform_tab_about({}, ru) })
-  let asked = false
-  page.once('dialog', dialog => {
-    asked = true
-    void dialog.dismiss()
-  })
+  const leave = page.getByRole('alertdialog', { name: m.ui_unsaved_leave({}, ru) })
   await about.click()
-  await expect.poll(() => asked).toBe(true)
+  await leave.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(leave).toBeHidden()
   await expect(page).toHaveURL(/\/discussions$/)
   // Emptied the way a person does it. (A `fill('')` right after the dismissed confirm was not always taken by
   // ProseMirror under CI load: the draft stayed and every later click was asked about again.)

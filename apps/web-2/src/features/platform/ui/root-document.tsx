@@ -3,6 +3,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 
 import { getLocale } from '#/paraglide/runtime'
 import { useSessionExpired } from '#/shared/api/held-session'
+import { LeaveConfirmHost } from '#/shared/components/leave-confirm'
 import { modeAttribute, readAppearance, themeHref } from '#/shared/lib/appearance'
 import { Toaster } from '#/shared/ui/toast'
 
@@ -15,7 +16,8 @@ const SessionExpiredNotice = lazy(() =>
  * The HTML shell. Rendered even when the root route fails, so errors keep the document intact.
  * Theme and mode come from cookies during SSR: the first paint has the right colors, no script needed. A signed-in
  * user's theme is the account's (the session the root route read; absent when that read failed).
- * The Toaster mounts eagerly on the client so its provider subscribes before the first action emits a toast.
+ * The Toaster mounts eagerly on the client so its provider subscribes before the first action emits a toast; the
+ * leave-page question (`confirmLeave`) is drawn here too.
  */
 export function RootDocument({ children }: { children: ReactNode }) {
   const session = useRouteContext({ from: rootRouteId, select: context => context.session })
@@ -31,6 +33,7 @@ export function RootDocument({ children }: { children: ReactNode }) {
         {children}
         <ClientOnly>
           <Toaster />
+          <LeaveConfirmHost />
           <Suspense fallback={null}>{expired ? <SessionExpiredNotice /> : null}</Suspense>
         </ClientOnly>
         <Scripts />

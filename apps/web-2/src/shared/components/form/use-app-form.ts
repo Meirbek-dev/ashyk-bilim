@@ -5,6 +5,7 @@ import { setGlobalMessage, type GenericSchema } from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { confirmLeave } from '#/shared/components/leave-confirm'
 import { validationMessage } from '#/shared/i18n/validation'
 
 import { CheckboxField } from './checkbox-field'
@@ -108,7 +109,8 @@ export function useAppForm<T>(
   useBlocker({
     disabled: !unsaved,
     enableBeforeUnload: unsaved,
-    shouldBlockFn: () => !window.confirm(m.ui_unsaved_leave()),
+    shouldBlockFn: async () =>
+      !(await confirmLeave({ title: m.ui_unsaved_leave(), consequence: m.ui_unsaved_leave_consequence() })),
   })
   return form
 }

@@ -67,11 +67,14 @@ test('B-SET-18 a picked theme and mode show at once; leaving without Save puts b
   await expect(html).toHaveAttribute('data-theme', 't3-chat')
   await expect(html).toHaveAttribute('data-mode', 'dark')
   await expect(page.locator('link[href="/themes/t3-chat.css"]')).toHaveCount(1)
-  page.once('dialog', dialog => void dialog.accept())
   await page
     .getByRole('navigation')
     .getByRole('link', { name: m.platform_nav_home({}, ru) })
     .first()
+    .click()
+  await page
+    .getByRole('alertdialog', { name: m.ui_unsaved_leave({}, ru) })
+    .getByRole('button', { name: m.ui_leave_confirm({}, ru) })
     .click()
   await expect(page).toHaveURL(/\/home$/)
   await expect(html).toHaveAttribute('data-theme', String(before))

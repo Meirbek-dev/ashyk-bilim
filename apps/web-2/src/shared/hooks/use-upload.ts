@@ -7,6 +7,7 @@ import type { FinalizedUpload } from '#/shared/api/gen/types.gen'
 import { isSessionLost } from '#/shared/api/errors'
 import { holdSession } from '#/shared/api/held-session'
 import { releaseSessionHold } from '#/shared/api/query-client'
+import { confirmLeave } from '#/shared/components/leave-confirm'
 import {
   checkUpload,
   upload,
@@ -64,7 +65,8 @@ function useLeaveGuard(active: boolean) {
   useBlocker({
     disabled: !active,
     enableBeforeUnload: active,
-    shouldBlockFn: () => !window.confirm(m.ui_file_leave()),
+    shouldBlockFn: async () =>
+      !(await confirmLeave({ title: m.ui_file_leave(), consequence: m.ui_file_leave_consequence() })),
   })
 }
 

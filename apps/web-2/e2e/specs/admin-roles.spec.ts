@@ -155,13 +155,10 @@ test("B-ADM-23 a role save over someone else's change asks, keeps the input and 
   await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
   await expect(name).toHaveValue('E2E мой вариант')
   // Nothing was saved: leaving the page still asks (a refused 412 is not a save).
-  let asked = false
-  page.once('dialog', dialog => {
-    asked = true
-    void dialog.dismiss()
-  })
+  const leave = page.getByRole('alertdialog', { name: m.ui_unsaved_leave({}, ru) })
   await page.getByRole('link', { name: m.admin_roles_all({}, ru) }).click()
-  await expect.poll(() => asked).toBe(true)
+  await leave.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(leave).toBeHidden()
   await expect(page).toHaveURL(new RegExp(`/admin/roles/${slug}$`))
 
   await general.getByRole('button', { name: m.ui_save({}, ru) }).click()

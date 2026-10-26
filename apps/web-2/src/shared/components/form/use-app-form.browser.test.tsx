@@ -1,10 +1,12 @@
 import { useNavigate } from '@tanstack/react-router'
 import * as v from 'valibot'
 import { afterEach, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { Button } from '#/shared/ui/button'
 
+import { LeaveConfirmHost } from '../leave-confirm'
 import { renderInRouter } from '../testing'
 import { useAppForm } from './use-app-form'
 
@@ -54,23 +56,33 @@ function GuardedForm({ save, onChange, rules = schema, footer = false }: Guarded
 
 afterEach(() => vi.restoreAllMocks())
 
-test('a guarded form asks before a link drops an unsaved edit, and not once it is saved', async () => {
-  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+test('a guarded form asks in the app dialog before a link drops an unsaved edit, and not once it is saved', async () => {
   const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
-  const screen = await renderInRouter(<GuardedForm save={save} />)
+  const screen = await renderInRouter(
+    <>
+      <GuardedForm save={save} />
+      <LeaveConfirmHost />
+    </>,
+  )
+  const dialog = page.getByRole('alertdialog')
   await screen.getByRole('button', { name: text.leave }).click()
-  expect(confirm).not.toHaveBeenCalled()
+  await expect.element(dialog).not.toBeInTheDocument()
 
   await screen.getByLabelText(text.name).fill('Geometry')
   await expect.element(screen.getByLabelText(text.name)).toHaveValue('Geometry')
   await screen.getByRole('button', { name: text.leave }).click()
-  await vi.waitFor(() => expect(confirm).toHaveBeenCalledWith(m.ui_unsaved_leave()))
+  await expect.element(dialog.getByRole('heading', { name: m.ui_unsaved_leave() })).toBeVisible()
+  await expect.element(dialog).toHaveAccessibleDescription(m.ui_unsaved_leave_consequence())
+  // «Отмена» has the focus: Enter or Escape keeps the page and the edit.
+  await expect.element(dialog.getByRole('button', { name: m.ui_cancel() })).toHaveFocus()
+  await dialog.getByRole('button', { name: m.ui_cancel() }).click()
+  await expect.element(dialog).not.toBeInTheDocument()
+  await expect.element(screen.getByLabelText(text.name)).toHaveValue('Geometry')
 
-  confirm.mockClear()
   await screen.getByRole('button', { name: text.save }).click()
   await vi.waitFor(() => expect(save).toHaveBeenCalled())
   await screen.getByRole('button', { name: text.leave }).click()
-  expect(confirm).not.toHaveBeenCalled()
+  await expect.element(dialog).not.toBeInTheDocument()
 })
 
 test('onChange sees the values after each edit of a field, and not a submit', async () => {
