@@ -32,7 +32,13 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   const { data: state, dataUpdatedAt } = useSuspenseQuery(learnerStateOptions(courseId))
   const [contentsOpen, setContentsOpen] = useState(false)
   const mark = useMutation(markOptions(useQueryClient(), courseId))
-  useHotkey(shortcuts.contents.hotkey, () => setContentsOpen(open => !open))
+  useHotkey(shortcuts.contents.hotkey, () => {
+    // A wide screen shows the contents beside the page: O moves there instead of opening a second copy in a sheet.
+    const panel = document.querySelector<HTMLElement>(`nav[aria-label="${m.ui_contents()}"]`)
+    if (panel?.offsetParent)
+      return (panel.querySelector<HTMLElement>('[aria-current="page"]') ?? panel.querySelector('a'))?.focus()
+    setContentsOpen(open => !open)
+  })
   const found = locate(state, activityId)
   // Not in the outline: unpublished (staff preview it from its own read), or unpublished while open.
   if (!found)

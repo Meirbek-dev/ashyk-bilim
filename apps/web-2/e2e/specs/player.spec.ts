@@ -264,6 +264,9 @@ test('B-PLY-04 B-PLY-13 shortcuts move between activities, mark one done and ope
   await expect(help.getByText(m.player_shortcut_next({}, ru))).toBeVisible()
   await expect(help.getByText(m.player_shortcut_mark({}, ru))).toBeVisible()
   await page.keyboard.press('Escape')
+  const panel = page.getByRole('navigation', { name: m.ui_contents({}, ru) })
+  await page.keyboard.press('o')
+  await expect(panel.getByRole('link', { name: /Page 1/ })).toBeFocused()
 
   // A phone: the contents are a sheet; picking an activity closes it.
   await page.setViewportSize({ width: 390, height: 844 })
