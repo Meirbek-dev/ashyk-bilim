@@ -52,7 +52,8 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   }, [expired])
   return (
     <AttemptFrame
-      saveStatus={<SaveIndicator status={draft.status} />}
+      // Saving shut for good (time, due date, archive): the alert says why; a «Сохраняется» there would never end.
+      saveStatus={draft.closed ? null : <SaveIndicator status={draft.status} />}
       actions={
         <RunnerActions
           left={left}
