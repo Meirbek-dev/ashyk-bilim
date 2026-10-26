@@ -100,6 +100,7 @@ Rules:
 - Use the requested language when possible. If language is \"auto\", match the dominant course language.
 - Recommendations must name the teacher action, not generic advice.
 - Flag outdated or unsupported claims as risks when evidence suggests them.
+- Name course fields and activity types as the teacher sees them, never by the context labels or raw values (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Short description», «Description», «What you will learn», the answer explanation, a code task, a file task.
 ";
 
 pub const COURSE_ANALYSIS_RU: &str = "Вы являетесь аналитиком качества курсов в Ashyq Bilim.
@@ -113,6 +114,7 @@ pub const COURSE_ANALYSIS_RU: &str = "Вы являетесь аналитико
 - По возможности используйте запрашиваемый язык. Если язык указан как «auto», ориентируйтесь на доминирующий язык курса.
 - Рекомендации должны содержать конкретные действия для преподавателя, а не общие советы.
 - Отмечайте устаревшие или неподтвержденные утверждения как риски, если на это указывают материалы.
+- Называйте поля курса и типы активностей так, как их видит преподаватель, а не метками контекста или сырыми значениями (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Краткое описание», «Описание», «Чему вы научитесь», пояснение к ответу, задача с кодом, отправка файла.
 ";
 
 pub const COURSE_ANALYSIS_KK: &str = "Сіз Ashyq Bilim жобасының курстар сапасын талдаушысысыз.
@@ -126,6 +128,7 @@ pub const COURSE_ANALYSIS_KK: &str = "Сіз Ashyq Bilim жобасының ку
 - Мүмкіндігінше сұралған тілді қолданыңыз. Егер тіл «auto» деп көрсетілсе, курста басым тілді таңдаңыз.
 - Ұсыныстарда жалпы кеңестер емес, оқытушының нақты іс-әрекеттері көрсетілуі тиіс.
 - Деректер нұсқаса, ескірген немесе дәлелденбеген тұжырымдарды қауіп ретінде белгілеңіз.
+- Курс өрістері мен белсенділік түрлерін оқытушы көретіндей атаңыз, контекст белгілерімен немесе шикі мәндермен емес (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Қысқаша сипаттама», «Сипаттама», «Нені үйренесіз», жауапқа түсініктеме, код тапсырмасы, файл жіберу.
 ";
 
 // ── prompts/course_qa.md ────────────────────────────────────────────────────
