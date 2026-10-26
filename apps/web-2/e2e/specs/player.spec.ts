@@ -140,7 +140,7 @@ test('B-PLY-03 B-PLY-05 B-PLY-06 B-PLY-07 B-PLY-08 a learner reads, marks a page
   await neighbours(page)
     .getByRole('link', { name: `${m.player_prev({}, ru)}: Page 1` })
     .click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Page 1' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Page 1' })).toBeFocused() // read out, not the link
   await expect(page.getByText(m.player_empty({}, ru))).toBeVisible()
   await expect(neighbours(page).getByRole('link')).toHaveText([m.player_next({}, ru)])
 })

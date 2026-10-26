@@ -70,7 +70,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       wide={(entry.activity_type === 'document' || entry.activity_type === 'video') && !entry.blocked_reason}
     >
       <article className="flex flex-col gap-gutter">
-        <ActivityHeader type={entry.activity_type} title={entry.title} />
+        <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
         {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
         {lesson && staffPreview(state) ? <PreviewNote /> : null}
         {entry.blocked_reason ? (
