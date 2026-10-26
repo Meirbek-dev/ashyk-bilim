@@ -4,20 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 
 import { ApiError } from '#/shared/api/errors'
 
-import type { CodeAnswer } from '../model/arena'
+import { stoppedSave, type CodeAnswer } from '../model/arena'
 import { attemptsOptions, saveOptions } from '../queries'
 
 /** Typing settles this long before the code is saved; the server takes one save per 5 s per draft. */
 const SAVE_WAIT_MS = 5000
 
-export type DraftStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict'
+export type DraftStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict' | 'archived'
 
 type DraftIds = { assessmentId: string; itemId: string; draftId: string }
 
 /**
  * The code in the server draft (B-COD-06): saved after a pause, one request at a time, with `If-Match` of the cached
- * draft (each answer replaces it). A refused save keeps the code for the next try; 409 (another tab saved, or the
- * attempt is closed) stops saving until the page is read again. Leaving sends what still waits.
+ * draft (each answer replaces it). A refused save keeps the code for the next try; 409 (another tab saved, the attempt
+ * is closed, or the course archived) stops saving until the page is read again. Leaving sends what still waits.
  */
 export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
   const queryClient = useQueryClient()
@@ -57,7 +57,8 @@ export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
   function settled(error: unknown, answer?: CodeAnswer) {
     sending.current = false
     if (answer) unsaved.current ??= answer
-    if (error instanceof ApiError && error.status === 409) setStatus('conflict')
+    const stopped = stoppedSave(error)
+    if (stopped) setStatus(stopped)
     else if (error && !(error instanceof ApiError && error.status === 429)) setStatus('failed')
     else if (unsaved.current) again.current()
     else setStatus('saved')
@@ -72,7 +73,7 @@ export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
     status,
     change: (answer: CodeAnswer) => {
       unsaved.current = answer
-      if (status !== 'conflict') setStatus('dirty')
+      if (status !== 'conflict' && status !== 'archived') setStatus('dirty')
       later.maybeExecute()
     },
     /** The hand-in carries the code itself: nothing may be saved after it (the attempt is closed then). */

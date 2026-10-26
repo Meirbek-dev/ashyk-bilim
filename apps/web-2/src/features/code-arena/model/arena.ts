@@ -87,3 +87,12 @@ export const isRunnerDown = (error: unknown): boolean =>
 
 /** The platform's languages; null while there is no list (off or down). */
 export const languagesIn = (runner: Runner) => (runner.state === 'ready' ? runner.languages : null)
+
+/**
+ * A refused draft save that stops saving until the page is read again (B-COD-06): another tab saved (409), or the
+ * course went to the archive (409 `course-archived`: no other tab, nothing saves any more). Null: try again later.
+ */
+export function stoppedSave(error: unknown): 'conflict' | 'archived' | null {
+  if (!(error instanceof ApiError) || error.status !== 409) return null
+  return error.code === 'course-archived' ? 'archived' : 'conflict'
+}

@@ -16,6 +16,7 @@ import {
   testsPassed,
   upsert,
   starterReset,
+  stoppedSave,
 } from './arena'
 import { caseVerdict } from './verdict'
 
@@ -176,4 +177,11 @@ describe('code arena entry', () => {
     expect(lastHandedIn([draft, sent, graded])?.id).toBe('s2')
     expect(lastHandedIn([draft])).toBeUndefined()
   })
+})
+
+test('B-COD-06 a draft refused as saved elsewhere or in an archived course stops saving and says which', () => {
+  expect(stoppedSave(apiError(409, 'conflict'))).toBe('conflict')
+  expect(stoppedSave(apiError(409, 'course-archived'))).toBe('archived')
+  expect(stoppedSave(apiError(429, 'rate-limited'))).toBeNull()
+  expect(stoppedSave(null)).toBeNull()
 })

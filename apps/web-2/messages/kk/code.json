@@ -51,6 +51,7 @@
   "code_unsaved": "Сақталмаған өзгерістер бар",
   "code_save_failed": "Сақталмады",
   "code_save_conflict": "Нобай басқа қойындыда өзгерді: бетті жаңартыңыз.",
+  "code_save_archived": "Курс мұрағатта: код енді сақталмайды.",
   "code_run_title": "Іске қосу нәтижесі",
   "code_run_passed": "{total} ішінен {passed} өтті",
   "code_runs": "Менің іске қосуларым",

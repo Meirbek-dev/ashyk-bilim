@@ -51,6 +51,7 @@
   "code_unsaved": "Есть несохранённые изменения",
   "code_save_failed": "Не сохранено",
   "code_save_conflict": "Черновик изменён в другой вкладке: обновите страницу.",
+  "code_save_archived": "Курс в архиве: код больше не сохраняется.",
   "code_run_title": "Результат запуска",
   "code_run_passed": "Пройдено {passed} из {total}",
   "code_runs": "Мои запуски",
