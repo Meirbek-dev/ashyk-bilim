@@ -13,7 +13,7 @@ export const Route = createFileRoute('/_public/courses/')({
       ...coursesListOptions(coursesFilter(deps, context.session !== null)),
       staleTime: 'static',
     }),
-  staticData: { title: m.platform_nav_courses },
+  staticData: { title: m.platform_nav_courses, skeleton: 'grid' },
   head: () => ({ meta: pageMeta(m.platform_nav_courses(), m.catalog_landing_lead()) }),
   component: CoursesPage,
 })

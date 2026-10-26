@@ -11,6 +11,6 @@ export const Route = createFileRoute('/_public/collections/')({
     deps.q
       ? context.queryClient.query({ ...collectionsSearchOptions(deps.q), staleTime: 'static' })
       : context.queryClient.infiniteQuery({ ...collectionsListOptions(), staleTime: 'static' }),
-  staticData: { title: m.collections_title },
+  staticData: { title: m.collections_title, skeleton: 'grid' },
   component: CollectionsPage,
 })
