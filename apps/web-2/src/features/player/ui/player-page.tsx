@@ -72,7 +72,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       <article className="flex flex-col gap-gutter">
         <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
         {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
-        {lesson && staffPreview(state) ? <PreviewNote /> : null}
+        {lesson && staffPreview(state) ? <PreviewNote lesson /> : null}
         {entry.blocked_reason ? (
           <p className="text-muted-foreground">
             {entry.opens_at_unix

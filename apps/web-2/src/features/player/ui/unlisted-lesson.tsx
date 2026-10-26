@@ -29,7 +29,7 @@ export function UnlistedLesson({ courseId, activityId, title, aside }: UnlistedL
   return (
     <FocusPage back={<BackToCourse courseId={courseId} />} title={title} aside={aside}>
       <article className="flex flex-col gap-gutter">
-        <PreviewNote />
+        <PreviewNote lesson />
         <ActivityHeader type={activity.activity_type} title={activity.name} />
         <LessonContent activityId={activity.id} onVideoEnded={() => undefined} />
       </article>
