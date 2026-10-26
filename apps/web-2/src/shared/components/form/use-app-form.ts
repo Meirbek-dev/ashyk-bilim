@@ -102,6 +102,10 @@ export function useAppForm<T>(
       try {
         await onSubmit(value)
         setSaved(JSON.stringify(form.state.values))
+        // A refusal the caller placed under a field itself (a wrong code, a taken name: `form.setFieldMeta`) takes
+        // focus like a 422's field errors. The submit's own check has cleared the earlier ones.
+        if (Object.keys(form.fieldInfo).some(name => isField(name) && form.getFieldMeta(name)?.errorMap.onSubmit))
+          focusFirstInvalid(origin)
       } catch (error) {
         // The mutation keeps the error for the region alert; only the field errors are placed here.
         if (!(error instanceof ApiError)) return

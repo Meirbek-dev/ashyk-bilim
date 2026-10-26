@@ -67,8 +67,6 @@ export function useSignupForm() {
           const field = signupFieldOf(error)
           if (!field) throw error
           form.setFieldMeta(field, meta => ({ ...meta, errorMap: { ...meta.errorMap, onSubmit: presentError(error) } }))
-          // The keyboard and the screen reader land on what to fix, as after a 422 (useAppForm), not on the button.
-          requestAnimationFrame(() => document.querySelector<HTMLElement>(`form [name="${field}"]`)?.focus())
         }),
   })
   // A code placed under its field is not repeated as the form's message.

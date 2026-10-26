@@ -23,13 +23,18 @@ type GuardedFormProps = {
   rules?: v.GenericSchema<{ name: string }>
   /** Save sits outside the form and names it by id, like a dialog's footer button. */
   footer?: boolean
+  /** The submit places its own refusal under the field (a wrong code), as a caller's catch does. */
+  refuse?: boolean
 }
 
-function GuardedForm({ save, onChange, rules = schema, footer = false }: GuardedFormProps) {
+function GuardedForm({ save, onChange, rules = schema, footer = false, refuse = false }: GuardedFormProps) {
   const navigate = useNavigate()
   const form = useAppForm(rules, {
     defaultValues: { name: 'Algebra' },
-    onSubmit: save,
+    onSubmit: async () => {
+      await save()
+      if (refuse) form.setFieldMeta('name', meta => ({ ...meta, errorMap: { ...meta.errorMap, onSubmit: 'Wrong' } }))
+    },
     leaveGuard: true,
     onChange: value => onChange?.(value.name),
   })
@@ -124,3 +129,12 @@ test.each([false, true])(
     expect(save).not.toHaveBeenCalled()
   },
 )
+
+test('a refusal the submit places under a field itself (a wrong code) takes focus there, as a 422 does', async () => {
+  const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
+  const screen = await renderInRouter(<GuardedForm save={save} refuse />)
+  await screen.getByLabelText(text.name).fill('Geometry')
+  await screen.getByRole('button', { name: text.save }).click()
+  await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(text.name).element()))
+  await expect.element(screen.getByLabelText(text.name)).toHaveAttribute('aria-invalid', 'true')
+})
