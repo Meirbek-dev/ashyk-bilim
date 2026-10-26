@@ -116,6 +116,7 @@
   "grading_rubric": "Рубрика",
   "grading_criterion_score": "{label} (из {max})",
   "grading_rubric_total": "По рубрике: {percent}",
+  "grading_rubric_out_of_range": "По рубрике: баллы критерия — от 0 до его максимума",
   "grading_final_score": "Оценка, %",
   "grading_kpi_total": "Всего работ",
   "grading_show_works": "Показать работы",

@@ -114,6 +114,7 @@
   "grading_rubric": "Бағалау критерийлері",
   "grading_criterion_score": "{label} ({max} ішінен)",
   "grading_rubric_total": "Критерийлер бойынша: {percent}",
+  "grading_rubric_out_of_range": "Критерийлер бойынша: ұпай 0-ден критерийдің ең жоғарысына дейін",
   "grading_final_score": "Баға, %",
   "grading_kpi_total": "Барлық жұмыстар",
   "grading_show_works": "Жұмыстарды көрсету",

@@ -114,6 +114,7 @@
   "grading_rubric": "Rubric",
   "grading_criterion_score": "{label} (of {max})",
   "grading_rubric_total": "From the rubric: {percent}",
+  "grading_rubric_out_of_range": "From the rubric: a criterion takes 0 to its maximum",
   "grading_final_score": "Grade, %",
   "grading_kpi_total": "All submissions",
   "grading_show_works": "Show submissions",

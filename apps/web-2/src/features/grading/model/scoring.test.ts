@@ -64,6 +64,15 @@ describe('B-GRD-22 score rounding', () => {
       ]),
     ).toBe(25)
   })
+
+  test('B-GRD-32 a score above its maximum leaves no total to apply, not one that counts it as 0', () => {
+    expect(
+      typedItemsPercent([
+        { score: '7', max: 6 },
+        { score: '3', max: 4 },
+      ]),
+    ).toBeNull()
+  })
 })
 
 describe('B-GRD-12 score input', () => {

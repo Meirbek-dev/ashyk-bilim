@@ -43,8 +43,12 @@ export function itemsPercent(items: readonly { score: number; max: number }[]): 
   return roundScore((sumScores(items.map(item => item.score)) / max) * 100)
 }
 
-/** The item total of typed scores (a blank one counts 0); null until one is typed: «0 %» over an ungraded work read as a grade. */
+/**
+ * The item total of typed scores (a blank one counts 0); null until one is typed: «0 %» over an ungraded work read as
+ * a grade. Null too while one is out of range («7» of 6): counted as 0 it gave a wrong total to apply as the grade.
+ */
 export function typedItemsPercent(rows: readonly { score: string; max: number }[]): number | null {
+  if (rows.some(row => isScoreInputInvalid(row.score, row.max))) return null
   const scores = rows.map(row => parseScoreInput(row.score, row.max))
   if (scores.every(score => score === null)) return null
   return itemsPercent(rows.map((row, index) => ({ score: scores[index] ?? 0, max: row.max })))
