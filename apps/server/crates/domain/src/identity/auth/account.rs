@@ -163,16 +163,16 @@ impl IdentityService {
         self.mail(
             &pending.email,
             copy.subject,
-            &format!(
-                "<p>{greeting}</p>\
-                 <p>{code_line}: <strong>{code}</strong></p>\
-                 <p>{action}</p>\
-                 <p>{ignore}</p>",
-                greeting = mail::greeting(language, &html_escape(&current.display_name)),
-                code_line = copy.code_line,
-                code = pending.code,
-                action = copy.action,
-                ignore = copy.ignore,
+            &mail::layout(
+                language,
+                copy.subject,
+                &mail::code_body(
+                    language,
+                    &html_escape(&current.display_name),
+                    &copy,
+                    &pending.code,
+                    None,
+                ),
             ),
             &pending.code,
         )
@@ -228,7 +228,13 @@ impl IdentityService {
         self.mail(
             &old,
             subject,
-            &format!("<p>{changed_line}</p><p>{not_you}</p>"),
+            &mail::layout(
+                language,
+                subject,
+                &format!(
+                    "<p style=\"margin:0 0 16px\">{changed_line}</p><p style=\"margin:0\">{not_you}</p>"
+                ),
+            ),
             "",
         )
         .await;

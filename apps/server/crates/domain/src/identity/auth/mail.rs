@@ -13,6 +13,64 @@ pub(super) struct CodeCopy {
     pub ignore: &'static str,
 }
 
+const FONT: &str = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+const NAVY: &str = "#162c4a";
+const MUTED: &str = "#5b6675";
+
+/// What a code email says under the platform name: the greeting, the code set
+/// large (easy to copy on a phone), then the button to the web page when there
+/// is a link, else what to do with the code, and the "not you" line. `name` is
+/// already HTML-escaped; `link` too.
+pub(super) fn code_body(
+    language: Language,
+    name: &str,
+    copy: &CodeCopy,
+    code: &str,
+    link: Option<&str>,
+) -> String {
+    let next = link.map_or_else(
+        || format!("<p style=\"margin:0 0 16px\">{}</p>", copy.action),
+        |href| {
+            format!(
+                "<p style=\"margin:0 0 24px\"><a href=\"{href}\" style=\"display:inline-block;\
+                 background:{NAVY};color:#ffffff;text-decoration:none;font-weight:600;\
+                 padding:12px 20px;border-radius:8px\">{}</a></p>",
+                copy.action
+            )
+        },
+    );
+    format!(
+        "<p style=\"margin:0 0 16px\">{greeting}</p>\
+         <p style=\"margin:0 0 8px\">{code_line}:</p>\
+         <p style=\"margin:0 0 24px;font:600 28px/1.2 ui-monospace,Menlo,Consolas,monospace;\
+         letter-spacing:4px;color:{NAVY}\"><strong>{code}</strong></p>\
+         {next}\
+         <p style=\"margin:0;font-size:13px;color:{MUTED}\">{ignore}</p>",
+        greeting = greeting(language, name),
+        code_line = copy.code_line,
+        ignore = copy.ignore,
+    )
+}
+
+/// The page every account email is sent in: the platform name over a white
+/// card with the message, in the recipient's language (`lang`), with inline
+/// styles and tables only (mail clients drop `<style>` and flex). `body` is HTML.
+pub(super) fn layout(language: Language, subject: &str, body: &str) -> String {
+    format!(
+        "<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\">\
+         <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{subject}</title></head>\
+         <body style=\"margin:0;padding:0;background:#f3f5f8\">\
+         <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" \
+         style=\"background:#f3f5f8;padding:24px 12px\"><tr><td align=\"center\">\
+         <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" \
+         style=\"max-width:520px;background:#ffffff;border:1px solid #e2e7ee;border-radius:12px\">\
+         <tr><td style=\"padding:24px 28px 0;font:700 18px/1.3 {FONT};color:{NAVY}\">Ashyq Bilim</td></tr>\
+         <tr><td style=\"padding:16px 28px 28px;font:15px/1.6 {FONT};color:#1f2a37\">{body}</td></tr>\
+         </table></td></tr></table></body></html>",
+        lang = language.code(),
+    )
+}
+
 pub(super) fn greeting(language: Language, name: &str) -> String {
     match language {
         Language::Ru => format!("Здравствуйте, {name}!"),
@@ -131,5 +189,27 @@ mod tests {
         }
         assert_eq!(greeting(Language::Kk, "Айгерим"), "Сәлеметсіз бе, Айгерим!");
         assert!(email_changed(Language::En, "a@b.kz").1.contains("a@b.kz"));
+    }
+
+    #[test]
+    fn a_code_email_is_a_branded_page_in_the_recipients_language() {
+        let copy = verification(Language::Kk);
+        let body = code_body(
+            Language::Kk,
+            "Айгерім",
+            &copy,
+            "123456",
+            Some("https://x.kz/kz/verify?c=1"),
+        );
+        let page = layout(Language::Kk, copy.subject, &body);
+        assert!(page.starts_with("<!doctype html><html lang=\"kk\">"));
+        assert!(page.contains("Ashyq Bilim</td>"));
+        assert!(page.contains("<strong>123456</strong>"));
+        assert!(page.contains("href=\"https://x.kz/kz/verify?c=1\""));
+        assert!(page.contains(copy.action) && page.contains(copy.ignore));
+        // Without a link (address change) the action is an instruction, not a button.
+        let change = email_change(Language::Ru);
+        let body = code_body(Language::Ru, "Ann", &change, "654321", None);
+        assert!(!body.contains("<a ") && body.contains(change.action));
     }
 }

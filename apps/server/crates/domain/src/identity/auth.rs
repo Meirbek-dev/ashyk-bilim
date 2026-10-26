@@ -961,18 +961,16 @@ impl IdentityService {
             query_encode(to.email),
             path = mail.link().path(language),
         );
-        let copy = mail.copy(language.unwrap_or(Language::Ru));
-        let html = format!(
-            "<p>{greeting}</p>\
-             <p>{code_line}: <strong>{code}</strong></p>\
-             <p><a href=\"{link}\">{action}</a></p>\
-             <p>{ignore}</p>",
-            greeting = mail::greeting(language.unwrap_or(Language::Ru), &html_escape(to.name)),
-            code_line = copy.code_line,
-            action = copy.action,
-            ignore = copy.ignore,
-            link = html_escape(&link),
+        let language = language.unwrap_or(Language::Ru);
+        let copy = mail.copy(language);
+        let body = mail::code_body(
+            language,
+            &html_escape(to.name),
+            &copy,
+            code,
+            Some(&html_escape(&link)),
         );
+        let html = mail::layout(language, copy.subject, &body);
         if let Err(err) = mailer.send(to.email, copy.subject, &html).await {
             tracing::warn!(%err, user_id = %to.id, "{} email not sent", mail.what());
         }
