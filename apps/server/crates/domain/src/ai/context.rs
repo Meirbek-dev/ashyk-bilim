@@ -705,10 +705,24 @@ pub fn clean_report_citations(artifact: &mut serde_json::Value) {
 /// The text after a `Content: ` label when there is one, else every line that is not a header (a header joined to
 /// the quote with " ... " keeps the quote).
 #[must_use]
+/// The question-scores line (`item_points_line`), «"Q": 0 of 1 points (awaiting the teacher's score)»: English made
+/// for the model, quoted back as a source it read to teachers as an untranslated line.
+fn is_points_line(raw: &str) -> bool {
+    raw.contains("(awaiting the teacher's score)")
+        || raw.split("»: ").skip(1).any(|rest| {
+            let mut words = rest.split_whitespace();
+            matches!(
+                (words.next(), words.next(), words.next(), words.next()),
+                (Some(earned), Some("of"), Some(max), Some(unit))
+                    if earned.parse::<f64>().is_ok() && max.parse::<f64>().is_ok() && unit.starts_with("point")
+            )
+        })
+}
+
 pub fn clean_excerpt(raw: &str) -> String {
     // An assessment's settings line (`settings_text`) is the model's English summary, not a quote for a reader:
     // the citation keeps its label only.
-    if raw.contains("; pass mark ") {
+    if raw.contains("; pass mark ") || is_points_line(raw) {
         return String::new();
     }
     if let Some(at) = raw.rfind("Content: ") {
@@ -863,6 +877,17 @@ Learning outcomes: Циклы, функции"
         assert_eq!(
             clean_excerpt("quiz (graded automatically); pass mark 60%; unlimited attempts"),
             ""
+        );
+        assert_eq!(
+            clean_excerpt(
+                "«Объясните решение»: 0 of 1 points (awaiting the teacher's score); «Анкета»: 0 of 1 points"
+            ),
+            ""
+        );
+        assert_eq!(clean_excerpt("«Корни»: 0.5 of 1 points"), "");
+        assert_eq!(
+            clean_excerpt("«Корни»: ответ 3 и 4"),
+            "«Корни»: ответ 3 и 4"
         );
         let mut report = serde_json::json!({ "citations": [{ "excerpt": "Description: Курс. About: Для 9 класса." }] });
         clean_report_citations(&mut report);
