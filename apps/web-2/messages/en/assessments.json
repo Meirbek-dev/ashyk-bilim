@@ -143,6 +143,7 @@
   "assessments_exception_remove_confirm": "Remove",
   "assessments_exception_removed": "Exception removed",
   "assessments_exception_saved": "Exception saved",
+  "assessments_exception_empty": "Set attempts, a personal deadline or «No late penalty».",
   "assessments_field_learner": "Learner",
   "assessments_learner_pick": "Choose a learner",
   "assessments_field_attempts_override": "Number of attempts",

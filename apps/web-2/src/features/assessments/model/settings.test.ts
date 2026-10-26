@@ -126,6 +126,13 @@ describe('exceptions and publishing', () => {
     expect(v.is(overrideFormSchema, { ...form, user_id: '' })).toBe(false)
   })
 
+  test('B-ASM-21 an exception must change attempts, the deadline or the late penalty', () => {
+    const bare = { user_id: 'u', attempts: '', due_at: '', waive: false, note: 'n' }
+    expect(v.is(overrideFormSchema, bare)).toBe(false)
+    expect(v.is(overrideFormSchema, { ...bare, attempts: '2' })).toBe(true)
+    expect(v.is(overrideFormSchema, { ...bare, waive: true })).toBe(true)
+  })
+
   test('B-ASM-22 readiness: blockers come first', () => {
     const sorted = sortedIssues([issue('policy.due_at_past', 'warning'), issue('assessment.empty', 'blocker')])
     expect(sorted.map(row => row.code)).toEqual(['assessment.empty', 'policy.due_at_past'])

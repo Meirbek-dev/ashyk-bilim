@@ -143,6 +143,7 @@
   "assessments_exception_remove_confirm": "Алып тастау",
   "assessments_exception_removed": "Ерекшелік алынып тасталды",
   "assessments_exception_saved": "Ерекшелік сақталды",
+  "assessments_exception_empty": "Әрекеттерді, жеке мерзімді немесе «Кешіккені үшін айыппұлсыз» дегенді көрсетіңіз.",
   "assessments_field_learner": "Білім алушы",
   "assessments_learner_pick": "Білім алушыны таңдаңыз",
   "assessments_field_attempts_override": "Әрекет саны",

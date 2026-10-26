@@ -2,6 +2,7 @@ import * as v from 'valibot'
 
 import type { OverrideRequest, StudentOverride } from '#/shared/api/gen/types.gen'
 import { vOverrideRequest } from '#/shared/api/gen/valibot.gen'
+import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
 import { momentOf } from './moment'
@@ -11,7 +12,7 @@ import { momentOf } from './moment'
 
 export type OverrideForm = { user_id: string; attempts: string; due_at: string; waive: boolean; note: string }
 
-export const overrideFormSchema = v.object({
+const overrideObject = v.object({
   user_id: v.pipe(v.string(), v.nonEmpty()),
   attempts: v.pipe(v.string(), v.trim(), v.regex(/^\d*$/u)),
   due_at: v.pipe(
@@ -21,6 +22,18 @@ export const overrideFormSchema = v.object({
   waive: v.boolean(),
   note: vOverrideRequest.entries.note.wrapped,
 })
+
+/** An exception changes something: attempts, a deadline or the late penalty (a bare one listed the learner, no terms). */
+export const overrideFormSchema = v.pipe(
+  overrideObject,
+  v.forward(
+    v.check(
+      (form: v.InferOutput<typeof overrideObject>) => form.attempts.trim() !== '' || form.due_at !== '' || form.waive,
+      () => m.assessments_exception_empty(),
+    ),
+    ['attempts'],
+  ),
+)
 
 export const blankOverride: OverrideForm = { user_id: '', attempts: '', due_at: '', waive: false, note: '' }
 

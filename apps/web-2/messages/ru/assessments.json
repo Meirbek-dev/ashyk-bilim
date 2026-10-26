@@ -143,6 +143,7 @@
   "assessments_exception_remove_confirm": "Убрать",
   "assessments_exception_removed": "Исключение убрано",
   "assessments_exception_saved": "Исключение сохранено",
+  "assessments_exception_empty": "Задайте попытки, личный срок или «Без штрафа за опоздание».",
   "assessments_field_learner": "Учащийся",
   "assessments_learner_pick": "Выберите учащегося",
   "assessments_field_attempts_override": "Число попыток",
