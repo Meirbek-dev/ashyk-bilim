@@ -55,10 +55,12 @@ describe('learning model', () => {
     expect(orderRuns(runs).map(item => item.id)).toEqual(['mid', 'mid2', 'fresh', 'done', 'done2'])
   })
 
-  test('B-LRN-04 the card goes to the next activity until the course is completed', () => {
-    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x' })).toBe('x')
-    expect(nextActivity({ progress_pct: null, next_activity_id: 'x' })).toBe('x')
-    expect(nextActivity({ progress_pct: 100, next_activity_id: 'x' })).toBeNull()
-    expect(nextActivity({ progress_pct: 40, next_activity_id: null })).toBeNull()
+  test('B-LRN-04 the card goes to the next activity until the course is completed or archived', () => {
+    const open = { archived_at_unix: null }
+    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x', course: open })).toBe('x')
+    expect(nextActivity({ progress_pct: null, next_activity_id: 'x', course: open })).toBe('x')
+    expect(nextActivity({ progress_pct: 100, next_activity_id: 'x', course: open })).toBeNull()
+    expect(nextActivity({ progress_pct: 40, next_activity_id: null, course: open })).toBeNull()
+    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x', course: { archived_at_unix: 1 } })).toBeNull()
   })
 })

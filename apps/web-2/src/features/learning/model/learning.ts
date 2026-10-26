@@ -29,6 +29,13 @@ export const countByState = (runs: readonly Enrollment[]): Record<RunState, numb
   return counts
 }
 
-/** Where "Continue"/"Start" goes: the server's next activity of a course not yet completed; null means the course page. */
-export const nextActivity = (run: Pick<Enrollment, 'progress_pct' | 'next_activity_id'>): string | null =>
-  runState(run) === 'completed' ? null : run.next_activity_id
+type NextOf = Pick<Enrollment, 'progress_pct' | 'next_activity_id'> & {
+  course: Pick<Enrollment['course'], 'archived_at_unix'>
+}
+
+/**
+ * Where "Continue"/"Start" goes: the server's next activity of a course not yet completed; null means the course page.
+ * An archived course takes no more work, so it opens its page too.
+ */
+export const nextActivity = (run: NextOf): string | null =>
+  runState(run) === 'completed' || run.course.archived_at_unix ? null : run.next_activity_id

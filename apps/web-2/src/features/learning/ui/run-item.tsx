@@ -89,7 +89,7 @@ export function RunItem({ run }: { run: Enrollment }) {
               params={{ courseId: run.course_id }}
               className={buttonVariants({ variant: 'secondary' })}
             >
-              {/* No next activity (none published yet): "Start" would promise what the course page cannot give. */}
+              {/* No next activity (none published yet, or archived): "Start" would promise what the course cannot give. */}
               {m.learning_action_open()}
             </RouterLink>
           )}
