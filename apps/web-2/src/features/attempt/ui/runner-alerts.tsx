@@ -52,9 +52,11 @@ export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: Run
               ? m.attempt_due_up()
               : expired === 'time'
                 ? m.attempt_time_up()
-                : gateCode(closed)
-                  ? presentError(closed)
-                  : m.attempt_closed()}
+                : gateCode(closed) === 'course-archived'
+                  ? m.attempt_closed_archived()
+                  : gateCode(closed)
+                    ? presentError(closed)
+                    : m.attempt_closed()}
           </ErrorAlert>
           <Button variant="outline" size="sm" onClick={refresh}>
             {m.attempt_refresh()}

@@ -268,3 +268,11 @@ describe('attempt question view', () => {
     expect(extraPrompt(item('q'))).toBeNull()
   })
 })
+
+describe('archived course', () => {
+  test('B-ATT-15 an archived course shuts saving and handing in for good: not «saved by someone else»', () => {
+    expect(saveOutcome(apiError(409, 'course-archived'))).toBe('closed')
+    expect(submitOutcome(apiError(409, 'course-archived'))).toBe('closed')
+    expect(gateCode(apiError(409, 'course-archived'))).toBe('course-archived')
+  })
+})

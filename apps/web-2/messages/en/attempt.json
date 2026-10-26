@@ -73,6 +73,7 @@
   "attempt_days_clock": "{days}d {clock}",
   "attempt_time_up": "Time is up: the attempt is being submitted",
   "attempt_closed": "Saving is closed: time is up or the deadline has passed. Answers are no longer accepted.",
+  "attempt_closed_archived": "The course was archived: answers are no longer saved or handed in.",
   "attempt_changed": "The quiz has changed: review your answers and submit again",
   "attempt_violations": "Violations: {count} of {threshold}",
   "attempt_violations_count": "Violations: {count}",

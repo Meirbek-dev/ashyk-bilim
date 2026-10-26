@@ -73,6 +73,7 @@
   "attempt_days_clock": "{days} д {clock}",
   "attempt_time_up": "Время вышло: попытка сдаётся автоматически",
   "attempt_closed": "Сохранение закрыто: время вышло или срок сдачи прошёл. Ответы больше не принимаются.",
+  "attempt_closed_archived": "Курс перенесён в архив: ответы больше не сохраняются и не сдаются.",
   "attempt_changed": "Тест изменился: проверьте ответы и сдайте снова",
   "attempt_violations": "Нарушений: {count} из {threshold}",
   "attempt_violations_count": "Нарушений: {count}",

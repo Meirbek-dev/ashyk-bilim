@@ -157,18 +157,27 @@ export const WARN_SECONDS = 300
 export type SaveOutcome = 'conflict' | 'throttled' | 'closed' | 'gone' | 'network' | 'failed'
 export function saveOutcome(error: unknown): SaveOutcome {
   if (!(error instanceof ApiError) || error.status >= 500) return 'network'
-  if (error.status === 409) return 'conflict'
+  // An archived course answers 409 too, but nothing saves any more: not a draft saved elsewhere.
+  if (error.status === 409) return error.code === 'course-archived' ? 'closed' : 'conflict'
   if (error.status === 429) return 'throttled'
   if (error.status === 403) return 'closed'
   if (error.status === 404) return 'gone'
   return 'failed'
 }
 
-const GATE_CODES: readonly ErrorCode[] = ['attempt-time-expired', 'attempt-past-due', 'remediation-required']
+const GATE_CODES: readonly ErrorCode[] = [
+  'attempt-time-expired',
+  'attempt-past-due',
+  'remediation-required',
+  'course-archived',
+]
 
-/** Why the gate shut, when a 403 names it (`attempt-time-expired`...); a plain `forbidden` names nothing. */
+/**
+ * Why the gate shut, when the refusal names it (a 403 `attempt-time-expired`..., the 409 `course-archived`); a plain
+ * `forbidden` names nothing.
+ */
 export const gateCode = (error: unknown): ErrorCode | null =>
-  error instanceof ApiError && error.status === 403 && GATE_CODES.includes(error.code) ? error.code : null
+  error instanceof ApiError && GATE_CODES.includes(error.code) ? error.code : null
 
 /** The one save indicator has exactly three states (B-ATT-09): no network wins, then anything still queued. */
 export type SaveStatus = 'saved' | 'saving' | 'offline'
@@ -190,7 +199,7 @@ export const retryDelayMs = (error: unknown): number =>
 export type SubmitOutcome = 'network' | 'reread' | 'closed' | 'failed'
 export function submitOutcome(error: unknown): SubmitOutcome {
   if (!(error instanceof ApiError) || error.status >= 500) return 'network'
-  if (error.status === 409) return 'reread'
+  if (error.status === 409) return error.code === 'course-archived' ? 'closed' : 'reread'
   if (error.status === 403) return 'closed'
   return 'failed'
 }
