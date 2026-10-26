@@ -88,8 +88,8 @@ export async function ensureAttempt(
   void reading.catch(() => null)
   void attempt?.catch(() => null)
   const { entry } = await ensureEntry(queryClient, courseId, activityId)
-  // Closed to the learner (scheduled, or restricted to other groups): its test cannot be read, so the player's card says it
-  // (when it opens) instead of «not found» under a link that card itself shows.
+  // Closed to the learner (scheduled, or restricted to other groups): its test cannot be read, so the player's card
+  // says why (and when it opens) instead of «not found» under a link that card itself shows.
   const assessment = await reading.catch((error: unknown) => {
     if (entry.blocked_reason) throw redirect({ to: '/learn/$courseId/$activityId', params: { courseId, activityId } })
     return missing(error)
