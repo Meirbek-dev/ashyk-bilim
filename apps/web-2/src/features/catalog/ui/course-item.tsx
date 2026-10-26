@@ -1,3 +1,5 @@
+import { Award } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 import type { Course, CourseListItem } from '#/shared/api/gen/types.gen'
 import { CourseCover } from '#/shared/components/course-cover'
@@ -17,7 +19,7 @@ type CourseItemProps = { course: Course & Partial<Pick<CourseListItem, 'authors'
 
 /**
  * One course card: its cover (thumbnail or ornament), name (the whole card opens the course), description, authors,
- * the signed-in learner's progress, date, and a badge for unusual states. Search hits are plain `Course`s: no
+ * the signed-in learner's progress, date, a badge for unusual states and one when finishing it earns a certificate. Search hits are plain `Course`s: no
  * authors or progress there.
  */
 export function CourseItem({ course, level = 2 }: CourseItemProps) {
@@ -36,6 +38,12 @@ export function CourseItem({ course, level = 2 }: CourseItemProps) {
             </Link>
           </Heading>
           {state ? <StatusBadge tone="neutral">{stateLabels[state]()}</StatusBadge> : null}
+          {course.certificate_offered ? (
+            <StatusBadge tone="info">
+              <Award aria-hidden data-icon="inline-start" />
+              {m.catalog_course_certificate()}
+            </StatusBadge>
+          ) : null}
         </div>
         {authors ? (
           <p className="line-clamp-1 text-sm wrap-anywhere text-muted-foreground">

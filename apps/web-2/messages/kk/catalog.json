@@ -23,6 +23,7 @@
   "catalog_sort_progress": "Алдымен басталғандар",
   "catalog_sort_updated": "Алдымен жаңалары",
   "catalog_sort_name": "Атауы бойынша",
+  "catalog_course_certificate": "Сертификатпен",
   "catalog_course_updated": "Жаңартылды: {date}",
   "catalog_course_state_unpublished": "Жарияланбаған",
   "catalog_course_state_archived": "Мұрағатта",

@@ -23,6 +23,7 @@
   "catalog_sort_progress": "In progress first",
   "catalog_sort_updated": "Newest first",
   "catalog_sort_name": "By name",
+  "catalog_course_certificate": "Certificate",
   "catalog_course_updated": "Updated {date}",
   "catalog_course_state_unpublished": "Not published",
   "catalog_course_state_archived": "Archived",

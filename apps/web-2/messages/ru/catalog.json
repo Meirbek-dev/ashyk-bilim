@@ -23,6 +23,7 @@
   "catalog_sort_progress": "Сначала начатые",
   "catalog_sort_updated": "Сначала новые",
   "catalog_sort_name": "По названию",
+  "catalog_course_certificate": "С сертификатом",
   "catalog_course_updated": "Обновлено {date}",
   "catalog_course_state_unpublished": "Не опубликован",
   "catalog_course_state_archived": "В архиве",
