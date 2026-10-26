@@ -17,7 +17,7 @@ export function BottomBar({ session, workspace }: { session: SessionInfo; worksp
   return (
     <nav
       aria-label={m.platform_nav_label()}
-      className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch gap-1 border-t bg-sidebar px-2 py-0.5 text-sidebar-foreground lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch gap-0.5 border-t bg-sidebar px-1 py-0.5 text-sidebar-foreground lg:hidden"
     >
       <NavSections session={session} workspace={workspace} render={barItems} />
     </nav>

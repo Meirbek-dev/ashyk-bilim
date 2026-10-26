@@ -189,3 +189,24 @@ test('on a phone the bottom bar marks «Ещё» while a section behind it is op
   await page.goto('/admin/users')
   await expect(more).not.toHaveAttribute('aria-current', 'page')
 })
+
+// 360 px is the common Android width; kk and en have the longest labels («Жетістіктер», «Achievements»).
+for (const locale of ['kk', 'en'] as const) {
+  test(`on a 360 px phone in ${locale} every bottom bar item fits on the screen`, async ({
+    page,
+    context,
+    signInAs,
+    baseURL,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await signInAs('student')
+    await context.addCookies([{ name: 'ab_locale', value: locale, url: String(baseURL) }])
+    await page.goto('/home')
+    const items = page.getByRole('navigation', { name: m.platform_nav_label({}, { locale }) }).getByRole('link')
+    await expect(items.last()).toBeVisible()
+    for (const item of await items.all()) {
+      const box = await item.boundingBox()
+      expect(box && box.x >= 0 && box.x + box.width <= 360, await item.innerText()).toBe(true)
+    }
+  })
+}
