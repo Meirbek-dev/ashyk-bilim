@@ -41,6 +41,10 @@ export function PublishPage() {
             <Link to="/courses/$courseId" params={{ courseId }}>
               {m.studio_publish_open_page()}
             </Link>
+            {/* The step after publishing: a first course has nobody on it yet (UX-admin first-run). */}
+            <Link to="/teach/courses/$courseId/learners" params={{ courseId }}>
+              {m.studio_roster_title()}
+            </Link>
           </p>
         ) : null}
         {/* An archived course is read-only: what blocks publishing is moot until it is restored. */}
