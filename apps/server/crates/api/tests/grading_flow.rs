@@ -1952,6 +1952,21 @@ async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
         subs.push(sub);
     }
     let override_path = format!("/api/v2/assessments/{id}/overrides/{}", bob.user_id);
+    // An exception that gives nothing (a note alone) is refused.
+    let empty = app
+        .post_as(
+            &teacher,
+            &override_path,
+            &serde_json::json!({ "note": "just a note" }),
+        )
+        .await;
+    assert_eq!(
+        empty.status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "{}",
+        empty.text()
+    );
+    assert!(empty.text().contains("empty-override"), "{}", empty.text());
     let granted = app
         .post_as(
             &teacher,

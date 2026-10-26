@@ -109,6 +109,24 @@ pub struct OverrideInput {
 }
 
 impl OverrideInput {
+    /// A new exception must change something for the learner: attempts, a
+    /// due date or the late penalty (a note alone listed a row that did
+    /// nothing). An edit may clear them all (a revoked waiver, BUG-297).
+    fn validate_new(&self) -> Result<()> {
+        if self.max_attempts_override.is_none()
+            && self.due_at_override.is_none()
+            && !self.waive_late_penalty
+        {
+            return Err(Error::validation(vec![FieldError {
+                field: "max_attempts_override".into(),
+                code: "empty-override".into(),
+                message: "an override must set attempts, a due date or waive the late penalty"
+                    .into(),
+            }]));
+        }
+        self.validate()
+    }
+
     /// Legacy ceilings: at most [`MAX_ATTEMPTS`] attempts by override.
     fn validate(&self) -> Result<()> {
         if self
@@ -558,7 +576,7 @@ impl AssessmentsService {
     ) -> Result<Override> {
         let assessment = self.load_for_edit(actor, id).await?;
         Self::not_own(actor, user_id)?;
-        input.validate()?;
+        input.validate_new()?;
         if let Some(e) = Self::unknown_user(&self.pool, user_id, "user_id").await? {
             return Err(Error::validation(vec![e]));
         }
