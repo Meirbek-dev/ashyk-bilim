@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/collections/$collectionId/edit')({
   loader: ({ context, params }) => ensureCollection(context.queryClient, params.collectionId, 'update'),
-  staticData: { title: m.collections_edit_title },
+  staticData: { title: m.collections_edit_title, notFoundTitle: m.collections_not_found },
   component: CollectionEditPage,
   notFoundComponent: CollectionNotFound,
 })

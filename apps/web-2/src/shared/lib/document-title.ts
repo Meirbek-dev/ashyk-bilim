@@ -1,6 +1,8 @@
+import { isNotFound } from '@tanstack/react-router'
 import { createIsomorphicFn } from '@tanstack/react-start'
 
 import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
 import { serverEnv } from '#/shared/lib/env.server'
 
 import { contentUrl } from './content-url'
@@ -10,6 +12,34 @@ export const documentTitle = (name?: string | null): string =>
   name ? `${name} · ${m.platform_brand()}` : m.platform_brand()
 
 type TitledMatch = { staticData: { title?: () => string } }
+
+type HeadMatch = {
+  status: string
+  error?: unknown
+  staticData: { title?: () => string; notFoundTitle?: () => string }
+}
+
+const failedTitle = ({ error, staticData }: HeadMatch) => {
+  const missing = isNotFound(error) || (error instanceof ApiError && error.status === 404)
+  if (missing) return (staticData.notFoundTitle ?? m.platform_not_found_title)()
+  if (error instanceof ApiError && error.status === 403) return m.platform_forbidden_title()
+  return m.platform_error_title()
+}
+
+/**
+ * The page's name for the root's document title. The deepest route with a title names the document; a route's own
+ * head may still override it. A page that could not show its object says so instead, as the page itself does
+ * («Пользователь не найден», else «Страница не найдена»; «Нет доступа»), not the name of its tab. A tab names its
+ * section too («Учащиеся · Аналитика»): its parent route's title follows its own.
+ */
+export const pageTitle = (matches: readonly HeadMatch[]): string | undefined => {
+  const failed = matches.find(match => match.status === 'notFound' || match.status === 'error')
+  if (failed) return failedTitle(failed)
+  const page = matches.findLast(match => match.staticData.title)
+  const name = page?.staticData.title?.()
+  const section = page ? matches[matches.indexOf(page) - 1]?.staticData.title?.() : undefined
+  return name && section ? `${name} · ${section}` : name
+}
 
 /**
  * A tab's document title: the open tab before its object («Журнал · Python · Ashyq Bilim»), so browser tabs and

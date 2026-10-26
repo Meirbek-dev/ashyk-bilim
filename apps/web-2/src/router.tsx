@@ -13,6 +13,8 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     /** The screen's name: the document title, a layout's heading. */
     title?: () => string
+    /** What the document title says when the route's object is missing, as its notFoundComponent does. */
+    notFoundTitle?: () => string
     /** 'focus': the route draws the focus layout (FocusPage) itself and the app shell steps aside (spec 5.2). */
     layout?: 'focus'
     /** A layout's tabs, one child route each; the English label is the URL segment (spec 5.2). */

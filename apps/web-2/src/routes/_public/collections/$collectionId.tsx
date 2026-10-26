@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_public/collections/$collectionId')({
     const collection = await ensureCollection(context.queryClient, params.collectionId)
     return { name: collection.name, summary: markdownSummary(collection.description), image: collection.cover_key }
   },
-  staticData: { title: m.platform_page_collection },
+  staticData: { title: m.platform_page_collection, notFoundTitle: m.collections_not_found },
   // A collection is shared as a link: its name, description and cover make the preview (like a course's).
   head: ({ loaderData }) => ({
     meta: loaderData ? pageMeta(loaderData.name, loaderData.summary, { imageKey: loaderData.image }) : [],

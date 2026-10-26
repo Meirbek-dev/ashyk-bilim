@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_public/courses/$courseId')({
     const course = await ensureCoursePage(context.queryClient, params.courseId, context.session)
     return { name: course.name, summary: markdownSummary(course.description), image: course.thumbnail_key }
   },
-  staticData: { title: m.platform_page_course },
+  staticData: { title: m.platform_page_course, notFoundTitle: m.course_not_found },
   head: ({ loaderData }) => ({
     meta: loaderData ? pageMeta(loaderData.name, loaderData.summary, { imageKey: loaderData.image }) : [],
   }),

@@ -19,15 +19,3 @@ export function certificateHead({ holder, course, certificate }: VerifiedCertifi
     { property: 'og:description', content: description },
   ]
 }
-
-/**
- * The verify routes' head: the certificate's preview, or, for a code that matches none, «Сертификат не найден» in the
- * tab as on the page (not the generic «Страница не найдена»). Any other failure keeps the root's title.
- */
-export const verifyHead = ({ loaderData, match }: { loaderData?: VerifiedCertificate; match: { status: string } }) => ({
-  meta: loaderData
-    ? certificateHead(loaderData)
-    : match.status === 'notFound'
-      ? [{ title: documentTitle(m.certificates_not_found()) }]
-      : [],
-})

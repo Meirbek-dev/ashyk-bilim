@@ -1,0 +1,34 @@
+import { notFound } from '@tanstack/react-router'
+import { describe, expect, test } from 'vite-plus/test'
+
+import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
+
+import { pageTitle } from './document-title'
+
+const ok = (title?: () => string) => ({ status: 'success', staticData: { title } })
+const apiError = (status: number) =>
+  new ApiError({ status, code: 'not-found', fieldErrors: [], requestId: null, retryAfter: null })
+
+const missing = (error: unknown, notFoundTitle?: () => string) => ({
+  status: 'notFound',
+  error,
+  staticData: { title: m.platform_page_user, notFoundTitle },
+})
+
+describe('pageTitle', () => {
+  test('names the deepest titled page, after its section', () => {
+    expect(pageTitle([ok(), ok(m.platform_page_user)])).toBe(m.platform_page_user())
+    expect(pageTitle([ok(m.collections_title), ok(m.collections_edit_title)])).toBe(
+      `${m.collections_edit_title()} · ${m.collections_title()}`,
+    )
+  })
+
+  // «Пользователь не найден» on the page, «Страница не найдена» in the tab and the history.
+  test('B-SET-19 B-CRT-02 a missing object reads in the tab as on its page', () => {
+    expect(pageTitle([ok(), missing(notFound(), m.settings_user_not_found)])).toBe(m.settings_user_not_found())
+    expect(pageTitle([ok(), missing(apiError(404), m.certificates_not_found)])).toBe(m.certificates_not_found())
+    expect(pageTitle([ok(), missing(notFound())])).toBe(m.platform_not_found_title())
+    expect(pageTitle([ok(), { ...missing(apiError(403)), status: 'error' }])).toBe(m.platform_forbidden_title())
+  })
+})

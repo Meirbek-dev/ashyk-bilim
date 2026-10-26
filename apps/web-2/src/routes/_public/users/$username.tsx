@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_public/users/$username')({
     const profile = await ensurePublicProfile(context.queryClient, params.username)
     return { name: profile.display_name || profile.username, summary: markdownSummary(profile.bio) }
   },
-  staticData: { title: m.platform_page_user },
+  staticData: { title: m.platform_page_user, notFoundTitle: m.settings_user_not_found },
   // A profile link previews with the person's name and bio (the brand card as the picture: an avatar is too small).
   head: ({ loaderData }) => ({
     meta: loaderData ? pageMeta(loaderData.name, loaderData.summary) : [],
