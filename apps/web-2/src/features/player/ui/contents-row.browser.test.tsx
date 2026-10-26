@@ -33,6 +33,14 @@ describe('ContentsRow', () => {
       .toBeVisible()
   })
 
+  test('B-PLY-20 work started and not handed in is named in the contents', async () => {
+    const row = <ContentsRow courseId="c" activity={quiz({ state: 'in_progress' })} onPick={vi.fn<() => void>()} />
+    const screen = await renderInRouter(row)
+    await expect
+      .element(screen.getByRole('link', { name: `Тест 1 ${m.player_state_in_progress()}`, exact: false }))
+      .toBeVisible()
+  })
+
   test('B-PLY-20 untouched work carries no state mark', async () => {
     const screen = await renderInRouter(<ContentsRow courseId="c" activity={quiz({})} onPick={vi.fn<() => void>()} />)
     await expect.element(screen.getByRole('link')).toBeVisible()
