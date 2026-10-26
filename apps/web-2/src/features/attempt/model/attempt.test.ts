@@ -16,6 +16,7 @@ import {
   isBlank,
   needsRemediation,
   protections,
+  asksTeacherForRetake,
   autoPart,
   resultVerdict,
   retryDelayMs,
@@ -87,6 +88,13 @@ describe('attempt model', () => {
       kind: 'blocked',
       reasons: ['PAST_DUE'],
     })
+  })
+
+  test('B-ATT-03 out of attempts, or past the due date after an attempt, leads to the teacher for a retake', () => {
+    expect(asksTeacherForRetake(state({ can_start: false, disabled_reasons: ['MAX_ATTEMPTS_REACHED'] }))).toBe(true)
+    const late = (attempts_used: number) => state({ can_start: false, disabled_reasons: ['PAST_DUE'], attempts_used })
+    expect(asksTeacherForRetake(late(1))).toBe(true)
+    expect(asksTeacherForRetake(late(0))).toBe(false)
   })
 
   test('B-ATT-23 a released score is passed or not against the effective passing score; nothing to judge otherwise', () => {

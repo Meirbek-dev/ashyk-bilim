@@ -14,7 +14,7 @@ import { presentError } from '#/shared/i18n/errors'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { Field, FieldLabel } from '#/shared/ui/field'
 
-import { entryAction, protections } from '../model/attempt'
+import { asksTeacherForRetake, entryAction, protections } from '../model/attempt'
 import { startOptions, stateOptions, submissionKey } from '../queries'
 import { ATTEMPT_PATH, ATTEMPT_ROUTE } from './attempt-frame'
 import { ContinueDraft } from './continue-draft'
@@ -61,8 +61,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
           ))}
           {state.opens_at_unix ? <li>{m.attempt_opens_at({ date: formatDateTime(state.opens_at_unix) })}</li> : null}
         </ul>
-        {/* As the player's card says it (B-PLY-19): a retake is the teacher's call, not a dead end. */}
-        {action.reasons.includes('MAX_ATTEMPTS_REACHED') ? (
+        {asksTeacherForRetake(state) ? (
           <p className="text-sm text-muted-foreground">
             {m.attempt_retake_if()}{' '}
             <Link to="/courses/$courseId/discussions" params={{ courseId: params.courseId }}>

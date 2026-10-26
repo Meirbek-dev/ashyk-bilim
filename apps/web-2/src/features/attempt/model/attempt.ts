@@ -27,6 +27,14 @@ export function entryAction(state: AttemptState): EntryAction {
 export const needsRemediation = (state: AttemptState) => state.disabled_reasons.includes('REMEDIATION_REQUIRED')
 
 /**
+ * A retake is the teacher's call, not a dead end (B-ATT-03, as the player's card B-PLY-19): after the last attempt, or
+ * after the due date once one was handed in.
+ */
+export const asksTeacherForRetake = (state: AttemptState) =>
+  state.disabled_reasons.includes('MAX_ATTEMPTS_REACHED') ||
+  (state.disabled_reasons.includes('PAST_DUE') && state.attempts_used > 0)
+
+/**
  * The automatically scored part of an attempt still under manual review (B-ATT-25): shown when the policy lets the
  * learner see scores at all; null once the grade is out or when nothing was auto-scored.
  */
