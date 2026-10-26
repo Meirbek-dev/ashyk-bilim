@@ -35,7 +35,7 @@
   "attempt_reason_course_archived": "Курс мұрағатта",
   "attempt_reason_past_due": "Тапсыру мерзімі өтті",
   "attempt_reason_max_attempts": "Әрекеттер таусылды",
-  "attempt_reason_time_expired": "Уақыт бітті",
+  "attempt_reason_time_expired": "Уақыт бітті: әрекет автоматты түрде тапсырылуда. Нәтижені көру үшін бетті бір минуттан кейін жаңартыңыз",
   "attempt_reason_remediation": "Алдымен өткен әрекеттегі қателерді талдаңыз",
   "attempt_reason_access": "Тест сізге тағайындалмаған",
   "attempt_reason_not_enrolled": "Тестті тапсыру үшін курсқа жазылыңыз",

@@ -35,7 +35,7 @@
   "attempt_reason_course_archived": "The course is archived",
   "attempt_reason_past_due": "The deadline has passed",
   "attempt_reason_max_attempts": "No attempts left",
-  "attempt_reason_time_expired": "Time is up",
+  "attempt_reason_time_expired": "Time is up: the attempt is being handed in automatically. Reload the page in a minute to see the result",
   "attempt_reason_remediation": "Review the mistakes of your last attempt first",
   "attempt_reason_access": "This quiz is not assigned to you",
   "attempt_reason_not_enrolled": "Enroll in the course to take this quiz",
