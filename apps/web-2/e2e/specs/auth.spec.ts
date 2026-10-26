@@ -114,7 +114,6 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up, is signed in at once and goes where 
   const field = (label: string) => page.getByLabel(label, { exact: true })
   await page.getByRole('button', { name: m.auth_signup_submit({}, ru) }).click()
   await expect(field(m.auth_signup_field_first_name({}, ru))).toHaveAttribute('aria-invalid', 'true')
-
   await field(m.auth_signup_field_first_name({}, ru)).fill('Айгерім')
   await field(m.auth_signup_field_last_name({}, ru)).fill('Сейітқызы')
   await field(m.auth_signup_field_organization({}, ru)).fill('E2E')
@@ -128,6 +127,7 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up, is signed in at once and goes where 
   expect(sent['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/)
   expect(sent['accept-language']).toBe('ru')
   await expect(page.getByText(m.errors_username_taken({}, ru))).toBeVisible()
+  await expect(field(m.auth_signup_field_username({}, ru))).toBeFocused()
   await expect(field(m.auth_signup_field_email({}, ru))).toHaveValue(account.email)
 
   await field(m.auth_signup_field_username({}, ru)).fill(account.username)
