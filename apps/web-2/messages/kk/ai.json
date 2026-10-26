@@ -211,6 +211,8 @@
   "ai_finding_state_dismissed": "Қабылданбады",
   "ai_finding_state_task_created": "Жоспарланды",
   "ai_feedback_draft": "Пікірге қосу",
+  "ai_feedback_gaps": "Нені қайталау керек:",
+  "ai_feedback_next": "Келесі қадам: {step}",
   "ai_gate_lesson": "Қателерді талдау сабағы: {title}",
   "ai_gate_score": "нәтиже {score}",
   "ai_filter_provider": "Провайдер немесе модель",

@@ -48,7 +48,7 @@ export function SubmissionAiBody({ submissionId, onFeedbackDraft }: BodyProps) {
       {analysis ? (
         <>
           <SubmissionAnalysisView analysis={analysis} />
-          {onFeedbackDraft ? (
+          {onFeedbackDraft && feedbackDraft(analysis.analysis) ? (
             <div>
               <Button variant="secondary" onClick={() => onFeedbackDraft(feedbackDraft(analysis.analysis))}>
                 {m.ai_feedback_draft()}

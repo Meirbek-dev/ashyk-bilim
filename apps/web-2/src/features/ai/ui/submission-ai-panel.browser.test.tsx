@@ -133,7 +133,9 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     const draft = vi.fn<(text: string) => void>()
     const screen = await render(draft)
     await userEvent.click(screen.getByRole('button', { name: m.ai_feedback_draft() }))
-    expect(draft.mock.lastCall?.[0]).toContain('Ошибки в циклах.')
     expect(draft.mock.lastCall?.[0]).toContain('**Условие выхода**')
+    expect(draft.mock.lastCall?.[0]).toContain(m.ai_feedback_next({ step: 'Повторить тему циклов' }))
+    // The summary is the teacher's reading of the work, not a text to the learner.
+    expect(draft.mock.lastCall?.[0]).not.toContain('Ошибки в циклах.')
   })
 })

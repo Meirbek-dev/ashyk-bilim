@@ -211,6 +211,8 @@
   "ai_finding_state_dismissed": "Dismissed",
   "ai_finding_state_task_created": "Planned",
   "ai_feedback_draft": "Add to feedback",
+  "ai_feedback_gaps": "What to go over again:",
+  "ai_feedback_next": "Next step: {step}",
   "ai_gate_lesson": "Remediation lesson: {title}",
   "ai_gate_score": "score {score}",
   "ai_filter_provider": "Provider or model",

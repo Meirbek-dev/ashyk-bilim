@@ -217,6 +217,8 @@
   "ai_finding_state_dismissed": "Отклонено",
   "ai_finding_state_task_created": "Запланировано",
   "ai_feedback_draft": "Добавить в отзыв",
+  "ai_feedback_gaps": "Что стоит повторить:",
+  "ai_feedback_next": "Следующий шаг: {step}",
   "ai_gate_lesson": "Урок разбора: {title}",
   "ai_gate_score": "результат {score}",
   "ai_filter_provider": "Провайдер или модель",

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { vAiRunKind, vAiRunStatus, vRemediationStatus } from '#/shared/api/gen/valibot.gen'
 
@@ -122,20 +123,19 @@ test('B-AI-27 a cited activity is found by source_uuid or by its activity:<id> c
   expect(citedActivity({ source_type: 'activity', citation_id: 'activity:../x' })).toBeNull()
 })
 
-test('B-AI-29 the feedback draft is the summary, each gap with what to work on, then the next step', () => {
+test('B-AI-29 the feedback draft tells the learner what to go over and the next step, not the teacher summary', () => {
   expect(
     feedbackDraft({
-      summary: 'Ошибки в циклах.',
       knowledge_gaps: [
         { concept: 'Условие выхода', remediation_goal: 'Повторить while' },
-        { concept: 'Счётчик', evidence: 'i не растёт' },
+        { concept: 'Счётчик', evidence: 'Учащийся не увеличивает i' },
       ],
       next_action: 'Решить задачу 2 заново',
     }),
   ).toBe(
-    'Ошибки в циклах.\n\n- **Условие выхода**: Повторить while\n- **Счётчик**: i не растёт\n\nРешить задачу 2 заново',
+    `${m.ai_feedback_gaps()}\n- **Условие выхода**: Повторить while\n- **Счётчик**\n\n${m.ai_feedback_next({ step: 'Решить задачу 2 заново' })}`,
   )
-  expect(feedbackDraft({ summary: 'Хорошо.' })).toBe('Хорошо.')
+  expect(feedbackDraft({})).toBe('')
 })
 
 describe('byPriority', () => {

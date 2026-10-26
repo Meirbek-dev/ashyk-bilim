@@ -1,3 +1,4 @@
+import { m } from '#/paraglide/messages'
 import type {
   Citation,
   Level,
@@ -87,13 +88,19 @@ export function readableExcerpt(excerpt: string | null | undefined): string {
 }
 
 /**
- * A feedback draft from a submission analysis (B-AI-29, the old web's text): the summary, then each knowledge gap
- * with what to work on (else its evidence), then the next step.
+ * A feedback draft from a submission analysis (B-AI-29), written to the learner: what to go over again (each gap
+ * with its goal) and the next step. The summary and a gap's evidence are not in it: they are the analysis for the
+ * teacher («учащийся верно решил…», «ждут оценки учителя»). Empty when the analysis names neither.
  */
-export function feedbackDraft(report: Pick<SubmissionAnalysisReport, 'summary' | 'knowledge_gaps' | 'next_action'>) {
-  const gaps = (report.knowledge_gaps ?? []).map(gap => {
-    const detail = gap.remediation_goal ?? gap.evidence
-    return detail ? `- **${gap.concept}**: ${detail}` : `- **${gap.concept}**`
-  })
-  return [report.summary.trim(), gaps.join('\n'), report.next_action?.trim()].filter(Boolean).join('\n\n')
+export function feedbackDraft(report: Pick<SubmissionAnalysisReport, 'knowledge_gaps' | 'next_action'>): string {
+  const gaps = (report.knowledge_gaps ?? []).map(gap =>
+    gap.remediation_goal ? `- **${gap.concept}**: ${gap.remediation_goal}` : `- **${gap.concept}**`,
+  )
+  const next = report.next_action?.trim()
+  return [
+    gaps.length > 0 ? `${m.ai_feedback_gaps()}\n${gaps.join('\n')}` : '',
+    next ? m.ai_feedback_next({ step: next }) : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 }
