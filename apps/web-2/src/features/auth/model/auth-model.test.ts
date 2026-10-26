@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
-import { loginSearchSchema, verifyEmailSearchSchema } from '../route'
+import { loginSearchSchema, opensVerifyLink, verifyEmailSearchSchema } from '../route'
 import {
   isBadEmail,
   isResetCodeInvalid,
@@ -102,4 +102,14 @@ test('B-AUTH-14 a 422 on the address of a resend goes under the email field', ()
   expect(isBadEmail(apiError('validation-failed', [{ field: 'email', code: 'invalid', message: '' }]))).toBe(true)
   expect(isBadEmail(apiError('validation-failed', [{ field: 'code', code: 'invalid', message: '' }]))).toBe(false)
   expect(isBadEmail(apiError('rate-limited'))).toBe(false)
+})
+
+test('B-AUTH-08 the emailed link stays open for a signed-in account whose address is unconfirmed', () => {
+  const link = { pathname: '/verify-email', search: { email: 'a@b.kz', code: 'X1Y2Z3' } }
+  const unconfirmed = { user: { email_verified: false } }
+  expect(opensVerifyLink(link, unconfirmed)).toBe(true)
+  expect(opensVerifyLink(link, { user: { email_verified: true } })).toBe(false)
+  expect(opensVerifyLink(link, null)).toBe(false)
+  expect(opensVerifyLink({ pathname: '/verify-email', search: {} }, unconfirmed)).toBe(false)
+  expect(opensVerifyLink({ pathname: '/login', search: { code: 'x' } }, unconfirmed)).toBe(false)
 })

@@ -4,6 +4,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import { vVerifyEmailRequest } from '#/shared/api/gen/valibot.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { sessionOptions } from '#/shared/auth/session'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -20,7 +21,8 @@ import { ResendCode } from './resend-code'
 export function VerifyEmailPage() {
   const search = useSearch({ from: '/_guest/verify-email' })
   const navigate = useNavigate()
-  const verify = useMutation(verifyEmailOptions())
+  // Signed in (the emailed link, B-AUTH-08): the session is read again, so the banner goes and /login leads home.
+  const verify = useMutation({ ...verifyEmailOptions(), meta: { invalidates: [sessionOptions().queryKey] } })
   const form = useAppForm(vVerifyEmailRequest, {
     defaultValues: { email: search.email ?? '', code: search.code ?? '' },
     onSubmit: body =>

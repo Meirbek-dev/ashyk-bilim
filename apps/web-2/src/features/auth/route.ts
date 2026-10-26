@@ -26,6 +26,20 @@ export const loginSearchSchema = v.object({
  */
 export const verifyEmailSearchSchema = v.object({ email: v.optional(v.string()), code: v.optional(v.string()) })
 
+/**
+ * The emailed confirmation link opened by an account already signed in with that address unconfirmed (sign-up signs
+ * in at once, so this is the usual case): /verify-email stays, prefilled, instead of the guest redirect home that
+ * dropped the code and left it to be typed into the banner.
+ */
+export const opensVerifyLink = (
+  location: { pathname: string; search?: Record<string, unknown> },
+  session: { user: { email_verified: boolean } } | null,
+): boolean =>
+  session !== null &&
+  !session.user.email_verified &&
+  location.pathname === '/verify-email' &&
+  typeof location.search?.['code'] === 'string'
+
 const Banner = lazy(() => import('./ui/email-banner').then(module => ({ default: module.EmailBanner })))
 
 /** The shell's «Подтвердите email» banner: browser only (it reads session storage), its module loaded on demand. */
