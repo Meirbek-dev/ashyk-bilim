@@ -42,7 +42,8 @@ const MORE = ''
 
 /**
  * Multi-select with search on the stock combobox: chips plus a text input; arrows move through the list, Enter
- * toggles, Backspace at the start removes the last chip. The popup stays open while picking several.
+ * toggles, Backspace at the start removes the last chip, Escape only closes the popup (never clears the choices).
+ * The popup stays open while picking several.
  */
 export function MultiCombobox(props: MultiComboboxProps) {
   const { label, description, error, placeholder, options, value, onValueChange, onQueryChange } = props
@@ -57,7 +58,17 @@ export function MultiCombobox(props: MultiComboboxProps) {
         multiple
         items={[...options, ...kept, ...more]}
         value={[...value]}
-        onValueChange={next => (next.some(option => option.value === MORE) ? onMore?.() : onValueChange(next))}
+        onValueChange={(next, details) => {
+          // Escape on the closed list clears every choice in the stock combobox: a dozen picked courses or people
+          // gone at a keystroke meant to close the popup. Here it only closes: with the list already shut it goes on
+          // to the dialog or sheet around the field. A chip's cross removes one choice.
+          if (details.reason === 'escape-key') {
+            details.allowPropagation()
+            return
+          }
+          if (next.some(option => option.value === MORE)) onMore?.()
+          else onValueChange(next)
+        }}
         itemToStringLabel={(item: ComboboxOption) => item.label}
         isItemEqualToValue={sameOption}
         filter={onQueryChange ? null : undefined}

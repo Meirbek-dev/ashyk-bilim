@@ -84,4 +84,17 @@ describe('Combobox (multi-select) and MultiSelectField', () => {
     await screen.getByRole('button', { name: text.save }).click()
     await vi.waitFor(() => expect(submit).toHaveBeenCalledWith(['c4']))
   })
+
+  test('Escape closes the list and keeps every choice, also pressed again on the closed list', async () => {
+    const submit = vi.fn<(ids: readonly string[]) => void>()
+    const screen = await renderInRouter(<Picker submit={submit} />)
+
+    await screen.getByLabelText(text.label).click()
+    await userEvent.keyboard('{ArrowDown}{Enter}{ArrowDown}{Enter}')
+    await userEvent.keyboard('{Escape}{Escape}{Escape}')
+    for (const name of ['Algebra', 'Biology'])
+      await expect.element(screen.getByRole('button', { name: m.ui_option_remove({ label: name }) })).toBeVisible()
+    await screen.getByRole('button', { name: text.save }).click()
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledWith(['c1', 'c2']))
+  })
 })
