@@ -18,9 +18,10 @@ import { anyEnrollmentOptions } from '../queries'
 export function HomeWelcome() {
   const { data } = useSuspenseQuery(landingCoursesOptions())
   const finished = useSuspenseQuery(anyEnrollmentOptions()).data.runs.length > 0
-  const courses = suggestedCourses(data.items)
+  const session = useSuspenseQuery(sessionOptions()).data
+  const courses = suggestedCourses(data.items, session?.user.id)
   // A teacher's first sign-in lands here, in «Учёба»: the way to their own space, not only the catalog (B-HOME-12).
-  const teaches = hasCapability(useSuspenseQuery(sessionOptions()).data, 'teach')
+  const teaches = hasCapability(session, 'teach')
   const lead = teaches && !finished ? 'teach' : 'learn'
   return (
     <div className="flex w-full flex-col items-start gap-10 py-2">
