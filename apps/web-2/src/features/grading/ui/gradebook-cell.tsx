@@ -28,24 +28,28 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
   const status = statusMeta[cell.status]
   const note = waitingNote(cell)
   const content = (link: boolean) => (
-    <span className="flex flex-wrap items-center gap-2">
+    // The score on its own line, the badges under it: wrapped inline they sat beside the score in one row and under
+    // it in the next, depending on the column's width.
+    <span className="flex flex-col items-start gap-1">
       <span className={cn('tabular-nums', link && linkVariants.text)}>{scoreText(cell.final_score)}</span>
-      {cell.status === 'published' ? (
-        <span className="sr-only">{status.label()}</span>
-      ) : (
-        <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-      )}
-      {cell.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
-      {cell.attempts > 1 ? (
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {m.grading_cell_attempts({ count: formatNumber(cell.attempts) })}
-        </span>
-      ) : null}
-      {note ? (
-        <span className="text-xs text-muted-foreground">
-          {note === 'release' ? m.grading_cell_waiting_release() : m.grading_cell_waiting()}
-        </span>
-      ) : null}
+      <span className="flex flex-wrap items-center gap-1 empty:hidden">
+        {cell.status === 'published' ? (
+          <span className="sr-only">{status.label()}</span>
+        ) : (
+          <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+        )}
+        {cell.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
+        {cell.attempts > 1 ? (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {m.grading_cell_attempts({ count: formatNumber(cell.attempts) })}
+          </span>
+        ) : null}
+        {note ? (
+          <span className="text-xs text-muted-foreground">
+            {note === 'release' ? m.grading_cell_waiting_release() : m.grading_cell_waiting()}
+          </span>
+        ) : null}
+      </span>
     </span>
   )
   if (!target) return content(false)
