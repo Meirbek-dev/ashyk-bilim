@@ -14,6 +14,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
+use crate::assessments::access::DisabledReason;
 use crate::assessments::service::AssessmentsService;
 use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
@@ -311,7 +312,8 @@ impl LearnerStateService {
 
     /// OPEN-E-6: a failed test the learner may take again offers `start`
     /// first (attempts left, not past due, no remediation gate): the
-    /// player card is the retake, not only the result.
+    /// player card is the retake, not only the result. Behind an unpassed
+    /// remediation gate it offers `remediate` first.
     async fn offer_retakes(
         &self,
         actor: &Actor,
@@ -332,13 +334,17 @@ impl LearnerStateService {
                 continue;
             };
             // A gate that cannot be read leaves the card as it was, not the page broken.
-            if self
-                .assessments
-                .attempt_state(actor, assessment.id)
-                .await
-                .is_ok_and(|a| a.can_start)
-            {
-                state.allowed_actions.insert(0, "start");
+            match self.assessments.attempt_state(actor, assessment.id).await {
+                Ok(a) if a.can_start => state.allowed_actions.insert(0, "start"),
+                // The retake waits behind an unpassed remediation: the card
+                // leads to it instead of reading as out of attempts.
+                Ok(a)
+                    if a.disabled_reasons
+                        .contains(&DisabledReason::RemediationRequired) =>
+                {
+                    state.allowed_actions.insert(0, "remediate");
+                }
+                _ => {}
             }
         }
         Ok(())

@@ -49,8 +49,8 @@ export function nextStep(state: LearnerCourseState, id: ActivityId) {
 }
 
 /** `ActivityState.allowed_actions` an entry card can act on (the server's work-state vocabulary). */
-export type EntryAction = 'start' | 'continue' | 'revise' | 'view_feedback' | 'view_receipt'
-const ENTRY_ACTIONS = new Set<string>(['start', 'continue', 'revise', 'view_feedback', 'view_receipt'])
+export type EntryAction = 'start' | 'continue' | 'revise' | 'remediate' | 'view_feedback' | 'view_receipt'
+const ENTRY_ACTIONS = new Set<string>(['start', 'continue', 'revise', 'remediate', 'view_feedback', 'view_receipt'])
 const isEntryAction = (value: string): value is EntryAction => ENTRY_ACTIONS.has(value)
 
 export type PlayerAction =

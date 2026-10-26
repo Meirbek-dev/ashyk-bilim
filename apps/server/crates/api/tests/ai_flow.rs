@@ -105,6 +105,17 @@ async fn submitted_essay(
     alice: &MintedSession,
     course_id: &str,
 ) -> String {
+    submitted_essay_scored(app, teacher, alice, course_id, 10).await
+}
+
+/// [`submitted_essay`] with its grade: `score` of 10 (below 6 fails).
+async fn submitted_essay_scored(
+    app: &TestApp,
+    teacher: &MintedSession,
+    alice: &MintedSession,
+    course_id: &str,
+    score: u32,
+) -> String {
     let chapter = app
         .post_as(
             teacher,
@@ -158,7 +169,7 @@ async fn submitted_essay(
         )
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
-    publish_grade(app, teacher, &sub_id, &essay_id, 10).await;
+    publish_grade(app, teacher, &sub_id, &essay_id, score).await;
     sub_id
 }
 
@@ -1456,6 +1467,67 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         .await
         .status,
         StatusCode::NOT_FOUND
+    );
+}
+
+/// A failed test behind an unpassed gate offers `remediate` first in
+/// learner-state: the player card leads to the remediation, not to «no
+/// attempts left, ask the teacher».
+#[sqlx::test(migrations = "../../migrations")]
+async fn failed_test_behind_a_gate_offers_the_remediation(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |c| {
+        c.server.web_links = ab_core::links::LinkScheme::V2;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let course_id = published_course(&app, &teacher, "Gate").await;
+    let sub_id = submitted_essay_scored(&app, &teacher, &alice, &course_id, 2).await;
+    let actions = || async {
+        let state = app
+            .get_as(
+                &alice,
+                &format!("/api/v2/courses/{course_id}/learner-state"),
+            )
+            .await
+            .json();
+        let essay = state["outline"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|chapter| chapter["activities"].as_array().unwrap().clone())
+            .find(|activity| activity["title"] == "Essay")
+            .unwrap();
+        assert_eq!(essay["state"], "failed", "{essay}");
+        essay["allowed_actions"].clone()
+    };
+    assert_eq!(
+        actions().await,
+        serde_json::json!(["start", "view_feedback"])
+    );
+
+    mount_json_reply(&app.llm, &analysis_reply(&sub_id)).await;
+    let analysed = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/submission-analysis/{sub_id}/analyze"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(analysed.status, StatusCode::OK, "{}", analysed.text());
+    app.llm.reset().await;
+    mount_json_reply(&app.llm, &remediation_reply()).await;
+    let session = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/remediation/{sub_id}/generate"),
+            &serde_json::json!({ "gate_mode": true }),
+        )
+        .await;
+    assert_eq!(session.status, StatusCode::OK, "{}", session.text());
+    assert_eq!(
+        actions().await,
+        serde_json::json!(["remediate", "view_feedback"])
     );
 }
 

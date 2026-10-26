@@ -46,4 +46,17 @@ describe('EntryCard', () => {
     await expect.element(screen.getByText(m.player_state_failed())).toBeVisible()
     expect(screen.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
   })
+
+  test('B-PLY-19 failed behind the teacher’s remediation says so instead of «no attempts left»', async () => {
+    const screen = await renderInRouter(
+      <EntryCard
+        courseId="c"
+        entry={exam({ allowed_actions: ['remediate', 'view_feedback'] })}
+        action={null}
+        nowUnix={0}
+      />,
+    )
+    await expect.element(screen.getByText(m.player_remediation_hint())).toBeVisible()
+    expect(screen.getByText(m.player_out_of_attempts(), { exact: false }).query()).toBeNull()
+  })
 })

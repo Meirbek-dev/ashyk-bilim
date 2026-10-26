@@ -19,6 +19,7 @@ const entryLabels = {
   start: m.player_entry_start,
   continue: m.player_continue,
   revise: m.player_entry_revise,
+  remediate: m.player_entry_remediate,
   view_feedback: m.player_entry_view_feedback,
   view_receipt: m.player_entry_view_receipt,
 } satisfies Record<EntryAction, () => string>

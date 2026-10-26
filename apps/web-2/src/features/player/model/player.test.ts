@@ -110,6 +110,8 @@ describe('player model', () => {
       ['exam', 'attempt', ['view_receipt'], 'view_receipt'],
       // OPEN-E-6: a failed test with an attempt left leads with the retake.
       ['exam', 'attempt', ['start', 'view_feedback'], 'start'],
+      // A retake behind the teacher's remediation leads to it.
+      ['quiz', 'attempt', ['remediate', 'view_feedback'], 'remediate'],
       ['code_challenge', 'code', ['continue'], 'continue'],
       ['file_submission', 'submission', ['revise', 'view_feedback'], 'revise'],
     ] as const

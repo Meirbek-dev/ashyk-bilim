@@ -28,6 +28,7 @@
   "player_entry_start": "Open",
   "player_entry_revise": "Revise the submission",
   "player_entry_view_feedback": "View the result",
+  "player_entry_remediate": "Review your mistakes",
   "player_entry_view_receipt": "View your submitted work",
   "player_state_not_started": "Not started",
   "player_state_in_progress": "In progress",
@@ -72,5 +73,6 @@
   "player_outline": "On this page",
   "player_out_of_attempts": "No attempts are left. If you need a retake,",
   "player_ask_teacher": "ask the teacher in the course discussions.",
+  "player_remediation_hint": "Before another attempt, your teacher asks you to review the mistakes of the last one.",
   "player_hours_left": "{hours} h left"
 }

@@ -28,6 +28,7 @@
   "player_entry_start": "Открыть",
   "player_entry_revise": "Исправить работу",
   "player_entry_view_feedback": "Посмотреть результат",
+  "player_entry_remediate": "Разобрать ошибки",
   "player_entry_view_receipt": "Посмотреть сданную работу",
   "player_state_not_started": "Не начато",
   "player_state_in_progress": "В процессе",
@@ -74,5 +75,6 @@
   "player_outline": "На этой странице",
   "player_out_of_attempts": "Попыток больше не осталось. Если нужна пересдача,",
   "player_ask_teacher": "напишите преподавателю в обсуждениях курса.",
+  "player_remediation_hint": "Перед новой попыткой преподаватель просит разобрать ошибки прошлой.",
   "player_hours_left": "Осталось {hours} ч"
 }
