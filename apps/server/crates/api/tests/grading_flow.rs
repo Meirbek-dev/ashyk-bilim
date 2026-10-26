@@ -2897,12 +2897,13 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
         .await;
     assert_eq!(csv.status, StatusCode::OK, "{}", csv.text());
     assert!(csv.content_type().starts_with("text/csv"));
+    let disposition = csv.headers[header::CONTENT_DISPOSITION].to_str().unwrap();
+    // Named after the course (UTF-8 `filename*`), the id only as the ASCII fallback.
     assert!(
-        csv.headers[header::CONTENT_DISPOSITION]
-            .to_str()
-            .unwrap()
-            .contains("gradebook-")
+        disposition.contains("filename=\"gradebook-"),
+        "{disposition}"
     );
+    assert!(disposition.contains("filename*=UTF-8''"), "{disposition}");
     let text = csv.text();
     assert!(text.starts_with('\u{feff}'), "BOM first");
     let lines: Vec<&str> = text.trim_start_matches('\u{feff}').lines().collect();

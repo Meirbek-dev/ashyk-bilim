@@ -37,7 +37,7 @@ use crate::files::uploads::{FILE_SUBMISSION_MAX_MB, UNREFERENCED_GRACE};
 use crate::grading::breakdown::round2;
 use crate::grading::penalties::{apply_late, late_penalty_pct};
 use crate::grading::teacher::{
-    CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_datetime, csv_row,
+    CsvExport, CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_datetime, csv_row,
 };
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -1607,9 +1607,12 @@ impl FileSubmissionsService {
         actor: &Actor,
         id: FileSubmissionId,
         language: CsvLanguage,
-    ) -> Result<String> {
+    ) -> Result<CsvExport> {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Grade, "grading").await?;
+        let activity = ab_db::catalog::get_activity(&self.pool, row.activity_id)
+            .await?
+            .ok_or_else(|| Error::not_found("activity"))?;
         let attempts = ab_db::file_submissions::list_attempts(&self.pool, id).await?;
         let views = self.attempts_with_files(attempts, true, false).await?;
         let header: Vec<String> = language
@@ -1647,7 +1650,10 @@ impl FileSubmissionsService {
             ];
             out.push_str(&csv_row(&fields, language));
         }
-        Ok(out)
+        Ok(CsvExport {
+            name: activity.name,
+            body: out,
+        })
     }
 
     /// Short-lived download URL for an attached file: its owner or a grader.

@@ -481,6 +481,14 @@ fn gradebook_totals(
     (totals, summary)
 }
 
+/// A CSV export and what it is of (a test, a course, a file task): the
+/// download is named after it, not after its id.
+#[derive(Debug, Clone)]
+pub struct CsvExport {
+    pub name: String,
+    pub body: String,
+}
+
 /// Header + status words of the CSV exports, by `Accept-Language`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CsvLanguage {
@@ -1167,8 +1175,8 @@ impl GradingService {
         actor: &Actor,
         assessment_id: AssessmentId,
         language: CsvLanguage,
-    ) -> Result<String> {
-        self.grader_context(actor, assessment_id).await?;
+    ) -> Result<CsvExport> {
+        let (assessment, _) = self.grader_context(actor, assessment_id).await?;
         let items = self.items(assessment_id).await?;
         let rows = ab_db::submissions::list_non_draft(&self.pool, assessment_id).await?;
         let ids: Vec<UserId> = rows.iter().map(|r| r.user_id).collect();
@@ -1242,7 +1250,10 @@ impl GradingService {
             }));
             out.push_str(&csv_row(&fields, language));
         }
-        Ok(out)
+        Ok(CsvExport {
+            name: assessment.title,
+            body: out,
+        })
     }
 
     async fn items(&self, assessment_id: AssessmentId) -> Result<Vec<Item>> {
@@ -2018,7 +2029,7 @@ impl GradingService {
         actor: &Actor,
         course_id: CourseId,
         language: CsvLanguage,
-    ) -> Result<String> {
+    ) -> Result<CsvExport> {
         let mut cells = Vec::new();
         let mut cursor: Option<String> = None;
         let first = self
@@ -2109,7 +2120,12 @@ impl GradingService {
             );
             out.push_str(&csv_row(&fields, language));
         }
-        Ok(out)
+        // The gradebook read above checked the caller; this read only names the file.
+        let course = self.assessments.courses.get(actor, course_id).await?;
+        Ok(CsvExport {
+            name: course.name,
+            body: out,
+        })
     }
 }
 

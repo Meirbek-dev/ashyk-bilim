@@ -9,8 +9,8 @@ use ab_core::id::{ActivityId, FileAttemptFileId, FileAttemptId, FileSubmissionId
 use ab_domain::files::submissions::{FileGradeInput, FileRef, ReviewFilter};
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
-use axum::response::{IntoResponse, Response};
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 
 use crate::detach::detached;
 use crate::dto::file_submissions::{
@@ -22,7 +22,7 @@ use crate::dto::file_submissions::{
 use crate::dto::grading::{DeadlineExtensionRequest, SortOrder};
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson, idempotent, require_if_match};
-use crate::routes::grading::{csv_language, if_match};
+use crate::routes::grading::{csv_download, csv_language, if_match};
 use crate::state::AppState;
 use ab_db::versions::Versioned;
 
@@ -424,19 +424,7 @@ pub async fn export_csv(
         .file_submissions
         .export_csv(&actor, id, csv_language(&headers))
         .await?;
-    let mut response = (StatusCode::OK, csv).into_response();
-    response.headers_mut().insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/csv; charset=utf-8"),
-    );
-    response.headers_mut().insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!(
-            "attachment; filename=\"file-submissions-{id}.csv\""
-        ))
-        .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
-    );
-    Ok(response)
+    Ok(csv_download(csv, &format!("file-submissions-{id}.csv")))
 }
 
 /// One attempt: its owner (grade redacted until released) or a grader.

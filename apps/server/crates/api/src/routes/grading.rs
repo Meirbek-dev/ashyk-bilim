@@ -9,7 +9,7 @@ use ab_core::id::{AssessmentId, BulkActionId, CourseId, SubmissionId};
 use ab_core::{Error, FieldError};
 use ab_domain::grading::bulk::DeadlineExtension;
 use ab_domain::grading::teacher::{
-    CsvLanguage, GradeInput, ItemFeedbackView, ItemGrade, ReviewFilter,
+    CsvExport, CsvLanguage, GradeInput, ItemFeedbackView, ItemGrade, ReviewFilter,
 };
 use axum::Json;
 use axum::extract::State;
@@ -149,17 +149,7 @@ pub async fn export_csv(
 ) -> ApiResult<Response> {
     let language = csv_language(&headers);
     let csv = state.grading.export_csv(&actor, id, language).await?;
-    let mut response = (StatusCode::OK, csv).into_response();
-    response.headers_mut().insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/csv; charset=utf-8"),
-    );
-    response.headers_mut().insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=\"grades-{id}.csv\""))
-            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
-    );
-    Ok(response)
+    Ok(csv_download(csv, &format!("grades-{id}.csv")))
 }
 
 /// A submission with answers, breakdown, versions and feedback (graders).
@@ -377,17 +367,7 @@ pub async fn export_gradebook_csv(
 ) -> ApiResult<Response> {
     let language = csv_language(&headers);
     let csv = state.grading.gradebook_csv(&actor, id, language).await?;
-    let mut response = (StatusCode::OK, csv).into_response();
-    response.headers_mut().insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/csv; charset=utf-8"),
-    );
-    response.headers_mut().insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=\"gradebook-{id}.csv\""))
-            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
-    );
-    Ok(response)
+    Ok(csv_download(csv, &format!("gradebook-{id}.csv")))
 }
 
 /// Course gradebook: the grade-of-record attempt per (learner, activity).
@@ -465,4 +445,69 @@ pub(crate) fn csv_language(headers: &HeaderMap) -> CsvLanguage {
             .get(header::ACCEPT_LANGUAGE)
             .and_then(|v| v.to_str().ok()),
     )
+}
+
+/// A CSV export as a download named after what it is of («Тест: дискриминант.csv»), not its id: `filename*`
+/// (RFC 5987, UTF-8) for the name, `fallback` (ASCII) for a client that reads only `filename`.
+pub(crate) fn csv_download(export: CsvExport, fallback: &str) -> Response {
+    let mut response = (StatusCode::OK, export.body).into_response();
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/csv; charset=utf-8"),
+    );
+    response.headers_mut().insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&csv_disposition(&export.name, fallback))
+            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
+    );
+    response
+}
+
+/// `attachment; filename="<fallback>"; filename*=UTF-8''<name>.csv`; characters a file system refuses
+/// (`/ \ : * ? " < > |`, controls) become spaces; a blank name keeps the fallback alone.
+fn csv_disposition(name: &str, fallback: &str) -> String {
+    use std::fmt::Write;
+    let safe: String = name
+        .chars()
+        .map(|c| {
+            if c.is_control() || "/\\:*?\"<>|".contains(c) {
+                ' '
+            } else {
+                c
+            }
+        })
+        .collect();
+    let safe = safe.split_whitespace().collect::<Vec<_>>().join(" ");
+    let safe: String = safe.chars().take(120).collect();
+    if safe.is_empty() {
+        return format!("attachment; filename=\"{fallback}\"");
+    }
+    let encoded = format!("{safe}.csv")
+        .bytes()
+        .fold(String::new(), |mut out, b| {
+            if b.is_ascii_alphanumeric() || b"-_.~".contains(&b) {
+                out.push(char::from(b));
+            } else {
+                let _ = write!(out, "%{b:02X}");
+            }
+            out
+        });
+    format!("attachment; filename=\"{fallback}\"; filename*=UTF-8''{encoded}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::csv_disposition;
+
+    #[test]
+    fn a_csv_download_is_named_after_its_subject() {
+        assert_eq!(
+            csv_disposition("Тест: 9/А", "grades-1.csv"),
+            "attachment; filename=\"grades-1.csv\"; filename*=UTF-8''%D0%A2%D0%B5%D1%81%D1%82%209%20%D0%90.csv"
+        );
+        assert_eq!(
+            csv_disposition(" \n ", "grades-1.csv"),
+            "attachment; filename=\"grades-1.csv\""
+        );
+    }
 }
