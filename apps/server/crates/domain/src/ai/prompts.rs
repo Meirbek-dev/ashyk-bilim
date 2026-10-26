@@ -232,6 +232,7 @@ Rules:
 
 - The micro-lecture must teach the smallest useful concept that unlocks the gap.
 - Practice questions must test the gap directly and include explanations.
+- A question with choices has exactly one correct choice, and its answer is that choice word for word: never ask to mark several.
 - Cite the source submission or course material.
 - Do not expose hidden assessment answers.
 - Keep the tone direct and respectful.
@@ -246,6 +247,7 @@ pub const REMEDIATION_LECTURE_RU: &str = "Вы создаете адаптивн
 
 - Микролекция должна объяснять минимально необходимую концепцию для устранения пробела.
 - Практические вопросы должны напрямую проверять усвоение темы и содержать подробные объяснения.
+- У вопроса с вариантами ровно один верный вариант, и ответ - дословно его текст: не просите отметить несколько.
 - Ссылайтесь на исходную работу учащегося или материалы курса.
 - Не раскрывайте скрытые ответы к заданиям.
 - Тон должен быть прямым и уважительным.
@@ -260,6 +262,7 @@ pub const REMEDIATION_LECTURE_KK: &str = "Білім алушының жұмыс
 
 - Микро-дәріс олқылықты жою үшін қажетті ең кіші пайдалы ұғымды түсіндіруі тиіс.
 - Тәжірибелік сұрақтар олқылықты тікелей тексеруі және түсіндірмелерді қамтуы керек.
+- Нұсқалары бар сұрақтың бір ғана дұрыс нұсқасы болады, ал жауап сол нұсқаның мәтінімен сөзбе-сөз сәйкес келеді: бірнешеуін белгілеуді сұрамаңыз.
 - Білім алушының жұмысына немесе курс материалдарына сілтеме жасаңыз.
 - Жасырын бағалау жауаптарын ашпаңыз.
 - Тон тура және сыпайы болуы тиіс.

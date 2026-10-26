@@ -474,7 +474,10 @@ impl AiService {
 /// REM-SCORE: round(100 x right / all) over the stored practice questions;
 /// an answer is right when it equals the question's `answer` ignoring case
 /// and surrounding / repeated whitespace. No questions = 100 (the lecture
-/// is the whole remediation); a question without a stored answer is right.
+/// is the whole remediation); a question without a stored answer is right,
+/// and so is one whose answer is none of its choices (a generated «mark all
+/// that apply» with `answer: "a, b"`): the learner picks one choice and could
+/// never pass the gate.
 fn practice_score(questions: &[RemediationQuestion], answers: &[String]) -> i32 {
     fn norm(s: &str) -> String {
         s.split_whitespace()
@@ -490,7 +493,8 @@ fn practice_score(questions: &[RemediationQuestion], answers: &[String]) -> i32 
         .enumerate()
         .filter(|(i, q)| {
             let key = norm(&q.answer);
-            key.is_empty() || answers.get(*i).is_some_and(|a| norm(a) == key)
+            let unanswerable = !q.choices.is_empty() && !q.choices.iter().any(|c| norm(c) == key);
+            key.is_empty() || unanswerable || answers.get(*i).is_some_and(|a| norm(a) == key)
         })
         .count();
     let total = questions.len();
@@ -508,6 +512,27 @@ mod tests {
             answer: answer.into(),
             explanation: String::new(),
         }
+    }
+
+    #[test]
+    fn a_choice_question_whose_answer_is_no_choice_does_not_lock_the_gate() {
+        let several = RemediationQuestion {
+            choices: vec!["total_sum".into(), "9lives".into(), "_count".into()],
+            ..q("total_sum, _count")
+        };
+        let one = RemediationQuestion {
+            choices: vec!["user2".into(), "user-name".into()],
+            ..q("user-name")
+        };
+        let test = [several, one];
+        assert_eq!(
+            practice_score(&test, &["total_sum".into(), "user-name".into()]),
+            100
+        );
+        assert_eq!(
+            practice_score(&test, &["total_sum".into(), "user2".into()]),
+            50
+        );
     }
 
     #[test]
