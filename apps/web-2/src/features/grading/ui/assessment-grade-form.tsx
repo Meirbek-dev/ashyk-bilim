@@ -4,9 +4,10 @@ import { useRef, useState } from 'react'
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, GradeAction, GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ErrorAlert } from '#/shared/components/error-alert'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
-import { gradeForm, gradeFormSchema, gradeRequest } from '../model/grade-form'
+import { gradeForm, gradeFormSchema, gradeRequest, unscoredManual } from '../model/grade-form'
 import { typedItemsPercent } from '../model/scoring'
 import { type ReviewIds, saveGradeOptions } from '../mutations'
 import { reviewOptions } from '../queries'
@@ -41,7 +42,12 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
     onSubmit: values => grade.save(gradeRequest(values, gradeForm(submission, items), action.current)),
   })
   useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))
+  // Publishing with an answer awaiting manual review still unscored: say which, before the server's bare 409.
+  const [unscored, setUnscored] = useState<number[]>([])
   const submit = (chosen: GradeAction) => {
+    const missing = chosen === 'publish' ? unscoredManual(form.state.values, submission) : []
+    setUnscored(missing)
+    if (missing.length > 0) return
     action.current = chosen
     void form.handleSubmit()
   }
@@ -74,6 +80,9 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
         {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
       </form.AppField>
       <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
+      {unscored.length > 0 ? (
+        <ErrorAlert>{m.grading_manual_unscored({ numbers: unscored.join(', ') })}</ErrorAlert>
+      ) : null}
       <GradeActions
         allowed={submission.allowed_actions}
         published={submission.status === 'published'}

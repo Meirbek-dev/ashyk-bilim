@@ -175,5 +175,6 @@
   "grading_started_at": "Started {date}",
   "grading_graded_at": "Graded {date}",
   "grading_returned_at": "Returned for revision {date}",
-  "grading_keys_hint": "J next, K previous"
+  "grading_keys_hint": "J next, K previous",
+  "grading_manual_unscored": "Score the answers that need manual review: questions {numbers}."
 }

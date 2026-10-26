@@ -175,5 +175,6 @@
   "grading_started_at": "Басталды {date}",
   "grading_graded_at": "Тексерілді {date}",
   "grading_returned_at": "Пысықтауға қайтарылды {date}",
-  "grading_keys_hint": "J — келесі, K — алдыңғы"
+  "grading_keys_hint": "J — келесі, K — алдыңғы",
+  "grading_manual_unscored": "Қолмен тексерілетін жауаптарға балл қойыңыз: {numbers}-сұрақ."
 }

@@ -12,6 +12,7 @@ import {
   gradeRequest,
   showsInline,
   appendDraft,
+  unscoredManual,
 } from './grade-form'
 
 const item = (id: string, max: number): AssessmentItem => ({
@@ -73,6 +74,31 @@ describe('assessment grade form', () => {
     ])
     expect(form.feedback).toBe('Хорошо')
     expect(form.final_score).toBe('')
+  })
+
+  test('B-GRD-15 an answer awaiting manual review is blank, not its placeholder 0, and blocks publishing until scored', () => {
+    const awaiting = submission({
+      grading: {
+        items: [
+          { item_id: 'a', max_score: 33.33, score: 33.33, correct: true, correct_answer: null, user_answer: null },
+          {
+            item_id: 'b',
+            max_score: 33.33,
+            score: 0,
+            needs_manual_review: true,
+            correct: null,
+            correct_answer: null,
+            user_answer: null,
+          },
+        ],
+      },
+    })
+    const seed = gradeForm(awaiting, items)
+    expect(seed.items.map(row => row.score)).toEqual(['1', '', ''])
+    expect(unscoredManual(seed, awaiting)).toEqual([2])
+    const scored = { ...seed, items: seed.items.map(row => (row.item_id === 'b' ? { ...row, score: '0' } : row)) }
+    expect(unscoredManual(scored, awaiting)).toEqual([])
+    expect(gradeRequest(seed, seed, 'save')).not.toHaveProperty('item_grades')
   })
 
   test('B-GRD-12 sends only the edited items; an untouched form sends no item grades', () => {

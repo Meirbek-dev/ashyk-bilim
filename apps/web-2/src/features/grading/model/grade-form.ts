@@ -52,7 +52,8 @@ export function gradeForm(submission: TeacherSubmission, items: readonly Assessm
     feedback: submission.grading.feedback ?? '',
     items: items.map(item => {
       const done = graded.get(item.id)
-      const score = done ? toItemScale(done.score, done.max_score, item.max_score) : null
+      // An answer still awaiting manual review carries the grader's placeholder 0: blank, so it reads «not scored».
+      const score = done && !done.needs_manual_review ? toItemScale(done.score, done.max_score, item.max_score) : null
       return {
         item_id: item.id,
         max: item.max_score,
@@ -90,6 +91,17 @@ export function gradeRequest(form: GradeForm, seed: GradeForm, action: GradeActi
     ...(item_grades.length > 0 ? { item_grades } : {}),
     ...(final_score === undefined ? {} : { final_score }),
   }
+}
+
+/**
+ * Publishing needs a score for every answer awaiting manual review (the server answers 409 otherwise): their numbers
+ * (1-based, in item order) still blank in the form.
+ */
+export function unscoredManual(form: GradeForm, submission: TeacherSubmission): number[] {
+  const pending = new Set(
+    (submission.grading.items ?? []).filter(item => item.needs_manual_review).map(item => item.item_id),
+  )
+  return form.items.flatMap((row, index) => (pending.has(row.item_id) && row.score.trim() === '' ? [index + 1] : []))
 }
 
 // ---- File attempts (B-GRD-16) ----
