@@ -234,6 +234,44 @@ pub async fn restricted_activity_ids<'e>(
     Ok(ids)
 }
 
+/// A learner's own due date for one task of a course (an extension or override).
+pub struct DueOverrideRow {
+    pub activity_id: ActivityId,
+    pub due_at: i64,
+}
+
+/// The learner's own due dates in a course; the progress projection keeps
+/// only each task's date.
+///
+/// An assessment override in force (or an extension, which outlives the
+/// grant's expiry, BUG-300) and a file task's extension: the rule of
+/// `work_queue::upcoming_deadlines` and of the attempt policy.
+pub async fn due_overrides<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<Vec<DueOverrideRow>> {
+    let rows = sqlx::query_as!(
+        DueOverrideRow,
+        r#"SELECT s.activity_id AS "activity_id!: ActivityId",
+                  (extract(epoch FROM o.due_at_override))::bigint AS "due_at!"
+           FROM assessment_overrides o
+           JOIN assessments s ON s.id = o.assessment_id
+           WHERE s.course_id = $1 AND o.user_id = $2 AND o.due_at_override IS NOT NULL
+             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
+           UNION ALL
+           SELECT f.activity_id, (extract(epoch FROM fo.due_at))::bigint
+           FROM file_submission_overrides fo
+           JOIN file_submissions f ON f.id = fo.file_submission_id
+           WHERE f.course_id = $1 AND fo.user_id = $2"#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
 /// Assessment weights per activity (for the weighted course average).
 pub struct ActivityWeightRow {
     pub activity_id: ActivityId,

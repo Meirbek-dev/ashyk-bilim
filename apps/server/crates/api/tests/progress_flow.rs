@@ -2361,3 +2361,98 @@ async fn course_list_items_carry_authors_and_progress(pool: PgPool) {
         serde_json::json!({ "learners": 1, "activities": 0, "ungraded": 0 })
     );
 }
+
+fn now_unix() -> i64 {
+    i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    )
+    .unwrap()
+}
+
+/// A learner's extended due date - a test's (a bulk job) and a file task's -
+/// is the one their player card and next step read; the projection keeps the
+/// task's own date, which the others still see.
+#[sqlx::test(migrations = "../../migrations")]
+async fn learner_state_reads_each_learners_extended_due_date(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Extensions 101").await;
+    let (quiz_id, quiz_activity, _) = quiz(&app, &teacher, &chapter_id).await;
+    let task_due = now_unix() + 3600;
+    let created = app
+        .post_as(
+            &teacher,
+            "/api/v2/file-submissions",
+            &serde_json::json!({ "chapter_id": chapter_id, "title": "Essay",
+                                 "instructions": "PDF please.", "due_at_unix": task_due }),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+    let (task_id, task_activity) = (
+        created.json()["id"].as_str().unwrap().to_owned(),
+        created.json()["activity_id"].as_str().unwrap().to_owned(),
+    );
+    let published = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{task_id}/publish"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(published.status, StatusCode::OK, "{}", published.text());
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    for who in [&alice, &bob] {
+        let added = app
+            .post_as(
+                who,
+                &format!("/api/v2/trail/courses/{course_id}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    }
+
+    let due = now_unix() + 3 * 86_400;
+    let body = serde_json::json!({ "user_ids": [bob.user_id], "new_due_at_unix": due });
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessments/{quiz_id}/deadline-extensions"),
+            &body,
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let action = uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap();
+    ab_domain::grading::GradingService::execute_bulk_action(
+        &app.pool,
+        None,
+        ab_core::id::BulkActionId(action),
+    )
+    .await
+    .unwrap();
+    let file_extended = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{task_id}/deadline-extensions"),
+            &body,
+        )
+        .await;
+    assert_eq!(
+        file_extended.status,
+        StatusCode::OK,
+        "{}",
+        file_extended.text()
+    );
+
+    let path = format!("/api/v2/courses/{course_id}/learner-state");
+    let bobs = app.get_as(&bob, &path).await.json();
+    assert_eq!(activity(&bobs, &quiz_activity)["due_at_unix"], due);
+    assert_eq!(activity(&bobs, &task_activity)["due_at_unix"], due);
+    let alices = app.get_as(&alice, &path).await.json();
+    assert!(activity(&alices, &quiz_activity)["due_at_unix"].is_null());
+    assert_eq!(activity(&alices, &task_activity)["due_at_unix"], task_due);
+}

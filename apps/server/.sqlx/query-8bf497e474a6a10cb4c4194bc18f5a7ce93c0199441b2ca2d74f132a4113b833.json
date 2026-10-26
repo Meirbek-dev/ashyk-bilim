@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.activity_id AS \"activity_id!: ActivityId\",\n                  (extract(epoch FROM o.due_at_override))::bigint AS \"due_at!\"\n           FROM assessment_overrides o\n           JOIN assessments s ON s.id = o.assessment_id\n           WHERE s.course_id = $1 AND o.user_id = $2 AND o.due_at_override IS NOT NULL\n             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)\n           UNION ALL\n           SELECT f.activity_id, (extract(epoch FROM fo.due_at))::bigint\n           FROM file_submission_overrides fo\n           JOIN file_submissions f ON f.id = fo.file_submission_id\n           WHERE f.course_id = $1 AND fo.user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "activity_id!: ActivityId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "due_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "8bf497e474a6a10cb4c4194bc18f5a7ce93c0199441b2ca2d74f132a4113b833"
+}

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use ab_core::assessments::{ActivityProgressState, Lifecycle};
 use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
 use ab_core::{Error, Result};
-use ab_db::progress::{ActivityProgressRow, CourseProgressRow};
+use ab_db::progress::{ActivityProgressRow, CourseProgressRow, DueOverrideRow};
 use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -20,6 +20,13 @@ use crate::catalog::courses::{Course, CoursesService};
 use crate::identity::Actor;
 
 const DUE_SOON_WINDOW_SECS: i64 = 7 * 86_400;
+
+type OwnRows = (
+    Vec<ActivityProgressRow>,
+    Option<CourseProgressRow>,
+    Vec<ActivityId>,
+    Vec<DueOverrideRow>,
+);
 
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
@@ -352,6 +359,17 @@ impl LearnerStateService {
 
     /// Visible course (404) the caller may access (403). A guest gets the
     /// anonymous state of a public course: not enrolled, nothing done.
+    /// The learner's own rows: progress, the course's, tasks restricted away
+    /// from them and their extensions (the card and next step say their date).
+    async fn own_rows(&self, course_id: CourseId, user_id: UserId) -> Result<OwnRows> {
+        Ok((
+            ab_db::progress::list_course_progress_rows(&self.pool, course_id, user_id).await?,
+            ab_db::progress::get_course_progress(&self.pool, course_id, user_id).await?,
+            ab_db::progress::restricted_activity_ids(&self.pool, course_id, user_id).await?,
+            ab_db::progress::due_overrides(&self.pool, course_id, user_id).await?,
+        ))
+    }
+
     pub async fn course_state(
         &self,
         actor: &Actor,
@@ -365,14 +383,10 @@ impl LearnerStateService {
         let activities = ab_db::catalog::list_activities(&self.pool, course.id).await?;
         // BUG-292: a run kept from before joining the staff is no member's -
         // its ticks and counts are not shown (the outline and sidebar read these).
-        let (rows, course_progress, restricted) = if staff || guest {
-            (Vec::new(), None, Vec::new())
+        let (rows, course_progress, restricted, due) = if staff || guest {
+            (Vec::new(), None, Vec::new(), Vec::new())
         } else {
-            (
-                ab_db::progress::list_course_progress_rows(&self.pool, course.id, user_id).await?,
-                ab_db::progress::get_course_progress(&self.pool, course.id, user_id).await?,
-                ab_db::progress::restricted_activity_ids(&self.pool, course.id, user_id).await?,
-            )
+            self.own_rows(course.id, user_id).await?
         };
         let has_run =
             !guest && ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
@@ -396,6 +410,9 @@ impl LearnerStateService {
             .map(|a| {
                 let progress = rows.iter().find(|r| r.activity_id == a.id);
                 let mut state = activity_state(a, progress);
+                if let Some(own) = due.iter().find(|d| d.activity_id == a.id) {
+                    state.due_at_unix = Some(own.due_at);
+                }
                 if !a.published {
                     return (a.chapter_id, scheduled(state, opens_at.get(&a.id).copied()));
                 }
