@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { CodeBody } from '#/shared/api/gen/types.gen'
 
 import { bodyChanged, codeBodyOf, codeForm, codeFormSchema, newTest, testCounts } from './body-form'
@@ -87,6 +88,12 @@ describe('code item form', () => {
     expect(valid('10')).toBe(true)
     expect(valid('0')).toBe(false)
     expect(valid('-1')).toBe(false)
+    // The sandbox's caps, named under the field (the server refuses them on `body.*`, a name the form lacks).
+    const issue = (patch: { time?: string; memory?: string }) =>
+      v.safeParse(codeFormSchema, { ...form, ...patch }).issues?.[0]?.message
+    expect(issue({ time: '16' })).toBe(m.validation_max_value({ max: '15' }))
+    expect(issue({ memory: '99999' })).toBe(m.validation_max_value({ max: '2048' }))
+    expect(issue({ time: '0' })).toBe(m.validation_min_value({ min: '1' }))
     expect(codeBodyOf({ ...form, time: '', memory: ' 512 ' }, stored)).toMatchObject({
       time_limit_seconds: null,
       memory_limit_mb: 512,

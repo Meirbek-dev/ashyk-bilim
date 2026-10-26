@@ -1,11 +1,26 @@
 import * as v from 'valibot'
 
+import { m } from '#/paraglide/messages'
 import type { CodeBody, CodeTestCase } from '#/shared/api/gen/types.gen'
 
 // The code item's form keeps numbers as typed text (blank = the sandbox default) and turns into a `CodeBody` on save.
-// The contract declares no ranges for limits and weights (SPEC "Ждёт сервера"): only the shape is checked here.
+// The limits carry the server's ranges (the sandbox's caps, ItemBody::validate), named under the field: its 422 is on
+// `body.time_limit_seconds`, a name this form does not have. Weights have no declared range: only the shape.
 
-const wholeOrBlank = v.pipe(v.string(), v.trim(), v.regex(/^([1-9]\d*)?$/))
+const wholeOrBlank = v.pipe(v.string(), v.trim(), v.regex(/^\d*$/))
+const limit = (max: number) =>
+  v.pipe(
+    wholeOrBlank,
+    v.rawCheck<string>(({ dataset, addIssue }) => {
+      if (!dataset.typed || dataset.value === '' || !/^\d+$/.test(dataset.value)) return
+      const value = Number(dataset.value)
+      if (value < 1) addIssue({ message: m.validation_min_value({ min: '1' }) })
+      else if (value > max) addIssue({ message: m.validation_max_value({ max: String(max) }) })
+    }),
+  )
+/** The sandbox's caps (server MAX_CODE_TIME_SECONDS, MAX_CODE_MEMORY_MB). */
+const MAX_TIME_SECONDS = 15
+const MAX_MEMORY_MB = 2048
 const positive = v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d*$/))
 
 const testSchema = v.object({
@@ -26,8 +41,8 @@ export const codeFormSchema = v.object({
   starter: v.record(v.string(), v.string()),
   reference: v.record(v.string(), v.string()),
   tests: v.array(testSchema),
-  time: wholeOrBlank,
-  memory: wholeOrBlank,
+  time: limit(MAX_TIME_SECONDS),
+  memory: limit(MAX_MEMORY_MB),
 })
 export type CodeForm = v.InferOutput<typeof codeFormSchema>
 export type TestForm = CodeForm['tests'][number]
