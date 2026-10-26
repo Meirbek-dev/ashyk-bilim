@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from 'vite-plus/test'
 import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
+import { sessionHeld } from '#/shared/api/held-session'
 import { Button } from '#/shared/ui/button'
 
 import { LeaveConfirmHost } from '../leave-confirm'
@@ -83,6 +84,20 @@ test('a guarded form asks in the app dialog before a link drops an unsaved edit,
   await vi.waitFor(() => expect(save).toHaveBeenCalled())
   await screen.getByRole('button', { name: text.leave }).click()
   await expect.element(dialog).not.toBeInTheDocument()
+})
+
+test('unsaved edits hold the session through the submit (a 401 keeps the page and the text); a save lets go', async () => {
+  const pending = Promise.withResolvers<void>()
+  const save = vi.fn<() => Promise<void>>(() => pending.promise)
+  const screen = await renderInRouter(<GuardedForm save={save} />)
+  expect(sessionHeld()).toBe(false)
+  await screen.getByLabelText(text.name).fill('Geometry')
+  await vi.waitFor(() => expect(sessionHeld()).toBe(true))
+  await screen.getByRole('button', { name: text.save }).click()
+  await vi.waitFor(() => expect(save).toHaveBeenCalled())
+  expect(sessionHeld()).toBe(true)
+  pending.resolve()
+  await vi.waitFor(() => expect(sessionHeld()).toBe(false))
 })
 
 test('onChange sees the values after each edit of a field, and not a submit', async () => {

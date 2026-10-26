@@ -1,10 +1,13 @@
 import { createFormHook, useStore, type DeepKeys } from '@tanstack/react-form'
+import { QueryClientContext } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { setGlobalMessage, type GenericSchema } from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { holdSession } from '#/shared/api/held-session'
+import { releaseSessionHold } from '#/shared/api/query-client'
 import { confirmLeave } from '#/shared/components/leave-confirm'
 import { validationMessage } from '#/shared/i18n/validation'
 
@@ -38,6 +41,22 @@ const submittedForm = (): Element | null | undefined => {
   return focused && 'form' in focused && focused.form instanceof HTMLFormElement
     ? focused.form
     : focused?.closest('form')
+}
+
+/**
+ * Unsaved edits keep the page across a lost session (`shared/api/held-session.ts`), as a running upload does: a 401
+ * (the session ended in another tab or expired) then shows the «sign in again in a new tab» notice instead of leaving
+ * for /login with the text; after signing in there, Save works here.
+ */
+function useHoldWhileEdited(edited: boolean) {
+  const queryClient = useContext(QueryClientContext)
+  useEffect(() => {
+    const release = edited ? holdSession() : null
+    return () => {
+      if (release && queryClient) releaseSessionHold(queryClient, release)
+      else release?.()
+    }
+  }, [edited, queryClient])
 }
 
 type AppFormOptions<T> = {
@@ -98,14 +117,11 @@ export function useAppForm<T>(
     },
   })
   const isField = (name: string): name is DeepKeys<T> => name in form.fieldInfo
-  const unsaved = useStore(
-    form.store,
-    state =>
-      leaveGuard !== false &&
-      !state.isSubmitting &&
-      JSON.stringify(state.values) !== saved &&
-      (leaveGuard === true || leaveGuard(state.values)),
-  )
+  const edited = (values: T) =>
+    leaveGuard !== false && JSON.stringify(values) !== saved && (leaveGuard === true || leaveGuard(values))
+  // Held through the submit too: a Save that answers 401 must find the edits still holding the page.
+  useHoldWhileEdited(useStore(form.store, state => edited(state.values)))
+  const unsaved = useStore(form.store, state => !state.isSubmitting && edited(state.values))
   useBlocker({
     disabled: !unsaved,
     enableBeforeUnload: unsaved,
