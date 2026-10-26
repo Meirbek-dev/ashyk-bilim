@@ -5,7 +5,7 @@ import { locales } from '#/paraglide/runtime'
 import type { SessionSummary } from '#/shared/api/gen/types.gen'
 import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 
-import { avatarProblem, deviceLabel, orderSessions, readSwitches, startTheme } from './settings'
+import { avatarProblem, deviceLabel, orderSessions, pendingEmailFor, readSwitches, startTheme } from './settings'
 
 const MB = 1024 * 1024
 
@@ -92,4 +92,12 @@ describe('settings model', () => {
     const off = { ...settings(null, null), display: { ...settings(null, null).display, show_gamification: false } }
     expect(readSwitches(off)).toMatchObject({ showGamification: false, showStreaks: true })
   })
+})
+
+test('B-SET-24 a sent address change waits for its code for this account only, until the code expires', () => {
+  const pending = { user: 'u1', email: 'new@example.com', until: 1_000 }
+  expect(pendingEmailFor(pending, 'u1', 999)).toBe('new@example.com')
+  expect(pendingEmailFor(pending, 'u1', 1_000)).toBeNull()
+  expect(pendingEmailFor(pending, 'u2', 999)).toBeNull()
+  expect(pendingEmailFor(null, 'u1', 0)).toBeNull()
 })

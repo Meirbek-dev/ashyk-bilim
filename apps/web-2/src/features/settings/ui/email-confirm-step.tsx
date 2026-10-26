@@ -46,7 +46,7 @@ export function EmailConfirmStep({ email, onRestart }: { email: string; onRestar
         )}
       </form.AppField>
       <div>
-        <Button type="button" variant="link" className="px-0" onClick={onRestart}>
+        <Button type="button" variant="ghost" onClick={onRestart}>
           {m.settings_email_other()}
         </Button>
       </div>

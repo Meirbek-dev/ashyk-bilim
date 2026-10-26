@@ -85,3 +85,14 @@ export const isStale = (error: unknown): boolean => error instanceof ApiError &&
 /** An ApiError with this code. */
 export const hasCode = (error: unknown, code: ApiError['code']): boolean =>
   error instanceof ApiError && error.code === code
+
+/** How long the emailed address-change code works (the server's one hour, `settings_email_code_sent`). */
+export const EMAIL_CODE_TTL_MS = 60 * 60 * 1000
+
+/** A sent address change kept in the browser, so the code step survives a reload or a trip to the mailbox. */
+export const vPendingEmail = v.object({ user: v.string(), email: v.string(), until: v.number() })
+export type PendingEmail = v.InferOutput<typeof vPendingEmail>
+
+/** The address waiting for its code: only this account's and only while the code still works (B-SET-24). */
+export const pendingEmailFor = (pending: PendingEmail | null, user: string, now: number): string | null =>
+  pending && pending.user === user && pending.until > now ? pending.email : null
