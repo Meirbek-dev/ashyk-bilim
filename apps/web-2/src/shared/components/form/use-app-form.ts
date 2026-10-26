@@ -31,6 +31,14 @@ const { useAppForm: useKitForm } = /* @__PURE__ */ createFormHook({
 const focusFirstInvalid = (form: Element | null | undefined) =>
   form && requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
 
+/** The form of the focused control: its own `form` (a dialog's footer button points at it by id), else the enclosing. */
+const submittedForm = (): Element | null | undefined => {
+  const focused = document.activeElement
+  return focused && 'form' in focused && focused.form instanceof HTMLFormElement
+    ? focused.form
+    : focused?.closest('form')
+}
+
 type AppFormOptions<T> = {
   defaultValues: T
   /** Usually `body => mutation.mutateAsync({ body })`: a 422's field errors land under their fields. */
@@ -66,11 +74,11 @@ export function useAppForm<T>(
     defaultValues,
     validators: { onSubmit: schema },
     listeners: { onChange: ({ formApi }) => void onChange?.(formApi.state.values) },
-    onSubmitInvalid: () => void focusFirstInvalid(document.activeElement?.closest('form')),
+    onSubmitInvalid: () => void focusFirstInvalid(submittedForm()),
     onSubmit: async ({ value }) => {
       if (submitting.current) return
       submitting.current = true
-      const origin = document.activeElement?.closest('form')
+      const origin = submittedForm()
       try {
         await onSubmit(value)
         setSaved(JSON.stringify(form.state.values))

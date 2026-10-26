@@ -18,9 +18,11 @@ type GuardedFormProps = {
   save: () => Promise<void>
   onChange?: (name: string) => void
   rules?: v.GenericSchema<{ name: string }>
+  /** Save sits outside the form and names it by id, like a dialog's footer button. */
+  footer?: boolean
 }
 
-function GuardedForm({ save, onChange, rules = schema }: GuardedFormProps) {
+function GuardedForm({ save, onChange, rules = schema, footer = false }: GuardedFormProps) {
   const navigate = useNavigate()
   const form = useAppForm(rules, {
     defaultValues: { name: 'Algebra' },
@@ -29,16 +31,24 @@ function GuardedForm({ save, onChange, rules = schema }: GuardedFormProps) {
     onChange: value => onChange?.(value.name),
   })
   return (
-    <form
-      onSubmit={event => {
-        event.preventDefault()
-        void form.handleSubmit()
-      }}
-    >
-      <form.AppField name="name">{field => <field.TextField label={text.name} />}</form.AppField>
-      <Button type="submit">{text.save}</Button>
-      <Button onClick={() => void navigate({ href: `/away/${(hops += 1)}` })}>{text.leave}</Button>
-    </form>
+    <>
+      <form
+        id="guarded"
+        onSubmit={event => {
+          event.preventDefault()
+          void form.handleSubmit()
+        }}
+      >
+        <form.AppField name="name">{field => <field.TextField label={text.name} />}</form.AppField>
+        {footer ? null : <Button type="submit">{text.save}</Button>}
+        <Button onClick={() => void navigate({ href: `/away/${(hops += 1)}` })}>{text.leave}</Button>
+      </form>
+      {footer ? (
+        <Button type="submit" form="guarded">
+          {text.save}
+        </Button>
+      ) : null}
+    </>
   )
 }
 
@@ -76,11 +86,14 @@ test('onChange sees the values after each edit of a field, and not a submit', as
   expect(onChange).not.toHaveBeenCalled()
 })
 
-test('a refused submit moves focus from the button to the field to fix', async () => {
-  const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
-  const screen = await renderInRouter(<GuardedForm save={save} rules={named} />)
-  await screen.getByLabelText(text.name).fill('')
-  await screen.getByRole('button', { name: text.save }).click()
-  await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(text.name).element()))
-  expect(save).not.toHaveBeenCalled()
-})
+test.each([false, true])(
+  'a refused submit moves focus from the button to the field to fix (button outside the form: %s)',
+  async footer => {
+    const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
+    const screen = await renderInRouter(<GuardedForm save={save} rules={named} footer={footer} />)
+    await screen.getByLabelText(text.name).fill('')
+    await screen.getByRole('button', { name: text.save }).click()
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(text.name).element()))
+    expect(save).not.toHaveBeenCalled()
+  },
+)
