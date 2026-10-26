@@ -13,7 +13,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId/overview'
   staticData: { title: m.platform_tab_overview },
   component: function Overview() {
     return (
-      <div className="flex flex-col gap-gutter">
+      <div className="flex flex-col gap-8">
         <OverviewPage />
         <Suspense fallback={<ListSkeleton />}>
           <CourseAnalysis courseId={Route.useParams().courseId} />
