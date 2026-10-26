@@ -58,4 +58,10 @@ describe('validationMessage', () => {
     expect(serverFieldMessage('invalid', 'code')).toBe(m.validation_code_wrong())
     expect(serverFieldMessage('required', 'code')).toBe(m.validation_required())
   })
+
+  // Sign-up, reset and the password change: «Проверьте это значение.» under a password the identity provider refused.
+  test('a password the policy refuses says what a password needs', () => {
+    expect(serverFieldMessage('password-policy', 'password')).toBe(m.validation_password_policy())
+    expect(serverFieldMessage('password-policy', 'new_password')).toBe(m.validation_password_policy())
+  })
 })

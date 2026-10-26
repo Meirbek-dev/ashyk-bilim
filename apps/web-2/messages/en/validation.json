@@ -9,6 +9,7 @@
   "validation_email": "Enter an email address, e.g. name@example.com.",
   "validation_duplicate": "This value already exists.",
   "validation_code_wrong": "The code is wrong or has expired.",
+  "validation_password_policy": "This password is too simple: it needs a lowercase and an uppercase Latin letter, a digit and a symbol.",
   "validation_invalid": "Check this value.",
   "validation_too_long": "The value is too long.",
   "validation_out_of_range": "The value is out of range.",

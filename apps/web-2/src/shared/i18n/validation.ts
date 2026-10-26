@@ -54,6 +54,8 @@ const serverCodes: Partial<Record<string, () => string>> = {
   // A document's link or embed (REVIEW-1 C1); `unsafe`: a link preview of a private or local address.
   'unsafe-url': m.validation_unsafe_url,
   unsafe: m.validation_unsafe_url,
+  // The identity provider's password policy (sign-up, reset, password change); its own text is English.
+  'password-policy': m.validation_password_policy,
 }
 
 /**
