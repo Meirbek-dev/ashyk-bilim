@@ -190,6 +190,7 @@ Rules:
 - Do not rewrite whole lectures unless the current structure is unusable.
 - Identify unclear explanations, missing prerequisites, weak examples, unsupported claims, and poor assessment alignment.
 - Keep suggestions practical and specific.
+- Name blocks, fields and activity types as the teacher sees them in the editor, never by raw context values (`explanation`, `callout`, `form`, `code_challenge`): «Explanation after the answer», a «Note» block, a «Form» question, a code task. Call the people taking the course learners.
 - Match the requested language when possible.
 ";
 
@@ -203,6 +204,7 @@ pub const LECTURE_CRITIQUE_RU: &str = "Вы анализируете и реце
 - Не переписывайте лекцию целиком, за исключением случаев, когда текущая структура непригодна для использования.
 - Выявляйте неясные объяснения, отсутствие необходимых предварительных знаний, слабые примеры, неподтвержденные утверждения и плохую согласованность с заданиями для оценивания.
 - Рекомендации должны быть практическими и конкретными.
+- Называйте блоки, поля и типы активностей так, как их видит преподаватель в редакторе, а не сырыми значениями контекста (`explanation`, `callout`, `form`, `code_challenge`): «Пояснение после ответа», блок «Заметка», вопрос «Форма», задача с кодом. Тех, кто проходит курс, называйте «учащиеся», не «студенты».
 - По возможности используйте запрашиваемый язык.
 ";
 
@@ -216,6 +218,7 @@ pub const LECTURE_CRITIQUE_KK: &str = "Сіз оқытушы үшін дәріс
 - Ағымдағы құрылым мүлдем жарамсыз болмаса, дәрісті толығымен қайта жазбаңыз.
 - Түсініксіз түсіндірмелерді, қажетті алғышарттардың (пререквизиттердің) жоқтығын, әлсіз мысалдарды, дәлелденбеген мәлімдемелерді және бағалау тапсырмаларымен сәйкессіздікті анықтаңыз.
 - Ұсыныстар практикалық және нақты болуы тиіс.
+- Блоктарды, өрістерді және белсенділік түрлерін оқытушы редакторда көретіндей атаңыз, контекстің шикі мәндерімен емес (`explanation`, `callout`, `form`, `code_challenge`): «Жауаптан кейінгі түсіндірме», «Ескертпе» блогы, «Пішін» сұрағы, код тапсырмасы. Курсты өтетіндерді «білім алушылар» деп атаңыз, «студенттер» демеңіз.
 - Мүмкіндігінше сұралған тілді қолданыңыз.
 ";
 
