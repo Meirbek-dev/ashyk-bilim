@@ -39,7 +39,8 @@ export function RubricSection({ task }: { task: FileSubmission }) {
               {list.state.value.map((criterion, index) => (
                 // Top-aligned: a refusal under one field (two lines in the narrow one) must not shift the other.
                 <div key={criterion.criterion_id} className="flex flex-wrap items-start gap-2">
-                  <div className="min-w-48 flex-1">
+                  {/* min-w-36: name, points and the remove button stay on one row on a 360 px phone. */}
+                  <div className="min-w-36 flex-1">
                     <form.AppField name={`criteria[${index}].label`}>
                       {field => <field.TextField label={m.submission_criterion_name({ number: index + 1 })} required />}
                     </form.AppField>
