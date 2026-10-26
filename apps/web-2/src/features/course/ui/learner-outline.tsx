@@ -66,8 +66,9 @@ export function LearnerOutline({ course }: { course: Course }) {
         </p>
       ) : null}
       <Syllabus courseId={course.id} chapters={outlineSyllabus(state, course.allowed_actions.includes('update'))} />
-      {/* Rare and destructive: after the programme, not between the progress and its bar (on a phone it split them). */}
-      {state.enrolled ? (
+      {/* Rare and destructive: after the programme, not between the progress and its bar (on a phone it split them).
+          An archived course is read-only: the server refuses to let anyone leave it (409). */}
+      {state.enrolled && !course.archived_at_unix ? (
         <div className="flex justify-end border-t pt-4">
           <LeaveCourse course={course} />
         </div>
