@@ -283,7 +283,7 @@ pub async fn grade_changed(
             submission_id,
             attempt_id,
             final_score,
-            excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
+            excerpt: crate::rich_text::markdown_excerpt(feedback, EXCERPT_CHARS),
             activity_type,
         },
         SubmissionStatus::Returned => NotificationPayload::SubmissionReturned {
@@ -293,7 +293,7 @@ pub async fn grade_changed(
             activity_name,
             submission_id,
             attempt_id,
-            excerpt: crate::rich_text::plain_excerpt(feedback, EXCERPT_CHARS),
+            excerpt: crate::rich_text::markdown_excerpt(feedback, EXCERPT_CHARS),
             activity_type,
         },
         _ => return,

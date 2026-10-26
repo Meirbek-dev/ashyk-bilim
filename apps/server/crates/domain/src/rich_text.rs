@@ -281,6 +281,55 @@ pub fn plain_excerpt(content: &str, limit: usize) -> String {
     format!("{}…", cut.trim_end())
 }
 
+/// A notification's excerpt of a teacher's feedback: typed as Markdown and
+/// shown rendered on the result, so the excerpt drops the marks
+/// (`**слово**`, `[текст](url)`, `# `, `- `) and keeps the words.
+#[must_use]
+pub fn markdown_excerpt(content: &str, limit: usize) -> String {
+    let mut text = String::with_capacity(content.len());
+    for line in content.lines() {
+        let mut line = line.trim_start();
+        line = line.trim_start_matches(['#', '>']).trim_start();
+        for marker in ["- ", "* ", "+ "] {
+            line = line.strip_prefix(marker).unwrap_or(line);
+        }
+        if let Some((number, rest)) = line.split_once(". ")
+            && !number.is_empty()
+            && number.chars().all(|c| c.is_ascii_digit())
+        {
+            line = rest;
+        }
+        text.push_str(line);
+        text.push('\n');
+    }
+    let chars: Vec<char> = text.chars().collect();
+    let mut plain = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        let prev = i.checked_sub(1).map(|j| chars[j]);
+        let next = chars.get(i + 1).copied();
+        match c {
+            // `[text](url)` and `![alt](url)` read as their text.
+            '!' if next == Some('[') => {}
+            ']' if next == Some('(') => {
+                let close = chars[i..].iter().position(|&c| c == ')');
+                if let Some(close) = close {
+                    i += close;
+                }
+            }
+            '[' | '`' | '~' => {}
+            // Emphasis marks go; one inside a word (`snake_case`, `2*3`) stays.
+            '*' | '_'
+                if !(prev.is_some_and(char::is_alphanumeric)
+                    && next.is_some_and(char::is_alphanumeric)) => {}
+            _ => plain.push(c),
+        }
+        i += 1;
+    }
+    plain_excerpt(&plain, limit)
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -395,5 +444,16 @@ mod tests {
     fn only_documents_are_checked() {
         assert!(fields(&json!({ "type": "youtube", "uri": "javascript:x" })).is_empty());
         assert!(fields(&json!({ "filename": "../x" })).is_empty());
+    }
+
+    #[test]
+    fn feedback_excerpts_drop_markdown_marks() {
+        assert_eq!(
+            markdown_excerpt(
+                "# Итог\n**Хорошо**, но _проверьте_ `snake_case`:\n- пункт [ссылка](https://x.kz/a_b)\n2. 2*3",
+                140
+            ),
+            "Итог Хорошо, но проверьте snake_case: пункт ссылка 2*3"
+        );
     }
 }
