@@ -2,7 +2,7 @@ import { m } from '#/paraglide/messages'
 import type { SearchResults } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
-import type { SearchKind } from '../model/catalog'
+import { type SearchKind, searchCount } from '../model/catalog'
 import { searchKindLabels } from './kind-labels'
 
 type SearchKindsProps = { q: string; kinds: readonly SearchKind[]; results: SearchResults }
@@ -17,7 +17,7 @@ export function SearchKinds({ q, kinds, results }: SearchKindsProps) {
       {kinds.map(kind => (
         <Link key={kind} to="/search" search={{ q, kind }} variant="tab" activeOptions={{ exact: true }}>
           {searchKindLabels[kind]()}
-          <span className="ml-2 text-muted-foreground tabular-nums">{String(results[kind].length)}</span>
+          <span className="ml-2 text-muted-foreground tabular-nums">{String(searchCount(results, kind))}</span>
         </Link>
       ))}
     </nav>

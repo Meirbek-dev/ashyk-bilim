@@ -4,6 +4,7 @@ import { Keyboard, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
+import type { SearchResults } from '#/shared/api/gen/types.gen'
 import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { gamificationOn } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
@@ -28,6 +29,48 @@ export type PaletteEntry = {
 type PaletteGroup = { heading: string; entries: readonly PaletteEntry[] }
 
 type PaletteActions = { close: () => void; showHelp: () => void }
+
+type Go = (navigation: () => Promise<void>) => () => void
+
+/** The `search` hits as palette groups, in the search page's order; each opens the object's page. */
+function hitGroups(found: SearchResults, go: Go, navigate: ReturnType<typeof useNavigate>): PaletteGroup[] {
+  return [
+    {
+      heading: searchKindLabels.courses(),
+      entries: found.courses.map(course => ({
+        id: `course:${course.id}`,
+        label: course.name,
+        onSelect: go(() => navigate({ to: paletteCourseTarget(course), params: { courseId: course.id } })),
+      })),
+    },
+    {
+      heading: searchKindLabels.lessons(),
+      entries: (found.lessons ?? []).map(lesson => ({
+        id: `lesson:${lesson.activity_id}`,
+        label: lesson.title,
+        hint: lesson.course_name,
+        onSelect: go(() => navigate({ to: '/courses/$courseId', params: { courseId: lesson.course_id } })),
+      })),
+    },
+    {
+      heading: searchKindLabels.collections(),
+      entries: found.collections.map(collection => ({
+        id: `collection:${collection.id}`,
+        label: collection.name,
+        onSelect: go(() => navigate({ to: '/collections/$collectionId', params: { collectionId: collection.id } })),
+      })),
+    },
+    {
+      heading: searchKindLabels.users(),
+      entries: found.users.map(user => ({
+        id: `user:${user.id}`,
+        label: user.display_name,
+        hint: `@${user.username}`,
+        onSelect: go(() => navigate({ to: '/users/$username', params: { username: user.username } })),
+      })),
+    },
+  ]
+}
 
 /**
  * The palette's entries for the typed text: the sections the user may open (access table), the `search` hits for
@@ -59,35 +102,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
       }
     }),
   }))
-  const hits: PaletteGroup[] = found
-    ? [
-        {
-          heading: searchKindLabels.courses(),
-          entries: found.courses.map(course => ({
-            id: `course:${course.id}`,
-            label: course.name,
-            onSelect: go(() => navigate({ to: paletteCourseTarget(course), params: { courseId: course.id } })),
-          })),
-        },
-        {
-          heading: searchKindLabels.collections(),
-          entries: found.collections.map(collection => ({
-            id: `collection:${collection.id}`,
-            label: collection.name,
-            onSelect: go(() => navigate({ to: '/collections/$collectionId', params: { collectionId: collection.id } })),
-          })),
-        },
-        {
-          heading: searchKindLabels.users(),
-          entries: found.users.map(user => ({
-            id: `user:${user.id}`,
-            label: user.display_name,
-            hint: `@${user.username}`,
-            onSelect: go(() => navigate({ to: '/users/$username', params: { username: user.username } })),
-          })),
-        },
-      ]
-    : []
+  const hits = found ? hitGroups(found, go, navigate) : []
   const all: PaletteEntry[] = q
     ? [
         {

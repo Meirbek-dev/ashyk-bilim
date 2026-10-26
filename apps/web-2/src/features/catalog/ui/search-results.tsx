@@ -6,7 +6,7 @@ import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { ListState } from '#/shared/components/list-state'
 
-import { type SearchKind, searchKinds } from '../model/catalog'
+import { type SearchKind, searchCount, searchKinds } from '../model/catalog'
 import { searchResultsOptions } from '../queries'
 import { SearchKinds } from './search-kinds'
 import { SearchSection } from './search-section'
@@ -20,8 +20,8 @@ export function SearchResults({ q, kind }: { q: string; kind: SearchKind | undef
   const query = useSuspenseQuery(searchResultsOptions(q))
   const navigate = useNavigate()
   const kinds = searchKinds(session !== null)
-  const shown = kinds.filter(each => (kind ? each === kind : query.data[each].length > 0))
-  const count = shown.reduce((sum, each) => sum + query.data[each].length, 0)
+  const shown = kinds.filter(each => (kind ? each === kind : searchCount(query.data, each) > 0))
+  const count = shown.reduce((sum, each) => sum + searchCount(query.data, each), 0)
   return (
     <>
       <SearchKinds q={q} kinds={kinds} results={query.data} />

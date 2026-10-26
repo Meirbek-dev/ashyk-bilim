@@ -13,6 +13,7 @@ import {
   paletteCourseTarget,
   paletteSections,
   resolveSort,
+  searchCount,
   searchKinds,
   sortOptions,
 } from './catalog'
@@ -79,8 +80,8 @@ describe('catalog model', () => {
   })
 
   test('B-CAT-08 a guest gets no people section', () => {
-    expect(searchKinds(false)).toEqual(['courses', 'collections'])
-    expect(searchKinds(true)).toEqual(['courses', 'collections', 'users'])
+    expect(searchKinds(false)).toEqual(['courses', 'lessons', 'collections'])
+    expect(searchKinds(true)).toEqual(['courses', 'lessons', 'collections', 'users'])
   })
 
   test('B-CAT-11 palette navigation is the access table: only open sections, per workspace, none for a guest', () => {
@@ -132,4 +133,17 @@ test('B-CAT-29 the landing texts follow the interface language and fall back to 
   expect(localizedPlatform(platform, 'ru')).toMatchObject({ description: 'Курсы', about: 'О нас' })
   // An older server sends no translations.
   expect(localizedPlatform({ description: 'Курсы', about: '' }, 'en')).toMatchObject({ description: 'Курсы' })
+})
+
+test('B-CAT-07 lessons found by name are a section, counted as none when the answer leaves them out', () => {
+  const results = { courses: [], collections: [], users: [], next_cursor: null }
+  expect(searchCount(results, 'lessons')).toBe(0)
+  const lesson = {
+    activity_id: 'a',
+    activity_type: 'video',
+    course_id: 'c',
+    course_name: 'SQL',
+    title: 'JOIN',
+  } as const
+  expect(searchCount({ ...results, lessons: [lesson] }, 'lessons')).toBe(1)
 })

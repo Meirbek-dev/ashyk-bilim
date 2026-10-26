@@ -27,7 +27,7 @@ export const coursesSearchSchema = v.object({
 export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
 
 /** The sections of one `search` answer; people come only to signed-in callers (contract). */
-export const SEARCH_KINDS = ['courses', 'collections', 'users'] as const
+export const SEARCH_KINDS = ['courses', 'lessons', 'collections', 'users'] as const
 export type SearchKind = (typeof SEARCH_KINDS)[number]
 
 /** /search?q=&kind=. No kind, or an unknown one, is "all" (BUG-382). */

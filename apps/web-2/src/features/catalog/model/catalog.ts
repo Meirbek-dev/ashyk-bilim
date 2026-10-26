@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 
-import type { Course, CourseAuthor, CoursePage, SessionInfo } from '#/shared/api/gen/types.gen'
+import type { Course, CourseAuthor, CoursePage, SearchResults, SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, type Section, visibleSections, type Workspace } from '#/shared/auth/access'
 
 import { COURSE_SORTS, courseSort, type CourseSort, type CoursesSearch, SEARCH_KINDS, type SearchKind } from '../route'
@@ -30,6 +30,9 @@ export const nextCoursesCursor = (page: CoursePage) => page.next_cursor ?? undef
 
 export const searchKinds = (signedIn: boolean): readonly SearchKind[] =>
   signedIn ? SEARCH_KINDS : SEARCH_KINDS.filter(kind => kind !== 'users')
+
+/** How many hits a section of the answer has: `lessons` is absent when there are none (CONTRACT-REQ-G-6). */
+export const searchCount = (results: SearchResults, kind: SearchKind) => results[kind]?.length ?? 0
 
 /** `search` answers at most this many hits per section, without a cursor. */
 export const SEARCH_LIMIT = 50

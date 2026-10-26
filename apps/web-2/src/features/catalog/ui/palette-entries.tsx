@@ -23,7 +23,10 @@ export function PaletteEntries({ text, q, actions }: PaletteEntriesProps) {
             <ComboboxItem key={entry.id} value={entry}>
               {entry.icon}
               <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-              {entry.hint ? <span className="text-xs text-muted-foreground">{entry.hint}</span> : null}
+              {/* A lesson's course name can be long: the hint takes at most half, the entry's own name the rest. */}
+              {entry.hint ? (
+                <span className="max-w-1/2 truncate text-xs text-muted-foreground">{entry.hint}</span>
+              ) : null}
             </ComboboxItem>
           ))}
         </ComboboxGroup>
