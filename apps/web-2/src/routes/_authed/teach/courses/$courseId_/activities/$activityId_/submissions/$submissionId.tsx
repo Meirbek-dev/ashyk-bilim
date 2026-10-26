@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { SubmissionAiPanel } from '#/features/ai'
+import { StudioError } from '#/features/course-studio'
 import { ensureReview, ReviewPage, SubmissionNotFound } from '#/features/grading'
 import { queueSearchSchema } from '#/features/grading/route'
 import { m } from '#/paraglide/messages'
@@ -16,6 +17,7 @@ export const Route = createFileRoute(
     ensureReview(context.queryClient, params.activityId, params.submissionId, deps),
   staticData: { title: m.platform_page_submission, layout: 'focus' },
   component: Review,
+  errorComponent: StudioError,
   notFoundComponent: SubmissionNotFound,
 })
 

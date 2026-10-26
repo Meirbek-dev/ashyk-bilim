@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import { AiPanel, prefetchPanel } from '#/features/ai'
 import { aiSearchSchema } from '#/features/ai/route'
 import { assessmentPublishControl, ensureAssessment } from '#/features/assessments'
-import { ActivityNotFound, CourseStudioLayout, ensureStudio } from '#/features/course-studio'
+import { ActivityNotFound, CourseStudioLayout, ensureStudio, StudioError } from '#/features/course-studio'
 import { ensureTaskStudio, fileSubmissionPublishControl } from '#/features/file-submissions'
 import { m } from '#/paraglide/messages'
 import { ListSkeleton } from '#/shared/components/list-skeleton'
@@ -39,6 +39,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
     meta: loaderData ? [{ title: tabTitle(loaderData.name, match, matches) }] : [],
   }),
   component: StudioLayout,
+  errorComponent: StudioError,
   notFoundComponent: ActivityNotFound,
 })
 
