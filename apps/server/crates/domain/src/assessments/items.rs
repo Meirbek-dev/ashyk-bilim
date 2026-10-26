@@ -26,6 +26,13 @@ pub const ITEM_BODY_SCHEMA_VERSION: u32 = 1;
 /// pairs, code specs / starters / tests) is bounded by `MAX_TEXT_CHARS`.
 pub const MAX_TEXT_CHARS: usize = 20_000;
 pub const MAX_BODY_ENTRIES: usize = 200;
+/// A code item's limits within what the sandbox accepts.
+///
+/// Judge0 `MAX_CPU_TIME_LIMIT` is 15 s (our wall time is one more second)
+/// and infra/judge0/judge0.conf `MAX_MEMORY_LIMIT` is 2 GB: beyond them
+/// every run of the item is refused, so the learner can never be graded.
+pub const MAX_CODE_TIME_SECONDS: i32 = 15;
+pub const MAX_CODE_MEMORY_MB: i32 = 2048;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChoiceOption {
@@ -746,6 +753,28 @@ impl ItemBody {
                 "an item holds at most 200 options, fields, pairs or tests",
             );
         }
+        if let Self::Code(body) = self {
+            if body
+                .time_limit_seconds
+                .is_some_and(|t| !(1..=MAX_CODE_TIME_SECONDS).contains(&t))
+            {
+                return fail(
+                    "body.time_limit_seconds",
+                    "out-of-range",
+                    "the time limit is 1 to 15 seconds",
+                );
+            }
+            if body
+                .memory_limit_mb
+                .is_some_and(|mb| !(1..=MAX_CODE_MEMORY_MB).contains(&mb))
+            {
+                return fail(
+                    "body.memory_limit_mb",
+                    "out-of-range",
+                    "the memory limit is 1 to 2048 MB",
+                );
+            }
+        }
         Ok(())
     }
 
@@ -1033,6 +1062,21 @@ mod tests {
             code_titled.readiness_issues("")[0].code,
             "code.prompt_missing"
         );
+        // Limits the sandbox refuses are refused at write time.
+        let ItemBody::Code(mut slow) = code_titled else {
+            panic!("code")
+        };
+        assert!(ItemBody::Code(slow.clone()).validate().is_ok());
+        slow.time_limit_seconds = Some(9999);
+        let refused = ItemBody::Code(slow.clone()).validate().unwrap_err();
+        assert!(matches!(
+            refused,
+            ab_core::Error::Validation { field_errors }
+                if field_errors[0].field == "body.time_limit_seconds"
+        ));
+        slow.time_limit_seconds = Some(15);
+        slow.memory_limit_mb = Some(99_999);
+        assert!(ItemBody::Code(slow).validate().is_err());
     }
 
     #[test]
