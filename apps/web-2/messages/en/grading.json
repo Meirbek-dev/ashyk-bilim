@@ -126,6 +126,7 @@
   "grading_kpi_average": "Average grade",
   "grading_kpi_pass_rate": "Passed",
   "grading_distribution": "Grade distribution",
+  "grading_distribution_empty": "No grades yet: the distribution appears after the first review.",
   "grading_items_stats": "Questions",
   "grading_items_stats_empty": "Question statistics will appear after the first answers.",
   "grading_col_item": "Question",

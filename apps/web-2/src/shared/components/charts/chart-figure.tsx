@@ -10,6 +10,8 @@ type ChartFigureProps = {
   title: string
   data: readonly ChartDatum[]
   formatValue: (value: number) => string
+  /** Said instead of the chart when every value is 0 (default: «all values are 0»), e.g. «no grades yet» for counts. */
+  empty?: string | undefined
   /** The lazy SVG chart. */
   children: ReactNode
 }
@@ -18,13 +20,13 @@ type ChartFigureProps = {
  * A chart with its caption and, for screen readers, every value as a table: the SVG is a picture, the numbers are
  * text (DESIGN 3, WCAG 1.1.1). The SVG loads lazily; its slot keeps the final height meanwhile.
  */
-export function ChartFigure({ title, data, formatValue, children }: ChartFigureProps) {
+export function ChartFigure({ title, data, formatValue, empty, children }: ChartFigureProps) {
   // Nothing but zeros (a quiet course, a new platform): one line says so; four flat lines on an axis up to 1 were noise.
   if (data.every(datum => datum.value === 0))
     return (
       <figure className="flex min-w-0 flex-col gap-2">
         <figcaption className="text-sm font-medium">{title}</figcaption>
-        <p className="text-sm text-muted-foreground">{m.ui_chart_all_zero()}</p>
+        <p className="text-sm text-muted-foreground">{empty ?? m.ui_chart_all_zero()}</p>
       </figure>
     )
   return (

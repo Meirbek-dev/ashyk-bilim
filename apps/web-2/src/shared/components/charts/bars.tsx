@@ -10,12 +10,14 @@ type BarsProps = {
   /** One bar per category, in display order. */
   data: readonly ChartDatum[]
   formatValue: (value: number) => string
+  /** Said instead of the chart when every count is 0. */
+  empty?: string | undefined
 }
 
 /** Counts per category: a bar chart plus its values as text. */
-export function Bars({ title, data, formatValue }: BarsProps) {
+export function Bars({ title, data, formatValue, empty }: BarsProps) {
   return (
-    <ChartFigure title={title} data={data} formatValue={formatValue}>
+    <ChartFigure title={title} data={data} formatValue={formatValue} empty={empty}>
       <BarsSvg label={title} data={data} formatValue={formatValue} />
     </ChartFigure>
   )

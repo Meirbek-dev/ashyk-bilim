@@ -131,6 +131,7 @@
   "analytics_eligible": "Допущено",
   "analytics_submitted": "Сдали",
   "analytics_score_distribution": "Распределение баллов",
+  "analytics_score_distribution_empty": "Оценок пока нет.",
   "analytics_pass_rows": "Учащиеся и результаты",
   "analytics_pass_threshold": "Порог прохождения: {value}",
   "analytics_as_of": "Данные на {time}",

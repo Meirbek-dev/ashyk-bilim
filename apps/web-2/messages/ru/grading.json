@@ -128,6 +128,7 @@
   "grading_kpi_average": "Средняя оценка",
   "grading_kpi_pass_rate": "Прошли",
   "grading_distribution": "Распределение оценок",
+  "grading_distribution_empty": "Оценок пока нет: распределение появится после первой проверки.",
   "grading_items_stats": "Вопросы",
   "grading_items_stats_empty": "Статистика по вопросам появится после первых ответов.",
   "grading_col_item": "Вопрос",

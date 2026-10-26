@@ -131,6 +131,7 @@
   "analytics_eligible": "Eligible",
   "analytics_submitted": "Submitted",
   "analytics_score_distribution": "Score distribution",
+  "analytics_score_distribution_empty": "No grades yet.",
   "analytics_pass_rows": "Learners and results",
   "analytics_pass_threshold": "Pass threshold: {value}",
   "analytics_as_of": "Data as of {time}",

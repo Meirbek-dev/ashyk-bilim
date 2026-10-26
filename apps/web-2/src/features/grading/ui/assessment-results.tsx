@@ -86,6 +86,7 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
         title={m.grading_distribution()}
         data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}
         formatValue={value => formatNumber(value)}
+        empty={m.grading_distribution_empty()}
       />
       <section aria-labelledby="grading-items-stats" className="flex flex-col gap-4">
         <h2 id="grading-items-stats" className="text-xl font-semibold">

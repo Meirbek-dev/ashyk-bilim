@@ -126,6 +126,7 @@
   "grading_kpi_average": "Орташа баға",
   "grading_kpi_pass_rate": "Өткендер",
   "grading_distribution": "Бағалардың таралуы",
+  "grading_distribution_empty": "Әзірге баға жоқ: бөлініс алғашқы тексерістен кейін шығады.",
   "grading_items_stats": "Сұрақтар",
   "grading_items_stats_empty": "Сұрақтар бойынша статистика алғашқы жауаптардан кейін пайда болады.",
   "grading_col_item": "Сұрақ",

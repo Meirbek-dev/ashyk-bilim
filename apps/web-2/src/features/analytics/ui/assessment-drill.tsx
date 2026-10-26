@@ -50,6 +50,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
         title={m.analytics_score_distribution()}
         data={data.score_distribution.map(bucket => ({ label: bucket.label, value: bucket.count }))}
         formatValue={value => formatNumber(value)}
+        empty={m.analytics_score_distribution_empty()}
       />
       <AssessmentInsights data={data} />
       <DrillSection

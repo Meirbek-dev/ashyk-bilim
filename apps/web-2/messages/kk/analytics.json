@@ -131,6 +131,7 @@
   "analytics_eligible": "Рұқсат етілген",
   "analytics_submitted": "Тапсырғандар",
   "analytics_score_distribution": "Ұпайлардың таралуы",
+  "analytics_score_distribution_empty": "Әзірге баға жоқ.",
   "analytics_pass_rows": "Білім алушылар мен нәтижелер",
   "analytics_pass_threshold": "Өту шегі: {value}",
   "analytics_as_of": "Деректер {time} бойынша",
