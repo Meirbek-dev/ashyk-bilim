@@ -64,4 +64,9 @@ describe('validationMessage', () => {
     expect(serverFieldMessage('password-policy', 'password')).toBe(m.validation_password_policy())
     expect(serverFieldMessage('password-policy', 'new_password')).toBe(m.validation_password_policy())
   })
+
+  test('B-SET-22 a new password or address equal to the current one says so', () => {
+    expect(serverFieldMessage('password-unchanged', 'new_password')).toBe(m.validation_password_unchanged())
+    expect(serverFieldMessage('unchanged', 'email')).toBe(m.validation_email_unchanged())
+  })
 })

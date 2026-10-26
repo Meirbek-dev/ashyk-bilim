@@ -10,6 +10,8 @@
   "validation_duplicate": "Мұндай мән бұрыннан бар.",
   "validation_code_wrong": "Код қате немесе мерзімі өткен.",
   "validation_password_policy": "Құпиясөз тым қарапайым: кіші және бас латын әріптері, цифр және белгі қажет.",
+  "validation_password_unchanged": "Жаңа құпиясөз қазіргісімен бірдей.",
+  "validation_email_unchanged": "Бұл - тіркелгіңіздің қазіргі мекенжайы.",
   "validation_invalid": "Бұл мәнді тексеріңіз.",
   "validation_too_long": "Мән тым ұзын.",
   "validation_out_of_range": "Мән рұқсат етілген ауқымнан тыс.",

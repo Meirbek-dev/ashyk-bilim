@@ -56,6 +56,9 @@ const serverCodes: Partial<Record<string, () => string>> = {
   unsafe: m.validation_unsafe_url,
   // The identity provider's password policy (sign-up, reset, password change); its own text is English.
   'password-policy': m.validation_password_policy,
+  'password-unchanged': m.validation_password_unchanged,
+  // The only `unchanged` today: an address change to the account's own address.
+  unchanged: m.validation_email_unchanged,
 }
 
 /**
