@@ -3,6 +3,8 @@
 //! sessionless reads of the public catalog.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use std::fmt::Write as _;
+
 use ab_testkit::{MintedSession, TestApp};
 use axum::http::StatusCode;
 use sqlx::PgPool;
@@ -349,6 +351,46 @@ async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool)
         .map(|u| u["username"].as_str().unwrap().to_owned())
         .collect();
     assert_eq!(people, ["c.dev"]);
+}
+
+/// A Kazakh name typed on a Russian keyboard (қ as к, і as и...) and ё typed
+/// as е still find the course, in `/search` and `courses?q=` alike.
+#[sqlx::test(migrations = "../../migrations")]
+async fn search_folds_kazakh_letters_and_yo(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = author(&app, "teacher").await;
+    for name in [
+        "Қазақ тілі: іскери хат алмасу",
+        "Учёба без стресса",
+        "Kazan history",
+    ] {
+        course(&app, &teacher, name, true).await;
+    }
+    for (typed, expected) in [
+        ("казак", "Қазақ тілі: іскери хат алмасу"),
+        ("искери хат", "Қазақ тілі: іскери хат алмасу"),
+        ("ҚАЗАҚ", "Қазақ тілі: іскери хат алмасу"),
+        ("учеба", "Учёба без стресса"),
+    ] {
+        let q = typed.bytes().fold(String::new(), |mut q, b| {
+            write!(q, "%{b:02X}").unwrap();
+            q
+        });
+        for path in [
+            format!("/api/v2/search?q={q}"),
+            format!("/api/v2/courses?q={q}"),
+        ] {
+            let body = app.get(&path).await.json();
+            let found = body.get("courses").or_else(|| body.get("items")).unwrap();
+            let names: Vec<_> = found
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c["name"].as_str().unwrap())
+                .collect();
+            assert_eq!(names, [expected], "{path} ({typed})");
+        }
+    }
 }
 
 /// `cursor` pages every section by the same offset; `next_cursor` is set
