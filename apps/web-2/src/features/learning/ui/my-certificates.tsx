@@ -1,5 +1,6 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
+import { BadgeCheck } from 'lucide-react'
 
 import { CertificatePdfLink, CertificateShare, certificateKind, certificateTitle } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
@@ -67,6 +68,7 @@ export function MyCertificates() {
                   params={{ certificateId: certificate.verify_code }}
                   className={buttonVariants({ variant: 'ghost' })}
                 >
+                  <BadgeCheck data-icon="inline-start" aria-hidden />
                   {m.learning_certificate_verify()}
                 </RouterLink>
                 <CertificateShare

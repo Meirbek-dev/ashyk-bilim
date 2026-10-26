@@ -11,7 +11,7 @@ import { certificatePdfHref } from '../model/certificates'
 export function CertificatePdfLink({ code, variant = 'outline' }: { code: string; variant?: 'default' | 'outline' }) {
   return (
     <Anchor href={certificatePdfHref(code, getLocale())} className={buttonVariants({ variant })} download>
-      <Download aria-hidden />
+      <Download data-icon="inline-start" aria-hidden />
       {m.certificates_download_pdf()}
     </Anchor>
   )

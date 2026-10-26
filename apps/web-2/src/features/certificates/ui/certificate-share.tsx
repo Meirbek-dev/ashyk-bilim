@@ -1,4 +1,4 @@
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -45,6 +45,7 @@ export function CertificateShare({ code, name, issuedAtUnix, linkedIn = false, v
           className={buttonVariants({ variant: 'ghost' })}
         >
           {m.certificates_linkedin()}
+          <ExternalLink data-icon="inline-end" aria-hidden />
         </Anchor>
       ) : null}
     </>
