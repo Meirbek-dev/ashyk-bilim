@@ -42,7 +42,7 @@
   "attempt_history_heading": "Ваши попытки",
   "attempt_number": "Попытка {number}",
   "attempt_status_draft": "Черновик",
-  "attempt_status_pending": "На проверке",
+  "attempt_status_pending": "Ждёт проверки",
   "attempt_status_graded": "Оценка не опубликована",
   "attempt_status_published": "Оценено",
   "attempt_status_returned": "Возвращена",

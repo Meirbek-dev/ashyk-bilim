@@ -47,7 +47,7 @@
   "submission_receipt_title": "Работа сдана {date}",
   "submission_attempt": "Попытка {number}",
   "submission_late": "С опозданием",
-  "submission_awaiting_review": "Ожидает проверки",
+  "submission_awaiting_review": "Ждёт проверки",
   "submission_grade_hidden": "Оценка выставлена и появится после публикации.",
   "submission_result_title": "Результат",
   "submission_score": "Оценка: {score}",

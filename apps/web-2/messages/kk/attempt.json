@@ -42,7 +42,7 @@
   "attempt_history_heading": "Сіздің әрекеттеріңіз",
   "attempt_number": "{number}-әрекет",
   "attempt_status_draft": "Нобай",
-  "attempt_status_pending": "Тексерілуде",
+  "attempt_status_pending": "Тексеруді күтуде",
   "attempt_status_graded": "Баға жарияланбаған",
   "attempt_status_published": "Бағаланды",
   "attempt_status_returned": "Қайтарылды",

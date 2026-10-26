@@ -42,7 +42,7 @@
   "attempt_history_heading": "Your attempts",
   "attempt_number": "Attempt {number}",
   "attempt_status_draft": "Draft",
-  "attempt_status_pending": "In review",
+  "attempt_status_pending": "Awaiting review",
   "attempt_status_graded": "Grade not published",
   "attempt_status_published": "Graded",
   "attempt_status_returned": "Returned",
