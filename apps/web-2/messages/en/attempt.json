@@ -75,6 +75,7 @@
   "attempt_closed": "Saving is closed: time is up or the deadline has passed. Answers are no longer accepted.",
   "attempt_changed": "The quiz has changed: review your answers and submit again",
   "attempt_violations": "Violations: {count} of {threshold}",
+  "attempt_violations_count": "Violations: {count}",
   "attempt_violations_exceeded": "The violation limit is reached: the attempt will score zero when submitted",
   "attempt_fullscreen_needed": "The exam runs in full screen",
   "attempt_fullscreen_enter": "Full screen",

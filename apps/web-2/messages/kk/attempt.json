@@ -75,6 +75,7 @@
   "attempt_closed": "Сақтау жабылды: уақыт бітті немесе тапсыру мерзімі өтті. Жауаптар енді қабылданбайды.",
   "attempt_changed": "Тест өзгерді: жауаптарды тексеріп, қайта тапсырыңыз",
   "attempt_violations": "Бұзушылықтар: {threshold} ішінен {count}",
+  "attempt_violations_count": "Бұзушылықтар: {count}",
   "attempt_violations_exceeded": "Бұзушылық шегінен асты: тапсырғанда әрекет нөлденеді",
   "attempt_fullscreen_needed": "Емтихан толық экран режимінде өтеді",
   "attempt_fullscreen_enter": "Толық экран",

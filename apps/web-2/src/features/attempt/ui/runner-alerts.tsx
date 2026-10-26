@@ -29,7 +29,10 @@ export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: Run
     <div className="flex flex-col gap-2 text-sm empty:hidden">
       {guard.active && guard.count > 0 ? (
         <p className="text-muted-foreground tabular-nums">
-          {m.attempt_violations({ count: guard.count, threshold: guard.threshold })}
+          {/* Past the threshold «4 из 3» reads as a glitch: the count alone, the alert below says what it means. */}
+          {guard.exceeded
+            ? m.attempt_violations_count({ count: guard.count })
+            : m.attempt_violations({ count: guard.count, threshold: guard.threshold })}
         </p>
       ) : null}
       {guard.exceeded ? <ErrorAlert>{m.attempt_violations_exceeded()}</ErrorAlert> : null}
