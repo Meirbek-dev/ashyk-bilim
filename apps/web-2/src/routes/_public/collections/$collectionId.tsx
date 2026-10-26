@@ -1,13 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { CollectionNotFound, CollectionPage, ensureCollection } from '#/features/collections'
+import { markdownSummary } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import { documentTitle } from '#/shared/lib/document-title'
+import { pageMeta } from '#/shared/lib/document-title'
 
 export const Route = createFileRoute('/_public/collections/$collectionId')({
-  loader: ({ context, params }) => ensureCollection(context.queryClient, params.collectionId),
+  loader: async ({ context, params }) => {
+    const collection = await ensureCollection(context.queryClient, params.collectionId)
+    return { name: collection.name, summary: markdownSummary(collection.description), image: collection.cover_key }
+  },
   staticData: { title: m.platform_page_collection },
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.name) }] : [] }),
+  // A collection is shared as a link: its name, description and cover make the preview (like a course's).
+  head: ({ loaderData }) => ({
+    meta: loaderData ? pageMeta(loaderData.name, loaderData.summary, { imageKey: loaderData.image }) : [],
+  }),
   component: CollectionPage,
   notFoundComponent: CollectionNotFound,
 })
