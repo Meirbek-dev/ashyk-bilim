@@ -11,6 +11,7 @@
   "ui_not_found_text": "Возможно, ссылка устарела или у вас нет к этому доступа.",
   "ui_filters": "Фильтры",
   "ui_filters_count": "Фильтры ({count})",
+  "ui_password_show": "Показать пароль",
   "ui_more_actions": "Другие действия",
   "ui_sections": "Разделы",
   "ui_contents": "Содержание",

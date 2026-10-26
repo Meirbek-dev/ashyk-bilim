@@ -11,6 +11,7 @@
   "ui_not_found_text": "Сілтеме ескірген немесе сізде бұған рұқсат жоқ болуы мүмкін.",
   "ui_filters": "Сүзгілер",
   "ui_filters_count": "Сүзгілер ({count})",
+  "ui_password_show": "Құпиясөзді көрсету",
   "ui_more_actions": "Басқа әрекеттер",
   "ui_sections": "Бөлімдер",
   "ui_contents": "Мазмұны",

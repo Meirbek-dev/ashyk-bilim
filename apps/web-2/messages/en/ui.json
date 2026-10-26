@@ -11,6 +11,7 @@
   "ui_not_found_text": "The link may be out of date, or you do not have access to it.",
   "ui_filters": "Filters",
   "ui_filters_count": "Filters ({count})",
+  "ui_password_show": "Show password",
   "ui_more_actions": "More actions",
   "ui_sections": "Sections",
   "ui_contents": "Contents",

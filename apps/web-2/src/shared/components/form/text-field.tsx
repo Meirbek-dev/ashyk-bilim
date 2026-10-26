@@ -6,6 +6,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '#/
 
 import { errorText } from './field-errors'
 import { describedBy, FieldShell } from './field-shell'
+import { PasswordInput } from './password-input'
 import { useFieldContext } from './form-context'
 
 type TextFieldProps = Pick<
@@ -21,6 +22,7 @@ type TextFieldProps = Pick<
 /**
  * `<form.AppField name="x">{f => <f.TextField label={...} />}</form.AppField>`: stock `Input` in a stock `Field`.
  * `type="search"` draws a search box: magnifier and the label as placeholder; the label itself is for screen readers.
+ * `type="password"` adds a «show password» switch.
  */
 export function TextField({ label, description, suffix, ...input }: TextFieldProps) {
   const field = useFieldContext<string | null | undefined>()
@@ -54,6 +56,8 @@ export function TextField({ label, description, suffix, ...input }: TextFieldPro
             <Search aria-hidden />
           </InputGroupAddon>
         </InputGroup>
+      ) : input.type === 'password' ? (
+        <PasswordInput {...control} />
       ) : suffix ? (
         <InputGroup className="h-control">
           <InputGroupInput {...control} />
