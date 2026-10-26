@@ -12,11 +12,12 @@
 use std::time::Duration;
 
 use ab_clients::zitadel::{PasswordSessionOutcome, SessionUser};
+use ab_core::language::Language;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use redis::AsyncCommands;
 use secrecy::SecretString;
 
-use super::{CODE_MAIL_WINDOW, IdentityService, PASSWORD_CHECK_WINDOW, html_escape};
+use super::{CODE_MAIL_WINDOW, IdentityService, PASSWORD_CHECK_WINDOW, html_escape, mail};
 use crate::identity::Actor;
 
 /// How long an emailed change code stays valid.
@@ -157,16 +158,21 @@ impl IdentityService {
             serde_json::json!({}),
         )
         .await?;
+        let language = Language::from_locale(&current.locale).unwrap_or(Language::Ru);
+        let copy = mail::email_change(language);
         self.mail(
             &pending.email,
-            "Подтвердите новый адрес почты - Ashyq Bilim",
+            copy.subject,
             &format!(
-                "<p>Здравствуйте, {name}!</p>\
-                 <p>Код для смены адреса почты: <strong>{code}</strong></p>\
-                 <p>Введите его в настройках профиля. Код действует один час.</p>\
-                 <p>Если вы не меняли адрес, просто проигнорируйте это письмо.</p>",
-                name = html_escape(&current.display_name),
+                "<p>{greeting}</p>\
+                 <p>{code_line}: <strong>{code}</strong></p>\
+                 <p>{action}</p>\
+                 <p>{ignore}</p>",
+                greeting = mail::greeting(language, &html_escape(&current.display_name)),
+                code_line = copy.code_line,
                 code = pending.code,
+                action = copy.action,
+                ignore = copy.ignore,
             ),
             &pending.code,
         )
@@ -206,18 +212,23 @@ impl IdentityService {
         let changed = self.switch_email(actor, &pending.email).await;
         self.unlock(&lock).await?;
         let old = changed?;
+        // The address has changed: a failed read of the language only costs the notice its translation.
+        let language = ab_db::identity::find_auth_user(&self.pool, actor.user_id)
+            .await
+            .ok()
+            .flatten()
+            .and_then(|user| Language::from_locale(&user.locale))
+            .unwrap_or(Language::Ru);
         let _: i64 = redis
             .del(pending_key(actor))
             .await
             .map_err(|e| Error::internal("dropping a pending email change", e))?;
+        let (subject, changed_line, not_you) =
+            mail::email_changed(language, &html_escape(&pending.email));
         self.mail(
             &old,
-            "Адрес почты изменён - Ashyq Bilim",
-            &format!(
-                "<p>Адрес почты вашей учётной записи Ashyq Bilim изменён на {new}.</p>\
-                 <p>Если это были не вы, восстановите доступ через «Забыли пароль?» и напишите администратору платформы.</p>",
-                new = html_escape(&pending.email),
-            ),
+            subject,
+            &format!("<p>{changed_line}</p><p>{not_you}</p>"),
             "",
         )
         .await;

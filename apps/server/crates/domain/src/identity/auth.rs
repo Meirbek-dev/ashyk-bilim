@@ -33,6 +33,7 @@ use crate::identity::rate_limit::RateLimiter;
 use crate::identity::sessions::{NewSession, SessionStore};
 
 mod account;
+mod mail;
 
 /// Default counts: `ab_core::config::AuthLimits` (`AB__AUTH__LIMITS__*`).
 /// Failed logins per IP. Every attempt is counted up front (before the
@@ -80,21 +81,10 @@ impl CodeMail {
         }
     }
 
-    /// (subject, code line, link text, ignore line).
-    const fn copy(self) -> (&'static str, &'static str, &'static str, &'static str) {
+    const fn copy(self, language: Language) -> mail::CodeCopy {
         match self {
-            Self::Verification => (
-                "Подтвердите адрес электронной почты - Ashyq Bilim",
-                "Код подтверждения адреса электронной почты",
-                "Подтвердить адрес",
-                "Если вы не регистрировались на Ashyq Bilim, просто проигнорируйте это письмо.",
-            ),
-            Self::PasswordReset => (
-                "Восстановление пароля - Ashyq Bilim",
-                "Код для восстановления пароля",
-                "Задать новый пароль",
-                "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.",
-            ),
+            Self::Verification => mail::verification(language),
+            Self::PasswordReset => mail::password_reset(language),
         }
     }
 }
@@ -971,16 +961,19 @@ impl IdentityService {
             query_encode(to.email),
             path = mail.link().path(language),
         );
-        let (subject, code_line, action, ignore) = mail.copy();
+        let copy = mail.copy(language.unwrap_or(Language::Ru));
         let html = format!(
-            "<p>Здравствуйте, {name}!</p>\
+            "<p>{greeting}</p>\
              <p>{code_line}: <strong>{code}</strong></p>\
              <p><a href=\"{link}\">{action}</a></p>\
              <p>{ignore}</p>",
-            name = html_escape(to.name),
+            greeting = mail::greeting(language.unwrap_or(Language::Ru), &html_escape(to.name)),
+            code_line = copy.code_line,
+            action = copy.action,
+            ignore = copy.ignore,
             link = html_escape(&link),
         );
-        if let Err(err) = mailer.send(to.email, subject, &html).await {
+        if let Err(err) = mailer.send(to.email, copy.subject, &html).await {
             tracing::warn!(%err, user_id = %to.id, "{} email not sent", mail.what());
         }
     }
