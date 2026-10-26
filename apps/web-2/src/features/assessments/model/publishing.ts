@@ -4,6 +4,27 @@ import type { AssessmentDetail, AuditEvent, Lifecycle, ReadinessIssue } from '#/
 export const sortedIssues = (issues: readonly ReadinessIssue[]): ReadinessIssue[] =>
   issues.toSorted((a, b) => Number(a.severity !== 'blocker') - Number(b.severity !== 'blocker'))
 
+export type IssueGroup = { itemId: string | null; codes: ReadinessIssue['code'][] }
+
+/**
+ * Readiness by severity (blockers first), each severity's issues gathered per question in the server's order: a
+ * question with five problems is one line with one link, not five lines repeating «Мешает публикации».
+ */
+export function groupedIssues(
+  issues: readonly ReadinessIssue[],
+): { severity: 'blocker' | 'warning'; groups: IssueGroup[] }[] {
+  const sections = new Map<'blocker' | 'warning', Map<string | null, IssueGroup>>()
+  for (const issue of sortedIssues(issues)) {
+    const severity = issue.severity === 'blocker' ? 'blocker' : 'warning'
+    const groups = sections.get(severity) ?? new Map<string | null, IssueGroup>()
+    sections.set(severity, groups)
+    const group = groups.get(issue.item_id) ?? { itemId: issue.item_id, codes: [] }
+    groups.set(issue.item_id, group)
+    if (!group.codes.includes(issue.code)) group.codes.push(issue.code)
+  }
+  return [...sections].map(([severity, groups]) => ({ severity, groups: [...groups.values()] }))
+}
+
 const LIFECYCLES = ['draft', 'scheduled', 'published', 'archived'] as const satisfies readonly Lifecycle[]
 
 /** A lifecycle-transition's `from` / `to`, when the payload names a known state. */

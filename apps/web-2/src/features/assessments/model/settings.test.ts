@@ -7,7 +7,7 @@ import { toDateTimeInput } from '#/shared/i18n/format'
 import { detailsBody, detailsFormSchema } from './details'
 import { overrideBody, overrideForm, overrideFormSchema } from './overrides'
 import { policyBody, policyForm, policyFormSchema } from './policy'
-import { auditActor, canMove, lifecycleOf, sortedIssues } from './publishing'
+import { auditActor, canMove, groupedIssues, lifecycleOf, sortedIssues } from './publishing'
 
 // 2026-02-01 14:30 in Almaty (UTC+5) is 09:30 UTC.
 const FEB_1_1430 = Date.UTC(2026, 1, 1, 9, 30) / 1000
@@ -84,6 +84,11 @@ describe('rules', () => {
 const issue = (code: ReadinessIssueCode, severity: 'blocker' | 'warning') =>
   ({ area: 'questions', code, item_id: null, message: '', severity }) as const
 
+const at = (code: ReadinessIssueCode, severity: 'blocker' | 'warning', item_id: string | null) => ({
+  ...issue(code, severity),
+  item_id,
+})
+
 const event = (actor: string | null, by?: string): AuditEvent => ({
   actor_id: actor,
   actor_name: null,
@@ -124,6 +129,25 @@ describe('exceptions and publishing', () => {
   test('B-ASM-22 readiness: blockers come first', () => {
     const sorted = sortedIssues([issue('policy.due_at_past', 'warning'), issue('assessment.empty', 'blocker')])
     expect(sorted.map(row => row.code)).toEqual(['assessment.empty', 'policy.due_at_past'])
+  })
+
+  test('B-ASM-22 readiness: one line per question, its problems together, blockers first', () => {
+    const sections = groupedIssues([
+      at('choice.prompt_missing', 'blocker', 'q2'),
+      at('policy.due_at_past', 'warning', null),
+      at('choice.correct_missing', 'blocker', 'q2'),
+      at('matching.prompt_missing', 'blocker', 'q4'),
+    ])
+    expect(sections).toEqual([
+      {
+        severity: 'blocker',
+        groups: [
+          { itemId: 'q2', codes: ['choice.prompt_missing', 'choice.correct_missing'] },
+          { itemId: 'q4', codes: ['matching.prompt_missing'] },
+        ],
+      },
+      { severity: 'warning', groups: [{ itemId: null, codes: ['policy.due_at_past'] }] },
+    ])
   })
 
   test('B-ASM-23 the transitions the buttons offer are the server allowed_transitions', () => {

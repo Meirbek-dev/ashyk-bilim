@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
 
-import { sortedIssues } from '../model/publishing'
+import { groupedIssues } from '../model/publishing'
 import { assessmentReadinessOptions } from '../queries'
 import { issueLabels } from './labels'
 
@@ -27,24 +27,30 @@ export function ReadinessList({ courseId, activityId, assessment }: ReadinessLis
     return item?.title || m.assessments_item_untitled()
   }
   return (
-    <ul className="flex flex-col gap-2">
-      {sortedIssues(readiness.issues).map((issue, at) => (
-        <li key={`${issue.code}-${issue.item_id ?? at}`} className="flex flex-col gap-0.5 text-sm">
-          <span className={issue.severity === 'blocker' ? 'text-destructive' : 'text-warning'}>
-            {issue.severity === 'blocker' ? m.assessments_blockers() : m.assessments_warnings()}:{' '}
-            {issueLabels[issue.code]()}
-          </span>
-          {issue.item_id ? (
-            <Link
-              to="/teach/courses/$courseId/activities/$activityId/edit"
-              params={{ courseId, activityId }}
-              search={{ item: issue.item_id }}
-            >
-              {m.assessments_issue_open({ title: title(issue.item_id) })}
-            </Link>
-          ) : null}
-        </li>
+    <div className="flex flex-col gap-3">
+      {groupedIssues(readiness.issues).map(({ severity, groups }) => (
+        <section key={severity} className="flex flex-col gap-1 text-sm">
+          <h3 className={severity === 'blocker' ? 'font-medium text-destructive' : 'font-medium text-warning'}>
+            {severity === 'blocker' ? m.assessments_blockers() : m.assessments_warnings()}
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {groups.map(group => (
+              <li key={group.itemId ?? 'assessment'} className="flex flex-col gap-0.5">
+                <span>{group.codes.map(code => issueLabels[code]()).join(' · ')}</span>
+                {group.itemId ? (
+                  <Link
+                    to="/teach/courses/$courseId/activities/$activityId/edit"
+                    params={{ courseId, activityId }}
+                    search={{ item: group.itemId }}
+                  >
+                    {m.assessments_issue_open({ title: title(group.itemId) })}
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   )
 }
