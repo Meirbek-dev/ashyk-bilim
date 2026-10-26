@@ -55,7 +55,9 @@ export default async function warmDevServer(config: FullConfig): Promise<void> {
   if (process.env['E2E_BASE_URL']) return
   const baseURL = String(config.projects[0]?.use.baseURL)
   const browser = await chromium.launch()
-  const context = await browser.newContext({ baseURL })
+  // The specs' locale, which is also the seeded accounts' profile language: a guest route of the pass sets that
+  // language's cookie (applyProfileLanguage), and under another locale the tabs then loading hydrated in a new language.
+  const context = await browser.newContext({ baseURL, locale: 'ru-RU' })
   // `vp dev` speaks HTTP/1.1: six signed-in pages each holding /me/events take every connection the browser allows
   // per host and the module requests behind them never finish. Warming needs no live events.
   await context.route('**/me/events', route => route.abort())
