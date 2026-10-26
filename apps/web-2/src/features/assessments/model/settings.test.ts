@@ -173,7 +173,7 @@ describe('exceptions and publishing', () => {
 })
 
 describe('history', () => {
-  test('B-ASM-30 a grade or an exception names its learner; a transition names none', () => {
+  test('B-ASM-26 a grade or an exception names its learner; a transition names none', () => {
     expect(auditLearnerId({ payload: { learner_id: 'a', status: 'published' } })).toBe('a')
     expect(auditLearnerId({ payload: { user_id: 'b' } })).toBe('b')
     expect(auditLearnerId({ payload: { from: 'draft', to: 'published' } })).toBeNull()
