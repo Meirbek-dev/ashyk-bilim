@@ -181,7 +181,9 @@ impl AiService {
         .map(|f| self.feature_capability(&switches, f))
         .collect();
 
-        let ai_enabled = self.config.ai_enabled;
+        // No provider and no draft answers: every AI call would answer 503, so the panel says so up front.
+        let ai_enabled = self.config.ai_enabled
+            && (self.provider().is_some() || self.config.ai_draft_mode_enabled);
         let mut modes: Vec<AiMode> = Vec::new();
         if ai_enabled && !restricted {
             if self.feature_available(&switches, AiFeature::CourseQa) {

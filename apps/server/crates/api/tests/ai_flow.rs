@@ -786,6 +786,30 @@ async fn budget_and_master_switch_answer_503(pool: PgPool) {
     assert_eq!(capabilities.json()["reason"], "ai_disabled");
 }
 
+/// Without a provider key and without draft answers every AI call answers 503: capabilities say so up front,
+/// so the teacher sees «AI is off» instead of buttons that fail.
+#[sqlx::test(migrations = "../../migrations")]
+async fn no_provider_and_no_draft_mode_reads_as_ai_disabled(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.ai.openai_api_key = None;
+        config.ai.claude_api_key = None;
+        config.ai.openrouter_api_key = None;
+        config.ai.ai_draft_mode_enabled = false;
+    })
+    .await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = published_course(&app, &teacher, "No key").await;
+    let capabilities = app
+        .get_as(
+            &teacher,
+            &format!("/api/v2/ai/capabilities/scope/{course_id}"),
+        )
+        .await;
+    assert_eq!(capabilities.status, StatusCode::OK);
+    assert_eq!(capabilities.json()["available"], false);
+    assert_eq!(capabilities.json()["reason"], "ai_disabled");
+}
+
 /// UX-037: without a provider, draft mode answers in the requested
 /// language (the legacy text was Russian regardless).
 #[sqlx::test(migrations = "../../migrations")]
