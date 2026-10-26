@@ -71,9 +71,11 @@ export function LifecycleActions({ activityId, title, assessment }: LifecycleAct
             void form.handleSubmit()
           }}
         >
-          <form.AppField name="scheduled_at">
-            {field => <field.TextField label={m.assessments_schedule_at()} type="datetime-local" />}
-          </form.AppField>
+          <div className="w-full max-w-xs">
+            <form.AppField name="scheduled_at">
+              {field => <field.TextField label={m.assessments_schedule_at()} type="datetime-local" />}
+            </form.AppField>
+          </div>
           <SubmitButton type="submit" variant="outline" pending={transition.isPending}>
             {m.assessments_schedule()}
           </SubmitButton>

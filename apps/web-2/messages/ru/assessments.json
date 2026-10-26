@@ -166,7 +166,7 @@
   "assessments_blockers": "Мешает публикации",
   "assessments_warnings": "Стоит проверить",
   "assessments_issue_open": "Открыть вопрос «{title}»",
-  "assessments_schedule_at": "Открыть в",
+  "assessments_schedule_at": "Время открытия (Алматы)",
   "assessments_schedule": "Запланировать",
   "assessments_unschedule": "Отменить расписание",
   "assessments_archive": "В архив",
