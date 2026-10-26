@@ -96,7 +96,9 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
               )}
               {check === null ? null : (
                 <span>
-                  {(check.returned ? m.grading_returned_at : m.grading_graded_at)({ date: formatDateTime(check.at) })}
+                  {(check.returned ? m.grading_returned_at : check.draft ? m.grading_draft_at : m.grading_graded_at)({
+                    date: formatDateTime(check.at),
+                  })}
                 </span>
               )}
               {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}

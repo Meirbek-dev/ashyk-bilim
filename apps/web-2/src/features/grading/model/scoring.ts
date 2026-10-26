@@ -58,8 +58,10 @@ export const afterLatePenalty = (score: number, penaltyPct: number): number =>
  * The review header's last check (B-GRD-35): a check older than the hand-in was a return for revision, and the work on
  * screen is the learner's answer to it, so it reads «Возвращена», not «Проверена».
  */
-export function lastCheck(head: { graded_at_unix: number | null; submitted_at_unix: number | null }) {
+export function lastCheck(head: { graded_at_unix: number | null; submitted_at_unix: number | null; status: string }) {
   if (head.graded_at_unix === null) return null
   const returned = head.submitted_at_unix !== null && head.graded_at_unix < head.submitted_at_unix
-  return { at: head.graded_at_unix, returned }
+  // A saved draft stamps the check time too, while the work still waits: «grade draft saved», not «Проверена».
+  const draft = !returned && (head.status === 'pending' || head.status === 'submitted')
+  return { at: head.graded_at_unix, returned, draft }
 }

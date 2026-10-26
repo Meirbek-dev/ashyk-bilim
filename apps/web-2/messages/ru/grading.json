@@ -179,6 +179,7 @@
   "grading_started_at": "Начата {date}",
   "grading_graded_at": "Проверена {date}",
   "grading_returned_at": "Возвращена на исправление {date}",
+  "grading_draft_at": "Черновик оценки сохранён {date}",
   "grading_keys_hint": "J — следующая, K — предыдущая",
   "grading_manual_unscored": "Поставьте баллы за ответы, которые проверяются вручную: вопросы {numbers}."
 }

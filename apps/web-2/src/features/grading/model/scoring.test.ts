@@ -87,8 +87,22 @@ test('B-GRD-32 the late penalty is applied as the server does: a share off, hund
 
 describe('lastCheck', () => {
   test('B-GRD-35 a check before the latest hand-in was a return: the resubmitted work does not read «Проверена»', () => {
-    expect(lastCheck({ graded_at_unix: null, submitted_at_unix: 10 })).toBeNull()
-    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10 })).toEqual({ at: 20, returned: false })
-    expect(lastCheck({ graded_at_unix: 10, submitted_at_unix: 20 })).toEqual({ at: 10, returned: true })
+    expect(lastCheck({ graded_at_unix: null, submitted_at_unix: 10, status: 'pending' })).toBeNull()
+    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10, status: 'graded' })).toEqual({
+      at: 20,
+      returned: false,
+      draft: false,
+    })
+    expect(lastCheck({ graded_at_unix: 10, submitted_at_unix: 20, status: 'submitted' })).toEqual({
+      at: 10,
+      returned: true,
+      draft: false,
+    })
+  })
+
+  test('B-GRD-35 a grade draft saved on work still waiting reads as a draft, not «Проверена»', () => {
+    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10, status: 'pending' })?.draft).toBe(true)
+    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10, status: 'submitted' })?.draft).toBe(true)
+    expect(lastCheck({ graded_at_unix: 20, submitted_at_unix: 10, status: 'published' })?.draft).toBe(false)
   })
 })
