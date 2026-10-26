@@ -194,4 +194,5 @@ test('B-GRD-31 a feedback draft goes under what is written; an empty field takes
   expect(appendDraft('', 'Черновик')).toBe('Черновик')
   expect(appendDraft('  ', 'Черновик')).toBe('Черновик')
   expect(appendDraft('Молодец. ', 'Черновик')).toBe('Молодец.\n\nЧерновик')
+  expect(appendDraft('Молодец.\n\nЧерновик', 'Черновик')).toBe('Молодец.\n\nЧерновик')
 })

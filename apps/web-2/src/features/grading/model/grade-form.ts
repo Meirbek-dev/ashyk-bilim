@@ -163,6 +163,11 @@ export function fileGradeRequest(form: FileGradeForm, action: FileGradeAction): 
   }
 }
 
-/** A feedback draft offered by the side panel goes under what the grader wrote (B-GRD-31): nothing is replaced. */
-export const appendDraft = (current: string, draft: string): string =>
-  current.trim() ? `${current.trimEnd()}\n\n${draft}` : draft
+/**
+ * A feedback draft offered by the side panel goes under what the grader wrote (B-GRD-31): nothing is replaced, and
+ * a draft already in the field (a second click) is not written twice.
+ */
+export const appendDraft = (current: string, draft: string): string => {
+  if (current.includes(draft.trim())) return current
+  return current.trim() ? `${current.trimEnd()}\n\n${draft}` : draft
+}
