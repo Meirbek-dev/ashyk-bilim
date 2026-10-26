@@ -151,7 +151,9 @@ pub struct AiConfig {
     /// Origin + version prefix, no trailing slash. Tests point it at a fake.
     #[serde(default = "AiConfig::default_claude_base_url")]
     pub claude_base_url: String,
-    #[serde(default = "AiConfig::default_openai_timeout_secs")]
+    /// Whole call for a structured (non-streaming) reply: a course analysis runs ~30-60 s, so the 20 s default
+    /// shared with the other providers failed every one (`request timed out`). Heavy runs are queued, not inline.
+    #[serde(default = "AiConfig::default_claude_timeout_secs")]
     pub claude_timeout_secs: f64,
     pub openai_api_key: Option<SecretString>,
     #[serde(default = "AiConfig::default_openai_model")]
@@ -226,6 +228,9 @@ impl AiConfig {
     }
     const fn default_openai_timeout_secs() -> f64 {
         20.0
+    }
+    const fn default_claude_timeout_secs() -> f64 {
+        120.0
     }
     const fn default_openrouter_timeout_secs() -> f64 {
         25.0
@@ -332,7 +337,7 @@ impl Default for AiConfig {
             claude_api_key: None,
             claude_model: Self::default_claude_model(),
             claude_base_url: Self::default_claude_base_url(),
-            claude_timeout_secs: Self::default_openai_timeout_secs(),
+            claude_timeout_secs: Self::default_claude_timeout_secs(),
             openai_api_key: None,
             openai_model: Self::default_openai_model(),
             openai_base_url: Self::default_openai_base_url(),
