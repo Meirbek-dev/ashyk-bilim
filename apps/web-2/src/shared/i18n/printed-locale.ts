@@ -25,6 +25,9 @@ const PRINTED_PATH = /^\/([a-z]{2})\/certificates\/[^/]+\/verify\/?$/
 /** The certificate's language on its printed verify URL; undefined anywhere else (the next strategy decides). */
 export const fromPath = (pathname: string) => printedLocale(PRINTED_PATH.exec(pathname)?.[1] ?? '') ?? undefined
 
+/** The same for a router `location.href`: the in-app path with its query ("/login?redirect=…"), not an absolute URL. */
+export const fromHref = (href: string) => fromPath(new URL(href, 'http://localhost').pathname)
+
 /**
  * `custom-printed`, the first strategy (paraglideOptions): on `/{ru|kz|en}/certificates/{code}/verify` only,
  * the page speaks the certificate's language, read from its URL on the server and in the browser alike, and never
