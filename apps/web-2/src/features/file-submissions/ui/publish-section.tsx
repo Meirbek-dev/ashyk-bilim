@@ -29,12 +29,17 @@ export function PublishSection({ task }: { task: FileSubmission }) {
   const publish = useMutation(publishTaskOptions(queryClient, task.course_id, task.activity_id))
   const unpublish = useMutation(unpublishTaskOptions(queryClient, task.course_id, task.activity_id))
   const [confirming, setConfirming] = useState(false)
+  // A refusal is about the task as it was: once a section saves (new version), «add the instructions» is stale.
+  const [refusedAt, setRefusedAt] = useState<number | undefined | null>(null)
   const allowed = task.allowed_actions ?? []
   const status = lifecycleStatus[task.lifecycle]
   const run = () =>
     publish.mutate(
       { path: { file_submission_id: task.id } },
-      { onSuccess: () => toast.add({ title: m.submission_published_toast() }) },
+      {
+        onSuccess: () => toast.add({ title: m.submission_published_toast() }),
+        onError: () => setRefusedAt(task.version),
+      },
     )
   return (
     <section aria-labelledby="submission-publishing" className="flex max-w-prose flex-col items-start gap-2">
@@ -78,7 +83,7 @@ export function PublishSection({ task }: { task: FileSubmission }) {
           error={unpublish.error}
         />
       ) : null}
-      {publish.error ? (
+      {publish.error && refusedAt === task.version ? (
         <ErrorAlert>
           {needsInstructions(publish.error) ? m.submission_publish_needs_instructions() : presentError(publish.error)}
         </ErrorAlert>
