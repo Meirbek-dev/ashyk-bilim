@@ -53,4 +53,9 @@ describe('validationMessage', () => {
     expect(serverFieldMessage('invalid', 'username')).toBe(m.validation_invalid())
     expect(serverFieldMessage('required', 'email')).toBe(m.validation_required())
   })
+
+  test('a server "invalid" on a one-time code says the code is wrong or expired', () => {
+    expect(serverFieldMessage('invalid', 'code')).toBe(m.validation_code_wrong())
+    expect(serverFieldMessage('required', 'code')).toBe(m.validation_required())
+  })
 })

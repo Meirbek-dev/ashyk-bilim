@@ -56,8 +56,12 @@ const serverCodes: Partial<Record<string, () => string>> = {
   unsafe: m.validation_unsafe_url,
 }
 
-/** A field's server error as text; an `invalid` email (empty or without @) says what an address looks like. */
-export const serverFieldMessage = (code: string, field = ''): string =>
-  code === 'invalid' && /(^|[._])email$/.test(field)
-    ? m.validation_email()
-    : (serverCodes[code] ?? m.validation_invalid)()
+/**
+ * A field's server error as text. An `invalid` email (empty or without @) says what an address looks like; an `invalid`
+ * `code` (every request with one takes a code from an email or an authenticator app) is wrong or expired.
+ */
+export const serverFieldMessage = (code: string, field = ''): string => {
+  if (code === 'invalid' && /(^|[._])email$/.test(field)) return m.validation_email()
+  if (code === 'invalid' && field === 'code') return m.validation_code_wrong()
+  return (serverCodes[code] ?? m.validation_invalid)()
+}

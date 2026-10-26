@@ -8,6 +8,7 @@
   "validation_format": "Мәннің пішімін тексеріңіз.",
   "validation_email": "Пошта мекенжайын енгізіңіз, мысалы name@example.com.",
   "validation_duplicate": "Мұндай мән бұрыннан бар.",
+  "validation_code_wrong": "Код қате немесе мерзімі өткен.",
   "validation_invalid": "Бұл мәнді тексеріңіз.",
   "validation_too_long": "Мән тым ұзын.",
   "validation_out_of_range": "Мән рұқсат етілген ауқымнан тыс.",

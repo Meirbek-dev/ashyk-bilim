@@ -8,6 +8,7 @@
   "validation_format": "Проверьте формат значения.",
   "validation_email": "Введите адрес почты, например name@example.com.",
   "validation_duplicate": "Такое значение уже есть.",
+  "validation_code_wrong": "Код неверный или устарел.",
   "validation_invalid": "Проверьте это значение.",
   "validation_too_long": "Значение слишком длинное.",
   "validation_out_of_range": "Значение вне допустимого диапазона.",
