@@ -12,6 +12,8 @@
   "attempt_attempts_left": "Қалған әрекеттер: {total} ішінен {left}",
   "attempt_attempts_unlimited": "Әрекет саны шектелмеген, пайдаланылды: {used}",
   "attempt_attempts_unlimited_fresh": "Әрекет саны шектелмеген",
+  "attempt_attempts_running": "{total} ішінен {number}-әрекет жүріп жатыр",
+  "attempt_attempts_running_unlimited": "{number}-әрекет жүріп жатыр, әрекет саны шектелмеген",
   "attempt_due": "Мерзімі: {date}",
   "attempt_review_none": "Тексеруден кейін талдаусыз ұпай ғана көрінеді",
   "attempt_review_score_only": "Тексеруден кейін әр сұрақтың ұпайы көрінеді",

@@ -19,8 +19,18 @@ const ruleLabels = {
   fullscreen: m.attempt_rule_fullscreen,
 } satisfies Record<Protection, () => string>
 
-const attemptsText = (state: AttemptState) => {
+/**
+ * The attempts line. The server counts an open draft as neither used nor remaining: while one is open the line names
+ * it («Идёт попытка 1 из 3»), not «Осталось попыток: 3 из 3» for a learner already inside the only attempt.
+ */
+export const attemptsText = (state: AttemptState) => {
   const used = formatNumber(state.attempts_used)
+  if (state.can_continue && state.draft_id) {
+    const number = formatNumber(state.attempts_used + 1)
+    if (state.attempts_remaining === null) return m.attempt_attempts_running_unlimited({ number })
+    const total = formatNumber(state.attempts_used + state.attempts_remaining)
+    return m.attempt_attempts_running({ number, total })
+  }
   if (state.attempts_remaining === null)
     return state.attempts_used === 0 ? m.attempt_attempts_unlimited_fresh() : m.attempt_attempts_unlimited({ used })
   const total = formatNumber(state.attempts_used + state.attempts_remaining)

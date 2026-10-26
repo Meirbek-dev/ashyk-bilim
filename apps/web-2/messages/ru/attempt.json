@@ -12,6 +12,8 @@
   "attempt_attempts_left": "Осталось попыток: {left} из {total}",
   "attempt_attempts_unlimited": "Попыток без ограничений, использовано: {used}",
   "attempt_attempts_unlimited_fresh": "Попыток без ограничений",
+  "attempt_attempts_running": "Идёт попытка {number} из {total}",
+  "attempt_attempts_running_unlimited": "Идёт попытка {number}, попыток без ограничений",
   "attempt_due": "Срок: {date}",
   "attempt_review_none": "После проверки будет виден балл без разбора",
   "attempt_review_score_only": "После проверки будут видны баллы за каждый вопрос",

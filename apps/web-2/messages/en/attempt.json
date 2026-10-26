@@ -12,6 +12,8 @@
   "attempt_attempts_left": "Attempts left: {left} of {total}",
   "attempt_attempts_unlimited": "Unlimited attempts, used: {used}",
   "attempt_attempts_unlimited_fresh": "Unlimited attempts",
+  "attempt_attempts_running": "Attempt {number} of {total} in progress",
+  "attempt_attempts_running_unlimited": "Attempt {number} in progress, unlimited attempts",
   "attempt_due": "Deadline: {date}",
   "attempt_review_none": "After review you will see your score, without a breakdown",
   "attempt_review_score_only": "After review you will see the points for each question",
