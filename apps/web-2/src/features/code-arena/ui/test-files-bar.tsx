@@ -1,5 +1,5 @@
 import { Download } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { FileButton } from '#/shared/components/file-button'
@@ -17,13 +17,18 @@ const save = (text: string, type: string, name: string) => {
   URL.revokeObjectURL(url)
 }
 
-type TestFilesBarProps = { tests: readonly TestForm[]; onImport?: (tests: TestForm[]) => void }
+type TestFilesBarProps = {
+  tests: readonly TestForm[]
+  onImport?: (tests: TestForm[]) => void
+  /** A button that leads the row («Добавить пример»), so the case actions sit on one line. */
+  lead?: ReactNode
+}
 
 /**
  * The cases to a JSON or CSV file and back (B-COD-25): imported cases join the list, saved with the item. Without
  * `onImport` (a locked challenge) only the exports.
  */
-export function TestFilesBar({ tests, onImport }: TestFilesBarProps) {
+export function TestFilesBar({ tests, onImport, lead }: TestFilesBarProps) {
   const [error, setError] = useState<string | null>(null)
   const read = async (file: File) => {
     const imported = parseTestsFile(file.name, await file.text())
@@ -34,6 +39,7 @@ export function TestFilesBar({ tests, onImport }: TestFilesBarProps) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap gap-2">
+        {lead}
         {onImport ? (
           <FileButton
             label={m.code_cases_import()}

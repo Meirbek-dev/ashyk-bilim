@@ -65,20 +65,18 @@ export function CaseFields({ form, editable }: { form: CodeFormApi; editable: bo
             </ol>
             {/* Read-only: no adding; the export bar sits outside the disabled fieldset (code-item-form). */}
             {editable ? (
-              <>
-                <div>
+              <TestFilesBar
+                tests={list.state.value}
+                onImport={imported => {
+                  for (const test of imported) list.pushValue(test)
+                }}
+                lead={
                   <Button type="button" variant="outline" onClick={() => list.pushValue(newTest())}>
                     <Plus data-icon="inline-start" aria-hidden />
                     {m.code_case_add()}
                   </Button>
-                </div>
-                <TestFilesBar
-                  tests={list.state.value}
-                  onImport={imported => {
-                    for (const test of imported) list.pushValue(test)
-                  }}
-                />
-              </>
+                }
+              />
             ) : null}
           </fieldset>
         )
