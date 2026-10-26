@@ -179,9 +179,10 @@ describe('code arena entry', () => {
   })
 })
 
-test('B-COD-06 a draft refused as saved elsewhere or in an archived course stops saving and says which', () => {
+test('B-COD-06 a draft refused as saved elsewhere, in an archived course or gone with its task stops saving and says which', () => {
   expect(stoppedSave(apiError(409, 'conflict'))).toBe('conflict')
   expect(stoppedSave(apiError(409, 'course-archived'))).toBe('archived')
+  expect(stoppedSave(apiError(404, 'not-found'))).toBe('gone')
   expect(stoppedSave(apiError(429, 'rate-limited'))).toBeNull()
   expect(stoppedSave(null)).toBeNull()
 })

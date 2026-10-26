@@ -10,14 +10,15 @@ import { attemptsOptions, saveOptions } from '../queries'
 /** Typing settles this long before the code is saved; the server takes one save per 5 s per draft. */
 const SAVE_WAIT_MS = 5000
 
-export type DraftStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict' | 'archived'
+export type DraftStatus = 'saved' | 'dirty' | 'saving' | 'failed' | 'conflict' | 'archived' | 'gone'
 
 type DraftIds = { assessmentId: string; itemId: string; draftId: string }
 
 /**
  * The code in the server draft (B-COD-06): saved after a pause, one request at a time, with `If-Match` of the cached
  * draft (each answer replaces it). A refused save keeps the code for the next try; 409 (another tab saved, the attempt
- * is closed, or the course archived) stops saving until the page is read again. Leaving sends what still waits.
+ * is closed, or the course archived) or 404 (the task unpublished) stops saving until the page is read again. Leaving
+ * sends what still waits.
  */
 export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
   const queryClient = useQueryClient()
@@ -73,7 +74,7 @@ export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
     status,
     change: (answer: CodeAnswer) => {
       unsaved.current = answer
-      if (status !== 'conflict' && status !== 'archived') setStatus('dirty')
+      if (status !== 'conflict' && status !== 'archived' && status !== 'gone') setStatus('dirty')
       later.maybeExecute()
     },
     /** The hand-in carries the code itself: nothing may be saved after it (the attempt is closed then). */

@@ -89,10 +89,12 @@ export const isRunnerDown = (error: unknown): boolean =>
 export const languagesIn = (runner: Runner) => (runner.state === 'ready' ? runner.languages : null)
 
 /**
- * A refused draft save that stops saving until the page is read again (B-COD-06): another tab saved (409), or the
- * course went to the archive (409 `course-archived`: no other tab, nothing saves any more). Null: try again later.
+ * A refused draft save that stops saving until the page is read again (B-COD-06): another tab saved (409), the
+ * course went to the archive (409 `course-archived`: no other tab, nothing saves any more), or the task was
+ * unpublished or archived under the learner (404: the draft is gone with it). Null: try again later.
  */
-export function stoppedSave(error: unknown): 'conflict' | 'archived' | null {
+export function stoppedSave(error: unknown): 'conflict' | 'archived' | 'gone' | null {
+  if (error instanceof ApiError && error.status === 404) return 'gone'
   if (!(error instanceof ApiError) || error.status !== 409) return null
   return error.code === 'course-archived' ? 'archived' : 'conflict'
 }

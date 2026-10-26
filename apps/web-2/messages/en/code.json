@@ -52,6 +52,7 @@
   "code_save_failed": "Not saved",
   "code_save_conflict": "The draft was changed in another tab: reload the page.",
   "code_save_archived": "The course is archived: the code is no longer saved.",
+  "code_save_gone": "This task is no longer available: the teacher unpublished or archived it. The code is no longer saved.",
   "code_run_title": "Run result",
   "code_run_passed": "Passed {passed} of {total}",
   "code_runs": "My runs",

@@ -35,6 +35,7 @@ const statusText: Record<DraftStatus, () => string> = {
   failed: m.code_save_failed,
   conflict: m.code_save_conflict,
   archived: m.code_save_archived,
+  gone: m.code_save_gone,
 }
 
 type WorkspaceProps = {
