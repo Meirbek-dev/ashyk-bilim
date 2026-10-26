@@ -2,7 +2,7 @@ import { m } from '#/paraglide/messages'
 import type { WorkItem } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { StatusBadge, type StatusTone } from '#/shared/components/status-badge'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDateTime } from '#/shared/i18n/format'
 
 import { type InboxKind, isInboxKind } from '../model/inbox'
 import { WorkActionLink } from './work-action-link'
@@ -18,7 +18,9 @@ function KindBadge({ kind }: { kind: string }) {
   return <StatusBadge tone={meta.tone}>{meta.label()}</StatusBadge>
 }
 
-const date = (unix: number | null) => (unix === null ? null : <span className="tabular-nums">{formatDate(unix)}</span>)
+// With the time: the queue is sorted by how long a work waits, and several from one day read as a tie without it.
+const date = (unix: number | null) =>
+  unix === null ? null : <span className="tabular-nums">{formatDateTime(unix)}</span>
 
 export const inboxColumns: DataColumn<WorkItem>[] = [
   {
