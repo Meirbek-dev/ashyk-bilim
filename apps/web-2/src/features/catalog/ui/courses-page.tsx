@@ -19,15 +19,18 @@ export function CoursesPage() {
   return (
     <ListPage
       title={m.catalog_courses_title()}
+      // The order is the only control: beside the search box at every width, not one menu inside a «Фильтры» sheet.
       search={
-        <SearchBox
-          key={search.q ?? ''}
-          q={search.q}
-          label={m.catalog_courses_search_label()}
-          onSearch={q => navigate({ search: prev => ({ ...prev, q }) })}
-        />
+        <>
+          <SearchBox
+            key={search.q ?? ''}
+            q={search.q}
+            label={m.catalog_courses_search_label()}
+            onSearch={q => navigate({ search: prev => ({ ...prev, q }) })}
+          />
+          <SortMenu sort={filter.sort} signedIn={session !== null} />
+        </>
       }
-      filters={<SortMenu sort={filter.sort} signedIn={session !== null} />}
     >
       <CoursesList filter={filter} />
     </ListPage>
