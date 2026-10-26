@@ -58,7 +58,7 @@ const missing = (error: unknown) => {
  * The learner state of an enrolled learner, or of the course's staff previewing it as a learner (their attempts are
  * previews: never counted, never graded); anyone else (not enrolled, no access) gets a 403 in place.
  */
-export async function ensureLearner(queryClient: QueryClient, courseId: CourseId) {
+async function ensureLearner(queryClient: QueryClient, courseId: CourseId) {
   const state = await queryClient.query({ ...learnerStateOptions(courseId), staleTime: 'static' }).catch(missing)
   if (!state.enrolled && !staffPreview(state)) throw forbidden()
   return state
