@@ -28,11 +28,18 @@ export const isResetCodeInvalid = (error: unknown): boolean =>
 export const resetFormError = (error: unknown): unknown =>
   isResetCodeInvalid(error) || (error instanceof ApiError && error.fieldErrors.length > 0) ? null : error
 
+/** A name the server trims before its "must not be blank": checked trimmed here too, so spaces alone read "fill it in". */
+const trimmed = <T extends v.GenericSchema<string, string>>(schema: T) => v.pipe(v.string(), v.trim(), schema)
+
 /**
  * Sign-up's body schema with the address checked here too: the contract leaves its format to the server, so an empty
- * or malformed address came back alone after every other field had been fixed.
+ * or malformed address came back alone after every other field had been fixed. The same for names of spaces only: the
+ * server refuses them one field per answer (organization, then first name, then last name).
  */
 export const vSignupForm = v.strictObject({
   ...vRegisterRequest.entries,
+  first_name: trimmed(vRegisterRequest.entries.first_name),
+  last_name: trimmed(vRegisterRequest.entries.last_name),
+  organization: trimmed(vRegisterRequest.entries.organization),
   email: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.email(), v.maxLength(320)),
 })

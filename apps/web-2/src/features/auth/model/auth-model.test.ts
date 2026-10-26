@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
+import { validationMessage } from '#/shared/i18n/validation'
 
 import { loginSearchSchema, opensEmailLink, opensVerifyLink, verifyEmailSearchSchema } from '../route'
 import {
@@ -97,6 +98,15 @@ test('B-AUTH-06 an empty or malformed address is caught with the other fields, b
   expect(emailIssue('')).toBe('non_empty')
   expect(emailIssue('name.example.com')).toBe('email')
   expect(emailIssue(' name@example.com ')).toBeUndefined()
+})
+
+test('B-AUTH-06 names of spaces only are caught all at once, not one per server answer', () => {
+  const body = { username: 'abc', email: 'a@b.kz', password: 'Strong-Pass1!' }
+  const blank = v.safeParse(vSignupForm, { ...body, first_name: '  ', last_name: ' ', organization: '   ' })
+  expect(blank.issues?.map(issue => issue.path?.[0]?.key)).toEqual(['first_name', 'last_name', 'organization'])
+  expect(blank.issues?.map(issue => validationMessage(issue))).toEqual(Array(3).fill(m.validation_required()))
+  const named = { ...body, first_name: ' Әйгерім ', last_name: 'Сапарова', organization: 'ТОУ' }
+  expect(v.safeParse(vSignupForm, named).success).toBe(true)
 })
 
 test('B-AUTH-14 a 422 on the address of a resend goes under the email field', () => {

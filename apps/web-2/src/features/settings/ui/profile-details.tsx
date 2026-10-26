@@ -3,12 +3,12 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { UpdateProfileRequest, UserProfile } from '#/shared/api/gen/types.gen'
-import { vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
+import { vProfileDetailsForm } from '../model/settings'
 import { updateProfileOptions } from '../queries'
 
 /** Name, organization and bio; login and email are shown (the email changes on «Безопасность», B-SET-22). */
@@ -20,7 +20,7 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
     organization: profile.organization,
     bio: profile.bio,
   }))
-  const form = useAppForm(vUpdateProfileRequest, {
+  const form = useAppForm(vProfileDetailsForm, {
     leaveGuard: true,
     defaultValues,
     onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.settings_saved() }) }),

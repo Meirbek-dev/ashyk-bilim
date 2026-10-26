@@ -3,7 +3,7 @@ import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
 import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
-import { vChangeEmailRequest } from '#/shared/api/gen/valibot.gen'
+import { vChangeEmailRequest, vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
 import { MODES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
@@ -97,6 +97,16 @@ export type PendingEmail = v.InferOutput<typeof vPendingEmail>
 /** The address waiting for its code: only this account's and only while the code still works (B-SET-24). */
 export const pendingEmailFor = (pending: PendingEmail | null, user: string, now: number): string | null =>
   pending && pending.user === user && pending.until > now ? pending.email : null
+
+/**
+ * The profile's name and organization: the server trims both and refuses a blank one, one field per answer, while
+ * the contract marks neither required. Checked trimmed here, so a cleared field or spaces alone read "fill it in".
+ */
+export const vProfileDetailsForm = v.strictObject({
+  ...vUpdateProfileRequest.entries,
+  display_name: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(120)),
+  organization: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(200)),
+})
 
 /** The address change's body with the new address checked here as well (the contract leaves its format to the server). */
 export const vEmailChangeForm = v.strictObject({

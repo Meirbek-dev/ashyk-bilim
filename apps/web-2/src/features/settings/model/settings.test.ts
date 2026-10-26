@@ -13,6 +13,7 @@ import {
   readSwitches,
   startTheme,
   vEmailChangeForm,
+  vProfileDetailsForm,
 } from './settings'
 
 const MB = 1024 * 1024
@@ -116,4 +117,13 @@ test('B-SET-22 the new address is checked before the code is requested', () => {
   expect(emailIssue('')).toBe('non_empty')
   expect(emailIssue('new.example.com')).toBe('email')
   expect(emailIssue('new@example.com')).toBeUndefined()
+})
+
+test('B-SET-19 a cleared name or organization, or spaces alone, is "fill it in" before the server', () => {
+  const issues = v.safeParse(vProfileDetailsForm, { display_name: '  ', organization: '', bio: '' }).issues ?? []
+  expect(issues.map(issue => [issue.path?.[0]?.key, issue.type])).toEqual([
+    ['display_name', 'non_empty'],
+    ['organization', 'non_empty'],
+  ])
+  expect(v.safeParse(vProfileDetailsForm, { display_name: 'Ann', organization: 'ТОУ', bio: '' }).success).toBe(true)
 })
