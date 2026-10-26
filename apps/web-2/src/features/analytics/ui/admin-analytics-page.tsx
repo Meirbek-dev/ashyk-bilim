@@ -22,33 +22,45 @@ const bar = (value: number | null | undefined, text: string) =>
   value === null || value === undefined ? text : <ScoreBar value={value} text={text} />
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
 
-const courseColumns = (): DataColumn<AdminCourseRow>[] => [
-  {
-    id: 'course',
-    header: m.analytics_col_course(),
-    priority: 1,
-    // A ranking row leads to the course's drill-down: why it scores low is the next question (B-ANL-41).
-    cell: row => (
-      <Link variant="title" to="/teach/analytics/performance" search={{ courseId: row.course_id }}>
-        {name(row.course_name)}
-      </Link>
-    ),
-  },
-  {
-    id: 'health',
-    header: m.analytics_col_health(),
-    priority: 2,
-    cell: row => bar(row.health_score, score(row.health_score)),
-  },
-  { id: 'roi', header: m.analytics_col_roi(), priority: 2, cell: row => score(row.content_roi_score) },
-  {
-    id: 'completion',
-    header: m.analytics_col_completion(),
-    priority: 2,
-    cell: row => bar(row.completion_rate, formatPercent(row.completion_rate)),
-  },
+const courseColumn = (): DataColumn<AdminCourseRow> => ({
+  id: 'course',
+  header: m.analytics_col_course(),
+  priority: 1,
+  // A ranking row leads to the course's drill-down: why it scores low is the next question (B-ANL-41).
+  cell: row => (
+    <Link variant="title" to="/teach/analytics/performance" search={{ courseId: row.course_id }}>
+      {name(row.course_name)}
+    </Link>
+  ),
+})
+const healthColumn = (): DataColumn<AdminCourseRow> => ({
+  id: 'health',
+  header: m.analytics_col_health(),
+  priority: 2,
+  cell: row => bar(row.health_score, score(row.health_score)),
+})
+const completionColumn = (): DataColumn<AdminCourseRow> => ({
+  id: 'completion',
+  header: m.analytics_col_completion(),
+  priority: 2,
+  cell: row => bar(row.completion_rate, formatPercent(row.completion_rate)),
+})
+
+// The two course rankings share their rows but not their question: health ranks by health with the learner counts
+// beside it; content return leads with its own number and the two it is made of (it used to repeat the health table).
+const healthColumns = (): DataColumn<AdminCourseRow>[] => [
+  courseColumn(),
+  healthColumn(),
+  completionColumn(),
   { id: 'active', header: m.analytics_col_active(), priority: 3, cell: row => count(row.active_learners_7d) },
   { id: 'risk', header: m.analytics_kpi_at_risk_learners(), priority: 3, cell: row => count(row.at_risk_learners) },
+]
+
+const roiColumns = (): DataColumn<AdminCourseRow>[] => [
+  courseColumn(),
+  { id: 'roi', header: m.analytics_col_roi(), priority: 2, cell: row => score(row.content_roi_score) },
+  completionColumn(),
+  healthColumn(),
 ]
 
 const teacherColumns = (): DataColumn<AdminTeacherRow>[] => [
@@ -100,7 +112,15 @@ const programColumns = (): DataColumn<AdminProgramRow>[] => [
     id: 'program',
     header: m.analytics_col_program(),
     priority: 1,
-    cell: row => name(programAuthor(row.program_name) ?? m.analytics_program_unassigned()),
+    // The author opens in the user sheet, like a teacher row: two authors may share a display name.
+    cell: row =>
+      row.program_id ? (
+        <Link variant="title" to="/admin/users" search={{ user: row.program_id }}>
+          {name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())}
+        </Link>
+      ) : (
+        name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())
+      ),
   },
   { id: 'courses', header: m.analytics_col_courses(), priority: 2, cell: row => count(row.course_count) },
   { id: 'learners', header: m.analytics_col_learners(), priority: 2, cell: row => count(row.learner_count) },
@@ -134,14 +154,14 @@ export function AdminAnalyticsPage() {
           title={m.analytics_admin_courses()}
           description={m.analytics_admin_courses_hint()}
           rows={data.course_health_ranking}
-          columns={courseColumns()}
+          columns={healthColumns()}
           getKey={row => row.course_id}
         />
         <AdminTable
           title={m.analytics_admin_roi()}
           description={m.analytics_admin_roi_hint()}
           rows={data.content_roi}
-          columns={courseColumns()}
+          columns={roiColumns()}
           getKey={row => row.course_id}
         />
         <AdminTable

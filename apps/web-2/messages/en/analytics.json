@@ -301,7 +301,7 @@
   "analytics_admin_group": "Group: {group}",
   "analytics_admin_all": "all",
   "analytics_admin_roi": "Content return",
-  "analytics_admin_roi_hint": "Course completion and health per activity: the higher, the more each activity gives back.",
+  "analytics_admin_roi_hint": "Completion (%) plus course health, divided by the number of its activities: the higher, the more each activity gives back. A short course with the same results ranks above a long one.",
   "analytics_admin_courses_hint": "Health is a course score from 0 to 100; courses nobody has started come last.",
   "analytics_program_unassigned": "No author"
 }
