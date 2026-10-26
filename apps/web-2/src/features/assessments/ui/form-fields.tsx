@@ -5,6 +5,7 @@ import type { FormBody, FormField, FormFieldType } from '#/shared/api/gen/types.
 import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
+import { FieldDescription, FieldLegend, FieldSet } from '#/shared/ui/field'
 import { Input } from '#/shared/ui/input'
 import { Label } from '#/shared/ui/label'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
@@ -27,7 +28,9 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
   const patch = (at: number, change: Partial<FormField>) =>
     setFields(fields.map((field, index) => (index === at ? { ...field, ...change } : field)))
   return (
-    <div className="flex flex-col gap-4">
+    <FieldSet>
+      <FieldLegend variant="label">{m.assessments_form_legend()}</FieldLegend>
+      {editable ? <FieldDescription>{m.assessments_form_hint()}</FieldDescription> : null}
       <ol className="flex flex-col gap-3">
         {fields.map((field, at) => (
           <li key={field.id} className="flex flex-wrap items-center gap-2">
@@ -77,6 +80,6 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
           </Button>
         </div>
       ) : null}
-    </div>
+    </FieldSet>
   )
 }
