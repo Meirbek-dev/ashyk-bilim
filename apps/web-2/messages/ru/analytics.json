@@ -55,6 +55,7 @@
   "analytics_col_result": "Результат",
   "analytics_passed": "Сдал",
   "analytics_failed": "Не сдал",
+  "analytics_not_graded": "Нет оценки",
   "analytics_hours": "{value} ч",
   "analytics_tile_risk_high": "Учащиеся с высоким риском",
   "analytics_tile_risk_medium": "Учащиеся со средним риском",

@@ -55,6 +55,7 @@
   "analytics_col_result": "Нәтиже",
   "analytics_passed": "Өтті",
   "analytics_failed": "Өтпеді",
+  "analytics_not_graded": "Баға жоқ",
   "analytics_hours": "{value} сағ",
   "analytics_tile_risk_high": "Тәуекелі жоғары білім алушылар",
   "analytics_tile_risk_medium": "Тәуекелі орташа білім алушылар",

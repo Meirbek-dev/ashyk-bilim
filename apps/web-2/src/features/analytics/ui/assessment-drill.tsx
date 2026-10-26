@@ -14,7 +14,7 @@ import { AsOf } from './as-of'
 import { AssessmentInsights } from './assessment-insights'
 import { BackLink } from './back-link'
 import { DrillSection } from './drill-section'
-import { hours, percent, score } from './kpi'
+import { hours, percent } from './kpi'
 
 type AssessmentDrillProps = { filters: Filters; type: AssessmentKind; id: string; page: number }
 
@@ -27,7 +27,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
     { label: m.analytics_submitted(), value: formatNumber(summary.submitted_learners) },
     { label: m.analytics_col_submission(), value: percent(summary.submission_rate) },
     { label: m.analytics_col_pass(), value: percent(summary.pass_rate) },
-    { label: m.analytics_col_median(), value: score(summary.median_score) },
+    { label: m.analytics_col_median(), value: percent(summary.median_score) },
     { label: m.analytics_col_latency(), value: hours(summary.grading_latency_hours_p50) },
   ]
   return (

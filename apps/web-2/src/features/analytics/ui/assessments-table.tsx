@@ -12,7 +12,7 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 import { activeFilters, ASSESSMENT_SORTS, type AssessmentSort, type Filters, tableSort } from '../model/filters'
 import { outlierLabels } from '../model/signals'
 import { assessmentsOptions } from '../queries'
-import { hours, percent, score } from './kpi'
+import { hours, percent } from './kpi'
 import { Pager } from './pager'
 
 const columns = (): DataColumn<AssessmentOutlierRow>[] => [
@@ -60,7 +60,7 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     cell: row => percent(row.submission_rate),
   },
   { id: 'pass', sortable: true, header: m.analytics_col_pass(), priority: 2, cell: row => percent(row.pass_rate) },
-  { id: 'median', header: m.analytics_col_median(), priority: 3, cell: row => score(row.median_score) },
+  { id: 'median', header: m.analytics_col_median(), priority: 3, cell: row => percent(row.median_score) },
   {
     id: 'latency',
     sortable: true,

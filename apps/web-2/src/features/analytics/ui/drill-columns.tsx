@@ -51,17 +51,20 @@ const backlog = (): Column[] => [
 
 const passRate = (): Column[] => [
   learner(),
-  { id: 'best', header: m.analytics_col_best_score(), priority: 2, cell: row => score(row.best_score) },
-  { id: 'last', header: m.analytics_col_last_score(), priority: 3, cell: row => score(row.last_score) },
+  { id: 'best', header: m.analytics_col_best_score(), priority: 2, cell: row => percent(row.best_score) },
+  { id: 'last', header: m.analytics_col_last_score(), priority: 3, cell: row => percent(row.last_score) },
   { id: 'attempts', header: m.analytics_col_attempts(), priority: 3, cell: row => score(row.attempts) },
   submitted(),
   {
     id: 'result',
     header: m.analytics_col_result(),
     priority: 2,
+    // No score yet (awaiting grading, returned for revision) is not «Не сдал».
     cell: row =>
       row.passed ? (
         <StatusBadge tone="success">{m.analytics_passed()}</StatusBadge>
+      ) : row.best_score === null || row.best_score === undefined ? (
+        <StatusBadge tone="neutral">{m.analytics_not_graded()}</StatusBadge>
       ) : (
         <StatusBadge tone="neutral">{m.analytics_failed()}</StatusBadge>
       ),

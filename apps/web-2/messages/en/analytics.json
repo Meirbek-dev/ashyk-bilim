@@ -55,6 +55,7 @@
   "analytics_col_result": "Result",
   "analytics_passed": "Passed",
   "analytics_failed": "Not passed",
+  "analytics_not_graded": "Not graded yet",
   "analytics_hours": "{value} h",
   "analytics_tile_risk_high": "High-risk learners",
   "analytics_tile_risk_medium": "Medium-risk learners",
