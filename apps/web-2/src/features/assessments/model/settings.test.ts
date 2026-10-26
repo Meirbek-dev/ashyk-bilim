@@ -7,7 +7,7 @@ import { toDateTimeInput } from '#/shared/i18n/format'
 import { detailsBody, detailsFormSchema } from './details'
 import { overrideBody, overrideForm, overrideFormSchema } from './overrides'
 import { policyBody, policyForm, policyFormSchema } from './policy'
-import { auditActor, canMove, groupedIssues, lifecycleOf, sortedIssues } from './publishing'
+import { auditActor, auditLearnerId, canMove, groupedIssues, lifecycleOf, sortedIssues } from './publishing'
 
 // 2026-02-01 14:30 in Almaty (UTC+5) is 09:30 UTC.
 const FEB_1_1430 = Date.UTC(2026, 1, 1, 9, 30) / 1000
@@ -169,5 +169,13 @@ describe('exceptions and publishing', () => {
     expect(auditActor(event('other'), 'me')).toBe('other')
     expect(auditActor(event('me', 'scheduler'), 'me')).toBe('system')
     expect(auditActor(event(null), 'me')).toBe('system')
+  })
+})
+
+describe('history', () => {
+  test('B-ASM-30 a grade or an exception names its learner; a transition names none', () => {
+    expect(auditLearnerId({ payload: { learner_id: 'a', status: 'published' } })).toBe('a')
+    expect(auditLearnerId({ payload: { user_id: 'b' } })).toBe('b')
+    expect(auditLearnerId({ payload: { from: 'draft', to: 'published' } })).toBeNull()
   })
 })

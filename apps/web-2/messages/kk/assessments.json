@@ -196,6 +196,7 @@
   "assessments_actor_system": "Жүйе",
   "assessments_actor_other": "Басқа автор",
   "assessments_event_transition": "{from} күйінен {to} күйіне",
+  "assessments_event_learner": "Білім алушы: {name}",
   "assessments_event_lifecycle_transition": "Күй өзгерді",
   "assessments_event_auto_publish_skipped": "Жоспарланған жариялау болмады",
   "assessments_event_access_changed": "Қолжетімділік өзгерді",

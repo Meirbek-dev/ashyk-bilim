@@ -79,7 +79,7 @@ export function AssessmentSettingsPage() {
         </div>
       ) : null}
       <div id="journal">
-        <JournalSection assessmentId={assessment.id} />
+        <JournalSection assessmentId={assessment.id} learners={people} />
       </div>
     </SettingsPage>
   )

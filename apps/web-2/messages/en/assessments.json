@@ -196,6 +196,7 @@
   "assessments_actor_system": "System",
   "assessments_actor_other": "Another author",
   "assessments_event_transition": "Was {from}, now {to}",
+  "assessments_event_learner": "Learner: {name}",
   "assessments_event_lifecycle_transition": "State changed",
   "assessments_event_auto_publish_skipped": "Scheduled publishing did not happen",
   "assessments_event_access_changed": "Access changed",

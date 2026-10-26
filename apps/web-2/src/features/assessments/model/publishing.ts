@@ -40,3 +40,11 @@ export function auditActor(event: AuditEvent, me: string): 'you' | 'system' | 'o
 /** The transitions the server allows from the current state (`allowed_transitions`); it still answers 409 to others. */
 export const canMove = (assessment: Pick<AssessmentDetail, 'allowed_transitions'>, to: Lifecycle): boolean =>
   assessment.allowed_transitions.includes(to)
+
+/**
+ * The learner an event is about: a grade names `learner_id`, an exception `user_id`; a submit is the learner's own
+ * act (its actor), so it names none.
+ */
+export function auditLearnerId(event: Pick<AuditEvent, 'payload'>): string | null {
+  return event.payload.learner_id ?? event.payload.user_id ?? null
+}
