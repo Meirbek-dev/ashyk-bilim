@@ -51,6 +51,7 @@
   "analytics_col_last_activity": "Last activity",
   "analytics_col_assessment": "Assessment",
   "analytics_col_age": "Waiting",
+  "analytics_col_oldest": "Longest wait",
   "analytics_col_best_score": "Best score",
   "analytics_col_result": "Result",
   "analytics_passed": "Passed",

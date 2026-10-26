@@ -41,7 +41,7 @@ const columns = (): DataColumn<GradingBacklogItem>[] => [
     priority: 2,
     cell: row => <span className="tabular-nums">{formatNumber(row.sla_breaches)}</span>,
   },
-  { id: 'age', header: m.analytics_col_age(), priority: 3, cell: row => hours(row.age_hours) },
+  { id: 'age', header: m.analytics_col_oldest(), priority: 3, cell: row => hours(row.age_hours) },
 ]
 
 /** The queue's age as bars and where it sits, as a table: only when something waits. */

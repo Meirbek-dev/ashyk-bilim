@@ -51,6 +51,7 @@
   "analytics_col_last_activity": "Последняя активность",
   "analytics_col_assessment": "Задание",
   "analytics_col_age": "Ждёт",
+  "analytics_col_oldest": "Дольше всех ждёт",
   "analytics_col_best_score": "Лучший балл",
   "analytics_col_result": "Результат",
   "analytics_passed": "Сдал",
