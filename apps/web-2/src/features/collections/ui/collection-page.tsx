@@ -1,15 +1,14 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
+import { CourseGrid } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
-import { DataList } from '#/shared/components/data-list'
-import { Link } from '#/shared/components/link'
+import { CourseCover } from '#/shared/components/course-cover'
 import { ListState } from '#/shared/components/list-state'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { formatDate } from '#/shared/i18n/format'
 import { collectionActionLabels, collectionVisibility, collectionVisibilityLabels } from '#/shared/i18n/labels'
-import { contentUrl } from '#/shared/lib/content-url'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { can } from '../model/collections'
@@ -33,6 +32,14 @@ export function CollectionPage() {
   )
   return (
     <DetailPage
+      cover={
+        <CourseCover
+          seed={collection.id}
+          imageKey={collection.cover_key}
+          shape="banner"
+          className="h-32 w-full rounded-xl border @2xl:h-48"
+        />
+      }
       title={collection.name}
       meta={`${m.collections_course_count({ count: collection.courses.length })} · ${m.collections_updated({ date: formatDate(collection.updated_at_unix) })}`}
       status={
@@ -40,13 +47,6 @@ export function CollectionPage() {
       }
       primaryAction={collection.allowed_actions.length > 0 ? actions : null}
     >
-      {collection.cover_key ? (
-        <img
-          src={contentUrl(collection.cover_key)}
-          alt=""
-          className="aspect-video w-full max-w-md rounded-lg border object-cover"
-        />
-      ) : null}
       {collection.description ? <p className="max-w-prose wrap-anywhere">{collection.description}</p> : null}
       <h2 className="text-xl font-semibold">{m.collections_courses_title()}</h2>
       <ListState
@@ -57,18 +57,7 @@ export function CollectionPage() {
         emptyText={m.collections_courses_empty()}
         onRetry={() => void query.refetch()}
       >
-        <DataList items={collection.courses} getKey={course => course.id}>
-          {course => (
-            <>
-              <h3 className="font-medium wrap-anywhere">
-                <Link to="/courses/$courseId" params={{ courseId: course.id }}>
-                  {course.name}
-                </Link>
-              </h3>
-              {course.description ? <p className="text-sm text-muted-foreground">{course.description}</p> : null}
-            </>
-          )}
-        </DataList>
+        <CourseGrid courses={collection.courses} level={3} />
       </ListState>
     </DetailPage>
   )

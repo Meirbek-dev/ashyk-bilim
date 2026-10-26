@@ -1,6 +1,7 @@
 export { coursesFilter } from './model/catalog'
 export { shortcuts } from './model/shortcuts'
 export { coursesListOptions, landingCoursesOptions, platformOptions, searchResultsOptions } from './queries'
+export { CourseGrid } from './ui/course-grid'
 export { CoursesPage } from './ui/courses-page'
 export { LandingPage } from './ui/landing-page'
 export { SearchPage } from './ui/search-page'

@@ -52,6 +52,7 @@
   "attempt_next": "Келесі",
   "attempt_questions_nav": "Сұрақтар",
   "attempt_answered": "Жауап берілді",
+  "attempt_answered_count": "{total} ішінен {done} жауап берілді",
   "attempt_submit": "Тапсыру",
   "attempt_time_left": "Қалған уақыт",
   "attempt_late_cutoff_left": "Кешіктіріп тапсыру жабылғанға дейін",

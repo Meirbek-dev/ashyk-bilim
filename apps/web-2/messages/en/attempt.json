@@ -52,6 +52,7 @@
   "attempt_next": "Next",
   "attempt_questions_nav": "Questions",
   "attempt_answered": "Answered",
+  "attempt_answered_count": "{done} of {total} answered",
   "attempt_submit": "Submit",
   "attempt_time_left": "Time left",
   "attempt_late_cutoff_left": "Until late submissions close",

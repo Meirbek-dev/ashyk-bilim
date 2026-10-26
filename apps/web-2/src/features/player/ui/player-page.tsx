@@ -8,11 +8,11 @@ import { CommandPalette } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
-import { activityTypeMeta } from '#/shared/i18n/labels'
 import { toast } from '#/shared/ui/toast'
 
 import { activityKind, locate, staffPreview } from '../model/player'
 import { learnerStateOptions, markOptions } from '../queries'
+import { ActivityHeader } from './activity-header'
 import { BackToCourse } from './back-to-course'
 import { Contents } from './contents'
 import { EntryCard } from './entry-card'
@@ -42,8 +42,6 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       <PlayerNotFound />
     )
   const { entry, prev, next } = found
-  const meta = activityTypeMeta[entry.activity_type]
-  const Icon = meta.icon
   const lesson = activityKind(entry.activity_type) === 'lesson'
   const action = <PlayerAction key={entry.id} state={state} entry={entry} />
   // A hosted video watched to the end marks its lesson done, as on the old web (B-PLY-06).
@@ -61,13 +59,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       aside={aside}
     >
       <article className="flex flex-col gap-gutter">
-        <header className="flex flex-col gap-1">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Icon aria-hidden className={`size-4 ${meta.ink}`} />
-            {meta.label()}
-          </p>
-          <h1 className="text-2xl font-semibold wrap-anywhere">{entry.title}</h1>
-        </header>
+        <ActivityHeader type={entry.activity_type} title={entry.title} />
         {entry.blocked_reason ? (
           <p className="text-muted-foreground">
             {entry.opens_at_unix
@@ -79,7 +71,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         ) : (
           <EntryCard entry={entry} action={action} />
         )}
-        <footer className="flex flex-col gap-4 border-t pt-4">
+        <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
           {lesson ? action : null}
           <NeighbourLinks courseId={courseId} prev={prev} next={next} />
         </footer>
