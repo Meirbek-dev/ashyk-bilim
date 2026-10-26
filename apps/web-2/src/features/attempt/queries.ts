@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { notFound } from '@tanstack/react-router'
+import { notFound, redirect } from '@tanstack/react-router'
 
 import { ensureEntry } from '#/features/player'
 import { ApiError } from '#/shared/api/errors'
@@ -88,7 +88,12 @@ export async function ensureAttempt(
   void reading.catch(() => null)
   void attempt?.catch(() => null)
   const { entry } = await ensureEntry(queryClient, courseId, activityId)
-  const assessment = await reading.catch(missing)
+  // Closed to the learner (scheduled, behind a prerequisite): its test cannot be read, so the player's card says when it
+  // opens instead of «not found» under a link that card itself shows.
+  const assessment = await reading.catch((error: unknown) => {
+    if (entry.blocked_reason) throw redirect({ to: '/learn/$courseId/$activityId', params: { courseId, activityId } })
+    return missing(error)
+  })
   if (assessment.kind === 'code_challenge') throw notFound()
   const [submission, state] = await Promise.all([
     attempt?.catch(missing) ?? null,
