@@ -23,6 +23,14 @@ const { useAppForm: useKitForm } = /* @__PURE__ */ createFormHook({
   formComponents: {},
 })
 
+/**
+ * After a refused submit (client check or a 422), the first field marked invalid in the submitted form takes focus,
+ * so the keyboard and the screen reader land on what to fix, not on the button. The form is the one holding focus at
+ * submit (its button, or a field Enter was pressed in); after the next paint its fields carry `aria-invalid`.
+ */
+const focusFirstInvalid = (form: Element | null | undefined) =>
+  form && requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+
 type AppFormOptions<T> = {
   defaultValues: T
   /** Usually `body => mutation.mutateAsync({ body })`: a 422's field errors land under their fields. */
@@ -58,9 +66,11 @@ export function useAppForm<T>(
     defaultValues,
     validators: { onSubmit: schema },
     listeners: { onChange: ({ formApi }) => void onChange?.(formApi.state.values) },
+    onSubmitInvalid: () => void focusFirstInvalid(document.activeElement?.closest('form')),
     onSubmit: async ({ value }) => {
       if (submitting.current) return
       submitting.current = true
+      const origin = document.activeElement?.closest('form')
       try {
         await onSubmit(value)
         setSaved(JSON.stringify(form.state.values))
@@ -72,6 +82,7 @@ export function useAppForm<T>(
           if (isField(name))
             form.setFieldMeta(name, meta => ({ ...meta, errorMap: { ...meta.errorMap, onSubmit: message } }))
         }
+        if (byField.size > 0) focusFirstInvalid(origin)
       } finally {
         submitting.current = false
       }

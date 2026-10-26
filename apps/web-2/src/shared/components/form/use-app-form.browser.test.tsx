@@ -9,13 +9,20 @@ import { renderInRouter } from '../testing'
 import { useAppForm } from './use-app-form'
 
 const schema = v.object({ name: v.string() })
+const named = v.object({ name: v.pipe(v.string(), v.nonEmpty()) })
 const text = { name: 'Name', save: 'Save', leave: 'Leave' }
 // Each click leaves for a new address: a link to the current one is no navigation at all.
 let hops = 0
 
-function GuardedForm({ save, onChange }: { save: () => Promise<void>; onChange?: (name: string) => void }) {
+type GuardedFormProps = {
+  save: () => Promise<void>
+  onChange?: (name: string) => void
+  rules?: v.GenericSchema<{ name: string }>
+}
+
+function GuardedForm({ save, onChange, rules = schema }: GuardedFormProps) {
   const navigate = useNavigate()
-  const form = useAppForm(schema, {
+  const form = useAppForm(rules, {
     defaultValues: { name: 'Algebra' },
     onSubmit: save,
     leaveGuard: true,
@@ -67,4 +74,13 @@ test('onChange sees the values after each edit of a field, and not a submit', as
   await screen.getByRole('button', { name: text.save }).click()
   await vi.waitFor(() => expect(save).toHaveBeenCalled())
   expect(onChange).not.toHaveBeenCalled()
+})
+
+test('a refused submit moves focus from the button to the field to fix', async () => {
+  const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
+  const screen = await renderInRouter(<GuardedForm save={save} rules={named} />)
+  await screen.getByLabelText(text.name).fill('')
+  await screen.getByRole('button', { name: text.save }).click()
+  await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(text.name).element()))
+  expect(save).not.toHaveBeenCalled()
 })
