@@ -41,6 +41,24 @@ test('B-FSB-01 only an enrolled learner opens the hand-in; another activity type
   await expect(page.getByRole('heading', { level: 1, name: 'Эссе' })).toBeVisible()
 })
 
+test('B-FSB-25 the course teacher opens the hand-in as a preview, an unpublished task too, and leaves to the studio', async ({
+  page,
+  signInAs,
+  makeCourse,
+  tasks,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  const task = await tasks.make(course, { publish: false })
+  await signInAs('teacher')
+  await page.goto(handIn(course, task))
+  await expect(page.getByRole('heading', { level: 1, name: 'Эссе' })).toBeVisible()
+  await expect(page.getByText(m.player_preview_title({}, ru))).toBeVisible()
+  await expect(page.getByRole('link', { name: m.player_preview_studio({}, ru) })).toHaveAttribute(
+    'href',
+    `/teach/courses/${course.id}/activities/${task.activity_id}/edit`,
+  )
+})
+
 test('B-FSB-02 a task the learner cannot read yet is "not set up", without an error', async ({
   page,
   learner,

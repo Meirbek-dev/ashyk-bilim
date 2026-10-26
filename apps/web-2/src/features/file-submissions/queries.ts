@@ -1,7 +1,7 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 
-import { ensureLearner } from '#/features/player'
+import { ensureEntry } from '#/features/player'
 import { ApiError } from '#/shared/api/errors'
 import {
   courseReadinessQueryKey,
@@ -71,9 +71,9 @@ export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition 
 
 /** The submission page's loader: an enrolled learner (else 403 in place), a file-submission activity of the course. */
 export async function ensureSubmission(queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) {
-  const state = await ensureLearner(queryClient, courseId)
-  const entry = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === activityId)
-  if (entry?.activity_type !== 'file_submission') throw notFound()
+  // The player's rules: enrolled, or the course's staff previewing (an unpublished task too, B-FSB-25).
+  const { state, entry, preview } = await ensureEntry(queryClient, courseId, activityId)
+  if (entry.activity_type !== 'file_submission') throw notFound()
   if (!entry.blocked_reason) {
     const task = await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })
     if (task)
@@ -86,7 +86,7 @@ export async function ensureSubmission(queryClient: QueryClient, courseId: Cours
   }
   // Names for the page, not the learner state itself: the page does not observe it, so a hand-in that invalidates it
   // (for the player's outline) does not refetch it here.
-  return { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null }
+  return { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null, preview }
 }
 
 // ---- Learner writes: each answers the attempt, which goes into the task and the history instead of a refetch. ----
