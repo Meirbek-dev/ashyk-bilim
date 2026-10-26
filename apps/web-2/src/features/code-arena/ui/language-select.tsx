@@ -1,11 +1,10 @@
 import { useId } from 'react'
 
-import { m } from '#/paraglide/messages'
 import type { LanguageInfo } from '#/shared/api/gen/types.gen'
 import { Label } from '#/shared/ui/label'
 import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
-import { languageOf } from '../model/arena'
+import { languageName } from './labels'
 
 type LanguageSelectProps = {
   label: string
@@ -26,7 +25,7 @@ export function LanguageSelect({ label, value, ids, languages, onChange }: Langu
       <NativeSelect id={id} value={String(value)} onChange={event => onChange(Number(event.target.value))}>
         {ids.map(option => (
           <NativeSelectOption key={option} value={String(option)}>
-            {languageOf(languages, option)?.name ?? m.code_language_unknown({ id: option })}
+            {languageName(languages, option)}
           </NativeSelectOption>
         ))}
       </NativeSelect>

@@ -1,9 +1,16 @@
 import { Clock, PencilLine, Undo2, type LucideIcon } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { CodeRunStatus, Difficulty, DisabledReason, SubmissionStatus } from '#/shared/api/gen/types.gen'
+import type {
+  CodeRunStatus,
+  Difficulty,
+  DisabledReason,
+  LanguageInfo,
+  SubmissionStatus,
+} from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
 
+import { languageOf } from '../model/arena'
 import type { CaseVerdict } from '../model/verdict'
 
 /** `icon`: a state that is not a verdict (a draft, waiting for review) gets its own, not the tone's alarm sign. */
@@ -68,3 +75,10 @@ export const difficultyLabels = {
   medium: m.code_difficulty_medium,
   hard: m.code_difficulty_hard,
 } satisfies Record<Difficulty, () => string>
+
+/**
+ * A language's name from the platform. Without the list (the runner is down) the name is unknown, not the language
+ * unavailable: «Язык № 71»; «Недоступный язык» only for one the platform no longer offers.
+ */
+export const languageName = (languages: LanguageInfo[] | null, id: number) =>
+  languageOf(languages, id)?.name ?? (languages ? m.code_language_unknown({ id }) : m.code_language_number({ id }))

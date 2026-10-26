@@ -35,6 +35,7 @@
   "code_reason_not_enrolled": "Есепті шығару үшін курсқа жазылыңыз.",
   "code_solution": "Шешім",
   "code_language": "Тіл",
+  "code_language_number": "№ {id} тіл",
   "code_language_unknown": "Қолжетімсіз тіл (№ {id})",
   "code_editor_label": "Шешім коды",
   "code_run": "Іске қосу",

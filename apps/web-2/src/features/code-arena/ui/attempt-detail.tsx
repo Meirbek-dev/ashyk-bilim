@@ -9,6 +9,7 @@ import { Skeleton } from '#/shared/ui/skeleton'
 import { answerOf, languageOf, languagesIn, testsPassed, type CodeItem } from '../model/arena'
 import { runnerStateOptions } from '../queries'
 import { FinalRun } from './final-run'
+import { languageName } from './labels'
 import { CodeEditor } from './lazy-editor'
 
 /** What the attempt came to (B-COD-10): the grade once released, else why it is not shown yet. */
@@ -38,7 +39,7 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
       {/* An empty source (a migrated or blank hand-in) says so, not an empty read-only editor. */}
       {answer?.source.trim() ? (
         <>
-          <p className="text-muted-foreground">{language?.name ?? m.code_language_unknown({ id: answer.language })}</p>
+          <p className="text-muted-foreground">{languageName(languages, answer.language)}</p>
           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
             <CodeEditor
               readOnly
