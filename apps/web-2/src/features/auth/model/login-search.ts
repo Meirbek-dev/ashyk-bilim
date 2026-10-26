@@ -1,5 +1,11 @@
+import * as v from 'valibot'
+
+import { m } from '#/paraglide/messages'
+import { ApiError } from '#/shared/api/errors'
 import type { GoogleStartData } from '#/shared/api/gen/types.gen'
+import { vErrorCode } from '#/shared/api/gen/valibot.gen'
 import { safeRedirect } from '#/shared/auth/redirect'
+import { presentError } from '#/shared/i18n/errors'
 
 const GOOGLE_START: GoogleStartData['url'] = '/api/v2/auth/google'
 
@@ -30,3 +36,13 @@ export function guestBack(redirect: string | undefined): string {
 /** The guest pressed «Записаться» on a course: signing in (or up) enrols them at once (B-CRS-16, B-AUTH-17). */
 export const enrolsAfterAuth = (redirect: string | undefined): boolean =>
   new URL(safeRedirect(redirect), 'http://internal.invalid').searchParams.get('enroll') === '1'
+
+/**
+ * A failed Google sign-in comes back as /login?error=<code>: a contract code, or the callback's own "cancelled". A
+ * refused form (`validation-failed`) has no fields to point at here: it reads as the sign-in that did not work.
+ */
+export function googleErrorText(code: string): string {
+  if (!v.is(vErrorCode, code)) return m.auth_login_error_google_cancelled()
+  if (code === 'validation-failed') return m.auth_login_error_google_failed()
+  return presentError(new ApiError({ status: 400, code, fieldErrors: [], requestId: null, retryAfter: null }))
+}

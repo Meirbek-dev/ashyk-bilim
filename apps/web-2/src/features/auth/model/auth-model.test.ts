@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
 import type { ErrorCode, FieldError } from '#/shared/api/gen/types.gen'
 
@@ -13,7 +14,7 @@ import {
   signupFieldOf,
   vSignupForm,
 } from './account-search'
-import { enrolsAfterAuth, googleStartHref, guestBack, retryMinutes } from './login-search'
+import { enrolsAfterAuth, googleErrorText, googleStartHref, guestBack, retryMinutes } from './login-search'
 
 const redirectOf = (value: unknown) => v.parse(loginSearchSchema, { redirect: value }).redirect
 const apiError = (code: ErrorCode, fieldErrors: FieldError[] = []) =>
@@ -112,4 +113,10 @@ test('B-AUTH-08 the emailed link stays open for a signed-in account whose addres
   expect(opensVerifyLink(link, null)).toBe(false)
   expect(opensVerifyLink({ pathname: '/verify-email', search: {} }, unconfirmed)).toBe(false)
   expect(opensVerifyLink({ pathname: '/login', search: { code: 'x' } }, unconfirmed)).toBe(false)
+})
+
+test('B-AUTH-05 a Google return error says what happened, never «check the highlighted fields»', () => {
+  expect(googleErrorText('google-cancelled')).toBe(m.auth_login_error_google_cancelled())
+  expect(googleErrorText('validation-failed')).toBe(m.auth_login_error_google_failed())
+  expect(googleErrorText('account-disabled')).not.toBe(m.auth_login_error_google_failed())
 })
