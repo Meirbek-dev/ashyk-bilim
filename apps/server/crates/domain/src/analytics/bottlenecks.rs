@@ -20,6 +20,13 @@ use super::types::{AssessmentOutlierRow, ContentBottleneckRow, Severity};
 
 const MAX_TIME_SECS: f64 = 6.0 * 3600.0;
 
+/// A learner who opened the activity and left it unfinished: still `in_progress`. One who handed the work in
+/// (awaiting grading, returned for revision, graded, failed) did not leave, so a test whose learners all wait for
+/// the teacher is not «learners leave right after opening».
+fn left_after_open(p: &ab_db::analytics::ProgressInfoRow) -> bool {
+    p.state == ActivityProgressState::InProgress && !progress_completed(p)
+}
+
 /// Legacy `build_content_bottlenecks`.
 #[must_use]
 #[allow(
@@ -39,6 +46,7 @@ pub fn build_content_bottlenecks(
     );
     let mut started: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
     let mut completed: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
+    let mut left: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();
     let mut times: HashMap<ActivityId, Vec<f64>> = HashMap::new();
     // Members only (BUG-267): the assessment rows' pass rates below count
     // members, so `started_n` must too.
@@ -48,6 +56,9 @@ pub fn build_content_bottlenecks(
         }
         if p.state != ActivityProgressState::NotStarted {
             started.entry(p.activity_id).or_default().insert(p.user_id);
+        }
+        if left_after_open(p) {
+            left.entry(p.activity_id).or_default().insert(p.user_id);
         }
         if progress_completed(p) {
             completed
@@ -95,7 +106,7 @@ pub fn build_content_bottlenecks(
             .then(|| safe_pct_counts(completed_n, started_n))
             .flatten();
         let avg_time = times.get(activity_id).and_then(|t| mean(t)).map(round1);
-        let exit_count = started_n.saturating_sub(completed_n);
+        let exit_count = left.get(activity_id).map_or(0, HashSet::len);
         let exit_rate = (started_n > 0)
             .then(|| safe_pct_counts(exit_count, started_n))
             .flatten();
@@ -218,4 +229,46 @@ pub fn build_content_bottlenecks(
     });
     rows.truncate(limit);
     rows
+}
+
+#[cfg(test)]
+mod tests {
+    use ab_core::assessments::ActivityProgressState;
+    use ab_core::id::{ActivityId, CourseId, UserId};
+    use ab_db::analytics::ProgressInfoRow;
+
+    use super::left_after_open;
+
+    fn progress(state: ActivityProgressState) -> ProgressInfoRow {
+        ProgressInfoRow {
+            course_id: CourseId::new(),
+            activity_id: ActivityId::new(),
+            user_id: UserId::new(),
+            state,
+            required: true,
+            started_at: Some(1),
+            last_activity_at: Some(2),
+            submitted_at: None,
+            graded_at: None,
+            completed_at: None,
+        }
+    }
+
+    #[test]
+    fn handed_in_work_is_not_leaving_after_open() {
+        assert!(left_after_open(&progress(
+            ActivityProgressState::InProgress
+        )));
+        for state in [
+            ActivityProgressState::Submitted,
+            ActivityProgressState::NeedsGrading,
+            ActivityProgressState::Returned,
+            ActivityProgressState::Graded,
+            ActivityProgressState::Failed,
+            ActivityProgressState::Passed,
+            ActivityProgressState::Completed,
+        ] {
+            assert!(!left_after_open(&progress(state)), "{state:?}");
+        }
+    }
 }
