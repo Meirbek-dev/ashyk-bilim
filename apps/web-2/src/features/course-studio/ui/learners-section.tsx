@@ -33,7 +33,8 @@ const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner
       <span className="flex items-center gap-3">
         <UserAvatar name={learner.display_name || learner.username} avatarKey={learner.avatar_key} />
         <span className="flex min-w-48 flex-col wrap-anywhere">
-          <Link to="/users/$username" params={{ username: learner.username }}>
+          {/* Their grades in this course (the gradebook found by username), not the public profile. */}
+          <Link to="/teach/courses/$courseId/gradebook" params={{ courseId }} search={{ q: learner.username }}>
             {learner.display_name || learner.username}
           </Link>
           <span className="text-sm font-normal text-muted-foreground">
