@@ -54,6 +54,7 @@ test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 B-
   await page.getByRole('radio', { name: 'Астана' }).check()
   await page.getByRole('link', { name: m.attempt_next({}, ru) }).click()
   await expect(page).toHaveURL(/item=2/)
+  await expect(page.getByRole('heading', { level: 1, name: items.multiple.title })).toBeFocused()
   await page.getByRole('link', { name: m.attempt_next({}, ru) }).click()
   await page.getByLabel('Кошка').selectOption('Мяу')
   await page.getByLabel('Собака').selectOption('Гав')
