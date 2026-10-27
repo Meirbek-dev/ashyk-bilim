@@ -112,12 +112,18 @@ const programColumns = (): DataColumn<AdminProgramRow>[] => [
     id: 'program',
     header: m.analytics_col_program(),
     priority: 1,
-    // The author opens in the user sheet, like a teacher row: two authors may share a display name.
+    // The author opens in the user sheet with the @username under the name, like a teacher row: two authors may share
+    // a display name.
     cell: row =>
       row.program_id ? (
-        <Link variant="title" to="/admin/users" search={{ user: row.program_id }}>
-          {name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())}
-        </Link>
+        <span className="flex flex-col">
+          <Link variant="title" to="/admin/users" search={{ user: row.program_id }}>
+            {name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())}
+          </Link>
+          {row.author_username ? (
+            <span className="text-xs wrap-anywhere text-muted-foreground">@{row.author_username}</span>
+          ) : null}
+        </span>
       ) : (
         name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())
       ),

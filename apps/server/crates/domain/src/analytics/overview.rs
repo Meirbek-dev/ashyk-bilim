@@ -682,6 +682,7 @@ pub fn build_admin_overview(
             let completions: Vec<f64> = rows.iter().map(|r| r.completion_rate).collect();
             let health: Vec<f64> = rows.iter().map(|r| r.health_score).collect();
             AdminProgramRow {
+                author_username: creator.map(|c| ctx.username(c)),
                 program_id: creator,
                 program_name: creator.map_or_else(
                     || "unassigned_courses".to_owned(),

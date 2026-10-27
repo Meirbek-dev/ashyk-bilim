@@ -2360,6 +2360,10 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
             .is_some_and(|u| !u.is_empty() && u != "(unknown user)"),
         "{rows}"
     );
+    // The courses-by-author rows carry the author's username too.
+    let programs = &overview.json()["department_program_performance"];
+    let alphas = find_row(programs, "program_id", &alpha.user_id.to_string()).unwrap();
+    assert_eq!(alphas["author_username"], "alpha", "{programs}");
     let inspected = app
         .get_as(
             &admin,

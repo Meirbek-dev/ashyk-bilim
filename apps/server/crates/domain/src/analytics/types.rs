@@ -576,6 +576,9 @@ pub struct AdminProgramRow {
     /// The creating teacher; `None` groups courses without a creator.
     pub program_id: Option<UserId>,
     pub program_name: String,
+    /// The creating teacher's username, beside the name (two teachers may
+    /// share one); `None` with `program_id`.
+    pub author_username: Option<String>,
     pub course_count: i64,
     pub learner_count: i64,
     pub completion_rate: Option<f64>,
