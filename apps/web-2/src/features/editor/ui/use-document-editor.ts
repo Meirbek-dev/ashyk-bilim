@@ -37,7 +37,8 @@ type Options = {
 // a post is a field among fields.
 const surface = {
   view: 'max-w-none',
-  authoring: 'mx-auto min-h-96 max-w-prose px-4 py-gutter',
+  // The sheet around it draws the focus ring (BlockEditor): an outline here would box the text column alone.
+  authoring: 'mx-auto min-h-96 max-w-prose px-4 py-gutter outline-none',
   input: 'max-w-none min-h-40 rounded-md border border-input bg-background p-4',
 }
 
