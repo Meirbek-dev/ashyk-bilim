@@ -56,6 +56,12 @@ body {
   }
 }
 
+/* Toasts are the top layer. The kit gives the viewport z-50, like sheets and dialogs, which portal after it: a toast
+   from an action inside a sheet («Роль добавлена», «Начислено…», «Учащиеся добавлены») drew behind the sheet. */
+[data-slot='toast-viewport'] {
+  z-index: 60;
+}
+
 /* Phones: toasts come in at the top, clear of the bottom bar and the player's «Продолжить» row (the stock kit
    stacks them at the bottom). Unlayered, so it wins over the kit's utilities; the stack mirrors the kit's: older
    toasts peek below the front one. */
