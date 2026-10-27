@@ -16,11 +16,13 @@ type TitledMatch = { staticData: { title?: () => string } }
 type HeadMatch = {
   status: string
   error?: unknown
+  /** Set on the match that shows a not-found thrown for another route (`notFound({ routeId })`): its status stays. */
+  _notFound?: boolean
   staticData: { title?: () => string; notFoundTitle?: () => string }
 }
 
-const failedTitle = ({ error, staticData }: HeadMatch) => {
-  const missing = isNotFound(error) || (error instanceof ApiError && error.status === 404)
+const failedTitle = ({ error, staticData, _notFound }: HeadMatch) => {
+  const missing = _notFound || isNotFound(error) || (error instanceof ApiError && error.status === 404)
   if (missing) return (staticData.notFoundTitle ?? m.platform_not_found_title)()
   if (error instanceof ApiError && error.status === 403) return m.platform_forbidden_title()
   return m.platform_error_title()
@@ -33,7 +35,7 @@ const failedTitle = ({ error, staticData }: HeadMatch) => {
  * section too («Учащиеся · Аналитика»): its parent route's title follows its own.
  */
 export const pageTitle = (matches: readonly HeadMatch[]): string | undefined => {
-  const failed = matches.find(match => match.status === 'notFound' || match.status === 'error')
+  const failed = matches.find(({ status, _notFound }) => status === 'notFound' || status === 'error' || _notFound)
   if (failed) return failedTitle(failed)
   const page = matches.findLast(match => match.staticData.title)
   const name = page?.staticData.title?.()

@@ -31,6 +31,13 @@ describe('pageTitle', () => {
     expect(pageTitle([ok(), missing(notFound())])).toBe(m.platform_not_found_title())
     expect(pageTitle([ok(), { ...missing(apiError(403)), status: 'error' }])).toBe(m.platform_forbidden_title())
   })
+
+  // /xx/certificates/<code>/verify: a prefix no certificate prints sends the page's not-found to the root, whose
+  // status stays 'success'; the tab says «Страница не найдена» like the page, not «Подлинность сертификата».
+  test('B-CRT-06 a not-found handed to the root names the tab as the page it shows', () => {
+    const root = { status: 'success', _notFound: true, staticData: {} }
+    expect(pageTitle([root, ok(m.platform_page_certificate)])).toBe(m.platform_not_found_title())
+  })
 })
 
 test('a shared or indexed page names its path without the query, on the public origin, with its language', () => {
