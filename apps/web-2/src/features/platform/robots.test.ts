@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-
 import { expect, test } from 'vite-plus/test'
 
-const rules = readFileSync(resolve(import.meta.dirname, '../../../public/robots.txt'), 'utf8')
+import { robotsTxt } from './robots'
+
+const robots = robotsTxt('https://bilim.kz')
+const rules = robots
   .split('\n')
   .flatMap(line => /^Disallow: (.+)$/.exec(line)?.[1] ?? [])
   .map(rule => new RegExp(`^${rule.replaceAll('*', '[^/]+')}`))
@@ -16,4 +16,8 @@ test('crawlers index the public pages and skip signed-in areas, search results a
   const detours = ['/collections/x/edit', '/search?q=python', '/verify-email?code=1', '/reset-password']
   expect(open.filter(blocked)).toEqual([])
   expect([...closed, ...detours].filter(path => !blocked(path))).toEqual([])
+})
+
+test('B-CAT-30 robots.txt names the sitemap on the site address', () => {
+  expect(robots).toContain('\nSitemap: https://bilim.kz/sitemap.xml\n')
 })

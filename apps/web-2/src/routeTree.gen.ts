@@ -13,6 +13,8 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthedAchievementsRouteImport } from './routes/_authed/achievements'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedHomeRouteImport } from './routes/_authed/home'
@@ -98,6 +100,16 @@ const GuestRoute = GuestRouteImport.update({
 } as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedAchievementsRoute = AuthedAchievementsRouteImport.update({
@@ -489,6 +501,8 @@ const AuthedTeachCoursesCourseIdActivitiesActivityIdSubmissionsSubmissionIdRoute
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/': typeof GuestIndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/achievements': typeof AuthedAchievementsRoute
   '/admin': typeof AuthedAdminRouteWithChildren
   '/home': typeof AuthedHomeRoute
@@ -561,6 +575,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/': typeof GuestIndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/achievements': typeof AuthedAchievementsRoute
   '/home': typeof AuthedHomeRoute
   '/learning': typeof AuthedLearningRoute
@@ -629,6 +645,8 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authed/achievements': typeof AuthedAchievementsRoute
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/home': typeof AuthedHomeRoute
@@ -704,6 +722,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/$'
     | '/'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/achievements'
     | '/admin'
     | '/home'
@@ -776,6 +796,8 @@ export interface FileRouteTypes {
   to:
     | '/$'
     | '/'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/achievements'
     | '/home'
     | '/learning'
@@ -843,6 +865,8 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_guest'
     | '/_public'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/_authed/achievements'
     | '/_authed/admin'
     | '/_authed/home'
@@ -919,6 +943,8 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   GuestRoute: typeof GuestRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -949,6 +975,20 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/achievements': {
@@ -1699,6 +1739,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   GuestRoute: GuestRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

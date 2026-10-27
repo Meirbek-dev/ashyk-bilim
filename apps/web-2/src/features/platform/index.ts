@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 
+export { robotsTxt } from './robots'
 export { AppShell } from './ui/app-shell'
 export { NotFoundView } from './ui/not-found-view'
 export { PendingView } from './ui/pending-view'

@@ -4,7 +4,8 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
 
 
 - Tree = spec 5.3: `_public` (`ssr: true`), `_guest` (signed-in -> `/home`), `_authed` (`ssr: 'data-only'`) with
-  `teach.tsx` / `admin.tsx` guarded by `requireCapability`. `shared/auth/access.ts` is the one table "workspace ->
+  `teach.tsx` / `admin.tsx` guarded by `requireCapability`. Two root routes answer documents that are not pages
+  (`server.handlers`): `sitemap[.]xml.ts` (public courses, collections, their authors) and `robots[.]txt.ts`. `shared/auth/access.ts` is the one table "workspace ->
   section -> capability": guards, sidebar, bottom bar, switcher (and the palette) read it. A new nav section = a row.
 - Route `staticData`: `title` (document title, layout heading), `layout: 'focus'` (the route draws
   `FocusPage` itself; the shell steps aside), `tabs` (a layout's tab routes; English label = URL segment),
