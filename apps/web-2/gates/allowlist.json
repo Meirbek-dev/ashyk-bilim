@@ -27,6 +27,10 @@
   "suppressions": [],
   "i18nSameAsRu": [
     {
+      "key": "ai_run_course",
+      "reason": "kk says «Курс» too (the glossary term); the rest is the course's own name."
+    },
+    {
       "key": "platform_brand",
       "reason": "Brand name, not translated."
     },

@@ -199,7 +199,6 @@
   "ai_open_run": "Запуск ИИ",
   "ai_run_tokens": "Токены: {input} на входе, {output} на выходе",
   "ai_run_duration": "Длительность: {seconds} с",
-  "ai_run_error": "Код ошибки: {code}",
   "ai_run_events": "Журнал событий",
   "ai_event_running": "Запуск начат",
   "ai_event_collecting_context": "Собраны материалы",

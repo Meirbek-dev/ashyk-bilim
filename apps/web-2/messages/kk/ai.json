@@ -193,7 +193,6 @@
   "ai_open_run": "ЖИ іске қосуы",
   "ai_run_tokens": "Токендер: кірісте {input}, шығыста {output}",
   "ai_run_duration": "Ұзақтығы: {seconds} с",
-  "ai_run_error": "Қате коды: {code}",
   "ai_run_events": "Оқиғалар журналы",
   "ai_event_running": "Іске қосылды",
   "ai_event_collecting_context": "Материалдар жиналды",

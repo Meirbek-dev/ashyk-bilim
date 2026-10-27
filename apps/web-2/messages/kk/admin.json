@@ -191,7 +191,7 @@
   "admin_group_members_add": "Мүшелерді қосу",
   "admin_group_members_added": "Мүшелер қосылды",
   "admin_group_member_remove": "{name} топтан шығару",
-  "admin_group_member_remove_title": "«{name}» пайдаланушысын «{group}» тобынан шығару керек пе?",
+  "admin_group_member_remove_title": "«{name}» пайдаланушысын топтан шығару керек пе? Топ: «{group}».",
   "admin_group_member_remove_consequence": "Топ тіркелген курстар одан жойылады, егер ол оларға жеке тіркелмесе.",
   "admin_group_member_remove_confirm": "Шығару",
   "admin_group_member_removed": "Мүше шығарылды",
