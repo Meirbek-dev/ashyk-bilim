@@ -15,7 +15,9 @@ type SortHeaderProps = {
 export function SortHeader({ id, label, sort, onSortChange }: SortHeaderProps) {
   const Icon = sort?.id !== id ? ArrowUpDown : sort.desc ? ArrowDown : ArrowUp
   return (
-    <Button variant="ghost" size="sm" onClick={() => onSortChange(nextSort(sort, id))}>
+    // The label lines up with the column's values and reads at the size of the plain headers beside it (the small
+    // button's own padding and 0.8rem put sortable headers out of line).
+    <Button variant="ghost" size="sm" className="-ml-2.5 text-sm" onClick={() => onSortChange(nextSort(sort, id))}>
       {label}
       <Icon aria-hidden data-icon="inline-end" />
     </Button>
