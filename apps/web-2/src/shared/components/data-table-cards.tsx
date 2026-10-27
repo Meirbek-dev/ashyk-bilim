@@ -34,9 +34,10 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
             </p>
           ))}
           {lines.length > 0 ? (
-            <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-              {/* A label too long for the line goes whole and its value under it at the left, as after a short
-                  label; without the wrap the value hung at the far right (gradebook columns named by long activities). */}
+            <dl className="flex flex-col gap-y-1 text-sm">
+              {/* One label and its value per line: pairs flowing side by side read as «Итог курса — Тест: … —», where
+                  no value is plainly whose. A label too long for the line goes whole and its value under it at the
+                  left; without the wrap the value hung at the far right (gradebook columns named by long activities). */}
               {lines.map(column => {
                 // A cell with nothing to say leaves its label out too: a bare «Описание» or «Модель» read as broken.
                 const value = column.cell(row)
