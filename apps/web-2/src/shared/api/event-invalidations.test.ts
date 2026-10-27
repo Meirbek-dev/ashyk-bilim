@@ -112,6 +112,9 @@ test('B-NOT-16 the live events refresh the lists this web reads (its infinite an
   const collection = invalidationsFor('collection.updated', { collection_id: COLLECTION, deleted: false })
   expect(hits(collection, listCollectionsInfiniteQueryKey({ query: { limit: 20, q: 'x' } }))).toBe(true)
   expect(hits(collection, getCollectionQueryKey({ path: { collection_id: COLLECTION } }))).toBe(true)
+  const gone = invalidationsFor('collection.updated', { collection_id: COLLECTION, deleted: true })
+  expect(hits(gone, listCollectionsInfiniteQueryKey({ query: { limit: 20 } }))).toBe(true)
+  expect(hits(gone, getCollectionQueryKey({ path: { collection_id: COLLECTION } }))).toBe(false)
   const reply = { course_id: COURSE, discussion_id: SUBMISSION, parent_id: POST, deleted: false }
   const discussion = invalidationsFor('discussion.updated', reply)
   expect(hits(discussion, listDiscussionsInfiniteQueryKey({ path: { course_id: COURSE }, query: {} }))).toBe(true)

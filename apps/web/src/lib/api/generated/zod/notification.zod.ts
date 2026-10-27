@@ -171,6 +171,22 @@ export const Notification = zod
           .describe(
             'Work in a course the recipient teaches was handed in and waits for\na grade. One unread row per activity: later hand-ins replace it and\nraise `count` until the recipient reads it.',
           ),
+        zod
+          .object({
+            activity_id: zod.uuid(),
+            activity_name: zod.string(),
+            activity_type: zod
+              .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+              .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
+            course_id: zod.uuid(),
+            course_name: zod.string(),
+            gate: zod.boolean(),
+            session_id: zod.uuid(),
+            type: zod.enum(['remediation_assigned']),
+          })
+          .describe(
+            'A teacher assigned the recipient a remediation (разбор ошибок) on\ntheir work: with `gate`, it must be passed before the next attempt.',
+          ),
       ])
       .describe(
         'What happened, with the ids a client needs to route and to invalidate\ncaches, and the names the bell renders without another request.',
@@ -190,6 +206,7 @@ export const Notification = zod
         'discussion_post',
         'course_team_added',
         'work_submitted',
+        'remediation_assigned',
       ])
       .describe('Same as `payload.type`.'),
   })

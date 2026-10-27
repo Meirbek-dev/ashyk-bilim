@@ -220,3 +220,25 @@ test('B-NOT-18 one hand-in opens the work in the review, several the activity qu
     params,
   })
 })
+
+test('B-NOT-19 a mistake review leads to the work it is about: the attempt entry, the code task, the hand-in', () => {
+  const payload = {
+    ...names,
+    type: 'remediation_assigned' as const,
+    activity_id: ACTIVITY,
+    activity_name: 'Тест',
+    activity_type: 'quiz' as const,
+    session_id: '0190a5d2-0000-7000-8000-000000000016',
+    gate: true,
+  }
+  const params = { courseId: COURSE, activityId: ACTIVITY }
+  expect(notificationTarget(payload)).toEqual({ to: '/learn/$courseId/$activityId/attempt', params })
+  expect(notificationTarget({ ...payload, activity_type: 'code_challenge' }).to).toBe(
+    '/learn/$courseId/$activityId/code',
+  )
+  expect(notificationTarget({ ...payload, activity_type: 'file_submission' }).to).toBe(
+    '/learn/$courseId/$activityId/submission',
+  )
+  // A learner has the switch for it.
+  expect(preferenceTypes(false)).toContain('remediation_assigned')
+})

@@ -28,6 +28,7 @@ describe('notification bell links', () => {
   })
   it('opens the review queue of the activity for work handed in to grade', () => {
     expect(hrefFor(note({ type: 'work_submitted', activity_id: 'a1' }))).toBe('/dash/courses/c1/activity/a1/review')
+    expect(hrefFor(note({ type: 'remediation_assigned', activity_id: 'a1' }))).toBe('/course/c1/activity/a1')
   })
   it('quotes the post words of a reply or thread; older rows have none', () => {
     expect(excerptOf(note({ type: 'discussion_reply', excerpt: 'Срок завтра?' }))).toBe('«Срок завтра?»')

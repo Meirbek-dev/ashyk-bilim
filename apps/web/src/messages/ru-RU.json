@@ -1469,7 +1469,8 @@
         "contributor_application": "{applicant} хочет стать соавтором курса",
         "discussion_post": "Новая тема от {author} в обсуждении",
         "course_team_added": "Вас добавили в команду курса",
-        "work_submitted": "Работа на проверку: «{activity}»"
+        "work_submitted": "Работа на проверку: «{activity}»",
+        "remediation_assigned": "Разбор ошибок от учителя: «{activity}»"
       }
     },
     "WidgetErrorBoundary": {

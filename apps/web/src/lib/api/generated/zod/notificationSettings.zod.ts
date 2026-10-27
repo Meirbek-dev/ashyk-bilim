@@ -17,6 +17,10 @@ export const NotificationSettings = zod
     discussion_post: zod.boolean().optional().describe('Absent (a client older than the type) = on.'),
     discussion_reply: zod.boolean(),
     grade_published: zod.boolean(),
+    remediation_assigned: zod
+      .boolean()
+      .optional()
+      .describe('A teacher assigned the user a remediation (разбор ошибок).'),
     submission_returned: zod.boolean(),
     work_submitted: zod.boolean().optional().describe('Work handed in for grading in a course the user teaches.'),
   })

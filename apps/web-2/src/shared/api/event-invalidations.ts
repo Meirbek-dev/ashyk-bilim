@@ -116,11 +116,12 @@ const eventInvalidations = {
         : [],
   'notification.read': () => [],
   'xp.awarded': () => [dashboardQueryKey(), leaderboardInfiniteQueryKey(), xpHistoryInfiniteQueryKey()],
-  // LIVE (S-GAPS-2): a collection the user owns was changed by someone else - the lists and that collection.
-  'collection.updated': ({ collection_id }) => [
-    listCollectionsQueryKey(),
-    getCollectionQueryKey({ path: { collection_id } }),
-  ],
+  // LIVE (S-GAPS-2): a collection the user owns was changed by someone else - the lists and that collection. A
+  // deleted one is not read again: that read can only answer 404 (the deleting tab is still on its page).
+  'collection.updated': ({ collection_id, deleted }) =>
+    deleted
+      ? [listCollectionsQueryKey()]
+      : [listCollectionsQueryKey(), getCollectionQueryKey({ path: { collection_id } })],
   // A post or reply changed in a thread the user is in or a course they teach: the course's posts and the thread.
   'discussion.updated': ({ course_id, discussion_id, parent_id }) => [
     listDiscussionsQueryKey({ path: { course_id } }),

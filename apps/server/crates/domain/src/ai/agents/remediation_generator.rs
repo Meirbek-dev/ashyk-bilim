@@ -366,6 +366,18 @@ impl AiService {
                 ));
             };
             self.commit_finish(finished.completion).await?;
+            // OPEN-learn-o: a teacher's remediation (a gate above all) is
+            // news to the learner; their own request or a preview is not.
+            if subject.user_id() != user_id && !subject.preview() {
+                crate::notifications::remediation_assigned(
+                    &self.pool,
+                    subject.user_id(),
+                    activity_id,
+                    id,
+                    gate_mode,
+                )
+                .await;
+            }
             ab_db::ai::get_remediation_session(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("remediation session"))

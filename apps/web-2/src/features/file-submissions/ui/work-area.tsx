@@ -61,7 +61,8 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
           ))}
         </ul>
       ) : null}
-      {next && task.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
+      {/* The review is there to work on while the hand-in waits too (the learner was told of it, B-NOT-19). */}
+      {task.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
         <Suspense fallback={null}>
           <RemediationGate activityId={task.activity_id} invalidates={[taskOptions(task.activity_id).queryKey]} />
         </Suspense>

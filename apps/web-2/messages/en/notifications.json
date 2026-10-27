@@ -32,6 +32,7 @@
   "notifications_type_discussion_post": "New discussion thread",
   "notifications_type_course_team_added": "Added to a course team",
   "notifications_type_work_submitted": "Submission to review",
+  "notifications_type_remediation_assigned": "Mistake review",
   "notifications_text_activity": "“{activity}”, course “{course}”",
   "notifications_text_score": "Grade: {score}",
   "notifications_text_due": "Deadline: {date}",
@@ -52,6 +53,8 @@
   "notifications_text_excerpt": "“{text}”",
   "notifications_text_team_added": "You were added to the team of the course “{course}”",
   "notifications_text_team_observer": "You were added as an observer of the course “{course}”: you see it, drafts too, but change nothing",
+  "notifications_text_remediation_gate": "Before your next attempt, pass the mistake review your teacher prepared",
+  "notifications_text_remediation": "Your teacher prepared a mistake review for you",
   "notifications_text_work": "{learner}: a submission awaits review",
   "notifications_text_works": [
     {

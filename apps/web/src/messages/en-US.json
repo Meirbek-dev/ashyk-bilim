@@ -1465,7 +1465,8 @@
         "contributor_application": "{applicant} wants to co-author the course",
         "discussion_post": "{author} started a new discussion thread",
         "course_team_added": "You were added to the course team",
-        "work_submitted": "Submission to review: “{activity}”"
+        "work_submitted": "Submission to review: “{activity}”",
+        "remediation_assigned": "Mistake review from your teacher: “{activity}”"
       }
     },
     "WidgetErrorBoundary": {

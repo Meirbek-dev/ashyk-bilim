@@ -42,6 +42,12 @@ export const AdminAnalyticsResponse = zod.object({
   ),
   department_program_performance: zod.array(
     zod.object({
+      author_username: zod
+        .string()
+        .nullable()
+        .describe(
+          "The creating teacher's username, beside the name (two teachers may\nshare one); `None` with `program_id`.",
+        ),
       completion_rate: zod.number().nullable(),
       course_count: zod.int(),
       health_score: zod.number().nullable(),

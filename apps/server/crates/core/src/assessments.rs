@@ -353,6 +353,7 @@ text_enum!(
         DiscussionPost => "discussion_post",
         CourseTeamAdded => "course_team_added",
         WorkSubmitted => "work_submitted",
+        RemediationAssigned => "remediation_assigned",
     }
 );
 

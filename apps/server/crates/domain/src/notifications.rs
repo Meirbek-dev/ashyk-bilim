@@ -10,8 +10,8 @@
 
 use ab_core::assessments::NotificationType;
 use ab_core::id::{
-    ActivityId, AssessmentId, CourseId, CourseUpdateId, DiscussionId, FileAttemptId,
-    FileSubmissionId, NotificationId, SubmissionId, UserId,
+    ActivityId, AiRemediationSessionId, AssessmentId, CourseId, CourseUpdateId, DiscussionId,
+    FileAttemptId, FileSubmissionId, NotificationId, SubmissionId, UserId,
 };
 use ab_core::{Error, FieldError, Result};
 use ab_db::notifications::NotificationRow;
@@ -160,6 +160,18 @@ pub enum NotificationPayload {
         /// Hand-ins since the recipient last read this activity's row (>= 1).
         count: i64,
     },
+    /// A teacher assigned the recipient a remediation (разбор ошибок) on
+    /// their work: with `gate`, it must be passed before the next attempt.
+    RemediationAssigned {
+        course_id: CourseId,
+        course_name: String,
+        activity_id: ActivityId,
+        activity_name: String,
+        #[schema(value_type = crate::wire::ActivityType)]
+        activity_type: String,
+        session_id: AiRemediationSessionId,
+        gate: bool,
+    },
 }
 
 impl NotificationPayload {
@@ -176,6 +188,7 @@ impl NotificationPayload {
             Self::DiscussionPost { .. } => NotificationType::DiscussionPost,
             Self::CourseTeamAdded { .. } => NotificationType::CourseTeamAdded,
             Self::WorkSubmitted { .. } => NotificationType::WorkSubmitted,
+            Self::RemediationAssigned { .. } => NotificationType::RemediationAssigned,
         }
     }
 }
@@ -395,6 +408,45 @@ pub async fn work_handed_in(
         }
         Err(err) => tracing::warn!(%err, "work notification not stored"),
     }
+}
+
+/// A remediation a teacher made for a learner's work reaches that learner.
+///
+/// OPEN-learn-o: a gate blocked them unannounced until they opened the
+/// work. Never for the learner's own request or a preview. Never fails.
+pub async fn remediation_assigned(
+    pool: &PgPool,
+    learner: UserId,
+    activity_id: ActivityId,
+    session_id: AiRemediationSessionId,
+    gate: bool,
+) {
+    let Some((course_id, course_name, activity_name)) = activity_names(pool, activity_id).await
+    else {
+        return;
+    };
+    let activity_type = ab_db::catalog::get_activity(pool, activity_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| a.activity_type)
+        .unwrap_or_default();
+    let payload = NotificationPayload::RemediationAssigned {
+        course_id,
+        course_name,
+        activity_id,
+        activity_name,
+        activity_type,
+        session_id,
+        gate,
+    };
+    notify(
+        pool,
+        &[learner],
+        &payload,
+        Some(&format!("remediation:{session_id}")),
+    )
+    .await;
 }
 
 /// A page of notifications plus the cursor of the next one.

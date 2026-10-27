@@ -64,3 +64,17 @@ test('B-NOT-18 a hand-in row names the activity, then who handed in, or how many
   expect(notificationLines({ ...payload, count: 3 })[1]).toBe('3 новые работы ждут проверки, последняя — Аня')
   expect(notificationLines({ ...payload, count: 5 })[1]).toBe('5 новых работ ждут проверки, последняя — Аня')
 })
+
+test('B-NOT-19 a mistake review says whether it blocks the next attempt', () => {
+  const payload = {
+    ...names,
+    type: 'remediation_assigned' as const,
+    activity_id: '0190a5d2-0000-7000-8000-00000000000a',
+    activity_name: 'Тест',
+    activity_type: 'quiz' as const,
+    session_id: '0190a5d2-0000-7000-8000-000000000016',
+    gate: true,
+  }
+  expect(notificationLines(payload)[1]).toBe(m.notifications_text_remediation_gate())
+  expect(notificationLines({ ...payload, gate: false })[1]).toBe(m.notifications_text_remediation())
+})

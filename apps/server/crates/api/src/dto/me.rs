@@ -161,6 +161,10 @@ pub struct NotificationSettings {
     #[garde(skip)]
     #[serde(default = "switched_on")]
     pub work_submitted: bool,
+    /// A teacher assigned the user a remediation (разбор ошибок).
+    #[garde(skip)]
+    #[serde(default = "switched_on")]
+    pub remediation_assigned: bool,
 }
 
 const fn switched_on() -> bool {
@@ -168,7 +172,7 @@ const fn switched_on() -> bool {
 }
 
 impl NotificationSettings {
-    const fn switches(&self) -> [(NotificationType, bool); 10] {
+    const fn switches(&self) -> [(NotificationType, bool); 11] {
         [
             (NotificationType::GradePublished, self.grade_published),
             (
@@ -189,6 +193,10 @@ impl NotificationSettings {
             (NotificationType::DiscussionPost, self.discussion_post),
             (NotificationType::CourseTeamAdded, self.course_team_added),
             (NotificationType::WorkSubmitted, self.work_submitted),
+            (
+                NotificationType::RemediationAssigned,
+                self.remediation_assigned,
+            ),
         ]
     }
 
@@ -215,6 +223,7 @@ impl NotificationSettings {
             discussion_post: on(NotificationType::DiscussionPost),
             course_team_added: on(NotificationType::CourseTeamAdded),
             work_submitted: on(NotificationType::WorkSubmitted),
+            remediation_assigned: on(NotificationType::RemediationAssigned),
         }
     }
 }

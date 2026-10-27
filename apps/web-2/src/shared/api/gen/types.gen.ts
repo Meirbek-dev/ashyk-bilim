@@ -227,6 +227,11 @@ export type AdminListUpdated = {
 };
 
 export type AdminProgramRow = {
+    /**
+     * The creating teacher's username, beside the name (two teachers may
+     * share one); `None` with `program_id`.
+     */
+    author_username: string | null;
     completion_rate: number | null;
     course_count: number;
     health_score: number | null;
@@ -245,6 +250,11 @@ export type AdminRun = {
      */
     context: RunContext;
     cost_estimate: number | null;
+    /**
+     * The name of `context.course_id`; `null` without a course or once the
+     * course is deleted.
+     */
+    course_name: string | null;
     duration_ms: number | null;
     error_code: string | null;
     feature: AiRunKind;
@@ -4272,6 +4282,15 @@ export type NotificationPayload = {
     learner_name: string;
     submission_id: SubmissionId | null;
     type: 'work_submitted';
+} | {
+    activity_id: ActivityId;
+    activity_name: string;
+    activity_type: ActivityType;
+    course_id: CourseId;
+    course_name: string;
+    gate: boolean;
+    session_id: AiRemediationSessionId;
+    type: 'remediation_assigned';
 };
 
 export type NotificationPreferences = {
@@ -4302,6 +4321,10 @@ export type NotificationSettings = {
     discussion_post?: boolean;
     discussion_reply: boolean;
     grade_published: boolean;
+    /**
+     * A teacher assigned the user a remediation (разбор ошибок).
+     */
+    remediation_assigned?: boolean;
     submission_returned: boolean;
     /**
      * Work handed in for grading in a course the user teaches.
@@ -4312,7 +4335,7 @@ export type NotificationSettings = {
 /**
  * In-app notification types (S-07; `notifications.kind`).
  */
-export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted';
+export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted' | 'remediation_assigned';
 
 export type OpenTextBody = {
     min_words: number | null;

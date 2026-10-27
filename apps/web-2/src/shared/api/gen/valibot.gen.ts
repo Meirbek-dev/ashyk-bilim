@@ -2228,6 +2228,7 @@ export const vNotificationSettings = v.strictObject({
     discussion_post: v.optional(v.boolean()),
     discussion_reply: v.boolean(),
     grade_published: v.boolean(),
+    remediation_assigned: v.optional(v.boolean()),
     submission_returned: v.boolean(),
     work_submitted: v.optional(v.boolean())
 });
@@ -2245,7 +2246,8 @@ export const vNotificationType = v.picklist([
     'contributor_application',
     'discussion_post',
     'course_team_added',
-    'work_submitted'
+    'work_submitted',
+    'remediation_assigned'
 ]);
 
 export const vOpenTextBody = v.object({
@@ -3749,6 +3751,7 @@ export const vAdminRun = v.object({
     completed_at_unix: v.nullable(vUnixTime),
     context: vRunContext,
     cost_estimate: v.nullable(v.number()),
+    course_name: v.nullable(v.string()),
     duration_ms: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     error_code: v.nullable(v.string()),
     feature: vAiRunKind,
@@ -4574,6 +4577,7 @@ export const vAdminAwardRequest = v.strictObject({
 });
 
 export const vAdminProgramRow = v.object({
+    author_username: v.nullable(v.string()),
     completion_rate: v.nullable(v.number()),
     course_count: v.pipe(v.number(), v.integer()),
     health_score: v.nullable(v.number()),
@@ -5235,6 +5239,16 @@ export const vNotificationPayload = v.union([
         learner_name: v.string(),
         submission_id: v.nullable(vSubmissionId),
         type: v.picklist(['work_submitted'])
+    }),
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        activity_type: vActivityType,
+        course_id: vCourseId,
+        course_name: v.string(),
+        gate: v.boolean(),
+        session_id: vAiRemediationSessionId,
+        type: v.picklist(['remediation_assigned'])
     })
 ]);
 

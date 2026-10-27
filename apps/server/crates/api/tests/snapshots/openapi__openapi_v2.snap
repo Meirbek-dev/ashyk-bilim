@@ -623,6 +623,13 @@ expression: json
       },
       "AdminProgramRow": {
         "properties": {
+          "author_username": {
+            "description": "The creating teacher's username, beside the name (two teachers may\nshare one); `None` with `program_id`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "completion_rate": {
             "format": "double",
             "type": [
@@ -662,6 +669,7 @@ expression: json
           "program_name",
           "course_count",
           "learner_count",
+          "author_username",
           "completion_rate",
           "health_score",
           "program_id"
@@ -689,6 +697,13 @@ expression: json
             "format": "double",
             "type": [
               "number",
+              "null"
+            ]
+          },
+          "course_name": {
+            "description": "The name of `context.course_id`; `null` without a course or once the\ncourse is deleted.",
+            "type": [
+              "string",
               "null"
             ]
           },
@@ -761,6 +776,7 @@ expression: json
           "context",
           "completed_at_unix",
           "cost_estimate",
+          "course_name",
           "duration_ms",
           "error_code",
           "input_tokens",
@@ -12353,6 +12369,49 @@ expression: json
               "submission_id"
             ],
             "type": "object"
+          },
+          {
+            "description": "A teacher assigned the recipient a remediation (разбор ошибок) on\ntheir work: with `gate`, it must be passed before the next attempt.",
+            "properties": {
+              "activity_id": {
+                "$ref": "#/components/schemas/ActivityId"
+              },
+              "activity_name": {
+                "type": "string"
+              },
+              "activity_type": {
+                "$ref": "#/components/schemas/ActivityType"
+              },
+              "course_id": {
+                "$ref": "#/components/schemas/CourseId"
+              },
+              "course_name": {
+                "type": "string"
+              },
+              "gate": {
+                "type": "boolean"
+              },
+              "session_id": {
+                "$ref": "#/components/schemas/AiRemediationSessionId"
+              },
+              "type": {
+                "enum": [
+                  "remediation_assigned"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "course_id",
+              "course_name",
+              "activity_id",
+              "activity_name",
+              "activity_type",
+              "session_id",
+              "gate",
+              "type"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -12417,6 +12476,10 @@ expression: json
           "grade_published": {
             "type": "boolean"
           },
+          "remediation_assigned": {
+            "description": "A teacher assigned the user a remediation (разбор ошибок).",
+            "type": "boolean"
+          },
           "submission_returned": {
             "type": "boolean"
           },
@@ -12448,7 +12511,8 @@ expression: json
           "contributor_application",
           "discussion_post",
           "course_team_added",
-          "work_submitted"
+          "work_submitted",
+          "remediation_assigned"
         ],
         "type": "string"
       },

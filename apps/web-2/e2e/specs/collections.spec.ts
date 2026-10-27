@@ -252,7 +252,7 @@ test('B-COL-12 delete asks with the name, starts on Cancel, then shows the list'
     expect(confirm).toBeVisible({ timeout: 1000 }),
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
-  expectFailure(page, new RegExp(`^/api/v2/collections/${own.id}$`), 404)
+  // No 404 from reading the deleted collection again: its live `collection.updated` names it deleted (OPEN-6).
   await confirm.getByRole('button', { name: m.collections_action_delete({}, ru) }).click()
   await expect(page).toHaveURL(/\/collections$/)
   await expect(page.getByText(m.collections_deleted({}, ru))).toBeVisible()

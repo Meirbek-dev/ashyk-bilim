@@ -66,6 +66,7 @@ const KNOWN_TYPES = new Set([
   'discussion_post',
   'course_team_added',
   'work_submitted',
+  'remediation_assigned',
 ])
 
 /** A reply's or new thread's own words, quoted (CONTRACT-REQ-E-1): twenty replies no longer read alike. */

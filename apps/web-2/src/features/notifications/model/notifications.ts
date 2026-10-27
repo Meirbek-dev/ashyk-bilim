@@ -50,6 +50,7 @@ export const NOTIFICATION_TYPES = [
   'deadline_extended',
   'course_update',
   'discussion_reply',
+  'remediation_assigned',
   'contributor_application',
   'discussion_post',
   'course_team_added',
@@ -112,6 +113,17 @@ export function notificationTarget(payload: NotificationPayload) {
       return payload.role === 'reporter'
         ? linkOptions({ to: '/courses/$courseId', params: course })
         : linkOptions({ to: '/teach/courses/$courseId/overview', params: course })
+    // The work's own page: its entry shows the gate and the review to pass (OPEN-learn-o).
+    case 'remediation_assigned': {
+      const params = { ...course, activityId: payload.activity_id }
+      if (payload.activity_type === 'quiz' || payload.activity_type === 'exam')
+        return linkOptions({ to: '/learn/$courseId/$activityId/attempt', params })
+      if (payload.activity_type === 'code_challenge')
+        return linkOptions({ to: '/learn/$courseId/$activityId/code', params })
+      if (payload.activity_type === 'file_submission')
+        return linkOptions({ to: '/learn/$courseId/$activityId/submission', params })
+      return linkOptions({ to: '/learn/$courseId/$activityId', params })
+    }
     case 'work_submitted': {
       // One work opens itself in the review; several, the activity's queue.
       const params = { courseId: payload.course_id, activityId: payload.activity_id }

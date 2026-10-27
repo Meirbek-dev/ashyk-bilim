@@ -56,6 +56,10 @@ export const AdminRunPage = zod.object({
           })
           .describe('The allow-listed part of the run metadata.'),
         cost_estimate: zod.number().nullable(),
+        course_name: zod
+          .string()
+          .nullable()
+          .describe('The name of `context.course_id`; `null` without a course or once the\ncourse is deleted.'),
         duration_ms: zod.int().nullable(),
         error_code: zod.string().nullable(),
         feature: zod
