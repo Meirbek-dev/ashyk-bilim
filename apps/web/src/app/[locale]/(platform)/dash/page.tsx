@@ -200,7 +200,7 @@ async function DashHome() {
           forecastBacklog7d: teacherOverview.workload.forecast_backlog_7d ?? 0,
           medianFeedbackLatencyHours: teacherOverview.workload.median_feedback_latency_hours ?? null,
           backlogItems: teacherOverview.workload.backlog_by_assessment.map(item => ({
-            assessmentId: item.assessment_id,
+            assessmentId: item.assessment_id ?? item.activity_id,
             awaitingReview: item.awaiting_review,
             courseName: item.course_name,
             title: item.title,

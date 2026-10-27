@@ -10,8 +10,7 @@ use super::assessments::build_assessment_rows;
 use super::bottlenecks::build_content_bottlenecks;
 use super::context::{
     AnalyticsContext, ProgressSnapshot, SnapshotKey, build_activity_events, build_series, count,
-    count_i64, days_between, is_reviewable, mean, progress_completed, progress_snapshots, round1,
-    safe_pct_counts,
+    count_i64, days_between, mean, progress_completed, progress_snapshots, round1, safe_pct_counts,
 };
 use super::filters::{AnalyticsFilters, DAY_SECS, SortOrder, Window};
 use super::risk::build_risk_rows;
@@ -186,13 +185,7 @@ pub fn build_course_rows(
                 .filter(|r| r.course_id == *course_id && r.risk_level.is_at_risk())
                 .count(),
         );
-        let ungraded = count_i64(
-            ctx.submissions
-                .iter()
-                .filter(|s| s.course_id == *course_id && is_reviewable(s))
-                .filter(|s| allowed.as_ref().is_none_or(|set| set.contains(&s.user_id)))
-                .count(),
-        );
+        let ungraded = count_i64(ctx.awaiting_review(allowed.as_ref(), Some(*course_id)));
         let last_update = ctx.course_last_content_update(*course_id);
         let days_since_update = last_update.map(|ts| days_between(ts, now));
         let engagement_delta = (!previous_active.is_empty()).then(|| {
@@ -351,12 +344,7 @@ pub fn build_course_detail(
         .member_certificates(allowed.as_ref())
         .filter(|c| c.course_id == course_id)
         .count();
-    let ungraded = ctx
-        .submissions
-        .iter()
-        .filter(|s| s.course_id == course_id && is_reviewable(s))
-        .filter(|s| allowed.as_ref().is_none_or(|set| set.contains(&s.user_id)))
-        .count();
+    let ungraded = ctx.awaiting_review(allowed.as_ref(), Some(course_id));
 
     // Completions per activity / chapter of the members counted above.
     let mut completion_by_activity: HashMap<ActivityId, HashSet<UserId>> = HashMap::new();

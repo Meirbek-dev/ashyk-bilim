@@ -9694,6 +9694,10 @@
       },
       "GradingBacklogItem": {
         "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId",
+            "description": "The activity the works belong to: a test or a file task."
+          },
           "age_hours": {
             "format": "double",
             "type": [
@@ -9702,10 +9706,25 @@
             ]
           },
           "assessment_id": {
-            "$ref": "#/components/schemas/AssessmentId"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentId",
+                "description": "The test's assessment; `None` for a file task (it has none)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "assessment_type": {
-            "$ref": "#/components/schemas/AssessmentKind"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "awaiting_review": {
             "type": "integer"
@@ -9736,12 +9755,13 @@
         "required": [
           "course_id",
           "course_name",
-          "assessment_id",
-          "assessment_type",
+          "activity_id",
           "title",
           "awaiting_review",
           "sla_breaches",
           "age_hours",
+          "assessment_id",
+          "assessment_type",
           "oldest_submitted_at_unix"
         ],
         "type": "object"

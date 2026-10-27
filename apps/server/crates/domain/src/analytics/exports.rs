@@ -6,8 +6,13 @@
 //! the watchlist shows (UX-123), as do the outcomes `outlier_reason_codes`
 //! (UX-135). Other diagnostic codes (`signals`) stay stable identifiers.
 
+use ab_core::assessments::SubmissionStatus;
+
 use super::assessments::build_assessment_rows;
-use super::context::{AnalyticsContext, is_reviewable, progress_snapshots, submitted_at};
+use super::context::{
+    AnalyticsContext, file_is_reviewable, file_submitted_at, is_reviewable, progress_snapshots,
+    submitted_at,
+};
 use super::filters::AnalyticsFilters;
 use super::risk::build_risk_rows;
 use super::types::RiskLevel;
@@ -331,7 +336,31 @@ pub fn grading_backlog_csv(
                 csv_datetime(submitted_at(s), language),
             ])
         });
-    document(language, &grading_backlog_header(language), rows)
+    let files = ctx
+        .file_attempts
+        .iter()
+        .filter(|a| file_is_reviewable(a))
+        .filter(|a| allowed.as_ref().is_none_or(|set| set.contains(&a.user_id)))
+        .map(|a| {
+            vec![
+                a.user_id.to_string(),
+                ctx.username(a.user_id),
+                a.course_id.to_string(),
+                ctx.course_name(a.course_id),
+                a.activity_id.to_string(),
+                language.file_task_kind().to_owned(),
+                ctx.activity_name(a.activity_id),
+                language
+                    .submission_status(SubmissionStatus::Pending)
+                    .to_owned(),
+                csv_datetime(file_submitted_at(a), language),
+            ]
+        });
+    document(
+        language,
+        &grading_backlog_header(language),
+        rows.chain(files),
+    )
 }
 
 #[must_use]

@@ -16,11 +16,18 @@ export const TeacherWorkloadSummary = zod.object({
   }),
   backlog_by_assessment: zod.array(
     zod.object({
+      activity_id: zod.uuid().describe('The activity the works belong to: a test or a file task.'),
       age_hours: zod.number().nullable(),
-      assessment_id: zod.uuid(),
-      assessment_type: zod
-        .enum(['quiz', 'exam', 'code_challenge'])
-        .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+      assessment_id: zod.union([
+        zod.uuid().describe("The test's assessment; `None` for a file task (it has none)."),
+        zod.null(),
+      ]),
+      assessment_type: zod.union([
+        zod
+          .enum(['quiz', 'exam', 'code_challenge'])
+          .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+        zod.null(),
+      ]),
       awaiting_review: zod.int(),
       course_id: zod.uuid(),
       course_name: zod.string(),

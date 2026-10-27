@@ -8,12 +8,14 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ab_core::Result;
-use ab_core::assessments::{ActivityProgressState, AssessmentKind, Lifecycle, SubmissionStatus};
+use ab_core::assessments::{
+    ActivityProgressState, AssessmentKind, FileAttemptStatus, Lifecycle, SubmissionStatus,
+};
 use ab_core::id::{ActivityId, AssessmentId, CourseId, TrailRunId, UserId, UsergroupId};
 use ab_db::analytics::{
     ActivityInfoRow, AssessmentInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow,
-    CourseProgressInfoRow, EventInfoRow, ProgressInfoRow, SubmissionInfoRow, TrailRunInfoRow,
-    UserInfoRow,
+    CourseProgressInfoRow, EventInfoRow, FileAttemptInfoRow, ProgressInfoRow, SubmissionInfoRow,
+    TrailRunInfoRow, UserInfoRow,
 };
 use sqlx::PgPool;
 
@@ -226,6 +228,8 @@ pub struct AnalyticsContext {
     pub activities: BTreeMap<ActivityId, ActivityInfoRow>,
     pub assessments: Vec<AssessmentInfoRow>,
     pub submissions: Vec<SubmissionInfoRow>,
+    /// Handed-in file-task attempts, graded by hand like pending submissions.
+    pub file_attempts: Vec<FileAttemptInfoRow>,
     pub activity_progress: Vec<ProgressInfoRow>,
     pub course_progress: Vec<CourseProgressInfoRow>,
     pub trail_runs: Vec<TrailRunInfoRow>,
@@ -259,6 +263,7 @@ impl AnalyticsContext {
         let activities = ab_db::analytics::list_activities(pool, course_ids).await?;
         let assessments = ab_db::analytics::list_assessments(pool, course_ids).await?;
         let submissions = ab_db::analytics::list_submissions(pool, course_ids, since).await?;
+        let file_attempts = ab_db::analytics::list_file_attempts(pool, course_ids, since).await?;
         let activity_progress = ab_db::analytics::list_activity_progress(pool, course_ids).await?;
         let course_progress = ab_db::analytics::list_course_progress(pool, course_ids).await?;
         let trail_runs = ab_db::analytics::list_trail_runs(pool, course_ids).await?;
@@ -276,6 +281,7 @@ impl AnalyticsContext {
         user_ids.extend(activity_progress.iter().map(|r| r.user_id));
         user_ids.extend(course_progress.iter().map(|r| r.user_id));
         user_ids.extend(submissions.iter().map(|r| r.user_id));
+        user_ids.extend(file_attempts.iter().map(|r| r.user_id));
         user_ids.extend(certificates.iter().map(|r| r.user_id));
         user_ids.extend(courses.iter().filter_map(|c| c.creator_id));
         let member_ids: Vec<UserId> = user_ids.iter().copied().collect();
@@ -304,6 +310,7 @@ impl AnalyticsContext {
             activities: activities.into_iter().map(|a| (a.id, a)).collect(),
             assessments,
             submissions,
+            file_attempts,
             activity_progress,
             course_progress,
             trail_runs,
@@ -347,6 +354,39 @@ impl AnalyticsContext {
         self.assessments
             .iter()
             .find(|a| a.activity_id == activity_id)
+    }
+
+    /// Works waiting for a teacher's grade - pending test submissions and
+    /// handed-in file attempts - of the cohort (`None` = everyone), in one
+    /// course or all.
+    #[must_use]
+    pub fn awaiting_review(
+        &self,
+        allowed: Option<&HashSet<UserId>>,
+        course: Option<CourseId>,
+    ) -> usize {
+        let keep = |c: CourseId, u: UserId| {
+            course.is_none_or(|id| id == c) && allowed.is_none_or(|set| set.contains(&u))
+        };
+        let tests = self
+            .submissions
+            .iter()
+            .filter(|s| is_reviewable(s) && keep(s.course_id, s.user_id))
+            .count();
+        let files = self
+            .file_attempts
+            .iter()
+            .filter(|a| file_is_reviewable(a) && keep(a.course_id, a.user_id))
+            .count();
+        tests + files
+    }
+
+    /// An activity's name as the course shows it.
+    #[must_use]
+    pub fn activity_name(&self, activity_id: ActivityId) -> String {
+        self.activities
+            .get(&activity_id)
+            .map_or_else(String::new, |a| a.name.clone())
     }
 
     /// Legacy `display_name`: display name, else username, else a placeholder.
@@ -536,6 +576,30 @@ pub const fn is_graded(s: &SubmissionInfoRow) -> bool {
 #[must_use]
 pub const fn is_reviewable(s: &SubmissionInfoRow) -> bool {
     matches!(s.status, SubmissionStatus::Pending)
+}
+
+/// A file-task attempt handed in and not yet graded (the inbox's rule).
+#[must_use]
+pub const fn file_is_reviewable(a: &FileAttemptInfoRow) -> bool {
+    matches!(a.status, FileAttemptStatus::Submitted)
+}
+
+#[must_use]
+pub const fn file_is_graded(a: &FileAttemptInfoRow) -> bool {
+    matches!(
+        a.status,
+        FileAttemptStatus::Graded | FileAttemptStatus::Published
+    )
+}
+
+#[must_use]
+pub fn file_submitted_at(a: &FileAttemptInfoRow) -> i64 {
+    a.submitted_at.unwrap_or(a.updated_at)
+}
+
+#[must_use]
+pub fn file_graded_at(a: &FileAttemptInfoRow) -> Option<i64> {
+    file_is_graded(a).then(|| a.graded_at.unwrap_or(a.updated_at))
 }
 
 /// The released score - the grade of record (BUG-194): a returned, pending

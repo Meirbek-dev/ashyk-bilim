@@ -385,8 +385,11 @@ pub struct WorkloadAgingBuckets {
 pub struct GradingBacklogItem {
     pub course_id: CourseId,
     pub course_name: String,
-    pub assessment_id: AssessmentId,
-    pub assessment_type: AssessmentKind,
+    /// The activity the works belong to: a test or a file task.
+    pub activity_id: ActivityId,
+    /// The test's assessment; `None` for a file task (it has none).
+    pub assessment_id: Option<AssessmentId>,
+    pub assessment_type: Option<AssessmentKind>,
     pub title: String,
     pub awaiting_review: i64,
     pub oldest_submitted_at_unix: Option<i64>,

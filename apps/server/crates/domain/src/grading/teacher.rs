@@ -547,6 +547,16 @@ impl CsvLanguage {
         }
     }
 
+    /// The kind column of a file task in a mixed export (the activity type's
+    /// name in the course).
+    pub(crate) const fn file_task_kind(self) -> &'static str {
+        match self {
+            Self::Ru => "Отправка файла",
+            Self::Kk => "Файл жіберу",
+            Self::En => "File submission",
+        }
+    }
+
     /// Per-assessment export header (UX-105): learner, email, attempt,
     /// status, late, submitted at, auto score, final score.
     const fn submission_header(self) -> [&'static str; 8] {

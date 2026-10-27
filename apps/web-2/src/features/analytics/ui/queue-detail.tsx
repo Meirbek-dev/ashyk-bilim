@@ -73,7 +73,7 @@ export function QueueDetail({ workload, onRetry }: { workload: TeacherWorkloadSu
             label={m.analytics_backlog_table()}
             rows={workload.backlog_by_assessment}
             columns={columns()}
-            getKey={row => row.assessment_id}
+            getKey={row => row.activity_id}
           />
         </ListState>
       </section>

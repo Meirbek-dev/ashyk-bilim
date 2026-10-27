@@ -91,7 +91,7 @@ export default function TeacherWorkloadPanel({ workload }: TeacherWorkloadPanelP
           </TableHeader>
           <TableBody>
             {workload.backlog_by_assessment.slice(0, 5).map(item => (
-              <TableRow key={`${item.assessment_id}-${item.course_id}`}>
+              <TableRow key={item.activity_id}>
                 <TableCell className="max-w-[260px] font-medium whitespace-normal">{item.title}</TableCell>
                 <TableCell className="max-w-[220px] whitespace-normal">{item.course_name}</TableCell>
                 <TableCell>{item.awaiting_review}</TableCell>

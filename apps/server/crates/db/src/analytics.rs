@@ -9,11 +9,12 @@
 
 use ab_core::Result;
 use ab_core::assessments::{
-    ActivityProgressState, AssessmentKind, GradingMode, Lifecycle, SubmissionStatus,
+    ActivityProgressState, AssessmentKind, FileAttemptStatus, GradingMode, Lifecycle,
+    SubmissionStatus,
 };
 use ab_core::id::{
-    ActivityId, AssessmentId, BulkActionId, ChapterId, CourseId, GradingEntryId, InterventionId,
-    SavedViewId, SubmissionId, TrailRunId, UserId, UsergroupId,
+    ActivityId, AssessmentId, BulkActionId, ChapterId, CourseId, FileAttemptId, GradingEntryId,
+    InterventionId, SavedViewId, SubmissionId, TrailRunId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -273,6 +274,49 @@ pub async fn list_submissions(
              AND ($2::double precision IS NULL
                   OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))
            ORDER BY id"#,
+        &ids,
+        epoch(since)
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// A handed-in file-task attempt: the other kind of work a teacher grades
+/// by hand (the inbox counts both, OPEN-teach-1). Same window and preview
+/// rules as [`list_submissions`].
+#[derive(Debug, Clone)]
+pub struct FileAttemptInfoRow {
+    pub id: FileAttemptId,
+    pub activity_id: ActivityId,
+    pub course_id: CourseId,
+    pub user_id: UserId,
+    pub status: FileAttemptStatus,
+    pub submitted_at: Option<i64>,
+    pub graded_at: Option<i64>,
+    pub updated_at: i64,
+}
+
+pub async fn list_file_attempts(
+    pool: &PgPool,
+    course_ids: &[CourseId],
+    since: Option<i64>,
+) -> Result<Vec<FileAttemptInfoRow>> {
+    let ids = uuids(course_ids);
+    let rows = sqlx::query_as!(
+        FileAttemptInfoRow,
+        r#"SELECT fa.id AS "id: FileAttemptId", f.activity_id AS "activity_id: ActivityId",
+                  fa.course_id AS "course_id: CourseId", fa.user_id AS "user_id: UserId",
+                  fa.status AS "status: FileAttemptStatus",
+                  (extract(epoch FROM fa.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM fa.graded_at))::bigint AS "graded_at?",
+                  (extract(epoch FROM fa.updated_at))::bigint AS "updated_at!"
+           FROM file_submission_attempts fa
+           JOIN file_submissions f ON f.id = fa.file_submission_id
+           WHERE fa.course_id = ANY($1) AND fa.status <> 'draft' AND NOT fa.preview
+             AND ($2::double precision IS NULL
+                  OR COALESCE(fa.submitted_at, fa.updated_at) >= to_timestamp($2))
+           ORDER BY fa.id"#,
         &ids,
         epoch(since)
     )

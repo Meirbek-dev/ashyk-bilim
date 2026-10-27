@@ -17,8 +17,7 @@ use super::assessments::build_assessment_rows;
 use super::bottlenecks::build_content_bottlenecks;
 use super::context::{
     ActivityEvent, AnalyticsContext, EventSource, build_activity_events, build_series, count,
-    count_i64, graded_at, is_graded, is_reviewable, mean, progress_snapshots, round1, safe_pct,
-    safe_pct_counts,
+    count_i64, graded_at, is_graded, mean, progress_snapshots, round1, safe_pct, safe_pct_counts,
 };
 use super::courses::{CourseRowInputs, at_risk_count, build_course_rows};
 use super::filters::{AnalyticsFilters, DAY_SECS};
@@ -26,7 +25,6 @@ use super::forecasting::build_forecasts;
 use super::insights::build_insight_feed;
 use super::quality::build_data_quality;
 use super::scope::TeacherScope;
-use super::types::AlertKind;
 use super::types::{
     AdminAnalyticsResponse, AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow,
     AlertItem, AnalyticsCode, AtRiskLearnerRow, Direction, FilterOption, InterventionSummary,
@@ -34,6 +32,7 @@ use super::types::{
     TeacherOverviewScope, TeacherOverviewSummary, TeacherOverviewTrends, TeacherWorkloadSummary,
     TimeSeriesPoint,
 };
+use super::types::{AlertKind, GradingBacklogItem};
 use super::workload::{GRADING_SLA_HOURS, build_teacher_workload, build_workload_for_courses};
 
 /// Legacy `_metric`.
@@ -92,6 +91,14 @@ pub fn summarize_interventions(rows: &[InterventionRow]) -> InterventionSummary 
     }
 }
 
+/// Where a backlog alert leads: a test's analytics, a file task's hand-ins.
+fn backlog_href(row: &GradingBacklogItem) -> String {
+    match (row.assessment_type, row.assessment_id) {
+        (Some(kind), Some(id)) => WebLink::AnalyticsAssessment(kind, id).path(None),
+        _ => WebLink::Review(row.course_id, row.activity_id, None).path(None),
+    }
+}
+
 /// Legacy `_build_grading_slo_alerts`.
 #[must_use]
 pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
@@ -105,7 +112,7 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
         return breached
             .into_iter()
             .map(|row| AlertItem {
-                id: format!("grading-slo-{}", row.assessment_id),
+                id: format!("grading-slo-{}", row.activity_id),
                 kind: AlertKind::GradingSlo,
                 severity: if row.sla_breaches >= 3 {
                     Severity::Critical
@@ -122,12 +129,10 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
                     "oldest_hours": row.age_hours.map_or(0.0, round1),
                     "target_hours": GRADING_SLA_HOURS,
                 }),
-                href: Some(
-                    WebLink::AnalyticsAssessment(row.assessment_type, row.assessment_id).path(None),
-                ),
+                href: Some(backlog_href(row)),
                 course_id: Some(row.course_id),
-                activity_id: None,
-                assessment_id: Some(row.assessment_id),
+                activity_id: Some(row.activity_id),
+                assessment_id: row.assessment_id,
                 learner_count: Some(row.awaiting_review),
             })
             .collect();
@@ -139,7 +144,7 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
         return Vec::new();
     };
     vec![AlertItem {
-        id: format!("grading-slo-watch-{}", leading.assessment_id),
+        id: format!("grading-slo-watch-{}", leading.activity_id),
         kind: AlertKind::GradingSlo,
         severity: Severity::Warning,
         code: AnalyticsCode::GradingSloWatch,
@@ -151,12 +156,10 @@ pub fn grading_slo_alerts(workload: &TeacherWorkloadSummary) -> Vec<AlertItem> {
             "oldest_hours": round1(age),
             "target_hours": GRADING_SLA_HOURS,
         }),
-        href: Some(
-            WebLink::AnalyticsAssessment(leading.assessment_type, leading.assessment_id).path(None),
-        ),
+        href: Some(backlog_href(leading)),
         course_id: Some(leading.course_id),
-        activity_id: None,
-        assessment_id: Some(leading.assessment_id),
+        activity_id: Some(leading.activity_id),
+        assessment_id: leading.assessment_id,
         learner_count: Some(leading.awaiting_review),
     }]
 }
@@ -257,12 +260,7 @@ pub fn build_teacher_overview(
     let previous_completion_rate = safe_pct_counts(previous_completions, enrolled).unwrap_or(0.0);
     let risk_rows = inputs.risk_rows;
     let at_risk = at_risk_count(&risk_rows);
-    let ungraded = ctx
-        .submissions
-        .iter()
-        .filter(|s| is_reviewable(s))
-        .filter(|s| allowed.as_ref().is_none_or(|set| set.contains(&s.user_id)))
-        .count();
+    let ungraded = ctx.awaiting_review(allowed.as_ref(), None);
 
     let course_rows = build_course_rows(ctx, filters, &scope.course_ids, &inputs.course_inputs);
     let assessment_rows = build_assessment_rows(ctx, filters);

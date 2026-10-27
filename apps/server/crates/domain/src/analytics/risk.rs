@@ -14,8 +14,8 @@ use ab_core::id::{AssessmentId, CourseId, UserId};
 use sqlx::PgPool;
 
 use super::context::{
-    AnalyticsContext, SnapshotKey, build_activity_events, days_between, is_reviewable,
-    progress_snapshots, round1, score_of, utc_date,
+    AnalyticsContext, SnapshotKey, build_activity_events, days_between, file_is_reviewable,
+    is_reviewable, progress_snapshots, round1, score_of, utc_date,
 };
 use super::filters::{AnalyticsFilters, SortOrder};
 use super::scope::TeacherScope;
@@ -225,6 +225,12 @@ pub fn build_risk_rows(
     let mut grading_blocks: HashMap<SnapshotKey, i64> = HashMap::new();
     let mut exam_seen: HashMap<SnapshotKey, HashSet<AssessmentId>> = HashMap::new();
     let mut code_passed: HashMap<SnapshotKey, HashSet<AssessmentId>> = HashMap::new();
+    // A file task waiting for its grade blocks the learner like a test does.
+    for a in ctx.file_attempts.iter().filter(|a| file_is_reviewable(a)) {
+        if allowed.as_ref().is_none_or(|set| set.contains(&a.user_id)) {
+            *grading_blocks.entry((a.course_id, a.user_id)).or_default() += 1;
+        }
+    }
     for s in &ctx.submissions {
         if allowed
             .as_ref()

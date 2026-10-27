@@ -4028,9 +4028,10 @@ export const vGradebookFileSubmission = v.object({
 });
 
 export const vGradingBacklogItem = v.object({
+    activity_id: vActivityId,
     age_hours: v.nullable(v.number()),
-    assessment_id: vAssessmentId,
-    assessment_type: vAssessmentKind,
+    assessment_id: v.nullable(vAssessmentId),
+    assessment_type: v.nullable(vAssessmentKind),
     awaiting_review: v.pipe(v.number(), v.integer()),
     course_id: vCourseId,
     course_name: v.string(),

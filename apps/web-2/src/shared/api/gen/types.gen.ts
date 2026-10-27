@@ -3429,9 +3429,13 @@ export type GradedItem = {
 };
 
 export type GradingBacklogItem = {
+    /**
+     * The activity the works belong to: a test or a file task.
+     */
+    activity_id: ActivityId;
     age_hours: number | null;
-    assessment_id: AssessmentId;
-    assessment_type: AssessmentKind;
+    assessment_id: AssessmentId | null;
+    assessment_type: AssessmentKind | null;
     awaiting_review: number;
     course_id: CourseId;
     course_name: string;
