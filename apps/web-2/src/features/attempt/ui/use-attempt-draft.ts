@@ -11,7 +11,7 @@ import { sendOnLeave } from '#/shared/api/keepalive'
 import { sessionOptions } from '#/shared/auth/session'
 
 import { attemptGone, retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
-import { ack, enqueue, overlay, patchOf, type Entry, type Queue } from '../model/queue'
+import { ack, enqueue, heldBy, overlay, patchOf, type Entry, type Queue } from '../model/queue'
 import { saveOptions, submissionOptions } from '../queries'
 import { draftStore, loadQueue, queueOf, updateQueue } from './draft-store'
 import { useOnline } from './use-online'
@@ -34,15 +34,34 @@ async function stillDraft(queryClient: QueryClient, attempt: StudentSubmission) 
 /**
  * A failed save's outcome. A 409 or 404 reads the attempt again: still a draft - a `conflict` to resolve; a 404 too -
  * `closed`, the attempt went with its test (unpublished or archived under the learner); handed in - `gone`, the page
- * turns to the result.
+ * turns to the result. `null`: the draft already held the queue (`ownSave`), nothing failed.
  */
-async function settled(error: unknown, queryClient: QueryClient, attempt: StudentSubmission): Promise<SaveOutcome> {
+async function settled(
+  error: unknown,
+  queryClient: QueryClient,
+  attempt: StudentSubmission,
+): Promise<SaveOutcome | null> {
   const outcome = saveOutcome(error)
   if (outcome !== 'conflict' && outcome !== 'gone') return outcome
   return queryClient.query({ ...submissionOptions(attempt.id), staleTime: 0 }).then(
-    fresh => (fresh.status === 'draft' ? 'conflict' : 'gone'),
+    fresh => {
+      if (fresh.status !== 'draft') return 'gone'
+      return ownSave(fresh) ? null : 'conflict'
+    },
     (reread: unknown) => (attemptGone(reread) ? 'closed' : 'gone'),
   )
+}
+
+/**
+ * A conflict over answers the reread draft already holds is this attempt's own last save, sent by a page that went
+ * away (a reload) before it could acknowledge it (B-ATT-10): the queue is dropped and there is nothing to resolve.
+ */
+function ownSave(fresh: StudentSubmission): boolean {
+  const batch = queueOf(fresh.id)
+  if (batch.length === 0 || !heldBy(batch, fresh.answers)) return false
+  const ids = batch.map(entry => entry.id)
+  updateQueue(fresh.id, current => ack(current, ids))
+  return true
 }
 
 /**
@@ -90,7 +109,7 @@ function useDraftSender(attempt: StudentSubmission) {
   async function failed(error: unknown) {
     sending.current = false
     const outcome = await settled(error, queryClient, attempt)
-    setFailure({ outcome, error })
+    setFailure(outcome ? { outcome, error } : null)
     if (outcome === 'network' || outcome === 'throttled') {
       waitMs.current = retryDelayMs(error)
       retry.maybeExecute()

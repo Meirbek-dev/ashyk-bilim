@@ -23,6 +23,23 @@ export const patchOf = (queue: Queue): Record<string, ItemAnswer> =>
 /** The server took these entries: drop them. Acknowledging twice, or an unknown id, changes nothing. */
 export const ack = (queue: Queue, ids: readonly string[]): Queue => queue.filter(entry => !ids.includes(entry.id))
 
+const canonical = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value === null || typeof value !== 'object') return value
+  const fields = Object.entries(value).filter(([, field]) => field !== undefined)
+  return Object.fromEntries(
+    fields.toSorted(([a], [b]) => (a < b ? -1 : 1)).map(([name, field]) => [name, canonical(field)]),
+  )
+}
+
+/**
+ * True when the server draft already holds every queued answer as given. A page of this attempt that went away
+ * (a reload) sends the queue on leaving and dies before acknowledging it, so the next page meets a version conflict
+ * that is its own earlier save, not another tab's.
+ */
+export const heldBy = (queue: Queue, answers: Record<string, ItemAnswer>): boolean =>
+  queue.every(entry => JSON.stringify(canonical(answers[entry.item])) === JSON.stringify(canonical(entry.answer)))
+
 /** What the learner sees: the server draft's answers with the unacknowledged ones on top. */
 export const overlay = (answers: Record<string, ItemAnswer>, queue: Queue): Record<string, ItemAnswer> => ({
   ...answers,

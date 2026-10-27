@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { ItemAnswer } from '#/shared/api/gen/types.gen'
 
-import { ack, draftKey, enqueue, overlay, patchOf, type Queue, vQueue } from './queue'
+import { ack, draftKey, enqueue, heldBy, overlay, patchOf, type Queue, vQueue } from './queue'
 
 const ITEMS = ['a', 'b', 'c', 'd']
 const text = (value: string): ItemAnswer => ({ kind: 'open_text', text: value })
@@ -133,4 +133,21 @@ describe('attempt queue', () => {
 test('B-ATT-10 the stored queue is per user and attempt: two accounts on one browser never share one', () => {
   expect(draftKey('u1', 'a1')).not.toBe(draftKey('u2', 'a1'))
   expect(draftKey('u1', 'a1')).toBe('ab.attempt.u1.a1')
+})
+
+describe('heldBy', () => {
+  const queue: Queue = [
+    { id: '1', item: 'a', answer: { kind: 'choice', selected: ['x', 'y'] } },
+    { id: '2', item: 'b', answer: text('Астана') },
+  ]
+
+  test('B-ATT-10 a draft that already holds every queued answer is this attempt’s own earlier save', () => {
+    const answers: Record<string, ItemAnswer> = { b: text('Астана'), a: { selected: ['x', 'y'], kind: 'choice' } }
+    expect(heldBy(queue, answers)).toBe(true)
+  })
+
+  test('B-ATT-10 a draft that differs in any queued answer is a real conflict', () => {
+    expect(heldBy(queue, { a: { kind: 'choice', selected: ['x'] }, b: text('Астана') })).toBe(false)
+    expect(heldBy(queue, { b: text('Астана') })).toBe(false)
+  })
 })
