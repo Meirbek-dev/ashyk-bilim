@@ -135,7 +135,7 @@ export const completeSessionOptions = (queryClient: QueryClient, userId: UserId)
   },
 })
 
-// ---- Lecture critique ----
+// ---- Content critique (lecture review) ----
 export const reviewsOptions = (courseId: CourseId) => lectureReviewsOptions({ path: { course_id: courseId } })
 export const reviewsKey = (courseId: CourseId) => lectureReviewsQueryKey({ path: { course_id: courseId } })
 export const critiqueQueue = (courseId: CourseId, activityId: ActivityId) => (language: string) =>

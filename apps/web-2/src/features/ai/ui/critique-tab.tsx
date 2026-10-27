@@ -13,7 +13,7 @@ import { useAiRun } from './use-ai-run'
 const ofActivity = (activityId: ActivityId) => (reviews: LectureReview[]) =>
   reviews.filter(review => review.activity_id === activityId && review.status === 'active')
 
-/** Lecture critique in the activity studio (B-AI-18, N-5): the active reviews of this activity and a new run. */
+/** Content critique in the activity studio, any activity kind (B-AI-18, N-5): the active reviews of this activity and a new run. */
 export function CritiqueTab({ courseId, activityId }: { courseId: CourseId; activityId: ActivityId }) {
   const { data: reviews } = useSuspenseQuery({ ...reviewsOptions(courseId), select: ofActivity(activityId) })
   const run = useAiRun(critiqueQueue(courseId, activityId), [reviewsKey(courseId)])
