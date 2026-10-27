@@ -7,7 +7,7 @@
 // Full output: tmp/e2e/<app>-<slot>/ (playwright.log, api.log, build.log); the summary is the log's tail.
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { type Subprocess } from 'bun'
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { changedFiles } from './check.ts'
@@ -222,15 +222,12 @@ async function playwright(o: ReturnType<typeof parse>, env: Record<string, strin
   const logPath = join(dir, 'playwright.log')
   say(`playwright (${o.app}${o.dev ? ', dev servers' : ', production build'}): log ${logPath}`)
   writeFileSync(logPath, '')
-  const child = Bun.spawn(
-    ['node', join(cwd, 'node_modules/@playwright/test/cli.js'), 'test', ...config, ...o.args],
-    {
-      cwd,
-      env: { ...process.env, NO_COLOR: '1', ...machineEnv(), E2E_OUTPUT_DIR: join(dir, 'test-results'), ...env },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    },
-  )
+  const child = Bun.spawn(['node', join(cwd, 'node_modules/@playwright/test/cli.js'), 'test', ...config, ...o.args], {
+    cwd,
+    env: { ...process.env, NO_COLOR: '1', ...machineEnv(), E2E_OUTPUT_DIR: join(dir, 'test-results'), ...env },
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
   children.push(child)
   const [code] = await Promise.all([child.exited, pipeToLog(child.stdout, logPath), pipeToLog(child.stderr, logPath)])
   say(tail(logPath, 25))
@@ -289,7 +286,7 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     }
     for (const role of ['api', 'worker']) {
       const copy = join(dir, `ashyq-${role}${exe}`)
-      await Bun.write(copy, Bun.file(builtServer))
+      copyFileSync(builtServer, copy) // keeps the exec bit; Bun.write creates a fresh copy as 0644
       start(role, [copy, role === 'api' ? 'serve' : 'worker'], join(root, 'apps/server'), server, dir)
     }
     writeJson(manifest, {
