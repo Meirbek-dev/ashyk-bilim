@@ -49,6 +49,7 @@ vi.mock('@/features/course-qa/components/qa-panel', () => ({
 const run: AIOperationRun = {
   completed_at_unix: 1_784_282_460,
   context: {},
+  course_name: null,
   cost_estimate: 0.01,
   duration_ms: 1000,
   error_code: null,
