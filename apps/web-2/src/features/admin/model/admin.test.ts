@@ -11,6 +11,7 @@ import {
   refusedLines,
   refusesGrants,
   awardFormSchema,
+  roleFormSchema,
   rulesBody,
   rulesForm,
   rulesFormSchema,
@@ -136,5 +137,26 @@ describe('XP fields', () => {
     expect(daily.success ? null : daily.issues[0]?.message).toBe(m.admin_xp_whole())
     const award = v.safeParse(awardFormSchema, { amount: '0', reason: '' })
     expect(award.success ? null : award.issues[0]?.message).toBe(m.admin_xp_positive())
+  })
+})
+
+const failing = (values: Partial<v.InferInput<typeof roleFormSchema>>) => {
+  const result = v.safeParse(roleFormSchema, {
+    slug: 'teaching-assistant',
+    display_name: 'Ассистент',
+    description: '',
+    priority: '10',
+    ...values,
+  })
+  return result.success ? [] : [...new Set(result.issues.map(issue => issue.path?.[0]?.key))]
+}
+
+describe('new role fields', () => {
+  test('B-ADM-10 a blank identifier or name and a priority outside 0..99 are caught before the request', () => {
+    expect(failing({})).toEqual([])
+    expect(failing({ slug: '', display_name: '  ' })).toEqual(['slug', 'display_name'])
+    expect(failing({ slug: 'Teaching Assistant' })).toEqual(['slug'])
+    expect(failing({ priority: '100' })).toEqual(['priority'])
+    expect(failing({ priority: '-1' })).toEqual(['priority'])
   })
 })

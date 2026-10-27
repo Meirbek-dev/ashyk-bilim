@@ -2,6 +2,7 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { vCreateRoleRequest } from '#/shared/api/gen/valibot.gen'
 import type {
   AdminUser,
   AdminUserAction,
@@ -73,12 +74,27 @@ const chosen = v.pipe(v.string(), v.nonEmpty())
 export const roleChoiceSchema = v.object({ role: chosen })
 export const groupChoiceSchema = v.object({ group: chosen })
 
-/** `vCreateRoleRequest` with the priority as typed text (converted on submit). */
+const { entries: role } = vCreateRoleRequest
+/** `vCreateRoleRequest.priority`'s maximum (custom roles stay below the administrator's 100). */
+const PRIORITY_MAX = 99
+
+/**
+ * `vCreateRoleRequest` with the priority as typed text (converted on submit). The contract's rules apply before the
+ * request: a blank identifier or name and a priority outside 0..99 used to pass, and only the priority said anything.
+ */
 export const roleFormSchema = v.object({
-  slug: v.string(),
-  display_name: v.string(),
-  description: v.string(),
-  priority: v.pipe(v.string(), v.trim(), v.regex(/^-?\d+$/)),
+  slug: role.slug,
+  display_name: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(200)),
+  description: v.pipe(v.string(), v.maxLength(1000)),
+  priority: v.pipe(
+    v.string(),
+    v.trim(),
+    v.regex(/^\d+$/, () => m.validation_integer()),
+    v.check(
+      value => Number(value) <= PRIORITY_MAX,
+      () => m.validation_max_value({ max: String(PRIORITY_MAX) }),
+    ),
+  ),
 })
 
 export const roleEditSchema = v.omit(roleFormSchema, ['slug'])
