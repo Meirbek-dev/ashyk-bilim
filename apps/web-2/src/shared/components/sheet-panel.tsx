@@ -25,9 +25,9 @@ export function SheetPanel({ trigger, open, onOpenChange, title, side, initialFo
         <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       ) : null}
       <SheetContent side={side} initialFocus={initialFocus}>
-        {/* Clear of the stock close button (absolute, top right): a long name wraps before it. */}
+        {/* Clear of the stock close button (absolute, top right): a long name wraps before it, a long login too. */}
         <SheetHeader className="pr-12">
-          <SheetTitle>{title}</SheetTitle>
+          <SheetTitle className="wrap-anywhere">{title}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-4">{children}</div>
       </SheetContent>
