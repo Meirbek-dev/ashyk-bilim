@@ -81,3 +81,16 @@ test('B-ATT-18 the author’s explanation follows the correct answer when the se
   await expect.element(screen.getByText('строку')).toBeInTheDocument()
   expect(screen.getByText(m.attempt_explanation(), { exact: true }).elements()).toHaveLength(1)
 })
+
+const chose = (id: string) => ({ kind: 'choice' as const, selected: [id] })
+
+test('B-ATT-18 the answer key is shown under a wrong answer, not repeated under a right one', async () => {
+  const items = [item('Q1', 'Q1'), item('Q2', 'Q2')]
+  const graded = [
+    { item_id: 'Q1', score: 0, max_score: 1, correct: false, correct_answer: ['o1'], user_answer: chose('o2') },
+    { item_id: 'Q2', score: 1, max_score: 1, correct: true, correct_answer: ['o1'], user_answer: chose('o1') },
+  ]
+  const screen = await renderInRouter(<ResultBreakdown items={items} graded={graded} />)
+  await expect.element(screen.getByText(m.attempt_correct_answer(), { exact: false })).toBeInTheDocument()
+  expect(screen.getByText(m.attempt_correct_answer(), { exact: false }).elements()).toHaveLength(1)
+})

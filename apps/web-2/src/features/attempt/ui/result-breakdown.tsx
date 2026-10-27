@@ -85,7 +85,8 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
                   {m.attempt_your_answer()}: {given || m.attempt_no_answer()}
                 </p>
               ) : null}
-              {item && entry.correct_answer ? (
+              {/* A right answer is its own key: «Правильный ответ: 4» under «Ваш ответ: 4» only repeated it. */}
+              {item && entry.correct_answer && shown !== 'correct' ? (
                 <p className="wrap-anywhere">
                   {m.attempt_correct_answer()}: {correctText(item.body, entry.correct_answer)}
                 </p>
