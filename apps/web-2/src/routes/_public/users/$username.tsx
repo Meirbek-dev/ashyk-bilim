@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { PublicProfilePage, UserNotFound, ensurePublicProfile } from '#/features/settings'
 import { markdownSummary } from '#/features/markdown'
@@ -8,6 +8,9 @@ import { pageMeta } from '#/shared/lib/document-title'
 export const Route = createFileRoute('/_public/users/$username')({
   loader: async ({ context, params }) => {
     const profile = await ensurePublicProfile(context.queryClient, params.username)
+    // Usernames match in any case: /users/E2E-Teacher is the same page, under its one address (canonical, sharing).
+    if (profile.username !== params.username)
+      throw redirect({ to: '/users/$username', params: { username: profile.username }, statusCode: 301 })
     return { name: profile.display_name || profile.username, summary: markdownSummary(profile.bio) }
   },
   staticData: { title: m.platform_page_user, notFoundTitle: m.settings_user_not_found },
