@@ -763,7 +763,8 @@ export const getSaveSubmissionDraftUrl = (submissionId: SubmissionId) => {
 /**
  * Requires `If-Match` with the draft_version you loaded; 409 carries
  * `{expected, actual}` when someone (another tab) saved in between.
- * Throttled to one save per 5 seconds per draft (429).
+ * Throttled to one save per 5 seconds per draft (429); a `last` save (the
+ * page is going away) skips that and has its own small per-minute budget.
  * @summary Merge answers into the open draft.
  */
 export const saveSubmissionDraft = async (

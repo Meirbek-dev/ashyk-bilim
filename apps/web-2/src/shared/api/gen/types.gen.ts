@@ -177,9 +177,18 @@ export type AddContributorRequest = {
 };
 
 export type AdminAnalyticsResponse = {
+    /**
+     * Every group, by name.
+     */
+    cohort_options: Array<FilterOption>;
     cohort_retention: Array<AdminCohortRow>;
     content_roi: Array<AdminCourseRow>;
     course_health_ranking: Array<AdminCourseRow>;
+    /**
+     * Every course in scope, by name: the rankings stop at 25, the course
+     * filter must not.
+     */
+    course_options: Array<FilterOption>;
     department_program_performance: Array<AdminProgramRow>;
     generated_at_unix: UnixTime;
     teacher_workload_comparison: Array<AdminTeacherRow>;
@@ -5606,6 +5615,12 @@ export type SaveDraftRequest = {
     answers: {
         [key: string]: ItemAnswer;
     };
+    /**
+     * The page is going away (`pagehide`, a hidden tab): this save skips
+     * the one-per-5-s throttle, so the last answers are not lost to a 429.
+     * Allowed a few times a minute per draft (429 past that).
+     */
+    last?: boolean;
 };
 
 /**

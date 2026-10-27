@@ -46,6 +46,12 @@ export const SaveSubmissionDraftBody = zod
           'Internally tagged on `kind`, mirroring the item body kinds. Unknown\nfields are refused (UX-108: a `pairs` matching answer used to be\naccepted and stored empty).',
         ),
     ),
+    last: zod
+      .boolean()
+      .optional()
+      .describe(
+        'The page is going away (`pagehide`, a hidden tab): this save skips\nthe one-per-5-s throttle, so the last answers are not lost to a 429.\nAllowed a few times a minute per draft (429 past that).',
+      ),
   })
   .describe('Partial answers; items not mentioned keep their current answer.')
 

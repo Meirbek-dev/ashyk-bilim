@@ -3095,7 +3095,8 @@ export const vRunStreamRequest = v.strictObject({
  * Partial answers; items not mentioned keep their current answer.
  */
 export const vSaveDraftRequest = v.strictObject({
-    answers: v.object({})
+    answers: v.object({}),
+    last: v.optional(v.boolean())
 });
 
 export const vSavedViewId = v.pipe(v.string(), v.uuid());
@@ -5715,9 +5716,11 @@ export const vAdminCohortRow = v.object({
 });
 
 export const vAdminAnalyticsResponse = v.object({
+    cohort_options: v.array(vFilterOption),
     cohort_retention: v.array(vAdminCohortRow),
     content_roi: v.array(vAdminCourseRow),
     course_health_ranking: v.array(vAdminCourseRow),
+    course_options: v.array(vFilterOption),
     department_program_performance: v.array(vAdminProgramRow),
     generated_at_unix: vUnixTime,
     teacher_workload_comparison: v.array(vAdminTeacherRow)

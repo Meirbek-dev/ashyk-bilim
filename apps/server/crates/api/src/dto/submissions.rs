@@ -89,6 +89,12 @@ impl From<DomainSubmission> for StudentSubmission {
 pub struct SaveDraftRequest {
     #[garde(skip)]
     pub answers: BTreeMap<AssessmentItemId, ItemAnswer>,
+    /// The page is going away (`pagehide`, a hidden tab): this save skips
+    /// the one-per-5-s throttle, so the last answers are not lost to a 429.
+    /// Allowed a few times a minute per draft (429 past that).
+    #[garde(skip)]
+    #[serde(default)]
+    pub last: bool,
 }
 
 #[derive(Debug, Default, Deserialize, garde::Validate, ToSchema)]

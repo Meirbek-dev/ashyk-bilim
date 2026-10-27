@@ -3,7 +3,11 @@ import { useMutation, useQueryClient, useSuspenseQuery, type QueryClient } from 
 import { useSelector } from '@tanstack/react-store'
 import { useEffect, useRef, useState } from 'react'
 
+import * as v from 'valibot'
+
 import type { ItemAnswer, StudentSubmission } from '#/shared/api/gen/types.gen'
+import { vStudentSubmission } from '#/shared/api/gen/valibot.gen'
+import { sendOnLeave } from '#/shared/api/keepalive'
 import { sessionOptions } from '#/shared/auth/session'
 
 import { attemptGone, retryDelayMs, SAVE_WINDOW_MS, saveOutcome, saveStatus, type SaveOutcome } from '../model/attempt'
@@ -42,18 +46,36 @@ async function settled(error: unknown, queryClient: QueryClient, attempt: Studen
 }
 
 /**
- * The one draft mechanism of an attempt (R-08, spec 7.8). An answer goes to the local queue at once (memory and
- * storage); the queue goes to the server draft with `If-Match: draft_version`, one request at a time and at most one
- * per save window. The server's answer replaces the cached attempt and acknowledges exactly the entries it carried.
- * A 409 rereads the attempt: still a draft - the conflict dialog; handed in - the page turns to the result. Nothing
- * local is dropped until the server has it.
+ * The save a page going away sends (B-ATT-29): at once and outliving the page, past the server's 5 s throttle on its
+ * own small budget, so answers typed in the last seconds are not lost to a 429.
  */
-export function useAttemptDraft(attempt: StudentSubmission) {
+const sendLast = (draft: StudentSubmission, batch: Queue) =>
+  sendOnLeave(
+    `/api/v2/submissions/${draft.id}/draft`,
+    'PATCH',
+    { answers: patchOf(batch), last: true },
+    { 'If-Match': String(draft.draft_version) },
+  ).then(body => v.parse(vStudentSubmission, body))
+
+/** `leave` when the page goes away: closed (`pagehide`) or hidden (another tab or app). */
+function usePageLeave(leave: () => void) {
+  useEffect(() => {
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') leave()
+    }
+    globalThis.addEventListener('pagehide', leave)
+    document.addEventListener('visibilitychange', hidden)
+    return () => {
+      globalThis.removeEventListener('pagehide', leave)
+      document.removeEventListener('visibilitychange', hidden)
+    }
+  })
+}
+
+/** Sends the queue to the server draft and keeps what came of it (the saving half of useAttemptDraft). */
+function useDraftSender(attempt: StudentSubmission) {
   const id = attempt.id
-  loadQueue(id, useSuspenseQuery(sessionOptions()).data?.user_id ?? 'anonymous')
   const queryClient = useQueryClient()
-  const queue = useSelector(draftStore, state => state[id] ?? EMPTY)
-  const online = useOnline()
   const save = useMutation(saveOptions())
   const [failure, setFailure] = useState<{ outcome: SaveOutcome; error: unknown } | null>(null)
   const [conflict, setConflict] = useState(false)
@@ -78,37 +100,48 @@ export function useAttemptDraft(attempt: StudentSubmission) {
     } else if (outcome === 'closed') stopped.current = 'closed'
   }
 
-  function flush() {
+  function saved(fresh: StudentSubmission, ids: string[]) {
+    sending.current = false
+    // A hand-in that overtook this save keeps its result in the cache.
+    queryClient.setQueryData(key, old => (old?.status === 'draft' ? fresh : old))
+    updateQueue(id, current => ack(current, ids))
+    setFailure(null)
+    if (queueOf(id).length) paced.maybeExecute()
+  }
+
+  // `last`: the page is going away; a refused last save is left to the ordinary autosave, which reports its outcome.
+  function flush(last = false) {
     const batch = queueOf(id)
     const draft = queryClient.getQueryData(key)
     // Offline nothing is sent: the queue holds the answers and the `online` event resumes.
     if (!batch.length || sending.current || stopped.current || !navigator.onLine || draft?.status !== 'draft') return
     sending.current = true
     const ids = batch.map(entry => entry.id)
-    const request = { answers: patchOf(batch) }
-    save.mutate(
-      { path: { submission_id: id }, body: request, headers: { 'If-Match': draft.draft_version } },
-      {
-        onSuccess: fresh => {
+    if (last)
+      void sendLast(draft, batch).then(
+        fresh => saved(fresh, ids),
+        () => {
           sending.current = false
-          // A hand-in that overtook this save keeps its result in the cache.
-          queryClient.setQueryData(key, old => (old?.status === 'draft' ? fresh : old))
-          updateQueue(id, current => ack(current, ids))
-          setFailure(null)
-          if (queueOf(id).length) paced.maybeExecute()
+          paced.maybeExecute()
         },
-        onError: error => void failed(error),
-      },
-    )
+      )
+    else
+      save.mutate(
+        {
+          path: { submission_id: id },
+          body: { answers: patchOf(batch) },
+          headers: { 'If-Match': draft.draft_version },
+        },
+        { onSuccess: fresh => saved(fresh, ids), onError: error => void failed(error) },
+      )
   }
 
-  // Back online, and on opening the attempt (a reload, a new tab): send what the queue still holds.
-  useEffect(() => {
-    if (online) paced.maybeExecute()
-  }, [online, paced])
-
-  const change = (item: string, answer: ItemAnswer) => {
-    updateQueue(id, adding({ id: crypto.randomUUID(), item, answer }))
+  usePageLeave(() => {
+    paced.cancel()
+    flush(true)
+  })
+  // A new answer lifts a conflict stop (the learner chose to go on) and is sent in the save window.
+  const answered = () => {
     if (stopped.current === 'conflict') stopped.current = null
     paced.maybeExecute()
   }
@@ -117,6 +150,32 @@ export function useAttemptDraft(attempt: StudentSubmission) {
     stopped.current = null
     setConflict(false)
     flush()
+  }
+  return { paced, failure, conflict, setConflict, answered, reloadAndRetry }
+}
+
+/**
+ * The one draft mechanism of an attempt (R-08, spec 7.8). An answer goes to the local queue at once (memory and
+ * storage); the queue goes to the server draft with `If-Match: draft_version`, one request at a time and at most one
+ * per save window. The server's answer replaces the cached attempt and acknowledges exactly the entries it carried.
+ * A 409 rereads the attempt: still a draft - the conflict dialog; handed in - the page turns to the result. Nothing
+ * local is dropped until the server has it.
+ */
+export function useAttemptDraft(attempt: StudentSubmission) {
+  const id = attempt.id
+  loadQueue(id, useSuspenseQuery(sessionOptions()).data?.user_id ?? 'anonymous')
+  const queue = useSelector(draftStore, state => state[id] ?? EMPTY)
+  const online = useOnline()
+  const { paced, failure, conflict, setConflict, answered, reloadAndRetry } = useDraftSender(attempt)
+
+  // Back online, and on opening the attempt (a reload, a new tab): send what the queue still holds.
+  useEffect(() => {
+    if (online) paced.maybeExecute()
+  }, [online, paced])
+
+  const change = (item: string, answer: ItemAnswer) => {
+    updateQueue(id, adding({ id: crypto.randomUUID(), item, answer }))
+    answered()
   }
   return {
     answers: overlay(attempt.answers, queue),

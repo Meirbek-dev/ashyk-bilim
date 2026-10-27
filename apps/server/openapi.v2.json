@@ -444,6 +444,13 @@
       },
       "AdminAnalyticsResponse": {
         "properties": {
+          "cohort_options": {
+            "description": "Every group, by name.",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            },
+            "type": "array"
+          },
           "cohort_retention": {
             "items": {
               "$ref": "#/components/schemas/AdminCohortRow"
@@ -459,6 +466,13 @@
           "course_health_ranking": {
             "items": {
               "$ref": "#/components/schemas/AdminCourseRow"
+            },
+            "type": "array"
+          },
+          "course_options": {
+            "description": "Every course in scope, by name: the rankings stop at 25, the course\nfilter must not.",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
             },
             "type": "array"
           },
@@ -484,7 +498,9 @@
           "course_health_ranking",
           "cohort_retention",
           "department_program_performance",
-          "content_roi"
+          "content_roi",
+          "course_options",
+          "cohort_options"
         ],
         "type": "object"
       },
@@ -16177,6 +16193,10 @@
               "type": "string"
             },
             "type": "object"
+          },
+          "last": {
+            "description": "The page is going away (`pagehide`, a hidden tab): this save skips\nthe one-per-5-s throttle, so the last answers are not lost to a 429.\nAllowed a few times a minute per draft (429 past that).",
+            "type": "boolean"
           }
         },
         "required": [
@@ -35628,7 +35648,7 @@
     },
     "/api/v2/submissions/{submission_id}/draft": {
       "patch": {
-        "description": "Requires `If-Match` with the draft_version you loaded; 409 carries\n`{expected, actual}` when someone (another tab) saved in between.\nThrottled to one save per 5 seconds per draft (429).",
+        "description": "Requires `If-Match` with the draft_version you loaded; 409 carries\n`{expected, actual}` when someone (another tab) saved in between.\nThrottled to one save per 5 seconds per draft (429); a `last` save (the\npage is going away) skips that and has its own small per-minute budget.",
         "operationId": "save_submission_draft",
         "parameters": [
           {

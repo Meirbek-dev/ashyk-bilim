@@ -3026,3 +3026,86 @@ async fn a_revision_starts_from_the_returned_answers(pool: PgPool) {
     );
     assert_eq!(revision.json()["answers"][&items[0]]["selected"][0], "a");
 }
+
+/// OPEN-learn-b: the save a closing page sends (`last`) goes through right
+/// after an autosave instead of a 429, so answers typed in the last seconds
+/// are not lost - but only a few a minute; a normal save stays throttled.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_last_save_skips_the_autosave_throttle_a_few_times_a_minute(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher).await;
+    let (id, items) = published_assessment(
+        &app,
+        &teacher,
+        &chapter_id,
+        "quiz",
+        serde_json::json!({}),
+        &[choice_item("First?")],
+    )
+    .await;
+    let alice = learner(&app, "alice").await;
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
+    let sub_id = started.json()["id"].as_str().unwrap().to_owned();
+    let answer =
+        |choice: &str| serde_json::json!({ &items[0]: { "kind": "choice", "selected": [choice] } });
+    let saved = app
+        .send(patch_draft(
+            &alice,
+            &sub_id,
+            Some("1"),
+            &serde_json::json!({ "answers": answer("a") }),
+        ))
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    let throttled = app
+        .send(patch_draft(
+            &alice,
+            &sub_id,
+            Some("2"),
+            &serde_json::json!({ "answers": answer("b") }),
+        ))
+        .await;
+    assert_eq!(throttled.status, StatusCode::TOO_MANY_REQUESTS);
+    for version in 2..=4 {
+        let last = app
+            .send(patch_draft(
+                &alice,
+                &sub_id,
+                Some(&version.to_string()),
+                &serde_json::json!({ "answers": answer("b"), "last": true }),
+            ))
+            .await;
+        assert_eq!(last.status, StatusCode::OK, "{}", last.text());
+        assert_eq!(last.json()["draft_version"], version + 1);
+    }
+    let spent = app
+        .send(patch_draft(
+            &alice,
+            &sub_id,
+            Some("5"),
+            &serde_json::json!({ "answers": answer("a"), "last": true }),
+        ))
+        .await;
+    assert_eq!(
+        spent.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        spent.text()
+    );
+    let draft = app
+        .get_as(&alice, &format!("/api/v2/submissions/{sub_id}"))
+        .await
+        .json();
+    assert_eq!(
+        draft["answers"][&items[0]]["selected"],
+        serde_json::json!(["b"])
+    );
+}

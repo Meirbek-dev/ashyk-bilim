@@ -2794,7 +2794,8 @@ export const getSubmission = <ThrowOnError extends boolean = false>(options: Opt
  *
  * Requires `If-Match` with the draft_version you loaded; 409 carries
  * `{expected, actual}` when someone (another tab) saved in between.
- * Throttled to one save per 5 seconds per draft (429).
+ * Throttled to one save per 5 seconds per draft (429); a `last` save (the
+ * page is going away) skips that and has its own small per-minute budget.
  */
 export const saveSubmissionDraft = <ThrowOnError extends boolean = false>(options: Options<SaveSubmissionDraftData, ThrowOnError>): RequestResult<SaveSubmissionDraftResponses, SaveSubmissionDraftErrors, ThrowOnError> => (options.client ?? client).patch<SaveSubmissionDraftResponses, SaveSubmissionDraftErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vSaveSubmissionDraftResponse, data),

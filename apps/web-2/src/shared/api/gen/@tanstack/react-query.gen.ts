@@ -5490,7 +5490,8 @@ export const getSubmissionOptions = (options: Options<GetSubmissionData>) => que
  *
  * Requires `If-Match` with the draft_version you loaded; 409 carries
  * `{expected, actual}` when someone (another tab) saved in between.
- * Throttled to one save per 5 seconds per draft (429).
+ * Throttled to one save per 5 seconds per draft (429); a `last` save (the
+ * page is going away) skips that and has its own small per-minute budget.
  */
 export const saveSubmissionDraftMutation = (options?: Partial<Options<SaveSubmissionDraftData>>): UseMutationOptions<SaveSubmissionDraftResponse, SaveSubmissionDraftError, Options<SaveSubmissionDraftData>> => {
     const mutationOptions: UseMutationOptions<SaveSubmissionDraftResponse, SaveSubmissionDraftError, Options<SaveSubmissionDraftData>> = {

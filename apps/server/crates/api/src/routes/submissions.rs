@@ -170,7 +170,8 @@ pub async fn get_submission(
 ///
 /// Requires `If-Match` with the draft_version you loaded; 409 carries
 /// `{expected, actual}` when someone (another tab) saved in between.
-/// Throttled to one save per 5 seconds per draft (429).
+/// Throttled to one save per 5 seconds per draft (429); a `last` save (the
+/// page is going away) skips that and has its own small per-minute budget.
 #[utoipa::path(
     operation_id = "save_submission_draft",
     patch, path = "/submissions/{submission_id}/draft", tag = "submissions",
@@ -210,7 +211,7 @@ pub async fn save_draft(
     detached(async move {
         let saved = state
             .submissions
-            .save_draft(&actor, id, request.answers, expected)
+            .save_draft(&actor, id, request.answers, expected, request.last)
             .await?;
         Ok(with_etag(StatusCode::OK, saved.into()))
     })

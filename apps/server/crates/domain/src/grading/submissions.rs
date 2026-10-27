@@ -45,6 +45,11 @@ pub const SUBMIT_GRACE_SECONDS: i64 = 30;
 const CLIENT_TIMER_SLACK_SECONDS: i64 = 2;
 /// Draft saves: one per submission per this window (legacy 5s throttle).
 pub const DRAFT_SAVE_WINDOW: Duration = Duration::from_secs(5);
+/// Last saves (the page is going away, OPEN-learn-b): outside the 5 s
+/// throttle, this many per draft per [`LAST_SAVE_WINDOW`] - a closing tab
+/// sends one, a learner switching tabs a few; more is a 429 again.
+pub const LAST_SAVE_LIMIT: u32 = 3;
+pub const LAST_SAVE_WINDOW: Duration = Duration::from_secs(60);
 /// Submits: 3 per learner per 10s (legacy rate limit dependency).
 pub const SUBMIT_LIMIT: u32 = 3;
 pub const SUBMIT_WINDOW: Duration = Duration::from_secs(10);
@@ -737,13 +742,15 @@ impl SubmissionsService {
     }
 
     /// Merge answers into the open draft under the learner's optimistic
-    /// lock. Throttled to one save per 5s per draft.
+    /// lock. Throttled to one save per 5s per draft; a `last` one (the page
+    /// is going away) to [`LAST_SAVE_LIMIT`] a minute instead.
     pub async fn save_draft(
         &self,
         actor: &Actor,
         id: SubmissionId,
         patch: Answers,
         expected_draft_version: i64,
+        last: bool,
     ) -> Result<StudentSubmission> {
         let submission = self.owned(actor, id).await?;
         if submission.status != SubmissionStatus::Draft {
@@ -781,22 +788,28 @@ impl SubmissionsService {
         }
         let merged = Self::merge(&ctx, patch)?;
         // Only a save that would otherwise succeed spends the throttle
-        // budget; a rejected one must not lock the client out for 5s.
-        let throttle_key = format!("draft_throttle:{id}");
-        if !self
-            .limiter
-            .check(&throttle_key, 1, DRAFT_SAVE_WINDOW)
-            .await?
-        {
-            // `Retry-After` from the live window (at most 5 s), not the
-            // generic 60 s default.
-            let retry_after = self
-                .limiter
-                .retry_after(&throttle_key, DRAFT_SAVE_WINDOW)
-                .await?;
+        // budget; a rejected one must not lock the client out for 5s. A
+        // last save spends its own budget instead.
+        let (throttle_key, limit, window) = if last {
+            (
+                format!("draft_last:{id}"),
+                LAST_SAVE_LIMIT,
+                LAST_SAVE_WINDOW,
+            )
+        } else {
+            (format!("draft_throttle:{id}"), 1, DRAFT_SAVE_WINDOW)
+        };
+        if !self.limiter.check(&throttle_key, limit, window).await? {
+            // `Retry-After` from the live window (at most 5 s for the
+            // throttle), not the generic 60 s default.
+            let retry_after = self.limiter.retry_after(&throttle_key, window).await?;
             return Err(Error::app_with_details(
                 ErrorCode::RateLimited,
-                "draft saves are limited to one per 5 seconds",
+                if last {
+                    "last draft saves are limited to three a minute"
+                } else {
+                    "draft saves are limited to one per 5 seconds"
+                },
                 serde_json::json!({ "retry_after_seconds": retry_after }),
             ));
         }

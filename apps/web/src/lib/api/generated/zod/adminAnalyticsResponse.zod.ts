@@ -8,6 +8,14 @@
 import * as zod from 'zod'
 
 export const AdminAnalyticsResponse = zod.object({
+  cohort_options: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        value: zod.string(),
+      }),
+    )
+    .describe('Every group, by name.'),
   cohort_retention: zod.array(
     zod.object({
       avg_progress_pct: zod.number().nullable(),
@@ -40,6 +48,14 @@ export const AdminAnalyticsResponse = zod.object({
       health_score: zod.number(),
     }),
   ),
+  course_options: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        value: zod.string(),
+      }),
+    )
+    .describe('Every course in scope, by name: the rankings stop at 25, the course\nfilter must not.'),
   department_program_performance: zod.array(
     zod.object({
       author_username: zod
