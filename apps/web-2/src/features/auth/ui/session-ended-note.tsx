@@ -1,4 +1,5 @@
 import { useHydrated } from '@tanstack/react-router'
+import { LogIn } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { sessionEnded } from '#/shared/auth/session'
@@ -18,6 +19,7 @@ export function SessionEndedNote() {
   if (!hydrated || !ended()) return null
   return (
     <Alert>
+      <LogIn aria-hidden />
       <AlertDescription>{m.auth_session_ended()}</AlertDescription>
     </Alert>
   )
