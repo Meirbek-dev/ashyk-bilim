@@ -44,10 +44,17 @@ export function FeatureRow({ feature, canSwitch, showSource }: FeatureRowProps) 
     )
   return (
     <li className="flex min-h-row flex-col justify-center gap-1 py-1">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span id={labelId}>{featureLabel(feature.key)}</span>
-        <span className="flex items-center gap-2 text-xs text-muted-foreground">
-          {showSource ? m.ai_feature_source({ source: sourceLabel(feature.source) }) : null}
+      {/* The source sits under the name, not beside the switch: on a phone some rows wrapped and some did not. */}
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex min-w-0 flex-col">
+          <span id={labelId}>{featureLabel(feature.key)}</span>
+          {showSource ? (
+            <span className="text-xs text-muted-foreground">
+              {m.ai_feature_source({ source: sourceLabel(feature.source) })}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex shrink-0 items-center">
           {canSwitch ? (
             <Switch
               aria-labelledby={labelId}

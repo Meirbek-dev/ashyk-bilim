@@ -43,8 +43,16 @@ export function AdminSettings() {
       </p>
       <div className="flex flex-col gap-1">
         <h3 className="font-medium">{m.ai_features()}</h3>
-        {source ? (
-          <p className="text-sm text-muted-foreground">{m.ai_features_source_all({ source: sourceLabel(source) })}</p>
+        {/* «…по настройкам сервера» beside working switches read as if they could not be changed: say what one does. */}
+        {source || canSwitch ? (
+          <p className="text-sm text-muted-foreground">
+            {[
+              source ? m.ai_features_source_all({ source: sourceLabel(source) }) : '',
+              canSwitch ? m.ai_features_switch_hint() : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          </p>
         ) : null}
       </div>
       <ul className="flex flex-col divide-y border-y text-sm">

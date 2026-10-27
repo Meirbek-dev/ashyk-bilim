@@ -222,5 +222,6 @@
   "ai_usage_runs_label": "Runs",
   "ai_usage_input_label": "Input tokens",
   "ai_usage_output_label": "Output tokens",
-  "ai_features_source_all": "All features are currently on or off {source}."
+  "ai_features_source_all": "All features are currently on or off {source}.",
+  "ai_features_switch_hint": "A switch turns the feature on or off for the whole platform, over the server settings."
 }
