@@ -28,7 +28,7 @@ export function CourseAnalysisBody({ courseId }: { courseId: CourseId }) {
       {analysis ? (
         <AnalysisReport courseId={courseId} analysis={analysis} />
       ) : (
-        <p className="text-muted-foreground">{m.ai_analysis_empty()}</p>
+        <p className="text-sm text-muted-foreground">{m.ai_analysis_empty()}</p>
       )}
     </section>
   )
