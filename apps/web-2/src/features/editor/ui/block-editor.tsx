@@ -25,7 +25,7 @@ export function BlockEditor({ activityId, content, onChange }: BlockEditorProps)
   return (
     <ActivityContext value={activityId}>
       {/* One sheet: the toolbar is its top edge, the page is written inside it. */}
-      <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs transition-shadow has-[.ProseMirror:focus-visible]:border-ring has-[.ProseMirror:focus-visible]:ring-3 has-[.ProseMirror:focus-visible]:ring-ring/50 [&>[role=toolbar]]:rounded-t-xl [&>[role=toolbar]]:bg-card [&>[role=toolbar]]:px-2">
+      <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs transition-shadow writing:border-ring writing:ring-3 writing:ring-ring/50 [&>[role=toolbar]]:rounded-t-xl [&>[role=toolbar]]:bg-card [&>[role=toolbar]]:px-2">
         <ContentStyles />
         {editor ? <EditorToolbar editor={editor} onInsert={setMenu} /> : null}
         <DocumentContent editor={editor} />

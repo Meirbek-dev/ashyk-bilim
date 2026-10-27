@@ -25,6 +25,9 @@
    question list marks its current question "step". */
 @custom-variant current (&:is([aria-current='page'], [aria-current='step']));
 
+/* The lesson editor's sheet while its writing surface has keyboard focus (the sheet draws the ring, not the text column). */
+@custom-variant writing (&:has(.ProseMirror:focus-visible));
+
 /* A `#section` link (a settings section nav) lands below the sticky top bar (h-14), not under it. */
 html {
   scroll-padding-top: 4.5rem;
