@@ -1,7 +1,9 @@
+import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
 import type { Course } from '#/shared/api/gen/types.gen'
 
+import { collectionsSearchSchema } from '../route'
 import { hiddenFromOthers } from './collections'
 
 const course = (open: boolean, archived = false): Pick<Course, 'public' | 'archived_at_unix'> => ({
@@ -16,4 +18,9 @@ describe('collection visibility', () => {
     expect(hiddenFromOthers({ public: true, courses: [] })).toBe(false)
     expect(hiddenFromOthers({ public: false, courses: [course(false)] })).toBe(false)
   })
+})
+
+test('B-COL-18 a NUL in ?q= is dropped (the search API refuses it); blank is no search', () => {
+  expect(v.parse(collectionsSearchSchema, { q: 'sq\0l' })).toEqual({ q: 'sql', create: undefined })
+  expect(v.parse(collectionsSearchSchema, { q: ' \0 ' })).toEqual({ q: undefined, create: undefined })
 })

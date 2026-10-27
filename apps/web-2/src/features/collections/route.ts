@@ -11,6 +11,8 @@ export const collectionsSearchSchema = v.object({
   q: v.optional(
     v.pipe(
       v.string(),
+      // A NUL (`%00`) is dropped, as in the catalog: the search API refuses it.
+      v.transform(text => text.replaceAll('\0', '')),
       v.trim(),
       v.transform(text => text || undefined),
     ),

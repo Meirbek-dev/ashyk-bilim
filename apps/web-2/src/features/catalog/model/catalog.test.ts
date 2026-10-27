@@ -78,6 +78,8 @@ describe('catalog model', () => {
     expect(v.parse(searchPageSchema, { q: 'go', kind: 'teachers' })).toEqual({ q: 'go', kind: undefined })
     expect(v.parse(searchPageSchema, { q: 'go', kind: 'users' })).toEqual({ q: 'go', kind: 'users' })
     expect(v.parse(searchPageSchema, {})).toEqual({ q: undefined, kind: undefined })
+    expect(v.parse(searchPageSchema, { q: 'py\0thon' })).toEqual({ q: 'python', kind: undefined })
+    expect(v.parse(coursesSearchSchema, { q: '\0' })).toEqual({ q: undefined, sort: undefined })
   })
 
   test('B-CAT-08 a guest gets no people section', () => {
