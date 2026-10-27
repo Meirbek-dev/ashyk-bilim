@@ -121,6 +121,7 @@ const adminRun: AdminRun = {
   completed_at_unix: 1_760_000_010,
   context: {},
   cost_estimate: null,
+  course_name: null,
   duration_ms: 4200,
   error_code: 'AI_RUN_FAILED',
   feature: 'course_qa',
@@ -214,7 +215,9 @@ test(
       .click()
     await expect(page).toHaveURL(new RegExp(`run=${RUN}`))
     const sheet = page.getByRole('dialog', { name: m.ai_open_run({}, ru) })
-    await expect(sheet.getByText(m.ai_run_error({ code: 'AI_RUN_FAILED' }, ru))).toBeVisible()
+    await expect(
+      sheet.getByText(m.ai_run_error_text({ text: m.ai_run_failed({}, ru), code: 'AI_RUN_FAILED' }, ru)),
+    ).toBeVisible()
     await expect(sheet.getByText(m.ai_model({ model: 'e2e-model' }, ru))).toBeVisible()
     await expect(sheet.getByRole('heading', { name: m.ai_run_events({}, ru) })).toBeVisible()
   },
@@ -257,7 +260,7 @@ for (const locale of ['kk', 'en'] as const) {
     await page.goto('/admin/ai')
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
     await expect(page.getByRole('heading', { level: 1, name: m.ai_admin_title({}, { locale }) })).toBeVisible()
-    await expect(page.getByRole('heading', { name: m.ai_admin_runs({}, { locale }) })).toBeVisible()
+    await expect(page.getByRole('heading', { name: m.ai_admin_runs({}, { locale }), exact: true })).toBeVisible()
     await expect(page.locator('body')).not.toContainText(/\b(ai|platform|ui|errors)_[a-z_]+/)
   })
 }

@@ -27,6 +27,7 @@ const user: AdminUser = {
   display_name: 'Айгерим Сапарова',
   email: 'aigerim@example.kz',
   avatar_key: null,
+  deleted: false,
   organization: '',
   created_at_unix: 1_790_000_000,
   status: 'active',
