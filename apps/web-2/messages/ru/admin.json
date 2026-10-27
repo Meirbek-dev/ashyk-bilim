@@ -18,7 +18,7 @@
       }
     }
   ],
-  "admin_users_search": "Поиск по имени, имени пользователя или почте",
+  "admin_users_search": "Имя, имя пользователя или почта",
   "admin_users_empty": "Пользователей пока нет.",
   "admin_users_table": "Пользователи платформы",
   "admin_users_col_user": "Пользователь",
