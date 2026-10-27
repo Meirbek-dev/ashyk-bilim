@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { CourseAuthor, CourseListItem } from '#/shared/api/gen/types.gen'
+import type { CourseAuthor, CourseListItem, LearningStatus } from '#/shared/api/gen/types.gen'
 
-import { suggestedCourses } from './suggestions'
+import { suggestedCourses, welcomeState } from './suggestions'
 
 type Item = Pick<CourseListItem, 'id' | 'progress' | 'authors'>
 const author = (user_id: string): CourseAuthor => ({ user_id, username: user_id, display_name: user_id })
@@ -29,4 +29,16 @@ describe('suggestedCourses', () => {
   test('B-HOME-13 an administrator who may edit every course but makes none still gets suggestions', () => {
     expect(suggestedCourses([course('a'), course('b')], 'admin').map(c => c.id)).toEqual(['a', 'b'])
   })
+})
+
+const run = (learning_status: LearningStatus, archived_at_unix: number | null = null) => ({
+  learning_status,
+  course: { id: 'c', name: 'C', thumbnail_key: null, archived_at_unix },
+})
+
+test('B-HOME-10 nothing to continue reads as new, all done, archived or waiting for a next lesson', () => {
+  expect(welcomeState([])).toBe('new')
+  expect(welcomeState([run('completed'), run('completed', 1)])).toBe('done')
+  expect(welcomeState([run('completed'), run('in_progress', 1), run('not_started', 2)])).toBe('archived')
+  expect(welcomeState([run('in_progress', 1), run('in_progress')])).toBe('waiting')
 })

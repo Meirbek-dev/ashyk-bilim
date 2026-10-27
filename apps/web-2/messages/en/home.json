@@ -33,6 +33,8 @@
   "home_state_failed": "Failed",
   "home_state_completed": "Done",
   "home_all_done": "You’ve finished every course you started. Finished courses and certificates are in My courses.",
+  "home_archived_left": "Your unfinished courses were archived and can no longer be taken. Finished courses and certificates are in My courses.",
+  "home_nothing_next": "Nothing to continue right now: your started courses have no next lesson yet. Courses and certificates are in My courses.",
   "home_find_next_course": "Find a new course",
   "home_my_courses": "My courses",
   "home_go_teach": "Go to teaching",

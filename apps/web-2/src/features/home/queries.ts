@@ -8,8 +8,11 @@ import { DEADLINE_DAYS } from './model/agenda'
 
 export const homeAgendaOptions = () => agendaOptions({ query: { days: DEADLINE_DAYS } })
 
-/** One course of the learner's, if any: with nothing to continue, it tells "all done" from "new here" (B-HOME-10). */
-export const anyEnrollmentOptions = () => listEnrollmentsOptions({ query: { limit: 1 } })
+/**
+ * The learner's courses (all of them: one page, as /learning reads them): with nothing to continue, they tell "new
+ * here" from "all done" and from "the rest was archived" (B-HOME-10).
+ */
+export const enrollmentsOptions = () => listEnrollmentsOptions()
 
 /**
  * Route loader of /home: the agenda, the learner's open work (overdue and older returned work, which the agenda does
@@ -26,6 +29,6 @@ export async function ensureHome(queryClient: QueryClient) {
   if (agenda.continue_learning.length === 0)
     await Promise.all([
       queryClient.query({ ...landingCoursesOptions(), staleTime: 'static' }),
-      queryClient.query({ ...anyEnrollmentOptions(), staleTime: 'static' }),
+      queryClient.query({ ...enrollmentsOptions(), staleTime: 'static' }),
     ])
 }

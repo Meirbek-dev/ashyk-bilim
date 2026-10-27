@@ -118,6 +118,21 @@ test('B-HOME-10 a learner whose every course is finished is not greeted as a new
   await expect(region(page, m.home_more_title({}, ru))).toBeVisible()
 })
 
+test('B-HOME-10 a learner whose unfinished course was archived is told so, not that every course is finished', async ({
+  page,
+  learner,
+  makeCourse,
+}) => {
+  const [finished, archived] = await Promise.all([makeCourse({ activities: 1 }), makeCourse({ activities: 2 })])
+  await learner.enroll(finished, 1)
+  await learner.enroll(archived, 1)
+  await archived.archive()
+  await learner.signIn()
+  await page.goto('/home')
+  await expect(page.getByText(m.home_archived_left({}, ru))).toBeVisible()
+  await expect(page.getByText(m.home_all_done({}, ru))).toHaveCount(0)
+})
+
 for (const locale of ['kk', 'en'] as const) {
   test(`B-HOME-08 /home speaks ${locale}`, async ({ page, context, baseURL, learner, makeCourse }) => {
     const course = await makeCourse({ activities: 1 })

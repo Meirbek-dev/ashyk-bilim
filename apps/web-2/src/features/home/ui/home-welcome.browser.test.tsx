@@ -8,7 +8,7 @@ import type { Capability, Enrollment, SessionInfo } from '#/shared/api/gen/types
 import { sessionOptions } from '#/shared/auth/session'
 import { renderInRouter } from '#/shared/components/testing'
 
-import { anyEnrollmentOptions } from '../queries'
+import { enrollmentsOptions } from '../queries'
 import { HomeWelcome } from './home-welcome'
 
 const session = (capabilities: Capability[]): SessionInfo => ({
@@ -42,13 +42,13 @@ const run: Enrollment = {
   updated_at_unix: 1_760_000_000,
 }
 
-async function show(capabilities: Capability[], runs: number) {
+async function show(capabilities: Capability[], runs: number, each: Enrollment = run) {
   const client = new QueryClient()
   client.setQueryData(sessionOptions().queryKey, session(capabilities))
   client.setQueryData(landingCoursesOptions().queryKey, { items: [], next_cursor: null })
-  client.setQueryData(anyEnrollmentOptions().queryKey, {
+  client.setQueryData(enrollmentsOptions().queryKey, {
     next_cursor: null,
-    runs: Array.from({ length: runs }, () => run),
+    runs: Array.from({ length: runs }, () => each),
   })
   return renderInRouter(
     <QueryClientProvider client={client}>
@@ -77,4 +77,12 @@ test('B-HOME-12 a learner sees no way into teaching', async () => {
   const screen = await show([], 0)
   await expect.element(screen.getByRole('link', { name: m.home_find_course() })).toBeInTheDocument()
   await expect.element(screen.getByRole('link', { name: m.home_go_teach() })).not.toBeInTheDocument()
+})
+
+test('B-HOME-10 a learner whose unfinished courses were archived is told so, not that every course is finished', async () => {
+  const archived = { ...run, learning_status: 'in_progress', course: { ...run.course, archived_at_unix: 1 } } as const
+  const screen = await show([], 1, archived)
+  await expect.element(screen.getByText(m.home_archived_left())).toBeInTheDocument()
+  await expect.element(screen.getByText(m.home_all_done())).not.toBeInTheDocument()
+  await expect.element(screen.getByRole('link', { name: m.home_my_courses() })).toBeInTheDocument()
 })

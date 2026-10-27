@@ -7,17 +7,25 @@ import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
 
-import { suggestedCourses } from '../model/suggestions'
-import { anyEnrollmentOptions } from '../queries'
+import { suggestedCourses, welcomeState } from '../model/suggestions'
+import { enrollmentsOptions } from '../queries'
+
+const welcomeText = {
+  new: m.home_empty,
+  done: m.home_all_done,
+  archived: m.home_archived_left,
+  waiting: m.home_nothing_next,
+} satisfies Record<ReturnType<typeof welcomeState>, () => string>
 
 /**
  * Today with nothing in it (B-HOME-07, B-HOME-09): the way to the catalog and, so a first visit is not a blank page,
- * the newest public courses as cards (read by the loader). A learner with courses but nothing to continue has finished
- * every one started (B-HOME-10): the way back to them and their certificates comes too, the cards are "more courses".
+ * the newest public courses as cards (read by the loader). A learner with courses but nothing to continue is told why
+ * (finished, archived, no next lesson yet: B-HOME-10): the way back to them and their certificates comes too, the cards are "more courses".
  */
 export function HomeWelcome() {
   const { data } = useSuspenseQuery(landingCoursesOptions())
-  const finished = useSuspenseQuery(anyEnrollmentOptions()).data.runs.length > 0
+  const state = welcomeState(useSuspenseQuery(enrollmentsOptions()).data.runs)
+  const finished = state !== 'new'
   const session = useSuspenseQuery(sessionOptions()).data
   const courses = suggestedCourses(data.items, session?.user.id)
   // A teacher's first sign-in lands here, in «Учёба»: the way to their own space, not only the catalog (B-HOME-12).
@@ -26,7 +34,7 @@ export function HomeWelcome() {
   return (
     <div className="flex w-full flex-col items-start gap-10 py-2">
       <div className="flex flex-col items-start gap-4">
-        <p className="text-muted-foreground">{finished ? m.home_all_done() : m.home_empty()}</p>
+        <p className="text-muted-foreground">{welcomeText[state]()}</p>
         <div className="flex flex-wrap gap-2">
           {/* A teacher who learns nothing yet came to teach: that is the one primary action (B-HOME-12). */}
           {lead === 'teach' ? (
