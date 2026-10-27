@@ -95,6 +95,22 @@ export const runStatusLabels: Record<AiRunStatus, () => string> = {
   aborted: m.ai_status_aborted,
 }
 
+// `RunEvent.event_type` is a plain string in the contract (`domain/src/ai/runs.rs` emits these).
+const eventLabels: Record<string, () => string> = {
+  queued: m.ai_status_queued,
+  running: m.ai_event_running,
+  collecting_context: m.ai_event_collecting_context,
+  budget_checked: m.ai_event_budget_checked,
+  model_started: m.ai_event_model_started,
+  validating_output: m.ai_event_validating_output,
+  saving_artifact: m.ai_event_saving_artifact,
+  finished: m.ai_status_succeeded,
+  failed: m.ai_status_failed,
+  cancelled: m.ai_status_aborted,
+}
+/** A run journal's step in words (the raw `collecting_context collecting_context` read as a log dump); unknown: itself. */
+export const eventLabel = (type: string) => eventLabels[type]?.() ?? type
+
 export const kindLabels: Record<AiRunKind, () => string> = {
   course_analysis: m.ai_kind_course_analysis,
   submission_analysis: m.ai_kind_submission_analysis,

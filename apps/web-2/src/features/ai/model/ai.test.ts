@@ -16,7 +16,7 @@ import {
   feedbackDraft,
   readableExcerpt,
 } from './ai'
-import { runErrorText } from './labels'
+import { eventLabel, runErrorText } from './labels'
 import { STREAM_LOST } from './run'
 
 const caps = (patch: Partial<ScopeCapabilities> = {}): ScopeCapabilities => ({
@@ -149,4 +149,10 @@ describe('byPriority', () => {
     ]
     expect(byPriority(items).map(({ item, index }) => `${item.title}${index}`)).toEqual(['b1', 'e4', 'd3', 'a0', 'c2'])
   })
+})
+
+test('B-AI-22 a run journal names its steps in words; an unknown step shows as sent', () => {
+  expect(eventLabel('collecting_context')).toBe(m.ai_event_collecting_context())
+  expect(eventLabel('finished')).toBe(m.ai_status_succeeded())
+  expect(eventLabel('new_step')).toBe('new_step')
 })

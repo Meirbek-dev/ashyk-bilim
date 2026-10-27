@@ -11,7 +11,7 @@ import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { SheetPanel } from '#/shared/components/sheet-panel'
 import { ShowMore } from '#/shared/components/show-more'
 import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDateTime } from '#/shared/i18n/format'
 
 import { runsFilter, type AdminAiSearch } from '../route'
 import { kindLabels, runStatusLabels } from '../model/labels'
@@ -44,7 +44,7 @@ const columns = (): DataColumn<AdminRun>[] => [
       </span>
     ),
   },
-  { id: 'started', header: m.ai_col_started(), priority: 2, cell: run => formatDate(run.started_at_unix) },
+  { id: 'started', header: m.ai_col_started(), priority: 2, cell: run => formatDateTime(run.started_at_unix) },
   { id: 'model', header: m.ai_col_model(), priority: 3, cell: run => run.model_name },
   { id: 'error', header: m.ai_col_error(), priority: 3, cell: run => run.error_code },
   {
