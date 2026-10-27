@@ -48,7 +48,9 @@ export function HomePage() {
             <HomeWelcome />
           ) : (
             <>
-              <ContinueSection items={continue_learning} />
+              {/* Nothing to continue beside results or deadlines (the last course just finished): the next step is
+                  a new course, not a page of old news (B-HOME-10). */}
+              {continue_learning.length > 0 ? <ContinueSection items={continue_learning} /> : <HomeWelcome />}
               <div className={side ? 'grid gap-12 @4xl:grid-cols-5 @4xl:gap-8' : 'flex flex-col gap-12'}>
                 <div className="flex flex-col gap-12 @4xl:col-span-3">
                   <AttentionSection items={attention} />
