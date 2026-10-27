@@ -52,6 +52,7 @@
   "player_shortcut_mark": "Отметить активность пройденной",
   "player_completed_on": "Курс пройден {date}",
   "player_completed": "Курс пройден",
+  "player_congrats": "Поздравляем!",
   "player_grade_average": "Средняя оценка: {value}",
   "player_needs_grading": [
     {

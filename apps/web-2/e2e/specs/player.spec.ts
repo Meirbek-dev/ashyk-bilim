@@ -158,7 +158,7 @@ test('B-PLY-06 B-PLY-07 B-PLY-14 the last mark finishes the course and the summa
   await page.getByRole('link', { name: m.player_finish({}, ru) }).click()
 
   await expect(page).toHaveURL(`/learn/${course.id}/complete`)
-  await expect(page.getByRole('heading', { level: 1, name: m.player_finish({}, ru) })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: m.player_congrats({}, ru) })).toBeVisible()
   await expect(page.getByText(new RegExp(`^${m.player_completed({}, ru)}`))).toBeVisible()
   const code = await learner.certificateCode(course)
   await expect(page.getByRole('link', { name: m.player_certificate_view({}, ru) })).toHaveAttribute(

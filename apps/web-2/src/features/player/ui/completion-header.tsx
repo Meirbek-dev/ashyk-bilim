@@ -25,7 +25,8 @@ export function CompletionHeader({ progress, completed }: { progress: ProgressSt
         )}
       </ProgressRing>
       <div className="flex min-w-0 flex-col items-center gap-1">
-        <h1 className="text-display font-semibold">{m.player_finish()}</h1>
+        {/* A finished course is a moment: it is greeted, not only summed up (the page title stays «Итоги курса»). */}
+        <h1 className="text-display font-semibold">{completed ? m.player_congrats() : m.player_finish()}</h1>
         {completed ? (
           <p className="text-lg">
             {progress.completed_at_unix

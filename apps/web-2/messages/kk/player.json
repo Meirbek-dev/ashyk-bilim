@@ -52,6 +52,7 @@
   "player_shortcut_mark": "Белсенділікті өтілді деп белгілеу",
   "player_completed_on": "Курс {date} аяқталды",
   "player_completed": "Курс аяқталды",
+  "player_congrats": "Құттықтаймыз!",
   "player_grade_average": "Орташа баға: {value}",
   "player_needs_grading": [
     {

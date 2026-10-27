@@ -52,6 +52,7 @@
   "player_shortcut_mark": "Mark the activity as done",
   "player_completed_on": "Course completed on {date}",
   "player_completed": "Course completed",
+  "player_congrats": "Congratulations!",
   "player_grade_average": "Average grade: {value}",
   "player_needs_grading": [
     {
