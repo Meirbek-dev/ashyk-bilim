@@ -262,7 +262,7 @@ export const Trail = zod
           zod
             .uuid()
             .describe(
-              'The first published activity (course order) not done yet and not\nwaiting on a grade - the "continue" target; `null` when none is left.',
+              'The "continue" target: the activity the course page\'s next step names\n(learner-state `next_action`); `null` when none is left.',
             ),
           zod.null(),
         ]),

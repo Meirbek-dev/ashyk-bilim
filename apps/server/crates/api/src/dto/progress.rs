@@ -55,8 +55,8 @@ pub struct TrailRun {
     /// The real state (`status` is always `in_progress`, legacy):
     /// `completed` at 100 %, `not_started` with no progress and no steps.
     pub learning_status: LearningStatus,
-    /// The first published activity (course order) not done yet and not
-    /// waiting on a grade - the "continue" target; `null` when none is left.
+    /// The "continue" target: the activity the course page's next step names
+    /// (learner-state `next_action`); `null` when none is left.
     pub next_activity_id: Option<ActivityId>,
     pub created_at_unix: i64,
     pub updated_at_unix: i64,
