@@ -339,10 +339,11 @@ pub async fn submission_bundle(
         format!("Final score: {} (percent)", shown(submission.final_score)),
         format!("Auto score: {} (percent)", shown(submission.auto_score)),
         format!("Status: {}", submission.status),
-        format!("Answers: {}", json_snippet(&submission.answers, 1800)),
+        answers_line(&items, &submission.answers),
     ];
     lines.extend(question_scores(pool, assessment.as_ref(), grading.as_ref()).await?);
-    lines.extend(grading.map(|g| format!("Grading: {}", json_snippet(&g, 1800))));
+    lines
+        .extend(grading.map(|g| format!("Grading: {}", json_snippet(&grading_for_model(g), 1800))));
     let mut sources = vec![source(
         format!("submission:{}", submission.id),
         format!("Submission {}", submission.id),
@@ -368,7 +369,28 @@ pub async fn submission_bundle(
             serde_json::json!({ "activity_id": activity.id, "course_id": submission.course_id }),
         ));
     }
-    for item in &items {
+    item_sources(&items, &mut lines, &mut sources);
+    let metadata = serde_json::json!({
+        "activity_id": activity.as_ref().map(|a| a.id),
+        "assessment_id": assessment.as_ref().map(|a| a.id),
+        "item_count": items.len(),
+    });
+    Ok((
+        ContextBundle {
+            text: lines.join("\n"),
+            sources,
+        },
+        metadata,
+    ))
+}
+
+/// One source per assessment item, its line added to the bundle's text.
+fn item_sources(
+    items: &[db::ItemContextRow],
+    lines: &mut Vec<String>,
+    sources: &mut Vec<ContextSource>,
+) {
+    for item in items {
         let line = format!(
             "Item: {} {} {}",
             item.title,
@@ -390,18 +412,6 @@ pub async fn submission_bundle(
             serde_json::json!({ "assessment_id": item.assessment_id }),
         ));
     }
-    let metadata = serde_json::json!({
-        "activity_id": activity.as_ref().map(|a| a.id),
-        "assessment_id": assessment.as_ref().map(|a| a.id),
-        "item_count": items.len(),
-    });
-    Ok((
-        ContextBundle {
-            text: lines.join("\n"),
-            sources,
-        },
-        metadata,
-    ))
 }
 
 /// What the owner's submission read shows of the grade: `(released,
@@ -612,6 +622,133 @@ fn item_points_line(
     })
 }
 
+/// What the learner answered, question by question in the test's order and
+/// in words: the chosen options' texts, the typed text, form values by
+/// label, matched pairs, the code (OPEN-learn-n: the raw answer JSON reached
+/// the teacher as «selected: []»). An answer that does not parse is left out
+/// rather than shown as data.
+fn answers_line(items: &[db::ItemContextRow], answers: &serde_json::Value) -> String {
+    use crate::grading::answers::ItemAnswer;
+    const TEXT_CHARS: usize = 600;
+    let quoted = |text: &str| format!("«{}»", clipped_text(text.trim(), TEXT_CHARS));
+    let given = |item: &db::ItemContextRow| -> Option<String> {
+        let answer: ItemAnswer =
+            serde_json::from_value(answers.get(item.id.to_string())?.clone()).ok()?;
+        let body = ItemBody::from_stored(&item.body).ok();
+        let text = match answer {
+            ItemAnswer::Choice { selected } => {
+                let options = match &body {
+                    Some(ItemBody::Choice(b)) => b.options.as_slice(),
+                    _ => &[],
+                };
+                selected
+                    .iter()
+                    .map(|id| {
+                        options
+                            .iter()
+                            .find(|o| &o.id == id)
+                            .map_or_else(|| quoted(id), |o| quoted(&o.text))
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+            ItemAnswer::OpenText { text } => {
+                if text.trim().is_empty() {
+                    String::new()
+                } else {
+                    quoted(&text)
+                }
+            }
+            ItemAnswer::Form { values } => {
+                let label = |id: &str| match &body {
+                    Some(ItemBody::Form(b)) => b
+                        .fields
+                        .iter()
+                        .find(|f| f.id == id)
+                        .map_or_else(|| id.to_owned(), |f| f.label.clone()),
+                    _ => id.to_owned(),
+                };
+                values
+                    .iter()
+                    .filter(|(_, v)| !v.trim().is_empty())
+                    .map(|(k, v)| format!("{} - {}", label(k), quoted(v)))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+            ItemAnswer::Code { source, .. } => {
+                if source.trim().is_empty() {
+                    String::new()
+                } else {
+                    format!("code:\n{}", clipped_text(source.trim(), TEXT_CHARS))
+                }
+            }
+            ItemAnswer::Matching { matches } => matches
+                .iter()
+                .map(|m| format!("{} → {}", quoted(&m.left), quoted(&m.right)))
+                .collect::<Vec<_>>()
+                .join(", "),
+        };
+        Some(text)
+    };
+    let parts: Vec<String> = items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            // A dash reads the same in every language the model may quote it in.
+            let answer = given(item)
+                .filter(|a| !a.is_empty())
+                .unwrap_or_else(|| "—".to_owned());
+            format!("{}. «{}»: {answer}", index + 1, item.title)
+        })
+        .collect();
+    format!(
+        "{ANSWERS_LABEL} {}",
+        if parts.is_empty() {
+            "none".to_owned()
+        } else {
+            parts.join("; ")
+        }
+    )
+}
+
+/// The grading without what the model quoted to people as data
+/// (OPEN-learn-n): each item's raw answer (`user_answer`, which the answers
+/// line says in words) and the auto-grader's English verdict («No answer provided»: a `feedback` next to
+/// a `feedback_code`; a teacher's own words carry no code and stay). The
+/// key (`correct_answer`) stays for a grader; a learner's view never has it.
+fn grading_for_model(mut grading: serde_json::Value) -> serde_json::Value {
+    if let Some(items) = grading
+        .get_mut("items")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for item in items
+            .iter_mut()
+            .filter_map(serde_json::Value::as_object_mut)
+        {
+            item.remove("user_answer");
+            if item.get("feedback_code").is_some_and(|c| !c.is_null()) {
+                item.remove("feedback");
+                item.remove("feedback_code");
+                item.remove("feedback_params");
+            }
+        }
+    }
+    grading
+}
+
+/// The answers line's label; a citation quoting the answers keeps them, not
+/// the label.
+const ANSWERS_LABEL: &str = "Learner's answers (quote them as written here, never as data; — means the question was left unanswered):";
+
+/// `text` cut to `max` characters with an ellipsis.
+fn clipped_text(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        text.to_owned()
+    } else {
+        format!("{}…", text.chars().take(max).collect::<String>())
+    }
+}
+
 fn opt_num(value: Option<f64>) -> String {
     value.map_or_else(|| "None".to_owned(), |v| v.to_string())
 }
@@ -665,6 +802,7 @@ const CONTEXT_LABELS: &[&str] = &[
 /// Labels whose value is the course's own words (its description, about text, outcomes): quoted, the value stays and
 /// only the English label goes, also where the model ran two of them into one line ("Description: X About: Y").
 const CONTENT_LABELS: &[&str] = &[
+    ANSWERS_LABEL,
     "Description:",
     "About:",
     "Learning outcomes:",
@@ -823,6 +961,79 @@ mod tests {
     }
 
     #[test]
+    fn answers_read_as_words_not_json() {
+        let item = |title: &str, kind: &str, body: serde_json::Value| db::ItemContextRow {
+            id: ab_core::id::AssessmentItemId::new(),
+            assessment_id: ab_core::id::AssessmentId::new(),
+            title: title.into(),
+            kind: kind.into(),
+            body,
+        };
+        let items = [
+            item(
+                "Discriminant",
+                "choice",
+                serde_json::json!({ "kind": "choice", "prompt": "D?", "options": [
+                { "id": "a", "text": "b² − 4ac", "is_correct": true }, { "id": "b", "text": "b² + 4ac" } ] }),
+            ),
+            item(
+                "Skipped",
+                "choice",
+                serde_json::json!({ "kind": "choice", "prompt": "?", "options": [] }),
+            ),
+            item(
+                "Explain",
+                "open_text",
+                serde_json::json!({ "kind": "open_text", "prompt": "Why?" }),
+            ),
+            item(
+                "Pairs",
+                "matching",
+                serde_json::json!({ "kind": "matching", "pairs": [] }),
+            ),
+            item(
+                "Card",
+                "form",
+                serde_json::json!({ "kind": "form", "fields": [{ "id": "f1", "label": "Name" }] }),
+            ),
+            item(
+                "Never seen",
+                "open_text",
+                serde_json::json!({ "kind": "open_text" }),
+            ),
+        ];
+        let answers = serde_json::json!({
+            items[0].id.to_string(): { "kind": "choice", "selected": ["a"] },
+            items[1].id.to_string(): { "kind": "choice", "selected": [] },
+            items[2].id.to_string(): { "kind": "open_text", "text": "Because roots." },
+            items[3].id.to_string(): { "kind": "matching", "matches": [{ "left": "x", "right": "y" }] },
+            items[4].id.to_string(): { "kind": "form", "values": { "f1": "Ann" } },
+        });
+        let line = answers_line(&items, &answers);
+        assert_eq!(
+            line,
+            format!(
+                "{ANSWERS_LABEL} 1. «Discriminant»: «b² − 4ac»; \
+             2. «Skipped»: —; 3. «Explain»: «Because roots.»; 4. «Pairs»: «x» → «y»; \
+             5. «Card»: Name - «Ann»; 6. «Never seen»: —"
+            )
+        );
+        assert!(!line.contains("selected"), "{line}");
+        let grading = grading_for_model(serde_json::json!({ "items": [
+            { "item_id": "x", "feedback": "No answer provided", "feedback_code": "no-answer",
+              "user_answer": { "kind": "choice", "selected": [] }, "correct_answer": ["a"], "score": 0.0 },
+            { "item_id": "y", "feedback": "Покажите вывод", "feedback_code": null, "score": 1.0 },
+        ]}));
+        assert_eq!(
+            grading,
+            serde_json::json!({ "items": [
+                { "item_id": "x", "correct_answer": ["a"], "score": 0.0 },
+                { "item_id": "y", "feedback": "Покажите вывод", "feedback_code": null, "score": 1.0 },
+            ]})
+        );
+    }
+
+    #[test]
     fn assessment_settings_read_as_words_not_json() {
         let row = db::AssessmentContextRow {
             id: ab_core::id::AssessmentId::new(),
@@ -858,6 +1069,11 @@ mod tests {
             "Введение в курс"
         );
         assert_eq!(clean_excerpt("Plain quote"), "Plain quote");
+        // A quoted answer keeps the learner's words, not the line's label (OPEN-learn-n).
+        assert_eq!(
+            clean_excerpt(&format!("{ANSWERS_LABEL} 1. «D»: «b² − 4ac»")),
+            "1. «D»: «b² − 4ac»"
+        );
         // The course's own words keep, their English labels go (OPEN-A-2), even run together on one line.
         assert_eq!(
             clean_excerpt("Description: Fixture course. About: One activity of every type."),
