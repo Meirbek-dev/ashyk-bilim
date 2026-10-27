@@ -538,8 +538,11 @@ pub fn build_admin_overview(
 ) -> AdminAnalyticsResponse {
     let course_rows =
         build_course_rows(ctx, filters, &scope.course_ids, &CourseRowInputs::default());
-    let snapshots = progress_snapshots(ctx, None);
-    let events = build_activity_events(ctx, None);
+    // A group filter narrows the learners like the teacher overview's; it
+    // used to reach only the course rows, not retention or the author rows.
+    let allowed = ctx.cohort_user_ids(&filters.cohort_ids);
+    let snapshots = progress_snapshots(ctx, allowed.as_ref());
+    let events = build_activity_events(ctx, allowed.as_ref());
     let now = ctx.generated_at;
     let (current_start, _) = filters.window_bounds(now);
 
@@ -632,7 +635,11 @@ pub fn build_admin_overview(
         .iter()
         .filter(|(u, _)| learners.contains(u))
     {
-        for g in groups {
+        // Under a group filter, only the chosen groups (a member may belong to others).
+        for g in groups
+            .iter()
+            .filter(|g| filters.cohort_ids.is_empty() || filters.cohort_ids.contains(g))
+        {
             members.entry(*g).or_default().insert(*user);
         }
     }

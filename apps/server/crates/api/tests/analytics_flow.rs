@@ -2608,6 +2608,15 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
             .await
             .unwrap();
     }
+    // Dave learns in the course as a member of Other only.
+    let dave = learner(&app, "dave").await;
+    enrol(&pool, &course_id, dave.user_id, 0.0).await;
+    sqlx::query("INSERT INTO usergroup_members (usergroup_id, user_id) VALUES ($1, $2)")
+        .bind(other)
+        .bind(dave.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
     submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
     submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
     submit_attempt(&app, &teacher, &quiz_id, &choice_id, &essay_id).await;
@@ -2628,7 +2637,10 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
         .create_user("boss", "boss@example.com", &["admin"])
         .await;
     let admin = app
-        .mint_session_for(boss, &["analytics:read:platform"])
+        .mint_session_for(
+            boss,
+            &["analytics:read:platform", "usergroup:read:platform"],
+        )
         .await;
     let overview = app.get_as(&admin, "/api/v2/analytics/admin/overview").await;
     assert_eq!(overview.status, StatusCode::OK, "{}", overview.text());
@@ -2637,6 +2649,37 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
     assert_eq!(row["learners"], 1, "{rows}");
     assert_eq!(row["retained_learners"], 1, "{rows}");
     assert_eq!(row["retention_rate"], 100.0, "{rows}");
+    assert!(
+        find_row(rows, "cohort_id", &other.to_string()).is_some(),
+        "{rows}"
+    );
+    let teachers_learners = |body: &serde_json::Value| {
+        find_row(
+            &body["department_program_performance"],
+            "program_id",
+            &teacher.user_id.to_string(),
+        )
+        .map(|r| r["learner_count"].clone())
+    };
+    assert_eq!(
+        teachers_learners(&overview.json()),
+        Some(serde_json::json!(2))
+    );
+    // A group filter reaches retention and the author rows too: only Trio, only its learner.
+    let in_trio = app
+        .get_as(
+            &admin,
+            &format!("/api/v2/analytics/admin/overview?cohort_ids={trio}"),
+        )
+        .await;
+    assert_eq!(in_trio.status, StatusCode::OK, "{}", in_trio.text());
+    let trio_rows = &in_trio.json()["cohort_retention"];
+    assert_eq!(trio_rows.as_array().unwrap().len(), 1, "{trio_rows}");
+    assert_eq!(trio_rows[0]["cohort_id"], trio.to_string());
+    assert_eq!(
+        teachers_learners(&in_trio.json()),
+        Some(serde_json::json!(1))
+    );
 
     let reader = app
         .mint_session_for(
