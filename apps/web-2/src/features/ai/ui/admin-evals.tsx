@@ -25,31 +25,37 @@ const columns = (): DataColumn<EvalResult>[] => [
   { id: 'date', header: m.ai_col_started(), priority: 3, cell: row => formatDate(row.created_at_unix) },
 ]
 
-/** Run counts by status, the eval summary and the recent evals (B-AI-23). */
+/** Run counts by status, the eval summary and the recent evals (B-AI-23). With no evals yet, only the run counts and a
+ *  line saying where evals come from: zero counters beside «no evals» said nothing. */
 export function AdminEvals() {
   const { data } = useSuspenseQuery(evalsOptions())
   const { evals, runs } = data
   return (
     <section id="evals" className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.ai_admin_evals()}</h2>
-      <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-        {vAiRunStatus.options.map(status => (
-          <li key={status}>
-            {runStatusLabels[status]()}: {formatNumber(runs[status])}
-          </li>
-        ))}
-      </ul>
-      <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-        <li>{m.ai_evals_total({ count: formatNumber(evals.total) })}</li>
-        <li>{m.ai_evals_passed({ count: formatNumber(evals.passed) })}</li>
-        <li>{m.ai_evals_failed({ count: formatNumber(evals.failed) })}</li>
-        {evals.average_score === null ? null : <li>{m.ai_evals_average({ score: score(evals.average_score) })}</li>}
-      </ul>
-      <h3 className="font-medium">{m.ai_evals_recent()}</h3>
-      {data.recent_evals.length === 0 ? (
-        <p className="text-muted-foreground">{m.ai_evals_empty()}</p>
+      <div className="flex flex-col gap-1 text-sm">
+        <h3 className="font-medium">{m.ai_evals_runs_label()}</h3>
+        <ul className="flex flex-wrap gap-x-6 gap-y-1">
+          {vAiRunStatus.options.map(status => (
+            <li key={status}>
+              {runStatusLabels[status]()}: {formatNumber(runs[status])}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {evals.total === 0 ? (
+        <p className="text-sm text-muted-foreground">{m.ai_evals_empty()}</p>
       ) : (
-        <DataTable label={m.ai_evals_recent()} rows={data.recent_evals} columns={columns()} getKey={row => row.id} />
+        <>
+          <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <li>{m.ai_evals_total({ count: formatNumber(evals.total) })}</li>
+            <li>{m.ai_evals_passed({ count: formatNumber(evals.passed) })}</li>
+            <li>{m.ai_evals_failed({ count: formatNumber(evals.failed) })}</li>
+            {evals.average_score === null ? null : <li>{m.ai_evals_average({ score: score(evals.average_score) })}</li>}
+          </ul>
+          <h3 className="font-medium">{m.ai_evals_recent()}</h3>
+          <DataTable label={m.ai_evals_recent()} rows={data.recent_evals} columns={columns()} getKey={row => row.id} />
+        </>
       )}
     </section>
   )
