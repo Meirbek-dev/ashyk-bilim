@@ -32,7 +32,7 @@
   "code_reason_time_expired": "Әрекет уақыты бітті.",
   "code_reason_remediation": "Алдымен қателерді талдаудан өтіңіз.",
   "code_reason_restricted": "Есеп барлығына ашық емес, сіз тізімде жоқсыз.",
-  "code_reason_not_enrolled": "Есепті шығару үшін курсқа жазылыңыз.",
+  "code_reason_not_enrolled": "Есепті шығару үшін курсқа тіркеліңіз.",
   "code_solution": "Шешім",
   "code_language": "Тіл",
   "code_language_number": "№ {id} тіл",
