@@ -87,7 +87,8 @@ test('B-CRT-06 the URL printed on the PDF opens the page in the certificate lang
   expect((await context.cookies()).find(cookie => cookie.name === 'ab_locale')).toBeUndefined()
   // Leaving it (a client-side link) reloads in the visitor's own language.
   await page.getByRole('link', { name: m.platform_nav_login({}, { locale: 'kk' }) }).click()
-  await expect(page).toHaveURL(/\/login$/)
+  // Signed in, the visitor comes back to the certificate (B-AUTH-17).
+  await expect(page).toHaveURL(new RegExp(`/login\\?redirect=%2Fkz%2Fcertificates%2F${issued.code}%2Fverify$`))
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
 
   await page.goto(`/en/certificates/${issued.code}/verify`)

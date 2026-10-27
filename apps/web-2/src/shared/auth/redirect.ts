@@ -11,3 +11,9 @@ export function safeRedirect(value: string | undefined): string {
   if (url.origin !== BASE || url.pathname.startsWith('//')) return FALLBACK
   return value
 }
+
+/**
+ * The `redirect` of a sign-in or sign-up link on `href`: a guest comes back to the public page they were reading
+ * (B-AUTH-17). From the landing there is nothing to return to (a signed-in "/" is /home): no redirect.
+ */
+export const returnTo = (href: string): { redirect?: string } => (href === '/' ? {} : { redirect: href })

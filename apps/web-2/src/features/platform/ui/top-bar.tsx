@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Link as RouterLink } from '@tanstack/react-router'
+import { Link as RouterLink, useLocation } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { SessionInfo } from '#/shared/api/gen/types.gen'
 import type { WorkspaceId } from '#/shared/auth/access'
+import { returnTo } from '#/shared/auth/redirect'
 import { BrandMark } from '#/shared/components/brand-mark'
 import { buttonVariants } from '#/shared/components/button-variants'
 
@@ -19,6 +20,8 @@ const GuestSwitches = lazy(() => import('./guest-switches').then(module => ({ de
 export function TopBar({ session, workspace }: { session: SessionInfo | null; workspace: WorkspaceId }) {
   const Search = shellSlots.search
   const Notifications = shellSlots.notifications
+  // «Войти» on a course, a collection or a search comes back there after sign-in (B-AUTH-17), not to /home.
+  const back = returnTo(useLocation({ select: location => location.href }))
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-2 md:px-4">
       <RouterLink
@@ -48,11 +51,11 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
             <Suspense fallback={null}>
               <GuestSwitches />
             </Suspense>
-            <RouterLink to="/login" className={buttonVariants({ variant: 'ghost' })}>
+            <RouterLink to="/login" search={back} className={buttonVariants({ variant: 'ghost' })}>
               {m.platform_nav_login()}
             </RouterLink>
             <span className="hidden sm:flex">
-              <RouterLink to="/signup" className={buttonVariants({ variant: 'outline' })}>
+              <RouterLink to="/signup" search={back} className={buttonVariants({ variant: 'outline' })}>
                 {m.platform_nav_signup()}
               </RouterLink>
             </span>
