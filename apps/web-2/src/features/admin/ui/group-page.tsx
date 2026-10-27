@@ -31,6 +31,10 @@ export function GroupPage() {
       meta={`${m.admin_group_member_count({ count: group.member_count })} · ${m.admin_group_updated({ date: formatDate(group.updated_at_unix) })}`}
     >
       {group.description ? <p className="max-w-prose wrap-anywhere">{group.description}</p> : null}
+      {/* Teachers see every group but change only their own: say why there is nothing to press. */}
+      {group.allowed_actions.length === 0 ? (
+        <p className="max-w-prose text-sm text-muted-foreground">{m.admin_group_read_only()}</p>
+      ) : null}
       <GroupCourses group={group} />
       <GroupMembers group={group} />
       {/* Renaming is rare: the courses and people the page is visited for come first. */}

@@ -188,6 +188,7 @@
   "admin_group_created": "Группа создана",
   "admin_group_not_found": "Группа не найдена",
   "admin_group_updated": "Обновлено {date}",
+  "admin_group_read_only": "Менять группу могут её автор и администраторы платформы; вам она открыта для просмотра.",
   "admin_group_edit_section_hint": "Название и описание группы видят преподаватели.",
   "admin_group_members_empty": "В группе пока нет участников.",
   "admin_group_courses": "Курсы группы",

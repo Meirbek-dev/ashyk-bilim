@@ -180,6 +180,7 @@
   "admin_group_created": "Group created",
   "admin_group_not_found": "Group not found",
   "admin_group_updated": "Updated {date}",
+  "admin_group_read_only": "Only the group’s author and platform administrators can change it; you can view it.",
   "admin_group_edit_section_hint": "Teachers see the group name and description.",
   "admin_group_members_empty": "The group has no members yet.",
   "admin_group_courses": "Group courses",

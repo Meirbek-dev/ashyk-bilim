@@ -180,6 +180,7 @@
   "admin_group_created": "Топ жасалды",
   "admin_group_not_found": "Топ табылмады",
   "admin_group_updated": "Жаңартылған күні {date}",
+  "admin_group_read_only": "Топты оның авторы мен платформа әкімшілері ғана өзгерте алады; сізге ол тек қарауға ашық.",
   "admin_group_edit_section_hint": "Топтың атауы мен сипаттамасын оқытушылар көреді.",
   "admin_group_members_empty": "Топта әзірге мүшелер жоқ.",
   "admin_group_courses": "Топ курстары",
