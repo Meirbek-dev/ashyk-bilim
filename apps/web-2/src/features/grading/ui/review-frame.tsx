@@ -87,25 +87,28 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
             <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-              <span>{m.grading_attempt_label({ number: head.attempt_number })}</span>
-              {head.started_at_unix === null ? null : (
-                <span>{m.grading_started_at({ date: formatDateTime(head.started_at_unix) })}</span>
-              )}
-              {head.submitted_at_unix === null ? null : (
-                <span>{m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) })}</span>
-              )}
-              {check === null ? null : (
-                <span>
-                  {(check.returned ? m.grading_returned_at : check.draft ? m.grading_draft_at : m.grading_graded_at)({
-                    date: formatDateTime(check.at),
-                  })}
-                </span>
-              )}
               {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
-              {head.late_penalty_pct ? (
-                <span>{m.grading_penalty({ percent: scoreText(head.late_penalty_pct) })}</span>
-              ) : null}
-              <span className="tabular-nums">{scoreLine(head.final_score)}</span>
+              {/* One line of facts, a dot between them as elsewhere: spaces alone ran «Сдана …» into «Нет оценки». */}
+              <span className="tabular-nums">
+                {[
+                  m.grading_attempt_label({ number: head.attempt_number }),
+                  head.started_at_unix === null
+                    ? null
+                    : m.grading_started_at({ date: formatDateTime(head.started_at_unix) }),
+                  head.submitted_at_unix === null
+                    ? null
+                    : m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) }),
+                  check === null
+                    ? null
+                    : (check.returned ? m.grading_returned_at : check.draft ? m.grading_draft_at : m.grading_graded_at)(
+                        { date: formatDateTime(check.at) },
+                      ),
+                  head.late_penalty_pct ? m.grading_penalty({ percent: scoreText(head.late_penalty_pct) }) : null,
+                  scoreLine(head.final_score),
+                ]
+                  .filter(fact => fact !== null)
+                  .join(' · ')}
+              </span>
             </div>
             <ReviewNav work={work} />
           </header>
