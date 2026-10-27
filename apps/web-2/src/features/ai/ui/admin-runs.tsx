@@ -55,11 +55,18 @@ const columns = (): DataColumn<AdminRun>[] => [
     id: 'course',
     header: m.ai_col_course(),
     priority: 3,
+    wrap: true,
     cell: run =>
+      // The course by name (a deleted one has none), and the filter to its runs under it.
       run.context.course_id ? (
-        <Link from="/admin/ai" to="." search={prev => ({ ...prev, course: run.context.course_id, run: undefined })}>
-          {m.ai_filter_this_course()}
-        </Link>
+        <span className="flex flex-col items-start gap-0.5">
+          {run.course_name ? <span className="wrap-anywhere">{run.course_name}</span> : null}
+          <span className="text-sm">
+            <Link from="/admin/ai" to="." search={prev => ({ ...prev, course: run.context.course_id, run: undefined })}>
+              {m.ai_filter_this_course()}
+            </Link>
+          </span>
+        </span>
       ) : null,
   },
 ]

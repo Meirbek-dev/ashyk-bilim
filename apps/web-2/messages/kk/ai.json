@@ -137,6 +137,7 @@
   "ai_provider_ready": "Провайдер дайын",
   "ai_draft_mode": "Провайдер қолжетімсіз кезде дайындамалар",
   "ai_model": "Үлгі: {model}",
+  "ai_run_course": "Курс: {course}",
   "ai_max_request": "Сұраудағы токендер: {count}",
   "ai_max_output": "Жауаптағы токендер: {count}",
   "ai_yes": "Иә",

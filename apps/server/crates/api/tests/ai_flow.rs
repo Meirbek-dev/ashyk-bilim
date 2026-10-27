@@ -9,7 +9,8 @@
 //! - the monthly budget → 503 `ai-budget-exhausted`;
 //! - the master switch off → 503 `ai-disabled`;
 //! - the admin views gate (`platform:read:platform`) and the usage numbers;
-//! - capabilities for a learner and a teacher.
+//! - capabilities for a learner and a teacher;
+//! - a teacher's remediation gate notifies the learner (`remediation_assigned`).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::time::Duration;
@@ -694,6 +695,8 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(page["items"][0]["feature"], "submission_analysis");
     assert_eq!(page["items"][0]["context"]["submission_id"], sub_id);
     assert!(page["items"][0]["context"].get("question").is_none());
+    // The admin reads which course a run was about, not only a filter by it.
+    assert_eq!(page["items"][0]["course_name"], "Analysis");
     let aborted = app
         .get_as(&admin, "/api/v2/ai/admin/runs?status=aborted")
         .await;
@@ -704,6 +707,7 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
     let detail = detail.json();
     assert_eq!(detail["run"]["status"], "succeeded");
+    assert_eq!(detail["run"]["course_name"], "Analysis");
     assert_eq!(detail["events"].as_array().unwrap().len(), 8);
     assert_eq!(detail["artifacts"].as_array().unwrap().len(), 1);
     assert_eq!(detail["evidence"].as_array().unwrap().len(), 1);
@@ -1255,6 +1259,19 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
         )
         .await;
     assert_eq!(mine.status, StatusCode::OK, "{}", mine.text());
+    // OPEN-learn-o: the learner hears of the gate before opening the work.
+    let told = app.get_as(&alice, "/api/v2/me/notifications").await.json();
+    let told = told["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["type"] == "remediation_assigned")
+        .unwrap_or_else(|| panic!("remediation notification: {told}"))
+        .clone();
+    assert_eq!(told["payload"]["session_id"], session_id.as_str());
+    assert_eq!(told["payload"]["activity_id"], activity_id.as_str());
+    assert_eq!(told["payload"]["activity_type"], "file_submission");
+    assert_eq!(told["payload"]["gate"], true);
     assert_eq!(
         app.get_as(
             &bob,

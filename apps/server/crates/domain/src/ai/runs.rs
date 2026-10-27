@@ -135,6 +135,16 @@ pub fn safe_run_context(metadata: &serde_json::Value) -> serde_json::Value {
     )
 }
 
+/// The course a run was about (`metadata.course_id`), if any.
+#[must_use]
+pub fn run_course_id(metadata: &serde_json::Value) -> Option<CourseId> {
+    metadata
+        .get("course_id")
+        .and_then(serde_json::Value::as_str)
+        .and_then(|s| uuid::Uuid::parse_str(s).ok())
+        .map(CourseId)
+}
+
 /// One feature flag as the admin sees it (S-GAPS).
 #[derive(Debug, Clone)]
 pub struct FeatureState {
@@ -776,6 +786,27 @@ impl AiService {
             None
         };
         Ok((rows, next))
+    }
+
+    /// Names of the runs' courses (`metadata.course_id`); a deleted one is absent.
+    pub async fn run_course_names<'a>(
+        &self,
+        runs: impl IntoIterator<Item = &'a RunRow>,
+    ) -> Result<std::collections::HashMap<CourseId, String>> {
+        let mut ids: Vec<CourseId> = runs
+            .into_iter()
+            .filter_map(|r| run_course_id(&r.metadata))
+            .collect();
+        ids.sort_unstable_by_key(|id| id.0);
+        ids.dedup();
+        if ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+        Ok(ab_db::analytics::list_courses(&self.pool, &ids)
+            .await?
+            .into_iter()
+            .map(|c| (c.id, c.name))
+            .collect())
     }
 
     pub async fn admin_run_detail(&self, actor: &Actor, id: AiRunId) -> Result<RunDetail> {

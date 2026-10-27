@@ -33,6 +33,7 @@ export function AdminRunDetail({ runId }: { runId: AiRunId }) {
       </div>
       <ul className="flex flex-col gap-1 text-muted-foreground">
         <li>{formatDateTime(run.started_at_unix)}</li>
+        {run.course_name ? <li className="wrap-anywhere">{m.ai_run_course({ course: run.course_name })}</li> : null}
         {run.model_name ? <li>{m.ai_model({ model: run.model_name })}</li> : null}
         <li>
           {m.ai_run_tokens({

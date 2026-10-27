@@ -399,10 +399,11 @@ pub async fn admin_runs(
         )
         .await?;
     let now = now_unix();
+    let names = state.ai.run_course_names(&rows).await?;
     Ok(Json(AdminRunPage {
         items: rows
             .into_iter()
-            .map(|r| AdminRun::from_row(r, now))
+            .map(|r| AdminRun::from_row(r, now, &names))
             .collect(),
         next_cursor,
     }))
@@ -423,8 +424,9 @@ pub async fn admin_run_detail(
     Path(id): Path<AiRunId>,
 ) -> ApiResult<Json<AdminRunDetail>> {
     let detail = state.ai.admin_run_detail(&actor, id).await?;
+    let names = state.ai.run_course_names([&detail.run]).await?;
     Ok(Json(AdminRunDetail {
-        run: AdminRun::from_row(detail.run, now_unix()),
+        run: AdminRun::from_row(detail.run, now_unix(), &names),
         events: detail.events.into_iter().map(Into::into).collect(),
         artifacts: detail.artifacts.into_iter().map(Into::into).collect(),
         evidence: detail.evidence.into_iter().map(Into::into).collect(),

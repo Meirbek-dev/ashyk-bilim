@@ -141,6 +141,7 @@
   "ai_provider_ready": "Провайдер готов",
   "ai_draft_mode": "Заготовки, когда провайдер недоступен",
   "ai_model": "Модель: {model}",
+  "ai_run_course": "Курс: {course}",
   "ai_max_request": "Токенов на запрос: {count}",
   "ai_max_output": "Токенов в ответе: {count}",
   "ai_yes": "Да",

@@ -137,6 +137,7 @@
   "ai_provider_ready": "Provider ready",
   "ai_draft_mode": "Placeholder answers while the provider is down",
   "ai_model": "Model: {model}",
+  "ai_run_course": "Course: {course}",
   "ai_max_request": "Tokens per request: {count}",
   "ai_max_output": "Tokens per answer: {count}",
   "ai_yes": "Yes",

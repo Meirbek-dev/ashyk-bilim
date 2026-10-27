@@ -879,11 +879,18 @@ pub struct AdminRun {
     /// The allow-listed part of the run metadata.
     #[schema(value_type = ab_domain::wire::RunContext)]
     pub context: serde_json::Value,
+    /// The name of `context.course_id`; `null` without a course or once the
+    /// course is deleted.
+    pub course_name: Option<String>,
 }
 
 impl AdminRun {
     #[must_use]
-    pub fn from_row(r: ab_db::ai::RunRow, now_unix: i64) -> Self {
+    pub fn from_row(
+        r: ab_db::ai::RunRow,
+        now_unix: i64,
+        course_names: &std::collections::HashMap<ab_core::id::CourseId, String>,
+    ) -> Self {
         let stuck = !r.status.is_terminal()
             && now_unix.saturating_sub(r.started_at) > domain::runs::STUCK_AFTER_SECS;
         Self {
@@ -908,6 +915,8 @@ impl AdminRun {
             started_at_unix: r.started_at,
             completed_at_unix: r.completed_at,
             stuck,
+            course_name: domain::runs::run_course_id(&r.metadata)
+                .and_then(|id| course_names.get(&id).cloned()),
             context: domain::runs::safe_run_context(&r.metadata),
         }
     }
