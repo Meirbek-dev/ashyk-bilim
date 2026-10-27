@@ -47,11 +47,11 @@ function CoverForm({ submit }: { submit: (id: string | null) => void }) {
   )
 }
 
-async function renderInput() {
+async function renderInput({ listed = false } = {}) {
   const onUploaded = vi.fn<(upload: FinalizedUpload) => void>()
   const screen = await renderInRouter(
     <QueryClientProvider client={new QueryClient()}>
-      <FileInput label={label} purpose="course-thumbnail" onUploaded={onUploaded} />
+      <FileInput label={label} purpose="course-thumbnail" onUploaded={onUploaded} listed={listed} />
     </QueryClientProvider>,
   )
   return { screen, onUploaded, input: screen.getByLabelText(label) }
@@ -307,5 +307,13 @@ describe('FileInput handed file', () => {
     await expect.element(screen.getByText(m.ui_file_uploaded({ name: 'pasted.png' }))).toBeVisible()
     expect(onUploaded).toHaveBeenCalledTimes(1)
     expect(api.mock.calls.filter(([request]) => request.url.endsWith('/finalize'))).toHaveLength(1)
+  })
+
+  test('B-FSB-04 a page that lists the attached files gets no «Загружено» line to outlive a removed file', async () => {
+    stubNetwork()
+    const { screen, onUploaded, input } = await renderInput({ listed: true })
+    await userEvent.upload(input, new File(['abcd'], 'work.png', { type: 'image/png' }))
+    await expect.poll(() => onUploaded.mock.calls.length).toBe(1)
+    expect(screen.getByText(m.ui_file_uploaded({ name: 'work.png' })).query()).toBeNull()
   })
 })

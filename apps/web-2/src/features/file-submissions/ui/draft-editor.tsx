@@ -44,6 +44,7 @@ export function DraftEditor({ task, run, pending, submitting }: DraftEditorProps
           limits={uploadLimits(task)}
           disabled={pending}
           multiple={task.max_files - files.length}
+          listed
           onUploaded={(upload, file) =>
             run({ kind: 'files', change: { add: { upload_id: upload.id, display_name: file.name } } })
           }

@@ -33,6 +33,11 @@ type FileInputProps = {
   /** An error from outside (the form field's), shown when the upload itself has none. */
   error?: string | undefined
   disabled?: boolean
+  /**
+   * The page lists the attached files itself (a file task's work): no «Загружено: …» line, which would repeat the list
+   * and outlive a file removed from it.
+   */
+  listed?: boolean
 }
 
 /**
@@ -65,6 +70,7 @@ function useBatch(
   start: (file: File) => Promise<FinalizedUpload | null>,
   onUploaded: FileInputProps['onUploaded'],
   max: number,
+  listed = false,
 ) {
   const [uploaded, setUploaded] = useState<string[]>([])
   const [picked, setPicked] = useState<File | null>(null)
@@ -123,7 +129,8 @@ function useBatch(
       setPending(false)
     }
   }
-  return { uploaded, picked, dropped, take, retry, pending, claimError, claimFailed }
+  // `listed`: the page shows the attached files, so no «Загружено» names (FileInputProps.listed).
+  return { uploaded: listed ? [] : uploaded, picked, dropped, take, retry, pending, claimError, claimFailed }
 }
 
 /**
@@ -136,7 +143,7 @@ export function FileInput(props: FileInputProps) {
   const id = useId()
   const upload = useUpload(purpose, limits)
   const { cancel, failed, notice, progress, error: uploadError, sessionLost: lost } = upload
-  const batch = useBatch(upload.start, onUploaded, multiple)
+  const batch = useBatch(upload.start, onUploaded, multiple, props.listed)
   const { uploaded, picked, dropped, pending } = batch
   const again = batch.claimFailed ?? failed
   const [dragging, setDragging] = useState(false)
