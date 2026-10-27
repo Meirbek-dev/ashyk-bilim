@@ -136,6 +136,10 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   const member = page.getByRole('listitem').filter({ hasText: '@e2e-student1' })
   await expect(member.getByRole('link', { name: 'E2E student1' })).toBeVisible()
   await member.getByRole('button', { name: m.admin_group_member_remove({ name: 'E2E student1' }, ru) }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: m.admin_group_member_remove_confirm({}, ru) })
+    .click()
   await expect(page.getByText(m.admin_group_member_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.admin_group_members_empty({}, ru))).toBeVisible()
 

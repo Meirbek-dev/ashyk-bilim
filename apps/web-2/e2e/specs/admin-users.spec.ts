@@ -93,6 +93,10 @@ test('B-ADM-04 roles are added and removed in the panel; the table follows', asy
   // The panel is modal: the table behind it is out of the accessibility tree, so it is found by element.
   await expect(page.locator('table').getByText(teacher)).toBeVisible()
   await sheet.getByRole('button', { name: m.admin_user_role_remove({ role: teacher }, ru) }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: m.admin_user_role_remove_confirm({}, ru) })
+    .click()
   await expect(page.getByText(m.admin_user_role_removed({}, ru))).toBeVisible()
   await expect(sheet.getByRole('listitem').filter({ hasText: teacher })).toHaveCount(0)
 })
@@ -134,6 +138,10 @@ test('B-ADM-06 the panel lists the user’s groups; «Add to group» puts the us
     // The panel lists the group now, and takes the user out of it again.
     await expect(sheet.getByRole('link', { name })).toBeVisible()
     await sheet.getByRole('button', { name: m.admin_user_group_remove({ group: name }, ru) }).click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: m.admin_group_member_remove_confirm({}, ru) })
+      .click()
     await expect(page.getByText(m.admin_user_group_removed({}, ru))).toBeVisible()
     await expect(sheet.getByRole('link', { name })).toHaveCount(0)
   } finally {
