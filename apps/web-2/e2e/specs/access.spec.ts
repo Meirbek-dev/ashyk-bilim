@@ -16,11 +16,14 @@ const ROLES: Role[] = ['guest', 'student', 'teacher', 'admin']
 type Outcome = 'renders' | 'login' | 'home' | 'forbidden' | 'not-found' | 'missing-resource'
 type Leaf = { id: string; group: string; path: string }
 
-/** Leaf routes of src/routeTree.gen.ts: what a user can land on. Index routes are leaves even with siblings. */
+/** Leaf routes of src/routeTree.gen.ts: what a user can land on. Index routes are leaves even with siblings.
+ *  File routes (`/robots.txt`, `/sitemap.xml`) are server handlers, not pages: their unit tests cover them. */
 function leafRoutes(): Leaf[] {
   const tree = readFileSync(resolve(import.meta.dirname, '../../src/routeTree.gen.ts'), 'utf8')
   const block = /export interface FileRoutesById \{([\s\S]*?)\n\}/.exec(tree)?.[1] ?? ''
-  const ids = [...block.matchAll(/^\s+'([^']+)':/gm)].flatMap(match => (match[1] ? [match[1]] : []))
+  const ids = [...block.matchAll(/^\s+'([^']+)':/gm)].flatMap(match =>
+    match[1] && !/\.\w+$/.test(match[1]) ? [match[1]] : [],
+  )
   const isLeaf = (id: string) => id.endsWith('/') || !ids.some(other => other.startsWith(`${id}/`))
   return ids.filter(isLeaf).map(id => {
     const segments = id.split('/').filter(segment => segment && !segment.startsWith('_'))
