@@ -152,3 +152,19 @@ describe('DataTable cards', () => {
     expect(Math.abs(value.element().getBoundingClientRect().left - term.left)).toBeLessThan(2)
   })
 })
+
+describe('DataTable cards', () => {
+  test('narrow: a line whose cell is empty leaves its label out, not a bare «Description»', async () => {
+    await page.viewport(390, 800)
+    const described: DataColumn<Row>[] = [
+      ...columns,
+      { id: 'note', header: 'Description', cell: row => (row.id === 'a' ? 'Core course' : null), priority: 2 },
+    ]
+    const screen = await renderInRouter(
+      <DataTable label={label} rows={rows} columns={described} getKey={row => row.id} />,
+    )
+    const cards = screen.getByRole('listitem')
+    await expect.element(cards.first().getByText('Description')).toBeVisible()
+    await expect.element(cards.nth(1).getByText('Description')).not.toBeInTheDocument()
+  })
+})

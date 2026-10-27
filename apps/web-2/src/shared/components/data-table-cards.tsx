@@ -1,7 +1,9 @@
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 import type { DataColumn } from './data-columns'
 import { DataList } from './data-list'
+
+const isBlank = (value: ReactNode) => value === null || value === undefined || value === false || value === ''
 
 type DataTableCardsProps<T> = { rows: readonly T[]; columns: readonly DataColumn<T>[]; getKey: (row: T) => string }
 
@@ -35,12 +37,16 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
             <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {/* A label too long for the line goes whole and its value under it at the left, as after a short
                   label; without the wrap the value hung at the far right (gradebook columns named by long activities). */}
-              {lines.map(column => (
-                <div key={column.id} className="flex flex-wrap gap-x-1">
-                  <dt className="text-muted-foreground">{column.header}</dt>
-                  <dd>{column.cell(row)}</dd>
-                </div>
-              ))}
+              {lines.map(column => {
+                // A cell with nothing to say leaves its label out too: a bare «Описание» or «Модель» read as broken.
+                const value = column.cell(row)
+                return isBlank(value) ? null : (
+                  <div key={column.id} className="flex flex-wrap gap-x-1">
+                    <dt className="text-muted-foreground">{column.header}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                )
+              })}
             </dl>
           ) : null}
           {actions.length > 0 ? (

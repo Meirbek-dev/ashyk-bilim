@@ -31,7 +31,7 @@ const columns: DataColumn<Usergroup>[] = [
     id: 'description',
     header: m.admin_field_description(),
     priority: 2,
-    cell: group => <span className="wrap-anywhere">{group.description}</span>,
+    cell: group => (group.description ? <span className="wrap-anywhere">{group.description}</span> : null),
   },
   {
     id: 'members',
