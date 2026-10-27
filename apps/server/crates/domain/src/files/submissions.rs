@@ -37,7 +37,8 @@ use crate::files::uploads::{FILE_SUBMISSION_MAX_MB, UNREFERENCED_GRACE};
 use crate::grading::breakdown::round2;
 use crate::grading::penalties::{apply_late, late_penalty_pct};
 use crate::grading::teacher::{
-    CsvExport, CsvLanguage, ReviewSort, UserSummary, course_event_name, csv_datetime, csv_row,
+    CsvExport, CsvLanguage, ReviewSort, ScoreBucket, UserSummary, average_score, course_event_name,
+    csv_datetime, csv_row, score_buckets,
 };
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -1705,8 +1706,9 @@ impl FileSubmissionsService {
     }
 }
 
-/// Queue counts of a file submission (L-6).
-#[derive(Debug, Clone, Copy, Serialize, ToSchema)]
+/// Queue counts of a file submission (L-6), with the average and the
+/// ten-bucket distribution of graded/published scores, as a test's stats.
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct FileReviewStats {
     pub total: i64,
     pub submitted: i64,
@@ -1714,6 +1716,10 @@ pub struct FileReviewStats {
     pub published: i64,
     pub returned: i64,
     pub late: i64,
+    /// Mean final score (percent) of graded/published hand-ins; `null`
+    /// without one.
+    pub avg_score: Option<f64>,
+    pub distribution: Vec<ScoreBucket>,
 }
 
 /// One grade save of a file attempt (append-only, newest first).
@@ -1753,7 +1759,10 @@ impl FileSubmissionsService {
         let row = self.load(id).await?;
         self.scoped(actor, &row, Action::Grade, "grading").await?;
         let c = ab_db::file_submissions::review_counts(&self.pool, id, group_id).await?;
+        let scores = ab_db::file_submissions::graded_scores(&self.pool, id, group_id).await?;
         Ok(FileReviewStats {
+            avg_score: average_score(&scores),
+            distribution: score_buckets(&scores),
             total: c.total,
             submitted: c.submitted,
             graded: c.graded,

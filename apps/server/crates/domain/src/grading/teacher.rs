@@ -152,6 +152,31 @@ pub struct ScoreBucket {
     pub count: i64,
 }
 
+/// Ten buckets `"0-10"` … `"90-100"` of percent scores (100 in the last).
+#[must_use]
+pub fn score_buckets(scores: &[f64]) -> Vec<ScoreBucket> {
+    let mut buckets = [0i64; 10];
+    for score in scores {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let index = ((score / 10.0).floor().clamp(0.0, 9.0)) as usize;
+        buckets[index] += 1;
+    }
+    buckets
+        .iter()
+        .enumerate()
+        .map(|(i, c)| ScoreBucket {
+            range: format!("{}-{}", i * 10, i * 10 + 10),
+            count: *c,
+        })
+        .collect()
+}
+
+/// The mean at two decimals; `None` without scores.
+#[must_use]
+pub fn average_score(scores: &[f64]) -> Option<f64> {
+    (!scores.is_empty()).then(|| round2(scores.iter().sum::<f64>() / count(scores.len())))
+}
+
 #[derive(Debug, Clone)]
 pub struct Stats {
     pub total: i64,
@@ -1042,12 +1067,6 @@ impl GradingService {
         let (assessment, _) = self.grader_context(actor, assessment_id).await?;
         let counts = ab_db::submissions::stats(&self.pool, assessment_id, group_id).await?;
         let scores = ab_db::submissions::graded_scores(&self.pool, assessment_id, group_id).await?;
-        let mut buckets = [0i64; 10];
-        for score in &scores {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-            let index = ((score / 10.0).floor().clamp(0.0, 9.0)) as usize;
-            buckets[index] += 1;
-        }
         let (avg_score, pass_rate) = if scores.is_empty() {
             (None, None)
         } else {
@@ -1057,7 +1076,7 @@ impl GradingService {
                 .filter(|s| **s >= assessment.passing_score)
                 .count();
             (
-                Some(round2(scores.iter().sum::<f64>() / n)),
+                average_score(&scores),
                 Some((count(passing) / n * 1000.0).round() / 10.0),
             )
         };
@@ -1071,14 +1090,7 @@ impl GradingService {
             group_id,
             avg_score,
             pass_rate,
-            distribution: buckets
-                .iter()
-                .enumerate()
-                .map(|(i, c)| ScoreBucket {
-                    range: format!("{}-{}", i * 10, i * 10 + 10),
-                    count: *c,
-                })
-                .collect(),
+            distribution: score_buckets(&scores),
         })
     }
 

@@ -133,7 +133,16 @@ describe('group and file counts', () => {
   })
 
   test('B-GRD-25 the file queue counts come from its stats; "needs grading" is submitted', () => {
-    const stats: FileReviewStats = { graded: 2, late: 1, published: 4, returned: 5, submitted: 3, total: 14 }
+    const stats: FileReviewStats = {
+      graded: 2,
+      late: 1,
+      published: 4,
+      returned: 5,
+      submitted: 3,
+      total: 14,
+      avg_score: 80,
+      distribution: [],
+    }
     expect(statusCounts(stats)).toEqual({ needs_grading: 3, graded: 2, published: 4, returned: 5 })
   })
 })

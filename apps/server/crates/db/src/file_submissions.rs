@@ -756,6 +756,27 @@ pub async fn review_counts(
     })
 }
 
+/// Final scores (percent) of graded/published non-preview attempts, for the
+/// average and the distribution; `group_id` as in [`review_counts`].
+pub async fn graded_scores(
+    pool: &PgPool,
+    file_submission_id: FileSubmissionId,
+    group_id: Option<UsergroupId>,
+) -> Result<Vec<f64>> {
+    let scores = sqlx::query_scalar!(
+        r#"SELECT final_score AS "final_score!" FROM file_submission_attempts a
+           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'published')
+             AND a.final_score IS NOT NULL AND NOT a.preview
+             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
+                  WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,
+        file_submission_id.0,
+        group_id.map(|g| g.0)
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(scores)
+}
+
 /// `(id, version)` of the non-preview attempts in `status` (bulk input).
 pub async fn list_ids_in_status(
     pool: &PgPool,

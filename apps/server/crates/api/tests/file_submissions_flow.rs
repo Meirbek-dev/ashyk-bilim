@@ -2018,3 +2018,67 @@ async fn file_task_requires_enrollment(pool: PgPool) {
     let started = app.post_as(&alice, &start, &serde_json::json!({})).await;
     assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
 }
+
+/// «Результаты» of a file task: the average and the ten-bucket distribution
+/// of graded and published hand-ins beside the counts, as a test's stats;
+/// work still waiting counts but has no score.
+#[sqlx::test(migrations = "../../migrations")]
+async fn results_carry_the_average_and_the_distribution(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_, chapter_id) = public_course(&app, &teacher).await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let stats_url = format!("/api/v2/file-submissions/{id}/submissions/stats");
+    let empty = app.get_as(&teacher, &stats_url).await;
+    assert_eq!(empty.status, StatusCode::OK, "{}", empty.text());
+    assert_eq!(empty.json()["avg_score"], serde_json::Value::Null);
+    assert_eq!(empty.json()["distribution"].as_array().unwrap().len(), 10);
+    for (name, grade) in [
+        ("alice", Some(("publish", 91))),
+        ("bob", Some(("save", 45))),
+        ("carol", None),
+    ] {
+        let who = learner(&app, name).await;
+        let upload = finalized_upload(&app, &who, "application/pdf", b"%PDF v1").await;
+        let submitted = app
+            .post_as(
+                &who,
+                &format!("/api/v2/file-submissions/{id}/submit"),
+                &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+            )
+            .await;
+        assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+        let Some((action, score)) = grade else {
+            continue;
+        };
+        let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+        let version = submitted.json()["version"].to_string();
+        let graded = app
+            .send(with_if_match(
+                &teacher,
+                "PATCH",
+                format!("/api/v2/file-submission-attempts/{attempt_id}/grade"),
+                Some(&version),
+                &serde_json::json!({ "action": action, "final_score": score }),
+            ))
+            .await;
+        assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
+    }
+    let stats = app.get_as(&teacher, &stats_url).await.json();
+    assert_eq!(stats["total"], 3);
+    assert_eq!(stats["submitted"], 1);
+    assert_eq!(stats["avg_score"], 68.0);
+    let buckets: Vec<(String, i64)> = stats["distribution"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|b| b["count"].as_i64() > Some(0))
+        .map(|b| {
+            (
+                b["range"].as_str().unwrap().to_owned(),
+                b["count"].as_i64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(buckets, [("40-50".to_owned(), 1), ("90-100".to_owned(), 1)]);
+}

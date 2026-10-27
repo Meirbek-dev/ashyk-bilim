@@ -3019,9 +3019,16 @@ export type FileReviewPage = {
 };
 
 /**
- * Queue counts of a file submission (L-6).
+ * Queue counts of a file submission (L-6), with the average and the
+ * ten-bucket distribution of graded/published scores, as a test's stats.
  */
 export type FileReviewStats = {
+    /**
+     * Mean final score (percent) of graded/published hand-ins; `null`
+     * without one.
+     */
+    avg_score: number | null;
+    distribution: Array<ScoreBucket>;
     graded: number;
     late: number;
     published: number;

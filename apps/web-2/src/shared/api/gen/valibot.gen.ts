@@ -1474,18 +1474,6 @@ export const vDraftRequest = v.strictObject({
 });
 
 /**
- * Queue counts of a file submission (L-6).
- */
-export const vFileReviewStats = v.object({
-    graded: v.pipe(v.number(), v.integer()),
-    late: v.pipe(v.number(), v.integer()),
-    published: v.pipe(v.number(), v.integer()),
-    returned: v.pipe(v.number(), v.integer()),
-    submitted: v.pipe(v.number(), v.integer()),
-    total: v.pipe(v.number(), v.integer())
-});
-
-/**
  * What an author may do to the task now (`FileSubmission.allowed_actions`).
  */
 export const vFileSubmissionAction = v.picklist([
@@ -3145,6 +3133,21 @@ export const vScanStatus = v.picklist([
 export const vScoreBucket = v.object({
     count: v.pipe(v.number(), v.integer()),
     range: v.string()
+});
+
+/**
+ * Queue counts of a file submission (L-6), with the average and the
+ * ten-bucket distribution of graded/published scores, as a test's stats.
+ */
+export const vFileReviewStats = v.object({
+    avg_score: v.nullable(v.number()),
+    distribution: v.array(vScoreBucket),
+    graded: v.pipe(v.number(), v.integer()),
+    late: v.pipe(v.number(), v.integer()),
+    published: v.pipe(v.number(), v.integer()),
+    returned: v.pipe(v.number(), v.integer()),
+    submitted: v.pipe(v.number(), v.integer()),
+    total: v.pipe(v.number(), v.integer())
 });
 
 export const vScoringStrategy = v.picklist([

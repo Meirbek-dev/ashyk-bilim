@@ -8542,8 +8542,22 @@ expression: json
         "type": "object"
       },
       "FileReviewStats": {
-        "description": "Queue counts of a file submission (L-6).",
+        "description": "Queue counts of a file submission (L-6), with the average and the\nten-bucket distribution of graded/published scores, as a test's stats.",
         "properties": {
+          "avg_score": {
+            "description": "Mean final score (percent) of graded/published hand-ins; `null`\nwithout one.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "distribution": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucket"
+            },
+            "type": "array"
+          },
           "graded": {
             "type": "integer"
           },
@@ -8569,7 +8583,9 @@ expression: json
           "graded",
           "published",
           "returned",
-          "late"
+          "late",
+          "distribution",
+          "avg_score"
         ],
         "type": "object"
       },

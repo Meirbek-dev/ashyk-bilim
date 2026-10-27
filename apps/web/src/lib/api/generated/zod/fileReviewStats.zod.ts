@@ -9,6 +9,16 @@ import * as zod from 'zod'
 
 export const FileReviewStats = zod
   .object({
+    avg_score: zod
+      .number()
+      .nullable()
+      .describe('Mean final score (percent) of graded/published hand-ins; `null`\nwithout one.'),
+    distribution: zod.array(
+      zod.object({
+        count: zod.int(),
+        range: zod.string().describe('`"0-10"`, …, `"90-100"`.'),
+      }),
+    ),
     graded: zod.int(),
     late: zod.int(),
     published: zod.int(),
@@ -16,7 +26,9 @@ export const FileReviewStats = zod
     submitted: zod.int(),
     total: zod.int(),
   })
-  .describe('Queue counts of a file submission (L-6).')
+  .describe(
+    "Queue counts of a file submission (L-6), with the average and the\nten-bucket distribution of graded/published scores, as a test's stats.",
+  )
 
 export type FileReviewStats = zod.input<typeof FileReviewStats>
 export type FileReviewStatsOutput = zod.output<typeof FileReviewStats>
