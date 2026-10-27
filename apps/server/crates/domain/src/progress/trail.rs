@@ -6,7 +6,6 @@
 //! assessment and file-submission activities are projected by their own
 //! pipelines and the step is UX-only there.
 
-use ab_core::assessments::ActivityProgressState;
 use ab_core::id::{ActivityId, CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
@@ -40,8 +39,9 @@ pub struct TrailRun {
     /// reports - or `None` before the projection wrote a row (UX-250).
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
-    /// The first published activity (course order) the learner has not
-    /// completed and is not waiting on a grade for; `None` when nothing is left.
+    /// The activity the course page's next step names (returned work, then
+    /// overdue, in progress, due soon, the next required one, optional);
+    /// `None` when nothing is left to open.
     pub next_activity_id: Option<ActivityId>,
 }
 
@@ -275,7 +275,6 @@ impl TrailService {
         })
     }
 
-    /// [`TrailRun::next_activity_id`]: chapters by position, then activities.
     async fn hydrate_run(
         &self,
         actor: &Actor,
@@ -291,7 +290,7 @@ impl TrailService {
             return Ok(None);
         }
         let activities = ab_db::catalog::list_activities(&self.pool, run.course_id).await?;
-        let next_activity_id = self.next_activity(&run, &activities, steps).await?;
+        let next_activity_id = self.next_activity(&run, &activities).await?;
         let run_steps = steps
             .iter()
             .filter(|s| s.trail_run_id == run.id)
@@ -321,39 +320,22 @@ impl TrailService {
         }))
     }
 
+    /// The course page's rule (`learner_state::next_activity`), so «Сегодня»
+    /// and «Мои курсы» open the activity the course page names.
     async fn next_activity(
         &self,
         run: &TrailRunRow,
         activities: &[ActivityRow],
-        steps: &[TrailStepRow],
     ) -> Result<Option<ActivityId>> {
         let chapters = ab_db::catalog::list_chapters(&self.pool, run.course_id).await?;
-        let progress =
-            ab_db::progress::list_course_progress_rows(&self.pool, run.course_id, run.user_id)
-                .await?;
-        let done = |a: &ActivityRow| {
-            steps
-                .iter()
-                .any(|s| s.trail_run_id == run.id && s.activity_id == a.id && s.complete)
-                || progress.iter().any(|p| {
-                    p.activity_id == a.id
-                        && (super::projector::progress_is_completed(p)
-                            || matches!(
-                                p.state,
-                                ActivityProgressState::Submitted
-                                    | ActivityProgressState::NeedsGrading
-                                    | ActivityProgressState::Graded
-                            ))
-                })
-        };
-        Ok(chapters.iter().find_map(|c| {
-            let mut in_chapter: Vec<&ActivityRow> = activities
-                .iter()
-                .filter(|a| a.chapter_id == c.id && a.published)
-                .collect();
-            in_chapter.sort_by_key(|a| (a.position, a.id));
-            in_chapter.into_iter().find(|a| !done(a)).map(|a| a.id)
-        }))
+        super::learner_state::next_activity(
+            &self.pool,
+            run.course_id,
+            run.user_id,
+            &chapters,
+            activities,
+        )
+        .await
     }
 
     async fn lock(

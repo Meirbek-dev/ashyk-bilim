@@ -765,6 +765,61 @@ async fn learner_flow_gaps(pool: PgPool) {
     assert_eq!(after.json()["enrolled"], false);
 }
 
+/// OPEN-discover-13: «Сегодня» → «Продолжить», «Мои курсы» and the course
+/// page name the same next activity. A chapter moved to the top leads the
+/// outline: the course page took chapters in creation order and named the
+/// moved chapter's lesson last.
+#[sqlx::test(migrations = "../../migrations")]
+async fn home_my_courses_and_the_course_page_agree_on_next(pool: PgPool) {
+    let World {
+        app,
+        admin,
+        course,
+        chapter,
+    } = world(pool).await;
+    lesson(&app, &admin, &chapter, "Later").await;
+    let moved = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/courses/{course}/chapters"),
+            &json!({ "name": "Moved to the top" }),
+        )
+        .await;
+    let moved = id(&moved);
+    let first = lesson(&app, &admin, &moved, "First in the outline").await;
+    let move_up = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/chapters/{moved}/move"),
+            &json!({ "position": 1 }),
+        )
+        .await;
+    assert_eq!(move_up.status, StatusCode::NO_CONTENT, "{}", move_up.text());
+    app.publish_course(&course).await;
+
+    let student = session(
+        &app,
+        "student",
+        &["trail:read:all", "trail:submit:assigned"],
+    )
+    .await;
+    app.post_as(
+        &student,
+        &format!("/api/v2/trail/courses/{course}"),
+        &json!({}),
+    )
+    .await;
+    let state = app
+        .get_as(&student, &format!("/api/v2/courses/{course}/learner-state"))
+        .await;
+    assert_eq!(state.json()["next_action"]["activity_id"], first);
+    let trail = app.get_as(&student, "/api/v2/trail?limit=1").await;
+    assert_eq!(trail.json()["runs"][0]["next_activity_id"], first);
+    let agenda = app.get_as(&student, "/api/v2/me/agenda").await;
+    assert_eq!(agenda.status, StatusCode::OK, "{}", agenda.text());
+    assert_eq!(agenda.json()["continue_learning"][0]["activity_id"], first);
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn keyset_pages_and_teacher_gaps(pool: PgPool) {
     let World {

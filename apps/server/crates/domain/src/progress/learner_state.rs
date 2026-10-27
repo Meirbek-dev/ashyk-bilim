@@ -359,17 +359,6 @@ impl LearnerStateService {
 
     /// Visible course (404) the caller may access (403). A guest gets the
     /// anonymous state of a public course: not enrolled, nothing done.
-    /// The learner's own rows: progress, the course's, tasks restricted away
-    /// from them and their extensions (the card and next step say their date).
-    async fn own_rows(&self, course_id: CourseId, user_id: UserId) -> Result<OwnRows> {
-        Ok((
-            ab_db::progress::list_course_progress_rows(&self.pool, course_id, user_id).await?,
-            ab_db::progress::get_course_progress(&self.pool, course_id, user_id).await?,
-            ab_db::progress::restricted_activity_ids(&self.pool, course_id, user_id).await?,
-            ab_db::progress::due_overrides(&self.pool, course_id, user_id).await?,
-        ))
-    }
-
     pub async fn course_state(
         &self,
         actor: &Actor,
@@ -386,7 +375,7 @@ impl LearnerStateService {
         let (rows, course_progress, restricted, due) = if staff || guest {
             (Vec::new(), None, Vec::new(), Vec::new())
         } else {
-            self.own_rows(course.id, user_id).await?
+            own_rows(&self.pool, course.id, user_id).await?
         };
         let has_run =
             !guest && ab_db::progress::has_trail_run(&self.pool, course.id, user_id).await?;
@@ -404,23 +393,13 @@ impl LearnerStateService {
         let enrolled = has_run;
 
         let opens_at = scheduled_opening(&self.pool, course.id).await?;
-        let mut states: Vec<(ChapterId, ActivityState)> = activities
-            .iter()
+        let mut states: Vec<(ChapterId, ActivityState)> = outline_order(&chapters, &activities)
+            .into_iter()
             .filter(|a| a.published || opens_at.contains_key(&a.id))
             .map(|a| {
-                let progress = rows.iter().find(|r| r.activity_id == a.id);
-                let mut state = activity_state(a, progress);
-                if let Some(own) = due.iter().find(|d| d.activity_id == a.id) {
-                    state.due_at_unix = Some(own.due_at);
-                }
+                let mut state = learner_activity_state(a, &rows, &restricted, &due);
                 if !a.published {
                     return (a.chapter_id, scheduled(state, opens_at.get(&a.id).copied()));
-                }
-                // BUG-318: restricted to an allowlist the learner is not on -
-                // not required, never a next step; their own results stay readable.
-                if restricted.contains(&a.id) {
-                    state.required = false;
-                    state.blocked_reason = Some(BlockedReason::Restricted);
                 }
                 if markable.as_ref().is_some_and(|ids| ids.contains(&a.id)) {
                     state.allowed_actions.push(if state.complete {
@@ -486,6 +465,91 @@ impl LearnerStateService {
         })
     }
 }
+
+/// The learner's own rows: progress, the course's, tasks restricted away
+/// from them and their extensions (the card and next step say their date).
+async fn own_rows(pool: &PgPool, course_id: CourseId, user_id: UserId) -> Result<OwnRows> {
+    Ok((
+        ab_db::progress::list_course_progress_rows(pool, course_id, user_id).await?,
+        ab_db::progress::get_course_progress(pool, course_id, user_id).await?,
+        ab_db::progress::restricted_activity_ids(pool, course_id, user_id).await?,
+        ab_db::progress::due_overrides(pool, course_id, user_id).await?,
+    ))
+}
+
+/// Activities as the learner meets them: chapters by position, then
+/// activities by position (`list_activities` sorts by chapter id, which is
+/// creation order, not the outline's).
+fn outline_order<'a>(
+    chapters: &[ab_db::catalog::ChapterRow],
+    activities: &'a [ab_db::catalog::ActivityRow],
+) -> Vec<&'a ab_db::catalog::ActivityRow> {
+    let chapter_rank = |a: &ab_db::catalog::ActivityRow| {
+        chapters
+            .iter()
+            .find(|c| c.id == a.chapter_id)
+            .map_or((i32::MAX, a.chapter_id), |c| (c.position, c.id))
+    };
+    let mut ordered: Vec<&ab_db::catalog::ActivityRow> = activities.iter().collect();
+    ordered.sort_by_key(|a| (chapter_rank(a), a.position, a.id));
+    ordered
+}
+
+/// One activity for this learner: their progress, their own due date, and
+/// (BUG-318) an allowlist they are not on - not required, never a next
+/// step; their own results stay readable.
+fn learner_activity_state(
+    activity: &ab_db::catalog::ActivityRow,
+    rows: &[ActivityProgressRow],
+    restricted: &[ActivityId],
+    due: &[DueOverrideRow],
+) -> ActivityState {
+    let mut state = activity_state(activity, rows.iter().find(|r| r.activity_id == activity.id));
+    if let Some(own) = due.iter().find(|d| d.activity_id == activity.id) {
+        state.due_at_unix = Some(own.due_at);
+    }
+    if activity.published && restricted.contains(&activity.id) {
+        state.required = false;
+        state.blocked_reason = Some(BlockedReason::Restricted);
+    }
+    state
+}
+
+/// OPEN-discover-13: the one «next» rule. The activity [`next_action`]
+/// names on the course page is the one «Сегодня» → «Продолжить» and «Мои
+/// курсы» open (`TrailRun::next_activity_id`) - they disagreed when the
+/// trail took the first unfinished activity and the page took returned,
+/// overdue and in-progress work first. Only for an enrolled learner.
+pub(crate) async fn next_activity(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+    chapters: &[ab_db::catalog::ChapterRow],
+    activities: &[ab_db::catalog::ActivityRow],
+) -> Result<Option<ActivityId>> {
+    let (rows, course_progress, restricted, due) = own_rows(pool, course_id, user_id).await?;
+    let states: Vec<ActivityState> = outline_order(chapters, activities)
+        .into_iter()
+        .filter(|a| a.published)
+        .map(|a| learner_activity_state(a, &rows, &restricted, &due))
+        .collect();
+    let flat: Vec<&ActivityState> = states.iter().collect();
+    let progress = progress_state(course_progress.as_ref(), &flat);
+    let open: Vec<&ActivityState> = flat
+        .into_iter()
+        .filter(|a| a.blocked_reason.is_none())
+        .collect();
+    // The certificate only matters once no activity is left to name.
+    Ok(next_action(true, course_id, &open, &NO_CERTIFICATE, &progress).activity_id)
+}
+
+const NO_CERTIFICATE: CertificateState = CertificateState {
+    configured: false,
+    eligible: false,
+    issued: false,
+    verify_code: None,
+    href: None,
+};
 
 /// An archived course is read-only: no start, continue or revise leads to a
 /// page that can only say «Курс в архиве»; results stay readable.
@@ -837,13 +901,7 @@ mod tests {
         }
     }
 
-    const NO_CERT: CertificateState = CertificateState {
-        configured: false,
-        eligible: false,
-        issued: false,
-        verify_code: None,
-        href: None,
-    };
+    const NO_CERT: CertificateState = NO_CERTIFICATE;
 
     /// Priority order: returned > overdue > in-progress > due-soon > next
     /// required; with nothing left to start, awaiting grade → wait.
