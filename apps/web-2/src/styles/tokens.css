@@ -111,6 +111,9 @@
   --spacing-row: var(--density-row);
   --spacing-gutter: var(--density-gutter);
 
+  /* Breakpoint below Tailwind's sm..2xl: `max-xs:` is a phone narrower than 360 px (iPhone SE 1st gen, 320) */
+  --breakpoint-xs: 22.5rem;
+
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --default-transition-duration: var(--duration-base);
