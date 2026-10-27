@@ -55,7 +55,9 @@ export function RunItem({ run }: { run: Enrollment }) {
             {run.course.name}
           </Link>
         </h2>
-        <div className="mt-auto flex flex-col gap-2">
+        {/* The state sits under the title and the action at the foot: side by side, a finished card (no bar) and an
+            open one keep their state lines and buttons level. */}
+        <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
             <span className={`flex items-center gap-1.5 font-medium ${state.ink}`}>
               <state.icon aria-hidden className="size-4" />
@@ -74,7 +76,7 @@ export function RunItem({ run }: { run: Enrollment }) {
             <Progress aria-hidden value={percent} />
           )}
         </div>
-        <div className="pt-1">
+        <div className="mt-auto pt-1">
           {next ? (
             <RouterLink
               to="/learn/$courseId/$activityId"
