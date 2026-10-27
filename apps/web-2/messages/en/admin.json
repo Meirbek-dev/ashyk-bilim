@@ -192,7 +192,7 @@
   "admin_group_member_remove_confirm": "Remove",
   "admin_group_member_removed": "Member removed",
   "admin_group_delete_title": "Delete the {name} group?",
-  "admin_group_delete_consequence": "Members and courses will be unlinked from the group.",
+  "admin_group_delete_consequence": "Members lose the courses they were enrolled in only through this group. The accounts and courses themselves stay.",
   "admin_group_delete_section": "Delete the group",
   "admin_group_deleted": "Group deleted",
   "admin_users_sort_label": "Sort: {sort}",

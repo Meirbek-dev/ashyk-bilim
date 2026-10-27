@@ -200,7 +200,7 @@
   "admin_group_member_remove_confirm": "Убрать",
   "admin_group_member_removed": "Участник убран",
   "admin_group_delete_title": "Удалить группу «{name}»?",
-  "admin_group_delete_consequence": "Участники и курсы будут отвязаны от группы.",
+  "admin_group_delete_consequence": "Участники потеряют курсы, на которые записаны только через эту группу. Сами учётные записи и курсы останутся.",
   "admin_group_delete_section": "Удаление группы",
   "admin_group_deleted": "Группа удалена",
   "admin_users_sort_label": "Сортировка: {sort}",

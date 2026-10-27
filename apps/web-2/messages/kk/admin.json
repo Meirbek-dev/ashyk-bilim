@@ -192,7 +192,7 @@
   "admin_group_member_remove_confirm": "Шығару",
   "admin_group_member_removed": "Мүше шығарылды",
   "admin_group_delete_title": "«{name}» атты топты жою керек пе?",
-  "admin_group_delete_consequence": "Мүшелер мен курстар топтан ажыратылады.",
+  "admin_group_delete_consequence": "Қатысушылар тек осы топ арқылы жазылған курстарынан айырылады. Тіркелгілер мен курстардың өздері қалады.",
   "admin_group_delete_section": "Топты жою",
   "admin_group_deleted": "Топ жойылды",
   "admin_users_sort_label": "Сұрыптау: {sort}",
