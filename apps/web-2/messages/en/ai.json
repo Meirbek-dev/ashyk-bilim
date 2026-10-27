@@ -189,7 +189,6 @@
   "ai_col_status": "Status",
   "ai_col_started": "Started",
   "ai_col_model": "Model",
-  "ai_col_error": "Error code",
   "ai_open_run": "AI run",
   "ai_run_tokens": "Tokens: {input} in, {output} out",
   "ai_run_duration": "Duration: {seconds} s",

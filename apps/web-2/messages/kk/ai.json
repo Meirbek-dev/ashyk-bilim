@@ -189,7 +189,6 @@
   "ai_col_status": "Күйі",
   "ai_col_started": "Басталды",
   "ai_col_model": "Үлгі",
-  "ai_col_error": "Қате коды",
   "ai_open_run": "ЖИ іске қосуы",
   "ai_run_tokens": "Токендер: кірісте {input}, шығыста {output}",
   "ai_run_duration": "Ұзақтығы: {seconds} с",

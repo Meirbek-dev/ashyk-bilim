@@ -195,7 +195,6 @@
   "ai_col_status": "Статус",
   "ai_col_started": "Начат",
   "ai_col_model": "Модель",
-  "ai_col_error": "Код ошибки",
   "ai_open_run": "Запуск ИИ",
   "ai_run_tokens": "Токены: {input} на входе, {output} на выходе",
   "ai_run_duration": "Длительность: {seconds} с",

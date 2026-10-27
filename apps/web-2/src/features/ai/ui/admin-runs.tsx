@@ -14,7 +14,7 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
 import { runsFilter, type AdminAiSearch } from '../route'
-import { kindLabels, runStatusLabels } from '../model/labels'
+import { kindLabels, runErrorText, runStatusLabels } from '../model/labels'
 import { runsOptions } from '../queries'
 import { AdminRunDetail } from './admin-run-detail'
 import { RunsFilters } from './runs-filters'
@@ -36,17 +36,21 @@ const columns = (): DataColumn<AdminRun>[] => [
     header: m.ai_col_status(),
     priority: 2,
     cell: run => (
-      <span className="flex flex-wrap gap-1">
-        <StatusBadge tone={run.status === 'failed' ? 'destructive' : 'neutral'}>
-          {runStatusLabels[run.status]()}
-        </StatusBadge>
-        {run.stuck ? <StatusBadge tone="warning">{m.ai_stuck()}</StatusBadge> : null}
+      <span className="flex flex-col items-start gap-1">
+        <span className="flex flex-wrap gap-1">
+          <StatusBadge tone={run.status === 'failed' ? 'destructive' : 'neutral'}>
+            {runStatusLabels[run.status]()}
+          </StatusBadge>
+          {run.stuck ? <StatusBadge tone="warning">{m.ai_stuck()}</StatusBadge> : null}
+        </span>
+        {/* Why it failed, in words (the code is in the run's panel): a raw COURSE_ANALYSIS_FAILED column widened
+            the table past its edge. */}
+        {run.error_code ? <span className="text-sm text-muted-foreground">{runErrorText(run.error_code)}</span> : null}
       </span>
     ),
   },
   { id: 'started', header: m.ai_col_started(), priority: 2, cell: run => formatDateTime(run.started_at_unix) },
   { id: 'model', header: m.ai_col_model(), priority: 3, cell: run => run.model_name },
-  { id: 'error', header: m.ai_col_error(), priority: 3, cell: run => run.error_code },
   {
     id: 'course',
     header: m.ai_col_course(),
