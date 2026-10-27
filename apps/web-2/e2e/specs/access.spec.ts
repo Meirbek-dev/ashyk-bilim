@@ -190,15 +190,21 @@ test('on a phone the bottom bar marks «Ещё» while a section behind it is op
   await expect(more).not.toHaveAttribute('aria-current', 'page')
 })
 
-// 360 px is the common Android width; kk and en have the longest labels («Жетістіктер», «Achievements»).
-for (const locale of ['kk', 'en'] as const) {
-  test(`on a 360 px phone in ${locale} every bottom bar item fits on the screen`, async ({
+// 360 px is the common Android width, 320 px the smallest iPhone; kk and en have the longest labels («Жетістіктер»,
+// «Achievements»).
+for (const [locale, width] of [
+  ['kk', 360],
+  ['en', 360],
+  ['kk', 320],
+  ['en', 320],
+] as const) {
+  test(`on a ${width} px phone in ${locale} every bottom bar item fits on the screen`, async ({
     page,
     context,
     signInAs,
     baseURL,
   }) => {
-    await page.setViewportSize({ width: 360, height: 800 })
+    await page.setViewportSize({ width, height: 800 })
     await signInAs('student')
     await context.addCookies([{ name: 'ab_locale', value: locale, url: String(baseURL) }])
     await page.goto('/home')
@@ -206,7 +212,7 @@ for (const locale of ['kk', 'en'] as const) {
     await expect(items.last()).toBeVisible()
     for (const item of await items.all()) {
       const box = await item.boundingBox()
-      expect(box && box.x >= 0 && box.x + box.width <= 360, await item.innerText()).toBe(true)
+      expect(box && box.x >= 0 && box.x + box.width <= width, await item.innerText()).toBe(true)
     }
   })
 }

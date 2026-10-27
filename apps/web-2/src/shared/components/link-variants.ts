@@ -12,8 +12,11 @@ export const linkVariants = {
   tab: 'inline-flex min-h-row shrink-0 items-center border-b-2 border-transparent px-3 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors duration-150 hover:text-foreground current:border-foreground current:text-foreground',
   /** A sidebar item of the app shell: icon + label; the current section is highlighted. */
   nav: 'relative flex min-h-control items-center gap-3 rounded-md px-3 py-1 text-sm font-medium transition-colors duration-150 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-transparent before:transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground current:bg-sidebar-accent current:font-semibold current:text-sidebar-accent-foreground current:before:bg-sidebar-primary [&_svg]:size-4 [&_svg]:shrink-0',
-  /** A bottom-bar item on phones: icon over a label of up to two lines; long labels take the room short ones leave. */
-  bar: 'flex flex-auto flex-col items-center justify-center gap-0.5 rounded-md px-1 text-center text-xs leading-tight font-medium transition-colors duration-150 hover:text-sidebar-accent-foreground current:font-semibold current:text-sidebar-accent-foreground [&_svg]:box-content [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:rounded-full [&_svg]:px-3 [&_svg]:py-0.5 [&_svg]:transition-colors current:[&_svg]:bg-sidebar-accent',
+  /**
+   * A bottom-bar item on phones: icon over a label of up to two lines; long labels take the room short ones leave.
+   * Below 360 px (iPhone SE 1st gen, 320) a slightly smaller label and pill keep «Жетістіктер», «Achievements» on screen.
+   */
+  bar: 'flex flex-auto flex-col items-center justify-center gap-0.5 rounded-md px-1 text-center text-xs leading-tight font-medium transition-colors duration-150 hover:text-sidebar-accent-foreground current:font-semibold current:text-sidebar-accent-foreground max-[359px]:px-0.5 max-[359px]:text-[11px] [&_svg]:box-content [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:rounded-full [&_svg]:px-3 max-[359px]:[&_svg]:px-2 [&_svg]:py-0.5 [&_svg]:transition-colors current:[&_svg]:bg-sidebar-accent',
 }
 
 export type LinkVariant = keyof typeof linkVariants
