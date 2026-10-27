@@ -23,6 +23,7 @@ const page = {
       context: {},
       completed_at_unix: null,
       cost_estimate: null,
+      course_name: null,
       duration_ms: null,
       error_code: null,
       input_tokens: null,
