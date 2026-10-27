@@ -20,8 +20,9 @@ const GuestSwitches = lazy(() => import('./guest-switches').then(module => ({ de
 export function TopBar({ session, workspace }: { session: SessionInfo | null; workspace: WorkspaceId }) {
   const Search = shellSlots.search
   const Notifications = shellSlots.notifications
-  // «Войти» on a course, a collection or a search comes back there after sign-in (B-AUTH-17), not to /home.
-  const back = returnTo(useLocation({ select: location => location.href }))
+  // «Войти» on a course, a collection or a search comes back there after sign-in (B-AUTH-17), not to /home. Path and
+  // query only: the server never sees the hash (#main after the skip link), so with it the link would not hydrate.
+  const back = returnTo(useLocation({ select: location => location.pathname + location.searchStr }))
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-2 md:px-4">
       <RouterLink
