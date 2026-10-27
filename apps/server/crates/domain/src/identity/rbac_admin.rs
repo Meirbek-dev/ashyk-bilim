@@ -102,6 +102,10 @@ impl RbacAdminService {
     /// (`platform:manage`, never the caller's own account).
     #[must_use]
     pub fn user_actions(actor: &Actor, user: &AdminUser) -> Vec<AdminUserAction> {
+        // OPEN-G-1: a deleted account keeps its row for the work that points at it, nothing else.
+        if user.deleted {
+            return Vec::new();
+        }
         let platform = Self::require_manage_platform(actor).is_ok();
         let active = user.status == "active";
         let own = user.id == actor.user_id;

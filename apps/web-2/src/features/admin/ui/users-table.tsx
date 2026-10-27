@@ -13,7 +13,8 @@ import { UserAvatar } from '#/shared/components/user-avatar'
 import { formatDate } from '#/shared/i18n/format'
 
 import { usersListOptions, type UsersFilter } from '../queries'
-import { userStatusBadges } from './labels'
+import { userName } from '../model/admin'
+import { userBadge } from './labels'
 import { RoleNames } from './role-names'
 
 const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
@@ -24,12 +25,15 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     // The panel opens from the URL (R-07): this link is the shareable address of the user.
     cell: user => (
       <span className="flex items-center gap-3">
-        <UserAvatar name={user.display_name || user.username} avatarKey={user.avatar_key} />
+        <UserAvatar name={userName(user)} avatarKey={user.avatar_key} />
         <span className="flex min-w-0 flex-col">
           <Link variant="title" from="/admin/users" to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
-            <span className="font-medium wrap-anywhere">{user.display_name || user.username}</span>
+            <span className="font-medium wrap-anywhere">{userName(user)}</span>
           </Link>
-          <span className="text-sm font-normal wrap-anywhere text-muted-foreground">@{user.username}</span>
+          {/* A deleted account's login is a `deleted-<id>` placeholder: nothing to read. */}
+          {user.deleted ? null : (
+            <span className="text-sm font-normal wrap-anywhere text-muted-foreground">@{user.username}</span>
+          )}
         </span>
       </span>
     ),
@@ -38,7 +42,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     id: 'email',
     header: m.admin_users_col_email(),
     priority: 2,
-    cell: user => <span className="wrap-anywhere text-muted-foreground">{user.email}</span>,
+    cell: user => (user.deleted ? null : <span className="wrap-anywhere text-muted-foreground">{user.email}</span>),
   },
   {
     id: 'roles',
@@ -51,8 +55,8 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     header: m.admin_users_col_status(),
     priority: 2,
     cell: user => {
-      // The usual state is quiet text; only a disabled account gets a badge, so it stands out in a page of actives.
-      const badge = userStatusBadges[user.status]
+      // The usual state is quiet text; a disabled or deleted account gets a badge, so it stands out in a page of actives.
+      const badge = userBadge(user)
       return user.status === 'active' ? (
         <span className="text-muted-foreground">{badge.label()}</span>
       ) : (

@@ -10,10 +10,10 @@ import { StatusBadge } from '#/shared/components/status-badge'
 import { UserAvatar } from '#/shared/components/user-avatar'
 import { formatDate } from '#/shared/i18n/format'
 
-import { canUser } from '../model/admin'
+import { canUser, userName } from '../model/admin'
 import { userOptions } from '../queries'
 import { AwardXp } from './award-xp'
-import { userStatusBadges } from './labels'
+import { userBadge } from './labels'
 import { RoleNames } from './role-names'
 import { UserGroup } from './user-group'
 import { UserRoles } from './user-roles'
@@ -21,7 +21,8 @@ import { UserStatus } from './user-status'
 
 /**
  * The user open by `?user=<id>` (R-07: the address is shareable): who they are, and every action the API lists
- * for them in `allowed_actions`, plus "add to group" and "award XP" by the caller's capabilities.
+ * for them in `allowed_actions`, plus "add to group" and "award XP" by the caller's capabilities. An account its
+ * owner deleted says so instead of its placeholder login, address and profile link, and offers nothing to do.
  */
 export function UserSheet({ id }: { id: string }) {
   const { data: user } = useSuspenseQuery(userOptions(id))
@@ -29,7 +30,7 @@ export function UserSheet({ id }: { id: string }) {
   const navigate = useNavigate({ from: '/admin/users' })
   const close = () => void navigate({ search: prev => ({ ...prev, user: undefined }) })
   const namedRoles = hasCapability(session, 'admin.roles')
-  const badge = user ? userStatusBadges[user.status] : null
+  const badge = user ? userBadge(user) : null
   return (
     <SheetPanel
       open
@@ -37,24 +38,30 @@ export function UserSheet({ id }: { id: string }) {
         if (!open) close()
       }}
       side="right"
-      title={user ? user.display_name || user.username : m.admin_user_not_found()}
+      title={user ? userName(user) : m.admin_user_not_found()}
     >
       {user && badge ? (
         <>
-          <div className="flex items-center gap-3">
-            <UserAvatar name={user.display_name || user.username} avatarKey={user.avatar_key} />
-            <div className="flex min-w-0 flex-col text-sm">
-              <span className="wrap-anywhere">@{user.username}</span>
-              <Link to="/users/$username" params={{ username: user.username }}>
-                {m.admin_user_profile()}
-              </Link>
+          {user.deleted ? (
+            <p className="text-sm text-muted-foreground">{m.admin_user_deleted_hint()}</p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <UserAvatar name={userName(user)} avatarKey={user.avatar_key} />
+              <div className="flex min-w-0 flex-col text-sm">
+                <span className="wrap-anywhere">@{user.username}</span>
+                <Link to="/users/$username" params={{ username: user.username }}>
+                  {m.admin_user_profile()}
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
           <dl className="flex flex-col gap-2 text-sm *:flex *:flex-wrap *:items-center *:gap-x-2">
-            <div>
-              <dt className="text-muted-foreground">{m.admin_users_col_email()}</dt>
-              <dd className="wrap-anywhere">{user.email}</dd>
-            </div>
+            {user.deleted ? null : (
+              <div>
+                <dt className="text-muted-foreground">{m.admin_users_col_email()}</dt>
+                <dd className="wrap-anywhere">{user.email}</dd>
+              </div>
+            )}
             {user.organization ? (
               <div>
                 <dt className="text-muted-foreground">{m.admin_user_organization()}</dt>
@@ -80,8 +87,8 @@ export function UserSheet({ id }: { id: string }) {
           </dl>
           {namedRoles && canUser(user, 'manage_roles') ? <UserRoles user={user} /> : null}
           {canUser(user, 'disable') || canUser(user, 'enable') ? <UserStatus user={user} /> : null}
-          {hasCapability(session, 'groups.manage') ? <UserGroup user={user} /> : null}
-          {hasCapability(session, 'admin.gamification') ? <AwardXp user={user} /> : null}
+          {hasCapability(session, 'groups.manage') && !user.deleted ? <UserGroup user={user} /> : null}
+          {hasCapability(session, 'admin.gamification') && !user.deleted ? <AwardXp user={user} /> : null}
         </>
       ) : user ? null : (
         <p className="text-sm text-muted-foreground">{m.admin_user_not_found_hint()}</p>

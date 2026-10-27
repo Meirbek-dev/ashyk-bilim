@@ -3184,4 +3184,11 @@ async fn a_learner_deletes_their_account_and_the_work_stays(pool: PgPool) {
         .await;
     assert_eq!(reenable.status, StatusCode::CONFLICT, "{}", reenable.text());
     assert_eq!(reenable.json()["code"], "account-deleted");
+    // The directory says so, and offers nothing to do to it (not even «enable»).
+    let listed = app
+        .get_as(&admin_session, &format!("/api/v2/users/by-id/{user}/admin"))
+        .await;
+    assert_eq!(listed.status, StatusCode::OK, "{}", listed.text());
+    assert_eq!(listed.json()["deleted"], true);
+    assert_eq!(listed.json()["allowed_actions"], serde_json::json!([]));
 }

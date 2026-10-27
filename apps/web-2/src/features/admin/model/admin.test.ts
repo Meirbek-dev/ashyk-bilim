@@ -16,7 +16,9 @@ import {
   rulesForm,
   rulesFormSchema,
   takenField,
+  userName,
 } from './admin'
+import { userBadge } from '../ui/labels'
 import { usersSearchSchema } from '../route'
 import { permissionSummary, roleDescription, roleName, roleNames } from './roles'
 
@@ -159,4 +161,13 @@ describe('new role fields', () => {
     expect(failing({ priority: '100' })).toEqual(['priority'])
     expect(failing({ priority: '-1' })).toEqual(['priority'])
   })
+})
+
+test('B-ADM-27 an account its owner deleted reads as deleted, not by its placeholder login or as switched off', () => {
+  const deleted = { deleted: true, display_name: '', username: 'deleted-01a17998', status: 'disabled' } as const
+  expect(userName(deleted)).toBe(m.admin_user_deleted_name())
+  expect(userBadge(deleted).label()).toBe(m.admin_status_deleted())
+  const off = { ...deleted, deleted: false, username: 'dana' }
+  expect(userName(off)).toBe('dana')
+  expect(userBadge(off).label()).toBe(m.admin_status_disabled())
 })

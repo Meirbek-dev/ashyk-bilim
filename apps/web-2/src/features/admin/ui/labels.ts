@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 
-import type { UserStatus } from '#/shared/api/gen/types.gen'
+import type { AdminUser, UserStatus } from '#/shared/api/gen/types.gen'
 
 import type { RewardSource } from '../model/admin'
 
@@ -10,6 +10,10 @@ export const userStatusBadges = {
   active: { label: m.admin_status_active, tone: 'neutral' },
   disabled: { label: m.admin_status_disabled, tone: 'destructive' },
 } as const satisfies Record<UserStatus, { label: () => string; tone: 'neutral' | 'destructive' }>
+
+/** An account its owner deleted reads as deleted, not as one an admin switched off: it stays `disabled` for good. */
+export const userBadge = (user: Pick<AdminUser, 'status' | 'deleted'>) =>
+  user.deleted ? ({ label: m.admin_status_deleted, tone: 'neutral' } as const) : userStatusBadges[user.status]
 
 export const roleKindLabels = {
   system: m.admin_role_kind_system,

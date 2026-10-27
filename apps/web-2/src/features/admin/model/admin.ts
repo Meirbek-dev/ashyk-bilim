@@ -18,6 +18,10 @@ import type {
 /** A search box's own form value (a form, so Enter submits; the URL is the source of truth). */
 export const searchBoxSchema = v.object({ q: v.string() })
 
+/** The name an admin reads: a deleted account's login and address are `deleted-<id>` placeholders (OPEN-G-1). */
+export const userName = (user: Pick<AdminUser, 'deleted' | 'display_name' | 'username'>) =>
+  user.deleted ? m.admin_user_deleted_name() : user.display_name || user.username
+
 export const canUser = (user: Pick<AdminUser, 'allowed_actions'>, action: AdminUserAction) =>
   user.allowed_actions.includes(action)
 export const canRole = (role: Pick<Role, 'allowed_actions'>, action: RoleAction) =>

@@ -605,6 +605,8 @@ pub struct AdminUserRow {
     pub roles: Vec<String>,
     pub created_at: i64,
     pub avatar_key: Option<String>,
+    /// The owner deleted the account (OPEN-G-1): its names are placeholders.
+    pub deleted: bool,
 }
 
 /// Admin listing filters (`GET /users`).
@@ -636,7 +638,8 @@ pub async fn list_users(
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
-                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key,
+                  u.deleted_at IS NOT NULL AS "deleted!"
            FROM users u
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id
@@ -698,7 +701,8 @@ pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<Adm
         r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
-                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key
+                  (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key,
+                  u.deleted_at IS NOT NULL AS "deleted!"
            FROM users u
            LEFT JOIN user_roles ur ON ur.user_id = u.id
            LEFT JOIN roles r ON r.id = ur.role_id

@@ -191,8 +191,11 @@ pub struct AdminUser {
     pub created_at_unix: i64,
     /// Public profile photo (`/content/<key>`); `null` = initials.
     pub avatar_key: Option<String>,
-    /// What the caller may do to this account now.
+    /// What the caller may do to this account now (nothing, once deleted).
     pub allowed_actions: Vec<ab_domain::identity::rbac_admin::AdminUserAction>,
+    /// The owner deleted the account: username and email are `deleted-<id>`
+    /// placeholders, the name is blank and the status `disabled` for good.
+    pub deleted: bool,
 }
 
 impl AdminUser {
@@ -211,6 +214,7 @@ impl AdminUser {
             roles: u.roles,
             created_at_unix: u.created_at,
             avatar_key: u.avatar_key,
+            deleted: u.deleted,
         }
     }
 }
