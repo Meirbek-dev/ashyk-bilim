@@ -43,3 +43,24 @@ test('B-NOT-04 a released or returned work quotes the teacher feedback; an old r
   expect(notificationLines({ ...work, type: 'submission_returned', excerpt: 'Добавьте пример' })).toEqual([what, quote])
   expect(notificationLines({ ...work, type: 'submission_returned' })).toEqual([what])
 })
+
+test('B-NOT-18 a hand-in row names the activity, then who handed in, or how many and who last', () => {
+  const payload = {
+    ...names,
+    type: 'work_submitted' as const,
+    activity_id: '0190a5d2-0000-7000-8000-00000000000a',
+    activity_name: 'Эссе',
+    activity_type: 'file_submission' as const,
+    learner_id: '0190a5d2-0000-7000-8000-000000000015',
+    learner_name: 'Аня',
+    submission_id: null,
+    attempt_id: null,
+    count: 1,
+  }
+  expect(notificationLines(payload)).toEqual([
+    m.notifications_text_activity({ activity: 'Эссе', course: 'Алгебра' }),
+    'Аня — работа ждёт проверки',
+  ])
+  expect(notificationLines({ ...payload, count: 3 })[1]).toBe('3 новые работы ждут проверки, последняя — Аня')
+  expect(notificationLines({ ...payload, count: 5 })[1]).toBe('5 новых работ ждут проверки, последняя — Аня')
+})

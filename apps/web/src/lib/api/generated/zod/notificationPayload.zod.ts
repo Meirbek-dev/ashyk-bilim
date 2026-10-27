@@ -144,6 +144,29 @@ export const NotificationPayload = zod
         type: zod.enum(['course_team_added']),
       })
       .describe('The recipient joined a course team: added, or their application\napproved.'),
+    zod
+      .object({
+        activity_id: zod.uuid(),
+        activity_name: zod.string(),
+        activity_type: zod
+          .enum(['dynamic', 'video', 'document', 'quiz', 'exam', 'code_challenge', 'file_submission', 'custom'])
+          .describe('Activity kind (`custom` exists only on migrated legacy rows).'),
+        attempt_id: zod.union([zod.uuid(), zod.null()]),
+        count: zod.int().describe("Hand-ins since the recipient last read this activity's row (>= 1)."),
+        course_id: zod.uuid(),
+        course_name: zod.string(),
+        learner_id: zod
+          .uuid()
+          .describe(
+            'The latest hand-in: whose and which (a test submission or a\nfile-task attempt), so a single one opens straight away.',
+          ),
+        learner_name: zod.string(),
+        submission_id: zod.union([zod.uuid(), zod.null()]),
+        type: zod.enum(['work_submitted']),
+      })
+      .describe(
+        'Work in a course the recipient teaches was handed in and waits for\na grade. One unread row per activity: later hand-ins replace it and\nraise `count` until the recipient reads it.',
+      ),
   ])
   .describe(
     'What happened, with the ids a client needs to route and to invalidate\ncaches, and the names the bell renders without another request.',

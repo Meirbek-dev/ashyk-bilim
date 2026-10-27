@@ -2228,7 +2228,8 @@ export const vNotificationSettings = v.strictObject({
     discussion_post: v.optional(v.boolean()),
     discussion_reply: v.boolean(),
     grade_published: v.boolean(),
-    submission_returned: v.boolean()
+    submission_returned: v.boolean(),
+    work_submitted: v.optional(v.boolean())
 });
 
 /**
@@ -2243,7 +2244,8 @@ export const vNotificationType = v.picklist([
     'discussion_reply',
     'contributor_application',
     'discussion_post',
-    'course_team_added'
+    'course_team_added',
+    'work_submitted'
 ]);
 
 export const vOpenTextBody = v.object({
@@ -5220,6 +5222,19 @@ export const vNotificationPayload = v.union([
         course_name: v.string(),
         role: v.optional(v.string()),
         type: v.picklist(['course_team_added'])
+    }),
+    v.object({
+        activity_id: vActivityId,
+        activity_name: v.string(),
+        activity_type: vActivityType,
+        attempt_id: v.nullable(vFileAttemptId),
+        count: v.pipe(v.number(), v.integer()),
+        course_id: vCourseId,
+        course_name: v.string(),
+        learner_id: vUserId,
+        learner_name: v.string(),
+        submission_id: v.nullable(vSubmissionId),
+        type: v.picklist(['work_submitted'])
     })
 ]);
 
@@ -5471,6 +5486,7 @@ export const vAdminUser = v.object({
     allowed_actions: v.array(vAdminUserAction),
     avatar_key: v.nullable(v.string()),
     created_at_unix: vUnixTime,
+    deleted: v.boolean(),
     display_name: v.string(),
     email: v.string(),
     id: vUserId,

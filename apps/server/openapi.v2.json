@@ -922,7 +922,7 @@
         "description": "Admin listing row (includes email + status - platform:read gated).",
         "properties": {
           "allowed_actions": {
-            "description": "What the caller may do to this account now.",
+            "description": "What the caller may do to this account now (nothing, once deleted).",
             "items": {
               "$ref": "#/components/schemas/AdminUserAction"
             },
@@ -937,6 +937,10 @@
           },
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "deleted": {
+            "description": "The owner deleted the account: username and email are `deleted-<id>`\nplaceholders, the name is blank and the status `disabled` for good.",
+            "type": "boolean"
           },
           "display_name": {
             "type": "string"
@@ -975,6 +979,7 @@
           "roles",
           "created_at_unix",
           "allowed_actions",
+          "deleted",
           "avatar_key"
         ],
         "type": "object"
@@ -12273,6 +12278,77 @@
               "type"
             ],
             "type": "object"
+          },
+          {
+            "description": "Work in a course the recipient teaches was handed in and waits for\na grade. One unread row per activity: later hand-ins replace it and\nraise `count` until the recipient reads it.",
+            "properties": {
+              "activity_id": {
+                "$ref": "#/components/schemas/ActivityId"
+              },
+              "activity_name": {
+                "type": "string"
+              },
+              "activity_type": {
+                "$ref": "#/components/schemas/ActivityType"
+              },
+              "attempt_id": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FileAttemptId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "description": "Hand-ins since the recipient last read this activity's row (>= 1).",
+                "type": "integer"
+              },
+              "course_id": {
+                "$ref": "#/components/schemas/CourseId"
+              },
+              "course_name": {
+                "type": "string"
+              },
+              "learner_id": {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The latest hand-in: whose and which (a test submission or a\nfile-task attempt), so a single one opens straight away."
+              },
+              "learner_name": {
+                "type": "string"
+              },
+              "submission_id": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SubmissionId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "enum": [
+                  "work_submitted"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "course_id",
+              "course_name",
+              "activity_id",
+              "activity_name",
+              "activity_type",
+              "learner_id",
+              "learner_name",
+              "count",
+              "type",
+              "attempt_id",
+              "submission_id"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -12339,6 +12415,10 @@
           },
           "submission_returned": {
             "type": "boolean"
+          },
+          "work_submitted": {
+            "description": "Work handed in for grading in a course the user teaches.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -12363,7 +12443,8 @@
           "discussion_reply",
           "contributor_application",
           "discussion_post",
-          "course_team_added"
+          "course_team_added",
+          "work_submitted"
         ],
         "type": "string"
       },

@@ -1,7 +1,9 @@
-import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { hasCapability } from '#/shared/auth/access'
+import { sessionOptions } from '#/shared/auth/session'
 import { ListState } from '#/shared/components/list-state'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -9,6 +11,7 @@ import { PopoverHeader, PopoverTitle } from '#/shared/ui/popover'
 
 import { foldThreadReplies, LATEST } from '../model/notifications'
 import { markAllReadOptions, notificationsListOptions } from '../queries'
+import { emptyListText } from './labels'
 import { NotificationItem } from './notification-item'
 
 type LatestPanelProps = { unread: number; onNavigate: () => void }
@@ -17,6 +20,7 @@ type LatestPanelProps = { unread: number; onNavigate: () => void }
 export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
   const query = useSuspenseInfiniteQuery(notificationsListOptions(false))
   const markAll = useMutation(markAllReadOptions(useQueryClient()))
+  const { data: session } = useSuspenseQuery(sessionOptions())
   const latest = foldThreadReplies(query.data.pages.flatMap(page => page.items)).slice(0, LATEST)
   return (
     <>
@@ -28,7 +32,7 @@ export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
         error={query.error}
         count={latest.length}
         filtered={false}
-        emptyText={m.notifications_empty()}
+        emptyText={emptyListText(hasCapability(session, 'teach'))}
         onRetry={() => void query.refetch()}
       >
         <ul className="flex max-h-96 flex-col gap-4 overflow-y-auto">

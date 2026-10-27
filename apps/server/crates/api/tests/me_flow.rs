@@ -11,6 +11,9 @@
 //! - a reply notifies the thread's author (not the replier); a contributor
 //!   application notifies the course owner;
 //! - XP grants reach the stream as `xp.awarded`;
+//! - work handed in for grading notifies the course's teachers (never the
+//!   learner, never for a preview): one unread row per activity whose
+//!   `count` grows with each hand-in until read; a type switched off stops it;
 //! - deadline reminders are idempotent per learner, activity and due date;
 //! - the agenda lists the deadline, the released result and the
 //!   announcement of the caller only;
@@ -454,10 +457,10 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     );
     // CONTRACT-REQ-G-2b: and the type, so the bell opens the work itself.
     assert_eq!(grade["payload"]["activity_type"], "quiz", "{grade}");
-    assert_eq!(
-        notifications(&app, &teacher, "").await["items"],
-        serde_json::json!([])
-    );
+    // The teacher heard of the hand-in that waited for a grade - and of nothing else.
+    let taught = notifications(&app, &teacher, "").await;
+    assert_eq!(taught["items"].as_array().unwrap().len(), 1, "{taught}");
+    assert_eq!(taught["items"][0]["type"], "work_submitted", "{taught}");
 
     let base = app.serve().await;
     let learner_events = stream_events(&base, &alice).await;
@@ -612,6 +615,101 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
     assert_eq!(admin_award["payload"]["amount"], 50);
     assert_eq!(admin_award["payload"]["reason"], "Helpful");
     assert!(admin_award["payload"]["total_xp"].as_i64().unwrap() >= 50);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn hand_ins_reach_the_teachers_one_unread_row_per_activity(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = teacher(&app, "teacher").await;
+    let (course_id, id, essay_id, activity_id) = course_with_quiz(&app, &teacher, 86_400 * 3).await;
+    let hand_in = |who: MintedSession| {
+        let (app, id, essay_id, course_id) =
+            (&app, id.clone(), essay_id.clone(), course_id.clone());
+        async move {
+            enrol(app, &who, &course_id).await;
+            let draft = app
+                .post_as(
+                    &who,
+                    &format!("/api/v2/assessments/{id}/submissions"),
+                    &serde_json::json!({}),
+                )
+                .await;
+            let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
+            let submitted = app
+                .post_as(
+                    &who,
+                    &format!("/api/v2/submissions/{sub_id}/submit"),
+                    &serde_json::json!({ "answers": { &essay_id: { "kind": "open_text", "text": "Ok." } } }),
+                )
+                .await;
+            assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+            (who, sub_id)
+        }
+    };
+    let (alice, _) = hand_in(learner(&app, "alice").await).await;
+    let (_, carol_sub) = hand_in(learner(&app, "carol").await).await;
+
+    // Two hand-ins, one unread row: the latest, counting both.
+    let taught = notifications(&app, &teacher, "").await;
+    let items = taught["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1, "{taught}");
+    let row = &items[0];
+    assert_eq!(row["type"], "work_submitted");
+    assert_eq!(row["payload"]["count"], 2, "{row}");
+    assert_eq!(row["payload"]["activity_id"], activity_id.as_str());
+    assert_eq!(row["payload"]["activity_type"], "quiz");
+    assert_eq!(row["payload"]["learner_name"], "carol");
+    assert_eq!(row["payload"]["submission_id"], carol_sub.as_str());
+    assert_eq!(unread(&app, &teacher).await, 1);
+    assert_eq!(
+        notifications(&app, &alice, "").await["items"],
+        serde_json::json!([])
+    );
+
+    // Read, the next hand-in starts a new row.
+    let read = app
+        .post_as(
+            &teacher,
+            &format!(
+                "/api/v2/me/notifications/{}/read",
+                row["id"].as_str().unwrap()
+            ),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert!(read.status.is_success(), "{}", read.text());
+    hand_in(learner(&app, "dave").await).await;
+    let taught = notifications(&app, &teacher, "").await;
+    assert_eq!(taught["items"].as_array().unwrap().len(), 2, "{taught}");
+    assert_eq!(taught["items"][0]["payload"]["count"], 1, "{taught}");
+    assert_eq!(unread(&app, &teacher).await, 1);
+
+    // Switched off, nothing more.
+    let mut prefs = app
+        .get_as(&teacher, "/api/v2/me/notification-preferences")
+        .await
+        .json();
+    prefs["work_submitted"] = serde_json::json!(false);
+    let saved = app
+        .send(
+            Request::builder()
+                .method("PUT")
+                .uri("/api/v2/me/notification-preferences")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &teacher.cookie)
+                .body(Body::from(prefs.to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
+    hand_in(learner(&app, "erin").await).await;
+    assert_eq!(
+        notifications(&app, &teacher, "").await["items"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]

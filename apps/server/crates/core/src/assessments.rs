@@ -352,6 +352,7 @@ text_enum!(
         ContributorApplication => "contributor_application",
         DiscussionPost => "discussion_post",
         CourseTeamAdded => "course_team_added",
+        WorkSubmitted => "work_submitted",
     }
 );
 

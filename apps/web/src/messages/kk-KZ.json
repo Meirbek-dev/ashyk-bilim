@@ -1363,7 +1363,8 @@
         "discussion_reply": "{author} талқылауда жауап берді",
         "contributor_application": "{applicant} курстың қосалқы авторы болғысы келеді",
         "discussion_post": "{author} талқылауда жаңа тақырып ашты",
-        "course_team_added": "Сізді курс командасына қосты"
+        "course_team_added": "Сізді курс командасына қосты",
+        "work_submitted": "Тексеруге жұмыс: «{activity}»"
       }
     },
     "WidgetErrorBoundary": {

@@ -11,6 +11,7 @@ import {
   preferenceTypes,
   notificationTarget,
   prependNotification,
+  replacesUnread,
   xpAwardToasts,
 } from './notifications'
 
@@ -136,7 +137,8 @@ test('B-NOT-09 the settings list every notification type once', () => {
   // A learner never gets staff-only types: no switches for them; a teacher sees all.
   expect(preferenceTypes(true)).toEqual(NOTIFICATION_TYPES)
   expect(preferenceTypes(false)).not.toContain('contributor_application')
-  expect(preferenceTypes(false)).toHaveLength(NOTIFICATION_TYPES.length - 3)
+  expect(preferenceTypes(false)).not.toContain('work_submitted')
+  expect(preferenceTypes(false)).toHaveLength(NOTIFICATION_TYPES.length - 4)
 })
 
 test('B-NOT-17 an award above the known level adds the level-up toast; an unknown previous level adds none', () => {
@@ -175,4 +177,46 @@ test('B-NOT-04 unread replies of one thread fold into the newest; read ones and 
     ['x1', []],
     ['old', []],
   ])
+})
+
+const work = (id: string, count: number, activity = ACTIVITY, read_at_unix: number | null = null): Notification => ({
+  id,
+  type: 'work_submitted',
+  payload: {
+    ...names,
+    type: 'work_submitted',
+    activity_id: activity,
+    activity_name: 'Эссе',
+    activity_type: 'file_submission',
+    learner_id: '0190a5d2-0000-7000-8000-000000000015',
+    learner_name: 'Аня',
+    submission_id: null,
+    attempt_id: `0190a5d2-0000-7000-8000-0000000000${id.padStart(2, '0')}`,
+    count,
+  },
+  created_at_unix: 1_700_000_000,
+  read_at_unix,
+})
+
+test('B-NOT-18 a hand-in row replaces the unread one of its activity and keeps the unread count; read ones stay', () => {
+  const other = '0190a5d2-0000-7000-8000-0000000000bb'
+  const data = pages([work('w2', 2), notification('u1'), work('w0', 1, ACTIVITY, 5)], [work('w1', 1, other)])
+  const next = work('w3', 3)
+  expect(ids(prependNotification(data, next))).toEqual([['w3*', 'u1*', 'w0'], ['w1*']])
+  expect(replacesUnread(next)).toBe(true)
+  // The first hand-in since the row was read is a new unread one.
+  expect(replacesUnread(work('w4', 1))).toBe(false)
+  expect(replacesUnread(notification('u2'))).toBe(false)
+})
+
+test('B-NOT-18 one hand-in opens the work in the review, several the activity queue', () => {
+  const params = { courseId: COURSE, activityId: ACTIVITY }
+  expect(notificationTarget(work('w1', 1).payload)).toEqual({
+    to: '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId',
+    params: { ...params, submissionId: '0190a5d2-0000-7000-8000-0000000000w1' },
+  })
+  expect(notificationTarget(work('w2', 2).payload)).toEqual({
+    to: '/teach/courses/$courseId/activities/$activityId/submissions',
+    params,
+  })
 })

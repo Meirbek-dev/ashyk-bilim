@@ -4,7 +4,8 @@ import { afterEach, expect, test, vi } from 'vite-plus/test'
 import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
-import type { Notification, NotificationPage, UnreadCount } from '#/shared/api/gen/types.gen'
+import type { Notification, NotificationPage, SessionInfo, UnreadCount } from '#/shared/api/gen/types.gen'
+import { sessionOptions } from '#/shared/auth/session'
 import { renderInRouter } from '#/shared/components/testing'
 
 import { NotificationBell } from './notification-bell'
@@ -38,8 +39,28 @@ function stubApi(count: number, items: Notification[]) {
   return api
 }
 
-function render() {
+const session = (teaches: boolean): SessionInfo => ({
+  user_id: 'u1',
+  user: {
+    id: 'u1',
+    username: 'u1',
+    display_name: 'U1',
+    email: 'u1@e2e.test',
+    locale: 'ru-RU',
+    language: 'ru',
+    email_verified: true,
+    avatar_key: null,
+    theme: null,
+  },
+  roles: [],
+  permissions: [],
+  capabilities: teaches ? ['teach'] : [],
+  mfa_enabled: false,
+})
+
+function render(teaches = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(sessionOptions().queryKey, session(teaches))
   return renderInRouter(
     <QueryClientProvider client={client}>
       <Suspense>
@@ -89,4 +110,11 @@ test('B-NOT-02 with nothing yet the panel says so', async () => {
   const screen = await render()
   await screen.getByRole('button', { name: m.notifications_title() }).click()
   await expect.element(page.getByRole('dialog').getByText(m.notifications_empty())).toBeVisible()
+})
+
+test('B-NOT-02 a teacher with nothing yet reads that hand-ins and new threads will arrive here too', async () => {
+  stubApi(0, [])
+  const screen = await render(true)
+  await screen.getByRole('button', { name: m.notifications_title() }).click()
+  await expect.element(page.getByRole('dialog').getByText(m.notifications_empty_teach())).toBeVisible()
 })

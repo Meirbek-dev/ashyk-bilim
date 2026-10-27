@@ -141,6 +141,25 @@ pub enum NotificationPayload {
         #[serde(default)]
         role: String,
     },
+    /// Work in a course the recipient teaches was handed in and waits for
+    /// a grade. One unread row per activity: later hand-ins replace it and
+    /// raise `count` until the recipient reads it.
+    WorkSubmitted {
+        course_id: CourseId,
+        course_name: String,
+        activity_id: ActivityId,
+        activity_name: String,
+        #[schema(value_type = crate::wire::ActivityType)]
+        activity_type: String,
+        /// The latest hand-in: whose and which (a test submission or a
+        /// file-task attempt), so a single one opens straight away.
+        learner_id: UserId,
+        learner_name: String,
+        submission_id: Option<SubmissionId>,
+        attempt_id: Option<FileAttemptId>,
+        /// Hand-ins since the recipient last read this activity's row (>= 1).
+        count: i64,
+    },
 }
 
 impl NotificationPayload {
@@ -156,6 +175,7 @@ impl NotificationPayload {
             Self::ContributorApplication { .. } => NotificationType::ContributorApplication,
             Self::DiscussionPost { .. } => NotificationType::DiscussionPost,
             Self::CourseTeamAdded { .. } => NotificationType::CourseTeamAdded,
+            Self::WorkSubmitted { .. } => NotificationType::WorkSubmitted,
         }
     }
 }
@@ -299,6 +319,82 @@ pub async fn grade_changed(
         _ => return,
     };
     notify(pool, &[owner], &payload, None).await;
+}
+
+/// A learner handed in work that waits for a teacher's grade.
+///
+/// A test submission left `pending` or a file-task attempt `submitted`: the course's
+/// teachers (creator, active maintainers and contributors; never the learner)
+/// hear of it, one unread row per activity (see
+/// [`ab_db::notifications::upsert_work_submitted`]). Previews never call it.
+/// Never fails.
+pub async fn work_handed_in(
+    pool: &PgPool,
+    learner: UserId,
+    activity_id: ActivityId,
+    work: (Option<SubmissionId>, Option<FileAttemptId>),
+) {
+    let Some((course_id, course_name, activity_name)) = activity_names(pool, activity_id).await
+    else {
+        return;
+    };
+    let teachers = match ab_db::notifications::course_teachers(pool, course_id).await {
+        Ok(ids) => ids
+            .into_iter()
+            .filter(|u| *u != learner)
+            .collect::<Vec<_>>(),
+        Err(err) => {
+            tracing::warn!(%err, "work notification: teachers not resolved");
+            return;
+        }
+    };
+    if teachers.is_empty() {
+        return;
+    }
+    let activity_type = ab_db::catalog::get_activity(pool, activity_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| a.activity_type)
+        .unwrap_or_default();
+    let learner_name = ab_db::notifications::user_name(pool, learner)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+    let (submission_id, attempt_id) = work;
+    let payload = NotificationPayload::WorkSubmitted {
+        course_id,
+        course_name,
+        activity_id,
+        activity_name,
+        activity_type,
+        learner_id: learner,
+        learner_name,
+        submission_id,
+        attempt_id,
+        count: 1,
+    };
+    let stored = match serde_json::to_value(&payload) {
+        Ok(value) => {
+            ab_db::notifications::upsert_work_submitted(pool, &teachers, activity_id, &value).await
+        }
+        Err(err) => Err(Error::internal("notification payload", err)),
+    };
+    match stored {
+        Ok(rows) => {
+            user::publish(
+                rows.into_iter()
+                    .filter_map(|row| {
+                        let to = row.user_id;
+                        Notification::from_row(row).map(|n| (to, UserEvent::NotificationCreated(n)))
+                    })
+                    .collect(),
+            )
+            .await;
+        }
+        Err(err) => tracing::warn!(%err, "work notification not stored"),
+    }
 }
 
 /// A page of notifications plus the cursor of the next one.

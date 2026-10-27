@@ -1390,6 +1390,15 @@ impl FileSubmissionsService {
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
         self.emit_course(&row, &attempt).await;
+        if !attempt.preview {
+            crate::notifications::work_handed_in(
+                &self.pool,
+                attempt.user_id,
+                row.activity_id,
+                (None, Some(attempt.id)),
+            )
+            .await;
+        }
         self.attempt_view(attempt, false, true).await
     }
 

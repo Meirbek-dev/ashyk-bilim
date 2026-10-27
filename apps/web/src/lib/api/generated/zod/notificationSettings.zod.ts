@@ -18,6 +18,7 @@ export const NotificationSettings = zod
     discussion_reply: zod.boolean(),
     grade_published: zod.boolean(),
     submission_returned: zod.boolean(),
+    work_submitted: zod.boolean().optional().describe('Work handed in for grading in a course the user teaches.'),
   })
   .describe('In-app notifications on (`true`) or off, one switch per type. `PUT`\ntakes the full set.')
 

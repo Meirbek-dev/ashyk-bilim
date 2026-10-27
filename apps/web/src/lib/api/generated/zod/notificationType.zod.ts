@@ -18,6 +18,7 @@ export const NotificationType = zod
     'contributor_application',
     'discussion_post',
     'course_team_added',
+    'work_submitted',
   ])
   .describe('In-app notification types (S-07; `notifications.kind`).')
 

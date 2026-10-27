@@ -53,10 +53,16 @@ export const NOTIFICATION_TYPES = [
   'contributor_application',
   'discussion_post',
   'course_team_added',
+  'work_submitted',
 ] as const satisfies readonly NotificationType[]
 
 /** Types only course staff receive (applications, new threads, team changes): a learner's settings leave them out. */
-const STAFF_TYPES = new Set<NotificationType>(['contributor_application', 'discussion_post', 'course_team_added'])
+const STAFF_TYPES = new Set<NotificationType>([
+  'contributor_application',
+  'discussion_post',
+  'course_team_added',
+  'work_submitted',
+])
 
 /** The switches a user sees (B-NOT-09): staff-only types need the teach capability. */
 export const preferenceTypes = (teaches: boolean) =>
@@ -106,6 +112,17 @@ export function notificationTarget(payload: NotificationPayload) {
       return payload.role === 'reporter'
         ? linkOptions({ to: '/courses/$courseId', params: course })
         : linkOptions({ to: '/teach/courses/$courseId/overview', params: course })
+    case 'work_submitted': {
+      // One work opens itself in the review; several, the activity's queue.
+      const params = { courseId: payload.course_id, activityId: payload.activity_id }
+      const work = payload.submission_id ?? payload.attempt_id
+      return payload.count === 1 && work
+        ? linkOptions({
+            to: '/teach/courses/$courseId/activities/$activityId/submissions/$submissionId',
+            params: { ...params, submissionId: work },
+          })
+        : linkOptions({ to: '/teach/courses/$courseId/activities/$activityId/submissions', params })
+    }
   }
   // A type this build does not know yet (a newer server): the list itself.
   return linkOptions({ to: '/notifications' })
@@ -116,12 +133,34 @@ type Pages = InfiniteData<NotificationPage> | undefined
 const inAny = (data: NonNullable<Pages>, id: NotificationId) =>
   data.pages.some(page => page.items.some(item => item.id === id))
 
-/** `notification.created`: the new one goes first, once (B-NOT-07). */
+/**
+ * The unread row a new one replaces: the server keeps one unread `work_submitted` per activity, the new row counting
+ * the old one's hand-ins too (B-NOT-18).
+ */
+const supersedes = (fresh: Notification, old: Notification) =>
+  fresh.payload.type === 'work_submitted' &&
+  old.payload.type === 'work_submitted' &&
+  old.read_at_unix === null &&
+  old.id !== fresh.id &&
+  old.payload.activity_id === fresh.payload.activity_id
+
+/**
+ * Whether the new row took the place of an unread one, so the unread count stays (B-NOT-18): a `work_submitted`
+ * counting more than one hand-in only ever folds an unread row in.
+ */
+export const replacesUnread = ({ payload }: Notification) => payload.type === 'work_submitted' && payload.count > 1
+
+/** `notification.created`: the new one goes first, once (B-NOT-07), in place of the unread row it replaces (B-NOT-18). */
 export function prependNotification(data: Pages, notification: Notification): Pages {
   if (!data || inAny(data, notification.id)) return data
   const [first, ...rest] = data.pages
   if (!first) return data
-  return { ...data, pages: [{ ...first, items: [notification, ...first.items] }, ...rest] }
+  const keep = (page: NotificationPage) => ({
+    ...page,
+    items: page.items.filter(item => !supersedes(notification, item)),
+  })
+  const head = keep(first)
+  return { ...data, pages: [{ ...head, items: [notification, ...head.items] }, ...rest.map(keep)] }
 }
 
 /** One notification (or all, `id` null) read at `at` (unix seconds); read ones keep their time (B-NOT-06, B-NOT-08). */

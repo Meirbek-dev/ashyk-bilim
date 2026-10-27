@@ -2,6 +2,7 @@ import {
   AlarmClock,
   Award,
   CalendarPlus,
+  ClipboardCheck,
   Megaphone,
   MessageSquarePlus,
   MessageSquareReply,
@@ -26,6 +27,7 @@ export const notificationTypeLabels: Record<NotificationType, () => string> = {
   contributor_application: m.notifications_type_contributor_application,
   discussion_post: m.notifications_type_discussion_post,
   course_team_added: m.notifications_type_course_team_added,
+  work_submitted: m.notifications_type_work_submitted,
 }
 
 export const notificationIcons: Record<NotificationType, LucideIcon> = {
@@ -38,7 +40,11 @@ export const notificationIcons: Record<NotificationType, LucideIcon> = {
   contributor_application: UserPlus,
   discussion_post: MessageSquarePlus,
   course_team_added: Users,
+  work_submitted: ClipboardCheck,
 }
+
+/** The empty list says what will arrive: a teacher also hears of hand-ins and new threads (B-NOT-02). */
+export const emptyListText = (teaches: boolean) => (teaches ? m.notifications_empty_teach() : m.notifications_empty())
 
 const excerpt = (text: string | undefined) => (text ? [m.notifications_text_excerpt({ text })] : [])
 
@@ -86,6 +92,14 @@ export function notificationLines(payload: NotificationPayload, replies = 1): st
         payload.role === 'reporter'
           ? m.notifications_text_team_observer({ course: payload.course_name })
           : m.notifications_text_team_added({ course: payload.course_name }),
+      ]
+    // One row per activity counts the hand-ins since it was read (B-NOT-18): who handed in last stays named.
+    case 'work_submitted':
+      return [
+        m.notifications_text_activity({ activity: payload.activity_name, course: payload.course_name }),
+        payload.count > 1
+          ? m.notifications_text_works({ count: payload.count, learner: payload.learner_name })
+          : m.notifications_text_work({ learner: payload.learner_name }),
       ]
   }
   return []

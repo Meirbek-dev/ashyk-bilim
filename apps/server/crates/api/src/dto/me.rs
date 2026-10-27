@@ -157,6 +157,10 @@ pub struct NotificationSettings {
     #[garde(skip)]
     #[serde(default = "switched_on")]
     pub course_team_added: bool,
+    /// Work handed in for grading in a course the user teaches.
+    #[garde(skip)]
+    #[serde(default = "switched_on")]
+    pub work_submitted: bool,
 }
 
 const fn switched_on() -> bool {
@@ -164,7 +168,7 @@ const fn switched_on() -> bool {
 }
 
 impl NotificationSettings {
-    const fn switches(&self) -> [(NotificationType, bool); 9] {
+    const fn switches(&self) -> [(NotificationType, bool); 10] {
         [
             (NotificationType::GradePublished, self.grade_published),
             (
@@ -184,6 +188,7 @@ impl NotificationSettings {
             ),
             (NotificationType::DiscussionPost, self.discussion_post),
             (NotificationType::CourseTeamAdded, self.course_team_added),
+            (NotificationType::WorkSubmitted, self.work_submitted),
         ]
     }
 
@@ -209,6 +214,7 @@ impl NotificationSettings {
             contributor_application: on(NotificationType::ContributorApplication),
             discussion_post: on(NotificationType::DiscussionPost),
             course_team_added: on(NotificationType::CourseTeamAdded),
+            work_submitted: on(NotificationType::WorkSubmitted),
         }
     }
 }

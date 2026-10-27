@@ -1177,6 +1177,15 @@ impl SubmissionsService {
             },
         )
         .await;
+        if fresh.status == SubmissionStatus::Pending && !preview {
+            crate::notifications::work_handed_in(
+                pool,
+                fresh.user_id,
+                assessment.activity_id,
+                (Some(fresh.id), None),
+            )
+            .await;
+        }
         Ok(Some((fresh, effective, items.len())))
     }
 

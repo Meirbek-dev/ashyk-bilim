@@ -2,7 +2,7 @@
 
 use ab_core::Result;
 use ab_core::assessments::NotificationType;
-use ab_core::id::{CourseId, DiscussionId, NotificationId, UserId};
+use ab_core::id::{ActivityId, CourseId, DiscussionId, NotificationId, UserId};
 use sqlx::PgPool;
 
 #[derive(Debug, Clone)]
@@ -46,6 +46,68 @@ pub async fn insert_many(
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// A `work_submitted` row per recipient that has not opted out.
+///
+/// The recipient's unread row of the same activity is folded in: replaced
+/// by the new one (first in the list again) whose `count` adds the old
+/// one's, so a teacher holds at most one unread row per activity. Returns
+/// the rows created.
+pub async fn upsert_work_submitted(
+    pool: &PgPool,
+    recipients: &[UserId],
+    activity_id: ActivityId,
+    payload: &serde_json::Value,
+) -> Result<Vec<NotificationRow>> {
+    let ids: Vec<uuid::Uuid> = recipients.iter().map(|u| u.0).collect();
+    let rows = sqlx::query_as!(
+        NotificationRow,
+        r#"WITH recipients AS (
+               SELECT DISTINCT r.user_id
+               FROM unnest($1::uuid[]) AS r(user_id)
+               JOIN users u ON u.id = r.user_id AND u.status = 'active'
+               WHERE NOT EXISTS (SELECT 1 FROM notification_preferences p
+                                 WHERE p.user_id = r.user_id
+                                   AND 'work_submitted' = ANY (p.disabled))),
+           folded AS (
+               DELETE FROM notifications n USING recipients r
+               WHERE n.user_id = r.user_id AND n.kind = 'work_submitted'
+                 AND n.read_at IS NULL AND n.payload->>'activity_id' = $2::text
+               RETURNING n.user_id, COALESCE((n.payload->>'count')::bigint, 1) AS works)
+           INSERT INTO notifications (user_id, kind, payload)
+           SELECT r.user_id, 'work_submitted',
+                  jsonb_set($3::jsonb, '{count}',
+                            to_jsonb(1 + COALESCE((SELECT sum(f.works) FROM folded f
+                                                   WHERE f.user_id = r.user_id), 0)))
+           FROM recipients r
+           RETURNING id AS "id: NotificationId", user_id AS "user_id: UserId",
+                     kind AS "kind: NotificationType", payload,
+                     (extract(epoch FROM created_at))::bigint AS "created_at!",
+                     (extract(epoch FROM read_at))::bigint AS "read_at?""#,
+        &ids,
+        activity_id.0.to_string(),
+        payload,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Who grades a course's work day to day: its creator and active
+/// maintainers and contributors (the teach inbox's scope; never observers
+/// nor platform admins).
+pub async fn course_teachers(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
+    let ids = sqlx::query_scalar!(
+        r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
+           UNION
+           SELECT user_id FROM resource_authors
+           WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'"#,
+        course_id.0
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(ids.into_iter().map(UserId).collect())
 }
 
 /// Newest first, keyset on the (time-ordered) id.
@@ -249,4 +311,16 @@ pub async fn activity_names(
     .fetch_optional(pool)
     .await?;
     Ok(row.map(|r| (r.course_id, r.course_name, r.activity_name)))
+}
+
+/// The name a notification shows for a user: display name, else username.
+pub async fn user_name(pool: &PgPool, user_id: UserId) -> Result<Option<String>> {
+    let name = sqlx::query_scalar!(
+        r#"SELECT COALESCE(NULLIF(trim(display_name), ''), username) AS "name!"
+           FROM users WHERE id = $1"#,
+        user_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(name)
 }

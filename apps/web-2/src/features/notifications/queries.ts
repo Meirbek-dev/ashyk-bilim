@@ -20,7 +20,7 @@ import type {
   UnreadCount,
 } from '#/shared/api/gen/types.gen'
 
-import { markRead, PAGE_SIZE, prependNotification } from './model/notifications'
+import { markRead, PAGE_SIZE, prependNotification, replacesUnread } from './model/notifications'
 
 /** The bell's number (B-NOT-01). Kept fresh by the event stream, not by a timer. */
 export const unreadOptions = () => unreadCountOptions()
@@ -62,11 +62,12 @@ export function applyRead(queryClient: QueryClient, id: NotificationId | null, c
   )
 }
 
-/** `notification.created`: first in every list, and one more unread. */
+/** `notification.created`: first in every list, and one more unread unless it replaced an unread row (B-NOT-18). */
 export function applyCreated(queryClient: QueryClient, notification: Notification) {
   queryClient.setQueriesData<InfiniteData<NotificationPage>>({ queryKey: lists() }, data =>
     prependNotification(data, notification),
   )
+  if (replacesUnread(notification)) return
   queryClient.setQueryData<UnreadCount>(unreadCountQueryKey(), count =>
     count ? { unread_count: count.unread_count + 1 } : count,
   )

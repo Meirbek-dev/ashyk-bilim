@@ -308,7 +308,7 @@ export type AdminTeacherRow = {
  */
 export type AdminUser = {
     /**
-     * What the caller may do to this account now.
+     * What the caller may do to this account now (nothing, once deleted).
      */
     allowed_actions: Array<AdminUserAction>;
     /**
@@ -316,6 +316,11 @@ export type AdminUser = {
      */
     avatar_key: string | null;
     created_at_unix: UnixTime;
+    /**
+     * The owner deleted the account: username and email are `deleted-<id>`
+     * placeholders, the name is blank and the status `disabled` for good.
+     */
+    deleted: boolean;
     display_name: string;
     email: string;
     id: UserId;
@@ -4248,6 +4253,25 @@ export type NotificationPayload = {
      */
     role?: string;
     type: 'course_team_added';
+} | {
+    activity_id: ActivityId;
+    activity_name: string;
+    activity_type: ActivityType;
+    attempt_id: FileAttemptId | null;
+    /**
+     * Hand-ins since the recipient last read this activity's row (>= 1).
+     */
+    count: number;
+    course_id: CourseId;
+    course_name: string;
+    /**
+     * The latest hand-in: whose and which (a test submission or a
+     * file-task attempt), so a single one opens straight away.
+     */
+    learner_id: UserId;
+    learner_name: string;
+    submission_id: SubmissionId | null;
+    type: 'work_submitted';
 };
 
 export type NotificationPreferences = {
@@ -4279,12 +4303,16 @@ export type NotificationSettings = {
     discussion_reply: boolean;
     grade_published: boolean;
     submission_returned: boolean;
+    /**
+     * Work handed in for grading in a course the user teaches.
+     */
+    work_submitted?: boolean;
 };
 
 /**
  * In-app notification types (S-07; `notifications.kind`).
  */
-export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added';
+export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted';
 
 export type OpenTextBody = {
     min_words: number | null;

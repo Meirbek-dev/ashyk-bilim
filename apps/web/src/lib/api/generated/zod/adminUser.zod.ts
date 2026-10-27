@@ -15,9 +15,14 @@ export const AdminUser = zod
           .enum(['manage_roles', 'disable', 'enable'])
           .describe('What the caller may do to a user in the admin directory (`AdminUser.allowed_actions`).'),
       )
-      .describe('What the caller may do to this account now.'),
+      .describe('What the caller may do to this account now (nothing, once deleted).'),
     avatar_key: zod.string().nullable().describe('Public profile photo (`/content/<key>`); `null` = initials.'),
     created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+    deleted: zod
+      .boolean()
+      .describe(
+        'The owner deleted the account: username and email are `deleted-<id>`\nplaceholders, the name is blank and the status `disabled` for good.',
+      ),
     display_name: zod.string(),
     email: zod.string(),
     id: zod.uuid(),

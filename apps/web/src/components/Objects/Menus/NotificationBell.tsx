@@ -65,6 +65,7 @@ const KNOWN_TYPES = new Set([
   'contributor_application',
   'discussion_post',
   'course_team_added',
+  'work_submitted',
 ])
 
 /** A reply's or new thread's own words, quoted (CONTRACT-REQ-E-1): twenty replies no longer read alike. */
@@ -79,6 +80,9 @@ export function hrefFor({ payload }: Notification): string {
     return payload.role === 'reporter'
       ? `/course/${payload.course_id}`
       : `/dash/courses/${payload.course_id}/curriculum`
+  // Work handed in for grading: the activity's review queue.
+  if (payload.type === 'work_submitted' && payload.activity_id)
+    return `/dash/courses/${payload.course_id}/activity/${payload.activity_id}/review`
   if (payload.activity_id) return `/course/${payload.course_id}/activity/${payload.activity_id}`
   // A reply lives in the course discussions, far below the course outline.
   if (payload.type === 'discussion_reply' || payload.type === 'discussion_post')

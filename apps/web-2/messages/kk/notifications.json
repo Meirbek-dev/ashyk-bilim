@@ -16,6 +16,7 @@
   "notifications_mark_all": "Барлығын оқылды деп белгілеу",
   "notifications_marked_all": "Барлық хабарландырулар оқылды",
   "notifications_empty": "Мұнда жаңа бағалар, талқылаудағы жауаптар және мерзім туралы еске салғыштар пайда болады.",
+  "notifications_empty_teach": "Мұнда тексеруге келген жұмыстар, курстарыңыздың талқылауындағы жаңа тақырыптар, сондай-ақ сіздің бағаларыңыз бен мерзім туралы еске салғыштар пайда болады.",
   "notifications_empty_unread": "Барлық хабарландырулар оқылды.",
   "notifications_filter_label": "Қандай хабарландыруларды көрсету",
   "notifications_filter_all": "Барлығы",
@@ -30,6 +31,7 @@
   "notifications_type_contributor_application": "Бірлескен автор өтінімі",
   "notifications_type_discussion_post": "Талқылауда жаңа тақырып",
   "notifications_type_course_team_added": "Курс командасына қосу",
+  "notifications_type_work_submitted": "Тексеруге жұмыс",
   "notifications_text_activity": "«{activity}», «{course}» курсы",
   "notifications_text_score": "Баға: {score}",
   "notifications_text_due": "Мерзімі: {date}",
@@ -50,6 +52,17 @@
   "notifications_text_excerpt": "«{text}»",
   "notifications_text_team_added": "Сізді «{course}» курсының командасына қосты",
   "notifications_text_team_observer": "Сізді «{course}» курсына бақылаушы ретінде қосты: оны, тіпті нобайын да көресіз, бірақ ештеңе өзгертпейсіз",
+  "notifications_text_work": "{learner} — жұмыс тексеруді күтуде",
+  "notifications_text_works": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} жаңа жұмыс тексеруді күтуде, соңғысы — {learner}",
+        "countPlural=other": "{count} жаңа жұмыс тексеруді күтуде, соңғысы — {learner}"
+      }
+    }
+  ],
   "notifications_xp_awarded": "{amount} XP есептелді",
   "notifications_prefs_title": "Нені жіберу керек",
   "notifications_prefs_hint": "Хабарландырулар тек қолданбаға келеді: қоңырау белгішесіне және «Хабарландырулар» бетіне.",
