@@ -11,6 +11,9 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 
 export const percentOf = (item: ContinueLearning) => (item.progress_pct === null ? null : Math.round(item.progress_pct))
 
+/** Nothing done yet (no progress row or 0 %, as «Мои курсы» counts it): the button says «Начать», not «Продолжить». */
+export const notStarted = (item: ContinueLearning) => !item.progress_pct
+
 /**
  * The most recent started course, the page's hero: its picture beside the course, the next activity (type icon and
  * name), the server's progress and the one primary button back into the player.
@@ -48,7 +51,7 @@ export function ContinueHero({ item }: { item: ContinueLearning }) {
             params={{ courseId: item.course_id, activityId: item.activity_id }}
             className={buttonVariants({ size: 'lg', className: 'px-5' })}
           >
-            {m.home_continue_action()}
+            {notStarted(item) ? m.home_start_action() : m.home_continue_action()}
           </RouterLink>
         </div>
       </div>
