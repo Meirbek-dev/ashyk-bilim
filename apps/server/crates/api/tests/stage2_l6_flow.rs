@@ -246,11 +246,35 @@ async fn file_review_has_assessment_parity(pool: PgPool) {
 
     let stats = app.get_as(&teacher, &format!("{queue}/stats")).await;
     assert_eq!(stats.status, StatusCode::OK, "{}", stats.text());
+    let stats = stats.json();
     assert_eq!(
-        stats.json(),
-        json!({ "total": 2, "submitted": 1, "graded": 1, "published": 0,
-                "returned": 0, "late": 0 })
+        [
+            &stats["total"],
+            &stats["submitted"],
+            &stats["graded"],
+            &stats["published"],
+            &stats["returned"],
+            &stats["late"]
+        ],
+        [
+            &json!(2),
+            &json!(1),
+            &json!(1),
+            &json!(0),
+            &json!(0),
+            &json!(0)
+        ]
     );
+    // The one graded hand-in is the average and the only scored bucket.
+    assert_eq!(stats["avg_score"], 80.0);
+    let scored: Vec<_> = stats["distribution"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|b| b["count"] != 0)
+        .collect();
+    assert_eq!(scored.len(), 1, "{stats}");
+    assert_eq!(scored[0]["range"], "80-90");
     let grouped = app
         .get_as(&teacher, &format!("{queue}/stats?group_id={g}"))
         .await
