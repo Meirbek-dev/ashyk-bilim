@@ -127,14 +127,14 @@ test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 
   await page.goto(studioUrl(courseId, assessment.activity_id, 'settings'))
   await expect(page.getByText(m.assessments_exceptions_empty({}, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_add({}, ru) }).click()
-  const dialog = page.getByRole('dialog', { name: m.assessments_nav_exceptions({}, ru) })
+  const dialog = page.getByRole('dialog', { name: m.assessments_exception_add({}, ru) })
   await dialog.getByLabel(m.assessments_field_learner({}, ru)).selectOption({ label: `${name} (@${username})` })
   await dialog.getByLabel(m.assessments_field_attempts_override({}, ru)).fill('3')
   await dialog.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect(page.getByText(m.assessments_exception_saved({}, ru))).toBeVisible()
   await expect(page.getByText(m.assessments_exception_attempts({ count: '3' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_edit({ name }, ru) }).click()
-  const edit = page.getByRole('dialog', { name: m.assessments_nav_exceptions({}, ru) })
+  const edit = page.getByRole('dialog', { name: m.assessments_exception_edit({ name }, ru) })
   await edit.getByLabel(m.assessments_field_attempts_override({}, ru)).fill('4')
   // The first change is answered 412, as if someone changed the exception since the page read it.
   const versions: (string | undefined)[] = []
@@ -151,7 +151,8 @@ test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 
   await expect.poll(() => versions).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/)])
   await expect(page.getByText(m.assessments_exception_attempts({ count: '4' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_remove({ name }, ru) }).click()
-  const confirm = page.getByRole('alertdialog', { name: m.assessments_exception_remove_title({ name }, ru) })
+  const removing = m.assessments_exception_remove_title({ name: `${name} (@${username})` }, ru)
+  const confirm = page.getByRole('alertdialog', { name: removing })
   await confirm.getByRole('button', { name: m.assessments_exception_remove_confirm({}, ru) }).click()
   await expect(page.getByText(m.assessments_exception_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.assessments_exceptions_empty({}, ru))).toBeVisible()
@@ -166,8 +167,9 @@ test('B-ASM-22 B-ASM-24 readiness links to the question; the header switch publi
   const items = [{ ...blank, body: { ...blank.body, prompt: '' } }]
   const { courseId, assessment } = await makeAssessment(studio, seed, { items })
   await page.goto(studioUrl(courseId, assessment.activity_id, 'settings'))
-  const issue = `${m.assessments_blockers({}, ru)}: ${m.assessments_issue_choice_prompt_missing({}, ru)}`
-  await expect(publishing(page).getByText(issue)).toBeVisible()
+  await expect(publishing(page).getByRole('heading', { name: m.assessments_blockers({}, ru) })).toBeVisible()
+  const blocker = m.assessments_issue_choice_prompt_missing({}, ru)
+  await expect(publishing(page).getByRole('listitem').filter({ hasText: blocker })).toBeVisible()
   const published = page.getByRole('switch', { name: m.assessments_published_switch({}, ru) })
   allowFailure(page, new RegExp(`^/api/v2/assessments/${assessment.id}/lifecycle$`), 422)
   await published.click()

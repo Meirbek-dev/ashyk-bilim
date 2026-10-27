@@ -76,7 +76,8 @@ test('B-ATT-02 B-ATT-03 B-ATT-05 B-ATT-06 B-ATT-07 B-ATT-09 B-ATT-16 B-ATT-18 B-
     formatPercent(100, 'ru'),
   )
   await expect(page.getByText(m.attempt_correct({}, ru)).first()).toBeVisible()
-  await expect(page.getByText(`${m.attempt_correct_answer({}, ru)}: Астана`)).toBeVisible()
+  // Every answer is right, so no «Правильный ответ» line repeats it (shown only under a wrong answer).
+  await expect(page.getByText(`${m.attempt_correct_answer({}, ru)}: Астана`)).toHaveCount(0)
   // Points on the item's own scale (1 point each), not its share of 100 («33,33 из 33,33»).
   await expect(page.getByText(m.attempt_item_points({ score: '1', max: '1' }, ru))).toHaveCount(3)
   await page.getByRole('link', { name: m.attempt_all_attempts({}, ru) }).click()

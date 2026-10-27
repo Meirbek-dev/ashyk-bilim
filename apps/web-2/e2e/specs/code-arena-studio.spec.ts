@@ -64,7 +64,7 @@ test('B-COD-13 B-COD-14 B-COD-15 B-COD-16 B-COD-17 B-COD-18 the author fills a n
   const time = editor.getByLabel(m.code_field_time({}, ru))
   await time.fill('0')
   await save.click()
-  await expect(editor.getByText(m.validation_format({}, ru))).toBeVisible()
+  await expect(editor.getByText(m.validation_min_value({ min: '1' }, ru))).toBeVisible()
   await time.fill('2')
   await save.click()
   await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible()

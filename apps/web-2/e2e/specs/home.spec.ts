@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
 import { expectFailure, clickUntil, gotoLive } from '../fixtures/test'
-import { createCourseUpdate } from '#/shared/api/gen/sdk.gen'
+import { createCourseUpdate, learnerCourseState } from '#/shared/api/gen/sdk.gen'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { expect, ru, test } from './file-submissions-fixture'
@@ -47,9 +47,17 @@ test('B-HOME-01 B-HOME-02 B-HOME-03 B-HOME-04 B-HOME-05 B-HOME-06 one page answe
 
   const resume = region(page, m.home_continue_title({}, ru))
   await expect(resume.getByRole('heading', { name: course.name })).toBeVisible()
+  // «Продолжить» names the course page's next step (the returned task comes before the first lesson).
+  const { data: state } = await learnerCourseState({
+    client: api,
+    path: { course_id: course.id },
+    headers,
+    throwOnError: true,
+  })
+  expect(state.next_action?.activity_id).toBe(returned.activity_id)
   await expect(resume.getByRole('link', { name: m.home_continue_action({}, ru) })).toHaveAttribute(
     'href',
-    `/learn/${course.id}/${course.activityIds[0]}`,
+    `/learn/${course.id}/${returned.activity_id}`,
   )
 
   const deadlines = region(page, m.home_deadlines_title({}, ru))
