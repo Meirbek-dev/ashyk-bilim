@@ -720,6 +720,8 @@ pub fn build_admin_overview(
         cohort_retention: cohort_rows,
         department_program_performance: program_rows,
         content_roi,
+        course_options: course_options(ctx, &scope.course_ids),
+        cohort_options: cohort_options(ctx),
     }
 }
 

@@ -16,15 +16,16 @@ const nameOf = (options: { value: string; label: string }[], id: string | undefi
 
 /**
  * The admin rankings' period (B-ANL-31) and one course or group (B-ANL-34), each in the URL. The courses and groups
- * offered are the ones the unscoped rankings of the period name.
+ * offered are every one in platform scope (`course_options`, `cohort_options` of the unscoped read), by name.
  */
 export function AdminFilters({ search }: { search: AdminAnalyticsSearch }) {
   const navigate = useNavigate()
   const { data: all } = useSuspenseQuery(adminAnalyticsOptions(search.window))
   const go = (patch: Partial<AdminAnalyticsSearch>) =>
     void navigate({ to: '/admin/analytics', search: { ...search, ...patch } })
-  const courses = all.course_health_ranking.map(row => ({ value: row.course_id, label: row.course_name }))
-  const groups = all.cohort_retention.map(row => ({ value: row.cohort_id, label: row.cohort_name }))
+  // The server's own option lists: the rankings stop at 25 rows, so a course past them could not be chosen.
+  const courses = all.course_options
+  const groups = all.cohort_options
   return (
     <div className="flex flex-wrap gap-2">
       <FilterMenu

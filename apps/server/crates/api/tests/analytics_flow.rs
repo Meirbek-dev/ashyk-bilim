@@ -977,6 +977,15 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     let admin_view = app.get_as(&admin, "/api/v2/analytics/admin/overview").await;
     assert_eq!(admin_view.status, StatusCode::OK, "{}", admin_view.text());
+    // The filter's courses come whole and by name, not from the rankings (which stop at 25).
+    let admin_json = admin_view.json();
+    let options: Vec<&str> = admin_json["course_options"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|o| o["value"].as_str().unwrap())
+        .collect();
+    assert_eq!(options.len(), 2, "{options:?}");
     assert_eq!(
         admin_view.json()["course_health_ranking"]
             .as_array()

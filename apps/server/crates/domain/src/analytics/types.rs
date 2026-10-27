@@ -593,6 +593,11 @@ pub struct AdminAnalyticsResponse {
     pub cohort_retention: Vec<AdminCohortRow>,
     pub department_program_performance: Vec<AdminProgramRow>,
     pub content_roi: Vec<AdminCourseRow>,
+    /// Every course in scope, by name: the rankings stop at 25, the course
+    /// filter must not.
+    pub course_options: Vec<FilterOption>,
+    /// Every group, by name.
+    pub cohort_options: Vec<FilterOption>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
