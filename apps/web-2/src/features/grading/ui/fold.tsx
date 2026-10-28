@@ -7,9 +7,10 @@ type FoldProps = { title: string; onToggle?: (open: boolean) => void; children: 
 export function Fold({ title, onToggle, children }: FoldProps) {
   return (
     <details className="group flex flex-col gap-2" onToggle={event => onToggle?.(event.currentTarget.open)}>
-      <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md text-xl font-semibold [&::-webkit-details-marker]:hidden">
+      <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md [&::-webkit-details-marker]:hidden">
         <ChevronRight aria-hidden className="size-5 transition-transform duration-150 group-open:rotate-90" />
-        {title}
+        {/* A real section heading: the same face as «Ответы» above it, and in the screen reader's heading list. */}
+        <h2 className="text-xl font-semibold">{title}</h2>
       </summary>
       <div className="pt-2">{children}</div>
     </details>
