@@ -89,6 +89,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
       onSubmit={() => form.handleSubmit()}
       pending={doors.some(door => door.isPending)}
       error={doors.find(door => door.error)?.error ?? null}
+      wide
     >
       <form.AppField name="type">
         {field => <field.RadioGroupField label={m.studio_field_type()} options={typeOptions()} />}

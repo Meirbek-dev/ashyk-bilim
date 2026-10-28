@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent, type ReactElement, type ReactNode } fr
 import { m } from '#/paraglide/messages'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
+import { cn } from '#/shared/lib/utils'
 import { Button } from '#/shared/ui/button'
 import {
   Dialog,
@@ -32,11 +33,13 @@ type FormDialogProps = {
   error: unknown
   /** The minimum fields: `form.AppField` items. */
   children: ReactNode
+  /** Room for a grid of choice cards (two per row with a line of hint each), e.g. the activity type picker. */
+  wide?: boolean
 }
 
 /** Create = this dialog, then the own page of the entity (DESIGN 8). Cancel is ghost, the verb is primary. */
 export function FormDialog(props: FormDialogProps) {
-  const { open, onOpenChange, trigger, title, submitLabel, onSubmit, pending, error, children } = props
+  const { open, onOpenChange, trigger, title, submitLabel, onSubmit, pending, error, children, wide } = props
   const formId = useId()
   // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
   const hydrated = useHydrated()
@@ -50,7 +53,7 @@ export function FormDialog(props: FormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={next => onOpenChange(next)}>
       <DialogTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
-      <DialogContent className="max-h-dvh overflow-y-auto sm:max-w-lg">
+      <DialogContent className={cn('max-h-dvh overflow-y-auto', wide ? 'sm:max-w-2xl' : 'sm:max-w-lg')}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
