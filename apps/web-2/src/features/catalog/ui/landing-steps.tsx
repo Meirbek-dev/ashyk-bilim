@@ -1,7 +1,7 @@
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 
-/** How to start, as three steps stitched together by a dashed seam (the ornament's language). */
+/** How to start, as three steps stitched together by a dashed seam. */
 export function LandingSteps() {
   const steps = [
     { id: 'browse', body: <Link to="/courses">{m.catalog_landing_step_browse()}</Link> },

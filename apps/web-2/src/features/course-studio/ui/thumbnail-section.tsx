@@ -18,7 +18,7 @@ import { useIfMatch } from './use-if-match'
 const defaultValues: UpdateCourseRequest = { thumbnail_upload_id: undefined }
 
 /**
- * "Cover": the current image (none: the ornament learners see instead), a new one uploaded as `course-thumbnail` and
+ * "Cover": the current image (none: the brand cover learners see instead), a new one uploaded as `course-thumbnail` and
  * claimed at once (no Save), or removed.
  */
 export function ThumbnailSection({ course }: { course: Course }) {

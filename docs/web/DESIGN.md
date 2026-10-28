@@ -7,11 +7,11 @@ rule below is checked by a gate, a lint rule or the reference slice; a rule nobo
 
 1. A study tool people look forward to opening. A screen answers one question (5.1), shows one next step and the
    learner's progress (rings, XP, streaks) where they act.
-2. Identity: official navy / white `public/app_logo*.svg`, original web blue actions, cool neutral / navy grounds.
-   Blue, teal, saffron, madder, sage for data. `CourseCover` Truchet arcs fill missing pictures and results; the seam
-   shows progress (solid completed, dashed ahead). Course pictures are always 16:9 (uploaded thumbnails carry text).
+2. Identity: Ashyq Bilim x Toraighyrov University (`BrandMark`, `UniversityMark`): its blue acts, its orange marks
+   the selected place and rewards. `CourseCover` (a brand tone + the emblem in a hairline per id) and `BrandPanel` are
+   fixed artwork (`--brand-*`). The seam shows progress (solid done, dashed ahead). Pictures are 16:9 (thumbnails carry text).
 3. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
-4. Color carries meaning (status, activity type, action, reward) and never decorates, except the ornament. The
+4. Color carries meaning (status, activity type, action, reward) and never decorates, except the brand artwork. The
    meaning always has a second channel too: a label or an icon.
 5. Motion only shows what changed after a user action, and lasts at most 200 ms.
 6. One app shell plus one focus layout. Screens are built from the 6 templates (section 6) and nothing else.
@@ -38,7 +38,7 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
 | `border`                                        | dividers                                   | table rows, separators, card outline                      |
 | `input`                                         | form control boundary, >= 3:1 on background | input, select, checkbox and switch outlines              |
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
-| `chart-1..5`                                    | data series                                | charts in slot order; the course ornament's field and ink |
+| `chart-1..5`                                    | data series                                | charts in slot order                                      |
 | `sidebar-*`                                     | the shell's navigation column              | the app shell sidebar and bottom bar only                 |
 
 - A fill always comes with its own ink: `bg-X` goes with `text-X-foreground`. Status and activity tokens are
@@ -116,7 +116,7 @@ title, a row or a card background.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark, space switcher
+**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark and `UniversityMark` (from md), space switcher
 (only with more than one space), a search field with its `Ctrl+K`, notifications and the profile menu. Below it, a
 sidebar `w-60` (current item: tint plus a primary bar) holding the current space's navigation, then the content. At
 390 px: mark only, search icon, notifications and profile; the space switcher moves into the profile menu, and the
@@ -194,7 +194,7 @@ Every data region renders exactly one of the kit's four states:
 
 ## 12. Never
 
-- gradients, glass/blur, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
+- gradients outside the brand artwork, glass/blur, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
 - cards inside cards, a second primary button, a delete without confirmation; color as the only signal
 - all-caps labels, letter-spacing, `font-bold`, sizes outside the seven above; animations > 200 ms, hover scale or lift
 - horizontal scroll at 390 px; "desktop only" outside the two editors; tabs in state; edit forms in dialogs

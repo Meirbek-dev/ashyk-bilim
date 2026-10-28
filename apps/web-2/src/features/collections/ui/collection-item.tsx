@@ -7,7 +7,7 @@ import { formatDate } from '#/shared/i18n/format'
 import { collectionVisibilityLabels } from '#/shared/i18n/labels'
 
 /**
- * One collection card: its cover (uploaded, else the ornament of its id), name (the whole card opens it),
+ * One collection card: its cover (uploaded, else the brand cover of its id), name (the whole card opens it),
  * description; a list item has its meta line, a search hit has neither cover nor meta.
  */
 export function CollectionItem({ collection }: { collection: Collection | CollectionHit }) {

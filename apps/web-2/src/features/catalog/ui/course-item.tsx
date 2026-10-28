@@ -18,7 +18,7 @@ const stateLabels = {
 type CourseItemProps = { course: Course & Partial<Pick<CourseListItem, 'authors' | 'progress'>>; level?: 2 | 3 }
 
 /**
- * One course card: its cover (thumbnail or ornament), name (the whole card opens the course), description, authors,
+ * One course card: its cover (thumbnail or brand cover), name (the whole card opens the course), description, authors,
  * the signed-in learner's progress, date, a badge for unusual states and one when finishing it earns a certificate. Search hits are plain `Course`s: no
  * authors or progress there.
  */

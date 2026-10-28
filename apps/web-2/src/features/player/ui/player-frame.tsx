@@ -12,7 +12,7 @@ type PlayerFrameProps = { title: string; text?: string; children?: ReactNode }
 
 /**
  * The player routes draw their own focus layout (the shell steps aside), so their error states need one too: the
- * app's status screen (ornament, heading, one sentence) with the way to the course page.
+ * app's status screen (brand emblem, heading, one sentence) with the way to the course page.
  */
 export function PlayerFrame({ title, text, children }: PlayerFrameProps) {
   const { courseId = '' } = useParams({ strict: false })

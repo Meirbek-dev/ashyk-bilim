@@ -4,13 +4,13 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { BrandMark } from '#/shared/components/brand-mark'
-import { CourseCover } from '#/shared/components/course-cover'
+import { BrandPanel } from '#/shared/components/brand-panel'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 /**
  * The focus layout of the guest pages (sign in, sign up, verify): back to the landing (or to the public page the guest
- * came from, `back`), one narrow column, and from lg the platform's ornament beside it.
+ * came from, `back`), one narrow column, and from lg the brand panel beside it.
  */
 export function AuthPage({
   title,
@@ -40,9 +40,7 @@ export function AuthPage({
           <h1 className="text-display font-semibold">{title}</h1>
           {children}
         </section>
-        <div aria-hidden className="hidden lg:block">
-          <CourseCover seed="ashyq-bilim" tone={0} shape="panel" className="aspect-4/5 w-full rounded-2xl border" />
-        </div>
+        <BrandPanel className="hidden aspect-4/5 w-full lg:block" />
       </div>
     </FocusPage>
   )

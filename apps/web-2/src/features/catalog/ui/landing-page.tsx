@@ -3,34 +3,24 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
+import { BrandPanel } from '#/shared/components/brand-panel'
 import { ListState } from '#/shared/components/list-state'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { landingLead, localizedPlatform } from '../model/catalog'
 import { landingCoursesOptions, platformOptions } from '../queries'
 import { CourseGrid } from './course-grid'
-import { CoverWall } from './cover-wall'
 import { LandingInside } from './landing-inside'
 import { LandingSteps } from './landing-steps'
 
-// Seeds that top the wall up with ornaments on a platform with fewer than four courses.
-const FILL = ['ashyq', 'bilim', 'oqu', 'jol']
-
 /**
- * The guest's `/`: what the platform is beside a wall of its newest course pictures, how to start as three stitched
- * steps, a few courses; the catalog itself is `/courses`.
+ * The guest's `/`: what the platform is beside the brand panel (the university's mark and motto), how to start as
+ * three stitched steps, a few courses; the catalog itself is `/courses`.
  */
 export function LandingPage() {
   const { data } = useSuspenseQuery(platformOptions())
   const platform = localizedPlatform(data, getLocale())
   const courses = useSuspenseQuery(landingCoursesOptions())
-  // Uploaded pictures first: they show what the courses are about; ornaments fill the rest.
-  const wall = [
-    ...courses.data.items
-      .map(course => ({ seed: course.id, imageKey: course.thumbnail_key }))
-      .toSorted((a, b) => Number(Boolean(b.imageKey)) - Number(Boolean(a.imageKey))),
-    ...FILL.map(seed => ({ seed, imageKey: null })),
-  ].slice(0, 4)
   const lead = landingLead(platform) ?? m.catalog_landing_lead()
   return (
     <section className="@container flex flex-col gap-16 pb-8">
@@ -47,7 +37,7 @@ export function LandingPage() {
             </RouterLink>
           </div>
         </div>
-        <CoverWall tiles={wall} />
+        <BrandPanel className="aspect-4/3" />
       </header>
       {/* «О платформе» once: not when it is the lead above (with or without the name it opens with). */}
       {platform.about.trim() && landingLead({ ...platform, description: '' }) !== lead ? (

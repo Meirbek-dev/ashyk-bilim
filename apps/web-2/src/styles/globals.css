@@ -59,6 +59,85 @@ body {
   }
 }
 
+/* Brand covers (CourseCover): a course without a picture gets one of five brand tones with the emblem in a hairline.
+   Fixed colours in every theme, like an uploaded picture; only the sand tone turns slate in dark mode (no glare). */
+.ab-cover {
+  --cover-from: #27507f;
+  --cover-to: var(--brand-ink);
+  --cover-ink: #fff;
+  --cover-fill: 0.05;
+  --cover-line: 0.32;
+  --cover-light: #fff;
+  background: var(--cover-to);
+}
+.ab-cover[data-tone='1'] {
+  --cover-from: #e9844f;
+  --cover-to: #c2531f;
+  --cover-fill: 0.07;
+  --cover-line: 0.4;
+}
+.ab-cover[data-tone='2'] {
+  --cover-from: #3a6fb5;
+  --cover-to: var(--brand-navy);
+}
+.ab-cover[data-tone='3'] {
+  --cover-from: light-dark(#f8f4ee, #2b3a50);
+  --cover-to: light-dark(#ece2d5, #1b2738);
+  --cover-ink: light-dark(var(--brand-navy), #f0c9a8);
+  --cover-fill: 0.04;
+  --cover-line: 0.42;
+}
+.ab-cover[data-tone='4'] {
+  --cover-from: #1b2e4a;
+  --cover-to: #0c1727;
+  --cover-ink: var(--brand-orange);
+  --cover-fill: 0.06;
+  --cover-line: 0.6;
+}
+.ab-cover-from {
+  stop-color: var(--cover-from);
+}
+.ab-cover-to {
+  stop-color: var(--cover-to);
+}
+.ab-cover-light {
+  stop-color: var(--cover-light);
+  stop-opacity: 0.16;
+}
+.ab-cover-light:last-child {
+  stop-opacity: 0;
+}
+.ab-cover-ink {
+  fill: var(--cover-ink);
+  fill-opacity: var(--cover-fill);
+  stroke: var(--cover-ink);
+  stroke-opacity: var(--cover-line);
+  stroke-width: 1px;
+}
+
+/* The brand panel (landing, sign-in): the navy field of the brand book with the emblem engraved across it, a warm
+   orange glow in one corner. White ink in every theme and mode. */
+.ab-brand-panel {
+  color: #fff;
+  background:
+    radial-gradient(120% 70% at 0% 100%, color-mix(in oklab, var(--brand-orange) 30%, transparent), transparent 60%),
+    radial-gradient(90% 60% at 100% 0%, color-mix(in oklab, #fff 9%, transparent), transparent 70%),
+    linear-gradient(160deg, #24497a, var(--brand-ink) 70%);
+}
+.ab-brand-panel-emblem {
+  fill: #fff;
+  fill-opacity: 0.04;
+  stroke: #fff;
+  stroke-opacity: 0.22;
+  stroke-width: 1px;
+}
+.ab-brand-panel-rule {
+  background: var(--brand-orange);
+}
+.ab-brand-panel-muted {
+  color: color-mix(in oklab, #fff 74%, transparent);
+}
+
 /* Toasts are the top layer. The kit gives the viewport z-50, like sheets and dialogs, which portal after it: a toast
    from an action inside a sheet («Роль добавлена», «Начислено…», «Учащиеся добавлены») drew behind the sheet. */
 [data-slot='toast-viewport'] {

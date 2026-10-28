@@ -31,7 +31,7 @@ export function CompletionPage() {
   return (
     <FocusPage back={<BackToCourse courseId={courseId} />} title={state.title}>
       <section className="flex flex-col gap-gutter">
-        {/* The course's own ornament as the felt the result is laid on: the one loud moment of the course. */}
+        {/* The course's own cover as the field the result is laid on: the one loud moment of the course. */}
         <div className="relative isolate overflow-hidden rounded-2xl border px-4 py-10 sm:px-10 sm:py-14">
           <CourseCover seed={courseId} className="absolute inset-0 -z-10 size-full" />
           <div className="mx-auto flex max-w-md flex-col items-center gap-gutter rounded-xl border bg-card p-gutter text-center text-card-foreground shadow-xs sm:p-8">

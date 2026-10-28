@@ -1,40 +1,30 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
-import { coverPattern } from './course-cover-pattern'
+import { EMBLEM } from './brand-emblem'
+import { COVER_TONES, coverLayout, type CoverShape } from './course-cover-layout'
 
 type CourseCoverProps = {
-  /** The course id: the same course always gets the same ornament. */
+  /** The course id: the same course always gets the same cover. */
   seed: string
-  /** A storage key (`thumbnail_key`): the uploaded image wins over the ornament. */
+  /** A storage key (`thumbnail_key`): the uploaded image wins over the generated cover. */
   imageKey?: string | null
-  /** A fixed chart slot (0..4) instead of the seed's: neighbours that must differ. */
+  /** A fixed brand tone (0 navy, 1 orange, 2 blue, 3 sand, 4 midnight) instead of the seed's. */
   tone?: number
   /** The box it fills: a card or page picture (16:9, the shape of uploaded thumbnails, so their lettering survives), a
-   * list thumbnail (16:9, coarser) or an upright panel (4:5). */
-  shape?: keyof typeof shapes
+   * list thumbnail (16:9, the whole emblem) or an upright panel (4:5). */
+  shape?: CoverShape
   className?: string
 }
 
-// Width:height of the grid and its short side in tiles: a big panel takes more, smaller tiles.
-const shapes = { card: [16 / 9, 6], thumb: [16 / 9, 3], panel: [0.8, 10] } as const
-
-// Full class names per chart slot (Tailwind reads them literally): the field tint, the ornament ink and the studs,
-// which take a neighbouring colour like the contrasting stitches on felt (lapis on turquoise, madder on saffron...).
-const inks = [
-  { field: 'fill-chart-1/15', line: 'stroke-chart-1', stud: 'fill-chart-3' },
-  { field: 'fill-chart-2/15', line: 'stroke-chart-2', stud: 'fill-chart-1' },
-  { field: 'fill-chart-3/20', line: 'stroke-chart-3', stud: 'fill-chart-4' },
-  { field: 'fill-chart-4/15', line: 'stroke-chart-4', stud: 'fill-chart-3' },
-  { field: 'fill-chart-5/20', line: 'stroke-chart-5', stud: 'fill-chart-2' },
-] as const
-
 /**
- * A course's picture: its uploaded thumbnail, else an ornament generated from its id: Truchet arcs in one chart
- * colour on a tint of it, like the stitched felt of a syrmak rug. Decorative: the course name is always beside it.
- * A picture that fails to load (a file gone from storage) gives way to the ornament, not an empty grey box.
+ * A course's picture: its uploaded thumbnail, else a brand cover from its id: one of the brand tones with the
+ * Ashyq Bilim emblem drawn large in a hairline, cropped differently per course. Decorative: the course name is always
+ * beside it. A picture that fails to load (a file gone from storage) gives way to the cover, not an empty grey box.
  */
 export function CourseCover({ seed, imageKey, tone, shape = 'card', className = '' }: CourseCoverProps) {
   const [broken, setBroken] = useState<string | null>(null)
+  // Gradient ids must be unique on the page and valid inside url(#...): React's ids carry other characters.
+  const id = `cover${useId().replace(/[^\w-]/g, '')}`
   if (imageKey && broken !== imageKey)
     return (
       <img
@@ -45,20 +35,28 @@ export function CourseCover({ seed, imageKey, tone, shape = 'card', className = 
         className={`bg-muted object-cover ${className}`}
       />
     )
-  const { cols, rows, field, path, studs } = coverPattern(seed, ...shapes[shape])
-  const ink = inks[(tone ?? field) % inks.length] ?? inks[0]
+  const layout = coverLayout(seed, shape)
   return (
     <svg
       aria-hidden
-      viewBox={`0 0 ${cols} ${rows}`}
+      viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid slice"
-      className={`bg-card ${className}`}
+      data-tone={(tone ?? layout.tone) % COVER_TONES}
+      className={`ab-cover ${className}`}
     >
-      <rect width={cols} height={rows} className={ink.field} />
-      <path d={path} className={`fill-none ${ink.line}`} strokeWidth={0.13} strokeLinecap="round" />
-      {studs.map(([x, y]) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r={0.16} className={ink.stud} />
-      ))}
+      <defs>
+        <linearGradient id={`${id}-field`} x1="0" y1="0" x2="1" y2="1">
+          <stop className="ab-cover-from" />
+          <stop offset="1" className="ab-cover-to" />
+        </linearGradient>
+        <radialGradient id={`${id}-light`} cx="0" cy="0" r="1">
+          <stop className="ab-cover-light" />
+          <stop offset="1" className="ab-cover-light" />
+        </radialGradient>
+      </defs>
+      <rect width={layout.width} height={layout.height} fill={`url(#${id}-field)`} />
+      <rect width={layout.width} height={layout.height} fill={`url(#${id}-light)`} />
+      <path d={EMBLEM.path} transform={layout.transform} className="ab-cover-ink" vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }

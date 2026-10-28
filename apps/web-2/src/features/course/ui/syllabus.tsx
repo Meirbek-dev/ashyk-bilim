@@ -10,8 +10,8 @@ import { syllabusSize, type SyllabusChapter } from '../model/course'
 import { SyllabusRow } from './syllabus-row'
 
 /**
- * Chapters and their activities in order, threaded on one seam: solid where the learner is done, dashed ahead (the
- * stitch of the course ornament). An activity the learner may open links into the player; the whole row is the link.
+ * Chapters and their activities in order, threaded on one seam: solid where the learner is done, dashed ahead. An
+ * activity the learner may open links into the player; the whole row is the link.
  */
 export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters: SyllabusChapter[] }) {
   const size = syllabusSize(chapters)

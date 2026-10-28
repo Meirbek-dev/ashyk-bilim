@@ -7,6 +7,7 @@ import type { WorkspaceId } from '#/shared/auth/access'
 import { returnTo } from '#/shared/auth/redirect'
 import { BrandMark } from '#/shared/components/brand-mark'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { UniversityMark } from '#/shared/components/university-mark'
 
 import { shellSlots } from './shell-slots'
 
@@ -16,7 +17,10 @@ const ProfileMenu = lazy(() => import('./profile-menu').then(module => ({ defaul
 const WorkspaceSwitch = lazy(() => import('./workspace-switch').then(module => ({ default: module.WorkspaceSwitch })))
 const GuestSwitches = lazy(() => import('./guest-switches').then(module => ({ default: module.GuestSwitches })))
 
-/** Brand, workspace switch (desktop), then the slots and the profile menu; guests get sign-in actions. */
+/**
+ * Brand with the university's mark beside it (from md), workspace switch (desktop), then the slots and the profile
+ * menu; guests get sign-in actions.
+ */
 export function TopBar({ session, workspace }: { session: SessionInfo | null; workspace: WorkspaceId }) {
   const Search = shellSlots.search
   const Notifications = shellSlots.notifications
@@ -33,6 +37,8 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
         <BrandMark full className="hidden h-8 w-auto sm:inline-flex" />
         <span className="sr-only">{m.platform_brand()}</span>
       </RouterLink>
+      <span aria-hidden className="mr-2 hidden h-6 border-l md:block" />
+      <UniversityMark className="mr-2 hidden h-8 md:inline-flex" />
       {session ? (
         <div className="hidden lg:block">
           <Suspense fallback={null}>

@@ -16,7 +16,7 @@ import { CertificateShare } from './certificate-share'
 
 /**
  * The public answer to "is this certificate real, and whose is it". Both verify URLs render it: the plain one and
- * the `/{ru|kz|en}/...` alias printed on issued PDFs. The facts sit on the course's own ornament under a seal with the
+ * the `/{ru|kz|en}/...` alias printed on issued PDFs. The facts sit on the course's own cover under a seal with the
  * holder's name large (B-CRT-07): the page an employer opens from a QR code reads as the credential it checks.
  */
 export function CertificateVerifyPage({ code }: { code: string }) {

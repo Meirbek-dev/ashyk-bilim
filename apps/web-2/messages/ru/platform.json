@@ -77,5 +77,8 @@
   "platform_back_to_gradebook": "К журналу",
   "platform_not_found_search": "Найти через поиск",
   "platform_my_profile": "Мой профиль",
-  "platform_classic_ui": "Классический интерфейс"
+  "platform_classic_ui": "Классический интерфейс",
+  "platform_university": "Торайгыров университет",
+  "platform_brand_motto": "Открытые знания",
+  "platform_brand_tagline": "Платформа онлайн-обучения Торайгыров университета"
 }

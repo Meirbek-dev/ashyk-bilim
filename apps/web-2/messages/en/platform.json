@@ -77,5 +77,8 @@
   "platform_back_to_gradebook": "Gradebook",
   "platform_not_found_search": "Search for it",
   "platform_my_profile": "My profile",
-  "platform_classic_ui": "Classic interface"
+  "platform_classic_ui": "Classic interface",
+  "platform_university": "Toraighyrov University",
+  "platform_brand_motto": "Open knowledge",
+  "platform_brand_tagline": "The online learning platform of Toraighyrov University"
 }
