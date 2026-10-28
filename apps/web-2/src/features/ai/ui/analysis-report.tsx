@@ -49,7 +49,7 @@ export function AnalysisReport({ courseId, analysis }: { courseId: CourseId; ana
           <ol className="flex flex-col gap-3">
             {byPriority(report.recommendations).map(({ item: recommendation, index }) => (
               <FindingRow
-                key={recommendation.title}
+                key={index}
                 courseId={courseId}
                 analysisId={analysis.id}
                 findingId={`finding-${index}`}

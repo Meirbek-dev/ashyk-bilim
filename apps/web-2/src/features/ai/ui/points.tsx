@@ -7,8 +7,9 @@ export function Points({ title, items }: { title: string; items: string[] | unde
       <h3 className="font-medium">{title}</h3>
       {items && items.length > 0 ? (
         <ul className="list-disc ps-5 text-sm">
-          {items.map(item => (
-            <li key={item}>{item}</li>
+          {/* The model may write the same point twice: a read-only list keyed by position. */}
+          {items.map((item, at) => (
+            <li key={at}>{item}</li>
           ))}
         </ul>
       ) : (
