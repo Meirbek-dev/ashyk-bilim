@@ -18,6 +18,7 @@ import { asksTeacherForRetake, entryAction, protections } from '../model/attempt
 import { startOptions, stateOptions, submissionKey } from '../queries'
 import { ATTEMPT_PATH, ATTEMPT_ROUTE } from './attempt-frame'
 import { ContinueDraft } from './continue-draft'
+import { enterFullscreen } from './use-exam-guard'
 
 const reasons = {
   NOT_PUBLISHED: m.attempt_reason_not_published,
@@ -72,7 +73,8 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
       </section>
     )
   const begin = () => {
-    if (rules.includes('fullscreen')) void document.documentElement.requestFullscreen().catch(() => null)
+    // Not `requestFullscreen()` itself: on an iPhone it is undefined, and the throw stopped the exam from starting.
+    if (rules.includes('fullscreen')) enterFullscreen()
     start.mutate(
       // The consent to the rules is stored on the attempt (B-ATT-04); without rules there is nothing to accept.
       { path: { assessment_id: assessment.id }, ...(rules.length ? { body: { rules_accepted: true } } : {}) },

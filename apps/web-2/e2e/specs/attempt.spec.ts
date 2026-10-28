@@ -242,6 +242,25 @@ test('B-ATT-04 B-ATT-21 B-ATT-18 an exam: rules accepted (stored), copying repor
   await expect(page.getByText(m.attempt_awaiting_text({}, ru))).toBeVisible()
   await expect(page.getByText(m.attempt_status_graded({}, ru))).toBeVisible()
 })
+test('B-ATT-21 an exam that asks for full screen starts on a phone without page full screen (iPhone Safari)', async ({
+  page,
+  learner,
+  makeQuiz,
+}) => {
+  const quiz = await makeQuiz({
+    kind: 'exam',
+    policy: { time_limit_seconds: null, tab_switch_detection: false, fullscreen_required: true },
+  })
+  await page.addInitScript(() => {
+    Reflect.deleteProperty(Element.prototype, 'requestFullscreen')
+    Object.defineProperty(Document.prototype, 'fullscreenEnabled', { get: () => false })
+  })
+  await learner.enroll(quiz.course)
+  await learner.signIn()
+  await start(page, quiz, { consent: true })
+  await expect(page.getByRole('heading', { level: 1, name: items.single.title })).toBeVisible()
+  await expect(page.getByText(m.attempt_fullscreen_needed({}, ru))).toHaveCount(0)
+})
 test('B-ATT-17 a test changed under the draft: the hand-in reopens it on the new questions', async ({
   page,
   learner,
