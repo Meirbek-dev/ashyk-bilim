@@ -58,6 +58,7 @@
   "analytics_failed": "Не сдал",
   "analytics_not_graded": "Нет оценки",
   "analytics_hours": "{value} ч",
+  "analytics_minutes": "{value} мин",
   "analytics_tile_risk_high": "Учащиеся с высоким риском",
   "analytics_tile_risk_medium": "Учащиеся со средним риском",
   "analytics_interventions_total": "Вмешательств всего",

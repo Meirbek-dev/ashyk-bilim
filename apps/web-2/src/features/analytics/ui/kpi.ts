@@ -27,9 +27,15 @@ export function metricChange(card: MetricCard): { text: string; tone: 'success' 
   return { text: `${delta} · ${trend.label()}`, tone: trend.tone }
 }
 
-/** Hours with one decimal; a dash when the server has no sample. */
-export const hours = (value: number | null | undefined): string =>
-  missing(value) ? dash : m.analytics_hours({ value: formatNumber(Math.round(value * 10) / 10) })
+/**
+ * Hours with one decimal; under an hour, whole minutes (a quick review read «0 ч» or «0,9 ч»); a dash when the server
+ * has no sample.
+ */
+export const hours = (value: number | null | undefined): string => {
+  if (missing(value)) return dash
+  if (value > 0 && value < 1) return m.analytics_minutes({ value: formatNumber(Math.max(1, Math.round(value * 60))) })
+  return m.analytics_hours({ value: formatNumber(Math.round(value * 10) / 10) })
+}
 
 /** A 0..100 share; a dash when the server has no sample. */
 export const percent = (value: number | null | undefined): string => (missing(value) ? dash : formatPercent(value))
