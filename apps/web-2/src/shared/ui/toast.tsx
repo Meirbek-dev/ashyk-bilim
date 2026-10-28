@@ -208,7 +208,7 @@ function Toaster({
     <ToastProvider toastManager={toastManager} {...props}>
       {children}
       <ToastPortal>
-        <ToastViewport>
+        <ToastViewport aria-label={m.ui_toast_region()}>
           <ToastList />
         </ToastViewport>
       </ToastPortal>

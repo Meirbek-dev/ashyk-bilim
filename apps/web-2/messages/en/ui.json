@@ -1,6 +1,7 @@
 {
   "ui_cancel": "Cancel",
   "ui_close": "Close",
+  "ui_toast_region": "Notifications",
   "ui_save": "Save",
   "ui_retry": "Retry",
   "ui_show_more": "Show more",

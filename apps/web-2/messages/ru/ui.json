@@ -1,6 +1,7 @@
 {
   "ui_cancel": "Отмена",
   "ui_close": "Закрыть",
+  "ui_toast_region": "Уведомления",
   "ui_save": "Сохранить",
   "ui_retry": "Повторить",
   "ui_show_more": "Показать ещё",
