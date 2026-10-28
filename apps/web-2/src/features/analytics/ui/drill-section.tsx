@@ -8,7 +8,7 @@ import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 
-import { drillRows } from '../model/analytics'
+import { drillRowKey, drillRows } from '../model/analytics'
 import { activeFilters, type Filters } from '../model/filters'
 import { drillOptions } from '../queries'
 import { drillColumns } from './drill-columns'
@@ -52,12 +52,7 @@ export function DrillSection({ title, metric, page, filters, assessment, closabl
         onResetFilters={() => void navigate({ to: '.', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={title}
-          rows={rows}
-          columns={drillColumns(metric)}
-          getKey={row => row.submission_id ?? `${row.user_id}:${row.course_name ?? ''}`}
-        />
+        <DataTable label={title} rows={rows} columns={drillColumns(metric)} getKey={drillRowKey} />
         <Pager page={page} total={query.data.total} />
       </ListState>
     </section>

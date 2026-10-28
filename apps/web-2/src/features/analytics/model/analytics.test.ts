@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
-import { drillRows, exportHrefs, pageCount, programAuthor, trendOf, viewTarget } from './analytics'
+import { drillRowKey, drillRows, exportHrefs, pageCount, programAuthor, trendOf, viewTarget } from './analytics'
 import { filtersSchema } from './filters'
 
 const COURSE = '01a0fe71-945c-760e-a11a-037490019fda'
@@ -33,6 +33,17 @@ describe('analytics model', () => {
     expect(progress).toMatchObject({ completed_steps: 3, total_steps: 5 })
     expect(pass).toMatchObject({ attempts: 2, last_score: 40, submitted_at_unix: 1_760_000_000 })
     expect(backlog?.sla_breached).toBe(true)
+  })
+
+  test('a learner in two courses of the same name, and two file attempts of one learner, are separate drill rows', () => {
+    const rows = drillRows([
+      { user_id: 'u1', user_display_name: 'A', course_id: 'c1', course_name: 'Алгебра' },
+      { user_id: 'u1', user_display_name: 'A', course_id: 'c2', course_name: 'Алгебра' },
+      { user_id: 'u1', user_display_name: 'A', course_id: 'c1', attempt_id: 'f1' },
+      { user_id: 'u1', user_display_name: 'A', course_id: 'c1', attempt_id: 'f2' },
+      { user_id: 'u1', user_display_name: 'A', submission_id: 's1' },
+    ])
+    expect(new Set(rows.map(drillRowKey)).size).toBe(5)
   })
 
   test('B-ANL-16 CSV links are relative API paths with the filters, the time zone and the interface language', () => {

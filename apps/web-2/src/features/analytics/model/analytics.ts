@@ -71,12 +71,15 @@ export function exportHrefs(filters: Filters) {
 const drillRowSchema = v.object({
   user_id: v.string(),
   user_display_name: v.string(),
+  course_id: v.optional(v.string()),
   course_name: v.optional(v.string()),
   progress_pct: v.optional(v.number()),
   last_activity_at_unix: v.nullish(v.number()),
   assessment_title: v.optional(v.string()),
   age_hours: v.optional(v.number()),
   submission_id: v.optional(v.string()),
+  /** A file task's attempt waiting for review (a backlog row without a submission). */
+  attempt_id: v.optional(v.string()),
   best_score: v.nullish(v.number()),
   passed: v.optional(v.boolean()),
   completed_steps: v.optional(v.number()),
@@ -87,6 +90,13 @@ const drillRowSchema = v.object({
   last_score: v.nullish(v.number()),
 })
 export type DrillRow = v.InferOutput<typeof drillRowSchema>
+
+/**
+ * A row's identity: the submission or file attempt, else the learner in the course (by id: two courses may share a name,
+ * and keyed by name their rows collided).
+ */
+export const drillRowKey = (row: DrillRow): string =>
+  row.submission_id ?? row.attempt_id ?? `${row.user_id}:${row.course_id ?? row.course_name ?? ''}`
 
 export const drillRows = (items: readonly unknown[]): DrillRow[] =>
   items.flatMap(item => {
