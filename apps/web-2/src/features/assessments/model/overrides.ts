@@ -6,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
 
 import { momentOf } from './moment'
+import { attemptsText } from './policy'
 
 // A learner's exception: attempts, a personal deadline, no late penalty, a note. Create and update share the block;
 // the update replaces it, so an expiry set elsewhere goes back as it was (BUG-317).
@@ -14,7 +15,8 @@ export type OverrideForm = { user_id: string; attempts: string; due_at: string; 
 
 const overrideObject = v.object({
   user_id: v.pipe(v.string(), v.nonEmpty()),
-  attempts: v.pipe(v.string(), v.trim(), v.regex(/^\d*$/u)),
+  // 0 or 11 were sent and came back as a bare «Проверьте выделенные поля»: the server names `max_attempts_override`.
+  attempts: attemptsText,
   due_at: v.pipe(
     v.string(),
     v.check(value => value === '' || momentOf(value) !== null),

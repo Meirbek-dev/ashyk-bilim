@@ -131,6 +131,8 @@ const within = (min: number, max?: number) =>
   })
 /** The server's cap on attempts (MAX_ATTEMPTS). */
 const MAX_ATTEMPTS = 10
+/** An attempts field: empty, or 1 to MAX_ATTEMPTS (the policy and a learner's exception alike). */
+export const attemptsText = v.pipe(optionalWhole, within(1, MAX_ATTEMPTS))
 const moment = v.pipe(
   v.string(),
   v.check(value => value === '' || momentOf(value) !== null),
@@ -139,7 +141,7 @@ const moment = v.pipe(
 /** The form's schema; a late policy needs its own fields filled. */
 export const policyFormSchema = v.pipe(
   v.object({
-    max_attempts: v.pipe(optionalWhole, within(1, MAX_ATTEMPTS)),
+    max_attempts: attemptsText,
     time_limit_minutes: v.pipe(optionalNumberText, within(1)),
     due_at: moment,
     allow_late: v.boolean(),

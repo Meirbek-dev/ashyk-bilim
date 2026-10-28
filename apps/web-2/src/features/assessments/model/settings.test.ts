@@ -145,6 +145,15 @@ describe('exceptions and publishing', () => {
     expect(v.is(overrideFormSchema, { ...bare, waive: true })).toBe(true)
   })
 
+  test('B-ASM-21 an exception gives 1 to 10 attempts, as the server takes them, and says so on the field', () => {
+    const form = { user_id: 'u', attempts: '0', due_at: '', waive: false, note: '' }
+    const zero = v.safeParse(overrideFormSchema, form)
+    expect(zero.success).toBe(false)
+    expect(zero.issues?.[0]?.path?.[0]?.key).toBe('attempts')
+    expect(v.is(overrideFormSchema, { ...form, attempts: '11' })).toBe(false)
+    expect(v.is(overrideFormSchema, { ...form, attempts: '10' })).toBe(true)
+  })
+
   test('B-ASM-22 readiness: blockers come first', () => {
     const sorted = sortedIssues([issue('policy.due_at_past', 'warning'), issue('assessment.empty', 'blocker')])
     expect(sorted.map(row => row.code)).toEqual(['assessment.empty', 'policy.due_at_past'])
