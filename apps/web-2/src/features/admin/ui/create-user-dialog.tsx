@@ -28,6 +28,9 @@ const defaultValues: CreateUserRequest = {
 const schema = v.object({
   ...vCreateUserRequest.entries,
   password: v.union([v.literal(''), vCreateUserRequest.entries.password]),
+  // The contract checks only the length: a blank or mistyped address reached the server (and an account with no
+  // password and no address cannot sign in at all).
+  email: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.email(), v.maxLength(320)),
 })
 
 /** Blank password and no extra roles are left out (Google-only sign-in, the default role). */
