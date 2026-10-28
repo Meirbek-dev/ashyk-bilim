@@ -60,7 +60,10 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
             <li>{m.attempt_late_penalty({ percent: formatPercent(attempt.late_penalty_pct) })}</li>
           ) : null}
         </ul>
-        <ResultActions retry={verdict === 'not_passed' && state.can_start} />
+        <ResultActions
+          retry={verdict === 'not_passed' && state.can_start}
+          draftId={state.can_continue && state.draft_id !== attempt.id ? state.draft_id : null}
+        />
         {grading?.feedback ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{m.attempt_feedback_heading()}</h2>
