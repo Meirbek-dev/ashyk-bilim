@@ -567,6 +567,24 @@ async fn admin_writes_answer_the_resource_on_request(pool: PgPool) {
         .unwrap()
         .to_lowercase();
     assert!(first <= second, "{first} then {second}");
+    // A deleted account (blank name) comes after every named one, not first.
+    let gone = app.create_user("gone", "gone@example.com", &["user"]).await;
+    sqlx::query("UPDATE users SET display_name = '', deleted_at = now() WHERE id = $1")
+        .bind(gone.0)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let all = app
+        .get_as(&admin, "/api/v2/users?sort=name&limit=100")
+        .await;
+    let items = all.json()["items"].as_array().unwrap().clone();
+    assert_eq!(items.last().unwrap()["id"], gone.to_string());
+    assert_eq!(items.last().unwrap()["deleted"], true);
+    assert!(
+        items[..items.len() - 1]
+            .iter()
+            .all(|u| u["deleted"] == false)
+    );
     let instructors = app.get_as(&admin, "/api/v2/users?role=instructor").await;
     assert!(
         instructors.json()["items"]

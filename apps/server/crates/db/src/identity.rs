@@ -623,8 +623,9 @@ pub struct UserFilter<'a> {
 }
 
 /// Keyset page of all users with aggregated role slugs. The cursor is the
-/// last id seen; the keyset is `id` (newest) or `(lower(display_name), id)`
-/// resolved from that id (`name`).
+/// last id seen; the keyset is `id` (newest) or `(deleted, lower(display_name),
+/// id)` resolved from that id (`name`): deleted accounts have a blank name and
+/// would otherwise open the A-Z list, so they come last.
 pub async fn list_users(
     pool: &PgPool,
     filter: UserFilter<'_>,
@@ -652,12 +653,14 @@ pub async fn list_users(
                    WHERE fr.user_id = u.id AND f.slug = $5))
              AND ($2::uuid IS NULL OR CASE
                    WHEN $6::bool
-                   THEN (lower(u.display_name), u.id)
-                        > (SELECT lower(c.display_name), c.id FROM users c WHERE c.id = $2)
+                   THEN (u.deleted_at IS NOT NULL, lower(u.display_name), u.id)
+                        > (SELECT c.deleted_at IS NOT NULL, lower(c.display_name), c.id
+                           FROM users c WHERE c.id = $2)
                    ELSE u.id < $2
                  END)
            GROUP BY u.id
-           ORDER BY CASE WHEN $6 THEN lower(u.display_name) END ASC,
+           ORDER BY CASE WHEN $6 THEN u.deleted_at IS NOT NULL END ASC,
+                    CASE WHEN $6 THEN lower(u.display_name) END ASC,
                     CASE WHEN $6 THEN u.id END ASC,
                     u.id DESC
            LIMIT $3"#,
