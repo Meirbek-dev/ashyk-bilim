@@ -2,7 +2,8 @@ import { expectFailure as allowFailure } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
-import { formatPercent } from '#/shared/i18n/format'
+import { setPolicy } from '#/shared/api/gen/sdk.gen'
+import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 import type { MadeCourse } from '../fixtures/learning'
 import {
@@ -27,6 +28,31 @@ test.describe.configure({ timeout: 60_000 })
 const arena = (course: MadeCourse, made: Made) => `/learn/${course.id}/${made.activityId}/code`
 const problemOf = (code: string, status: number) => ({ type: 'about:blank', title: code, status, code })
 
+test('B-COD-04 a due date says what it means for a late hand-in', async ({
+  page,
+  api,
+  learner,
+  makeCourse,
+  challenges,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  const made = await challenges.make(course)
+  const due = Math.floor(Date.now() / 1000) + 3 * 86_400
+  await setPolicy({
+    client: api,
+    path: { assessment_id: made.assessment.id },
+    body: { ...made.assessment.policy, due_at_unix: due, allow_late: false },
+    headers: challenges.teacher,
+    throwOnError: true,
+  })
+  await learner.enroll(course)
+  await learner.signIn()
+  await routeLanguages(page)
+  await page.goto(arena(course, made))
+  const entry = region(page, m.code_solution({}, ru))
+  await expect(entry.getByText(m.code_due({ date: formatDateTime(due, 'ru') }, ru))).toBeVisible()
+  await expect(entry.getByText(m.attempt_late_closed({}, ru))).toBeVisible()
+})
 test('B-COD-01 only an enrolled learner opens the challenge; another activity type is not found', async ({
   page,
   learner,

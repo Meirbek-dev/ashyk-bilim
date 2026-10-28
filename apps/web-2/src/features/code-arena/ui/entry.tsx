@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { Suspense } from 'react'
 
 import { RemediationGate } from '#/features/ai'
+import { lateText } from '#/features/attempt'
 import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { ActivityId, StudentSubmission } from '#/shared/api/gen/types.gen'
@@ -58,6 +59,7 @@ export function Entry({ courseId, assessmentId, activityId, last }: EntryProps) 
       <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
         <li>{max === null ? m.code_attempts_unlimited({ used }) : m.code_attempts_used({ used, max })}</li>
         {due === null ? null : <li>{m.code_due({ date: formatDateTime(due) })}</li>}
+        {due === null ? null : <li>{lateText(state.effective)}</li>}
         {limit === null ? null : <li>{m.code_attempt_time({ minutes: formatNumber(Math.ceil(limit / 60)) })}</li>}
       </ul>
       {state.can_start ? (

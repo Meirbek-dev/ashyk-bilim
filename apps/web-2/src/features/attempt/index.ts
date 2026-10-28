@@ -1,4 +1,5 @@
 export { ensureAttempt } from './queries'
 export { AttemptPage } from './ui/attempt-page'
 export { AttemptTimer } from './ui/attempt-timer'
+export { lateText } from './ui/policy-summary'
 export { useCountdown } from './ui/use-countdown'
