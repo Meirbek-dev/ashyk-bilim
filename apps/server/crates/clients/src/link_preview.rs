@@ -145,11 +145,11 @@ impl LinkPreviewClient {
         } else {
             tokio::net::lookup_host((host.as_str(), port))
                 .await
-                .map_err(|_| unsafe_url("URL hostname could not be resolved"))?
+                .map_err(|_| not_found())?
                 .collect()
         };
         if addrs.is_empty() {
-            return Err(unsafe_url("URL hostname could not be resolved"));
+            return Err(not_found());
         }
         for addr in &addrs {
             let ip = addr.ip();
@@ -168,6 +168,12 @@ fn unsafe_url(message: &str) -> Error {
         code: "unsafe".into(),
         message: message.into(),
     }])
+}
+
+/// A well-formed address of a site that does not exist is a fetch that
+/// failed, not an unsafe URL: the author mistyped it or the site is gone.
+fn not_found() -> Error {
+    failed("site not found: the hostname does not resolve")
 }
 
 fn failed(message: impl Into<String>) -> Error {
@@ -437,6 +443,15 @@ mod tests {
             let ip: IpAddr = ip.parse().unwrap_or_else(|_| unreachable!());
             assert!(is_public(ip), "{ip}");
         }
+    }
+
+    #[tokio::test]
+    async fn a_site_that_does_not_exist_is_a_failed_fetch_not_an_unsafe_url() {
+        // `.invalid` never resolves (RFC 2606).
+        let url =
+            Url::parse("https://no-such-site.invalid/page").unwrap_or_else(|_| unreachable!());
+        let err = LinkPreviewClient::new(false).resolve(&url).await.err();
+        assert_eq!(err.map(|e| e.code()), Some(ErrorCode::LinkPreviewFailed));
     }
 
     #[test]
