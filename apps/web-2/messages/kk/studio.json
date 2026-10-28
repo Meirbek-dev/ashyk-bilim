@@ -81,6 +81,7 @@
   "studio_field_source": "Неден бастау",
   "studio_field_source_hint": "Көшірмеге тараулар, белсенділіктер мен тапсырмалар (нобай ретінде) өтеді, білім алушылар мен бағалар өтпейді.",
   "studio_source_blank": "Бос курстан",
+  "studio_source_copy_name": "{name} (көшірме)",
   "studio_field_description": "Сипаттама",
   "studio_saved": "Сақталды",
   "studio_deleted": "Жойылды",
