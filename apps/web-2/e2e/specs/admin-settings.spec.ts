@@ -148,6 +148,8 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
     })
     await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
     const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
+    // Only once the refused save is answered: earlier, the wait below could catch that PUT instead of the retry.
+    await expect(conflict).toBeVisible()
     const sent = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith('/config'))
     await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
     expect((await sent).postDataJSON()).toMatchObject({ rewards: { admin_award: 4, course_completion: 250 } })
