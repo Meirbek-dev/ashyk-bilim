@@ -29,6 +29,7 @@
   "collections_action_delete": "Удалить",
   "collections_courses_title": "Курсы",
   "collections_courses_empty": "В коллекции пока нет курсов.",
+  "collections_courses_add": "Добавить курсы",
   "collections_not_found": "Коллекция не найдена",
   "collections_all": "Ко всем коллекциям",
   "collections_edit_title": "Изменение коллекции",

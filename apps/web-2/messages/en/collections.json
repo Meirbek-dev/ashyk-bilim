@@ -27,6 +27,7 @@
   "collections_action_delete": "Delete",
   "collections_courses_title": "Courses",
   "collections_courses_empty": "This collection has no courses yet.",
+  "collections_courses_add": "Add courses",
   "collections_not_found": "Collection not found",
   "collections_all": "All collections",
   "collections_edit_title": "Edit collection",

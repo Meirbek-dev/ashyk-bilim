@@ -55,6 +55,18 @@ export function CollectionPage() {
         count={collection.courses.length}
         filtered={false}
         emptyText={m.collections_courses_empty()}
+        // A new collection opens here empty: its author goes straight on to pick the courses.
+        emptyAction={
+          can(collection, 'update') ? (
+            <RouterLink
+              to="/collections/$collectionId/edit"
+              params={{ collectionId }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              {m.collections_courses_add()}
+            </RouterLink>
+          ) : undefined
+        }
         onRetry={() => void query.refetch()}
       >
         <CourseGrid courses={collection.courses} level={3} />
