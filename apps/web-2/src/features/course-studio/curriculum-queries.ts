@@ -23,7 +23,9 @@ import {
 import { updateActivity } from '#/shared/api/gen/sdk.gen'
 import type { Activity, ActivityDetail, Chapter, CourseId, Curriculum } from '#/shared/api/gen/types.gen'
 
+import { refusalCode } from './model/course'
 import { withActivity, withChapter, withoutActivity, withoutChapter } from './model/curriculum'
+import { courseOptions } from './queries'
 
 // Curriculum and activity writes. Each answer (or, for a 204, the change itself) goes into the curriculum cache:
 // a refetch would repeat the page's GET. Readiness depends on what is published, so it is read again where shown.
@@ -156,7 +158,10 @@ export async function ensureStudio(queryClient: QueryClient, courseId: CourseId,
     })
   if (activity.course_id !== courseId) throw notFound()
   if (!activity.allowed_actions.includes('update')) {
-    throw new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })
+    // An archived course refuses `update` to its own team as well: that is «the course is archived», not «you are not
+    // on the team» (its creator was told to ask the creator).
+    const course = await queryClient.query({ ...courseOptions(courseId), staleTime: 'static' }).catch(() => null)
+    throw new ApiError({ status: 403, code: refusalCode(course), fieldErrors: [], requestId: null, retryAfter: null })
   }
   return activity
 }

@@ -45,7 +45,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 import type { BulkAction } from './model/bulk'
-import { can, opensWorkspace, type CoursesSearch } from './model/course'
+import { can, opensWorkspace, refusalCode, type CoursesSearch } from './model/course'
 
 const PAGE_SIZE = 20
 const byId = (id: CourseId) => ({ path: { course_id: id } })
@@ -93,7 +93,7 @@ export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
     throw error
   })
   if (!opensWorkspace(course)) {
-    throw new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })
+    throw new ApiError({ status: 403, code: refusalCode(course), fieldErrors: [], requestId: null, retryAfter: null })
   }
   return course
 }

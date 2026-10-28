@@ -16,6 +16,10 @@ export const can = (course: Pick<Course, 'allowed_actions'>, action: CourseActio
 export const opensWorkspace = (course: Pick<Course, 'allowed_actions'>): boolean =>
   can(course, 'update') || can(course, 'restore')
 
+/** The refusal code of a course the caller cannot open or change: archived (its team included), or not theirs. */
+export const refusalCode = (course: Pick<Course, 'archived_at_unix'> | null): 'course-archived' | 'forbidden' =>
+  course?.archived_at_unix ? 'course-archived' : 'forbidden'
+
 /** A 412: someone saved the object after this page loaded it (its `version` is stale). */
 export const isStale = (error: unknown): boolean => error instanceof ApiError && error.status === 412
 
