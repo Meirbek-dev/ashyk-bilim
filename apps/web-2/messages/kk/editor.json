@@ -18,6 +18,8 @@
   "editor_scenario_restart": "Қайта бастау",
   "editor_scenario_end": "Сценарий аяқталды",
   "editor_user_missing": "Пайдаланушы профилі қолжетімсіз",
+  "editor_user_pick": "Адамды таңдау",
+  "editor_user_change": "Адамды ауыстыру",
   "editor_preview_open": "Сайтты ашу",
   "editor_toolbar": "Пішімдеу",
   "editor_bold": "Қалың",

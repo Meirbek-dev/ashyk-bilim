@@ -18,6 +18,8 @@
   "editor_scenario_restart": "Start over",
   "editor_scenario_end": "Scenario complete",
   "editor_user_missing": "User profile unavailable",
+  "editor_user_pick": "Choose a person",
+  "editor_user_change": "Change person",
   "editor_preview_open": "Open site",
   "editor_toolbar": "Formatting",
   "editor_bold": "Bold",

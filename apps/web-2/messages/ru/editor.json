@@ -18,6 +18,8 @@
   "editor_scenario_restart": "Начать заново",
   "editor_scenario_end": "Сценарий завершён",
   "editor_user_missing": "Профиль пользователя недоступен",
+  "editor_user_pick": "Выбрать человека",
+  "editor_user_change": "Сменить человека",
   "editor_preview_open": "Открыть сайт",
   "editor_toolbar": "Форматирование",
   "editor_bold": "Жирный",

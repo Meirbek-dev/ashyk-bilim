@@ -214,19 +214,35 @@ test('B-EDT-27 a user block takes a person picked by name, not a typed id', asyn
   vi.stubGlobal(
     'fetch',
     vi.fn(async (request: Request) => {
-      const path = new URL(request.url).pathname
-      if (path.endsWith('/search'))
-        return Response.json({ users: [hit], courses: [], collections: [], next_cursor: null })
-      if (path.endsWith(`/users/by-id/${id}`)) return Response.json({ ...hit, bio: '', profile: { sections: [] } })
+      const url = new URL(request.url)
+      if (url.pathname.endsWith('/search')) {
+        const users = (url.searchParams.get('q') ?? '').startsWith('Айг') ? [hit] : []
+        return Response.json({ users, courses: [], collections: [], next_cursor: null })
+      }
+      if (url.pathname.endsWith(`/users/by-id/${id}`))
+        return Response.json({ ...hit, bio: '', profile: { sections: [] } })
       return new Response(null, { status: 404 })
     }),
   )
   const onChange = vi.fn<(doc: EditorDocument) => void>()
-  const content = { type: 'doc', content: [{ type: 'blockUser', attrs: { user_id: '' } }] }
+  // Blocks around it: an open search marked them aria-hidden, the editor redrew the user block and the typed name
+  // went into the lesson text.
+  const around = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
+  const content = {
+    type: 'doc',
+    content: [around('До'), { type: 'blockUser', attrs: { user_id: '' } }, around('После')],
+  }
   const screen = await render(<BlockEditor activityId={ACTIVITY} content={content} onChange={onChange} />)
-  await screen.getByRole('combobox', { name: m.editor_field_user() }).click()
-  await screen.getByRole('option', { name: /Айгерим Сапарова/ }).click()
+  const pick = screen.getByRole('button', { name: m.editor_user_pick() })
+  await expect.element(pick).toBeVisible()
+  // Nobody chosen yet is not «profile unavailable».
+  expect(screen.getByText(m.editor_user_missing()).query()).toBeNull()
+  await userEvent.click(pick)
+  await userEvent.click(screen.getByRole('combobox', { name: m.editor_field_user() }))
+  await userEvent.keyboard('Айг')
+  await userEvent.click(screen.getByRole('option', { name: /Айгерим Сапарова/ }))
   await expect.poll(() => find(last(onChange), 'blockUser')?.attrs?.['user_id']).toBe(id)
+  expect(JSON.stringify(last(onChange))).not.toContain('Айг')
   vi.unstubAllGlobals()
 })
 
