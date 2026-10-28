@@ -48,6 +48,11 @@ describe('old web URLs', () => {
     expect(legacyTarget('/learn/01a1797d-c573/complete')).toBeNull()
   })
 
+  test('a certificate address without its /verify opens that certificate check', () => {
+    expect(legacyTarget('/certificates/FYX8-TPKX-X7EY-XH55')).toBe('/certificates/FYX8-TPKX-X7EY-XH55/verify')
+    expect(legacyTarget('/ru/certificates/FYX8-TPKX-X7EY-XH55/')).toBe('/certificates/FYX8-TPKX-X7EY-XH55/verify')
+  })
+
   test('web-2 pages, the printed certificate URL and unknown paths are not old links', () => {
     for (const path of ['/login?redirect=%2Fhome', '/search?q=a', '/courses', '/', '/teach', '/no/such/page'])
       expect(legacyTarget(path)).toBeNull()
