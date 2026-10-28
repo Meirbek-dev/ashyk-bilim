@@ -215,7 +215,7 @@
   "admin_users_filter_all": "все",
   "admin_users_filter_any": "Все",
   "admin_xp_whole": "Целое число от 0; пусто — по умолчанию.",
-  "admin_xp_positive": "Целое число больше 0.",
+  "admin_xp_positive": "Целое число от 1 до 100 000.",
   "admin_xp_too_large": "Слишком большое число: не больше 2 147 483 647.",
   "admin_user_field_roles": "Дополнительные роли",
   "admin_user_field_roles_hint": "Роль «Пользователь» назначается всегда.",

@@ -153,6 +153,9 @@ describe('XP fields', () => {
     expect(daily.success ? null : daily.issues[0]?.message).toBe(m.admin_xp_whole())
     const award = v.safeParse(awardFormSchema, { amount: '0', reason: '' })
     expect(award.success ? null : award.issues[0]?.message).toBe(m.admin_xp_positive())
+    const tooMuch = v.safeParse(awardFormSchema, { amount: '150000', reason: '' })
+    expect(tooMuch.success ? null : tooMuch.issues[0]?.message).toBe(m.admin_xp_positive())
+    expect(v.safeParse(awardFormSchema, { amount: '100000', reason: '' }).success).toBe(true)
   })
 
   test('an amount past what the server stores is refused here, under its field, not by a bare 422', () => {

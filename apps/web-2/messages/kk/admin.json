@@ -207,7 +207,7 @@
   "admin_users_filter_all": "барлығы",
   "admin_users_filter_any": "Барлығы",
   "admin_xp_whole": "0-ден бастап бүтін сан; бос болса — әдепкі мән.",
-  "admin_xp_positive": "0-ден үлкен бүтін сан.",
+  "admin_xp_positive": "1-ден 100 000-ға дейінгі бүтін сан.",
   "admin_xp_too_large": "Сан тым үлкен: 2 147 483 647-ден аспауы керек.",
   "admin_user_field_roles": "Қосымша рөлдер",
   "admin_user_field_roles_hint": "«Пайдаланушы» рөлі әрқашан тағайындалады.",

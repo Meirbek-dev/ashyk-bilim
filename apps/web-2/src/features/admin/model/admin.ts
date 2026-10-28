@@ -88,14 +88,21 @@ export const roleFormSchema = v.object({
 
 export const roleEditSchema = v.omit(roleFormSchema, ['slug'])
 
+/** The most XP one award gives (`vAdminAwardRequest.amount`, the server's range). */
+const MAX_AWARD = 100_000
+
 /** `vAdminAwardRequest` without the user (the panel's) and the key (the action's), amount as typed text. */
 export const awardFormSchema = v.object({
   amount: v.pipe(
     v.string(),
     v.trim(),
     v.regex(/^[1-9]\d*$/, () => m.admin_xp_positive()),
+    v.check(
+      text => !/^\d+$/.test(text) || Number(text) <= MAX_AWARD,
+      () => m.admin_xp_positive(),
+    ),
   ),
-  reason: v.string(),
+  reason: v.pipe(v.string(), v.maxLength(500)),
 })
 
 const GRANT_FIELD = /^permissions\[(\d+)\]$/
