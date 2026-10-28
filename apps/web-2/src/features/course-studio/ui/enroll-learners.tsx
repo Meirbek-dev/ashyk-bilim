@@ -7,9 +7,10 @@ import { FileButton } from '#/shared/components/file-button'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
+import { decodeCsv } from '#/shared/lib/csv-text'
 import { toast } from '#/shared/ui/toast'
 
-import { decodeCsv, MAX_ROSTER, MAX_ROSTER_FILE_BYTES, parsePasted, parseRosterCsv, summarize } from '../model/roster'
+import { MAX_ROSTER, MAX_ROSTER_FILE_BYTES, parsePasted, parseRosterCsv, summarize } from '../model/roster'
 import { enrollLearnersOptions } from '../people-queries'
 import { EnrollReport } from './enroll-report'
 

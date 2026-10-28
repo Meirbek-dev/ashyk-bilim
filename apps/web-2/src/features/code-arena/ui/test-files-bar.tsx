@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { FileButton } from '#/shared/components/file-button'
+import { decodeCsv } from '#/shared/lib/csv-text'
 import { Button } from '#/shared/ui/button'
 
 import type { TestForm } from '../model/body-form'
@@ -31,7 +32,8 @@ type TestFilesBarProps = {
 export function TestFilesBar({ tests, onImport, lead }: TestFilesBarProps) {
   const [error, setError] = useState<string | null>(null)
   const read = async (file: File) => {
-    const imported = parseTestsFile(file.name, await file.text())
+    // A Russian Excel saves a plain «CSV» in Windows-1251: read the bytes as the class-list import does.
+    const imported = parseTestsFile(file.name, decodeCsv(await file.arrayBuffer()))
     if (!imported?.length) return setError(m.code_cases_import_bad())
     setError(null)
     onImport?.(imported)

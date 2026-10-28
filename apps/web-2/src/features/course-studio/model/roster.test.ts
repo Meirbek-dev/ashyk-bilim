@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { CourseLearner } from '#/shared/api/gen/types.gen'
 
-import { decodeCsv, parsePasted, parseRosterCsv, rosterCsv, summarize } from './roster'
+import { parsePasted, parseRosterCsv, rosterCsv, summarize } from './roster'
 
 describe('roster', () => {
   test('B-CST-39 a pasted list splits on new lines, commas, semicolons and tabs', () => {
@@ -19,12 +19,6 @@ describe('roster', () => {
     expect(parseRosterCsv('email,name\na@x.kz,A\nb@x.kz,B')).toEqual(['a@x.kz', 'b@x.kz'])
     // A first row that already holds an email is data, not a header.
     expect(parseRosterCsv('user;a@x.kz\nuser;b@x.kz')).toEqual(['a@x.kz', 'b@x.kz'])
-  })
-
-  test('B-CST-39 a CSV saved by a Russian Excel (Windows-1251) reads as Cyrillic', () => {
-    const cp1251 = new Uint8Array([0xcf, 0xee, 0xf7, 0xf2, 0xe0]) // «Почта»
-    expect(decodeCsv(cp1251.buffer)).toBe('Почта')
-    expect(decodeCsv(new TextEncoder().encode('Почта').buffer)).toBe('Почта')
   })
 
   test('B-CST-39 the report counts outcomes and lists who was not enrolled', () => {

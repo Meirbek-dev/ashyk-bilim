@@ -22,15 +22,6 @@ export const parsePasted = (text: string): string[] =>
     .map(unquote)
     .filter(Boolean)
 
-/** File bytes as text: UTF-8, else Windows-1251 (the plain «CSV» of a Russian Excel). */
-export function decodeCsv(bytes: ArrayBuffer): string {
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-  } catch {
-    return new TextDecoder('windows-1251').decode(bytes)
-  }
-}
-
 /**
  * A class list CSV: `;` (Excel in ru/kk) or `,` delimited, an optional header row. Each row gives one identifier: the
  * cell with an email, else the cell under the email/login header («ФИО;Логин» reads the logins, not the names), else
