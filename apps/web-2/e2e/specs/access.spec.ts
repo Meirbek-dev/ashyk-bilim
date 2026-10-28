@@ -42,7 +42,8 @@ function withParams(path: string, seed: Seed, locale = 'ru'): string {
   if (path.endsWith('/submission') || path.includes('/submissions/'))
     params.activityId = seed.activities.file_submission
   const values = new Map(Object.entries(params))
-  values.set('locale', locale)
+  // The printed certificate prefix of Kazakh is the old web's `kz` (`/kk/...` answers 301 to it).
+  values.set('locale', locale === 'kk' ? 'kz' : locale)
   // The splat (`/$`) takes every address no other route does: an unknown one stands for it.
   return path.replaceAll(/\$(\w*)/g, (_, name: string) => values.get(name) ?? (name || 'no-such-page'))
 }
