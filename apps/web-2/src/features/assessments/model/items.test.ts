@@ -65,7 +65,13 @@ describe('builder', () => {
     expect(newItem('true_false', 't').body).toMatchObject({ options: [{ id: 'true' }, { id: 'false' }] })
     // Learners read the option text: the localized label, never the raw id (it showed «true» / «false»).
     expect(newItem('true_false', 't').body).toMatchObject({ options: [{ text: 'Верно' }, { text: 'Неверно' }] })
-    expect(newItem('matching', 't').body).toMatchObject({ kind: 'matching', pairs: [{ left: '', right: '' }] })
+    expect(newItem('matching', 't').body).toMatchObject({
+      kind: 'matching',
+      pairs: [
+        { left: '', right: '' },
+        { left: '', right: '' },
+      ],
+    })
     expect(newItem('form', 't').body).toMatchObject({ kind: 'form', fields: [{ field_type: 'text', required: true }] })
     expect(newItem('open_text', 't').body).toEqual({ kind: 'open_text', prompt: '', min_words: null, rubric: null })
   })

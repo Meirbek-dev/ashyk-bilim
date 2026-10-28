@@ -51,7 +51,16 @@ const blankBodies: Record<NewItemKind, () => ItemBody> = {
   single_choice: () => choice('single_choice', blankOptions()),
   multiple_choice: () => choice('multiple_choice', blankOptions()),
   true_false: () => choice('true_false', trueFalseOptions()),
-  matching: () => ({ kind: 'matching', prompt: '', explanation: null, pairs: [{ left: '', right: '' }] }),
+  // Two pairs, like two choice options: one pair has nothing to match.
+  matching: () => ({
+    kind: 'matching',
+    prompt: '',
+    explanation: null,
+    pairs: [
+      { left: '', right: '' },
+      { left: '', right: '' },
+    ],
+  }),
   open_text: () => ({ kind: 'open_text', prompt: '', min_words: null, rubric: null }),
   form: () => ({ kind: 'form', prompt: '', fields: [newFormField()] }),
   code: () => ({ kind: 'code', prompt: '', max_output_kb: null, memory_limit_mb: null, time_limit_seconds: null }),
