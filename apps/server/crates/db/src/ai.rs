@@ -1828,6 +1828,17 @@ pub async fn feature_switches(pool: &PgPool) -> Result<Vec<(String, bool)>> {
     Ok(rows.into_iter().map(|r| (r.feature, r.enabled)).collect())
 }
 
+/// Drop one switch: the feature follows the environment again.
+pub async fn clear_feature_switch(pool: &PgPool, feature: &str) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM ai_feature_switches WHERE feature = $1",
+        feature
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Set one switch (`feature` is the flag key).
 pub async fn set_feature_switch(
     pool: &PgPool,

@@ -745,7 +745,14 @@ impl AiService {
     ) -> Result<AdminSettings> {
         crate::catalog::PlatformService::require_update(actor)?;
         let feature = AiFeature::parse(key).ok_or_else(|| Error::not_found("AI feature"))?;
-        ab_db::ai::set_feature_switch(&self.pool, feature.as_str(), enabled, actor.user_id).await?;
+        // A switch only lowers the environment, so «on» is the environment's own value: dropping the
+        // stored row (instead of storing `true`) is how a feature goes back to the server setting.
+        if enabled {
+            ab_db::ai::clear_feature_switch(&self.pool, feature.as_str()).await?;
+        } else {
+            ab_db::ai::set_feature_switch(&self.pool, feature.as_str(), false, actor.user_id)
+                .await?;
+        }
         ab_db::identity::insert_auth_audit(
             &self.pool,
             Some(actor.user_id),

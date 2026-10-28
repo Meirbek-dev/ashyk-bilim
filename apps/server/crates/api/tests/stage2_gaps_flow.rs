@@ -238,9 +238,12 @@ async fn ai_feature_switches_toggle_at_runtime(pool: PgPool) {
     .unwrap();
     assert_eq!(audited, 1);
 
-    // Back on.
+    // Back on: the stored switch goes, the feature follows the environment again.
     let on = put_as(&app, &admin, path, &json!({ "enabled": true })).await;
-    assert_eq!(feature(&on.json(), qa)["enabled"], true);
+    assert_eq!(
+        feature(&on.json(), qa),
+        json!({ "key": qa, "enabled": true, "editable": true, "source": "environment" })
+    );
     let reopened = app.get_as(&teacher, &caps).await.json();
     assert_eq!(feature(&reopened, qa)["enabled"], true);
 }
