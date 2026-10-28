@@ -86,6 +86,7 @@
   "code_result_returned": "Работа возвращена на исправление.",
   "code_result_score": "Балл: {score}",
   "code_result_cases": "Пройдено примеров: {passed} из {total}",
+  "code_result_late_penalty": "Штраф за опоздание: {percent}",
   "code_passed": "Зачтено",
   "code_not_passed": "Не зачтено",
   "code_last_details": "Результаты и код",

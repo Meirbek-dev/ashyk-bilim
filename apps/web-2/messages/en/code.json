@@ -86,6 +86,7 @@
   "code_result_returned": "Your submission was returned for revision.",
   "code_result_score": "Score: {score}",
   "code_result_cases": "Test cases passed: {passed} of {total}",
+  "code_result_late_penalty": "Late penalty: {percent}",
   "code_passed": "Passed",
   "code_not_passed": "Not passed",
   "code_last_details": "Results and code",

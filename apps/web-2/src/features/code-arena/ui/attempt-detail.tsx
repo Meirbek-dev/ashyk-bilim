@@ -12,7 +12,7 @@ import { FinalRun } from './final-run'
 import { languageName } from './labels'
 import { CodeEditor } from './lazy-editor'
 
-/** What the attempt came to (B-COD-10): the grade once released, else why it is not shown yet. */
+/** What the attempt came to (B-COD-10): the grade once released with its late penalty, else why it is not shown yet. */
 export function outcome(attempt: StudentSubmission): string[] {
   if (attempt.release_state === 'returned_for_revision') return [m.code_result_returned()]
   if (attempt.status === 'pending') return [m.code_result_pending()]
@@ -20,6 +20,10 @@ export function outcome(attempt: StudentSubmission): string[] {
   const cases = testsPassed(attempt)
   return [
     ...(attempt.final_score === null ? [] : [m.code_result_score({ score: formatPercent(attempt.final_score) })]),
+    // A late hand-in's score is already reduced: say by how much, as a test's result does.
+    ...(attempt.late_penalty_pct
+      ? [m.code_result_late_penalty({ percent: formatPercent(attempt.late_penalty_pct) })]
+      : []),
     ...(cases ? [m.code_result_cases({ passed: cases.correct, total: cases.total })] : []),
   ]
 }

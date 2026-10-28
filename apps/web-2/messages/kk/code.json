@@ -86,6 +86,7 @@
   "code_result_returned": "Жұмыс пысықтауға қайтарылды.",
   "code_result_score": "Ұпай: {score}",
   "code_result_cases": "Өткен мысалдар: {total} ішінен {passed}",
+  "code_result_late_penalty": "Кешігу айыппұлы: {percent}",
   "code_passed": "Сынақтан өтті",
   "code_not_passed": "Сынақтан өтпеді",
   "code_last_details": "Нәтижелер мен код",
