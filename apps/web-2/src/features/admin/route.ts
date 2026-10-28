@@ -22,3 +22,6 @@ export const usersSearchSchema = v.object({
   user: v.optional(blankToUndefined),
 })
 export type UsersSearch = v.InferOutput<typeof usersSearchSchema>
+
+/** /teach/groups?q=: the groups whose name contains `q`. */
+export const groupsSearchSchema = v.object({ q: v.optional(blankToUndefined) })

@@ -173,6 +173,7 @@
   "admin_groups_title": "Группы",
   "admin_groups_table": "Группы пользователей",
   "admin_groups_empty": "Групп пока нет.",
+  "admin_groups_search": "Название группы",
   "admin_groups_all": "Все группы",
   "admin_group_members": "Участники",
   "admin_group_member_count": [

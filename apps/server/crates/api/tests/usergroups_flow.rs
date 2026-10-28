@@ -86,6 +86,12 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
         .get_as(&owner, &format!("/api/v2/groups?member={outsider}"))
         .await;
     assert_eq!(of_carol.json()["items"], serde_json::json!([]));
+    // `q` finds a group by part of its name, case-folded; a miss is empty.
+    let found = app.get_as(&owner, "/api/v2/groups?q=cohort%2020").await;
+    assert_eq!(found.status, StatusCode::OK, "{}", found.text());
+    assert_eq!(found.json()["items"][0]["id"], id.as_str());
+    let missed = app.get_as(&owner, "/api/v2/groups?q=%25zz").await;
+    assert_eq!(missed.json()["items"], serde_json::json!([]));
 
     // Course links round-trip and appear from the course side.
     let course = app

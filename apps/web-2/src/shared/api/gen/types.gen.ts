@@ -14532,6 +14532,10 @@ export type ListGroupsData = {
          */
         member?: UserId;
         /**
+         * Only the groups whose name contains this text
+         */
+        q?: string;
+        /**
          * Page size, 1..=100 (default 20)
          */
         limit?: number;

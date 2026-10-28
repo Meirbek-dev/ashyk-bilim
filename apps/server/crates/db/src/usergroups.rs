@@ -54,12 +54,15 @@ pub async fn get_usergroup(pool: &PgPool, id: UsergroupId) -> Result<Option<User
 /// Newest-first keyset page (admin/instructor view - no visibility split;
 /// the service gates on `usergroup:read:platform`).
 /// `member`: only the groups that user belongs to (the admin user panel).
+/// `q`: only the groups whose name contains it, folded like people search.
 pub async fn list_usergroups(
     pool: &PgPool,
     cursor: Option<UsergroupId>,
     member: Option<UserId>,
+    q: Option<&str>,
     limit: i64,
 ) -> Result<Vec<UsergroupRow>> {
+    let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         UsergroupRow,
         r#"SELECT g.id AS "id: UsergroupId", g.name, g.description,
@@ -73,11 +76,13 @@ pub async fn list_usergroups(
            WHERE ($1::uuid IS NULL OR g.id < $1)
              AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                                                WHERE m.usergroup_id = g.id AND m.user_id = $3))
+             AND ($4::text IS NULL OR search_fold(g.name) LIKE search_fold($4) ESCAPE '\')
            ORDER BY g.id DESC
            LIMIT $2"#,
         cursor.map(|c| c.0),
         limit,
-        member.map(|m| m.0)
+        member.map(|m| m.0),
+        pattern
     )
     .fetch_all(pool)
     .await?;

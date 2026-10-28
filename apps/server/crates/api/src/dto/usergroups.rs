@@ -110,6 +110,9 @@ pub struct UsergroupListQuery {
     pub cursor: Option<UsergroupId>,
     /// Only the groups this user is a member of.
     pub member: Option<UserId>,
+    /// Only the groups whose name contains this text (Kazakh letters typed
+    /// on a Russian keyboard match too); blank lists every group.
+    pub q: Option<String>,
     /// 1..=100, default 20.
     pub limit: Option<i64>,
 }

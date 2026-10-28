@@ -8870,6 +8870,7 @@ export const vXpHistoryResponse = vXpHistoryPage;
 export const vListGroupsQuery = v.object({
     cursor: v.optional(vUsergroupId),
     member: v.optional(vUserId),
+    q: v.optional(v.string()),
     limit: v.optional(v.pipe(v.number(), v.integer()))
 });
 

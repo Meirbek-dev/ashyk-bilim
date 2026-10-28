@@ -167,6 +167,7 @@
   "admin_groups_title": "Groups",
   "admin_groups_table": "User groups",
   "admin_groups_empty": "No groups yet.",
+  "admin_groups_search": "Group name",
   "admin_groups_all": "All groups",
   "admin_group_members": "Members",
   "admin_group_member_count": [

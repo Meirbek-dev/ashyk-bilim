@@ -167,6 +167,7 @@
   "admin_groups_title": "Топтар",
   "admin_groups_table": "Пайдаланушылар топтары",
   "admin_groups_empty": "Әзірге топтар жоқ.",
+  "admin_groups_search": "Топ атауы",
   "admin_groups_all": "Барлық топтар",
   "admin_group_members": "Мүшелер",
   "admin_group_member_count": [

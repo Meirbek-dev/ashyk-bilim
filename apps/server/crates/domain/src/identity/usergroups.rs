@@ -155,12 +155,14 @@ impl UsergroupsService {
         actor: &Actor,
         cursor: Option<UsergroupId>,
         member: Option<UserId>,
+        q: Option<&str>,
         limit: i64,
     ) -> Result<(Vec<Usergroup>, Option<UsergroupId>)> {
         actor.require(perm(Action::Read))?;
         let limit = ab_core::page_limit(limit, 100)?;
+        let q = q.map(str::trim).filter(|q| !q.is_empty());
         let mut rows =
-            ab_db::usergroups::list_usergroups(&self.pool, cursor, member, limit + 1).await?;
+            ab_db::usergroups::list_usergroups(&self.pool, cursor, member, q, limit + 1).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
             rows.last().map(|g| g.id)

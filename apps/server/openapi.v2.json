@@ -33908,6 +33908,15 @@
             }
           },
           {
+            "description": "Only the groups whose name contains this text",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "Page size, 1..=100 (default 20)",
             "in": "query",
             "name": "limit",

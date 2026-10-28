@@ -22,8 +22,9 @@ import type {
 
 import { nextCursor, notFoundOn404, PAGE_SIZE, representation } from './queries'
 
-export const groupsListOptions = () => {
-  const query = { limit: PAGE_SIZE }
+/** Groups newest first; `q`: only those whose name contains it. */
+export const groupsListOptions = (q?: string) => {
+  const query = q ? { limit: PAGE_SIZE, q } : { limit: PAGE_SIZE }
   return infiniteQueryOptions<
     UsergroupPage,
     ApiError,

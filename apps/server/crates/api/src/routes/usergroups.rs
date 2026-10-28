@@ -94,6 +94,7 @@ pub async fn list_usergroups(
             &actor,
             query.cursor,
             query.member,
+            query.q.as_deref(),
             query.limit.unwrap_or(20),
         )
         .await?;
@@ -420,6 +421,7 @@ pub async fn create_group(
     params(
         ("cursor" = Option<UsergroupId>, Query, description = "next_cursor from the previous page"),
         ("member" = Option<UserId>, Query, description = "Only the groups this user belongs to"),
+        ("q" = Option<String>, Query, description = "Only the groups whose name contains this text"),
         ("limit" = Option<i64>, Query, description = "Page size, 1..=100 (default 20)"),
     ),
     responses((status = 200, description = "Page of usergroups", body = UsergroupPage)),
