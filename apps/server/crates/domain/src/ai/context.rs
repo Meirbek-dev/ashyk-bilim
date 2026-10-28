@@ -846,11 +846,20 @@ pub fn clean_report_citations(artifact: &mut serde_json::Value) {
     }
 }
 
-/// A citation's excerpt without the context headers it may quote.
-///
-/// The text after a `Content: ` label when there is one, else every line that is not a header (a header joined to
-/// the quote with " ... " keeps the quote).
-#[must_use]
+/// The settings line (`settings_text`) or any piece of it the model cut out: «pass mark 60%; unlimited attempts; no
+/// time limit; no deadline» came back without the leading «quiz (graded automatically); ».
+fn is_settings_line(raw: &str) -> bool {
+    raw.split("; ").any(|part| {
+        let part = part.trim();
+        part.strip_prefix("pass mark ")
+            .is_some_and(|rest| rest.trim_end_matches('%').parse::<f64>().is_ok())
+            || matches!(part, "unlimited attempts" | "no time limit" | "no deadline")
+            || part
+                .strip_suffix(" attempt(s)")
+                .is_some_and(|n| n.parse::<u32>().is_ok())
+    })
+}
+
 /// The question-scores line (`item_points_line`), «"Q": 0 of 1 points (awaiting the teacher's score)»: English made
 /// for the model, quoted back as a source it read to teachers as an untranslated line.
 fn is_points_line(raw: &str) -> bool {
@@ -865,10 +874,15 @@ fn is_points_line(raw: &str) -> bool {
         })
 }
 
+/// A citation's excerpt without the context headers it may quote.
+///
+/// The text after a `Content: ` label when there is one, else every line that is not a header (a header joined to
+/// the quote with " ... " keeps the quote).
+#[must_use]
 pub fn clean_excerpt(raw: &str) -> String {
     // An assessment's settings line (`settings_text`) is the model's English summary, not a quote for a reader:
     // the citation keeps its label only.
-    if raw.contains("; pass mark ") || is_points_line(raw) {
+    if is_settings_line(raw) || is_points_line(raw) {
         return String::new();
     }
     if let Some(at) = raw.rfind("Content: ") {
@@ -1121,6 +1135,16 @@ Learning outcomes: Циклы, функции"
         assert_eq!(
             clean_excerpt("quiz (graded automatically); pass mark 60%; unlimited attempts"),
             ""
+        );
+        // A piece of it, as the model cut it (UX-teach-14).
+        assert_eq!(
+            clean_excerpt("pass mark 60%; unlimited attempts; no time limit; no deadline"),
+            ""
+        );
+        assert_eq!(clean_excerpt("1 attempt(s); time limit 60 min"), "");
+        assert_eq!(
+            clean_excerpt("Две попытки; без срока"),
+            "Две попытки; без срока"
         );
         assert_eq!(
             clean_excerpt(

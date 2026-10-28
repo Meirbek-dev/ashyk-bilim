@@ -101,6 +101,7 @@ Rules:
 - Recommendations must name the teacher action, not generic advice.
 - Flag outdated or unsupported claims as risks when evidence suggests them.
 - Name course fields and activity types as the teacher sees them, never by the context labels or raw values (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Short description», «Description», «What you will learn», the answer explanation, a code task, a file task.
+- Describe an assessment's settings (the `Assessment settings:` line) in your own words in the requested language, never as a quote: that line is a summary for you, not the course's text.
 ";
 
 pub const COURSE_ANALYSIS_RU: &str = "Вы являетесь аналитиком качества курсов в Ashyq Bilim.
@@ -115,6 +116,7 @@ pub const COURSE_ANALYSIS_RU: &str = "Вы являетесь аналитико
 - Рекомендации должны содержать конкретные действия для преподавателя, а не общие советы.
 - Отмечайте устаревшие или неподтвержденные утверждения как риски, если на это указывают материалы.
 - Называйте поля курса и типы активностей так, как их видит преподаватель, а не метками контекста или сырыми значениями (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Краткое описание», «Описание», «Чему вы научитесь», пояснение к ответу, задача с кодом, отправка файла.
+- Настройки задания (строка `Assessment settings:`) описывайте своими словами на языке отчёта («проверяется автоматически, затем преподавателем; проходной балл 60 %; 1 попытка»), а не цитатой: это сводка для вас, а не текст курса.
 ";
 
 pub const COURSE_ANALYSIS_KK: &str = "Сіз Ashyq Bilim жобасының курстар сапасын талдаушысысыз.
@@ -129,6 +131,7 @@ pub const COURSE_ANALYSIS_KK: &str = "Сіз Ashyq Bilim жобасының ку
 - Ұсыныстарда жалпы кеңестер емес, оқытушының нақты іс-әрекеттері көрсетілуі тиіс.
 - Деректер нұсқаса, ескірген немесе дәлелденбеген тұжырымдарды қауіп ретінде белгілеңіз.
 - Курс өрістері мен белсенділік түрлерін оқытушы көретіндей атаңыз, контекст белгілерімен немесе шикі мәндермен емес (`About:`, `Learning outcomes:`, `explanation: null`, `code_challenge`, `file_submission`): «Қысқаша сипаттама», «Сипаттама», «Нені үйренесіз», жауапқа түсініктеме, код тапсырмасы, файл жіберу.
+- Тапсырма баптауларын (`Assessment settings:` жолы) есеп тілінде өз сөзіңізбен сипаттаңыз («алдымен автоматты, содан кейін оқытушы тексереді; өту балы 60 %; 1 әрекет»), дәйексөз ретінде емес: бұл курс мәтіні емес, сізге арналған қысқаша мазмұн.
 ";
 
 // ── prompts/course_qa.md ────────────────────────────────────────────────────
