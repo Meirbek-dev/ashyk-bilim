@@ -42,6 +42,12 @@ describe('old web URLs', () => {
     expect(legacyTarget(`/ru/assessments/${A}?review=${C}`)).toEqual({ assessment: A, review: C })
   })
 
+  test('a player address cut short goes to the course page (or «Мои курсы»), not «Страница не найдена»', () => {
+    expect(legacyTarget('/learn/01a1797d-c573')).toBe('/courses/01a1797d-c573')
+    expect(legacyTarget('/learn/')).toBe('/learning')
+    expect(legacyTarget('/learn/01a1797d-c573/complete')).toBeNull()
+  })
+
   test('web-2 pages, the printed certificate URL and unknown paths are not old links', () => {
     for (const path of ['/login?redirect=%2Fhome', '/search?q=a', '/courses', '/', '/teach', '/no/such/page'])
       expect(legacyTarget(path)).toBeNull()

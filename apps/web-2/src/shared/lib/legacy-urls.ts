@@ -29,6 +29,9 @@ const PATHS: [string, To][] = [
   [`/(?:editor/)?course/${ID}/activity/${ID}/edit`, ([c = '', a]) => `${studio(c)}/activities/${id(a)}/edit`],
   ['/search', (_, query) => withQuery('/search', { q: query.get('q') })],
   ['/trail', () => '/learning'],
+  // This web's player without an activity (a URL cut short by hand): the course page, which says what is next.
+  ['/learn', () => '/learning'],
+  [`/learn/${ID}`, ([c]) => `/courses/${id(c)}`],
   ['/user/([^/]+)', ([u = '']) => `/users/${u}`],
   ['/unauthorized', () => '/'],
   ['/(?:auth/)?login', (_, query) => withQuery('/login', { redirect: returnTo(query) })],
