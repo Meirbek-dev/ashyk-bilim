@@ -25,7 +25,8 @@ export function ListState({ emptyText, emptyAction, onResetFilters, onRetry, chi
   const status = listStatus(input)
   if (status === 'ready') return children
   if (status === 'loading') return <ListSkeleton />
-  if (status === 'forbidden') return <p className="text-muted-foreground">{m.ui_forbidden()}</p>
+  // The sentences are UI text (DESIGN 4: `text-sm`), the size of the section hints and buttons around them.
+  if (status === 'forbidden') return <p className="text-sm text-muted-foreground">{m.ui_forbidden()}</p>
   if (status === 'error')
     return (
       <div className="flex flex-col items-start gap-4">
@@ -39,7 +40,7 @@ export function ListState({ emptyText, emptyAction, onResetFilters, onRetry, chi
   return (
     <div className="flex flex-col items-start gap-4 py-2">
       {/* The text may quote what was typed (a search): a long unbroken query wraps instead of widening the page. */}
-      <p className="max-w-full wrap-anywhere text-muted-foreground">{noMatches ? m.ui_no_matches() : emptyText}</p>
+      <p className="max-w-full text-sm wrap-anywhere text-muted-foreground">{noMatches ? m.ui_no_matches() : emptyText}</p>
       {noMatches && onResetFilters ? (
         <Button variant="outline" onClick={onResetFilters}>
           {m.ui_reset_filters()}

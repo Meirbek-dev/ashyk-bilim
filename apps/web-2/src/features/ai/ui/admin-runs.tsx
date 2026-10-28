@@ -82,7 +82,7 @@ export function AdminRuns({ search }: { search: AdminAiSearch }) {
       <h2 className="text-xl font-semibold">{m.ai_admin_runs()}</h2>
       <RunsFilters search={search} />
       {rows.length === 0 ? (
-        <p className="text-muted-foreground">{m.ai_runs_empty()}</p>
+        <p className="text-sm text-muted-foreground">{m.ai_runs_empty()}</p>
       ) : (
         <DataTable label={m.ai_admin_runs()} rows={rows} columns={columns()} getKey={run => run.id} />
       )}

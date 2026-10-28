@@ -67,7 +67,7 @@ export function GrantRows({ grants, refused, disabled, onChange }: GrantRowsProp
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">{m.admin_role_permissions_hint()}</p>
-      {grants.length === 0 ? <p className="text-muted-foreground">{m.admin_role_permissions_empty()}</p> : null}
+      {grants.length === 0 ? <p className="text-sm text-muted-foreground">{m.admin_role_permissions_empty()}</p> : null}
       {grants.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {grants.map((grant, at) => {
