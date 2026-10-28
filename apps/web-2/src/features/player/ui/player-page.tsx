@@ -64,7 +64,9 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       back={<BackToCourse courseId={courseId} />}
       title={state.title}
       actions={<CommandPalette />}
-      contents={<Contents state={state} onPick={() => setContentsOpen(false)} />}
+      contents={
+        <Contents state={state} onPick={() => setContentsOpen(false)} nowUnix={Math.floor(dataUpdatedAt / 1000)} />
+      }
       contentsSheet={{ open: contentsOpen, onOpenChange: setContentsOpen }}
       aside={aside}
       // A document or a video uses the column's full width (a PDF in 65ch opened at 38 %, B-PLY-10).

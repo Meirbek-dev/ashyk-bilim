@@ -27,14 +27,18 @@ const quiz = (patch: Partial<ActivityState>): ActivityState => ({
 describe('ContentsRow', () => {
   test('B-PLY-20 a failed test and work waiting for a grade are named in the contents; untouched work is not', async () => {
     const pick = vi.fn<() => void>()
-    const failed = await renderInRouter(<ContentsRow courseId="c" activity={quiz({ state: 'failed' })} onPick={pick} />)
+    const failed = await renderInRouter(
+      <ContentsRow courseId="c" activity={quiz({ state: 'failed' })} onPick={pick} nowUnix={0} />,
+    )
     await expect
       .element(failed.getByRole('link', { name: `Тест 1 ${m.player_state_failed()}`, exact: false }))
       .toBeVisible()
   })
 
   test('B-PLY-20 work started and not handed in is named in the contents', async () => {
-    const row = <ContentsRow courseId="c" activity={quiz({ state: 'in_progress' })} onPick={vi.fn<() => void>()} />
+    const row = (
+      <ContentsRow courseId="c" activity={quiz({ state: 'in_progress' })} onPick={vi.fn<() => void>()} nowUnix={0} />
+    )
     const screen = await renderInRouter(row)
     await expect
       .element(screen.getByRole('link', { name: `Тест 1 ${m.player_state_in_progress()}`, exact: false }))
@@ -42,8 +46,22 @@ describe('ContentsRow', () => {
   })
 
   test('B-PLY-20 untouched work carries no state mark', async () => {
-    const screen = await renderInRouter(<ContentsRow courseId="c" activity={quiz({})} onPick={vi.fn<() => void>()} />)
+    const screen = await renderInRouter(
+      <ContentsRow courseId="c" activity={quiz({})} onPick={vi.fn<() => void>()} nowUnix={0} />,
+    )
     await expect.element(screen.getByRole('link')).toBeVisible()
     expect(screen.getByText(m.player_state_failed()).query()).toBeNull()
+  })
+
+  test('B-PLY-20 untouched work past its due date is marked overdue; before the date it is not', async () => {
+    const due = quiz({ due_at_unix: 100 })
+    const late = await renderInRouter(
+      <ContentsRow courseId="c" activity={due} onPick={vi.fn<() => void>()} nowUnix={100} />,
+    )
+    await expect.element(late.getByRole('link', { name: `Тест 1 ${m.player_late()}`, exact: false })).toBeVisible()
+    const early = await renderInRouter(
+      <ContentsRow courseId="c" activity={due} onPick={vi.fn<() => void>()} nowUnix={99} />,
+    )
+    expect(early.getByText(m.player_late()).query()).toBeNull()
   })
 })

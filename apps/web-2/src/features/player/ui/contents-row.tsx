@@ -1,4 +1,4 @@
-import { Check, CircleX, Clock, Lock, PenLine, RotateCcw, type LucideIcon } from 'lucide-react'
+import { AlarmClock, Check, CircleX, Clock, Lock, PenLine, RotateCcw, type LucideIcon } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.gen'
@@ -7,7 +7,13 @@ import { Link } from '#/shared/components/link'
 import { formatDateTime } from '#/shared/i18n/format'
 import { activityTypeMeta } from '#/shared/i18n/labels'
 
-type RowProps = { courseId: CourseId; activity: ActivityState; onPick: () => void }
+type RowProps = {
+  courseId: CourseId
+  activity: ActivityState
+  onPick: () => void
+  /** When the learner state was read: untouched work past its due date is marked. */
+  nowUnix: number
+}
 
 // Work in flight beside the title (B-PLY-20): started and not handed in (an exam's clock may be running), waiting for
 // a grade, returned, failed; an icon with its name for readers.
@@ -21,8 +27,13 @@ const flight: Partial<Record<WorkState, { icon: LucideIcon; className: string; l
 }
 
 /** One activity of the contents: type tile, title, the server's mark; a restricted one is not a link. */
-export function ContentsRow({ courseId, activity, onPick }: RowProps) {
-  const work = activity.complete ? undefined : flight[activity.state]
+export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
+  // Untouched work past the learner's due date (B-PLY-20): the one the course page's «Далее» may jump to.
+  const overdue =
+    activity.state === 'not_started' && activity.due_at_unix !== null && activity.due_at_unix <= nowUnix
+      ? { icon: AlarmClock, className: 'text-warning', label: m.player_late }
+      : undefined
+  const work = activity.complete ? undefined : (flight[activity.state] ?? overdue)
   const label = (
     <>
       <ActivityIcon type={activity.activity_type} size="sm" />

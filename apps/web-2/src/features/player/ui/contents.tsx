@@ -9,7 +9,15 @@ import { formatPercent } from '#/shared/i18n/format'
 import { ContentsRow } from './contents-row'
 
 /** The course contents: progress ring, numbered chapters and activities with marks and locks, as the server sent them. */
-export function Contents({ state, onPick }: { state: LearnerCourseState; onPick: () => void }) {
+export function Contents({
+  state,
+  onPick,
+  nowUnix,
+}: {
+  state: LearnerCourseState
+  onPick: () => void
+  nowUnix: number
+}) {
   const { completed_required_count: done, total_required_count: total, progress_pct: percent } = state.progress
   return (
     <div className="flex flex-col gap-gutter">
@@ -50,7 +58,7 @@ export function Contents({ state, onPick }: { state: LearnerCourseState; onPick:
           <ol className="flex flex-col gap-0.5">
             {chapter.activities.map(activity => (
               <li key={activity.id}>
-                <ContentsRow courseId={state.course_id} activity={activity} onPick={onPick} />
+                <ContentsRow courseId={state.course_id} activity={activity} onPick={onPick} nowUnix={nowUnix} />
               </li>
             ))}
           </ol>
