@@ -60,11 +60,12 @@ describe('lateText', () => {
     expect(lateText({ ...penalty, waive_late_penalty: true })).toBe(m.attempt_late_free())
   })
 
-  test('B-ATT-02 a cutoff names the last moment, and no policy means a free late hand-in', () => {
+  test('B-ATT-02 a cutoff names the last moment unless waived, and no policy means a free late hand-in', () => {
     const cutoff = { kind: 'cutoff' as const, cutoff_at_unix: 1_800_000_000 }
     expect(lateText({ ...effective, late_policy: cutoff })).toBe(
       m.attempt_late_until({ date: formatDateTime(1_800_000_000) }),
     )
+    expect(lateText({ ...effective, late_policy: cutoff, waive_late_penalty: true })).toBe(m.attempt_late_free())
     expect(lateText(effective)).toBe(m.attempt_late_free())
   })
 })
