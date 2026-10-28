@@ -86,7 +86,12 @@ export function EntryCard({
           {m.player_due({ date: formatDateTime(entry.due_at_unix) })}
         </p>
       ) : null}
-      {!archived && kind !== 'lesson' && fresh.has(entry.state) && entry.score === null ? (
+      {/* A test's line promises the conditions page, which an attempt in progress has already passed (a timed one
+          keeps running: no «stop and continue later»). */}
+      {!archived &&
+      kind !== 'lesson' &&
+      (kind === 'attempt' ? entry.state === 'not_started' : fresh.has(entry.state)) &&
+      entry.score === null ? (
         <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}

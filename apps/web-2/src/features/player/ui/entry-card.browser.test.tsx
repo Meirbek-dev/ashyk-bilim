@@ -76,4 +76,14 @@ describe('EntryCard', () => {
     const open = await renderInRouter(<EntryCard courseId="c" entry={due} action={null} nowUnix={0} archived />)
     expect(open.getByText(m.player_hours_left({ hours: 1 })).query()).toBeNull()
   })
+
+  test('B-PLY-11 a test not started promises its conditions page; an attempt in progress gets no such line', async () => {
+    const fresh = exam({ state: 'not_started', score: null, allowed_actions: ['start'] })
+    const before = await renderInRouter(<EntryCard courseId="c" entry={fresh} action={null} nowUnix={0} />)
+    await expect.element(before.getByText(m.player_hint_attempt())).toBeVisible()
+    const running = exam({ state: 'in_progress', score: null, allowed_actions: ['continue'] })
+    const during = await renderInRouter(<EntryCard courseId="c" entry={running} action={null} nowUnix={0} />)
+    await expect.element(during.getByText(m.player_state_in_progress())).toBeVisible()
+    expect(during.getByText(m.player_hint_attempt()).query()).toBeNull()
+  })
 })
