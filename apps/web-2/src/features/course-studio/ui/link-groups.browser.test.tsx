@@ -10,7 +10,7 @@ import { LinkGroups } from './link-groups'
 
 afterEach(() => vi.unstubAllGlobals())
 
-test('B-CST-50 with no group at all the section leads to making one', async () => {
+test('B-CST-50 with no group the teacher can link, the section leads to making one', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => Response.json({ items: [], next_cursor: null, total: 0 })),

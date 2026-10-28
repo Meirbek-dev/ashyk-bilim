@@ -16,8 +16,9 @@ const option = (group: Usergroup): ComboboxOption => ({ value: group.id, label: 
 
 /**
  * "Link groups": pick from the groups the caller may link courses to (`manage_courses`) and not linked yet. With no
- * group at all, the way to make one (`groupPages`: the caller has the «Группы» section; B-CST-50) instead of `list`
- * (the linked groups, whose empty state would only repeat it).
+ * such group, the way to make one (`groupPages`: the caller has the «Группы» section; B-CST-50) instead of `list`
+ * (the linked groups, whose empty state would only repeat it). The text says «no group you can link», not «no groups»:
+ * «Группы» lists a colleague's groups too, which this teacher cannot link.
  */
 export function LinkGroups({
   courseId,
