@@ -66,10 +66,18 @@ pub fn new_verify_code() -> String {
 /// Trimmed, case-insensitive, dashes and spaces optional (`ftsb…` and
 /// `FTSB-…` name the same certificate). BUG-357: `-` and spaces are the
 /// only separators - any other character (`.`, quotes, non-Latin letters)
-/// is not a code at all (`None`), never silently dropped.
+/// is not a code at all (`None`), never silently dropped. The number as the
+/// PDF prints it (`№ FTSB-…-ЦТМ`, see `pdf.rs`) is the code too: its `№`
+/// and `-ЦТМ` decorations are dropped before that check.
 #[must_use]
 pub fn normalize_verify_code(raw: &str) -> Option<String> {
     let raw = raw.trim();
+    let raw = raw.strip_prefix('№').unwrap_or(raw).trim_start();
+    let raw = ["-ЦТМ", "-цтм", " ЦТМ", " цтм"]
+        .iter()
+        .find_map(|suffix| raw.strip_suffix(suffix))
+        .unwrap_or(raw)
+        .trim_end();
     if raw.is_empty()
         || !raw
             .chars()
@@ -679,11 +687,25 @@ mod tests {
             normalize_verify_code("cd-20260914-dvrt-411010").as_deref(),
             Some("CD20260914DVRT411010")
         );
+        // The number as printed on the PDF.
+        for printed in [
+            "№ FTSB-2ABC-9XYZ-DEFG-ЦТМ",
+            "FTSB-2ABC-9XYZ-DEFG-цтм",
+            "№FTSB2ABC9XYZDEFG ЦТМ",
+        ] {
+            assert_eq!(
+                normalize_verify_code(printed).as_deref(),
+                Some("FTSB-2ABC-9XYZ-DEFG"),
+                "{printed:?}"
+            );
+        }
         // BUG-357: only `-` and spaces separate; anything else is not a code.
         for junk in [
             "CD.20260914.DVRT.411010",
             "X68S-RTTD-T3GK-3RSV\"",
             "X68S-RTTD-T3GK-3RSVё",
+            "X68S-RTTD-T3GK-3RSV-ЦТМ-ЦТМ",
+            "№ ",
             "",
             "   ",
         ] {
