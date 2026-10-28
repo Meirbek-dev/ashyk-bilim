@@ -27,7 +27,16 @@ const counts: readonly {
 ]
 
 // Shares and averages at one decimal (formatPercent), as the per-question columns: «28,57 %» beside «28,6 %» read as two numbers.
-const share = (value: number | null) => (value === null ? m.grading_no_score() : formatPercent(value))
+// No answer yet: a quiet dash read as «Нет оценки», as in the gradebook.
+const share = (value: number | null) =>
+  value === null ? (
+    <span className="text-muted-foreground">
+      <span aria-hidden>—</span>
+      <span className="sr-only">{m.grading_no_score()}</span>
+    </span>
+  ) : (
+    formatPercent(value)
+  )
 
 const itemColumns: DataColumn<ItemAnalytics>[] = [
   {
@@ -79,8 +88,17 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
         {counts.map(({ key, label, filter }) => (
           <CountTile key={key} label={label()} value={stats[key]} filter={filter} />
         ))}
-        <KpiTile label={m.grading_kpi_average()} value={share(stats.avg_score)} />
-        <KpiTile label={m.grading_kpi_pass_rate()} value={share(stats.pass_rate)} />
+        {/* Before the first graded work: a quiet dash, as the gradebook, not a headline «Нет оценки». */}
+        <KpiTile
+          label={m.grading_kpi_average()}
+          value={stats.avg_score === null ? null : formatPercent(stats.avg_score)}
+          missing={m.grading_no_score()}
+        />
+        <KpiTile
+          label={m.grading_kpi_pass_rate()}
+          value={stats.pass_rate === null ? null : formatPercent(stats.pass_rate)}
+          missing={m.grading_no_score()}
+        />
       </KpiStrip>
       <Bars
         title={m.grading_distribution()}

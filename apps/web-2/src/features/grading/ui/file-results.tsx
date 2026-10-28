@@ -38,7 +38,8 @@ export function FileResults({ activityId }: { activityId: string }) {
         ))}
         <KpiTile
           label={m.grading_kpi_average()}
-          value={stats.avg_score === null ? m.grading_no_score() : formatPercent(stats.avg_score)}
+          value={stats.avg_score === null ? null : formatPercent(stats.avg_score)}
+          missing={m.grading_no_score()}
         />
       </KpiStrip>
       <Bars
