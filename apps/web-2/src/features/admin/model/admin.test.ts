@@ -6,9 +6,7 @@ import { ApiError } from '#/shared/api/errors'
 import type { Role } from '#/shared/api/gen/types.gen'
 
 import {
-  permissionLines,
-  permissionsByResource,
-  refusedLines,
+  refusedGrants,
   refusesGrants,
   awardFormSchema,
   roleFormSchema,
@@ -20,6 +18,7 @@ import {
 } from './admin'
 import { userBadge } from '../ui/labels'
 import { usersSearchSchema } from '../route'
+import { grantWords, permissionGroups } from './permissions'
 import { permissionSummary, roleDescription, roleName, roleNames } from './roles'
 
 const role = (slug: string, text: Partial<Role> = {}): Role => ({
@@ -62,20 +61,34 @@ describe('admin model', () => {
     )
   })
 
-  test('B-ADM-09 permissions are grouped by the text before the first colon, strings kept as sent', () => {
-    expect(permissionsByResource(['course:read:all', '*:*:*', 'course:update:own', 'quiz:*:platform'])).toEqual([
-      ['course', ['course:read:all', 'course:update:own']],
-      ['*', ['*:*:*']],
-      ['quiz', ['quiz:*:platform']],
+  test('B-ADM-09 grants read in words, grouped by resource in a fixed order; an unknown part stays as sent', () => {
+    const groups = permissionGroups(['quiz:*:platform', 'course:update:own', '*:*:*', 'course:read:all', 'robot:fly'])
+    expect(groups.map(group => group.resource)).toEqual([
+      m.admin_perm_resource_any(),
+      m.admin_perm_resource_course(),
+      m.admin_perm_resource_quiz(),
+      'robot',
     ])
+    expect(groups[1]?.grants).toEqual([
+      {
+        grant: 'course:read:all',
+        resource: m.admin_perm_resource_course(),
+        action: m.admin_perm_action_read(),
+        scope: m.admin_perm_scope_any(),
+      },
+      {
+        grant: 'course:update:own',
+        resource: m.admin_perm_resource_course(),
+        action: m.admin_perm_action_update(),
+        scope: m.admin_perm_scope_own(),
+      },
+    ])
+    // A two-part grant matches every scope, like `*`.
+    expect(grantWords('assessment:submit').scope).toBe(m.admin_perm_scope_any())
+    expect(grantWords('course:teleport:own').action).toBeNull()
   })
 
-  test('B-ADM-11 the permissions field is one grant per line, blanks dropped', () => {
-    expect(permissionLines(' course:read:all \n\n quiz:*:platform\n')).toEqual(['course:read:all', 'quiz:*:platform'])
-    expect(permissionLines('')).toEqual([])
-  })
-
-  test('B-ADM-11 a refused grant is named by its textarea line, blank lines counted', () => {
+  test('B-ADM-11 a refused grant is named by its row, in the sent order', () => {
     const refused = new ApiError({
       status: 422,
       code: 'validation-failed',
@@ -83,10 +96,10 @@ describe('admin model', () => {
       requestId: null,
       retryAfter: null,
     })
-    expect(refusedLines('course:read:all\n\n  \nnot-a-grant', refused)).toEqual([4])
+    expect(refusedGrants(refused)).toEqual([1])
     expect(refusesGrants(refused)).toBe(true)
     expect(refusesGrants(problem('conflict'))).toBe(false)
-    expect(refusedLines('a', problem('conflict'))).toEqual([])
+    expect(refusedGrants(problem('conflict'))).toEqual([])
   })
 
   test('B-ADM-07 a taken username, email or slug belongs under its field; other errors do not', () => {

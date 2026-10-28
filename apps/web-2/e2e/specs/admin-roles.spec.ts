@@ -62,15 +62,18 @@ test('B-ADM-08 system roles are named from the catalog', async ({ page, signInAs
   await expect(table.getByText(m.admin_role_kind_system({}, ru)).first()).toBeVisible()
 })
 
-test('B-ADM-09 a role page groups its permissions by resource; an unknown slug is not found', async ({
+test('B-ADM-09 a role page lists its permissions in words by resource; an unknown slug is not found', async ({
   page,
   signInAs,
 }) => {
   await signInAs('admin')
   await page.goto('/admin/roles/instructor')
   await expect(page.getByRole('heading', { level: 1, name: m.admin_role_instructor({}, ru) })).toBeVisible()
-  await expect(page.getByRole('definition').getByText('course:create:platform')).toBeVisible()
-  await expect(page.getByRole('term').getByText('course', { exact: true })).toBeVisible()
+  // Grants read in words; the string as sent is the tooltip.
+  await expect(page.getByRole('definition').getByTitle('course:create:platform')).toHaveText(
+    `${m.admin_perm_action_create({}, ru)} · ${m.admin_perm_scope_platform({}, ru)}`,
+  )
+  await expect(page.getByRole('term').getByText(m.admin_perm_resource_course({}, ru), { exact: true })).toBeVisible()
   // A system role has no edits: no form to save.
   await expect(page.getByRole('button', { name: m.ui_save({}, ru) })).toHaveCount(0)
   expectFailure(page, /^\/admin\/roles\/nope-/, 404)
@@ -96,7 +99,12 @@ test('B-ADM-10 a role is made in the dialog; a taken slug lands under its field'
   await deleteRole({ client: api, path: { slug }, headers: cookie(seed), throwOnError: true })
 })
 
-test('B-ADM-11 a custom role saves its name and its permissions, line by line', async ({ page, role, api, seed }) => {
+test('B-ADM-11 a custom role saves its name and its permissions, picked part by part', async ({
+  page,
+  role,
+  api,
+  seed,
+}) => {
   const { slug } = await role()
   await page.goto(`/admin/roles/${slug}`)
   const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
@@ -106,23 +114,38 @@ test('B-ADM-11 a custom role saves its name and its permissions, line by line', 
   await expect(page.getByRole('heading', { level: 1, name: 'E2E ассистент' })).toBeVisible()
 
   const grants = page.getByRole('form', { name: m.admin_role_permissions({}, ru) })
-  const field = grants.getByLabel(m.admin_role_permissions({}, ru))
-  await field.fill('course:read:all\nnot-a-grant')
-  expectFailure(page, new RegExp(`^/api/v2/rbac/roles/${slug}/permissions$`), 422)
-  await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  // The server names the refused line; the field says which one and selects it.
-  await expect(grants.getByText(m.admin_role_permissions_refused({ lines: '2' }, ru))).toBeVisible()
-  await expect(field).toBeFocused()
-  await field.fill('course:read:all\n\n quiz:read:assigned ')
+  const add = grants.getByRole('button', { name: m.admin_perm_add({}, ru) })
+  await add.click()
+  await add.click()
+  // The pickers name each part in words; the second row becomes «Тесты · Просмотр · только назначенные».
+  await grants
+    .getByRole('combobox', { name: m.admin_perm_field_resource({}, ru) })
+    .nth(1)
+    .selectOption('quiz')
+  await grants
+    .getByRole('combobox', { name: m.admin_perm_field_scope({}, ru) })
+    .nth(1)
+    .selectOption('assigned')
   await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
   await expect
     .poll(
       async () =>
         (await listRoles({ client: api, headers: cookie(seed) })).data?.find(r => r.slug === slug)?.permissions,
     )
-    .toEqual(['course:read:all', 'quiz:read:assigned'])
+    .toEqual(['course:read:*', 'quiz:read:assigned'])
   await page.reload()
-  await expect(field).toHaveValue('course:read:all\nquiz:read:assigned')
+  await expect(grants.getByRole('combobox', { name: m.admin_perm_field_scope({}, ru) }).nth(1)).toHaveValue('assigned')
+  await grants
+    .getByRole('button', { name: m.admin_perm_remove({}, ru) })
+    .first()
+    .click()
+  await grants.getByRole('button', { name: m.ui_save({}, ru) }).click()
+  await expect
+    .poll(
+      async () =>
+        (await listRoles({ client: api, headers: cookie(seed) })).data?.find(r => r.slug === slug)?.permissions,
+    )
+    .toEqual(['quiz:read:assigned'])
 })
 
 test("B-ADM-23 a role save over someone else's change asks, keeps the input and retries", async ({

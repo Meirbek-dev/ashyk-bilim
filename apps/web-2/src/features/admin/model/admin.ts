@@ -41,21 +41,6 @@ export function takenField(error: unknown): 'username' | 'email' | 'slug' | null
   return null
 }
 
-/**
- * A role's permission strings grouped by their resource (the text before the first `:`), for display only: the
- * strings are shown as the server sends them, the client never interprets them (R-06).
- */
-export const permissionsByResource = (permissions: readonly string[]): [string, string[]][] => [
-  ...Map.groupBy(permissions, permission => permission.split(':', 1)[0] ?? permission),
-]
-
-/** The permissions textarea: one grant per line, blank lines dropped. */
-export const permissionLines = (text: string): string[] =>
-  text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-
 /** Every XP source an admin may set a reward for; `admin_award` is the amount typed in each award. */
 export const REWARD_SOURCES = [
   'activity_completion',
@@ -119,22 +104,17 @@ const GRANT_FIELD = /^permissions\[(\d+)\]$/
 export const refusesGrants = (error: unknown): error is ApiError =>
   error instanceof ApiError && error.fieldErrors.some(({ field }) => GRANT_FIELD.test(field))
 
-/**
- * The textarea lines (1-based) of the grants a 422 refused: the server names each by its index in the sent list
- * (`permissions[3]`), and blank lines were not sent.
- */
-export function refusedLines(text: string, error: unknown): number[] {
+/** The rows (0-based, in the sent order) of the grants a 422 refused: the server names each `permissions[i]`. */
+export function refusedGrants(error: unknown): number[] {
   if (!refusesGrants(error)) return []
-  const sent = text.split('\n').flatMap((line, at) => (line.trim() ? [at + 1] : []))
   return error.fieldErrors.flatMap(({ field }) => {
     const index = GRANT_FIELD.exec(field)?.[1]
-    const line = index === undefined ? undefined : sent[Number(index)]
-    return line === undefined ? [] : [line]
+    return index === undefined ? [] : [Number(index)]
   })
 }
 
-/** The permissions field: one grant per line (`permissionLines` makes the body). */
-export const permissionsFormSchema = v.object({ permissions: v.string() })
+/** The permissions field: the grants as the editor's rows build them. */
+export const permissionsFormSchema = v.object({ permissions: v.array(v.string()) })
 
 /** A whole number or blank (blank = the platform's default). */
 const amountText = v.pipe(
