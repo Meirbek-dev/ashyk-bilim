@@ -797,6 +797,12 @@ const CONTEXT_LABELS: &[&str] = &[
     "Status:",
     "Question scores:",
     "Grading:",
+    "File submission attempt UUID:",
+    "Attempt number:",
+    "Late:",
+    "Rubric:",
+    "Rubric scores:",
+    "File:",
 ];
 
 /// Labels whose value is the course's own words (its description, about text, outcomes): quoted, the value stays and
@@ -808,6 +814,8 @@ const CONTENT_LABELS: &[&str] = &[
     "Learning outcomes:",
     "Learnings:",
     "Details:",
+    "Instructions:",
+    "Teacher feedback:",
 ];
 
 fn without_content_labels(line: &str) -> String {
@@ -896,14 +904,15 @@ pub fn clean_excerpt(raw: &str) -> String {
     }
 }
 
-/// The name a `Course:` / `Chapter:` / `Activity: name (type)` header carries; None for any other header.
+/// The name a `Course:` / `Chapter:` / `Activity: name (type)` / `File: name (type, size)` header carries; None for
+/// any other header.
 fn header_name(line: &str) -> Option<String> {
     let line = line.trim();
-    let name = ["Course:", "Chapter:", "Activity:"]
+    let name = ["Course:", "Chapter:", "Activity:", "File:"]
         .iter()
         .find_map(|label| line.strip_prefix(label))?
         .trim();
-    let name = if line.starts_with("Activity:") {
+    let name = if line.starts_with("Activity:") || line.starts_with("File:") {
         name.rsplit_once(" (").map_or(name, |(name, _)| name)
     } else {
         name
@@ -1134,6 +1143,21 @@ Learning outcomes: Циклы, функции"
             "T: Физика 10 класс"
         );
         assert_eq!(clean_excerpt("Published: True"), "");
+        // A file task's attempt as the model quoted it back.
+        assert_eq!(
+            clean_excerpt(
+                "Status: submitted; Late: false; Rubric: {}; Instructions: Upload any PDF."
+            ),
+            ""
+        );
+        assert_eq!(
+            clean_excerpt("File: essay.pdf (application/pdf, 13 bytes)"),
+            "essay.pdf"
+        );
+        assert_eq!(
+            clean_excerpt("Instructions: Загрузите эссе"),
+            "Загрузите эссе"
+        );
         let valid = validate_citations(
             &[
                 serde_json::json!({ "citation_id": "a", "excerpt": "Activity: P (dynamic) ... «Hi»" }),
