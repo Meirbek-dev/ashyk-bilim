@@ -110,7 +110,7 @@ const event = (actor: string | null, by?: string): AuditEvent => ({
   payload: { from: 'draft', to: 'published', ...(by ? { by } : {}) },
 })
 
-describe('exceptions and publishing', () => {
+describe('exceptions', () => {
   test('B-ASM-21 an exception sends only what is set and keeps an expiry set elsewhere (BUG-317)', () => {
     const stored: StudentOverride = {
       created_at_unix: 0,
@@ -153,7 +153,9 @@ describe('exceptions and publishing', () => {
     expect(v.is(overrideFormSchema, { ...form, attempts: '11' })).toBe(false)
     expect(v.is(overrideFormSchema, { ...form, attempts: '10' })).toBe(true)
   })
+})
 
+describe('publishing', () => {
   test('B-ASM-22 readiness: blockers come first', () => {
     const sorted = sortedIssues([issue('policy.due_at_past', 'warning'), issue('assessment.empty', 'blocker')])
     expect(sorted.map(row => row.code)).toEqual(['assessment.empty', 'policy.due_at_past'])

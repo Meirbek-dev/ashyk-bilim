@@ -1,4 +1,4 @@
-import type { FocusEvent, FormEvent } from 'react'
+import type { FormEvent } from 'react'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
@@ -46,15 +46,21 @@ export function AttrForm({ fields, values, onApply }: AttrFormProps) {
     event.preventDefault()
     void form.handleSubmit()
   }
-  const leave = (event: FocusEvent<HTMLFormElement>) => {
-    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
-    if (form.state.isDirty) void form.handleSubmit()
+  // Leaving the form (Tab or a click elsewhere) applies a change: a `focusout` listener on the form itself, the event
+  // React's `onBlur` delegates, since the form is no control of its own.
+  const watchLeave = (node: HTMLFormElement) => {
+    const leave = (event: FocusEvent) => {
+      if (event.relatedTarget instanceof Node && node.contains(event.relatedTarget)) return
+      if (form.state.isDirty) void form.handleSubmit()
+    }
+    node.addEventListener('focusout', leave)
+    return () => node.removeEventListener('focusout', leave)
   }
   return (
     <form
+      ref={watchLeave}
       noValidate
       onSubmit={submit}
-      onBlur={leave}
       className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
       {fields.map(field => (

@@ -14,6 +14,7 @@ import { passThreshold } from '../model/ai'
 import { completeSessionOptions } from '../queries'
 import { Citations } from './citations'
 import { AnswerKey } from './answer-key'
+import { LearningObjectives } from './learning-objectives'
 import { RemediationAnswer } from './remediation-answer'
 
 /**
@@ -44,16 +45,7 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
     <article className="flex flex-col gap-4">
       <h3 className="text-lg font-semibold wrap-anywhere">{lecture.title}</h3>
       <MarkdownView content={lecture.micro_lecture_markdown} />
-      {lecture.learning_objectives && lecture.learning_objectives.length > 0 ? (
-        <section className="flex flex-col gap-1">
-          <h4 className="text-sm font-medium">{m.ai_remediation_objectives()}</h4>
-          <ul className="list-disc ps-5 text-sm">
-            {lecture.learning_objectives.map(objective => (
-              <li key={objective}>{objective}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <LearningObjectives objectives={lecture.learning_objectives ?? []} />
       <Citations citations={lecture.citations ?? []} />
       {done && score !== null ? (
         <output className="font-medium">

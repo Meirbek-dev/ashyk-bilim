@@ -63,6 +63,19 @@ describe('authoring', () => {
     expect(saved?.content.flatMap(types)).not.toContain('blockEmbed')
   })
 
+  test('B-EDT-14 a legacy HTML post is sanitized and edited as rich text, without the block menu', async () => {
+    const onChange = vi.fn<(doc: EditorDocument) => void>()
+    const screen = await render(
+      <DiscussionEditor content={LEGACY_POST} onChange={onChange} onImage={() => undefined} />,
+    )
+    await expect.element(screen.getByText('21')).toBeVisible()
+    expect(document.querySelector('.ProseMirror [onerror], .ProseMirror script')).toBeNull()
+    await expect.element(screen.getByRole('button', { name: m.editor_insert() })).not.toBeInTheDocument()
+    await expect.element(screen.getByRole('button', { name: m.editor_bold() })).toBeVisible()
+  })
+})
+
+describe('block fields', () => {
   test('B-EDT-10 B-EDT-13 the Insert menu adds a formula; LaTeX renders, an error is shown, not thrown', async () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
     const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
@@ -113,17 +126,6 @@ describe('authoring', () => {
       type: 'youtube',
       url: 'https://youtu.be/dQw4w9WgXcQ',
     })
-  })
-
-  test('B-EDT-14 a legacy HTML post is sanitized and edited as rich text, without the block menu', async () => {
-    const onChange = vi.fn<(doc: EditorDocument) => void>()
-    const screen = await render(
-      <DiscussionEditor content={LEGACY_POST} onChange={onChange} onImage={() => undefined} />,
-    )
-    await expect.element(screen.getByText('21')).toBeVisible()
-    expect(document.querySelector('.ProseMirror [onerror], .ProseMirror script')).toBeNull()
-    await expect.element(screen.getByRole('button', { name: m.editor_insert() })).not.toBeInTheDocument()
-    await expect.element(screen.getByRole('button', { name: m.editor_bold() })).toBeVisible()
   })
 })
 
@@ -182,6 +184,7 @@ test('B-EDT-23 an embed of this site is refused in the dialog; a button link is 
   await expect.poll(() => find(last(onChange), 'button')?.attrs?.['link']).toBe('https://example.com/page')
 })
 
+const around = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
 const cell = (text: string) => ({
   type: 'tableCell',
   content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
@@ -227,7 +230,6 @@ test('B-EDT-27 a user block takes a person picked by name, not a typed id', asyn
   const onChange = vi.fn<(doc: EditorDocument) => void>()
   // Blocks around it: an open search marked them aria-hidden, the editor redrew the user block and the typed name
   // went into the lesson text.
-  const around = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
   const content = {
     type: 'doc',
     content: [around('До'), { type: 'blockUser', attrs: { user_id: '' } }, around('После')],
