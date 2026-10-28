@@ -51,10 +51,13 @@ export function MyCertificates() {
                 <p className="text-sm wrap-anywhere">{certificateKind(certification.config, course.name)}</p>
               ) : null}
               <p className="text-sm wrap-anywhere text-muted-foreground">
-                {m.learning_certificate_meta({
-                  date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
-                  code: certificate.verify_code,
-                })}
+                <CodeKeptWhole
+                  text={m.learning_certificate_meta({
+                    date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
+                    code: certificate.verify_code,
+                  })}
+                  code={certificate.verify_code}
+                />
               </p>
               {instructor ? (
                 <p className="text-sm text-muted-foreground">
@@ -89,5 +92,18 @@ export function MyCertificates() {
         />
       </ListState>
     </section>
+  )
+}
+
+/** The line with the code on one line: a phone broke «FYX8-TPKX-» from «X7EY-XH55» at a dash, as if two codes. */
+function CodeKeptWhole({ text, code }: { text: string; code: string }) {
+  const at = text.indexOf(code)
+  if (at < 0) return text
+  return (
+    <>
+      {text.slice(0, at)}
+      <span className="whitespace-nowrap">{code}</span>
+      {text.slice(at + code.length)}
+    </>
   )
 }
