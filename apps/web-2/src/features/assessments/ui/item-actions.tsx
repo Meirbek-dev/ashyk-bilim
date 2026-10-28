@@ -9,7 +9,7 @@ import { IconButton } from '#/shared/components/icon-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { toast } from '#/shared/ui/toast'
 
-import { copyItem } from '../model/items'
+import { copyItem, neighborOf } from '../model/items'
 import { createItemOptions, deleteItemOptions } from '../queries'
 import { useVersion } from './use-version'
 
@@ -17,12 +17,14 @@ type ItemActionsProps = {
   activityId: string
   assessmentId: string
   item: AssessmentItem
+  /** The test's questions in order: after a delete the neighbour opens. */
+  items: readonly AssessmentItem[]
   /** The only question of a published (or scheduled) test: the server keeps it, so delete is off and says why. */
   lastOfLive: boolean
 }
 
 /** Duplicate (the copy is appended and opened) and delete (asks first) of the open question. */
-export function ItemActions({ activityId, assessmentId, item, lastOfLive }: ItemActionsProps) {
+export function ItemActions({ activityId, assessmentId, item, items, lastOfLive }: ItemActionsProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const duplicate = useMutation(createItemOptions(queryClient, activityId, assessmentId))
@@ -54,7 +56,7 @@ export function ItemActions({ activityId, assessmentId, item, lastOfLive }: Item
         onSuccess: () => {
           setConfirming(false)
           toast.add({ title: m.assessments_item_deleted() })
-          void open(undefined)
+          void open(neighborOf(items, item.id))
         },
       },
     )

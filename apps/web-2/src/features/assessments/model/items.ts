@@ -122,6 +122,12 @@ export const totalPoints = (items: readonly Pick<AssessmentItem, 'max_score'>[])
 export const openItem = (items: readonly AssessmentItem[], id: string | undefined): AssessmentItem | undefined =>
   items.find(item => item.id === id) ?? items[0]
 
+/** The question to open after deleting one: the next, or the previous when it was the last; none when none is left. */
+export function neighborOf(items: readonly AssessmentItem[], id: string): string | undefined {
+  const at = items.findIndex(item => item.id === id)
+  return (items[at + 1] ?? items[at - 1])?.id
+}
+
 /** Items reordered to a list of ids (a drag), positions renumbered 1..n like the server. */
 export const inOrder = (items: readonly AssessmentItem[], ids: readonly string[]): AssessmentItem[] =>
   ids.flatMap((id, at) => {

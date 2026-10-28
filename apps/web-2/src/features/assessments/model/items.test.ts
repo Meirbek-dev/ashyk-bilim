@@ -10,6 +10,7 @@ import {
   itemKindOf,
   newItem,
   newItemKinds,
+  neighborOf,
   openItem,
   totalPoints,
   withVariant,
@@ -82,6 +83,13 @@ describe('builder', () => {
     expect(openItem(items, 'gone')?.id).toBe('a')
     expect(openItem(items, undefined)?.id).toBe('a')
     expect(openItem([], 'b')).toBeUndefined()
+  })
+
+  test('B-ASM-03 deleting a question opens its neighbour, not the first one', () => {
+    const items = ['a', 'b', 'c'].map(id => item(id, choice('single_choice', [true])))
+    expect(neighborOf(items, 'b')).toBe('c')
+    expect(neighborOf(items, 'c')).toBe('b')
+    expect(neighborOf(items.slice(0, 1), 'a')).toBeUndefined()
   })
 
   test('B-ASM-05 single answer keeps only the first correct; true/false gets its fixed pair; leaving it starts over', () => {

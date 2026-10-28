@@ -48,6 +48,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
             activityId={activityId}
             assessmentId={assessment.id}
             item={item}
+            items={assessment.items}
             lastOfLive={assessment.items.length === 1 && ['published', 'scheduled'].includes(assessment.lifecycle)}
           />
         ) : null}
