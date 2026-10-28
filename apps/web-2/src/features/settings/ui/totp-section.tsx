@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { lazy, Suspense, type FormEvent } from 'react'
+import { lazy, Suspense, useState, type FormEvent } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
@@ -56,6 +56,10 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     <StatusBadge tone="neutral">{m.settings_totp_off()}</StatusBadge>
   )
   const pending = enroll.data && !profile.mfa_enabled ? enroll.data : null
+  // «Включить» and the setup replace each other: focus follows (to the setup's start, back to «Включить» on cancel),
+  // else it falls to the page and a keyboard or screen-reader user starts over from the top.
+  const [cancelled, setCancelled] = useState(false)
+  const focusOnMount = (node: HTMLElement | null) => node?.focus()
   const verifyError = hasCode(verify.error, 'invalid-totp-code') ? null : verify.error
   return (
     <PlainSection title={m.settings_totp_title()} description={m.settings_totp_hint()}>
@@ -63,14 +67,21 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
       {profile.google_linked ? <p className="text-sm">{m.settings_totp_google()}</p> : null}
       {profile.mfa_enabled ? <DisableTotp /> : null}
       {!profile.mfa_enabled && !pending ? (
-        <div>
+        <div ref={cancelled ? node => node?.querySelector('button')?.focus() : undefined}>
           <SubmitButton variant="outline" onClick={() => enroll.mutate({})} pending={enroll.isPending}>
             {m.settings_totp_enable()}
           </SubmitButton>
         </div>
       ) : null}
       {pending ? (
-        <form noValidate onSubmit={submit} aria-label={m.settings_totp_title()} className="flex flex-col gap-4">
+        <form
+          ref={focusOnMount}
+          tabIndex={-1}
+          noValidate
+          onSubmit={submit}
+          aria-label={m.settings_totp_title()}
+          className="flex flex-col gap-4 outline-none"
+        >
           <p className="text-sm">{m.settings_totp_scan()}</p>
           <Suspense fallback={<div aria-hidden className="size-48 rounded-md bg-muted" />}>
             <TotpQr uri={pending.uri} />
@@ -94,7 +105,13 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
             <SubmitButton type="submit" variant="secondary" pending={verify.isPending}>
               {m.settings_totp_confirm()}
             </SubmitButton>
-            <Button variant="ghost" onClick={() => enroll.reset()}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCancelled(true)
+                enroll.reset()
+              }}
+            >
               {m.ui_cancel()}
             </Button>
           </div>
