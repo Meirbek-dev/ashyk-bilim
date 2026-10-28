@@ -20,13 +20,15 @@ const muted = 'text-sm text-muted-foreground'
 
 type Renderers = { [T in ProfileSection['type']]: (section: Extract<ProfileSection, { type: T }>) => ReactNode }
 
+// Items carry no ids and the owner may enter the same one twice (two «Python» skills, one link twice): a read-only list
+// keys them by position, never by their text, which collided.
 // Courses are listed by the page itself, and the legacy gamification kind has no public data: both show nothing.
 const bodies: Renderers = {
   text: section => <p className="max-w-prose wrap-anywhere whitespace-pre-line">{section.content}</p>,
   links: section => (
     <ul className="flex flex-col gap-1">
-      {section.links.map(link => (
-        <li key={link.url} className="wrap-anywhere">
+      {section.links.map((link, at) => (
+        <li key={at} className="wrap-anywhere">
           <Anchor href={link.url} target="_blank" rel="noopener noreferrer">
             {link.title || link.url}
           </Anchor>
@@ -36,8 +38,8 @@ const bodies: Renderers = {
   ),
   skills: section => (
     <ul className="flex flex-col gap-1">
-      {section.skills.map(skill => (
-        <li key={skill.name}>
+      {section.skills.map((skill, at) => (
+        <li key={at}>
           {skill.name}
           {skill.level ? <span className={muted}> · {skillLevelLabels[skill.level]()}</span> : null}
           {skill.category ? <span className={muted}> · {skill.category}</span> : null}
@@ -47,8 +49,8 @@ const bodies: Renderers = {
   ),
   experience: section => (
     <ul className="flex flex-col gap-3">
-      {section.experiences.map(item => (
-        <li key={`${item.title}-${item.startDate}`} className="flex flex-col gap-1">
+      {section.experiences.map((item, at) => (
+        <li key={at} className="flex flex-col gap-1">
           <h3 className="font-medium">{[item.title, item.organization].filter(Boolean).join(' · ')}</h3>
           <p className={muted}>{period(item)}</p>
           {item.description ? <p className="whitespace-pre-line">{item.description}</p> : null}
@@ -58,8 +60,8 @@ const bodies: Renderers = {
   ),
   education: section => (
     <ul className="flex flex-col gap-3">
-      {section.education.map(item => (
-        <li key={`${item.institution}-${item.startDate}`} className="flex flex-col gap-1">
+      {section.education.map((item, at) => (
+        <li key={at} className="flex flex-col gap-1">
           <h3 className="font-medium">{item.institution}</h3>
           <p className={muted}>{[item.degree, item.field, period(item)].filter(Boolean).join(' · ')}</p>
           {item.description ? <p className="whitespace-pre-line">{item.description}</p> : null}
@@ -69,8 +71,8 @@ const bodies: Renderers = {
   ),
   affiliation: section => (
     <ul className="flex flex-col gap-3">
-      {section.affiliations.map(item => (
-        <li key={item.name} className="flex items-start gap-3">
+      {section.affiliations.map((item, at) => (
+        <li key={at} className="flex items-start gap-3">
           {item.logoUrl ? <img src={item.logoUrl} alt="" className="size-10 rounded-md object-contain" /> : null}
           <div className="flex flex-col gap-1">
             <h3 className="font-medium">{item.name}</h3>
@@ -82,8 +84,8 @@ const bodies: Renderers = {
   ),
   'image-gallery': section => (
     <ul className="grid grid-cols-2 gap-3 @2xl:grid-cols-3">
-      {section.images.map(image => (
-        <li key={image.url}>
+      {section.images.map((image, at) => (
+        <li key={at}>
           <figure className="flex flex-col gap-1">
             <img src={image.url} alt={image.caption ?? ''} className="aspect-video w-full rounded-md object-cover" />
             {image.caption ? <figcaption className={muted}>{image.caption}</figcaption> : null}
