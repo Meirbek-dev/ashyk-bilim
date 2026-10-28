@@ -9,17 +9,25 @@ import type { Course } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
 import { activityType } from '#/shared/i18n/labels'
 
-import { certificateLine, nextActivity, outlineSyllabus } from '../model/course'
+import { certificateLine, nextActivity, outlineSyllabus, type NextReason } from '../model/course'
 import { learnerStateOptions } from '../queries'
 import { LeaveCourse } from './leave-course'
 import { Syllabus } from './syllabus'
+
+// Why «Далее» is not simply the next activity in order: an overdue exam put first must not look like a skipped course.
+const nextReasons = {
+  overdue: { label: m.course_next_reason_overdue, className: 'text-warning' },
+  due_soon: { label: m.course_next_reason_due_soon, className: 'text-warning' },
+  returned_for_revision: { label: m.course_next_reason_returned, className: 'text-warning' },
+  in_progress: { label: m.course_next_reason_in_progress, className: 'text-muted-foreground' },
+} satisfies Record<NextReason, { label: () => string; className: string }>
 
 /**
  * A signed-in user's progress and syllabus, both straight from the learner state (spec 7.6: nothing is computed
  * here). Progress and "Leave" (at the end, after the programme) show only to an enrolled learner.
  */
 export function LearnerOutline({ course }: { course: Course }) {
-  const { data: state } = useSuspenseQuery(learnerStateOptions(course.id))
+  const { data: state, dataUpdatedAt } = useSuspenseQuery(learnerStateOptions(course.id))
   const { completed_required_count: done, total_required_count: total, progress_pct: percent } = state.progress
   const next = state.enrolled ? nextActivity(state) : null
   const certificate = certificateLine(state)
@@ -48,6 +56,9 @@ export function LearnerOutline({ course }: { course: Course }) {
               <Link to="/learn/$courseId/$activityId" params={{ courseId: course.id, activityId: next.id }}>
                 {next.title}
               </Link>
+              {next.reason ? (
+                <span className={nextReasons[next.reason].className}>· {nextReasons[next.reason].label()}</span>
+              ) : null}
             </p>
           ) : null}
         </section>
@@ -65,7 +76,10 @@ export function LearnerOutline({ course }: { course: Course }) {
           )}
         </p>
       ) : null}
-      <Syllabus courseId={course.id} chapters={outlineSyllabus(state, course.allowed_actions.includes('update'))} />
+      <Syllabus
+        courseId={course.id}
+        chapters={outlineSyllabus(state, course.allowed_actions.includes('update'), Math.floor(dataUpdatedAt / 1000))}
+      />
       {/* Rare and destructive: after the programme, not between the progress and its bar (on a phone it split them).
           An archived course is read-only: the server refuses to let anyone leave it (409). */}
       {state.enrolled && !course.archived_at_unix ? (

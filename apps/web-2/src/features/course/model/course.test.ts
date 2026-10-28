@@ -208,6 +208,7 @@ describe('syllabus and progress', () => {
             available: false,
             opensAt: null,
             work: 'not_started',
+            due: null,
           },
         ],
       },
@@ -223,6 +224,7 @@ describe('syllabus and progress', () => {
       available: false,
       opensAt: null,
       work: 'not_started',
+      due: null,
     }
     expect(
       syllabusSize([
@@ -294,6 +296,7 @@ const of = (type: string, id: string) => ({
   available: false,
   opensAt: null,
   work: 'not_started' as const,
+  due: null,
 })
 
 test('B-CRS-15 the composition counts each activity type the syllabus lists, in the type table order', () => {
@@ -322,7 +325,7 @@ const pointing = (activity_id: string | null) =>
   })
 
 test('B-CRS-17 «Далее» names the activity the server points at; none without one or outside the outline', () => {
-  expect(nextActivity(pointing('a1'))).toEqual({ id: 'a1', title: 'Page', type: 'dynamic' })
+  expect(nextActivity(pointing('a1'))).toEqual({ id: 'a1', title: 'Page', type: 'dynamic', reason: null })
   expect(nextActivity(pointing(null))).toBeNull()
   expect(nextActivity(pointing('gone'))).toBeNull()
 })
@@ -343,4 +346,30 @@ test('B-CRS-20 the page says a certificate is offered, or links the learner to t
   expect(certificateLine(cert({ configured: false }))).toBeNull()
   expect(certificateLine(cert({}))).toEqual({ kind: 'offered' })
   expect(certificateLine(cert({ issued: true, verify_code: 'AB12' }))).toEqual({ kind: 'yours', code: 'AB12' })
+})
+
+test('B-CRS-17 «Далее» says why the server put work first: past due, due soon, returned, started', () => {
+  const overdue = pointing('a1')
+  expect(nextActivity({ ...overdue, next_action: { ...overdue.next_action!, reason: 'overdue' } })?.reason).toBe(
+    'overdue',
+  )
+  expect(nextActivity({ ...overdue, next_action: { ...overdue.next_action!, reason: 'next_required' } })?.reason).toBe(
+    null,
+  )
+})
+
+test('B-CRS-21 an enrolled learner sees the due date of work still theirs to do, past or not', () => {
+  const work = (patch: Partial<LearnerCourseState['outline'][number]['activities'][number]>) => {
+    const base = state({ enrolled: true })
+    const [chapter] = base.outline
+    const [first] = chapter!.activities
+    return { ...base, outline: [{ ...chapter!, activities: [{ ...first!, ...patch }] }] }
+  }
+  const open = { complete: false, state: 'not_started' as const, due_at_unix: 100 }
+  expect(outlineSyllabus(work(open), false, 50)[0]?.activities[0]?.due).toEqual({ at: 100, past: false })
+  expect(outlineSyllabus(work(open), false, 100)[0]?.activities[0]?.due).toEqual({ at: 100, past: true })
+  // Handed in: the date is the teacher's business now; done work and an outsider's syllabus show none.
+  expect(outlineSyllabus(work({ ...open, state: 'needs_grading' }), false, 50)[0]?.activities[0]?.due).toBeNull()
+  expect(outlineSyllabus(work({ ...open, complete: true }), false, 50)[0]?.activities[0]?.due).toBeNull()
+  expect(outlineSyllabus({ ...work(open), enrolled: false }, true, 50)[0]?.activities[0]?.due).toBeNull()
 })

@@ -5,6 +5,7 @@ import type {
   Course,
   Curriculum,
   LearnerCourseState,
+  NextActionReason,
   UserId,
   WorkState,
 } from '#/shared/api/gen/types.gen'
@@ -59,6 +60,8 @@ export type SyllabusActivity = {
   opensAt: number | null
   /** The learner's work on it (the server's): unfinished work in flight is named on the row. */
   work: WorkState
+  /** The learner's due date (their extension if any) while the work is still theirs to do; `past` once it went by. */
+  due: { at: number; past: boolean } | null
 }
 export type SyllabusChapter = { id: string; title: string; activities: SyllabusActivity[] }
 
@@ -78,16 +81,21 @@ export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
           available: false,
           opensAt: null,
           work: 'not_started',
+          due: null,
         })),
     }))
     .filter(chapter => chapter.activities.length > 0)
 }
 
+// Work still the learner's to do: a due date means something to them only then (handed-in work waits on the teacher).
+const OPEN_WORK = new Set<WorkState>(['not_started', 'in_progress', 'returned'])
+
 /**
  * A signed-in user's syllabus with the server's per-activity state. Rows link into the player for an enrolled learner,
- * and for the course's staff (`staff`), who reach this page by «Предпросмотр как у учащегося» (B-CRS-19).
+ * and for the course's staff (`staff`), who reach this page by «Предпросмотр как у учащегося» (B-CRS-19). An enrolled
+ * learner's open work carries its due date (B-CRS-21), past or not as of `nowUnix` (when the state was read).
  */
-export const outlineSyllabus = (state: LearnerCourseState, staff = false): SyllabusChapter[] =>
+export const outlineSyllabus = (state: LearnerCourseState, staff = false, nowUnix = 0): SyllabusChapter[] =>
   state.outline.map(chapter => ({
     id: chapter.id,
     title: chapter.title,
@@ -99,15 +107,33 @@ export const outlineSyllabus = (state: LearnerCourseState, staff = false): Sylla
       available: (state.enrolled || staff) && activity.available,
       opensAt: activity.opens_at_unix,
       work: activity.state,
+      due:
+        state.enrolled && !activity.complete && activity.due_at_unix !== null && OPEN_WORK.has(activity.state)
+          ? { at: activity.due_at_unix, past: activity.due_at_unix <= nowUnix }
+          : null,
     })),
   }))
 
+/** Why the server put an activity before the next one in order: «Далее» names it (B-CRS-17). */
+export type NextReason = Extract<NextActionReason, 'overdue' | 'due_soon' | 'returned_for_revision' | 'in_progress'>
+const NEXT_REASONS = new Set<NextActionReason>(['overdue', 'due_soon', 'returned_for_revision', 'in_progress'])
+const isNextReason = (reason: NextActionReason): reason is NextReason => NEXT_REASONS.has(reason)
+
 /** The activity the server's `next_action` points at, with its type, for «Далее: …» under the progress (B-CRS-17). */
-export function nextActivity(state: LearnerCourseState): { id: ActivityId; title: string; type: string } | null {
-  const id = state.next_action?.activity_id
-  if (!id) return null
+export function nextActivity(
+  state: LearnerCourseState,
+): { id: ActivityId; title: string; type: string; reason: NextReason | null } | null {
+  const next = state.next_action
+  const id = next?.activity_id
+  if (!next || !id) return null
   const found = state.outline.flatMap(chapter => chapter.activities).find(activity => activity.id === id)
-  return found ? { id: found.id, title: found.title, type: found.activity_type } : null
+  if (!found) return null
+  return {
+    id: found.id,
+    title: found.title,
+    type: found.activity_type,
+    reason: isNextReason(next.reason) ? next.reason : null,
+  }
 }
 
 const ROLE_ORDER = ['creator', 'maintainer', 'contributor']

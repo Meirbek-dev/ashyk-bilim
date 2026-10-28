@@ -32,7 +32,7 @@ export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activi
         <span className="rounded-lg bg-background">
           <ActivityIcon type={type} size="sm" />
         </span>
-        <span className="min-w-0 flex-1 wrap-anywhere">
+        <span className="flex min-w-0 flex-1 flex-col wrap-anywhere">
           {activity.available ? (
             <Link variant="stretched" to="/learn/$courseId/$activityId" params={{ courseId, activityId: activity.id }}>
               {activity.title}
@@ -40,6 +40,14 @@ export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activi
           ) : (
             activity.title
           )}
+          {/* The learner's deadline under the title (B-CRS-21): a phone row has no room beside it. */}
+          {activity.due ? (
+            <span className={`text-sm ${activity.due.past ? 'text-warning' : 'text-muted-foreground'}`}>
+              {(activity.due.past ? m.course_activity_overdue : m.course_activity_due)({
+                date: formatDateTime(activity.due.at),
+              })}
+            </span>
+          ) : null}
         </span>
         {activity.opensAt ? (
           <span className="text-sm text-muted-foreground">
