@@ -88,11 +88,19 @@ export function useAppForm<T>(
   // The mutation starts only after the async validation, so `pending` cannot disable the button before a double
   // click (or Enter pressed twice) submits again: a submit while one is in flight is dropped.
   const submitting = useRef(false)
+  const recheck = ({
+    formApi,
+  }: {
+    formApi: { state: { submissionAttempts: number }; parseValuesWithSchema: (schema: GenericSchema<T>) => unknown }
+  }) => (formApi.state.submissionAttempts > 0 ? formApi.parseValuesWithSchema(schema) : undefined)
   // What the server has: the defaults, then the values after each successful submit (which may have reset them).
   const [saved, setSaved] = useState(() => JSON.stringify(defaultValues))
   const form = useKitForm({
     defaultValues,
-    validators: { onSubmit: schema },
+    // From the first submit on, the form re-checks on every edit: a field the user fixes drops its message while they
+    // type, so «Save» does not jump up under the pointer as the text vanishes on blur (that click landed on nothing and
+    // was lost), and a field left unfixed keeps its message when focus moves on (a blur used to clear it).
+    validators: { onSubmit: schema, onChange: recheck },
     listeners: { onChange: ({ formApi }) => void onChange?.(formApi.state.values) },
     onSubmitInvalid: () => void focusFirstInvalid(submittedForm()),
     onSubmit: async ({ value }) => {

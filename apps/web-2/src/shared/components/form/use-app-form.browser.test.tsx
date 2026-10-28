@@ -138,3 +138,22 @@ test('a refusal the submit places under a field itself (a wrong code) takes focu
   await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(text.name).element()))
   await expect.element(screen.getByLabelText(text.name)).toHaveAttribute('aria-invalid', 'true')
 })
+
+test('after a refused submit a field keeps its message until fixed, drops it while typing, and one Save then sends', async () => {
+  const save = vi.fn<() => Promise<void>>(() => Promise.resolve())
+  const screen = await renderInRouter(<GuardedForm save={save} rules={named} />)
+  const field = screen.getByLabelText(text.name)
+  await field.fill('')
+  await screen.getByRole('button', { name: text.save }).click()
+  await expect.element(field).toHaveAttribute('aria-invalid', 'true')
+  await expect.element(field).toHaveFocus()
+  // Focus moves on to Save (a second try) with the field still empty: the message stays, nothing is sent.
+  await screen.getByRole('button', { name: text.save }).click()
+  await expect.element(field).toHaveAttribute('aria-invalid', 'true')
+  expect(save).not.toHaveBeenCalled()
+  // Fixed: the message goes as the user types (before Save, so the button does not move under the pointer).
+  await field.fill('Geometry')
+  await expect.element(field).not.toHaveAttribute('aria-invalid', 'true')
+  await screen.getByRole('button', { name: text.save }).click()
+  await expect.poll(() => save.mock.calls.length).toBe(1)
+})
