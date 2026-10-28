@@ -174,6 +174,22 @@ test('B-ATT-14 at zero the attempt is handed in by itself with the answers given
     formatPercent(100, 'ru'),
   )
 })
+test('B-ATT-02 the conditions say what the due date means for a late hand-in', async ({ page, learner, makeQuiz }) => {
+  const due = Math.floor(Date.now() / 1000) + 3 * 86_400
+  const strict = await makeQuiz({ policy: { due_at_unix: due, allow_late: false } })
+  const penalty = await makeQuiz({
+    policy: { due_at_unix: due, allow_late: true, late_policy: { kind: 'penalty', percent_per_day: 10, max_days: 3 } },
+  })
+  await learner.enroll(strict.course)
+  await learner.enroll(penalty.course)
+  await learner.signIn()
+  await page.goto(strict.url)
+  await expect(page.getByText(m.attempt_late_closed({}, ru))).toBeVisible()
+  await page.goto(penalty.url)
+  await expect(
+    page.getByText(m.attempt_late_penalty_rule({ percent: formatPercent(10, 'ru'), days: '3' }, ru)),
+  ).toBeVisible()
+})
 test('B-ATT-14 a strict due date reads «Сдать до» until its last day, then counts down', async ({
   page,
   learner,

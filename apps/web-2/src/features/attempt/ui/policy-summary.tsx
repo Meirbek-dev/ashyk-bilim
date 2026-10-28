@@ -1,7 +1,7 @@
-import { CalendarClock, Eye, ListOrdered, RotateCcw, Target, Timer } from 'lucide-react'
+import { CalendarClock, CalendarX, Eye, ListOrdered, RotateCcw, Target, Timer } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentDetail, AttemptState, ReviewVisibility } from '#/shared/api/gen/types.gen'
+import type { AssessmentDetail, AttemptState, EffectivePolicy, ReviewVisibility } from '#/shared/api/gen/types.gen'
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { protections, type Protection } from '../model/attempt'
@@ -38,6 +38,22 @@ export const attemptsText = (state: AttemptState) => {
 }
 
 /**
+ * What the due date means (B-ATT-02): nothing after it, a late hand-in without or with a penalty, or until a cutoff -
+ * so a learner starting late knows the price before «Начать», as the file task says it.
+ */
+export const lateText = (effective: Pick<EffectivePolicy, 'allow_late' | 'late_policy' | 'waive_late_penalty'>) => {
+  if (!effective.allow_late) return m.attempt_late_closed()
+  const policy = effective.late_policy
+  if (policy.kind === 'cutoff') return m.attempt_late_until({ date: formatDateTime(policy.cutoff_at_unix) })
+  if (policy.kind === 'penalty' && !effective.waive_late_penalty)
+    return m.attempt_late_penalty_rule({
+      percent: formatPercent(policy.percent_per_day),
+      days: formatNumber(policy.max_days),
+    })
+  return m.attempt_late_free()
+}
+
+/**
  * The conditions before starting (B-ATT-02, B-ATT-04): from the effective policy of `attempt-state` only, one fact per
  * line with its icon, the passing score among them.
  */
@@ -69,6 +85,12 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
           <li>
             <CalendarClock aria-hidden />
             {m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}
+          </li>
+        ) : null}
+        {effective.due_at_unix ? (
+          <li>
+            <CalendarX aria-hidden />
+            {lateText(effective)}
           </li>
         ) : null}
         <li>

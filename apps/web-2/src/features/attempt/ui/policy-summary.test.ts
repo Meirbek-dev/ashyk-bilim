@@ -3,7 +3,9 @@ import { describe, expect, test } from 'vite-plus/test'
 import { m } from '#/paraglide/messages'
 import type { AttemptState } from '#/shared/api/gen/types.gen'
 
-import { attemptsText } from './policy-summary'
+import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
+
+import { attemptsText, lateText } from './policy-summary'
 
 const state = (patch: Partial<AttemptState>): AttemptState => ({
   attempts_remaining: 3,
@@ -42,5 +44,27 @@ describe('attemptsText', () => {
     expect(attemptsText(state({ ...open, attempts_remaining: null }))).toBe(
       m.attempt_attempts_running_unlimited({ number: '1' }),
     )
+  })
+})
+
+describe('lateText', () => {
+  const effective = state({}).effective
+
+  test('B-ATT-02 a strict due date says nothing can be handed in after it', () => {
+    expect(lateText({ ...effective, allow_late: false })).toBe(m.attempt_late_closed())
+  })
+
+  test('B-ATT-02 a late penalty names its price per day and its limit, unless the learner has it waived', () => {
+    const penalty = { ...effective, late_policy: { kind: 'penalty' as const, percent_per_day: 10, max_days: 3 } }
+    expect(lateText(penalty)).toBe(m.attempt_late_penalty_rule({ percent: formatPercent(10), days: formatNumber(3) }))
+    expect(lateText({ ...penalty, waive_late_penalty: true })).toBe(m.attempt_late_free())
+  })
+
+  test('B-ATT-02 a cutoff names the last moment, and no policy means a free late hand-in', () => {
+    const cutoff = { kind: 'cutoff' as const, cutoff_at_unix: 1_800_000_000 }
+    expect(lateText({ ...effective, late_policy: cutoff })).toBe(
+      m.attempt_late_until({ date: formatDateTime(1_800_000_000) }),
+    )
+    expect(lateText(effective)).toBe(m.attempt_late_free())
   })
 })
