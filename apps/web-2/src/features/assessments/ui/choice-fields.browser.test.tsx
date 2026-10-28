@@ -22,12 +22,12 @@ const question: Choice = {
 
 let saved: Choice = question
 
-function Harness() {
+function Harness({ mode = 'wording' }: { mode?: 'all' | 'wording' }) {
   const [body, setBody] = useState(question)
   return (
     <ChoiceFields
       body={body}
-      mode="wording"
+      mode={mode}
       onChange={next => {
         saved = next
         setBody(next)
@@ -50,4 +50,17 @@ test('B-ASM-31 an answered live test takes option wording, never the correct mar
   await expect.element(screen.getByRole('combobox', { name: m.assessments_field_variant() })).toBeDisabled()
   await expect.element(screen.getByRole('button', { name: m.assessments_option_remove({ number: 1 }) })).toBeDisabled()
   await expect.element(screen.getByRole('button', { name: m.assessments_option_add() })).not.toBeInTheDocument()
+})
+
+test('B-ASM-15 «Добавить вариант» puts the cursor in the new option, not on the button', async () => {
+  const screen = await renderInRouter(<Harness mode="all" />)
+  await userEvent.click(screen.getByRole('button', { name: m.assessments_option_add() }))
+  const added = screen.getByRole('textbox', { name: m.assessments_option_text({ number: 3 }) })
+  await expect.element(added).toHaveFocus()
+  await userEvent.keyboard('Berlin')
+  await expect.poll(() => saved.options?.[2]?.text).toBe('Berlin')
+  // Typing elsewhere afterwards keeps the cursor where it is.
+  await userEvent.click(screen.getByRole('textbox', { name: m.assessments_option_text({ number: 1 }) }))
+  await userEvent.keyboard('!')
+  await expect.element(screen.getByRole('textbox', { name: m.assessments_option_text({ number: 1 }) })).toHaveFocus()
 })

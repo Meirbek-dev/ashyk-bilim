@@ -7,15 +7,17 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { IconButton } from '#/shared/components/icon-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { useFocusNew } from '#/shared/lib/focus-new'
 import { Button } from '#/shared/ui/button'
 
-import { newCriterion, rubricForm, rubricPatch, rubricSchema } from '../model/config'
+import { type CriterionForm, newCriterion, rubricForm, rubricPatch, rubricSchema } from '../model/config'
 import { useTaskSave } from './use-task-save'
 
 /** Rubric criteria: a name and the most points each; added and removed here, saved together (B-FSB-15). */
 export function RubricSection({ task }: { task: FileSubmission }) {
   const write = useTaskSave(task)
   const [defaultValues] = useState(() => rubricForm(task.rubric))
+  const focusNew = useFocusNew<CriterionForm>(criterion => criterion.criterion_id)
   const form = useAppForm(rubricSchema, {
     defaultValues,
     leaveGuard: true,
@@ -38,7 +40,11 @@ export function RubricSection({ task }: { task: FileSubmission }) {
               ) : null}
               {list.state.value.map((criterion, index) => (
                 // Top-aligned: a refusal under one field (two lines in the narrow one) must not shift the other.
-                <div key={criterion.criterion_id} className="flex flex-wrap items-start gap-2">
+                <div
+                  key={criterion.criterion_id}
+                  ref={focusNew.ref(criterion)}
+                  className="flex flex-wrap items-start gap-2"
+                >
                   {/* min-w-36: name, points and the remove button stay on one row on a 360 px phone. */}
                   <div className="min-w-36 flex-1">
                     <form.AppField name={`criteria[${index}].label`}>
@@ -64,7 +70,7 @@ export function RubricSection({ task }: { task: FileSubmission }) {
                 </div>
               ))}
               <div>
-                <Button type="button" variant="outline" onClick={() => list.pushValue(newCriterion())}>
+                <Button type="button" variant="outline" onClick={() => list.pushValue(focusNew.added(newCriterion()))}>
                   <Plus data-icon="inline-start" aria-hidden />
                   {m.submission_criterion_add()}
                 </Button>
