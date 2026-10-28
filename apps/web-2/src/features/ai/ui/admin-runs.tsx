@@ -54,7 +54,8 @@ const columns = (): DataColumn<AdminRun>[] => [
   {
     id: 'course',
     header: m.ai_col_course(),
-    priority: 3,
+    // Which course a run was about is half of what the row says: a phone card shows it too.
+    priority: 2,
     wrap: true,
     cell: run =>
       // The course by name (a deleted one has none), and the filter to its runs under it.
