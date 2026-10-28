@@ -45,9 +45,12 @@ function useCreateForm(onCreated: (course: Course) => Promise<void>) {
 
 export type CreateCourseFormApi = ReturnType<typeof useCreateForm>['form']
 
-/** "New course": a name and a short description, or a copy of another course; then its workspace (DESIGN 8). */
-export function CreateCourseDialog() {
-  const [open, setOpen] = useState(false)
+/**
+ * "New course": a name and a short description, or a copy of another course; then its workspace (DESIGN 8). Open on
+ * arrival from the old create page (`/teach/courses?create=true`); closing drops the parameter.
+ */
+export function CreateCourseDialog({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen)
   const navigate = useNavigate()
   const { form, reset, pending, error } = useCreateForm(async course => {
     setOpen(false)
@@ -56,7 +59,11 @@ export function CreateCourseDialog() {
   })
   const changeOpen = (next: boolean) => {
     setOpen(next)
-    if (!next) reset()
+    if (!next) {
+      reset()
+      // Only an old create link opens it on arrival, and that link carries no filters.
+      if (initiallyOpen) void navigate({ to: '/teach/courses', search: {}, replace: true })
+    }
   }
   return (
     <FormDialog

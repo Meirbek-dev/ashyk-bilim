@@ -57,7 +57,9 @@ const PATHS: [string, To][] = [
     `/dash/analytics/assessments/${ID}/${ID}`,
     ([type, a]) => withQuery(`${analytics}/performance`, { assessmentType: type, assessmentId: id(a) }),
   ],
-  ['/dash/courses(?:/new)?', () => '/teach/courses'],
+  ['/dash/courses', () => '/teach/courses'],
+  // The old create page: the list with its create dialog open.
+  ['/dash/courses/new', () => '/teach/courses?create=true'],
   [`/dash/courses/${ID}`, ([c = '']) => studio(c)],
   [`/dash/courses/${ID}/(?:details|certificate)`, ([c = '']) => `${studio(c)}/settings`],
   [`/dash/courses/${ID}/access`, ([c = '']) => `${studio(c)}/publish`],

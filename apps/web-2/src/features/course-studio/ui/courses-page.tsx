@@ -21,7 +21,7 @@ import { CreateCourseDialog } from './create-course-dialog'
 
 /** `/teach/courses`: the caller's editable courses, filtered by name and preset (both in the URL). */
 export function CoursesPage() {
-  const search = useSearch({ from: '/_authed/teach/courses/' })
+  const { create: opened, ...search } = useSearch({ from: '/_authed/teach/courses/' })
   const navigate = useNavigate()
   const { data: session } = useSuspenseQuery(sessionOptions())
   const query = useSuspenseInfiniteQuery(myCoursesOptions(search))
@@ -41,7 +41,9 @@ export function CoursesPage() {
     <ListPage
       title={m.studio_courses_title()}
       count={summary && !none ? m.studio_courses_count({ count: presetCount(summary, search.preset) }) : undefined}
-      primaryAction={hasCapability(session, 'course.create') ? <CreateCourseDialog /> : null}
+      primaryAction={
+        hasCapability(session, 'course.create') ? <CreateCourseDialog initiallyOpen={opened === true} /> : null
+      }
       // Keyed by the URL value: "back" to another search refills the box.
       search={
         // One row with the presets: a wrapper of its own put the order menu on a second line under the search box.
