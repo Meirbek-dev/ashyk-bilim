@@ -18,7 +18,7 @@ export function ResultActions({ retry, draftId }: { retry: boolean; draftId: Sub
     <div className="flex flex-wrap items-center gap-2">
       {draftId ? (
         <RouterLink to={ATTEMPT_PATH} params={params} search={{ attempt: draftId }} className={buttonVariants()}>
-          {m.attempt_continue()}
+          {m.attempt_continue_open()}
         </RouterLink>
       ) : retry ? (
         <RouterLink to={ATTEMPT_PATH} params={params} search={{}} className={buttonVariants()}>

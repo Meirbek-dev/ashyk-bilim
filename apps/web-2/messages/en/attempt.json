@@ -27,6 +27,7 @@
   "attempt_consent": "I understand the rules",
   "attempt_start": "Start",
   "attempt_continue": "Continue",
+  "attempt_continue_open": "Continue the attempt in progress",
   "attempt_revise": "Revise the submission",
   "attempt_blocked_heading": "You cannot start now",
   "attempt_reason_not_published": "The quiz is not published yet",

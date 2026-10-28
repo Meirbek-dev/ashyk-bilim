@@ -27,6 +27,7 @@
   "attempt_consent": "Я понимаю правила",
   "attempt_start": "Начать",
   "attempt_continue": "Продолжить",
+  "attempt_continue_open": "Продолжить начатую попытку",
   "attempt_revise": "Исправить работу",
   "attempt_blocked_heading": "Сейчас начать нельзя",
   "attempt_reason_not_published": "Тест ещё не опубликован",
