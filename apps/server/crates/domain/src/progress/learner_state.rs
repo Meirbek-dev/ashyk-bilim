@@ -357,6 +357,25 @@ impl LearnerStateService {
         Ok(())
     }
 
+    /// Past its hand-in cutoff ([`closed_hand_ins`]) the work offers no start
+    /// or continue - the entry would only say «Сейчас начать нельзя»; its
+    /// results stay readable. Returns the closed activities.
+    async fn close_past_hand_ins(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+        states: &mut [(ChapterId, ActivityState)],
+    ) -> Result<Vec<ActivityId>> {
+        let all: Vec<&ActivityState> = states.iter().map(|(_, s)| s).collect();
+        let closed = closed_hand_ins(&self.pool, course_id, user_id, &all).await?;
+        for (_, state) in states {
+            if closed.contains(&state.id) {
+                state.allowed_actions.retain(|a| a.starts_with("view_"));
+            }
+        }
+        Ok(closed)
+    }
+
     /// Visible course (404) the caller may access (403). A guest gets the
     /// anonymous state of a public course: not enrolled, nothing done.
     pub async fn course_state(
@@ -416,6 +435,12 @@ impl LearnerStateService {
         } else if !guest && !staff {
             self.offer_retakes(actor, course.id, &mut states).await?;
         }
+        let closed = if enrolled && !archived && !staff {
+            self.close_past_hand_ins(course.id, user_id, &mut states)
+                .await?
+        } else {
+            Vec::new()
+        };
         let outline = build_outline(&chapters, &states);
         let flat: Vec<&ActivityState> = states.iter().map(|(_, s)| s).collect();
         let progress = progress_state(course_progress.as_ref(), &flat);
@@ -427,11 +452,6 @@ impl LearnerStateService {
             enrolled && progress.progress_pct >= 100.0,
         )
         .await?;
-        let closed = if enrolled && !archived {
-            closed_hand_ins(&self.pool, course.id, user_id, &flat).await?
-        } else {
-            Vec::new()
-        };
         let open: Vec<&ActivityState> = flat
             .iter()
             .copied()

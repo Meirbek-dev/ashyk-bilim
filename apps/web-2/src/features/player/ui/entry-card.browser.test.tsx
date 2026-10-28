@@ -92,4 +92,21 @@ describe('EntryCard', () => {
     const screen = await renderInRouter(<EntryCard courseId="c" entry={overdue} action={null} nowUnix={200} />)
     await expect.element(screen.getByText(m.player_late())).toBeVisible()
   })
+
+  test('B-PLY-11 work past its last hand-in moment says it is closed and leads to the teacher, not to conditions', async () => {
+    const closed = exam({ state: 'not_started', score: null, allowed_actions: [], due_at_unix: 100 })
+    const screen = await renderInRouter(<EntryCard courseId="c" entry={closed} action={null} nowUnix={200} />)
+    await expect.element(screen.getByText(m.player_past_due_closed(), { exact: false })).toBeVisible()
+    await expect
+      .element(screen.getByRole('link', { name: m.player_ask_teacher() }))
+      .toHaveAttribute('href', '/courses/c/discussions')
+    await expect.element(screen.getByText(m.player_hint_attempt())).not.toBeInTheDocument()
+  })
+
+  test('B-PLY-11 overdue work that still takes a late hand-in keeps its conditions line', async () => {
+    const late = exam({ state: 'not_started', score: null, allowed_actions: ['start'], due_at_unix: 100 })
+    const screen = await renderInRouter(<EntryCard courseId="c" entry={late} action={null} nowUnix={200} />)
+    await expect.element(screen.getByText(m.player_hint_attempt())).toBeVisible()
+    await expect.element(screen.getByText(m.player_past_due_closed(), { exact: false })).not.toBeInTheDocument()
+  })
 })

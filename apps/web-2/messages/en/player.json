@@ -74,6 +74,7 @@
   "player_outline": "On this page",
   "player_out_of_attempts": "No attempts are left. If you need a retake,",
   "player_past_due_retake": "The deadline has passed. If you need a retake,",
+  "player_past_due_closed": "The deadline has passed and the work can no longer be submitted. If you need an extension,",
   "player_ask_teacher": "ask the teacher in the course discussions.",
   "player_remediation_hint": "Before another attempt, your teacher asks you to review the mistakes of the last one.",
   "player_hours_left": "{hours} h left",

@@ -65,6 +65,14 @@ export function EntryCard({
   const outOfAttempts = !archived && entry.state === 'failed' && !entry.allowed_actions.includes('start') && !remediate
   // No retake past the due date with attempts left too: the card names that reason, not «no attempts left».
   const pastDue = entry.due_at_unix !== null && entry.due_at_unix <= nowUnix
+  // Not handed in by the last hand-in moment (no late window, or past its cutoff): the server offers no start or
+  // continue, and the card says why instead of promising a conditions page that would only refuse.
+  const closed =
+    !archived &&
+    kind !== 'lesson' &&
+    fresh.has(entry.state) &&
+    pastDue &&
+    !entry.allowed_actions.some(action => action === 'start' || action === 'continue')
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -92,12 +100,21 @@ export function EntryCard({
       {/* A test's line promises the conditions page, which an attempt in progress has already passed (a timed one
           keeps running: no «stop and continue later»). */}
       {!archived &&
+      !closed &&
       kind !== 'lesson' &&
       (kind === 'attempt' ? entry.state === 'not_started' : fresh.has(entry.state)) &&
       entry.score === null ? (
         <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}
+      {closed ? (
+        <p className="max-w-prose text-sm text-muted-foreground">
+          {m.player_past_due_closed()}{' '}
+          <Link to="/courses/$courseId/discussions" params={{ courseId }}>
+            {m.player_ask_teacher()}
+          </Link>
+        </p>
+      ) : null}
       {outOfAttempts ? (
         <p className="max-w-prose text-sm text-muted-foreground">
           {pastDue ? m.player_past_due_retake() : m.player_out_of_attempts()}{' '}
