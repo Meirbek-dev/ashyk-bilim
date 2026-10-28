@@ -36,7 +36,8 @@ const PATHS: [string, To][] = [
   [`/certificates/${ID}`, ([c = '']) => `/certificates/${c}/verify`],
   ['/user/([^/]+)', ([u = '']) => `/users/${u}`],
   ['/unauthorized', () => '/'],
-  ['/(?:auth/)?login', (_, query) => withQuery('/login', { redirect: returnTo(query) })],
+  // `error`: the code a failed Google sign-in comes back with (the server's legacy link scheme), shown on the form.
+  ['/(?:auth/)?login', (_, query) => withQuery('/login', { redirect: returnTo(query), error: query.get('error') })],
   ['/(?:auth/)?signup', (_, query) => withQuery('/signup', { redirect: returnTo(query) })],
   // The emailed links (the server's legacy link scheme): the address and the code fill the form, as on the old page.
   ['/(?:auth/)?verify-email', (_, query) => withQuery('/verify-email', emailCode(query))],
@@ -47,12 +48,24 @@ const PATHS: [string, To][] = [
   ['/dash/admin/users', () => '/admin/users'],
   ['/dash/users/settings(?:/users)?', () => '/admin/users'],
   ['/dash/users/settings/usergroups', () => '/teach/groups'],
-  ['/dash/analytics', () => analytics],
+  // The server's grading-backlog link (`?drill=backlog`): the operations page with that tile open.
+  [
+    '/dash/analytics',
+    (_, query) => (query.get('drill') === 'backlog' ? `${analytics}/operations?metric=backlog` : analytics),
+  ],
   ['/dash/analytics/admin', () => '/admin/analytics'],
   ['/dash/analytics/overview', () => `${analytics}/overview`],
   ['/dash/analytics/(?:learners/at-risk|watchlist)', () => `${analytics}/learners`],
   ['/dash/analytics/operations', () => `${analytics}/operations`],
-  ['/dash/analytics/(?:performance|courses|assessments)', () => `${analytics}/performance`],
+  // The server's course filter link (`courses?course_ids=<id>`): the overview of that course.
+  [
+    '/dash/analytics/courses',
+    (_, query) => {
+      const course = query.get('course_ids')?.split(',')[0]
+      return course ? withQuery(`${analytics}/overview`, { course: id(course) }) : `${analytics}/performance`
+    },
+  ],
+  ['/dash/analytics/(?:performance|assessments)', () => `${analytics}/performance`],
   [`/dash/analytics/courses/${ID}`, ([c]) => withQuery(`${analytics}/performance`, { courseId: id(c) })],
   [
     `/dash/analytics/assessments/${ID}/${ID}`,

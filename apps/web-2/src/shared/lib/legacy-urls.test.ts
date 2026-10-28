@@ -32,6 +32,11 @@ describe('old web URLs', () => {
       `/teach/analytics/performance?assessmentType=quiz&assessmentId=${A}`,
     )
     expect(legacyTarget('/ru/dash/users/settings/usergroups')).toBe('/teach/groups')
+    // The server's own analytics links in its legacy scheme keep what they point at.
+    expect(legacyTarget('/dash/analytics?drill=backlog')).toBe('/teach/analytics/operations?metric=backlog')
+    expect(legacyTarget(`/dash/analytics/courses?course_ids=${C}`)).toBe(`/teach/analytics/overview?course=${C}`)
+    expect(legacyTarget('/dash/analytics/courses')).toBe('/teach/analytics/performance')
+    expect(legacyTarget('/ru/dash/analytics')).toBe('/teach/analytics')
     expect(legacyTarget('/ru/dash/user-account/settings/gamification')).toBe('/settings/notifications')
   })
 
@@ -47,6 +52,7 @@ describe('old web URLs', () => {
       '/reset-password?email=a%40b.kz&code=AB12CD',
     )
     expect(legacyTarget('/en/auth/verify-email')).toBe('/verify-email')
+    expect(legacyTarget('/auth/login?error=google-denied')).toBe('/login?error=google-denied')
     expect(legacyTarget(`/ru/assessments/${A}?review=${C}`)).toEqual({ assessment: A, review: C })
   })
 
