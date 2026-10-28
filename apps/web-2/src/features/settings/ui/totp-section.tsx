@@ -36,6 +36,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     onSubmit: async body => {
       try {
         await verify.mutateAsync({ body })
+        setSwapped(true)
         enroll.reset()
         form.reset()
         toast.add({ title: m.settings_totp_enabled() })
@@ -56,18 +57,24 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     <StatusBadge tone="neutral">{m.settings_totp_off()}</StatusBadge>
   )
   const pending = enroll.data && !profile.mfa_enabled ? enroll.data : null
-  // «Включить» and the setup replace each other: focus follows (to the setup's start, back to «Включить» on cancel),
-  // else it falls to the page and a keyboard or screen-reader user starts over from the top.
-  const [cancelled, setCancelled] = useState(false)
+  // «Включить», the setup and «Выключить» replace each other: focus follows (to the setup's start, back to «Включить» on
+  // cancel or once turned off, to «Выключить» once turned on), else it falls to the page and a keyboard or
+  // screen-reader user starts over from the top.
+  const [swapped, setSwapped] = useState(false)
   const focusOnMount = (node: HTMLElement | null) => node?.focus()
+  const focusButton = swapped ? (node: HTMLElement | null) => node?.querySelector('button')?.focus() : undefined
   const verifyError = hasCode(verify.error, 'invalid-totp-code') ? null : verify.error
   return (
     <PlainSection title={m.settings_totp_title()} description={m.settings_totp_hint()}>
       <div>{status}</div>
       {profile.google_linked ? <p className="text-sm">{m.settings_totp_google()}</p> : null}
-      {profile.mfa_enabled ? <DisableTotp /> : null}
+      {profile.mfa_enabled ? (
+        <div ref={focusButton}>
+          <DisableTotp onDisabled={() => setSwapped(true)} />
+        </div>
+      ) : null}
       {!profile.mfa_enabled && !pending ? (
-        <div ref={cancelled ? node => node?.querySelector('button')?.focus() : undefined}>
+        <div ref={focusButton}>
           <SubmitButton variant="outline" onClick={() => enroll.mutate({})} pending={enroll.isPending}>
             {m.settings_totp_enable()}
           </SubmitButton>
@@ -108,7 +115,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
             <Button
               variant="ghost"
               onClick={() => {
-                setCancelled(true)
+                setSwapped(true)
                 enroll.reset()
               }}
             >
