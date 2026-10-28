@@ -89,7 +89,7 @@ impl AiService {
             .await?;
         let activity_id = self.course_activity(course_id, activity_id).await?;
         let admitted = self
-            .admit_lecture_review(course_id, actor.user_id, language, None)
+            .admit_lecture_review(course_id, activity_id, actor.user_id, language, None)
             .await?;
         let run = self
             .create_run(
@@ -166,7 +166,13 @@ impl AiService {
             .settle(
                 run.id,
                 FAIL_CODE,
-                self.admit_lecture_review(course_id, user_id, &language, Some(run.id)),
+                self.admit_lecture_review(
+                    course_id,
+                    metadata_optional_id(run, "activity_id"),
+                    user_id,
+                    &language,
+                    Some(run.id),
+                ),
             )
             .await?;
         self.mark_running(run.id).await?;
@@ -175,15 +181,18 @@ impl AiService {
         Ok(())
     }
 
-    /// The course context admitted as sent (BUG-349).
+    /// The course context admitted as sent (BUG-349). A critique asked on one activity (the studio's «Критика
+    /// материала») reads that activity, in full, not the whole course: it reviewed every quiz and video of the course
+    /// from a lesson's tab and saw a heading and a paragraph of the lesson itself.
     async fn admit_lecture_review(
         &self,
         course_id: CourseId,
+        activity_id: Option<ActivityId>,
         user_id: UserId,
         language: &str,
         run: Option<AiRunId>,
     ) -> Result<Admitted> {
-        let bundle = context::course_bundle(&self.pool, course_id, true, None).await?;
+        let bundle = context::course_bundle(&self.pool, course_id, true, activity_id).await?;
         let locale = self.user_locale(user_id).await?;
         self.admit(
             bundle,

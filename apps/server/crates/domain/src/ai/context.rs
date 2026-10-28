@@ -114,6 +114,215 @@ pub fn json_snippet(value: &serde_json::Value, limit: usize) -> String {
     }
 }
 
+/// A lesson document as the model reads it, in Markdown-like lines.
+///
+/// Headings, lists, quotes, code, table rows and formulas (`$$`) as text; media and widgets one bracketed line each:
+/// the whole lesson fits where its editor JSON did not.
+#[must_use]
+pub fn lesson_text(doc: &serde_json::Value) -> String {
+    let mut lines = Vec::new();
+    block_lines(doc, "", &mut lines);
+    lines.join("\n")
+}
+
+fn attr<'a>(node: &'a serde_json::Value, path: &[&str]) -> Option<&'a str> {
+    let mut value = node.get("attrs")?;
+    for key in path {
+        value = value.get(key)?;
+    }
+    value.as_str().filter(|text| !text.trim().is_empty())
+}
+
+fn children(node: &serde_json::Value) -> &[serde_json::Value] {
+    node.get("content")
+        .and_then(serde_json::Value::as_array)
+        .map_or(&[], Vec::as_slice)
+}
+
+/// The inline text of a node: text runs (inline code in backticks), hard breaks as spaces.
+fn inline_text(node: &serde_json::Value) -> String {
+    let mut out = String::new();
+    for child in children(node) {
+        match child.get("type").and_then(serde_json::Value::as_str) {
+            Some("text") => {
+                let text = child
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default();
+                let code = child
+                    .get("marks")
+                    .and_then(serde_json::Value::as_array)
+                    .is_some_and(|marks| {
+                        marks.iter().any(|m| {
+                            m.get("type").and_then(serde_json::Value::as_str) == Some("code")
+                        })
+                    });
+                if code {
+                    out.push('`');
+                    out.push_str(text);
+                    out.push('`');
+                } else {
+                    out.push_str(text);
+                }
+            }
+            Some("hardBreak") => out.push(' '),
+            _ => out.push_str(&inline_text(child)),
+        }
+    }
+    out
+}
+
+fn block_lines(node: &serde_json::Value, prefix: &str, lines: &mut Vec<String>) {
+    let kind = node
+        .get("type")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    let line = match kind {
+        "heading" => {
+            let level = node
+                .get("attrs")
+                .and_then(|a| a.get("level"))
+                .and_then(serde_json::Value::as_u64)
+                .map_or(2, |l| l.clamp(1, 6));
+            let marks = "#".repeat(usize::try_from(level).unwrap_or(2));
+            format!("{marks} {}", inline_text(node))
+        }
+        "paragraph" => inline_text(node),
+        "horizontalRule" => "---".to_owned(),
+        "bulletList" | "orderedList" => {
+            return list_lines(node, kind == "orderedList", prefix, lines);
+        }
+        "blockquote" | "calloutInfo" | "calloutWarning" | "badge" => {
+            let lead = match kind {
+                "calloutInfo" => "> [note] ",
+                "calloutWarning" => "> [warning] ",
+                "badge" => "> [badge] ",
+                _ => "> ",
+            };
+            for child in children(node) {
+                block_lines(child, &format!("{prefix}{lead}"), lines);
+            }
+            return;
+        }
+        "codeBlock" => {
+            let language = attr(node, &["language"]).unwrap_or_default();
+            lines.push(format!("{prefix}```{language}"));
+            for line in inline_text(node).lines() {
+                lines.push(format!("{prefix}{line}"));
+            }
+            lines.push(format!("{prefix}```"));
+            return;
+        }
+        "table" => {
+            for row in children(node) {
+                let cells: Vec<String> = children(row)
+                    .iter()
+                    .map(|cell| {
+                        let mut cell_lines = Vec::new();
+                        for block in children(cell) {
+                            block_lines(block, "", &mut cell_lines);
+                        }
+                        cell_lines.join(" ")
+                    })
+                    .collect();
+                lines.push(format!("{prefix}| {} |", cells.join(" | ")));
+            }
+            return;
+        }
+        "scenarios" => return scenario_lines(node, prefix, lines),
+        _ => {
+            let Some(line) = widget_line(node, kind) else {
+                for child in children(node) {
+                    block_lines(child, prefix, lines);
+                }
+                return;
+            };
+            line
+        }
+    };
+    if !line.trim().is_empty() {
+        lines.push(format!("{prefix}{line}"));
+    }
+}
+
+/// A list's items, «- » or «1. », an item's further lines indented under its first.
+fn list_lines(node: &serde_json::Value, ordered: bool, prefix: &str, lines: &mut Vec<String>) {
+    for (index, item) in children(node).iter().enumerate() {
+        let marker = if ordered {
+            format!("{}. ", index + 1)
+        } else {
+            "- ".to_owned()
+        };
+        let mut item_lines = Vec::new();
+        for block in children(item) {
+            block_lines(block, "", &mut item_lines);
+        }
+        for (n, line) in item_lines.into_iter().enumerate() {
+            let lead = if n == 0 {
+                marker.clone()
+            } else {
+                " ".repeat(marker.len())
+            };
+            lines.push(format!("{prefix}{lead}{line}"));
+        }
+    }
+}
+
+/// A formula, a file, an embed or a card: one line; `None` for a node that is only a container.
+fn widget_line(node: &serde_json::Value, kind: &str) -> Option<String> {
+    let text = |path: &[&str]| attr(node, path).unwrap_or_default();
+    Some(match kind {
+        "blockMathEquation" => {
+            return attr(node, &["math_equation"]).map(|latex| format!("$$ {latex} $$"));
+        }
+        "blockImage" => format!(
+            "[image: {}]",
+            text(&["blockObject", "content", "file_name"])
+        ),
+        "blockVideo" => format!(
+            "[video: {}]",
+            text(&["blockObject", "content", "file_name"])
+        ),
+        "blockPDF" => format!("[pdf: {}]", text(&["blockObject", "content", "file_name"])),
+        "blockEmbed" => format!("[embed: {}]", text(&["embedUrl"])),
+        "blockWebPreview" => format!("[link: {} {}]", text(&["title"]), text(&["url"])),
+        "button" => format!("[button: {} → {}]", inline_text(node), text(&["link"])),
+        "flipcard" => format!(
+            "[flip card] {} → {}",
+            text(&["question"]),
+            text(&["answer"])
+        ),
+        _ => return None,
+    })
+}
+
+/// A branching scenario: its title, then each step's text with its options.
+fn scenario_lines(node: &serde_json::Value, prefix: &str, lines: &mut Vec<String>) {
+    lines.push(format!(
+        "{prefix}[scenarios] {}",
+        attr(node, &["title"]).unwrap_or_default()
+    ));
+    let steps = node
+        .get("attrs")
+        .and_then(|a| a.get("scenarios"))
+        .and_then(serde_json::Value::as_array)
+        .map_or(&[][..], Vec::as_slice);
+    for step in steps {
+        let text = step
+            .get("text")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let options: Vec<&str> = step
+            .get("options")
+            .and_then(serde_json::Value::as_array)
+            .map_or(&[][..], Vec::as_slice)
+            .iter()
+            .filter_map(|o| o.get("text").and_then(serde_json::Value::as_str))
+            .collect();
+        lines.push(format!("{prefix}  {text} ({})", options.join(" / ")));
+    }
+}
+
 fn source(
     citation_id: String,
     label: String,
@@ -127,10 +336,18 @@ fn source(
         label,
         source_type: source_type.to_owned(),
         source_ref,
-        excerpt: excerpt.chars().take(1200).collect(),
+        excerpt: excerpt.chars().take(SOURCE_CHARS).collect(),
         metadata,
     }
 }
+
+/// A source's excerpt in a course-wide outline: every activity gets a short look, so the whole course fits the window.
+const SOURCE_CHARS: usize = 1200;
+
+/// The one lesson a run is about (`only_activity`: the content critique, a question asked on a lesson) is read as
+/// its text, not the outline's 1200 characters of editor JSON: that was a heading and a paragraph of the lesson, and
+/// the critique wrote «only the first part is visible» about a whole lecture.
+const FOCUS_CHARS: usize = 8000;
 
 /// The course outline (published activities only for learners), optionally
 /// narrowed to one activity.
@@ -172,6 +389,12 @@ pub async fn course_bundle(
             .iter()
             .find(|c| c.id == activity.chapter_id)
             .map_or("Unassigned", |c| c.name.as_str());
+        let lesson = only_activity.is_some() && activity.activity_type == "dynamic";
+        let content = if lesson {
+            clipped_text(&lesson_text(&activity.content), FOCUS_CHARS)
+        } else {
+            json_snippet(&activity.content, 1800)
+        };
         let activity_lines = [
             format!("Chapter: {chapter_title}"),
             format!("Activity: {} ({})", activity.name, activity.activity_type),
@@ -179,22 +402,29 @@ pub async fn course_bundle(
                 "Published: {}",
                 if activity.published { "True" } else { "False" }
             ),
-            format!("Content: {}", json_snippet(&activity.content, 1800)),
+            format!("Content: {content}"),
             format!("Details: {}", json_snippet(&activity.details, 1800)),
         ];
-        sources.push(source(
+        let mut entry = source(
             format!("activity:{}", activity.id),
             activity.name.clone(),
             "activity",
             Some(activity.id.to_string()),
-            &activity_lines.join("\n"),
+            "",
             serde_json::json!({
                 "course_id": course.id,
                 "activity_id": activity.id,
                 "chapter_id": activity.chapter_id,
                 "published": activity.published,
             }),
-        ));
+        );
+        let cap = if lesson {
+            FOCUS_CHARS + 2400
+        } else {
+            SOURCE_CHARS
+        };
+        entry.excerpt = activity_lines.join("\n").chars().take(cap).collect();
+        sources.push(entry);
         if let Some(assessment) = assessments.iter().find(|a| a.activity_id == activity.id) {
             push_assessment_sources(pool, activity, assessment, &mut sources).await?;
         }
@@ -1091,6 +1321,34 @@ mod tests {
         assert_eq!(
             settings_text(&row),
             "exam (graded automatically, then reviewed by the teacher); pass mark 60%; 1 attempt(s); time limit 60 min; no deadline"
+        );
+    }
+
+    #[test]
+    fn a_lesson_reads_as_its_text_not_editor_json() {
+        let doc = serde_json::json!({ "type": "doc", "content": [
+            { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Первый закон" }] },
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "Тело " },
+                { "type": "text", "text": "покоится", "marks": [{ "type": "bold" }] },
+                { "type": "text", "text": " или `x`" } ] },
+            { "type": "bulletList", "content": [
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "инерция" }] }] } ] },
+            { "type": "orderedList", "content": [
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "шаг" }] }] } ] },
+            { "type": "table", "content": [{ "type": "tableRow", "content": [
+                { "type": "tableHeader", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "F" }] }] },
+                { "type": "tableCell", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "m·a" }] }] } ] }] },
+            { "type": "blockMathEquation", "attrs": { "math_equation": "F = ma" } },
+            { "type": "blockImage", "attrs": { "blockObject": { "content": { "file_name": "cart.png" } } } },
+            { "type": "calloutWarning", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Осторожно" }] }] },
+            { "type": "codeBlock", "attrs": { "language": "python" }, "content": [{ "type": "text", "text": "a = 1\nprint(a)" }] },
+            { "type": "paragraph" }
+        ]});
+        assert_eq!(
+            lesson_text(&doc),
+            "## Первый закон\nТело покоится или `x`\n- инерция\n1. шаг\n| F | m·a |\n$$ F = ma $$\n[image: cart.png]\n\
+             > [warning] Осторожно\n```python\na = 1\nprint(a)\n```"
         );
     }
 
