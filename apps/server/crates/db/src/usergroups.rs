@@ -53,6 +53,7 @@ pub async fn get_usergroup(pool: &PgPool, id: UsergroupId) -> Result<Option<User
 
 /// Newest-first keyset page (admin/instructor view - no visibility split;
 /// the service gates on `usergroup:read:platform`).
+///
 /// `member`: only the groups that user belongs to (the admin user panel).
 /// `q`: only the groups whose name contains it, folded like people search.
 pub async fn list_usergroups(

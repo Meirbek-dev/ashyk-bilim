@@ -622,8 +622,9 @@ pub struct UserFilter<'a> {
     pub sort: &'a str,
 }
 
-/// Keyset page of all users with aggregated role slugs. The cursor is the
-/// last id seen; the keyset is `id` (newest) or `(deleted, lower(display_name),
+/// Keyset page of all users with aggregated role slugs.
+///
+/// The cursor is the last id seen; the keyset is `id` (newest) or `(deleted, lower(display_name),
 /// id)` resolved from that id (`name`): deleted accounts have a blank name and
 /// would otherwise open the A-Z list, so they come last.
 pub async fn list_users(
