@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import type { FormBody, FormField, FormFieldType } from '#/shared/api/gen/types.gen'
 import { IconButton } from '#/shared/components/icon-button'
+import { useFocusNew } from '#/shared/lib/focus-new'
 import { Button } from '#/shared/ui/button'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { FieldDescription, FieldLegend, FieldSet } from '#/shared/ui/field'
@@ -23,6 +24,7 @@ const formType = (value: string) => FORM_TYPES.find(type => type === value) ?? '
 /** A form question: the fields the learner fills in, each with a label, a type and "required"; `wording`: labels only. */
 export function FormFields({ body, onChange, mode }: FormFieldsProps) {
   const editable = mode === 'all'
+  const focusNew = useFocusNew<FormField>(field => field.id)
   const fields = body.fields ?? []
   const setFields = (next: FormField[]) => onChange({ ...body, fields: next })
   const patch = (at: number, change: Partial<FormField>) =>
@@ -33,7 +35,7 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
       {editable ? <FieldDescription>{m.assessments_form_hint()}</FieldDescription> : null}
       <ol className="flex flex-col gap-3">
         {fields.map((field, at) => (
-          <li key={field.id} className="flex flex-wrap items-center gap-2">
+          <li key={field.id} ref={focusNew.ref(field)} className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={m.assessments_form_field_label({ number: at + 1 })}
               placeholder={m.assessments_form_field_label({ number: at + 1 })}
@@ -74,7 +76,12 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
       </ol>
       {editable ? (
         <div>
-          <Button type="button" variant="outline" size="sm" onClick={() => setFields([...fields, newFormField()])}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setFields([...fields, focusNew.added(newFormField())])}
+          >
             <Plus data-icon="inline-start" aria-hidden />
             {m.assessments_form_field_add()}
           </Button>

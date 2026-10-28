@@ -2,9 +2,10 @@ import { Plus, X } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
+import { useFocusNew } from '#/shared/lib/focus-new'
 import { Button } from '#/shared/ui/button'
 
-import { newTest, testCounts } from '../model/body-form'
+import { newTest, testCounts, type TestForm } from '../model/body-form'
 import { TestFilesBar } from './test-files-bar'
 import type { CodeFormApi } from './use-code-item-form'
 
@@ -13,6 +14,7 @@ import type { CodeFormApi } from './use-code-item-form'
  * weight; added and removed here, read from or written to a JSON/CSV file (B-COD-25), saved with the item.
  */
 export function CaseFields({ form, editable }: { form: CodeFormApi; editable: boolean }) {
+  const focusNew = useFocusNew<TestForm>(test => test.id)
   return (
     <form.AppField name="tests" mode="array">
       {list => {
@@ -28,7 +30,7 @@ export function CaseFields({ form, editable }: { form: CodeFormApi; editable: bo
             ) : null}
             <ol className="flex flex-col divide-y">
               {list.state.value.map((test, index) => (
-                <li key={test.id} className="flex min-w-0 flex-col gap-4 py-4">
+                <li key={test.id} ref={focusNew.ref(test)} className="flex min-w-0 flex-col gap-4 py-4">
                   <div className="flex items-center gap-2">
                     <span className="flex-1 font-medium">{m.code_case({ number: index + 1 })}</span>
                     {editable ? (
@@ -71,7 +73,7 @@ export function CaseFields({ form, editable }: { form: CodeFormApi; editable: bo
                   for (const test of imported) list.pushValue(test)
                 }}
                 lead={
-                  <Button type="button" variant="outline" onClick={() => list.pushValue(newTest())}>
+                  <Button type="button" variant="outline" onClick={() => list.pushValue(focusNew.added(newTest()))}>
                     <Plus data-icon="inline-start" aria-hidden />
                     {m.code_case_add()}
                   </Button>
