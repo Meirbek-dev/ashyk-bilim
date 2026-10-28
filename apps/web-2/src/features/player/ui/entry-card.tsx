@@ -69,7 +69,10 @@ export function EntryCard({
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-        {entry.is_late ? <StatusBadge tone="warning">{m.player_late()}</StatusBadge> : null}
+        {/* Handed in late, or still to do past the learner's due date: the contents and the course page say so too. */}
+        {entry.is_late || (!archived && open.has(entry.state) && pastDue) ? (
+          <StatusBadge tone="warning">{m.player_late()}</StatusBadge>
+        ) : null}
         {soon === null ? null : <StatusBadge tone="warning">{m.player_hours_left({ hours: soon })}</StatusBadge>}
       </div>
       {typeof entry.score === 'number' ? (

@@ -86,4 +86,10 @@ describe('EntryCard', () => {
     await expect.element(during.getByText(m.player_state_in_progress())).toBeVisible()
     expect(during.getByText(m.player_hint_attempt()).query()).toBeNull()
   })
+
+  test('B-PLY-11 work still to do past its due date is marked «Просрочено» on the card', async () => {
+    const overdue = exam({ state: 'not_started', score: null, allowed_actions: ['start'], due_at_unix: 100 })
+    const screen = await renderInRouter(<EntryCard courseId="c" entry={overdue} action={null} nowUnix={200} />)
+    await expect.element(screen.getByText(m.player_late())).toBeVisible()
+  })
 })
