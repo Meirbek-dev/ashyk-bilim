@@ -41,12 +41,18 @@ export const attemptsText = (state: AttemptState) => {
  * What the due date means (B-ATT-02): nothing after it, a late hand-in without or with a penalty, or until a cutoff -
  * so a learner starting late knows the price before «Начать», as the file task says it.
  */
-export const lateText = (effective: Pick<EffectivePolicy, 'allow_late' | 'late_policy' | 'waive_late_penalty'>) => {
+export const lateText = (
+  effective: Pick<EffectivePolicy, 'allow_late' | 'due_at_unix' | 'late_policy' | 'waive_late_penalty'>,
+) => {
   if (!effective.allow_late) return m.attempt_late_closed()
   const policy = effective.late_policy
   // A waived penalty waives the cutoff too: the server closes nothing for that learner (EffectivePolicy::hand_in).
   if (effective.waive_late_penalty || policy.kind === 'none') return m.attempt_late_free()
-  if (policy.kind === 'cutoff') return m.attempt_late_until({ date: formatDateTime(policy.cutoff_at_unix) })
+  // An own due date at or past the cutoff leaves no late window: it closes like a strict one.
+  if (policy.kind === 'cutoff')
+    return effective.due_at_unix !== null && policy.cutoff_at_unix <= effective.due_at_unix
+      ? m.attempt_late_closed()
+      : m.attempt_late_until({ date: formatDateTime(policy.cutoff_at_unix) })
   return m.attempt_late_penalty_rule({
     percent: formatPercent(policy.percent_per_day),
     days: formatNumber(policy.max_days),

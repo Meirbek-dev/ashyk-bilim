@@ -66,6 +66,8 @@ describe('lateText', () => {
       m.attempt_late_until({ date: formatDateTime(1_800_000_000) }),
     )
     expect(lateText({ ...effective, late_policy: cutoff, waive_late_penalty: true })).toBe(m.attempt_late_free())
+    // An own due date past the cutoff: no late window left.
+    expect(lateText({ ...effective, late_policy: cutoff, due_at_unix: 1_800_000_000 })).toBe(m.attempt_late_closed())
     expect(lateText(effective)).toBe(m.attempt_late_free())
   })
 })
