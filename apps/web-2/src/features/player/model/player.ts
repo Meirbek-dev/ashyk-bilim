@@ -37,8 +37,9 @@ export function locate(state: LearnerCourseState, id: ActivityId) {
 
 /**
  * Where to go after handing in graded work (B-PLY-18): the next activity in contents order that is not done yet;
- * past the last one the server's next step when work is left earlier in the course, else the course summary; nothing
- * for an activity the outline does not list.
+ * past the last one the server's next step when work is left earlier in the course (when that step is this work
+ * itself, the first other unfinished activity), else the course summary; nothing for an activity the outline does
+ * not list.
  */
 export function nextStep(state: LearnerCourseState, id: ActivityId) {
   const found = locate(state, id)
@@ -47,7 +48,13 @@ export function nextStep(state: LearnerCourseState, id: ActivityId) {
   const ahead = flat.slice(flat.findIndex(activity => activity.id === id) + 1).find(activity => !activity.complete)
   if (ahead) return { kind: 'activity', activity: ahead } as const
   const left = state.next_action?.activity_id
-  const pending = left && left !== id ? locate(state, left)?.entry : undefined
+  // The server's next step may be this very work (a retake, a draft still open): then the first other open one.
+  const pending =
+    left === id
+      ? flat.find(activity => activity.id !== id && !activity.complete && !activity.blocked_reason)
+      : left
+        ? locate(state, left)?.entry
+        : undefined
   return pending ? ({ kind: 'activity', activity: pending } as const) : ({ kind: 'finish' } as const)
 }
 

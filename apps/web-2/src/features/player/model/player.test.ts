@@ -77,6 +77,9 @@ describe('player model', () => {
     const unfinished = course([[activity('a'), activity('b')], [activity('c')]], { activity_id: 'a' })
     expect(nextStep(unfinished, 'c')).toMatchObject({ kind: 'activity', activity: { id: 'a' } })
     expect(nextStep(course([[activity('c')]], { activity_id: 'c' }), 'c')).toEqual({ kind: 'finish' })
+    // The server points at this test again (a retake, a draft): the earlier work left is the way on, not the summary.
+    const again = course([[activity('a'), activity('c')]], { activity_id: 'c' })
+    expect(nextStep(again, 'c')).toMatchObject({ kind: 'activity', activity: { id: 'a' } })
     // Done work ahead is skipped: the way on is the next thing still to do.
     const done = activity('b', { complete: true })
     expect(nextStep(course([[activity('a'), done, activity('c')]]), 'a')).toMatchObject({ activity: { id: 'c' } })
