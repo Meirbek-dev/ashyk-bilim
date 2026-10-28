@@ -80,10 +80,12 @@ export function citedActivity(citation: Pick<Citation, 'source_type' | 'source_u
 /**
  * A citation's quote as the reader sees it (B-AI-31): the model sometimes quotes the machine form of a source (an
  * activity's settings as JSON, `"prompt":"..."`, or as `max_attempts: 1, file_name: x.pdf` pairs), which reads as
- * noise next to its label; such an excerpt is dropped.
+ * noise next to its label; such an excerpt is dropped. So is the model's own note in place of a quote, «(пусто)» for an
+ * empty field or a bare dash: «Курс «Физика» — (пусто)» quotes nothing.
  */
 export function readableExcerpt(excerpt: string | null | undefined): string {
   const text = excerpt?.trim() ?? ''
+  if (/^\([^()]{0,40}\)$|^[\p{P}\s]*$/u.test(text)) return ''
   return /^[{["]|"\w+"\s*:|\b[a-z][a-z0-9]*_[a-z0-9_]+\s*:/.test(text) ? '' : text
 }
 

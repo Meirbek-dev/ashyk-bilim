@@ -113,6 +113,12 @@ test('B-AI-31 a citation keeps a quote and drops an excerpt in machine form', ()
     'Сохраните файл как report_2024.pdf: так проще.',
   )
   expect(readableExcerpt(null)).toBe('')
+  // The model's note instead of a quote (UX-teach-15): an empty field, a dash.
+  expect(readableExcerpt('(пусто)')).toBe('')
+  expect(readableExcerpt(' (empty) ')).toBe('')
+  expect(readableExcerpt('—')).toBe('')
+  expect(readableExcerpt('Сила (F) равна m·a.')).toBe('Сила (F) равна m·a.')
+  expect(readableExcerpt('(F = m·a) — второй закон')).toBe('(F = m·a) — второй закон')
 })
 
 test('B-AI-27 a cited activity is found by source_uuid or by its activity:<id> citation id; other sources are not', () => {
