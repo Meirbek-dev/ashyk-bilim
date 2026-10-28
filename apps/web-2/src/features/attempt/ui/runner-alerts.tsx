@@ -1,8 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { Hourglass } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { SubmissionId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
+import { Alert, AlertDescription } from '#/shared/ui/alert'
 import { Button } from '#/shared/ui/button'
 
 import { attemptGone } from '../model/attempt'
@@ -16,12 +18,14 @@ type RunnerAlertsProps = {
   closed: unknown
   /** The clock ran out: the time limit or the due date. */
   expired: 'time' | 'due' | null
+  /** The last minutes of the clock (`WARN_SECONDS`): said once in words, not only by the header clock's colour. */
+  runningOut: boolean
   changed: boolean
   attemptId: SubmissionId
 }
 
 /** What stands between the learner and the next answer: violations, full screen, a closed gate, the clock. */
-export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: RunnerAlertsProps) {
+export function RunnerAlerts({ guard, closed, expired, runningOut, changed, attemptId }: RunnerAlertsProps) {
   const queryClient = useQueryClient()
   // Handed in meanwhile (the server's timer sweep)? The reread turns the page into the result.
   const refresh = () => void queryClient.query({ ...submissionOptions(attemptId), staleTime: 0 }).catch(() => null)
@@ -43,6 +47,12 @@ export function RunnerAlerts({ guard, closed, expired, changed, attemptId }: Run
             {m.attempt_fullscreen_enter()}
           </Button>
         </div>
+      ) : null}
+      {runningOut && closed === null && expired === null ? (
+        <Alert>
+          <Hourglass aria-hidden className="text-warning" />
+          <AlertDescription>{m.attempt_time_running_out()}</AlertDescription>
+        </Alert>
       ) : null}
       {changed ? <p className="text-warning">{m.attempt_changed()}</p> : null}
       {closed !== null || expired !== null ? (

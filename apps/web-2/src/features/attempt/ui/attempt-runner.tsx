@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useState } from 'react'
 import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
-import { runsToDueDate, unanswered } from '../model/attempt'
+import { runsToDueDate, unanswered, WARN_SECONDS } from '../model/attempt'
 import { AttemptFrame, ATTEMPT_ROUTE } from './attempt-frame'
 import { ItemNavigator } from './item-navigator'
 import { ItemPager } from './item-pager'
@@ -73,6 +73,13 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
           guard={guard}
           closed={draft.closed}
           expired={expired ? (due ? 'due' : 'time') : null}
+          // Not on a test shorter than the warning: its whole time would be «running out».
+          runningOut={
+            left !== null &&
+            left > 0 &&
+            left <= WARN_SECONDS &&
+            (due || (assessment.policy.time_limit_seconds ?? 0) > WARN_SECONDS)
+          }
           changed={submit.changed}
           attemptId={attempt.id}
         />
