@@ -27,6 +27,17 @@ describe('test files', () => {
       { description: '', input: '5', expected: '25', visible: true, weight: '1' },
     ])
     expect(parseTestsFile('bad.csv', 'name,email\na,b')).toBeNull()
+    expect(parseTestsFile('bad.csv', 'name;email\na;b')).toBeNull()
     expect(parseTestsFile('bad.json', '{"not": "an array"}')).toBeNull()
+  })
+
+  test('B-COD-25 a CSV re-saved by a Russian Excel (`;`, ИСТИНА/ЛОЖЬ) imports', () => {
+    const excel =
+      'id;is_visible;description;input;expected_output;weight\r\nt1;ИСТИНА;Сумма;"1;2";3;2\r\nt2;ЛОЖЬ;;5;25;1\r\n'
+    expect(shape(parseTestsFile('cases.csv', excel))).toEqual([
+      { description: 'Сумма', input: '1;2', expected: '3', visible: true, weight: '2' },
+      { description: '', input: '5', expected: '25', visible: false, weight: '1' },
+    ])
+    expect(shape(parseTestsFile('cases.csv', 'input,expected_output,is_visible\n1,1,TRUE'))?.[0]?.visible).toBe(true)
   })
 })

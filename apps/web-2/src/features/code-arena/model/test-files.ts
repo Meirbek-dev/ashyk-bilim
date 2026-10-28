@@ -31,8 +31,8 @@ export const testsToCsv = (tests: readonly TestForm[]): string =>
     ),
   ].join('\r\n')
 
-/** RFC 4180 rows: quoted cells may hold `,`, `""` and line breaks. */
-function csvRows(text: string): string[][] {
+/** RFC 4180 rows: quoted cells may hold the delimiter, `""` and line breaks. */
+function csvRows(text: string, delimiter: string): string[][] {
   const rows: string[][] = []
   let row: string[] = []
   let cell = ''
@@ -46,7 +46,7 @@ function csvRows(text: string): string[][] {
       } else if (char === '"') quoted = false
       else cell += char
     } else if (char === '"') quoted = true
-    else if (char === ',') {
+    else if (char === delimiter) {
       row.push(cell)
       cell = ''
     } else if (char === '\n' || char === '\r') {
@@ -70,6 +70,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const textOf = (value: unknown): string =>
   typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''
 
+// Excel re-saves `true` as TRUE, or ИСТИНА in a Russian Excel.
+const VISIBLE = new Set(['true', 'истина', '1'])
+
 const caseOf = (raw: Raw): TestForm => {
   const weight = Number(raw.weight)
   return {
@@ -77,7 +80,7 @@ const caseOf = (raw: Raw): TestForm => {
     description: textOf(raw.description),
     input: textOf(raw.input),
     expected: textOf(raw.expected_output),
-    visible: raw.is_visible === true || raw.is_visible === 'true',
+    visible: raw.is_visible === true || VISIBLE.has(textOf(raw.is_visible).trim().toLowerCase()),
     weight: Number.isInteger(weight) && weight > 0 ? String(weight) : '1',
   }
 }
@@ -95,7 +98,11 @@ export function parseTestsFile(name: string, text: string): TestForm[] | null {
       return null
     }
   }
-  const [head, ...rows] = csvRows(text.replace(/^﻿/, ''))
+  const body = text.replace(/^﻿/, '')
+  // Excel with a Russian or Kazakh locale saves CSV with `;` (as the gradebook export is written): read its header.
+  const first = body.split(/\r?\n/u, 1)[0] ?? ''
+  const delimiter = first.includes(';') && !first.includes(',') ? ';' : ','
+  const [head, ...rows] = csvRows(body, delimiter)
   const header = (head ?? []).map(cell => cell.trim())
   if (!header.includes('input') || !header.includes('expected_output')) return null
   return rows.map(cells => caseOf(Object.fromEntries(header.map((key, index) => [key, cells[index] ?? '']))))
