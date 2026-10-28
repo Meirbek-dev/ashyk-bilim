@@ -35,11 +35,18 @@ describe('old web URLs', () => {
     expect(legacyTarget('/ru/dash/user-account/settings/gamification')).toBe('/settings/notifications')
   })
 
-  test('sign-in keeps its return path in the new shape; an assessment link is resolved by the route', () => {
+  test('sign-in keeps its return path in the new shape, an emailed code link its address and code; an assessment link is resolved by the route', () => {
     expect(legacyTarget(`/ru/login?returnTo=${encodeURIComponent(`/course/${C}`)}`)).toBe(
       `/login?redirect=${encodeURIComponent(`/courses/${C}`)}`,
     )
     expect(legacyTarget('/ru/auth/signup')).toBe('/signup')
+    expect(legacyTarget('/kz/auth/verify-email?email=a%40b.kz&code=123456')).toBe(
+      '/verify-email?email=a%40b.kz&code=123456',
+    )
+    expect(legacyTarget('/ru/auth/reset-password?email=a%40b.kz&code=AB12CD')).toBe(
+      '/reset-password?email=a%40b.kz&code=AB12CD',
+    )
+    expect(legacyTarget('/en/auth/verify-email')).toBe('/verify-email')
     expect(legacyTarget(`/ru/assessments/${A}?review=${C}`)).toEqual({ assessment: A, review: C })
   })
 

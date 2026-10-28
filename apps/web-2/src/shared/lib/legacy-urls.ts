@@ -38,8 +38,9 @@ const PATHS: [string, To][] = [
   ['/unauthorized', () => '/'],
   ['/(?:auth/)?login', (_, query) => withQuery('/login', { redirect: returnTo(query) })],
   ['/(?:auth/)?signup', (_, query) => withQuery('/signup', { redirect: returnTo(query) })],
-  ['/(?:auth/)?verify-email', () => '/verify-email'],
-  ['/(?:auth/)?reset-password', () => '/reset-password'],
+  // The emailed links (the server's legacy link scheme): the address and the code fill the form, as on the old page.
+  ['/(?:auth/)?verify-email', (_, query) => withQuery('/verify-email', emailCode(query))],
+  ['/(?:auth/)?reset-password', (_, query) => withQuery('/reset-password', emailCode(query))],
   ['/dash', () => '/teach'],
   ['/dash/admin', () => '/admin'],
   ['/dash/admin/roles', () => '/admin/roles'],
@@ -88,6 +89,8 @@ function withQuery(path: string, params: Record<string, string | null | undefine
   for (const [name, value] of Object.entries(params)) if (value) url.searchParams.set(name, value)
   return url.pathname + url.search
 }
+
+const emailCode = (query: URLSearchParams) => ({ email: query.get('email'), code: query.get('code') })
 
 /** The old sign-in return path, itself in the old shape: its new address (or none when it has no equivalent). */
 function returnTo(query: URLSearchParams): string | null {
