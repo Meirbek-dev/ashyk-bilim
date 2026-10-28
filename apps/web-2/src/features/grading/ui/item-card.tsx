@@ -6,7 +6,7 @@ import type { AssessmentItem, GradedItem, ItemAnswer } from '#/shared/api/gen/ty
 import { StatusBadge } from '#/shared/components/status-badge'
 
 import { AnswerView } from './answer-view'
-import { kindLabels, verdictText } from './labels'
+import { itemKindText, verdictText } from './labels'
 
 type ItemCardProps = {
   item: AssessmentItem
@@ -30,7 +30,7 @@ export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
         <h3 className="text-lg font-semibold wrap-anywhere">
           {m.grading_item_title({ number: item.position, title: item.title })}
         </h3>
-        <p className="text-sm text-muted-foreground">{kindLabels[item.kind]()}</p>
+        <p className="text-sm text-muted-foreground">{itemKindText(item.kind, item.body)}</p>
         {prompt ? (
           // The author's markdown, as the learner saw it (migrated prompts carry `## **…**`).
           <Suspense fallback={<p className="wrap-anywhere whitespace-pre-wrap">{prompt}</p>}>

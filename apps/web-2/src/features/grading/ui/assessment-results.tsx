@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
-import type { ItemAnalytics, Stats } from '#/shared/api/gen/types.gen'
+import type { ItemAnalytics, ItemBody, Stats } from '#/shared/api/gen/types.gen'
 import { Bars } from '#/shared/components/charts/bars'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
@@ -11,7 +11,7 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { assessmentOptions, itemStatsOptions, statsOptionsOf } from '../queries'
 import { type CountFilter, CountTile } from './count-tile'
-import { kindLabels } from './labels'
+import { itemKindText } from './labels'
 
 const counts: readonly {
   key: keyof Stats & ('total' | 'needs_grading' | 'graded' | 'published' | 'returned' | 'late')
@@ -38,14 +38,20 @@ const share = (value: number | null) =>
     formatPercent(value)
   )
 
-const itemColumns: DataColumn<ItemAnalytics>[] = [
+/** The per-question table; a question's kind reads as the builder named it, from the assessment's own item body. */
+const itemColumns = (bodies: ReadonlyMap<string, ItemBody>): DataColumn<ItemAnalytics>[] => [
   {
     id: 'title',
     header: m.grading_col_item(),
     priority: 1,
     cell: row => <span className="wrap-anywhere">{row.title}</span>,
   },
-  { id: 'kind', header: m.grading_col_kind(), priority: 2, cell: row => kindLabels[row.kind]() },
+  {
+    id: 'kind',
+    header: m.grading_col_kind(),
+    priority: 2,
+    cell: row => itemKindText(row.kind, bodies.get(row.item_id)),
+  },
   {
     id: 'responses',
     header: m.grading_col_responses(),
@@ -113,7 +119,12 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
         {items.length === 0 ? (
           <p className="text-muted-foreground">{m.grading_items_stats_empty()}</p>
         ) : (
-          <DataTable label={m.grading_items_stats()} rows={items} columns={itemColumns} getKey={row => row.item_id} />
+          <DataTable
+            label={m.grading_items_stats()}
+            rows={items}
+            columns={itemColumns(new Map(assessment.items.map(item => [item.id, item.body])))}
+            getKey={row => row.item_id}
+          />
         )}
       </section>
     </div>

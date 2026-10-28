@@ -1,8 +1,10 @@
 import { m } from '#/paraglide/messages'
 import type {
+  ChoiceVariant,
   FeedbackCode,
   FeedbackParams,
   FileAttemptStatus,
+  ItemBody,
   ItemKind,
   SubmissionStatus,
 } from '#/shared/api/gen/types.gen'
@@ -30,13 +32,28 @@ export const filterLabels = {
   returned: m.grading_filter_returned,
 } satisfies Record<QueueStatus, () => string>
 
-export const kindLabels = {
+const kindLabels = {
   choice: m.grading_kind_choice,
   open_text: m.grading_kind_open_text,
   form: m.grading_kind_form,
   code: m.grading_kind_code,
   matching: m.grading_kind_matching,
 } satisfies Record<ItemKind, () => string>
+
+const choiceLabels = {
+  single_choice: m.grading_kind_single_choice,
+  multiple_choice: m.grading_kind_multiple_choice,
+  true_false: m.grading_kind_true_false,
+} satisfies Record<ChoiceVariant, () => string>
+
+/**
+ * A question's kind as its author picked it in the builder: a choice by its variant («Несколько ответов», legacy rows
+ * carry only `multiple`), not the generic «Выбор ответа» the builder never shows.
+ */
+export function itemKindText(kind: ItemKind, body: ItemBody | undefined): string {
+  if (body?.kind !== 'choice') return kindLabels[kind]()
+  return choiceLabels[body.variant ?? (body.multiple ? 'multiple_choice' : 'single_choice')]()
+}
 
 export const violationLabels = {
   tab_switch: m.grading_violation_tab_switch,

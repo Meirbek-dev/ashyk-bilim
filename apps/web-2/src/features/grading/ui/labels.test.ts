@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vite-plus/test'
 
+import type { ChoiceVariant, ItemBody } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
 
-import { scoreText, verdictText } from './labels'
+import { itemKindText, scoreText, verdictText } from './labels'
 
 describe('grading labels', () => {
   test('B-GRD-11 the auto-grader verdict is localized from its code and params; teacher prose is no verdict', () => {
@@ -19,5 +20,20 @@ describe('grading labels', () => {
     expect(scoreText(66.666666)).toBe('66,67 %')
     expect(scoreText(50)).toBe(formatPercent(50))
     expect(scoreText(null)).toBe('Нет оценки')
+  })
+
+  test('B-GRD-10 a question reads as the builder named its kind: a choice by its variant', () => {
+    const choice = (variant: ChoiceVariant | null, multiple = false): ItemBody => ({
+      kind: 'choice',
+      explanation: null,
+      variant,
+      multiple,
+    })
+    expect(itemKindText('choice', choice('multiple_choice', true))).toBe('Несколько ответов')
+    expect(itemKindText('choice', choice('true_false'))).toBe('Верно или неверно')
+    // A legacy row carries only `multiple`.
+    expect(itemKindText('choice', choice(null, true))).toBe('Несколько ответов')
+    expect(itemKindText('choice', choice(null))).toBe('Один ответ')
+    expect(itemKindText('open_text', undefined)).toBe('Развёрнутый ответ')
   })
 })
