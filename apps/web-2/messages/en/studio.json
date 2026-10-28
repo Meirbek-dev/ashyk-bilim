@@ -204,6 +204,7 @@
   "studio_team_remove_named": "Remove “{name}” from the team",
   "studio_team_remove_title": "Remove “{name}” from the team?",
   "studio_team_remove_consequence": "They lose the right to edit the course.",
+  "studio_team_remove_viewer_consequence": "They will no longer see the course unless it is open to everyone.",
   "studio_team_removed": "Removed from team",
   "studio_applications_title": "Co-author applications",
   "studio_application_accept": "Accept",

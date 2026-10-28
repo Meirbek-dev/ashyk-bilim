@@ -9,6 +9,7 @@ import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
+import { memberName } from '../model/studio'
 import { removeContributorOptions } from '../people-queries'
 
 type RemoveContributorProps = { courseId: string; row: Contributor; applying: boolean }
@@ -17,7 +18,7 @@ type RemoveContributorProps = { courseId: string; row: Contributor; applying: bo
 export function RemoveContributor({ courseId, row, applying }: RemoveContributorProps) {
   const [open, setOpen] = useState(false)
   const remove = useMutation(removeContributorOptions(useQueryClient(), courseId))
-  const name = row.display_name || row.username
+  const name = memberName(row)
   const texts = applying
     ? {
         verb: m.studio_application_reject(),
@@ -28,7 +29,9 @@ export function RemoveContributor({ courseId, row, applying }: RemoveContributor
     : {
         verb: m.studio_team_remove(),
         title: m.studio_team_remove_title({ name }),
-        consequence: m.studio_team_remove_consequence(),
+        // An observer never could edit: say what they do lose.
+        consequence:
+          row.role === 'reporter' ? m.studio_team_remove_viewer_consequence() : m.studio_team_remove_consequence(),
         done: m.studio_team_removed(),
       }
   const confirm = () =>

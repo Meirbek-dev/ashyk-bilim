@@ -114,6 +114,10 @@ export type RoleForm = v.InferOutput<typeof roleSchema>
 /** A menu value that is a role the team can be given. */
 export const isAssignableRole = (value: string): value is ContributorRole => v.is(vContributorRole, value)
 
+/** A member as buttons and dialogs name them, «Name (@username)»: namesakes are common, the row shows both. */
+export const memberName = (row: Pick<Contributor, 'display_name' | 'username'>): string =>
+  row.display_name ? `${row.display_name} (@${row.username})` : row.username
+
 /** The team (creator first, as the server orders it), the open applications and the deactivated co-authors. */
 export function splitRoster(rows: readonly Contributor[]): {
   team: Contributor[]

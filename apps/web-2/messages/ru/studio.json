@@ -224,6 +224,7 @@
   "studio_team_remove_named": "Убрать «{name}» из команды",
   "studio_team_remove_title": "Убрать «{name}» из команды?",
   "studio_team_remove_consequence": "Человек потеряет право править курс.",
+  "studio_team_remove_viewer_consequence": "Наблюдатель перестанет видеть курс, если тот не открыт всем.",
   "studio_team_removed": "Убран из команды",
   "studio_applications_title": "Заявки в соавторы",
   "studio_application_accept": "Принять",

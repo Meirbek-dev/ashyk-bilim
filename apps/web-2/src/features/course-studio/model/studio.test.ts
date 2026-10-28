@@ -15,6 +15,7 @@ import {
   mediaPreview,
   mediaSource,
   groupReadiness,
+  memberName,
   readinessCode,
   readinessTarget,
   replacedMediaBlockIds,
@@ -132,6 +133,11 @@ describe('team', () => {
     expect(team.map(r => r.user_id)).toEqual(['c', 'm'])
     expect(pending.map(r => r.user_id)).toEqual(['p'])
     expect(inactive.map(r => r.user_id)).toEqual(['x'])
+  })
+
+  test('B-CST-17 a member is named with the username in buttons and dialogs: namesakes stay apart', () => {
+    expect(memberName({ display_name: 'Айгерим', username: 'aigerim2' })).toBe('Айгерим (@aigerim2)')
+    expect(memberName({ display_name: '', username: 'aigerim2' })).toBe('aigerim2')
   })
 })
 

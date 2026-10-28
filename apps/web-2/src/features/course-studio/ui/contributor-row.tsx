@@ -11,7 +11,7 @@ import { Button } from '#/shared/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 import { toast } from '#/shared/ui/toast'
 
-import { ASSIGNABLE_ROLES, isAssignableRole } from '../model/studio'
+import { ASSIGNABLE_ROLES, isAssignableRole, memberName } from '../model/studio'
 import { updateContributorOptions } from '../people-queries'
 import { RemoveContributor } from './remove-contributor'
 import { roleLabels } from './role-labels'
@@ -34,7 +34,7 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
       { onSuccess: () => toast.add({ title: done }) },
     )
   const roleChoice = {
-    label: m.studio_role_of({ name }),
+    label: m.studio_role_of({ name: memberName(row) }),
     value: role,
     options: ASSIGNABLE_ROLES.map(value => ({ value, label: roleLabels[value]() })),
     onValueChange: (value: string) => {

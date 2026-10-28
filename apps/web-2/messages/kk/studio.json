@@ -204,6 +204,7 @@
   "studio_team_remove_named": "«{name}» командадан шығару",
   "studio_team_remove_title": "«{name}» командадан шығарылсын ба?",
   "studio_team_remove_consequence": "Адам курсты өңдеу құқығынан айырылады.",
+  "studio_team_remove_viewer_consequence": "Курс барлығына ашық болмаса, бақылаушы оны көрмейді.",
   "studio_team_removed": "Командадан шығарылды",
   "studio_applications_title": "Бірлескен авторлыққа өтінімдер",
   "studio_application_accept": "Қабылдау",
