@@ -33,6 +33,9 @@ describe('EnrollLearners', () => {
     await userEvent.fill(screen.getByRole('textbox', { name: m.studio_roster_field() }), 'a@e2e.test\nnobody@e2e.test')
     await userEvent.click(screen.getByRole('button', { name: m.studio_roster_check() }))
     await expect.element(screen.getByRole('heading', { name: m.studio_roster_preview() })).toBeVisible()
+    // Nobody is enrolled by a check: the counts speak of what would happen.
+    await expect.element(screen.getByText(`${m.studio_roster_outcome_will_enroll()}: 1`)).toBeVisible()
+    await expect.element(screen.getByRole('heading', { name: m.studio_roster_problems_preview() })).toBeVisible()
     const sent = api.mock.calls.at(-1)?.[0]
     expect(await sent?.json()).toEqual({ identifiers: ['a@e2e.test', 'nobody@e2e.test'], dry_run: true })
   })

@@ -372,6 +372,8 @@
   "studio_roster_report": "Итог",
   "studio_roster_problems": "Не добавлены",
   "studio_roster_outcome_enrolled": "Добавлены",
+  "studio_roster_outcome_will_enroll": "Будут добавлены",
+  "studio_roster_problems_preview": "Не будут добавлены",
   "studio_roster_outcome_already_enrolled": "Уже были на курсе",
   "studio_roster_outcome_duplicate": "Повтор в списке",
   "studio_roster_outcome_not_found": "Нет такой учётной записи",

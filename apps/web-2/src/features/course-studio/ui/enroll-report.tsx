@@ -14,7 +14,7 @@ const outcomeLabels: Record<EnrollOutcome, () => string> = {
 
 /**
  * What one enrol request did (or, `preview`, would do: B-CST-46): a count per outcome, then each identifier that was
- * not added and why.
+ * not added and why. A preview says «Будут добавлены» / «Не будут добавлены»: nobody is enrolled yet.
  */
 export function EnrollReport({ result, preview = false }: { result: EnrollLearnersResponse; preview?: boolean }) {
   const { counts, problems } = summarize(result.results)
@@ -27,13 +27,14 @@ export function EnrollReport({ result, preview = false }: { result: EnrollLearne
       <ul className="flex flex-col gap-1">
         {OUTCOMES.filter(outcome => counts[outcome] > 0).map(outcome => (
           <li key={outcome} className="tabular-nums">
-            {outcomeLabels[outcome]()}: {counts[outcome]}
+            {preview && outcome === 'enrolled' ? m.studio_roster_outcome_will_enroll() : outcomeLabels[outcome]()}:{' '}
+            {counts[outcome]}
           </li>
         ))}
       </ul>
       {problems.length > 0 ? (
         <>
-          <h4 className="font-medium">{m.studio_roster_problems()}</h4>
+          <h4 className="font-medium">{preview ? m.studio_roster_problems_preview() : m.studio_roster_problems()}</h4>
           <ul className="flex flex-col gap-1">
             {problems.map((problem, index) => (
               <li key={`${index}-${problem.identifier}`} className="wrap-anywhere">

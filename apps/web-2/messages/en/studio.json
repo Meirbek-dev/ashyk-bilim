@@ -352,6 +352,8 @@
   "studio_roster_report": "Result",
   "studio_roster_problems": "Not added",
   "studio_roster_outcome_enrolled": "Added",
+  "studio_roster_outcome_will_enroll": "Will be added",
+  "studio_roster_problems_preview": "Will not be added",
   "studio_roster_outcome_already_enrolled": "Already in the course",
   "studio_roster_outcome_duplicate": "Repeated in the list",
   "studio_roster_outcome_not_found": "No such account",
