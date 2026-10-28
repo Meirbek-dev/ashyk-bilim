@@ -65,14 +65,14 @@ export function EntryCard({
   const outOfAttempts = !archived && entry.state === 'failed' && !entry.allowed_actions.includes('start') && !remediate
   // No retake past the due date with attempts left too: the card names that reason, not «no attempts left».
   const pastDue = entry.due_at_unix !== null && entry.due_at_unix <= nowUnix
-  // Not handed in by the last hand-in moment (no late window, or past its cutoff): the server offers no start or
-  // continue, and the card says why instead of promising a conditions page that would only refuse.
+  // Not handed in by the last hand-in moment (no late window, or past its cutoff; returned work too): the server
+  // offers no start, continue or revise, and the card says why instead of leading to a page that would only refuse.
   const closed =
     !archived &&
     kind !== 'lesson' &&
-    fresh.has(entry.state) &&
+    open.has(entry.state) &&
     pastDue &&
-    !entry.allowed_actions.some(action => action === 'start' || action === 'continue')
+    !entry.allowed_actions.some(action => action === 'start' || action === 'continue' || action === 'revise')
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">

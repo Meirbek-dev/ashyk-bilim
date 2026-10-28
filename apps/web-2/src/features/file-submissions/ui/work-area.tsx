@@ -49,7 +49,10 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
           {/* Returned: what happened, what to do, then the teacher's words (the files below stay editable). */}
           <div className="flex flex-col items-start gap-2">
             <StatusBadge tone="warning">{m.submission_returned()}</StatusBadge>
-            <p className="text-sm text-muted-foreground">{m.submission_returned_hint()}</p>
+            {/* "Revise and hand in again" only while it can be handed in: past a closed deadline the reason says so. */}
+            {reasons.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{m.submission_returned_hint()}</p>
+            ) : null}
           </div>
           <GradeDetails attempt={returned} />
         </>
@@ -80,8 +83,9 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
           </SubmitButton>
         </div>
       ) : null}
-      {/* Handed in: the way on to the next activity (B-PLY-18), beside a new attempt when one is open. */}
-      {state.kind !== 'edit' && !retry ? (
+      {/* Handed in, or a draft nothing can be done with (a closed deadline): the way on to the next activity (B-PLY-18),
+          beside a new attempt when one is open. */}
+      {(state.kind !== 'edit' || reasons.length > 0) && !retry ? (
         <div>
           <Suspense fallback={null}>
             <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />

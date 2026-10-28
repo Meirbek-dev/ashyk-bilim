@@ -103,6 +103,12 @@ describe('EntryCard', () => {
     await expect.element(screen.getByText(m.player_hint_attempt())).not.toBeInTheDocument()
   })
 
+  test('B-PLY-11 returned work past its last hand-in moment says it is closed, not «revise»', async () => {
+    const returned = exam({ state: 'returned', score: 40, allowed_actions: ['view_feedback'], due_at_unix: 100 })
+    const screen = await renderInRouter(<EntryCard courseId="c" entry={returned} action={null} nowUnix={200} />)
+    await expect.element(screen.getByText(m.player_past_due_closed(), { exact: false })).toBeVisible()
+  })
+
   test('B-PLY-11 overdue work that still takes a late hand-in keeps its conditions line', async () => {
     const late = exam({ state: 'not_started', score: null, allowed_actions: ['start'], due_at_unix: 100 })
     const screen = await renderInRouter(<EntryCard courseId="c" entry={late} action={null} nowUnix={200} />)

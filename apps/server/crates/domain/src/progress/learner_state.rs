@@ -586,8 +586,11 @@ async fn closed_hand_ins(
         .iter()
         .copied()
         .filter(|s| {
-            matches!(s.state, WorkState::NotStarted | WorkState::InProgress)
-                && s.due_at_unix.is_some_and(|due| due < now)
+            // Returned work too: a revision is a hand-in, behind the same gate.
+            matches!(
+                s.state,
+                WorkState::NotStarted | WorkState::InProgress | WorkState::Returned
+            ) && s.due_at_unix.is_some_and(|due| due < now)
         })
         .collect();
     let mut closed = Vec::new();
