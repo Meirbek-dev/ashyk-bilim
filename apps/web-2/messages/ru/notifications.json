@@ -57,7 +57,7 @@
   "notifications_text_excerpt": "«{text}»",
   "notifications_text_team_added": "Вас добавили в команду курса «{course}»",
   "notifications_text_team_observer": "Вас добавили наблюдателем курса «{course}»: вы видите его, даже черновик, но ничего не меняете",
-  "notifications_text_remediation_gate": "Перед следующей попыткой пройдите разбор ошибок, который подготовил учитель",
+  "notifications_text_remediation_gate": "Перед следующей попыткой пройдите разбор ошибок, который подготовил преподаватель",
   "notifications_text_remediation": "Учитель подготовил для вас разбор ошибок",
   "notifications_text_work": "{learner} — работа ждёт проверки",
   "notifications_text_works": [

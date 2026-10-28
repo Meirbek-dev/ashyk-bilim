@@ -53,7 +53,7 @@
   "notifications_text_excerpt": "«{text}»",
   "notifications_text_team_added": "Сізді «{course}» курсының командасына қосты",
   "notifications_text_team_observer": "Сізді «{course}» курсына бақылаушы ретінде қосты: оны, тіпті нобайын да көресіз, бірақ ештеңе өзгертпейсіз",
-  "notifications_text_remediation_gate": "Келесі әрекет алдында мұғалім дайындаған қателерді талдаудан өтіңіз",
+  "notifications_text_remediation_gate": "Келесі әрекет алдында оқытушы дайындаған қателерді талдаудан өтіңіз",
   "notifications_text_remediation": "Мұғалім сізге қателерді талдау дайындады",
   "notifications_text_work": "{learner} — жұмыс тексеруді күтуде",
   "notifications_text_works": [
