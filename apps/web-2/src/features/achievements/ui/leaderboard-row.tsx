@@ -13,7 +13,7 @@ export function LeaderboardRow({ entry, mine }: { entry: LeaderboardEntry; mine:
       aria-current={mine ? 'true' : undefined}
     >
       <span
-        className={`grid h-7 min-w-9 shrink-0 place-items-center rounded-full px-1.5 font-heading text-sm font-semibold tabular-nums ${entry.rank <= 3 ? 'bg-reward/10 text-reward' : 'text-muted-foreground'}`}
+        className={`grid h-7 min-w-12 shrink-0 place-items-center rounded-full px-1.5 font-heading text-sm font-semibold tabular-nums ${entry.rank <= 3 ? 'bg-reward/10 text-reward' : 'text-muted-foreground'}`}
       >
         #{formatNumber(entry.rank)}
       </span>
