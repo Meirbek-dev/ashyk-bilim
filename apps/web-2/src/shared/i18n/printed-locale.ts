@@ -20,6 +20,23 @@ const PRINTED_LOCALES = new Map<string, Locale>([
 /** The interface locale of a printed prefix; null for anything else (that URL does not exist). */
 export const printedLocale = (prefix: string): Locale | null => PRINTED_LOCALES.get(prefix) ?? null
 
+/** Other spellings the old web accepted for those prefixes (its locale aliases, apps/web/src/proxy.ts), any case. */
+const PRINTED_ALIASES = new Map([
+  ['kk', 'kz'],
+  ['kk-kz', 'kz'],
+  ['ru-ru', 'ru'],
+  ['en-us', 'en'],
+  ['ru', 'ru'],
+  ['kz', 'kz'],
+  ['en', 'en'],
+])
+
+/** The printed prefix an old alias (`/kk/...`, `/ru-RU/...`, `/KZ/...`) stands for; null for the printed form itself. */
+export const printedAlias = (prefix: string): string | null => {
+  const printed = PRINTED_ALIASES.get(prefix.toLowerCase())
+  return printed === undefined || printed === prefix ? null : printed
+}
+
 const PRINTED_PATH = /^\/([a-z]{2})\/certificates\/[^/]+\/verify\/?$/
 
 /** The certificate's language on its printed verify URL; undefined anywhere else (the next strategy decides). */
