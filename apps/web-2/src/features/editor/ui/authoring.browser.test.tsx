@@ -79,6 +79,17 @@ describe('authoring', () => {
     expect(find(last(onChange), 'blockMathEquation')?.attrs?.['math_equation']).toBe('\\frac{a}{b}')
   })
 
+  test('B-EDT-13 a formula typed and left without «Применить» is applied, not lost', async () => {
+    const onChange = vi.fn<(doc: EditorDocument) => void>()
+    const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)
+    await insert(screen, m.editor_block_math())
+    await expect.element(screen.getByLabelText(m.editor_field_latex())).toHaveFocus()
+    await screen.getByLabelText(m.editor_field_latex()).fill('F = ma')
+    const paragraph = document.querySelector('.ProseMirror > p')
+    if (paragraph) await userEvent.click(paragraph)
+    await expect.poll(() => find(last(onChange), 'blockMathEquation')?.attrs?.['math_equation']).toBe('F = ma')
+  })
+
   test('B-EDT-12 an embed takes an https URL and detects its provider', async () => {
     const onChange = vi.fn<(doc: EditorDocument) => void>()
     const screen = await render(<BlockEditor activityId={ACTIVITY} content={null} onChange={onChange} />)

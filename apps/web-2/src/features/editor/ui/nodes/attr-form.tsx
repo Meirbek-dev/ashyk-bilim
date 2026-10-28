@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import type { FocusEvent, FormEvent } from 'react'
 import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
@@ -32,7 +32,10 @@ const fieldSchema = ({ check }: AttrField) =>
     }),
   )
 
-/** The authoring form of a block's attributes (URL, formula, question...): validated, applied to the node. */
+/**
+ * The authoring form of a block's attributes (URL, formula, question...): validated, applied to the node by «Применить»
+ * or when the focus leaves the form with a change in it (a formula typed and left was silently lost on save).
+ */
 export function AttrForm({ fields, values, onApply }: AttrFormProps) {
   const schema = v.object(Object.fromEntries(fields.map(field => [field.name, fieldSchema(field)])))
   const form = useAppForm(schema, {
@@ -43,8 +46,17 @@ export function AttrForm({ fields, values, onApply }: AttrFormProps) {
     event.preventDefault()
     void form.handleSubmit()
   }
+  const leave = (event: FocusEvent<HTMLFormElement>) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+    if (form.state.isDirty) void form.handleSubmit()
+  }
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4">
+    <form
+      noValidate
+      onSubmit={submit}
+      onBlur={leave}
+      className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
+    >
       {fields.map(field => (
         <form.AppField key={field.name} name={field.name}>
           {control =>
