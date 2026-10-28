@@ -1,6 +1,6 @@
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Keyboard, Search } from 'lucide-react'
+import { Bell, Keyboard, Palette, Search, ShieldCheck, UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -9,7 +9,13 @@ import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { gamificationOn } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 
-import { PALETTE_LIMIT, paletteCourseTarget, paletteSections } from '../model/catalog'
+import {
+  PALETTE_LIMIT,
+  paletteCourseTarget,
+  paletteSections,
+  paletteSettings,
+  type SettingsPage,
+} from '../model/catalog'
 import { shortcuts } from '../model/shortcuts'
 import { searchResultsOptions } from '../queries'
 import { searchKindLabels } from './kind-labels'
@@ -27,6 +33,13 @@ export type PaletteEntry = {
 }
 
 type PaletteGroup = { heading: string; entries: readonly PaletteEntry[] }
+
+const settingsIcons: Record<SettingsPage['to'], typeof Bell> = {
+  '/settings/profile': UserRound,
+  '/settings/security': ShieldCheck,
+  '/settings/appearance': Palette,
+  '/settings/notifications': Bell,
+}
 
 type PaletteActions = { close: () => void; showHelp: () => void }
 
@@ -102,6 +115,18 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
       }
     }),
   }))
+  const settings = {
+    heading: m.platform_page_settings(),
+    entries: paletteSettings(session, text).map(page => {
+      const Icon = settingsIcons[page.to]
+      return {
+        id: `nav:${page.to}`,
+        label: page.label(),
+        icon: <Icon aria-hidden />,
+        onSelect: go(() => navigate({ to: page.to })),
+      }
+    }),
+  }
   const hits = found ? hitGroups(found, go, navigate) : []
   const all: PaletteEntry[] = q
     ? [
@@ -123,6 +148,7 @@ export function usePaletteGroups(text: string, q: string, { close, showHelp }: P
   const helpShown = help.label.toLowerCase().includes(text.trim().toLowerCase())
   return [
     ...navigation,
+    settings,
     ...hits,
     { heading: m.catalog_search_title(), entries: all },
     { heading: m.catalog_help_title(), entries: helpShown ? [help] : [] },

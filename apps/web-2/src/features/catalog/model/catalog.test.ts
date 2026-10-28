@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { describe, expect, test } from 'vite-plus/test'
 
+import { m } from '#/paraglide/messages'
 import type { Capability, SessionInfo } from '#/shared/api/gen/types.gen'
 
 import {
@@ -13,6 +14,7 @@ import {
   nextCoursesCursor,
   paletteCourseTarget,
   paletteSections,
+  paletteSettings,
   resolveSort,
   searchCount,
   searchKinds,
@@ -99,6 +101,16 @@ describe('catalog model', () => {
     const filtered = paletteSections(session(['teach']), '  ' + (teacher[0]?.sections[0]?.label() ?? '').slice(0, 3))
     expect(filtered.flatMap(group => group.sections).length).toBeGreaterThan(0)
     expect(paletteSections(session([]), 'zzzz-no-such-section')).toEqual([])
+  })
+
+  test('the palette offers the settings pages to a signed-in user: by page name, or all by «Настройки»', () => {
+    expect(paletteSettings(null, '')).toEqual([])
+    const all = ['/settings/profile', '/settings/security', '/settings/appearance', '/settings/notifications']
+    expect(paletteSettings(session([]), '').map(page => page.to)).toEqual(all)
+    expect(paletteSettings(session([]), ` ${m.platform_page_settings().slice(0, 5)}`).map(page => page.to)).toEqual(all)
+    const security = m.platform_tab_security().slice(0, 4).toUpperCase()
+    expect(paletteSettings(session([]), security).map(page => page.to)).toEqual(['/settings/security'])
+    expect(paletteSettings(session([]), 'zzzz')).toEqual([])
   })
 
   test('B-CAT-01 the landing lead skips a description that only repeats the name', () => {

@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 
+import { m } from '#/paraglide/messages'
 import type { Course, CourseAuthor, CoursePage, SearchResults, SessionInfo } from '#/shared/api/gen/types.gen'
 import { availableWorkspaces, type Section, visibleSections, type Workspace } from '#/shared/auth/access'
 
@@ -91,6 +92,27 @@ export function paletteSections(
       ),
     }))
     .filter(group => group.sections.length > 0)
+}
+
+/** The settings pages (the settings route's tabs), in its order. */
+const SETTINGS_PAGES = [
+  { to: '/settings/profile', label: m.platform_tab_profile },
+  { to: '/settings/security', label: m.platform_tab_security },
+  { to: '/settings/appearance', label: m.platform_tab_appearance },
+  { to: '/settings/notifications', label: m.platform_page_notifications },
+] as const
+
+export type SettingsPage = (typeof SETTINGS_PAGES)[number]
+
+/**
+ * The palette's settings group for a signed-in user: each page whose name holds the typed text, or all of them when
+ * the group's own name does («настр»). A guest has no settings.
+ */
+export function paletteSettings(session: SessionInfo | null, text: string): SettingsPage[] {
+  if (!session) return []
+  const needle = text.trim().toLowerCase()
+  if (m.platform_page_settings().toLowerCase().includes(needle)) return [...SETTINGS_PAGES]
+  return SETTINGS_PAGES.filter(page => page.label().toLowerCase().includes(needle))
 }
 
 type PlatformTexts = {
