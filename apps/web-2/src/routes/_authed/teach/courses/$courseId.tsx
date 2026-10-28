@@ -10,6 +10,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId')({
   loader: ({ context, params }) => ensureWorkspace(context.queryClient, params.courseId),
   staticData: {
     title: m.platform_page_course_workspace,
+    notFoundTitle: m.course_not_found,
     skeleton: 'detail',
     tabs: [
       { to: '/teach/courses/$courseId/overview', label: m.platform_tab_overview },

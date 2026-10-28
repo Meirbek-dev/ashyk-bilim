@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId_/atte
   loaderDeps: ({ search }) => ({ attempt: search.attempt }),
   loader: ({ context, params, deps }) => ensureAttempt(context.queryClient, { ...params, attemptId: deps.attempt }),
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
-  staticData: { title: m.player_page_attempt, layout: 'focus' },
+  staticData: { title: m.player_page_attempt, notFoundTitle: m.player_not_found, layout: 'focus' },
   component: AttemptPage,
   errorComponent: PlayerError,
   notFoundComponent: PlayerNotFound,

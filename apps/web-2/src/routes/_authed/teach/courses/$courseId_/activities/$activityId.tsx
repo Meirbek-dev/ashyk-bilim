@@ -27,6 +27,7 @@ export const Route = createFileRoute('/_authed/teach/courses/$courseId_/activiti
   },
   staticData: {
     title: m.platform_page_studio,
+    notFoundTitle: m.studio_activity_not_found,
     layout: 'focus',
     tabs: [
       { to: '/teach/courses/$courseId/activities/$activityId/edit', label: m.platform_tab_edit },

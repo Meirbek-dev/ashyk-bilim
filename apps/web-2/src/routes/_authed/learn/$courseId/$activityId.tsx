@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId')({
     return { ...player, aiOff: ai?.available === false }
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
-  staticData: { title: m.platform_page_activity, layout: 'focus' },
+  staticData: { title: m.platform_page_activity, notFoundTitle: m.player_not_found, layout: 'focus' },
   component: function Player() {
     const params = Route.useParams()
     const { aiOff } = Route.useLoaderData()

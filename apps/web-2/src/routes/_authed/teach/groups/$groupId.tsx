@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_authed/teach/groups/$groupId')({
     return { name: group.name }
   },
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.name) }] : [] }),
-  staticData: { title: m.platform_nav_groups },
+  staticData: { title: m.platform_nav_groups, notFoundTitle: m.admin_group_not_found },
   component: GroupPage,
   notFoundComponent: GroupNotFound,
 })

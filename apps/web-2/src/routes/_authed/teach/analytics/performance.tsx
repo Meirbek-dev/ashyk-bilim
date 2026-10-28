@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_authed/teach/analytics/performance')({
   search: { middlewares: [stripSearchParams({ page: 1, coursePage: 1 })] },
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) => loadPerformance(context.queryClient, deps),
-  staticData: { title: m.platform_tab_performance },
+  staticData: { title: m.platform_tab_performance, notFoundTitle: m.analytics_not_found_title },
   component: PerformanceTab,
   notFoundComponent: DrillNotFound,
 })

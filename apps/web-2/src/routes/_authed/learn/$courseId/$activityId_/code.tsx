@@ -13,7 +13,7 @@ export const Route = createFileRoute('/_authed/learn/$courseId/$activityId_/code
   loader: ({ context, params, deps }) =>
     ensureArena(context.queryClient, { courseId: params.courseId, activityId: params.activityId, ...deps }),
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
-  staticData: { title: m.player_page_code, layout: 'focus' },
+  staticData: { title: m.player_page_code, notFoundTitle: m.player_not_found, layout: 'focus' },
   component: CodeArenaPage,
   errorComponent: PlayerError,
   notFoundComponent: PlayerNotFound,

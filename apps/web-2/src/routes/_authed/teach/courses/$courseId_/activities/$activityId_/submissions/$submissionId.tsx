@@ -15,7 +15,7 @@ export const Route = createFileRoute(
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) =>
     ensureReview(context.queryClient, params.activityId, params.submissionId, deps),
-  staticData: { title: m.platform_page_submission, layout: 'focus' },
+  staticData: { title: m.platform_page_submission, notFoundTitle: m.grading_not_found, layout: 'focus' },
   component: Review,
   errorComponent: StudioError,
   notFoundComponent: SubmissionNotFound,

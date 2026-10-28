@@ -9,7 +9,7 @@ import { documentTitle } from '#/shared/lib/document-title'
 export const Route = createFileRoute('/_authed/learn/$courseId/$activityId_/submission')({
   loader: ({ context, params }) => ensureSubmission(context.queryClient, params.courseId, params.activityId),
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: documentTitle(loaderData.title) }] : [] }),
-  staticData: { title: m.player_page_submission, layout: 'focus' },
+  staticData: { title: m.player_page_submission, notFoundTitle: m.player_not_found, layout: 'focus' },
   component: SubmissionPage,
   errorComponent: PlayerError,
   notFoundComponent: PlayerNotFound,
