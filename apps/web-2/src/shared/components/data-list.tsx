@@ -12,15 +12,15 @@ type DataListProps<T> = {
 const looks = {
   cards: {
     list: 'flex flex-col gap-3',
-    item: 'flex flex-col gap-1 rounded-xl border bg-card p-4 text-card-foreground shadow-xs',
+    item: 'relative flex flex-col gap-1 rounded-xl border bg-card p-4 text-card-foreground shadow-xs',
   },
   rows: {
     list: 'flex flex-col divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs',
-    item: 'flex flex-col gap-1 p-4',
+    item: 'relative flex flex-col gap-1 p-4',
   },
 }
 
-/** Objects as a list of cards, or as rows of one panel. */
+/** Objects as a list of cards, or as rows of one panel; each item holds a `stretched` link of its own. */
 export function DataList<T>({ items, getKey, variant = 'cards', children }: DataListProps<T>) {
   const look = looks[variant]
   return (
