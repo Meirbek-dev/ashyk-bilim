@@ -39,3 +39,14 @@ test('B-COD-26 a late hand-in says the penalty its score already carries; one in
   ])
   expect(outcome(graded({}))).toEqual([m.code_result_score({ score: formatPercent(80) })])
 })
+
+test('B-COD-26 an attempt handed in by the clock says so, graded or still waiting for its grade', () => {
+  expect(outcome(graded({ auto_submit_reason: 'time_expired' }))).toEqual([
+    m.code_result_score({ score: formatPercent(80) }),
+    m.code_auto_time(),
+  ])
+  expect(outcome(graded({ auto_submit_reason: 'deadline_passed', release_state: 'hidden' }))).toEqual([
+    m.code_result_later(),
+    m.code_auto_deadline(),
+  ])
+})

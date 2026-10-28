@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { StudentSubmission } from '#/shared/api/gen/types.gen'
+import type { AutoSubmitReason, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -12,11 +12,23 @@ import { FinalRun } from './final-run'
 import { languageName } from './labels'
 import { CodeEditor } from './lazy-editor'
 
-/** What the attempt came to (B-COD-10): the grade once released with its late penalty, else why it is not shown yet. */
+/** Why the platform handed the attempt in, not the learner: a test's result says it too. */
+const autoLabels = {
+  time_expired: m.code_auto_time,
+  deadline_passed: m.code_auto_deadline,
+  late_cutoff_passed: m.code_auto_late_cutoff,
+  integrity_violation: m.code_auto_violation,
+} satisfies Record<AutoSubmitReason, () => string>
+
+/**
+ * What the attempt came to (B-COD-10): the grade once released with its late penalty, else why it is not shown yet;
+ * after either, why it was handed in by itself, if it was.
+ */
 export function outcome(attempt: StudentSubmission): string[] {
   if (attempt.release_state === 'returned_for_revision') return [m.code_result_returned()]
-  if (attempt.status === 'pending') return [m.code_result_pending()]
-  if (attempt.release_state !== 'visible') return [m.code_result_later()]
+  const auto = attempt.auto_submit_reason ? [autoLabels[attempt.auto_submit_reason]()] : []
+  if (attempt.status === 'pending') return [m.code_result_pending(), ...auto]
+  if (attempt.release_state !== 'visible') return [m.code_result_later(), ...auto]
   const cases = testsPassed(attempt)
   return [
     ...(attempt.final_score === null ? [] : [m.code_result_score({ score: formatPercent(attempt.final_score) })]),
@@ -25,6 +37,7 @@ export function outcome(attempt: StudentSubmission): string[] {
       ? [m.code_result_late_penalty({ percent: formatPercent(attempt.late_penalty_pct) })]
       : []),
     ...(cases ? [m.code_result_cases({ passed: cases.correct, total: cases.total })] : []),
+    ...auto,
   ]
 }
 
