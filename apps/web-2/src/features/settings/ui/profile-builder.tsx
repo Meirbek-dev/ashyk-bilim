@@ -45,6 +45,9 @@ export function ProfileBuilder() {
     )
   }
   const form = useBuilderForm(defaultValues, save)
+  // A section just added from the menu: the menu hands focus to its title, not back to «Добавить раздел».
+  const [added, setAdded] = useState<string | null>(null)
+  const addedTitle = useRef<HTMLDivElement>(null)
   const reloadAndRetry = async () => {
     retryVersion.current = (await query.refetch()).data?.version ?? null
     await form.handleSubmit()
@@ -70,17 +73,22 @@ export function ProfileBuilder() {
                 index={index}
                 section={section}
                 last={index === field.state.value.length - 1}
+                titleRef={section.id === added ? addedTitle : undefined}
                 onMove={delta => field.moveValue(index, index + delta)}
                 onRemove={() => field.removeValue(index)}
               />
             ))}
             <div>
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={open => open && setAdded(null)}>
                 <DropdownMenuTrigger render={<Button variant="outline">{m.settings_builder_add()}</Button>} />
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" finalFocus={addedTitle}>
                   {ADDABLE_SECTIONS.map(type => ({
                     label: sectionTypeLabels[type](),
-                    onSelect: () => field.pushValue(newSection(type, crypto.randomUUID(), sectionTypeLabels[type]())),
+                    onSelect: () => {
+                      const id = crypto.randomUUID()
+                      setAdded(id)
+                      field.pushValue(newSection(type, id, sectionTypeLabels[type]()))
+                    },
                   })).map(action => (
                     <DropdownMenuItem key={action.label} onClick={action.onSelect}>
                       {action.label}

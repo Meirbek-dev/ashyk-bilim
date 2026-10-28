@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react'
+import type { Ref } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ProfileSection } from '#/shared/api/gen/types.gen'
@@ -27,10 +28,12 @@ type SectionEditorProps = {
   last: boolean
   onMove: (delta: -1 | 1) => void
   onRemove: () => void
+  /** Set on a section just added: the add menu returns focus to its title field. */
+  titleRef?: Ref<HTMLDivElement>
 }
 
 /** One builder section: its kind, title, body fields, and the move and remove buttons. */
-export function SectionEditor({ form, index, section, last, onMove, onRemove }: SectionEditorProps) {
+export function SectionEditor({ form, index, section, last, onMove, onRemove, titleRef }: SectionEditorProps) {
   const kind = sectionTypeLabels[section.type]()
   return (
     <fieldset className="flex flex-col gap-4 rounded-lg border p-4">
@@ -50,9 +53,11 @@ export function SectionEditor({ form, index, section, last, onMove, onRemove }: 
         />
         <IconButton label={m.settings_builder_remove()} icon={<X aria-hidden />} onClick={onRemove} />
       </div>
-      <form.AppField name={`sections[${index}].title`}>
-        {field => <field.TextField label={m.settings_builder_section_title()} />}
-      </form.AppField>
+      <div ref={titleRef} className="contents">
+        <form.AppField name={`sections[${index}].title`}>
+          {field => <field.TextField label={m.settings_builder_section_title()} />}
+        </form.AppField>
+      </div>
       {section.type === 'text' ? (
         <form.AppField name={`sections[${index}].content`}>
           {field => <field.TextareaField label={m.settings_builder_content()} />}
