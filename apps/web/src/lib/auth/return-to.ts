@@ -63,6 +63,15 @@ export function buildLoginRedirect(returnTo?: string | null): string {
 }
 
 /**
+ * `path` carrying the sanitized `returnTo` along (login ↔ signup), or bare
+ * `path` when there is nowhere to go back to.
+ */
+export function withReturnTo(path: string, returnTo: string | null | undefined): string {
+  const resolved = normalizeReturnTo(returnTo)
+  return resolved === '/' ? path : `${path}?returnTo=${encodeURIComponent(resolved)}`
+}
+
+/**
  * Post-login destination: the sanitized `returnTo`, prefixed with the active
  * locale when it carries none (`/` → `/ru`). Never an unprefixed path: the
  * client router keeps the action's redirect URL as-is, so anything the

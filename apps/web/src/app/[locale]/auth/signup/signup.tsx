@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { toast } from 'sonner'
 import * as v from 'valibot'
@@ -14,6 +15,7 @@ import AuthCard from '@components/auth/card'
 import Link from '@components/ui/AppLink'
 import { getAbsoluteUrl } from '@services/config/config'
 import { registerAction } from '@/app/actions/auth'
+import { withReturnTo } from '@/lib/auth/redirect'
 import { meetsPasswordPolicy } from '@/lib/auth/schemas'
 
 const USERNAME_RE = /^[A-Za-z0-9._-]{3,48}$/u
@@ -53,6 +55,8 @@ const WIRE_TO_FIELD: Record<string, FieldName> = {
  * Self-registration against `POST /auth/register` (DECISIONS.md 2026-09-12).
  * Success → toast + the login page; the verification code arrives by email
  * and is confirmed on `/auth/verify-email` (login does not depend on it).
+ * `returnTo` rides along to the login page: a learner who came from a course's
+ * «Начать курс» is enrolled once they sign in, not dropped on the home page.
  */
 function SignupClient() {
   const t = useTranslations('Auth.Signup')
@@ -60,6 +64,7 @@ function SignupClient() {
   const errorsT = useTranslations('Errors')
   const locale = useLocale()
   const router = useRouter()
+  const loginHref = withReturnTo('/auth/login', useSearchParams().get('returnTo'))
 
   const schema = v.pipe(
     v.object({
@@ -131,7 +136,7 @@ function SignupClient() {
       }
 
       toast.success(t('success'), { description: t('successDescription') })
-      router.push('/auth/login')
+      router.push(loginHref)
       return INITIAL_STATE
     },
     INITIAL_STATE,
@@ -251,7 +256,7 @@ function SignupClient() {
 
       <p className="text-muted-foreground mt-5 text-center text-sm">
         {t('haveAccount')}{' '}
-        <Link href={getAbsoluteUrl('/login')} className="text-primary underline">
+        <Link href={loginHref} className="text-primary underline">
           {t('login')}
         </Link>
       </p>

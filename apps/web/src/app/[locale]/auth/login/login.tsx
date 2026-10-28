@@ -5,7 +5,7 @@ import { AuthErrorBanner, AuthSubmitButton } from '@components/auth/AuthForm'
 import { getAbsoluteUrl, getPublicAPIUrl } from '@services/config/config'
 import { loginAction } from '@/app/actions/auth'
 import type { AuthActionResult, LoginFailureReason } from '@/app/actions/auth'
-import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect'
+import { getPostAuthRedirect, normalizeReturnTo, withReturnTo } from '@/lib/auth/redirect'
 import PasswordInput from '@components/ui/custom/password-input'
 import { SiGoogle } from '@icons-pack/react-simple-icons'
 import { Separator } from '@components/ui/separator'
@@ -317,7 +317,8 @@ function LoginClient() {
 
       <p className="text-muted-foreground mt-5 text-center text-sm">
         {t('noAccount')}{' '}
-        <Link href={'/auth/signup'} className="text-primary underline">
+        {/* A newcomer sent here by «Начать курс» must come back to that course after signing up. */}
+        <Link href={withReturnTo('/auth/signup', searchParams.get('returnTo'))} className="text-primary underline">
           {t('signup')}
         </Link>
       </p>

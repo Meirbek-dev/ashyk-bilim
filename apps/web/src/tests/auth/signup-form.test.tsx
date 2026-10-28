@@ -24,6 +24,8 @@ vi.mock('next-intl', () => ({
 }))
 const push = vi.fn()
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }))
+let searchParams = new URLSearchParams()
+vi.mock('next/navigation', () => ({ useSearchParams: () => searchParams }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn() } }))
 vi.mock('@services/config/config', () => ({ getAbsoluteUrl: (p: string) => p }))
 vi.mock('@components/ui/AppLink', () => ({
@@ -49,7 +51,10 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(input('confirmPassword'), 'Correct horse 1')
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  searchParams = new URLSearchParams()
+})
 
 describe('/auth/signup', () => {
   it('validates locally before calling the server (short password, mismatch, bad username)', async () => {
@@ -107,6 +112,30 @@ describe('/auth/signup', () => {
         locale: 'ru-RU',
       }),
     )
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/auth/login'))
+  })
+
+  // Students from a course's «Начать курс» signed up, logged in on a bare /auth/login and landed on the
+  // home page, never enrolled: returnTo (with the auto-start flag) must survive the signup.
+  it('sends a newcomer from a course back to it through the login', async () => {
+    searchParams = new URLSearchParams({ returnTo: '/course/abc?start=1' })
+    registerAction.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    render(<SignupClient />)
+    const loginHref = '/auth/login?returnTo=%2Fcourse%2Fabc%3Fstart%3D1'
+    expect(screen.getByRole('link', { name: 'login' }).getAttribute('href')).toBe(loginHref)
+    await fillValid(user)
+    await user.click(screen.getByRole('button', { name: 'submit' }))
+    await waitFor(() => expect(push).toHaveBeenCalledWith(loginHref))
+  })
+
+  it('drops an unsafe returnTo', async () => {
+    searchParams = new URLSearchParams({ returnTo: 'https://evil.example/' })
+    registerAction.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    render(<SignupClient />)
+    await fillValid(user)
+    await user.click(screen.getByRole('button', { name: 'submit' }))
     await waitFor(() => expect(push).toHaveBeenCalledWith('/auth/login'))
   })
 

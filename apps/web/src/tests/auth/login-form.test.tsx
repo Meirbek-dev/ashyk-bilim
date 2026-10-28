@@ -126,4 +126,19 @@ describe('/auth/login', () => {
     await user.click(screen.getByRole('button', { name: 'login' }))
     expect(await screen.findByText('rateLimitedRetry:{"minutes":15}')).toBeDefined()
   })
+
+  // A newcomer sent here by a course's «Начать курс» signed up, logged in and landed on the home page,
+  // never enrolled: the signup link dropped `returnTo`.
+  it('keeps returnTo on the signup link', () => {
+    searchParams = new URLSearchParams({ returnTo: '/course/abc?start=1' })
+    render(<LoginClient />)
+    expect(screen.getByRole('link', { name: 'signup' }).getAttribute('href')).toBe(
+      '/auth/signup?returnTo=%2Fcourse%2Fabc%3Fstart%3D1',
+    )
+  })
+
+  it('links to a bare signup without returnTo', () => {
+    render(<LoginClient />)
+    expect(screen.getByRole('link', { name: 'signup' }).getAttribute('href')).toBe('/auth/signup')
+  })
 })
