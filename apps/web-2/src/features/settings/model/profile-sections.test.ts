@@ -3,7 +3,14 @@ import { expect, test } from 'vite-plus/test'
 
 import type { ProfileSections } from '#/shared/api/gen/types.gen'
 
-import { ADDABLE_SECTIONS, newSection, normalizeSections, sectionHeading, vBuilderDocument } from './profile-sections'
+import {
+  ADDABLE_SECTIONS,
+  newSection,
+  normalizeSections,
+  sectionHeading,
+  shownSections,
+  vBuilderDocument,
+} from './profile-sections'
 
 const issues = (document: ProfileSections) =>
   v.safeParse(vBuilderDocument, document).issues?.map(issue => v.getDotPath(issue)) ?? []
@@ -107,4 +114,12 @@ test('B-SET-14 an old-web default section title reads as its type on the public 
   expect(sectionHeading('Experience Section')).toBe('Experience')
   expect(sectionHeading('Веб технологиялар')).toBe('Веб технологиялар')
   expect(sectionHeading('Раздел «Опыт» и навыки')).toBe('Раздел «Опыт» и навыки')
+})
+
+test('a section saved without items, or with blank text, is not shown to visitors', () => {
+  const skills = newSection('skills', 's', 'Навыки')
+  const text = { ...newSection('text', 't', 'О себе'), content: '  ' }
+  const links = { type: 'links' as const, id: 'l', title: 'Ссылки', links: [{ title: 'GitHub', url: 'https://github.com' }] }
+  const courses = newSection('courses', 'c', 'Курсы')
+  expect(shownSections([skills, text, links, courses]).map(section => section.id)).toEqual(['l'])
 })

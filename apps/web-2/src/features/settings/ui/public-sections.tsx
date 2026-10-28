@@ -5,7 +5,7 @@ import type { ProfileSection } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { formatDate } from '#/shared/i18n/format'
 
-import { sectionHeading } from '../model/profile-sections'
+import { sectionHeading, shownSections } from '../model/profile-sections'
 import { skillLevelLabels } from './section-items'
 
 const day = (date: string) => formatDate(Date.parse(date) / 1000)
@@ -117,11 +117,9 @@ function body(section: ProfileSection): ReactNode {
   }
 }
 
-/** The builder sections in their saved order, read-only. */
+/** The builder sections with something to show, in their saved order, read-only. */
 export function PublicSections({ sections }: { sections: ProfileSection[] }) {
-  return sections
-    .filter(section => section.type !== 'courses' && section.type !== 'gamification')
-    .map(section => (
+  return shownSections(sections).map(section => (
       <section key={section.id} aria-label={sectionHeading(section.title)} className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold wrap-anywhere">{sectionHeading(section.title)}</h2>
         {body(section)}

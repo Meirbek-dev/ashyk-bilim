@@ -129,3 +129,32 @@ export const sectionHeading = (title: string): string => {
   }
   return trimmed
 }
+
+function itemCount(section: ProfileSection): number {
+  switch (section.type) {
+    case 'text':
+      return section.content.trim() ? 1 : 0
+    case 'links':
+      return section.links.length
+    case 'skills':
+      return section.skills.length
+    case 'experience':
+      return section.experiences.length
+    case 'education':
+      return section.education.length
+    case 'affiliation':
+      return section.affiliations.length
+    case 'image-gallery':
+      return section.images.length
+    default:
+      // Courses are listed by the page itself; the legacy gamification kind has no public data.
+      return 0
+  }
+}
+
+/**
+ * The sections a visitor sees, in their saved order: one added and saved without items (or with blank text) is left
+ * out, so the public page never shows a bare heading.
+ */
+export const shownSections = (sections: readonly ProfileSection[]): ProfileSection[] =>
+  sections.filter(section => itemCount(section) > 0)
