@@ -8,6 +8,7 @@ import type { RemediationSession, UserId } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
+import { toast } from '#/shared/ui/toast'
 
 import { passThreshold } from '../model/ai'
 import { completeSessionOptions } from '../queries'
@@ -23,7 +24,17 @@ type SessionViewProps = { session: RemediationSession; userId: UserId; invalidat
 
 export function RemediationSessionView({ session, userId, invalidates = [] }: SessionViewProps) {
   const queryClient = useQueryClient()
-  const complete = useMutation({ ...completeSessionOptions(queryClient, userId), meta: { invalidates } })
+  const options = completeSessionOptions(queryClient, userId)
+  const complete = useMutation({
+    ...options,
+    meta: { invalidates },
+    onSuccess: (result: RemediationSession) => {
+      options.onSuccess(result)
+      // Behind a gate (`invalidates`: the host's attempt state) passing lifts it and the host takes this block away
+      // at once: the learner is told why it went and what is open now (a callback of the mutation, not of this view).
+      if (result.status === 'passed' && invalidates.length > 0) toast.add({ title: m.ai_remediation_gate_lifted() })
+    },
+  })
   const { lecture } = session
   const questions = session.test.questions
   const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ''))

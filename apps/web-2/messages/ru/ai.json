@@ -95,6 +95,7 @@
   "ai_remediation_threshold": "Чтобы пройти, нужно {threshold}.",
   "ai_remediation_result_passed": "Пройдено: {score}",
   "ai_remediation_result_failed": "Не пройдено: {score}",
+  "ai_remediation_gate_lifted": "Разбор ошибок пройден: можно начать новую попытку.",
   "ai_remediation_assigned": "Назначен",
   "ai_remediation_in_progress": "В процессе",
   "ai_remediation_passed": "Пройден",

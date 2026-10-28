@@ -91,6 +91,7 @@
   "ai_remediation_threshold": "You need {threshold} to pass.",
   "ai_remediation_result_passed": "Passed: {score}",
   "ai_remediation_result_failed": "Not passed: {score}",
+  "ai_remediation_gate_lifted": "Mistake review passed: you can start a new attempt.",
   "ai_remediation_assigned": "Assigned",
   "ai_remediation_in_progress": "In progress",
   "ai_remediation_passed": "Passed",

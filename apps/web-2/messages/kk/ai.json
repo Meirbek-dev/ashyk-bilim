@@ -91,6 +91,7 @@
   "ai_remediation_threshold": "Өту үшін {threshold} керек.",
   "ai_remediation_result_passed": "Өтті: {score}",
   "ai_remediation_result_failed": "Өтпеді: {score}",
+  "ai_remediation_gate_lifted": "Қателерді талдау өтілді: жаңа әрекетті бастауға болады.",
   "ai_remediation_assigned": "Тағайындалды",
   "ai_remediation_in_progress": "Орындалуда",
   "ai_remediation_passed": "Өтті",

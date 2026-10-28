@@ -10,6 +10,7 @@ import { json } from '#/shared/api/testing'
 import type { RemediationSession, SessionInfo } from '#/shared/api/gen/types.gen'
 import { sessionOptions } from '#/shared/auth/session'
 import { renderInRouter } from '#/shared/components/testing'
+import { toast } from '#/shared/ui/toast'
 
 import { RemediationGate } from './remediation-gate'
 
@@ -71,7 +72,7 @@ afterEach(() => {
 })
 
 describe('RemediationGate (where the gate blocks the learner)', () => {
-  test("B-AI-26 the blocked page shows this activity's session in place; passing it re-reads the host state", async () => {
+  test("B-AI-26 the blocked page shows this activity's session in place; passing it re-reads the host state and says the gate is lifted", async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (request: Request) => {
@@ -94,10 +95,13 @@ describe('RemediationGate (where the gate blocks the learner)', () => {
     await expect.element(screen.getByRole('heading', { name: 'Работа по этой активности' })).toBeVisible()
     await expect.element(screen.getByText('Работа по другой активности')).not.toBeInTheDocument()
     const before = reads
+    const added = vi.spyOn(toast, 'add')
     await userEvent.fill(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }) }), 'Ответ')
     await userEvent.click(screen.getByRole('button', { name: m.ai_remediation_complete() }))
     await expect.element(screen.getByText(m.ai_remediation_result_passed({ score: formatPercent(100) }))).toBeVisible()
     await expect.poll(() => reads).toBeGreaterThan(before)
+    // The host takes the block away once the gate is lifted: the learner is told so.
+    expect(added).toHaveBeenCalledWith({ title: m.ai_remediation_gate_lifted() })
   })
 
   test('B-AI-26 two generated questions with the same prompt are both asked', async () => {
