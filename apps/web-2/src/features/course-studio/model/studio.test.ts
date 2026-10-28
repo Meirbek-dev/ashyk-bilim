@@ -46,13 +46,13 @@ describe('course list', () => {
     expect(hasNoCourses({ ...zero, archived: 1 })).toBe(false)
   })
 
-  test('B-CST-02 a blank search is no search; an unknown preset is rejected; an unknown sort is the default', () => {
+  test('B-CST-02 a blank search is no search; an unknown preset or sort (a stale link) is the default', () => {
     expect(v.parse(coursesSearchSchema, { q: '  ', preset: 'drafts' })).toEqual({
       q: undefined,
       preset: 'drafts',
       sort: undefined,
     })
-    expect(v.safeParse(coursesSearchSchema, { preset: 'recent' }).success).toBe(false)
+    expect(v.parse(coursesSearchSchema, { preset: 'recent' }).preset).toBeUndefined()
     expect(v.parse(coursesSearchSchema, { sort: 'name' }).sort).toBe('name')
     expect(v.parse(coursesSearchSchema, { sort: 'progress' }).sort).toBeUndefined()
   })
