@@ -32,10 +32,14 @@ export function AnalysisReport({ courseId, analysis }: { courseId: CourseId; ana
       </div>
       <p className="text-lg font-semibold">
         {m.ai_score({ score: analysis.public_score })}
+        {/* A real space: the margin alone left «Балл: 38 из 100Прошлый: 42» for a screen reader and a copy. */}
         {analysis.previous_public_score === null ? null : (
-          <span className="ms-3 text-sm font-normal text-muted-foreground">
-            {m.ai_score_previous({ score: analysis.previous_public_score })}
-          </span>
+          <>
+            {' '}
+            <span className="ms-2 text-sm font-normal text-muted-foreground">
+              {m.ai_score_previous({ score: analysis.previous_public_score })}
+            </span>
+          </>
         )}
       </p>
       <Suspense fallback={<ListSkeleton />}>
