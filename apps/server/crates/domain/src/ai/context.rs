@@ -116,8 +116,9 @@ pub fn json_snippet(value: &serde_json::Value, limit: usize) -> String {
 
 /// A lesson document as the model reads it, in Markdown-like lines.
 ///
-/// Headings, lists, quotes, code, table rows and formulas (`$$`) as text; media and widgets one bracketed line each:
-/// the whole lesson fits where its editor JSON did not.
+/// Headings, lists, quotes, code, table rows and formulas (`$$`) as text; media and widgets one line each behind an
+/// icon (🖼 🎬 📄 🔗), not an English word a citation would quote to the teacher: the whole lesson fits where its
+/// editor JSON did not.
 #[must_use]
 pub fn lesson_text(doc: &serde_json::Value) -> String {
     let mut lines = Vec::new();
@@ -194,9 +195,9 @@ fn block_lines(node: &serde_json::Value, prefix: &str, lines: &mut Vec<String>) 
         }
         "blockquote" | "calloutInfo" | "calloutWarning" | "badge" => {
             let lead = match kind {
-                "calloutInfo" => "> [note] ",
-                "calloutWarning" => "> [warning] ",
-                "badge" => "> [badge] ",
+                "calloutInfo" => "> ℹ️ ",
+                "calloutWarning" => "> ⚠️ ",
+                "badge" => "> 🏷 ",
                 _ => "> ",
             };
             for child in children(node) {
@@ -226,6 +227,12 @@ fn block_lines(node: &serde_json::Value, prefix: &str, lines: &mut Vec<String>) 
                     })
                     .collect();
                 lines.push(format!("{prefix}| {} |", cells.join(" | ")));
+                let header = children(row).iter().all(|cell| {
+                    cell.get("type").and_then(serde_json::Value::as_str) == Some("tableHeader")
+                });
+                if header {
+                    lines.push(format!("{prefix}|{}", " --- |".repeat(cells.len())));
+                }
             }
             return;
         }
@@ -275,23 +282,13 @@ fn widget_line(node: &serde_json::Value, kind: &str) -> Option<String> {
         "blockMathEquation" => {
             return attr(node, &["math_equation"]).map(|latex| format!("$$ {latex} $$"));
         }
-        "blockImage" => format!(
-            "[image: {}]",
-            text(&["blockObject", "content", "file_name"])
-        ),
-        "blockVideo" => format!(
-            "[video: {}]",
-            text(&["blockObject", "content", "file_name"])
-        ),
-        "blockPDF" => format!("[pdf: {}]", text(&["blockObject", "content", "file_name"])),
-        "blockEmbed" => format!("[embed: {}]", text(&["embedUrl"])),
-        "blockWebPreview" => format!("[link: {} {}]", text(&["title"]), text(&["url"])),
-        "button" => format!("[button: {} → {}]", inline_text(node), text(&["link"])),
-        "flipcard" => format!(
-            "[flip card] {} → {}",
-            text(&["question"]),
-            text(&["answer"])
-        ),
+        "blockImage" => format!("🖼 {}", text(&["blockObject", "content", "file_name"])),
+        "blockVideo" => format!("🎬 {}", text(&["blockObject", "content", "file_name"])),
+        "blockPDF" => format!("📄 {}", text(&["blockObject", "content", "file_name"])),
+        "blockEmbed" => format!("▶ {}", text(&["embedUrl"])),
+        "blockWebPreview" => format!("🔗 {} {}", text(&["title"]), text(&["url"])),
+        "button" => format!("🔘 {} → {}", inline_text(node), text(&["link"])),
+        "flipcard" => format!("🃏 {} → {}", text(&["question"]), text(&["answer"])),
         _ => return None,
     })
 }
@@ -299,7 +296,7 @@ fn widget_line(node: &serde_json::Value, kind: &str) -> Option<String> {
 /// A branching scenario: its title, then each step's text with its options.
 fn scenario_lines(node: &serde_json::Value, prefix: &str, lines: &mut Vec<String>) {
     lines.push(format!(
-        "{prefix}[scenarios] {}",
+        "{prefix}🔀 {}",
         attr(node, &["title"]).unwrap_or_default()
     ));
     let steps = node
@@ -1338,7 +1335,7 @@ mod tests {
                 { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "шаг" }] }] } ] },
             { "type": "table", "content": [{ "type": "tableRow", "content": [
                 { "type": "tableHeader", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "F" }] }] },
-                { "type": "tableCell", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "m·a" }] }] } ] }] },
+                { "type": "tableHeader", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "m·a" }] }] } ] }] },
             { "type": "blockMathEquation", "attrs": { "math_equation": "F = ma" } },
             { "type": "blockImage", "attrs": { "blockObject": { "content": { "file_name": "cart.png" } } } },
             { "type": "calloutWarning", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Осторожно" }] }] },
@@ -1347,8 +1344,8 @@ mod tests {
         ]});
         assert_eq!(
             lesson_text(&doc),
-            "## Первый закон\nТело покоится или `x`\n- инерция\n1. шаг\n| F | m·a |\n$$ F = ma $$\n[image: cart.png]\n\
-             > [warning] Осторожно\n```python\na = 1\nprint(a)\n```"
+            "## Первый закон\nТело покоится или `x`\n- инерция\n1. шаг\n| F | m·a |\n| --- | --- |\n$$ F = ma $$\n🖼 cart.png\n\
+             > ⚠️ Осторожно\n```python\na = 1\nprint(a)\n```"
         );
     }
 
