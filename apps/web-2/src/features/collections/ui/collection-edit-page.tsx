@@ -63,7 +63,7 @@ export function CollectionEditPage() {
     await form.handleSubmit()
   }
   const back = (
-    <Link to="/collections/$collectionId" params={{ collectionId }}>
+    <Link to="/collections/$collectionId" params={{ collectionId }} activeOptions={{ exact: true }}>
       {m.collections_back()}
     </Link>
   )

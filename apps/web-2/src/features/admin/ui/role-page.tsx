@@ -27,7 +27,7 @@ export function RolePage() {
   return (
     <DetailPage
       back={
-        <RouterLink to="/admin/roles" className={buttonVariants({ variant: 'ghost' })}>
+        <RouterLink to="/admin/roles" activeOptions={{ exact: true }} className={buttonVariants({ variant: 'ghost' })}>
           <ArrowLeft aria-hidden />
           {m.admin_roles_all()}
         </RouterLink>

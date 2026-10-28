@@ -22,7 +22,7 @@ export function GroupPage() {
   return (
     <DetailPage
       back={
-        <RouterLink to="/teach/groups" className={buttonVariants({ variant: 'ghost' })}>
+        <RouterLink to="/teach/groups" activeOptions={{ exact: true }} className={buttonVariants({ variant: 'ghost' })}>
           <ArrowLeft aria-hidden />
           {m.admin_groups_all()}
         </RouterLink>
