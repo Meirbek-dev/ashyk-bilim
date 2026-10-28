@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
+import { useRef } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
@@ -19,19 +20,31 @@ export function NotificationsPage() {
   const { unread = false } = useSearch({ from: '/_authed/notifications' })
   const { data } = useSuspenseQuery(unreadOptions())
   const markAll = useMutation(markAllReadOptions(useQueryClient()))
+  const filters = useRef<HTMLElement>(null)
   const action =
     data.unread_count > 0 ? (
       <SubmitButton
         variant="outline"
         pending={markAll.isPending}
-        onClick={() => markAll.mutate({}, { onSuccess: () => toast.add({ title: m.notifications_marked_all() }) })}
+        onClick={() =>
+          markAll.mutate(
+            {},
+            {
+              onSuccess: () => {
+                // The button goes with the last unread one: the keyboard moves to the filter, not back to the top.
+                filters.current?.querySelector<HTMLElement>('a[href]')?.focus()
+                toast.add({ title: m.notifications_marked_all() })
+              },
+            },
+          )
+        }
       >
         {m.notifications_mark_all()}
       </SubmitButton>
     ) : null
   const filter = (
     // Full width under the header, as the search page's sections; «Непрочитанные» counts what is left to read.
-    <nav aria-label={m.notifications_filter_label()} className="flex w-full overflow-x-auto border-b">
+    <nav ref={filters} aria-label={m.notifications_filter_label()} className="flex w-full overflow-x-auto border-b">
       <Link variant="tab" to="/notifications" search={{ unread: undefined }}>
         {m.notifications_filter_all()}
       </Link>

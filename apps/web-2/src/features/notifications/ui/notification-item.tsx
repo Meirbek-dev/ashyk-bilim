@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Notification, NotificationId } from '#/shared/api/gen/types.gen'
@@ -26,9 +27,20 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
   const markRead = useMutation(markReadOptions(useQueryClient()))
   const { id, type, payload, created_at_unix } = notification
   const unread = notification.read_at_unix === null
-  const read = () => {
+  const row = useRef<HTMLDivElement>(null)
+  const read = (then?: () => void) => {
     if (unread)
-      for (const notificationId of [id, ...folded]) markRead.mutate({ path: { notification_id: notificationId } })
+      for (const notificationId of [id, ...folded])
+        markRead.mutate(
+          { path: { notification_id: notificationId } },
+          { onSuccess: notificationId === id ? then : undefined },
+        )
+  }
+  // «Отметить прочитанным» goes once the row is read: the keyboard stays on this row (its link), not back at the top.
+  const keepFocus = () => {
+    const active = document.activeElement
+    if (active === null || active === document.body || row.current?.contains(active))
+      row.current?.querySelector<HTMLElement>('a[href]')?.focus()
   }
   const [what = '', ...details] = notificationLines(payload, folded.length + 1)
   const Icon = notificationIcons[type]
@@ -36,7 +48,7 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
   return (
     // On a phone "Mark as read" wraps under the text instead of squeezing it into a narrow column. The whole row is the
     // link's target (a tap on the type or the date opens it too); "Mark as read" sits above it.
-    <div className="relative flex flex-wrap items-start gap-3">
+    <div ref={row} className="relative flex flex-wrap items-start gap-3">
       <Icon aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground" />
       <div className="flex min-w-0 grow basis-56 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -63,7 +75,13 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
         <p className="text-xs text-muted-foreground">{formatDateTime(created_at_unix)}</p>
       </div>
       {unread && !compact ? (
-        <SubmitButton variant="ghost" size="sm" className="relative" pending={markRead.isPending} onClick={read}>
+        <SubmitButton
+          variant="ghost"
+          size="sm"
+          className="relative"
+          pending={markRead.isPending}
+          onClick={() => read(keepFocus)}
+        >
           {m.notifications_mark_read()}
         </SubmitButton>
       ) : null}
