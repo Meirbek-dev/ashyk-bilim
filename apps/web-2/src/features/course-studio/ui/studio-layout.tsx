@@ -34,12 +34,12 @@ const HANDED_IN = {
 const WORK_TABS = ['/submissions', '/results']
 
 // The activity as its learner sees it (B-CST-43): graded work on its own page (a preview: never counted), a lesson in
-// the player (staff preview). A file task has none: an upload there would be a real attempt.
+// the player (staff preview). A file task's hand-in page marks a staff attempt as a preview too (server UX-182).
 const PREVIEW = {
   quiz: '/learn/$courseId/$activityId/attempt',
   exam: '/learn/$courseId/$activityId/attempt',
   code_challenge: '/learn/$courseId/$activityId/code',
-  file_submission: null,
+  file_submission: '/learn/$courseId/$activityId/submission',
   dynamic: '/learn/$courseId/$activityId',
   video: '/learn/$courseId/$activityId',
   document: '/learn/$courseId/$activityId',
