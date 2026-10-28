@@ -8,8 +8,8 @@ import { toast } from '#/shared/ui/toast'
 
 import { totpRemoveOptions } from '../queries'
 
-/** Turning 2FA off weakens sign-in: it goes through a confirmation (spec 5.8). */
-export function DisableTotp({ onDisabled }: { onDisabled: () => void }) {
+/** Turning 2FA off weakens sign-in: it goes through a confirmation (spec 5.8). `onDisable`: as the confirmed one is sent. */
+export function DisableTotp({ onDisable }: { onDisable: () => void }) {
   const [open, setOpen] = useState(false)
   const remove = useMutation(totpRemoveOptions(useQueryClient()))
   return (
@@ -23,18 +23,18 @@ export function DisableTotp({ onDisabled }: { onDisabled: () => void }) {
       title={m.settings_totp_disable_title()}
       consequence={m.settings_totp_disable_consequence()}
       confirmLabel={m.settings_totp_disable()}
-      onConfirm={() =>
+      onConfirm={() => {
+        onDisable()
         remove.mutate(
           {},
           {
             onSuccess: () => {
               setOpen(false)
-              onDisabled()
               toast.add({ title: m.settings_totp_disabled() })
             },
           },
         )
-      }
+      }}
       pending={remove.isPending}
       error={remove.error}
     />

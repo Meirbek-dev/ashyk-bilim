@@ -6,6 +6,7 @@ import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
+import { useSwapFocus } from '#/shared/hooks/use-swap-focus'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
@@ -19,7 +20,10 @@ import { setUserStatusOptions } from '../queries'
 export function UserStatus({ user }: { user: AdminUser }) {
   const [confirming, setConfirming] = useState(false)
   const status = useMutation(setUserStatusOptions(useQueryClient()))
-  const change = (disabled: boolean) =>
+  // «Отключить» and «Включить» replace each other: the one shown next takes the focus.
+  const swap = useSwapFocus<'active' | 'disabled'>()
+  const change = (disabled: boolean) => {
+    swap.mark(disabled ? 'disabled' : 'active')
     status.mutate(
       { path: { user_id: user.id }, body: { disabled } },
       {
@@ -29,6 +33,7 @@ export function UserStatus({ user }: { user: AdminUser }) {
         },
       },
     )
+  }
   const name = user.display_name || user.username
   return (
     <section aria-labelledby="user-access" className="flex flex-col items-start gap-2">
@@ -36,25 +41,29 @@ export function UserStatus({ user }: { user: AdminUser }) {
         {m.admin_user_access_title()}
       </h3>
       {user.status === 'active' ? (
-        <ConfirmDialog
-          open={confirming}
-          onOpenChange={next => {
-            setConfirming(next)
-            if (!next) status.reset()
-          }}
-          trigger={<Button variant="outline">{m.admin_user_disable()}</Button>}
-          title={m.admin_user_disable_title({ name })}
-          consequence={m.admin_user_disable_consequence()}
-          confirmLabel={m.admin_user_disable()}
-          onConfirm={() => change(true)}
-          pending={status.isPending}
-          error={status.error}
-        />
+        <div ref={swap.focusOn('active')}>
+          <ConfirmDialog
+            open={confirming}
+            onOpenChange={next => {
+              setConfirming(next)
+              if (!next) status.reset()
+            }}
+            trigger={<Button variant="outline">{m.admin_user_disable()}</Button>}
+            title={m.admin_user_disable_title({ name })}
+            consequence={m.admin_user_disable_consequence()}
+            confirmLabel={m.admin_user_disable()}
+            onConfirm={() => change(true)}
+            pending={status.isPending}
+            error={status.error}
+          />
+        </div>
       ) : (
         <>
-          <SubmitButton variant="outline" onClick={() => change(false)} pending={status.isPending}>
-            {m.admin_user_enable()}
-          </SubmitButton>
+          <div ref={swap.focusOn('disabled')}>
+            <SubmitButton variant="outline" onClick={() => change(false)} pending={status.isPending}>
+              {m.admin_user_enable()}
+            </SubmitButton>
+          </div>
           {status.error ? <ErrorAlert>{presentError(status.error)}</ErrorAlert> : null}
         </>
       )}

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { lazy, Suspense, useState, type FormEvent } from 'react'
+import { lazy, Suspense, type FormEvent } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
@@ -7,6 +7,7 @@ import { vTotpVerifyRequest } from '#/shared/api/gen/valibot.gen'
 import { Anchor } from '#/shared/components/anchor'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { useSwapFocus } from '#/shared/hooks/use-swap-focus'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
@@ -35,8 +36,8 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     defaultValues,
     onSubmit: async body => {
       try {
+        swap.mark('on')
         await verify.mutateAsync({ body })
-        setSwapped(true)
         enroll.reset()
         form.reset()
         toast.add({ title: m.settings_totp_enabled() })
@@ -57,32 +58,36 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     <StatusBadge tone="neutral">{m.settings_totp_off()}</StatusBadge>
   )
   const pending = enroll.data && !profile.mfa_enabled ? enroll.data : null
-  // «Включить», the setup and «Выключить» replace each other: focus follows (to the setup's start, back to «Включить» on
-  // cancel or once turned off, to «Выключить» once turned on), else it falls to the page and a keyboard or
-  // screen-reader user starts over from the top.
-  const [swapped, setSwapped] = useState(false)
-  const focusOnMount = (node: HTMLElement | null) => node?.focus()
-  const focusButton = swapped ? (node: HTMLElement | null) => node?.querySelector('button')?.focus() : undefined
+  // «Включить», the setup and «Отключить» replace each other: focus follows (to the setup's start, back to «Включить»
+  // on cancel or once turned off, to «Отключить» once turned on).
+  const swap = useSwapFocus<'off' | 'setup' | 'on'>()
   const verifyError = hasCode(verify.error, 'invalid-totp-code') ? null : verify.error
   return (
     <PlainSection title={m.settings_totp_title()} description={m.settings_totp_hint()}>
       <div>{status}</div>
       {profile.google_linked ? <p className="text-sm">{m.settings_totp_google()}</p> : null}
       {profile.mfa_enabled ? (
-        <div ref={focusButton}>
-          <DisableTotp onDisabled={() => setSwapped(true)} />
+        <div ref={swap.focusOn('on')}>
+          <DisableTotp onDisable={() => swap.mark('off')} />
         </div>
       ) : null}
       {!profile.mfa_enabled && !pending ? (
-        <div ref={focusButton}>
-          <SubmitButton variant="outline" onClick={() => enroll.mutate({})} pending={enroll.isPending}>
+        <div ref={swap.focusOn('off')}>
+          <SubmitButton
+            variant="outline"
+            onClick={() => {
+              swap.mark('setup')
+              enroll.mutate({})
+            }}
+            pending={enroll.isPending}
+          >
             {m.settings_totp_enable()}
           </SubmitButton>
         </div>
       ) : null}
       {pending ? (
         <form
-          ref={focusOnMount}
+          ref={swap.focusOn('setup')}
           tabIndex={-1}
           noValidate
           onSubmit={submit}
@@ -115,7 +120,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
             <Button
               variant="ghost"
               onClick={() => {
-                setSwapped(true)
+                swap.mark('off')
                 enroll.reset()
               }}
             >
