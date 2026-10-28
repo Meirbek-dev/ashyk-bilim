@@ -27,7 +27,8 @@ export function PublicProfilePage() {
   const courses = useSuspenseInfiniteQuery(userCoursesListOptions(username))
   const items = courses.data.pages.flatMap(page => page.items)
   const { data: certificates } = useSuspenseQuery(profileCertificatesOptions(username))
-  const empty = !user.bio && items.length === 0 && certificates.length === 0 && shownSections(user.profile.sections).length === 0
+  const empty =
+    !user.bio && items.length === 0 && certificates.length === 0 && shownSections(user.profile.sections).length === 0
   return (
     <DetailPage
       title={user.display_name}

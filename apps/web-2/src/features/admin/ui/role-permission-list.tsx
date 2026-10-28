@@ -8,7 +8,8 @@ import { permissionGroups } from '../model/permissions'
  * as sent. Read-only.
  */
 export function RolePermissionList({ permissions }: { permissions: readonly string[] }) {
-  if (permissions.length === 0) return <p className="text-sm text-muted-foreground">{m.admin_role_permissions_empty()}</p>
+  if (permissions.length === 0)
+    return <p className="text-sm text-muted-foreground">{m.admin_role_permissions_empty()}</p>
   return (
     <dl className="flex max-w-4xl flex-col divide-y border-y text-sm">
       {permissionGroups(permissions).map(({ resource, grants }) => (

@@ -124,7 +124,10 @@ const amountText = v.pipe(
   v.string(),
   v.trim(),
   v.regex(/^\d*$/, () => m.admin_xp_whole()),
-  v.check(text => !/^\d+$/.test(text) || Number(text) <= MAX_AMOUNT, () => m.admin_xp_too_large()),
+  v.check(
+    text => !/^\d+$/.test(text) || Number(text) <= MAX_AMOUNT,
+    () => m.admin_xp_too_large(),
+  ),
 )
 
 /**

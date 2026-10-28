@@ -120,9 +120,9 @@ function body(section: ProfileSection): ReactNode {
 /** The builder sections with something to show, in their saved order, read-only. */
 export function PublicSections({ sections }: { sections: ProfileSection[] }) {
   return shownSections(sections).map(section => (
-      <section key={section.id} aria-label={sectionHeading(section.title)} className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold wrap-anywhere">{sectionHeading(section.title)}</h2>
-        {body(section)}
-      </section>
-    ))
+    <section key={section.id} aria-label={sectionHeading(section.title)} className="flex flex-col gap-3">
+      <h2 className="text-xl font-semibold wrap-anywhere">{sectionHeading(section.title)}</h2>
+      {body(section)}
+    </section>
+  ))
 }
