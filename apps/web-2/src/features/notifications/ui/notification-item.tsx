@@ -34,8 +34,9 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
   const Icon = notificationIcons[type]
   const Heading = compact ? 'h3' : 'h2'
   return (
-    // On a phone "Mark as read" wraps under the text instead of squeezing it into a narrow column.
-    <div className="flex flex-wrap items-start gap-3">
+    // On a phone "Mark as read" wraps under the text instead of squeezing it into a narrow column. The whole row is the
+    // link's target (a tap on the type or the date opens it too); "Mark as read" sits above it.
+    <div className="relative flex flex-wrap items-start gap-3">
       <Icon aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground" />
       <div className="flex min-w-0 grow basis-56 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -44,6 +45,7 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
         </div>
         <Heading className="font-medium wrap-anywhere">
           <Link
+            variant="stretched"
             {...notificationTarget(payload)}
             onClick={() => {
               read()
@@ -61,7 +63,7 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
         <p className="text-xs text-muted-foreground">{formatDateTime(created_at_unix)}</p>
       </div>
       {unread && !compact ? (
-        <SubmitButton variant="ghost" size="sm" pending={markRead.isPending} onClick={read}>
+        <SubmitButton variant="ghost" size="sm" className="relative" pending={markRead.isPending} onClick={read}>
           {m.notifications_mark_read()}
         </SubmitButton>
       ) : null}
