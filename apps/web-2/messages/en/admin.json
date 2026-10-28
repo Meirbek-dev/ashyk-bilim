@@ -208,6 +208,7 @@
   "admin_users_filter_any": "All",
   "admin_xp_whole": "A whole number from 0; blank means the default.",
   "admin_xp_positive": "A whole number above 0.",
+  "admin_xp_too_large": "Too large: at most 2,147,483,647.",
   "admin_user_field_roles": "Extra roles",
   "admin_user_field_roles_hint": "The User role is always assigned.",
   "admin_gamification_xp": "XP",

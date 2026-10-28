@@ -2,7 +2,7 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
-import { vCreateRoleRequest } from '#/shared/api/gen/valibot.gen'
+import { vCreateRoleRequest, vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
 import type {
   AdminUser,
   AdminUserAction,
@@ -116,12 +116,26 @@ export function refusedGrants(error: unknown): number[] {
 /** The permissions field: the grants as the editor's rows build them. */
 export const permissionsFormSchema = v.object({ permissions: v.array(v.string()) })
 
+/** The largest amount the server takes (its `i32`); a longer number is refused as unreadable, under no field. */
+const MAX_AMOUNT = 2_147_483_647
+
 /** A whole number or blank (blank = the platform's default). */
 const amountText = v.pipe(
   v.string(),
   v.trim(),
   v.regex(/^\d*$/, () => m.admin_xp_whole()),
+  v.check(text => !/^\d+$/.test(text) || Number(text) <= MAX_AMOUNT, () => m.admin_xp_too_large()),
 )
+
+/**
+ * The platform's name, texts and support email: the generated body, plus what the server refuses one field at a time
+ * (a blank name; an address that is blank or has no `@`), so every such field is marked on the first «Сохранить».
+ */
+export const platformFormSchema = v.strictObject({
+  ...vUpdatePlatformRequest.entries,
+  name: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(500)),
+  email: v.pipe(v.string(), v.trim(), v.nonEmpty(), v.email(), v.maxLength(320)),
+})
 
 /** The rules form: numbers as typed text, so a blank field can mean "default". */
 export const rulesFormSchema = v.object({

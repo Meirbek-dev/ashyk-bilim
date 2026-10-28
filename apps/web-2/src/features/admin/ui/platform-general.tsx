@@ -3,13 +3,12 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen'
-import { vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
-import { isStale } from '../model/admin'
+import { isStale, platformFormSchema } from '../model/admin'
 import { platformVersion, updatePlatformOptions } from '../queries'
 import { type BaseVersion, useIfMatch } from './use-if-match'
 
@@ -30,7 +29,7 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
     () => platformVersion(queryClient),
   )
   // Captured once: the cache write after saving must not reset what the user typed.
-  const [defaultValues] = useState<UpdatePlatformRequest>(() => ({
+  const [defaultValues] = useState(() => ({
     name: platform.name,
     label: platform.label ?? '',
     description: platform.description,
@@ -41,7 +40,7 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
     about_en: platform.about_en ?? '',
     email: platform.email,
   }))
-  const form = useAppForm(vUpdatePlatformRequest, {
+  const form = useAppForm(platformFormSchema, {
     leaveGuard: true,
     defaultValues,
     onSubmit: body => write.save(body),

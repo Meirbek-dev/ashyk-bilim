@@ -12,6 +12,7 @@ import {
   roleFormSchema,
   rulesBody,
   rulesForm,
+  platformFormSchema,
   rulesFormSchema,
   takenField,
   userName,
@@ -152,6 +153,26 @@ describe('XP fields', () => {
     expect(daily.success ? null : daily.issues[0]?.message).toBe(m.admin_xp_whole())
     const award = v.safeParse(awardFormSchema, { amount: '0', reason: '' })
     expect(award.success ? null : award.issues[0]?.message).toBe(m.admin_xp_positive())
+  })
+
+  test('an amount past what the server stores is refused here, under its field, not by a bare 422', () => {
+    const daily = v.safeParse(rulesFormSchema.entries.daily_xp_limit, '99999999999')
+    expect(daily.success ? null : daily.issues[0]?.message).toBe(m.admin_xp_too_large())
+    expect(v.safeParse(rulesFormSchema.entries.daily_xp_limit, '2147483647').success).toBe(true)
+  })
+})
+
+describe('platform form', () => {
+  const platform = { name: 'Ashyq Bilim', label: '', description: '', about: '', email: 'support@tou.edu.kz' }
+  const fields = (values: object) => {
+    const result = v.safeParse(platformFormSchema, { ...platform, ...values })
+    return result.success ? [] : [...new Set(result.issues.map(issue => v.getDotPath(issue)))].toSorted()
+  }
+
+  test('a blank name and a bad support address are both marked on the first save', () => {
+    expect(fields({})).toEqual([])
+    expect(fields({ name: '  ', email: 'not-an-email' })).toEqual(['email', 'name'])
+    expect(fields({ email: '' })).toEqual(['email'])
   })
 })
 
