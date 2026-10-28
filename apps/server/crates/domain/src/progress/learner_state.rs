@@ -858,6 +858,7 @@ fn next_action(
     if let Some(a) = activities.iter().find(|a| {
         a.required
             && !a.complete
+            && !a.state.awaiting_grade()
             && a.due_at_unix
                 .is_some_and(|d| d >= now && d <= now + DUE_SOON_WINDOW_SECS)
     }) {
@@ -1024,6 +1025,11 @@ mod tests {
             (ActionId::Continue, "in_progress")
         );
         assert_eq!(got.activity_id, Some(in_progress.id));
+        // Handed in before a near due date: nothing to start there.
+        let submitted_due_soon = act(WorkState::Submitted, true, false, Some(3 * 86_400));
+        let got = pick(&[&submitted_due_soon, &far]);
+        assert_eq!(got.reason.as_str(), "next_required");
+        assert_eq!(got.activity_id, Some(far.id));
         let got = pick(&[&submitted]);
         assert_eq!(
             (got.id, got.reason.as_str()),
