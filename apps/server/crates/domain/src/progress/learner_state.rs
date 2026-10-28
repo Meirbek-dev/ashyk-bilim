@@ -427,10 +427,15 @@ impl LearnerStateService {
             enrolled && progress.progress_pct >= 100.0,
         )
         .await?;
+        let closed = if enrolled && !archived {
+            closed_hand_ins(&self.pool, course.id, user_id, &flat).await?
+        } else {
+            Vec::new()
+        };
         let open: Vec<&ActivityState> = flat
             .iter()
             .copied()
-            .filter(|a| a.blocked_reason.is_none())
+            .filter(|a| a.blocked_reason.is_none() && !closed.contains(&a.id))
             .collect();
         let next_action =
             (!archived).then(|| next_action(enrolled, course.id, &open, &certificate, &progress));
@@ -535,12 +540,59 @@ pub(crate) async fn next_activity(
         .collect();
     let flat: Vec<&ActivityState> = states.iter().collect();
     let progress = progress_state(course_progress.as_ref(), &flat);
+    let closed = closed_hand_ins(pool, course_id, user_id, &flat).await?;
     let open: Vec<&ActivityState> = flat
         .into_iter()
-        .filter(|a| a.blocked_reason.is_none())
+        .filter(|a| a.blocked_reason.is_none() && !closed.contains(&a.id))
         .collect();
     // The certificate only matters once no activity is left to name.
     Ok(next_action(true, course_id, &open, &NO_CERTIFICATE, &progress).activity_id)
+}
+
+/// Open work past its last hand-in moment - a strict due date, or the late
+/// cutoff (the attempt and file gates' `PAST_DUE`) - can no longer be
+/// started or continued: it is never the next step. Otherwise a missed
+/// exam stayed «Complete overdue work» for good, and «Продолжить» on the
+/// course page and «Сегодня» led to «Сейчас начать нельзя» while the work
+/// still open waited unnamed.
+async fn closed_hand_ins(
+    pool: &PgPool,
+    course_id: CourseId,
+    user_id: UserId,
+    states: &[&ActivityState],
+) -> Result<Vec<ActivityId>> {
+    let now = now_unix();
+    let past: Vec<&ActivityState> = states
+        .iter()
+        .copied()
+        .filter(|s| {
+            matches!(s.state, WorkState::NotStarted | WorkState::InProgress)
+                && s.due_at_unix.is_some_and(|due| due < now)
+        })
+        .collect();
+    let mut closed = Vec::new();
+    if past.is_empty() {
+        return Ok(closed);
+    }
+    for assessment in ab_db::assessments::list_assessments_for_course(pool, course_id).await? {
+        if !past.iter().any(|s| s.id == assessment.activity_id) {
+            continue;
+        }
+        let policy =
+            AssessmentsService::effective_policy_for(pool, &assessment, user_id, false).await?;
+        if policy.hand_in_at().is_some_and(|at| now > at) {
+            closed.push(assessment.activity_id);
+        }
+    }
+    for state in past.iter().filter(|s| s.activity_type == "file_submission") {
+        if ab_db::file_submissions::get_file_submission_by_activity(pool, state.id)
+            .await?
+            .is_some_and(|fs| !fs.allow_late)
+        {
+            closed.push(state.id);
+        }
+    }
+    Ok(closed)
 }
 
 const NO_CERTIFICATE: CertificateState = CertificateState {
@@ -753,10 +805,12 @@ fn next_action(
         );
     }
     let now = now_unix();
-    if let Some(a) = activities
-        .iter()
-        .find(|a| a.due_at_unix.is_some_and(|d| d < now) && !a.complete && a.available)
-    {
+    if let Some(a) = activities.iter().find(|a| {
+        a.due_at_unix.is_some_and(|d| d < now)
+            && !a.complete
+            && a.available
+            && !a.state.awaiting_grade()
+    }) {
         return activity_action(
             ActionId::Continue,
             "Complete overdue work",
@@ -934,6 +988,15 @@ mod tests {
         assert_eq!(got.activity_id, Some(due_soon.id));
         let got = pick(&[&far]);
         assert_eq!(got.reason.as_str(), "next_required");
+        // Handed in past its due date and waiting for the grade: not
+        // overdue work to complete - the work in progress comes first.
+        let late_submitted = act(WorkState::Submitted, true, false, Some(-60));
+        let got = pick(&[&late_submitted, &in_progress]);
+        assert_eq!(
+            (got.id, got.reason.as_str()),
+            (ActionId::Continue, "in_progress")
+        );
+        assert_eq!(got.activity_id, Some(in_progress.id));
         let got = pick(&[&submitted]);
         assert_eq!(
             (got.id, got.reason.as_str()),
