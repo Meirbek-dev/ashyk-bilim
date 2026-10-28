@@ -88,6 +88,12 @@ describe('authoring', () => {
     const paragraph = document.querySelector('.ProseMirror > p')
     if (paragraph) await userEvent.click(paragraph)
     await expect.poll(() => find(last(onChange), 'blockMathEquation')?.attrs?.['math_equation']).toBe('F = ma')
+    // A filled formula away from the cursor is the formula alone; picking it brings its field back.
+    await expect.element(screen.getByLabelText(m.editor_field_latex())).not.toBeInTheDocument()
+    await expect.poll(() => document.querySelector('.katex') !== null).toBe(true)
+    const formula = document.querySelector('.katex')
+    if (formula) await userEvent.click(formula)
+    await expect.element(screen.getByLabelText(m.editor_field_latex())).toHaveValue('F = ma')
   })
 
   test('B-EDT-12 an embed takes an https URL and detects its provider', async () => {
