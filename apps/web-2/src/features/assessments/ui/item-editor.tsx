@@ -23,9 +23,9 @@ type ItemEditorProps = { activityId: string; assessment: AssessmentDetail; item:
  */
 export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
   const mode = editMode(assessment)
-  const autosave = useItemAutosave(activityId, assessment.id, item.id)
   // Captured once: saving puts the answer into the cache, which must not reset what the author is typing.
   const [defaultValues] = useState(() => itemForm(item))
+  const autosave = useItemAutosave(activityId, assessment.id, item.id, itemPatch(defaultValues))
   const form = useAppForm(itemFormSchema, {
     defaultValues,
     onSubmit: values => autosave.change(itemPatch(values)),

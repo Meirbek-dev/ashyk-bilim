@@ -29,3 +29,19 @@ export const itemPatch = (form: ItemForm): UpdateItemRequest => ({
   max_score: Number(form.points.replace(',', '.')),
   body: form.body,
 })
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+/**
+ * The fields of `next` that differ from what the server last took (`saved`). Only they are sent: a title edit does not
+ * move the assessment's `version`, so a whole-item save of the points carried a stale title back over a co-author's
+ * rename without a 412.
+ */
+export function changedFields(saved: UpdateItemRequest, next: UpdateItemRequest): UpdateItemRequest {
+  const patch: UpdateItemRequest = {}
+  if (next.title !== undefined && next.title !== saved.title) patch.title = next.title
+  if (next.max_score !== undefined && next.max_score !== saved.max_score) patch.max_score = next.max_score
+  if (next.body !== undefined && !same(next.body, saved.body)) patch.body = next.body
+  if (next.metadata !== undefined && !same(next.metadata, saved.metadata)) patch.metadata = next.metadata
+  return patch
+}

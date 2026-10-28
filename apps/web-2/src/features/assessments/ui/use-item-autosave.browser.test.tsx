@@ -23,16 +23,34 @@ const item: AssessmentItem = {
   assessment_version: 1,
 }
 
+const initial = { title: item.title, body: item.body, max_score: item.max_score }
+
 function Editor() {
-  const save = useItemAutosave(activityId, assessmentId, item.id)
+  const save = useItemAutosave(activityId, assessmentId, item.id, initial)
   return (
     <>
       <Button onClick={() => save.change({ title: crypto.randomUUID(), body: item.body, max_score: 1 })}>
         {m.assessments_field_title()}
       </Button>
+      <Button onClick={() => save.change({ ...initial, max_score: 3 })}>{m.assessments_field_points()}</Button>
       <Button onClick={save.invalid}>{m.validation_invalid()}</Button>
     </>
   )
+}
+
+function mount() {
+  const report = vi.fn<(id: string, state: string, editorId?: string) => void>()
+  const host = document.createElement('div')
+  document.body.append(host)
+  root = createRoot(host)
+  root.render(
+    <QueryClientProvider client={new QueryClient()}>
+      <SaveStatusContext value={report}>
+        <Editor />
+      </SaveStatusContext>
+    </QueryClientProvider>,
+  )
+  return { host, report }
 }
 
 let root: Root | null = null
@@ -75,4 +93,16 @@ test.each([false, true])('B-ASM-10 switching during a save preserves the latest 
   expect(new Set(bodies).size).toBe(invalid ? 1 : 2)
   replies[1]?.(Response.json({ ...item, assessment_version: 3 }))
   await expect.poll(() => report.mock.calls.at(-1)).toEqual([activityId, invalid ? 'dirty' : 'saved', item.id])
+})
+
+test("B-ASM-10 a save sends only the changed fields: a co-author's rename is not written back", async () => {
+  const requests: Request[] = []
+  vi.stubGlobal('fetch', (request: Request) => {
+    requests.push(request)
+    return Promise.resolve(Response.json({ ...item, max_score: 3, assessment_version: 2 }))
+  })
+  const { host } = mount()
+  await page.elementLocator(host).getByRole('button', { name: m.assessments_field_points() }).click()
+  await expect.poll(() => requests.length).toBe(1)
+  expect(await requests[0]?.clone().json()).toEqual({ max_score: 3 })
 })

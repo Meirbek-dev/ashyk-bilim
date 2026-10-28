@@ -5,6 +5,7 @@ import { use, useEffect, useEffectEvent, useRef } from 'react'
 import { SaveStatusContext } from '#/features/course-studio'
 import type { UpdateItemRequest } from '#/shared/api/gen/types.gen'
 
+import { changedFields } from '../model/item-form'
 import { updateItemOptions } from '../queries'
 import { useVersion } from './use-version'
 
@@ -15,13 +16,15 @@ const SAVE_WAIT_MS = 800
  * Autosave of one question (`PATCH /assessment-items/{id}` with `If-Match` = the assessment `version`). One request
  * at a time: edits made while one is in flight go in the next; a refusal keeps the edit for the next change, a 412
  * opens the conflict dialog (`retry` reloads and sends the kept edit). The studio's top bar shows the state; leaving
- * the question (unmount) sends what still waits for the pause.
+ * the question (unmount) sends what still waits for the pause. Only the fields that differ from what the server last
+ * took are sent (`initial`, then each answered save), so a co-author's edit of another field is not written back.
  */
-export function useItemAutosave(activityId: string, assessmentId: string, itemId: string) {
+export function useItemAutosave(activityId: string, assessmentId: string, itemId: string, initial: UpdateItemRequest) {
   const report = use(SaveStatusContext)
   const save = useMutation(updateItemOptions(useQueryClient(), activityId, assessmentId))
   const version = useVersion(activityId)
   const unsaved = useRef<UpdateItemRequest | null>(null)
+  const saved = useRef(initial)
   const sending = useRef(false)
   const invalid = useRef(false)
   const discardInvalid = useEffectEvent(() => {
@@ -41,6 +44,7 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
     // Promise continuations survive leaving the question; per-mutate callbacks do not.
     try {
       await save.mutateAsync({ path: { item_id: itemId }, body, headers: version.headers() })
+      saved.current = { ...saved.current, ...body }
       sending.current = false
       if (unsaved.current) void send()
       else report(activityId, invalid.current ? 'dirty' : 'saved', itemId)
@@ -54,9 +58,16 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
   const later = useDebouncer(send, { wait: SAVE_WAIT_MS, onUnmount: debouncer => debouncer.flush() })
   return {
     /** A valid edit: saved after the pause. */
-    change: (body: UpdateItemRequest) => {
+    change: (next: UpdateItemRequest) => {
       invalid.current = false
-      unsaved.current = body
+      const patch = changedFields(saved.current, next)
+      if (Object.keys(patch).length === 0) {
+        // Back to what is saved (a typed change undone): nothing to send.
+        unsaved.current = null
+        if (!sending.current) report(activityId, 'saved', itemId)
+        return
+      }
+      unsaved.current = patch
       report(activityId, 'dirty', itemId)
       later.maybeExecute()
     },
