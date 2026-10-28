@@ -169,11 +169,17 @@
     pointer-events: none;
     color: var(--muted-foreground);
   }
-  /* Editable only: a read-only lesson that starts with a video or PDF got its first block outlined as "selected". */
-  .ab-prose .ProseMirror[contenteditable='true'] .ProseMirror-selectednode {
+  /* Editable only: a read-only lesson that starts with a video or PDF got its first block outlined as "selected".
+     The editor's own root carries `ab-prose` (block editor), or sits inside it. */
+  :is(.ab-prose[contenteditable='true'], .ab-prose [contenteditable='true']) .ProseMirror-selectednode {
     outline: var(--focus-ring-width) solid var(--ring);
     outline-offset: var(--focus-ring-offset);
     @apply rounded-lg;
+  }
+  /* A new table's empty cells are a grid to type in, not 25 px slivers (the read view sizes cells by their text);
+     a cell ignores min-width, its paragraph does not. */
+  :is(.ab-prose[contenteditable='true'], .ab-prose [contenteditable='true']) :where(th, td) > p {
+    min-width: 6rem;
   }
   .ab-prose .selectedCell {
     @apply bg-accent;
