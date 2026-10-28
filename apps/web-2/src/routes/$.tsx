@@ -3,6 +3,7 @@ import { createFileRoute, notFound, redirect, rootRouteId } from '@tanstack/reac
 import { assessmentHome } from '#/features/assessments'
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
+import { applyLegacyLanguage } from '#/shared/i18n/profile-language'
 
 // Every address no route takes. An old-web URL (`/ru/course/<id>`, `/dash/...`) moves permanently to its web-2
 // page; an old `/assessments/<id>` link goes where that assessment lives now; anything else is «Страница не найдена».
@@ -12,7 +13,10 @@ export const Route = createFileRoute('/$')({
   staticData: { title: m.platform_not_found_title },
   beforeLoad: async ({ location }) => {
     const target = await legacyTarget(location.href)
-    if (typeof target === 'string') throw redirect({ href: target, statusCode: 301 })
+    if (typeof target === 'string') {
+      applyLegacyLanguage(location.pathname)
+      throw redirect({ href: target, statusCode: 301 })
+    }
     if (target === null) throw notFound({ routeId: rootRouteId })
   },
   loader: async ({ context, location }) => {

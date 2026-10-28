@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { fromHref, printedAlias } from './printed-locale'
+import { fromHref, prefixLocale, printedAlias } from './printed-locale'
 
 describe('fromHref', () => {
   // applyProfileLanguage reads it on every guest page a signed-in user opens: an absolute-URL parse of the router's
@@ -22,5 +22,20 @@ describe('printedAlias', () => {
     expect(printedAlias('kz')).toBeNull()
     expect(printedAlias('ru')).toBeNull()
     expect(printedAlias('xx')).toBeNull()
+  })
+})
+
+describe('prefixLocale', () => {
+  test('an old-web prefix names the language its link spoke, any spelling; anything else names none', () => {
+    expect(['kz', 'kk', 'KK-kz', 'ru', 'ru-RU', 'en', 'EN-us'].map(prefixLocale)).toEqual([
+      'kk',
+      'kk',
+      'kk',
+      'ru',
+      'ru',
+      'en',
+      'en',
+    ])
+    expect(['courses', 'xx', ''].map(prefixLocale)).toEqual([null, null, null])
   })
 })

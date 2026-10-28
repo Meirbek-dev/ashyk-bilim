@@ -37,6 +37,10 @@ export const printedAlias = (prefix: string): string | null => {
   return printed === undefined || printed === prefix ? null : printed
 }
 
+/** The interface locale an old-web prefix spoke (`/kz/...`, `/kk-KZ/...`, `/RU/...`); null for anything else. */
+export const prefixLocale = (prefix: string): Locale | null =>
+  printedLocale(PRINTED_ALIASES.get(prefix.toLowerCase()) ?? '')
+
 const PRINTED_PATH = /^\/([a-z]{2})\/certificates\/[^/]+\/verify\/?$/
 
 /** The certificate's language on its printed verify URL; undefined anywhere else (the next strategy decides). */
