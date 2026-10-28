@@ -54,8 +54,9 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
         <div className="flex flex-col gap-2 @2xl:flex-row @2xl:flex-wrap">
           {session ? (
             <LearnerAction course={course} />
-          ) : (
+          ) : course.archived_at_unix ? null : (
             // A guest's "Enrol" signs in first and comes back here (UX-021), where the enrolment runs (B-CRS-16).
+            // An archived course takes no one new: no "Enrol" that would end in a refusal after signing up.
             <RouterLink
               to="/login"
               search={{ redirect: `/courses/${courseId}/about?enroll=1` }}

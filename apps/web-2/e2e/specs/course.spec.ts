@@ -117,6 +117,20 @@ test('B-CRS-03 B-CRS-16 a guest enrols after signing in', async ({ page, signInA
   await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toBeVisible()
 })
 
+test('B-CRS-16 an archived course offers a guest no «Записаться»', async ({ page, api, seed, course }) => {
+  const made = await course()
+  await courseLifecycle({
+    client: api,
+    path: { course_id: made.course.id },
+    body: { action: 'archive' },
+    headers: cookie(seed, 'teacher'),
+    throwOnError: true,
+  })
+  await page.goto(about(made))
+  await expect(page.getByText(m.course_archived({}, ru))).toBeVisible()
+  await expect(page.getByRole('link', { name: m.course_enroll({}, ru) })).toHaveCount(0)
+})
+
 test('B-CRS-04 a student enrols and the header offers to start', async ({ page, signInAs, course }) => {
   const made = await course()
   await signInAs('student')
