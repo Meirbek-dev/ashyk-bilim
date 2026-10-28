@@ -658,9 +658,17 @@ pub struct DrillProgressRow {
 
 #[derive(Serialize, ToSchema)]
 pub struct DrillBacklogRow {
-    pub submission_id: uuid::Uuid,
-    pub assessment_id: uuid::Uuid,
-    pub assessment_type: ab_core::assessments::AssessmentKind,
+    /// A test submission; absent on a file task's row.
+    #[schema(nullable = false)]
+    pub submission_id: Option<uuid::Uuid>,
+    /// A file task's attempt; absent on a test submission's row.
+    #[schema(nullable = false)]
+    pub attempt_id: Option<uuid::Uuid>,
+    pub activity_id: Option<uuid::Uuid>,
+    /// `null` on a file task's row.
+    pub assessment_id: Option<uuid::Uuid>,
+    /// `null` on a file task's row.
+    pub assessment_type: Option<ab_core::assessments::AssessmentKind>,
     pub assessment_title: String,
     pub course_id: uuid::Uuid,
     pub course_name: String,

@@ -46,6 +46,8 @@ pub struct PlatformChanges<'a> {
     /// `true` removes the logo (ignored when `logo_key` sets a new one).
     pub clear_logo: bool,
     pub thumbnail_key: Option<&'a str>,
+    /// `true` removes the link cover (ignored when `thumbnail_key` sets a new one).
+    pub clear_thumbnail: bool,
 }
 
 /// The branding keys the UPDATE replaced (read under the row lock, so a
@@ -70,7 +72,8 @@ pub async fn update_platform<'e>(
                label = CASE WHEN $8 THEN $5 ELSE p.label END,
                logo_key = CASE WHEN $6::text IS NULL AND $13 THEN NULL
                                ELSE COALESCE($6, p.logo_key) END,
-               thumbnail_key = COALESCE($7, p.thumbnail_key),
+               thumbnail_key = CASE WHEN $7::text IS NULL AND $14 THEN NULL
+                                    ELSE COALESCE($7, p.thumbnail_key) END,
                description_kk = COALESCE($9, p.description_kk),
                description_en = COALESCE($10, p.description_en),
                about_kk = COALESCE($11, p.about_kk),
@@ -91,7 +94,8 @@ pub async fn update_platform<'e>(
         changes.description_en,
         changes.about_kk,
         changes.about_en,
-        changes.clear_logo
+        changes.clear_logo,
+        changes.clear_thumbnail
     )
     .fetch_optional(db)
     .await?;

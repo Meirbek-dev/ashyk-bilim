@@ -1,13 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ImageOff } from 'lucide-react'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen'
 import { vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
 import { FileField } from '#/shared/components/form/file-field'
 import { useAppForm } from '#/shared/components/form/use-app-form'
+import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
+import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { isStale } from '../model/admin'
@@ -22,10 +25,12 @@ const contentUrl = (key: string) => `/content/${key}`
 /**
  * The link cover: a picked image uploads at once (`platform-thumbnail`) and becomes the platform's
  * right away, like a course cover (it was left unclaimed when the admin missed «Сохранить»). An empty field leaves
- * the current image as it is. Saved with `If-Match`; a 412 opens the conflict dialog.
+ * the current image as it is; «Убрать обложку» clears it after a confirmation. Saved with `If-Match`; a 412 opens the
+ * conflict dialog.
  */
 export function PlatformBranding({ platform, base }: { platform: Platform; base: BaseVersion }) {
   const queryClient = useQueryClient()
+  const [removing, setRemoving] = useState(false)
   const update = useMutation(updatePlatformOptions(queryClient))
   const write = useIfMatch(
     base,
@@ -89,6 +94,27 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
                 {() => <FileField label={image.label} purpose={image.purpose} />}
               </form.AppField>
             </div>
+            {image.key ? (
+              <ConfirmDialog
+                open={removing}
+                onOpenChange={next => {
+                  setRemoving(next)
+                  if (!next) update.reset()
+                }}
+                trigger={<Button variant="outline">{m.admin_platform_thumbnail_remove()}</Button>}
+                title={m.admin_platform_thumbnail_remove_title()}
+                consequence={m.admin_platform_thumbnail_remove_consequence()}
+                confirmLabel={m.admin_platform_thumbnail_remove()}
+                // A refusal shows in the dialog (`error`); a 412 opens the conflict dialog.
+                onConfirm={() =>
+                  void write
+                    .save({ body: { remove_thumbnail: true }, reset: () => setRemoving(false) })
+                    .catch(() => undefined)
+                }
+                pending={update.isPending}
+                error={isStale(update.error) ? null : update.error}
+              />
+            ) : null}
           </div>
         ))}
       </SettingsSection>

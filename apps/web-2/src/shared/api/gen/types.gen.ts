@@ -2605,15 +2605,26 @@ export type DraftRequest = {
 };
 
 export type DrillBacklogRow = {
+    activity_id: string | null;
     age_hours: number;
-    assessment_id: string;
+    /**
+     * `null` on a file task's row.
+     */
+    assessment_id: string | null;
     assessment_title: string;
-    assessment_type: AssessmentKind;
+    assessment_type: AssessmentKind | null;
+    /**
+     * A file task's attempt; absent on a test submission's row.
+     */
+    attempt_id?: string;
     course_id: string;
     course_name: string;
     sla_breached: boolean;
     status: string;
-    submission_id: string;
+    /**
+     * A test submission; absent on a file task's row.
+     */
+    submission_id?: string;
     submitted_at_unix: UnixTime;
     user_display_name: string;
     user_id: string;
@@ -6564,6 +6575,10 @@ export type UpdatePlatformRequest = {
      * `true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.
      */
     remove_logo?: boolean;
+    /**
+     * `true` removes the link cover; ignored with `thumbnail_upload_id`.
+     */
+    remove_thumbnail?: boolean;
     /**
      * Finalized `platform-thumbnail` upload to claim.
      */

@@ -47,6 +47,8 @@ pub struct PlatformChanges<'a> {
     pub label: Option<Option<&'a str>>,
     /// Remove the logo (a new `logo_upload_id` wins).
     pub clear_logo: bool,
+    /// Remove the link cover (a new `thumbnail_upload_id` wins).
+    pub clear_thumbnail: bool,
 }
 
 #[derive(Clone)]
@@ -150,6 +152,7 @@ impl PlatformService {
                 logo_key: logo_key.as_deref(),
                 clear_logo: changes.clear_logo,
                 thumbnail_key: thumbnail_key.as_deref(),
+                clear_thumbnail: changes.clear_thumbnail,
             },
         )
         .await?
@@ -159,7 +162,9 @@ impl PlatformService {
             (logo_key.is_some() || changes.clear_logo)
                 .then_some(replaced.logo_key)
                 .flatten(),
-            thumbnail_key.and(replaced.thumbnail_key),
+            (thumbnail_key.is_some() || changes.clear_thumbnail)
+                .then_some(replaced.thumbnail_key)
+                .flatten(),
         ];
         for old in released.iter().flatten() {
             ab_db::uploads::release_reference_by_key(

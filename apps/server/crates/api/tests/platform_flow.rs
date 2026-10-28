@@ -8,12 +8,20 @@ use sqlx::PgPool;
 
 /// Upload + finalize a `platform-logo` image; returns (upload id, key).
 async fn upload_logo(app: &TestApp, session: &MintedSession) -> (String, String) {
+    upload_branding(app, session, "platform-logo").await
+}
+
+async fn upload_branding(
+    app: &TestApp,
+    session: &MintedSession,
+    purpose: &str,
+) -> (String, String) {
     let payload = b"logo bytes".to_vec();
     let created = app
         .post_as(
             session,
             "/api/v2/uploads",
-            &serde_json::json!({ "purpose": "platform-logo", "mime": "image/png",
+            &serde_json::json!({ "purpose": purpose, "mime": "image/png",
                                   "size_bytes": payload.len() }),
         )
         .await;
@@ -238,6 +246,33 @@ async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
             .await
             .unwrap();
     assert!(expiring, "a removed logo re-enters the reaper queue");
+
+    // The link cover is removed the same way, and its upload released.
+    let (cover_id, cover_key) = upload_branding(&app, &admin, "platform-thumbnail").await;
+    let cover = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "thumbnail_upload_id": cover_id }),
+        )
+        .await;
+    assert_eq!(cover.json()["thumbnail_key"], cover_key.as_str());
+    let uncovered = app
+        .patch_as(
+            &admin,
+            "/api/v2/platform",
+            &serde_json::json!({ "remove_thumbnail": true }),
+        )
+        .await;
+    assert_eq!(uncovered.status, StatusCode::OK, "{}", uncovered.text());
+    assert!(uncovered.json()["thumbnail_key"].is_null());
+    let expiring: bool =
+        sqlx::query_scalar("SELECT expires_at IS NOT NULL FROM uploads WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&cover_id).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert!(expiring, "a removed cover re-enters the reaper queue");
 
     // OPEN-G-4: Kazakh / English texts are stored trimmed; blank clears one.
     let texts = app

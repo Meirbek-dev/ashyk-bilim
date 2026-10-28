@@ -71,6 +71,7 @@ pub async fn update_platform(
                 email: request.email.as_deref(),
                 label: request.label.as_ref().map(Option::as_deref),
                 clear_logo: request.remove_logo,
+                clear_thumbnail: request.remove_thumbnail,
             },
             request.logo_upload_id,
             request.thumbnail_upload_id,

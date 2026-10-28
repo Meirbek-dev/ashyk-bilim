@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE platforms p SET\n               name = COALESCE($1, p.name),\n               description = COALESCE($2, p.description),\n               about = COALESCE($3, p.about),\n               email = COALESCE($4, p.email),\n               label = CASE WHEN $8 THEN $5 ELSE p.label END,\n               logo_key = CASE WHEN $6::text IS NULL AND $13 THEN NULL\n                               ELSE COALESCE($6, p.logo_key) END,\n               thumbnail_key = CASE WHEN $7::text IS NULL AND $14 THEN NULL\n                                    ELSE COALESCE($7, p.thumbnail_key) END,\n               description_kk = COALESCE($9, p.description_kk),\n               description_en = COALESCE($10, p.description_en),\n               about_kk = COALESCE($11, p.about_kk),\n               about_en = COALESCE($12, p.about_en)\n           FROM (SELECT singleton, logo_key, thumbnail_key FROM platforms\n                 WHERE singleton FOR UPDATE) old\n           WHERE p.singleton = old.singleton\n           RETURNING old.logo_key AS \"logo_key?\", old.thumbnail_key AS \"thumbnail_key?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "logo_key?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "logo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "thumbnail_key?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "thumbnail_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "30d3b7f433036140df2f4125e85fdaeeceb8beffa8b04ab5c72e18f7520855c3"
+}

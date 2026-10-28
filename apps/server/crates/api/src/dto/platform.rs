@@ -93,4 +93,8 @@ pub struct UpdatePlatformRequest {
     /// Finalized `platform-thumbnail` upload to claim.
     #[garde(skip)]
     pub thumbnail_upload_id: Option<uuid::Uuid>,
+    /// `true` removes the link cover; ignored with `thumbnail_upload_id`.
+    #[garde(skip)]
+    #[serde(default)]
+    pub remove_thumbnail: bool,
 }

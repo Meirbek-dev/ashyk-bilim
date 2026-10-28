@@ -3879,15 +3879,17 @@ export const vDeadlineExtended = v.object({
 });
 
 export const vDrillBacklogRow = v.object({
+    activity_id: v.nullable(v.pipe(v.string(), v.uuid())),
     age_hours: v.number(),
-    assessment_id: v.pipe(v.string(), v.uuid()),
+    assessment_id: v.nullable(v.pipe(v.string(), v.uuid())),
     assessment_title: v.string(),
-    assessment_type: vAssessmentKind,
+    assessment_type: v.nullable(vAssessmentKind),
+    attempt_id: v.optional(v.pipe(v.string(), v.uuid())),
     course_id: v.pipe(v.string(), v.uuid()),
     course_name: v.string(),
     sla_breached: v.boolean(),
     status: v.string(),
-    submission_id: v.pipe(v.string(), v.uuid()),
+    submission_id: v.optional(v.pipe(v.string(), v.uuid())),
     submitted_at_unix: vUnixTime,
     user_display_name: v.string(),
     user_id: v.pipe(v.string(), v.uuid())
@@ -4502,6 +4504,7 @@ export const vUpdatePlatformRequest = v.strictObject({
     logo_upload_id: v.optional(v.pipe(v.string(), v.uuid())),
     name: v.optional(v.pipe(v.string(), v.maxLength(500))),
     remove_logo: v.optional(v.boolean()),
+    remove_thumbnail: v.optional(v.boolean()),
     thumbnail_upload_id: v.optional(v.pipe(v.string(), v.uuid()))
 });
 

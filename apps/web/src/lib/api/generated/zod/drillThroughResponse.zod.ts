@@ -29,17 +29,20 @@ export const DrillThroughResponse = zod.object({
           user_id: zod.uuid(),
         }),
         zod.object({
+          activity_id: zod.uuid().nullable(),
           age_hours: zod.number(),
-          assessment_id: zod.uuid(),
+          assessment_id: zod.uuid().nullable().describe("`null` on a file task's row."),
           assessment_title: zod.string(),
-          assessment_type: zod
-            .enum(['quiz', 'exam', 'code_challenge'])
-            .describe('What the assessment is; decides the backing activity type and which\nitem kinds are allowed.'),
+          assessment_type: zod.union([
+            zod.enum(['quiz', 'exam', 'code_challenge']).describe("`null` on a file task's row."),
+            zod.null(),
+          ]),
+          attempt_id: zod.uuid().optional().describe("A file task's attempt; absent on a test submission's row."),
           course_id: zod.uuid(),
           course_name: zod.string(),
           sla_breached: zod.boolean(),
           status: zod.string(),
-          submission_id: zod.uuid(),
+          submission_id: zod.uuid().optional().describe("A test submission; absent on a file task's row."),
           submitted_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
           user_display_name: zod.string(),
           user_id: zod.uuid(),

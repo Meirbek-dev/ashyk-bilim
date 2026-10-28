@@ -7352,19 +7352,43 @@
       },
       "DrillBacklogRow": {
         "properties": {
+          "activity_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "age_hours": {
             "format": "double",
             "type": "number"
           },
           "assessment_id": {
+            "description": "`null` on a file task's row.",
             "format": "uuid",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "assessment_title": {
             "type": "string"
           },
           "assessment_type": {
-            "$ref": "#/components/schemas/AssessmentKind"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentKind",
+                "description": "`null` on a file task's row."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempt_id": {
+            "description": "A file task's attempt; absent on a test submission's row.",
+            "format": "uuid",
+            "type": "string"
           },
           "course_id": {
             "format": "uuid",
@@ -7380,6 +7404,7 @@
             "type": "string"
           },
           "submission_id": {
+            "description": "A test submission; absent on a file task's row.",
             "format": "uuid",
             "type": "string"
           },
@@ -7395,9 +7420,6 @@
           }
         },
         "required": [
-          "submission_id",
-          "assessment_id",
-          "assessment_type",
           "assessment_title",
           "course_id",
           "course_name",
@@ -7406,7 +7428,10 @@
           "status",
           "submitted_at_unix",
           "age_hours",
-          "sla_breached"
+          "sla_breached",
+          "activity_id",
+          "assessment_id",
+          "assessment_type"
         ],
         "type": "object"
       },
@@ -19168,6 +19193,10 @@
           },
           "remove_logo": {
             "description": "`true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.",
+            "type": "boolean"
+          },
+          "remove_thumbnail": {
+            "description": "`true` removes the link cover; ignored with `thumbnail_upload_id`.",
             "type": "boolean"
           },
           "thumbnail_upload_id": {

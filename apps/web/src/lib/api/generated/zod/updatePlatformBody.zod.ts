@@ -52,6 +52,10 @@ export const UpdatePlatformBody = zod.object({
     .boolean()
     .optional()
     .describe('`true` removes the logo (the wordmark shows again); ignored with `logo_upload_id`.'),
+  remove_thumbnail: zod
+    .boolean()
+    .optional()
+    .describe('`true` removes the link cover; ignored with `thumbnail_upload_id`.'),
   thumbnail_upload_id: zod.uuid().optional().describe('Finalized `platform-thumbnail` upload to claim.'),
 })
 
