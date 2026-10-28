@@ -586,10 +586,14 @@ async fn closed_hand_ins(
         .iter()
         .copied()
         .filter(|s| {
-            // Returned work too: a revision is a hand-in, behind the same gate.
+            // Returned and failed work too: a revision or a retake is a
+            // hand-in, behind the same gate.
             matches!(
                 s.state,
-                WorkState::NotStarted | WorkState::InProgress | WorkState::Returned
+                WorkState::NotStarted
+                    | WorkState::InProgress
+                    | WorkState::Returned
+                    | WorkState::Failed
             ) && s.due_at_unix.is_some_and(|due| due < now)
         })
         .collect();
