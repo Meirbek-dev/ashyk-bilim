@@ -1,3 +1,5 @@
+import { m } from '#/paraglide/messages'
+import { locales } from '#/paraglide/runtime'
 import type { CorrectAnswer, ItemAnswer, ItemBody } from '#/shared/api/gen/types.gen'
 
 // The result's plain-text view of an answer and of the server's answer key (B-ATT-18). Option ids become their
@@ -30,4 +32,16 @@ export function correctText(body: ItemBody, key: CorrectAnswer): string {
   const ids = key.filter(entry => typeof entry === 'string')
   if (ids.length) return ids.map(id => optionText(body, id)).join(', ')
   return pairs(key.filter(entry => typeof entry !== 'string'))
+}
+
+/**
+ * A question's own title, or null when it says nothing beyond its number: blank, or the studio's «Вопрос 3» left as
+ * created (in any interface language). The review then reads «Вопрос 1», not «Вопрос 1: Вопрос 3» after a reorder.
+ */
+export function ownTitle(title: string): string | null {
+  const trimmed = title.trim()
+  const number = /\d+/u.exec(trimmed)?.[0]
+  if (!trimmed) return null
+  if (number && locales.some(locale => m.assessments_item_new_title({ number }, { locale }) === trimmed)) return null
+  return trimmed
 }

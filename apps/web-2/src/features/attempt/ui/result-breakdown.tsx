@@ -6,7 +6,7 @@ import type { AssessmentItem, GradedItem } from '#/shared/api/gen/types.gen'
 import { StatusBadge, type StatusTone } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { answerText, correctText } from '../model/answer-text'
+import { answerText, correctText, ownTitle } from '../model/answer-text'
 import { extraPrompt, verdict, type Verdict } from '../model/attempt'
 
 /** Points to hundredths, as the grader rounds them («1,126 из 3» read as noise). */
@@ -64,7 +64,7 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium wrap-anywhere">
                   {m.attempt_question_number({ number: index + 1 })}
-                  {item ? `: ${item.title}` : ''}
+                  {item && ownTitle(item.title) ? `: ${ownTitle(item.title)}` : ''}
                 </p>
                 {shown ? <StatusBadge tone={verdicts[shown].tone}>{verdicts[shown].label()}</StatusBadge> : null}
                 <span className="text-muted-foreground tabular-nums">

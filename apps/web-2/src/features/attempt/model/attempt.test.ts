@@ -5,7 +5,7 @@ import { ApiError } from '#/shared/api/errors'
 import type { AssessmentItem, AttemptState, ErrorCode, ItemBody, Policy } from '#/shared/api/gen/types.gen'
 
 import { attemptSearchSchema } from '../route'
-import { answerText, correctText } from './answer-text'
+import { answerText, correctText, ownTitle } from './answer-text'
 import {
   attemptGone,
   clock,
@@ -282,4 +282,14 @@ describe('archived course', () => {
     expect(attemptGone(apiError(403, 'forbidden'))).toBe(false)
     expect(attemptGone(new Error('offline'))).toBe(false)
   })
+})
+
+test('B-ATT-18 the review names a question by its own title, not by the studio default «Вопрос N» it was created with', () => {
+  expect(ownTitle('Типы и примеры')).toBe('Типы и примеры')
+  expect(ownTitle('Вопрос 3')).toBeNull()
+  expect(ownTitle('2-сұрақ')).toBeNull()
+  expect(ownTitle('Question 12')).toBeNull()
+  expect(ownTitle('  ')).toBeNull()
+  // A title of the teacher's own that ends in a number stays.
+  expect(ownTitle('Задача 5')).toBe('Задача 5')
 })
