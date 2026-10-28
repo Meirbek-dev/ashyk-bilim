@@ -2,5 +2,7 @@
 // chunk, so this file imports nothing of the feature (AGENTS.md "Entry chunk").
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 /** `edit?item=`: the open question (unknown or absent: the first). */
-export const builderSearchSchema = v.object({ item: v.optional(v.string()) })
+export const builderSearchSchema = v.object({ item: v.fallback(v.optional(searchText), undefined) })

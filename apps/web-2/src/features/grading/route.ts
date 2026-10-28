@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 import type { ReviewSort } from '#/shared/api/gen/types.gen'
 
 // Route-level code (validateSearch, search, beforeLoad, loaderDeps, head): the route tree keeps it in the entry
@@ -13,7 +15,7 @@ export const SORTS = ['submitted_at', 'final_score', 'attempt_number'] as const 
 const optionalText = v.fallback(
   v.optional(
     v.pipe(
-      v.string(),
+      searchText,
       v.trim(),
       v.transform(text => text || undefined),
     ),

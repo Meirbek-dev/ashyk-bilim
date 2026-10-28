@@ -4,6 +4,8 @@ import { useHydrated } from '@tanstack/react-router'
 import { createElement, lazy, Suspense } from 'react'
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 import { safeRedirect } from '#/shared/auth/redirect'
 
 /**
@@ -13,18 +15,18 @@ import { safeRedirect } from '#/shared/auth/redirect'
 export const loginSearchSchema = v.object({
   redirect: v.optional(
     v.pipe(
-      v.string(),
+      searchText,
       v.transform(path => safeRedirect(path)),
     ),
   ),
-  error: v.optional(v.string()),
+  error: v.optional(searchText),
 })
 
 /**
  * /verify-email?email=&code= and /reset-password?email=&code=: the link in the email fills both fields (on
  * /reset-password it opens the code step).
  */
-export const verifyEmailSearchSchema = v.object({ email: v.optional(v.string()), code: v.optional(v.string()) })
+export const verifyEmailSearchSchema = v.object({ email: v.optional(searchText), code: v.optional(searchText) })
 
 /**
  * The emailed confirmation link opened by an account already signed in with that address unconfirmed (sign-up signs

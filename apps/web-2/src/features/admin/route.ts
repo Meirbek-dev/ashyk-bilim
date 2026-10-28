@@ -2,8 +2,10 @@
 // chunk, so this file imports nothing of the feature (AGENTS.md "Entry chunk").
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 const blankToUndefined = v.pipe(
-  v.string(),
+  searchText,
   v.trim(),
   v.transform(text => text || undefined),
 )

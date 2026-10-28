@@ -3,13 +3,15 @@
 import { lazy, Suspense } from 'react'
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 import type { CourseListSort } from '#/shared/api/gen/types.gen'
 
 /** Free text in the URL: trimmed, and blank is "no search", so `?q=` and no `q` are the same page. */
 // A NUL (a pasted or hand-made `%00`) is dropped: the API refuses it (422), which showed the error page.
 const queryText = v.optional(
   v.pipe(
-    v.string(),
+    searchText,
     v.transform(text => text.replaceAll('\0', '')),
     v.trim(),
     v.transform(text => text || undefined),

@@ -2,8 +2,10 @@
 // chunk, so this file imports nothing of the feature (AGENTS.md "Entry chunk").
 import * as v from 'valibot'
 
+import { searchText } from '#/shared/lib/search-text'
+
 const blankToUndefined = v.pipe(
-  v.string(),
+  searchText,
   v.trim(),
   v.transform(text => text || undefined),
 )
@@ -11,7 +13,7 @@ const blankToUndefined = v.pipe(
 /** /teach/courses?q=&preset=&sort=: the name search, the server preset (none is "all") and the order (none: newest). */
 export const coursesSearchSchema = v.object({
   q: v.optional(blankToUndefined),
-  preset: v.optional(v.picklist(['drafts', 'published', 'archived'])),
+  preset: v.fallback(v.optional(v.picklist(['drafts', 'published', 'archived'])), undefined),
   sort: v.fallback(v.optional(v.picklist(['name'])), undefined),
 })
 export type CoursesSearch = v.InferOutput<typeof coursesSearchSchema>
