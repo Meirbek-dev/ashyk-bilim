@@ -135,6 +135,7 @@
   "assessments_access_saved": "Қолжетімділік сақталды",
   "assessments_exceptions_hint": "Жеке білім алушыларға арналған жеке шарттар: әрекеттер, мерзім, айыппұл.",
   "assessments_exceptions_empty": "Ерекшеліктер жоқ",
+  "assessments_exceptions_no_learners": "Ерекшеліктер жоқ. Оларды курсқа білім алушылар жазылғанда қоюға болады.",
   "assessments_exception_add": "Ерекшелік қосу",
   "assessments_exception_edit": "Ерекшелікті өзгерту: {name}",
   "assessments_exception_remove": "Ерекшелікті алып тастау: {name}",

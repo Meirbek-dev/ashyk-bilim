@@ -135,6 +135,7 @@
   "assessments_access_saved": "Access saved",
   "assessments_exceptions_hint": "Personal terms for single learners: attempts, deadline, penalty.",
   "assessments_exceptions_empty": "No exceptions",
+  "assessments_exceptions_no_learners": "No exceptions. You can set them once learners enrol in the course.",
   "assessments_exception_add": "Add exception",
   "assessments_exception_edit": "Edit exception: {name}",
   "assessments_exception_remove": "Remove exception: {name}",

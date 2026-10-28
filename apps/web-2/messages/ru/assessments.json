@@ -135,6 +135,7 @@
   "assessments_access_saved": "Доступ сохранён",
   "assessments_exceptions_hint": "Личные условия для отдельных учащихся: попытки, срок, штраф.",
   "assessments_exceptions_empty": "Исключений нет",
+  "assessments_exceptions_no_learners": "Исключений нет. Их можно задать, когда на курс запишутся учащиеся.",
   "assessments_exception_add": "Добавить исключение",
   "assessments_exception_edit": "Изменить исключение: {name}",
   "assessments_exception_remove": "Убрать исключение: {name}",

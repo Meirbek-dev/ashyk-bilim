@@ -33,7 +33,12 @@ export function OverridesSection({ assessment, learners }: OverridesSectionProps
         <p className="text-sm text-muted-foreground">{m.assessments_exceptions_hint()}</p>
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.assessments_exceptions_empty()}</p>
+        <p className="text-sm text-muted-foreground">
+          {/* With nobody enrolled there is no «Добавить исключение» yet: say why, not just «none». */}
+          {editable && learners.length === 0
+            ? m.assessments_exceptions_no_learners()
+            : m.assessments_exceptions_empty()}
+        </p>
       ) : (
         <ul className="flex flex-col">
           {rows.map(row => (
