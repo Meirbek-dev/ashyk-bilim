@@ -886,10 +886,29 @@ pub fn clean_excerpt(raw: &str) -> String {
         .filter(|line| !line.is_empty())
         .collect();
     if kept.is_empty() {
-        raw.trim().to_owned()
+        // Nothing but headers ("Course: Физика"): the names they carry, never the English label or a raw type.
+        raw.lines()
+            .filter_map(header_name)
+            .collect::<Vec<_>>()
+            .join("\n")
     } else {
         kept.join("\n")
     }
+}
+
+/// The name a `Course:` / `Chapter:` / `Activity: name (type)` header carries; None for any other header.
+fn header_name(line: &str) -> Option<String> {
+    let line = line.trim();
+    let name = ["Course:", "Chapter:", "Activity:"]
+        .iter()
+        .find_map(|label| line.strip_prefix(label))?
+        .trim();
+    let name = if line.starts_with("Activity:") {
+        name.rsplit_once(" (").map_or(name, |(name, _)| name)
+    } else {
+        name
+    };
+    (!name.is_empty()).then(|| name.to_owned())
 }
 
 #[must_use]
@@ -1108,11 +1127,13 @@ Learning outcomes: Циклы, функции"
         let mut report = serde_json::json!({ "citations": [{ "excerpt": "Description: Курс. About: Для 9 класса." }] });
         clean_report_citations(&mut report);
         assert_eq!(report["citations"][0]["excerpt"], "Курс. Для 9 класса.");
-        // Nothing but a header: kept rather than an empty quote.
+        // Nothing but a header: the name it carries, not the English label or the raw type.
+        assert_eq!(clean_excerpt("Activity: Page (dynamic)"), "Page");
         assert_eq!(
-            clean_excerpt("Activity: Page (dynamic)"),
-            "Activity: Page (dynamic)"
+            clean_excerpt("Course: T: Физика 10 класс"),
+            "T: Физика 10 класс"
         );
+        assert_eq!(clean_excerpt("Published: True"), "");
         let valid = validate_citations(
             &[
                 serde_json::json!({ "citation_id": "a", "excerpt": "Activity: P (dynamic) ... «Hi»" }),
