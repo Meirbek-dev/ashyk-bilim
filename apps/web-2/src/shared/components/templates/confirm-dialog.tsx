@@ -78,11 +78,11 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     confirmed.current = false
   }, [open])
   // When the dialog itself sat in the removed row it goes with it, and the popup's return never runs: the same place
-  // takes the focus the page dropped.
+  // takes the focus the page dropped. Checked on the next frame, once the removal and the popup's own cleanup are done.
   useEffect(
     () => () => {
       if (!confirmed.current) return
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const target = returnTo(opener.current)
         if (target !== true && (document.activeElement ?? document.body) === document.body) target.focus()
       })

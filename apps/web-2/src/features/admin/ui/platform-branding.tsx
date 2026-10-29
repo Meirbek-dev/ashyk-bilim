@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ImageOff } from 'lucide-react'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -7,20 +6,17 @@ import type { Platform, UpdatePlatformRequest } from '#/shared/api/gen/types.gen
 import { vUpdatePlatformRequest } from '#/shared/api/gen/valibot.gen'
 import { FileField } from '#/shared/components/form/file-field'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { isStale } from '../model/admin'
 import { platformVersion, updatePlatformOptions } from '../queries'
+import { PlatformImagePreview } from './platform-image-preview'
+import { PlatformThumbnailRemove } from './platform-thumbnail-remove'
 import { type BaseVersion, useIfMatch } from './use-if-match'
 
 const defaultValues: UpdatePlatformRequest = {}
-
-/** Public storage keys are served anonymously at /content/<key>. */
-const contentUrl = (key: string) => `/content/${key}`
 
 /**
  * The link cover: a picked image uploads at once (`platform-thumbnail`) and becomes the platform's
@@ -75,37 +71,19 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
       >
         {images.map(image => (
           <div key={image.name} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            {image.key ? (
-              <img
-                src={contentUrl(image.key)}
-                alt={image.label}
-                className={`${image.shape} shrink-0 rounded-lg border bg-muted object-contain`}
-              />
-            ) : (
-              <span
-                className={`${image.shape} grid shrink-0 place-items-center rounded-lg border border-dashed bg-muted text-muted-foreground`}
-              >
-                <ImageOff aria-hidden className="size-5" />
-                <span className="sr-only">{m.admin_platform_no_image()}</span>
-              </span>
-            )}
+            <PlatformImagePreview imageKey={image.key} label={image.label} shape={image.shape} />
             <div className="min-w-0 flex-1">
               <form.AppField name={image.name} listeners={{ onChange: () => void form.handleSubmit() }}>
                 {() => <FileField label={image.label} purpose={image.purpose} />}
               </form.AppField>
             </div>
             {image.key ? (
-              <ConfirmDialog
+              <PlatformThumbnailRemove
                 open={removing}
                 onOpenChange={next => {
                   setRemoving(next)
                   if (!next) update.reset()
                 }}
-                trigger={<Button variant="outline">{m.admin_platform_thumbnail_remove()}</Button>}
-                title={m.admin_platform_thumbnail_remove_title()}
-                consequence={m.admin_platform_thumbnail_remove_consequence()}
-                confirmLabel={m.admin_platform_thumbnail_remove()}
-                // A refusal shows in the dialog (`error`); a 412 opens the conflict dialog.
                 onConfirm={() =>
                   void write
                     .save({ body: { remove_thumbnail: true }, reset: () => setRemoving(false) })

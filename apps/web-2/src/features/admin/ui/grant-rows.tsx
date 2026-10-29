@@ -4,11 +4,9 @@ import { m } from '#/paraglide/messages'
 import { IconButton } from '#/shared/components/icon-button'
 import { cn } from '#/shared/lib/utils'
 import { Button } from '#/shared/ui/button'
-import { NativeSelect, NativeSelectOption } from '#/shared/ui/native-select'
 
 import { actionChoices, grantWords, resourceChoices, scopeChoices } from '../model/permissions'
-
-type Choice = { value: string; label: string }
+import { GrantPicker } from './grant-picker'
 
 const NEW_GRANT = 'course:read:*'
 
@@ -16,36 +14,6 @@ const NEW_GRANT = 'course:read:*'
 const pickable = (grant: string) => {
   const words = grantWords(grant)
   return words.action !== null && words.scope !== null && resourceChoices().some(c => c.value === grant.split(':')[0])
-}
-
-function Picker({
-  label,
-  value,
-  choices,
-  disabled,
-  onChange,
-}: {
-  label: string
-  value: string
-  choices: Choice[]
-  disabled: boolean
-  onChange: (value: string) => void
-}) {
-  return (
-    <NativeSelect
-      aria-label={label}
-      value={value}
-      disabled={disabled}
-      className="w-full"
-      onChange={event => onChange(event.target.value)}
-    >
-      {choices.map(choice => (
-        <NativeSelectOption key={choice.value} value={choice.value}>
-          {choice.label}
-        </NativeSelectOption>
-      ))}
-    </NativeSelect>
-  )
 }
 
 type GrantRowsProps = {
@@ -89,21 +57,21 @@ export function GrantRows({ grants, refused, disabled, onChange }: GrantRowsProp
               >
                 {pickable(grant) ? (
                   <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-3">
-                    <Picker
+                    <GrantPicker
                       label={m.admin_perm_field_resource()}
                       value={resource}
                       choices={resourceChoices()}
                       disabled={disabled}
                       onChange={next => replace(at, `${next}:${action}:${scope}`)}
                     />
-                    <Picker
+                    <GrantPicker
                       label={m.admin_perm_field_action()}
                       value={action}
                       choices={actionChoices()}
                       disabled={disabled}
                       onChange={next => replace(at, `${resource}:${next}:${scope}`)}
                     />
-                    <Picker
+                    <GrantPicker
                       label={m.admin_perm_field_scope()}
                       value={scope}
                       choices={scopeOptions}

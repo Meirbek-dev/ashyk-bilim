@@ -39,7 +39,7 @@ const role = (slug: string, text: Partial<Role> = {}): Role => ({
 const problem = (code: 'username-taken' | 'email-taken' | 'role-slug-taken' | 'conflict') =>
   new ApiError({ status: 409, code, fieldErrors: [], requestId: null, retryAfter: null })
 
-describe('admin model', () => {
+describe('admin model: roles and grants', () => {
   test('B-ADM-08 seeded roles are named from the catalog key, custom ones by their own text, unknown by slug', () => {
     expect(roleName(role('admin'))).toBe(m.admin_role_admin())
     expect(roleDescription(role('instructor'))).toBe(m.admin_role_instructor_hint())
@@ -88,7 +88,9 @@ describe('admin model', () => {
     expect(grantWords('assessment:submit').scope).toBe(m.admin_perm_scope_any())
     expect(grantWords('course:teleport:own').action).toBeNull()
   })
+})
 
+describe('admin model: errors and forms', () => {
   test('B-ADM-11 a refused grant is named by its row, in the sent order', () => {
     const refused = new ApiError({
       status: 422,
@@ -169,7 +171,11 @@ describe('platform form', () => {
   const platform = { name: 'Ashyq Bilim', label: '', description: '', about: '', email: 'support@tou.edu.kz' }
   const fields = (values: object) => {
     const result = v.safeParse(platformFormSchema, { ...platform, ...values })
-    return result.success ? [] : [...new Set(result.issues.map(issue => v.getDotPath(issue)))].toSorted()
+    return result.success
+      ? []
+      : [...new Set(result.issues.map(issue => v.getDotPath(issue)))].toSorted((a, b) =>
+          String(a).localeCompare(String(b)),
+        )
   }
 
   test('a blank name and a bad support address are both marked on the first save', () => {

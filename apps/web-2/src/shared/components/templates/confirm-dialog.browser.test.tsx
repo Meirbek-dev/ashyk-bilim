@@ -9,6 +9,41 @@ import { ConfirmDialog } from './confirm-dialog'
 
 const text = { ask: 'Delete', title: 'Delete course «Algebra»?', consequence: 'Learners lose access.', verb: 'Delete' }
 
+const roleText = {
+  list: 'Roles',
+  roles: ['Moderator', 'User'],
+  consequence: 'Its rights go at once.',
+  verb: 'Remove',
+}
+
+/** A list whose confirmed removal takes the trigger's row away. */
+function Roles() {
+  const [roles, setRoles] = useState(roleText.roles)
+  const [open, setOpen] = useState<string | null>(null)
+  return (
+    <ul aria-label={roleText.list}>
+      {roles.map(role => (
+        <li key={role}>
+          <ConfirmDialog
+            open={open === role}
+            onOpenChange={next => setOpen(next ? role : null)}
+            trigger={<Button variant="destructive">{`Remove ${role}`}</Button>}
+            title={`Remove ${role}?`}
+            consequence={roleText.consequence}
+            confirmLabel={roleText.verb}
+            onConfirm={() => {
+              setOpen(null)
+              setRoles(rest => rest.filter(other => other !== role))
+            }}
+            pending={false}
+            error={null}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 describe('ConfirmDialog', () => {
   test('names the object, starts on Cancel, and confirms only on the destructive verb', async () => {
     const onConfirm = vi.fn<() => void>()
@@ -38,35 +73,9 @@ describe('ConfirmDialog', () => {
   })
 
   test('when the confirmed action removes its trigger, focus goes to the list it was in, not off the page', async () => {
-    function Roles() {
-      const [roles, setRoles] = useState(['Moderator', 'User'])
-      const [open, setOpen] = useState<string | null>(null)
-      return (
-        <ul aria-label="Roles">
-          {roles.map(role => (
-            <li key={role}>
-              <ConfirmDialog
-                open={open === role}
-                onOpenChange={next => setOpen(next ? role : null)}
-                trigger={<Button variant="destructive">{`Remove ${role}`}</Button>}
-                title={`Remove ${role}?`}
-                consequence="Its rights go at once."
-                confirmLabel="Remove"
-                onConfirm={() => {
-                  setOpen(null)
-                  setRoles(rest => rest.filter(other => other !== role))
-                }}
-                pending={false}
-                error={null}
-              />
-            </li>
-          ))}
-        </ul>
-      )
-    }
     const screen = await renderInRouter(<Roles />)
     await screen.getByRole('button', { name: 'Remove Moderator' }).click()
-    await screen.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click()
+    await screen.getByRole('alertdialog').getByRole('button', { name: roleText.verb }).click()
     await expect.element(screen.getByRole('button', { name: 'Remove User' })).toHaveFocus()
   })
 })

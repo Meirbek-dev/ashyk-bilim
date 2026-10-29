@@ -30,7 +30,7 @@ describe('RolePermissionList', () => {
 
 describe('GrantRows', () => {
   test('B-ADM-11 each grant is three pickers; a pick, a removal and «Добавить право» change the list', async () => {
-    const onChange = vi.fn()
+    const onChange = vi.fn<(grants: string[]) => void>()
     const screen = await renderInRouter(
       <GrantRows grants={['course:read:all', 'quiz:*:own']} refused={[]} disabled={false} onChange={onChange} />,
     )
@@ -47,7 +47,12 @@ describe('GrantRows', () => {
 
   test('B-ADM-11 a refused grant is marked with a line under the rows', async () => {
     const screen = await renderInRouter(
-      <GrantRows grants={['course:read:all']} refused={['course:read:all']} disabled={false} onChange={vi.fn()} />,
+      <GrantRows
+        grants={['course:read:all']}
+        refused={['course:read:all']}
+        disabled={false}
+        onChange={vi.fn<(grants: string[]) => void>()}
+      />,
     )
     await expect.element(screen.getByRole('alert')).toHaveTextContent(m.admin_role_permissions_refused())
   })

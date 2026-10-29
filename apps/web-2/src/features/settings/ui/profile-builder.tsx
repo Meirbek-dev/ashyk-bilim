@@ -6,13 +6,12 @@ import type { ProfileSections } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
-import { Button } from '#/shared/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
 import { toast } from '#/shared/ui/toast'
 
-import { ADDABLE_SECTIONS, newSection, normalizeSections, vBuilderDocument } from '../model/profile-sections'
+import { newSection, normalizeSections, vBuilderDocument } from '../model/profile-sections'
 import { isStale } from '../model/settings'
 import { profileOptions, updateProfileOptions } from '../queries'
+import { AddSectionMenu } from './add-section-menu'
 import { SectionEditor, sectionTypeLabels } from './section-editor'
 
 const useBuilderForm = (defaultValues: ProfileSections, onSubmit: (value: ProfileSections) => unknown) =>
@@ -78,25 +77,15 @@ export function ProfileBuilder() {
                 onRemove={() => field.removeValue(index)}
               />
             ))}
-            <div>
-              <DropdownMenu onOpenChange={open => open && setAdded(null)}>
-                <DropdownMenuTrigger render={<Button variant="outline">{m.settings_builder_add()}</Button>} />
-                <DropdownMenuContent align="end" finalFocus={addedTitle}>
-                  {ADDABLE_SECTIONS.map(type => ({
-                    label: sectionTypeLabels[type](),
-                    onSelect: () => {
-                      const id = crypto.randomUUID()
-                      setAdded(id)
-                      field.pushValue(newSection(type, id, sectionTypeLabels[type]()))
-                    },
-                  })).map(action => (
-                    <DropdownMenuItem key={action.label} onClick={action.onSelect}>
-                      {action.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <AddSectionMenu
+              finalFocus={addedTitle}
+              onOpen={() => setAdded(null)}
+              onAdd={type => {
+                const id = crypto.randomUUID()
+                setAdded(id)
+                field.pushValue(newSection(type, id, sectionTypeLabels[type]()))
+              }}
+            />
           </>
         )}
       </form.Field>

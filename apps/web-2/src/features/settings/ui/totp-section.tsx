@@ -1,31 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { lazy, Suspense, type FormEvent } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { vTotpVerifyRequest } from '#/shared/api/gen/valibot.gen'
-import { Anchor } from '#/shared/components/anchor'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { useSwapFocus } from '#/shared/hooks/use-swap-focus'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
 import { totpEnrollOptions, totpVerifyOptions } from '../queries'
 import { DisableTotp } from './disable-totp'
 import { PlainSection } from './plain-section'
-
-// The QR encoder loads only when someone turns 2FA on.
-const TotpQr = lazy(() => import('./totp-qr').then(module => ({ default: module.TotpQr })))
+import { TotpSetup } from './totp-setup'
 
 const defaultValues: TotpVerifyRequest = { code: '' }
 
-/** The key line, the key in groups of four as authenticator apps show and accept it: easier to type without a slip. */
-const keyLine = (key: string) => m.settings_totp_secret({ secret: key.match(/.{1,4}/g)?.join(' ') ?? key })
+export type TotpForm = ReturnType<typeof useAppForm<TotpVerifyRequest>>
 
 /** Off -> "Turn on" shows the QR, the key and a code field -> on; on -> "Turn off" through a confirmation. */
 export function TotpSection({ profile }: { profile: UserProfile }) {
@@ -48,10 +42,6 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
       }
     },
   })
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    void form.handleSubmit()
-  }
   const status = profile.mfa_enabled ? (
     <StatusBadge tone="success">{m.settings_totp_on()}</StatusBadge>
   ) : (
@@ -86,48 +76,17 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
         </div>
       ) : null}
       {pending ? (
-        <form
-          ref={swap.focusOn('setup')}
-          tabIndex={-1}
-          noValidate
-          onSubmit={submit}
-          aria-label={m.settings_totp_title()}
-          className="flex flex-col gap-4 outline-none"
-        >
-          <p className="text-sm">{m.settings_totp_scan()}</p>
-          <Suspense fallback={<div aria-hidden className="size-48 rounded-md bg-muted" />}>
-            <TotpQr uri={pending.uri} />
-          </Suspense>
-          <p className="font-mono text-sm wrap-anywhere">{keyLine(pending.secret)}</p>
-          <p className="text-sm">
-            <Anchor href={pending.uri}>{m.settings_totp_open_app()}</Anchor>
-          </p>
-          <form.AppField name="code">
-            {field => (
-              <field.TextField
-                label={m.settings_totp_code()}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-              />
-            )}
-          </form.AppField>
-          {verifyError ? <ErrorAlert>{presentError(verifyError)}</ErrorAlert> : null}
-          <div className="flex gap-2">
-            <SubmitButton type="submit" variant="secondary" pending={verify.isPending}>
-              {m.settings_totp_confirm()}
-            </SubmitButton>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                swap.mark('off')
-                enroll.reset()
-              }}
-            >
-              {m.ui_cancel()}
-            </Button>
-          </div>
-        </form>
+        <TotpSetup
+          form={form}
+          enrollment={pending}
+          focusRef={swap.focusOn('setup')}
+          pending={verify.isPending}
+          error={verifyError}
+          onCancel={() => {
+            swap.mark('off')
+            enroll.reset()
+          }}
+        />
       ) : null}
       {enroll.error ? <ErrorAlert>{presentError(enroll.error)}</ErrorAlert> : null}
     </PlainSection>
