@@ -2,10 +2,11 @@ import { cn } from 'cn'
 
 import { m } from '#/paraglide/messages'
 
-// Cut from the brand masters (noplagiat apps/web/brand) and re-inked: AVIF first, WebP for the rest.
+// Traced from the brand masters (noplagiat apps/web/brand) into one path per file, so the small wordmark of the top bar
+// stays sharp at any size and density (a downscaled raster blurred it).
 const files = {
-  lockup: { name: 'tou-lockup', width: 436, height: 144 },
-  emblem: { name: 'tou-emblem', width: 121, height: 192 },
+  lockup: { name: 'tou-lockup', width: 1517, height: 501 },
+  emblem: { name: 'tou-emblem', width: 717, height: 1140 },
 } as const
 
 /**
@@ -33,16 +34,14 @@ export function UniversityMark({
   return (
     <span className={cn('brand-mark inline-flex shrink-0', className)}>
       {inks.map(([suffix, mode]) => (
-        <picture key={suffix} className={cn('h-full', mode)}>
-          <source type="image/avif" srcSet={`/brand/${name}${suffix}.avif`} />
-          <img
-            src={`/brand/${name}${suffix}.webp`}
-            alt={m.platform_university()}
-            width={width}
-            height={height}
-            className="h-full w-auto"
-          />
-        </picture>
+        <img
+          key={suffix}
+          src={`/brand/${name}${suffix}.svg`}
+          alt={m.platform_university()}
+          width={width}
+          height={height}
+          className={cn('h-full w-auto', mode)}
+        />
       ))}
     </span>
   )
