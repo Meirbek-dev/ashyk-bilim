@@ -257,6 +257,34 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
         .respond_with(
             ResponseTemplate::new(200).set_body_json(serde_json::json!({ "details": {} })),
         )
+        .expect(1)
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(format!("/v2/users/{zid}/authentication_methods")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(true)))
+        .mount(&app.zitadel)
+        .await;
+    // The step-up before removal: a user + TOTP session check.
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "user": { "userId": zid }, "totp": { "code": "000000" } }
+        })))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "code": 3, "message": "Code is invalid", "details": []
+        })))
+        .mount(&app.zitadel)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/sessions"))
+        .and(body_partial_json(serde_json::json!({
+            "checks": { "user": { "userId": zid }, "totp": { "code": "654321" } }
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "sessionId": "zit-check-1", "sessionToken": "zit-token-1", "details": {}
+        })))
+        .expect(1)
         .mount(&app.zitadel)
         .await;
 
@@ -280,8 +308,24 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
         .await;
     assert_eq!(verify.status, StatusCode::NO_CONTENT);
 
-    let removed = app.delete_as(&session, "/api/v2/auth/mfa/totp").await;
-    assert_eq!(removed.status, StatusCode::NO_CONTENT);
+    // A session alone cannot strip the second factor (A-3).
+    let remove = async |body: serde_json::Value| {
+        app.delete_json_as(&session, "/api/v2/auth/mfa/totp", &body)
+            .await
+    };
+    let no_code = remove(serde_json::json!({})).await;
+    assert_eq!(
+        no_code.status,
+        StatusCode::BAD_REQUEST,
+        "{}",
+        no_code.text()
+    );
+    assert_eq!(no_code.json()["code"], "invalid-totp-code");
+    let wrong = remove(serde_json::json!({ "code": "000000" })).await;
+    assert_eq!(wrong.status, StatusCode::BAD_REQUEST, "{}", wrong.text());
+    assert_eq!(wrong.json()["code"], "invalid-totp-code");
+    let removed = remove(serde_json::json!({ "code": "654321" })).await;
+    assert_eq!(removed.status, StatusCode::NO_CONTENT, "{}", removed.text());
 
     let events: Vec<String> = sqlx::query_scalar(
         "SELECT event FROM auth_audit_log WHERE event LIKE 'mfa-%' ORDER BY created_at",
@@ -289,7 +333,10 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
     .fetch_all(&app.pool)
     .await
     .unwrap();
-    assert_eq!(events, vec!["mfa-enrolled", "mfa-removed"]);
+    assert_eq!(
+        events,
+        vec!["mfa-enrolled", "mfa-remove-failed", "mfa-removed"]
+    );
 }
 
 // ── `mfa_enabled` on the wire (DECISIONS 2026-09-12, Q-7) ───────────────────
@@ -384,7 +431,7 @@ async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
         .mount(&app.zitadel)
         .await;
     assert_eq!(
-        app.delete_as(&session, "/api/v2/auth/mfa/totp")
+        app.delete_json_as(&session, "/api/v2/auth/mfa/totp", &serde_json::json!({}))
             .await
             .status,
         StatusCode::NO_CONTENT
@@ -680,7 +727,15 @@ async fn pending_enrolment_outlives_a_wrong_code_only(pool: PgPool) {
     );
     assert_eq!(verify("111111").await, StatusCode::CONFLICT);
     assert_eq!(secret().await, "S2", "a verify conflict ends it");
-    let removed = app.delete_as(&session, "/api/v2/auth/mfa/totp").await;
+    // Only pending: cancelling the setup takes no code.
+    Mock::given(method("GET"))
+        .and(path(format!("/v2/users/{zid}/authentication_methods")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(methods_body(false)))
+        .mount(&app.zitadel)
+        .await;
+    let removed = app
+        .delete_json_as(&session, "/api/v2/auth/mfa/totp", &body)
+        .await;
     assert_eq!(removed.status, StatusCode::NO_CONTENT);
     assert_eq!(secret().await, "S3", "removal ends it");
 }

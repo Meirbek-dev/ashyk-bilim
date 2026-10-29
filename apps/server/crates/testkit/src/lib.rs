@@ -405,6 +405,24 @@ impl TestApp {
         .await
     }
 
+    pub async fn delete_json_as(
+        &self,
+        session: &MintedSession,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> TestResponse {
+        self.send(
+            Request::builder()
+                .method("DELETE")
+                .uri(path)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::COOKIE, &session.cookie)
+                .body(Body::from(body.to_string()))
+                .expect("request build"),
+        )
+        .await
+    }
+
     /// Escape hatch for custom requests (headers, methods, raw bodies).
     /// Inspect headers without draining the body; safe for accepted SSE streams.
     pub async fn status(&self, request: Request<Body>) -> StatusCode {

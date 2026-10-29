@@ -38,6 +38,7 @@ import {
   SessionInfo,
   SessionSummary,
   TotpEnrollment,
+  TotpRemoveRequest,
   TotpVerifyRequest,
   UserProfile,
   VerifyEmailRequest,
@@ -778,14 +779,36 @@ export const getTotpRemoveUrl = () => {
 }
 
 /**
+ * An active authenticator takes a current `code` from it (a stolen session
+ * alone cannot strip the second factor); a pending enrolment is dropped
+ * without one. Wrong codes share the change-password throttle.
  * @summary Remove the TOTP authenticator.
  */
-export const totpRemove = async (options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const totpRemove = async (
+  totpRemoveRequest: TotpRemoveRequest,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
+  const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {}
+    if (h instanceof Headers) return Object.fromEntries(h.entries())
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, entry => Array.from(entry) as [string, string]),
+      )
+    }
+    const headers: Record<string, string | readonly string[]> = {}
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value
+    }
+    return headers
+  }
   return orvalMutator<void>(
     getTotpRemoveUrl(),
     {
       ...options,
       method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(totpRemoveRequest),
     },
     voidParser,
   )
@@ -793,10 +816,10 @@ export const totpRemove = async (options?: Parameters<typeof orvalMutator>[1]): 
 
 export const getTotpRemoveMutationKey = () => ['totpRemove'] as const
 
-export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
-  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+export const getTotpRemoveMutationOptions = <TError = ErrorType<Problem>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, TotpRemoveMutationVariables, TContext>
   request?: SecondParameter<typeof orvalMutator>
-}): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+}): UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, TotpRemoveMutationVariables, TContext> => {
   const mutationKey = getTotpRemoveMutationKey()
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
@@ -804,27 +827,30 @@ export const getTotpRemoveMutationOptions = <TError = ErrorType<unknown>, TConte
       : { ...options, mutation: { ...options.mutation, mutationKey } }
     : { mutation: { mutationKey }, request: undefined }
 
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, void> = () => {
-    return totpRemove(requestOptions)
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof totpRemove>>, TotpRemoveMutationVariables> = props => {
+    const { data } = props ?? {}
+
+    return totpRemove(data, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
 }
 
 export type TotpRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof totpRemove>>>
-
-export type TotpRemoveMutationError = ErrorType<unknown>
+export type TotpRemoveMutationBody = BodyType<TotpRemoveRequest>
+export type TotpRemoveMutationError = ErrorType<Problem>
+export type TotpRemoveMutationVariables = { data: BodyType<TotpRemoveRequest> }
 
 /**
  * @summary Remove the TOTP authenticator.
  */
-export const useTotpRemove = <TError = ErrorType<unknown>, TContext = unknown>(
+export const useTotpRemove = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
-    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext>
+    mutation?: UseMutationOptions<Awaited<ReturnType<typeof totpRemove>>, TError, TotpRemoveMutationVariables, TContext>
     request?: SecondParameter<typeof orvalMutator>
   },
   queryClient?: QueryClient,
-): UseMutationResult<Awaited<ReturnType<typeof totpRemove>>, TError, void, TContext> => {
+): UseMutationResult<Awaited<ReturnType<typeof totpRemove>>, TError, TotpRemoveMutationVariables, TContext> => {
   return useMutation(getTotpRemoveMutationOptions(options), queryClient)
 }
 export const getTotpEnrollUrl = () => {

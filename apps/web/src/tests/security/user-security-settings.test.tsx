@@ -188,8 +188,13 @@ describe('UserSecuritySettings', () => {
 
     await user.click(screen.getByRole('button', { name: 'disableTotp' }))
     const dialog = await screen.findByRole('alertdialog')
+    // A-3: no code, no request.
     await user.click(within(dialog).getByRole('button', { name: 'disableTotp' }))
-    await waitFor(() => expect(mockRemoveTotp).toHaveBeenCalledTimes(1))
+    expect(await within(dialog).findByText('invalidCode')).toBeDefined()
+    expect(mockRemoveTotp).not.toHaveBeenCalled()
+    await user.type(within(dialog).getByRole('textbox'), '123456')
+    await user.click(within(dialog).getByRole('button', { name: 'disableTotp' }))
+    await waitFor(() => expect(mockRemoveTotp).toHaveBeenCalledWith('123456'))
     expect(await screen.findByText('enableTotp')).toBeDefined()
     // UX-055: the trigger unmounted with the dialog - focus lands on the
     // section heading, not <body>.

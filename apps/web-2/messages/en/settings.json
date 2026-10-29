@@ -104,6 +104,7 @@
   "settings_totp_disable": "Turn off",
   "settings_totp_disable_title": "Turn off two-factor authentication?",
   "settings_totp_disable_consequence": "Your password alone will be enough to sign in again.",
+  "settings_totp_disable_code": "Enter the current code from your authenticator app so we know it is you.",
   "settings_totp_disabled": "Two-factor authentication turned off",
   "settings_totp_google": "Signing in with Google does not ask for the code.",
   "settings_appearance_title": "Appearance",

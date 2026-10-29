@@ -104,6 +104,7 @@
   "settings_totp_disable": "Отключить",
   "settings_totp_disable_title": "Отключить двухфакторную аутентификацию?",
   "settings_totp_disable_consequence": "Для входа снова будет достаточно пароля.",
+  "settings_totp_disable_code": "Введите текущий код из приложения-аутентификатора: так мы убедимся, что это вы.",
   "settings_totp_disabled": "Двухфакторная аутентификация отключена",
   "settings_totp_google": "Вход через Google код не спрашивает.",
   "settings_appearance_title": "Оформление",

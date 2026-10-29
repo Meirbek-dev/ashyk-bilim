@@ -3713,6 +3713,14 @@ export const vTotpEnrollment = v.object({
     uri: v.string()
 });
 
+/**
+ * Removing an active authenticator takes a current code from it; a
+ * pending (unfinished) enrolment is dropped without one.
+ */
+export const vTotpRemoveRequest = v.strictObject({
+    code: v.optional(v.pipe(v.string(), v.minLength(6), v.maxLength(8)))
+});
+
 export const vTotpVerifyRequest = v.strictObject({
     code: v.pipe(v.string(), v.minLength(6), v.maxLength(8))
 });
@@ -7688,6 +7696,8 @@ export const vLoginResponse = vSessionInfo;
  * Session terminated, cookie cleared
  */
 export const vLogoutResponse = v.void();
+
+export const vTotpRemoveBody = vTotpRemoveRequest;
 
 /**
  * Removed (idempotent)

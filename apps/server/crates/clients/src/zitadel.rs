@@ -191,9 +191,36 @@ impl ZitadelClient {
         if let Some(code) = totp_code {
             body["checks"]["totp"] = serde_json::json!({ "code": code });
         }
+        self.session_check(&body, totp_code.is_some()).await
+    }
+
+    /// `POST /v2/sessions` with a user check + TOTP only: proves the caller
+    /// holds the authenticator (step-up before removing it). A wrong code
+    /// and an account without an active authenticator are both
+    /// [`PasswordSessionOutcome::InvalidTotp`].
+    pub async fn create_totp_session(
+        &self,
+        zitadel_user_id: &str,
+        code: &str,
+    ) -> Result<PasswordSessionOutcome> {
+        let body = serde_json::json!({
+            "checks": {
+                "user": { "userId": zitadel_user_id },
+                "totp": { "code": code },
+            }
+        });
+        self.session_check(&body, true).await
+    }
+
+    /// Send a session create and map Zitadel's answer (captured live).
+    async fn session_check(
+        &self,
+        body: &serde_json::Value,
+        with_totp: bool,
+    ) -> Result<PasswordSessionOutcome> {
         let response = self
             .auth(self.http.post(self.url("/v2/sessions")))
-            .json(&body)
+            .json(body)
             .send()
             .await
             .map_err(unavailable("create session"))?;
@@ -228,7 +255,7 @@ impl ZitadelClient {
         // 9 = FailedPrecondition: a TOTP code was sent for an account with no
         // authenticator ("Multifactor OTP (OneTimePassword) isn't ready",
         // COMMAND-3Mif9s) — a bad second factor, not an outage.
-        if err.code == 9 && totp_code.is_some() {
+        if err.code == 9 && with_totp {
             return Result::Ok(PasswordSessionOutcome::InvalidTotp);
         }
         // 9 = FailedPrecondition: the account has no password at all

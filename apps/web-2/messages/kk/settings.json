@@ -104,6 +104,7 @@
   "settings_totp_disable": "Өшіру",
   "settings_totp_disable_title": "Екі факторлы аутентификацияны өшіру керек пе?",
   "settings_totp_disable_consequence": "Кіру үшін қайтадан тек құпиясөз жеткілікті болады.",
+  "settings_totp_disable_code": "Аутентификатор қолданбасындағы ағымдағы кодты енгізіңіз: осылай бұл сіз екеніңізге көз жеткіземіз.",
   "settings_totp_disabled": "Екі факторлы аутентификация өшірілді",
   "settings_totp_google": "Google арқылы кіргенде код сұралмайды.",
   "settings_appearance_title": "Безендіру",

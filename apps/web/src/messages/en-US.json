@@ -7590,6 +7590,7 @@
           "revokeCancel": "Cancel",
           "disableTotpConfirmTitle": "Disable two-factor authentication?",
           "disableTotpConfirmDescription": "Signing in will no longer ask for an authenticator-app code. You can enable it again at any time.",
+          "disableTotpCodeHint": "Enter the current code from your authenticator app so we know it is you.",
           "showAllSessions": "Show all ({count})"
         }
       },

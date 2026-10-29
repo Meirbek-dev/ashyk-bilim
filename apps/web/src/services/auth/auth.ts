@@ -68,7 +68,11 @@ export async function verifyTotpEnrollment(code: string): Promise<void> {
   })
 }
 
-/** Remove the TOTP authenticator (idempotent). */
-export async function removeTotp(): Promise<void> {
-  await apiJson('auth/mfa/totp', { method: 'DELETE' })
+/** Remove the TOTP authenticator (idempotent); an active one takes a current code from it. */
+export async function removeTotp(code: string): Promise<void> {
+  await apiJson('auth/mfa/totp', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code.trim() }),
+  })
 }

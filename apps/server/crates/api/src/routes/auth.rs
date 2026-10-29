@@ -645,18 +645,33 @@ pub async fn totp_verify(
 }
 
 /// Remove the TOTP authenticator.
+///
+/// An active authenticator takes a current `code` from it (a stolen session
+/// alone cannot strip the second factor); a pending enrolment is dropped
+/// without one. Wrong codes share the change-password throttle.
 #[utoipa::path(
     delete,
     path = "/auth/mfa/totp",
     tag = "auth",
-    responses((status = 204, description = "Removed (idempotent)")),
+    request_body = crate::dto::auth::TotpRemoveRequest,
+    responses(
+        (status = 204, description = "Removed (idempotent)"),
+        (status = 400, description = "Missing or invalid code", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 429, description = "Too many code attempts", body = Problem,
+         content_type = "application/problem+json"),
+    )
 )]
 pub async fn totp_remove(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<crate::dto::auth::TotpRemoveRequest>,
 ) -> ApiResult<StatusCode> {
     detached(async move {
-        state.identity.totp_remove(&actor).await?;
+        state
+            .identity
+            .totp_remove(&actor, request.code.as_deref())
+            .await?;
         Ok(StatusCode::NO_CONTENT)
     })
     .await

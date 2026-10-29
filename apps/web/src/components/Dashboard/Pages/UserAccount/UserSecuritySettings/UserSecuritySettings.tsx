@@ -347,6 +347,9 @@ function TotpSection({
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
   const [confirmDisable, setConfirmDisable] = useState(false)
+  // A-3: turning 2FA off takes a current code from the app.
+  const [disableCode, setDisableCode] = useState('')
+  const [disableError, setDisableError] = useState<string | null>(null)
   // UX-082: `initialActive` is the server render's snapshot; a disable in
   // another tab must show here, so the live flag is re-read on focus.
   const sessionQuery = useQuery({
@@ -420,14 +423,36 @@ function TotpSection({
   })
 
   const removeMutation = useMutation({
-    mutationFn: removeTotp,
+    mutationFn: (value: string) => removeTotp(value),
     onSuccess: () => {
+      setConfirmDisable(false)
       setActive(false)
       setEnrollment(null)
       toast.success(t('totpRemoved'))
     },
-    onError: error => toastApiError(error),
+    onError: error => {
+      if (hasErrorCode(error, 'invalid-totp-code')) {
+        setDisableError(t('invalidCode'))
+        return
+      }
+      toastApiError(error)
+    },
   })
+
+  const openDisable = (open: boolean) => {
+    setConfirmDisable(open)
+    setDisableCode('')
+    setDisableError(null)
+  }
+
+  const submitDisable = () => {
+    if (!/^\d{6,8}$/u.test(disableCode.trim())) {
+      setDisableError(t('invalidCode'))
+      return
+    }
+    setDisableError(null)
+    removeMutation.mutate(disableCode)
+  }
 
   const submitCode = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -491,22 +516,36 @@ function TotpSection({
         // "not yet enrolled" state to enable into).
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-sm">{t('totpActive')}</span>
-          <Button variant="outline" onClick={() => setConfirmDisable(true)} disabled={removeMutation.isPending}>
+          <Button variant="outline" onClick={() => openDisable(true)} disabled={removeMutation.isPending}>
             {t('disableTotp')}
           </Button>
-          <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
+          <AlertDialog open={confirmDisable} onOpenChange={openDisable}>
             <AlertDialogContent finalFocus={headingRef}>
               <AlertDialogHeader>
                 <AlertDialogTitle>{t('disableTotpConfirmTitle')}</AlertDialogTitle>
                 <AlertDialogDescription>{t('disableTotpConfirmDescription')}</AlertDialogDescription>
               </AlertDialogHeader>
+              <Field>
+                <FieldLabel>{t('codeLabel')}</FieldLabel>
+                <FieldContent>
+                  <Input
+                    name="disable-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={disableCode}
+                    onChange={event => setDisableCode(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') submitDisable()
+                    }}
+                    placeholder={t('codePlaceholder')}
+                  />
+                </FieldContent>
+                <FieldDescription>{t('disableTotpCodeHint')}</FieldDescription>
+                <FieldError>{disableError}</FieldError>
+              </Field>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  disabled={removeMutation.isPending}
-                  onClick={() => removeMutation.mutate(undefined, { onSettled: () => setConfirmDisable(false) })}
-                >
+                <AlertDialogAction variant="destructive" disabled={removeMutation.isPending} onClick={submitDisable}>
                   {t('disableTotp')}
                 </AlertDialogAction>
               </AlertDialogFooter>

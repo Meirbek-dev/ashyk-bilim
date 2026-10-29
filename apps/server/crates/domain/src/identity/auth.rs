@@ -1478,8 +1478,13 @@ impl IdentityService {
         Ok(())
     }
 
-    /// Remove the TOTP authenticator (idempotent).
-    pub async fn totp_remove(&self, actor: &Actor) -> Result<()> {
+    /// Remove the TOTP authenticator (idempotent). An active one needs a
+    /// current code from it, so a stolen session cannot strip the second
+    /// factor; a pending enrolment is dropped without one.
+    pub async fn totp_remove(&self, actor: &Actor, code: Option<&str>) -> Result<()> {
+        if self.totp_enrolled(&actor.zitadel_user_id).await? {
+            self.confirm_totp(actor, code).await?;
+        }
         self.zitadel.remove_totp(&actor.zitadel_user_id).await?;
         self.forget_pending_totp(actor).await?;
         self.sessions.set_mfa_enabled(actor.user_id, false).await?;
@@ -1492,6 +1497,51 @@ impl IdentityService {
             serde_json::json!({ "method": "totp" }),
         )
         .await
+    }
+
+    /// Confirm the caller holds the authenticator: a code checked by
+    /// Zitadel, with the change-password throttle (a 6-digit code must not
+    /// be guessable from a session).
+    async fn confirm_totp(&self, actor: &Actor, code: Option<&str>) -> Result<()> {
+        let invalid = || Error::app(ErrorCode::InvalidTotpCode, "invalid one-time code");
+        let Some(code) = code else {
+            return Err(invalid());
+        };
+        let key = format!("rl:totp:user:{}", actor.user_id);
+        self.enforce(
+            &key,
+            (self.limits.password_check, PASSWORD_CHECK_WINDOW),
+            "one-time code",
+        )
+        .await?;
+        let checked = self
+            .zitadel
+            .create_totp_session(&actor.zitadel_user_id, code)
+            .await;
+        match checked {
+            Ok(PasswordSessionOutcome::Ok(session)) => {
+                self.limiter.clear(&key).await?;
+                // Only a check: the Zitadel session is not kept.
+                self.discard_zitadel_session(&session, "totp check").await;
+                Ok(())
+            }
+            Ok(_) => {
+                ab_db::identity::insert_auth_audit(
+                    &self.pool,
+                    Some(actor.user_id),
+                    "mfa-remove-failed",
+                    None,
+                    None,
+                    serde_json::json!({ "method": "totp", "reason": "invalid-totp" }),
+                )
+                .await?;
+                Err(invalid())
+            }
+            Err(err) => {
+                self.limiter.release(&key).await?;
+                Err(err)
+            }
+        }
     }
 
     async fn forget_pending_totp(&self, actor: &Actor) -> Result<()> {

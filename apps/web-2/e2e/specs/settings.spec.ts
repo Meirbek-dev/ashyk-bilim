@@ -168,7 +168,7 @@ test('B-SET-08 this device is marked and another session ends; B-SET-07 a passwo
   await expect(safari).toHaveCount(0)
 })
 
-test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off after a confirmation', async ({
+test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off only with a current code', async ({
   page,
   me,
 }) => {
@@ -194,8 +194,13 @@ test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off
   await expect(page.getByText(m.settings_totp_enabled({}, ru))).toBeVisible()
   await expect(section.getByText(m.settings_totp_on({}, ru))).toBeVisible()
 
-  const confirm = page.getByRole('alertdialog', { name: m.settings_totp_disable_title({}, ru) })
+  const confirm = page.getByRole('dialog', { name: m.settings_totp_disable_title({}, ru) })
   await section.getByRole('button', { name: m.settings_totp_disable({}, ru) }).click()
+  await confirm.getByLabel(m.settings_totp_code({}, ru)).fill(totp(secret) === '000000' ? '111111' : '000000')
+  expectFailure(page, /^\/api\/v2\/auth\/mfa\/totp$/, 400) // A-3: a session alone cannot turn 2FA off
+  await confirm.getByRole('button', { name: m.settings_totp_disable({}, ru) }).click()
+  await expect(confirm.getByText(m.errors_invalid_totp_code({}, ru))).toBeVisible()
+  await confirm.getByLabel(m.settings_totp_code({}, ru)).fill(totp(secret))
   await confirm.getByRole('button', { name: m.settings_totp_disable({}, ru) }).click()
   await expect(page.getByText(m.settings_totp_disabled({}, ru))).toBeVisible()
   await expect(section.getByRole('button', { name: m.settings_totp_enable({}, ru) })).toBeVisible()

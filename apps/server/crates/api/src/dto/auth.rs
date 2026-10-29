@@ -157,6 +157,16 @@ pub struct TotpVerifyRequest {
     pub code: String,
 }
 
+/// Removing an active authenticator takes a current code from it; a
+/// pending (unfinished) enrolment is dropped without one.
+#[derive(Deserialize, garde::Validate, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TotpRemoveRequest {
+    #[garde(length(min = 6, max = 8))]
+    #[schema(min_length = 6, max_length = 8)]
+    pub code: Option<String>,
+}
+
 /// The current session, as the frontend sees it (client-side permission
 /// gating mirrors the legacy `Session` contract).
 #[derive(Debug, Serialize, ToSchema)]

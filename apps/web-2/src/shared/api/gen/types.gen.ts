@@ -6326,6 +6326,14 @@ export type TotpEnrollment = {
     uri: string;
 };
 
+/**
+ * Removing an active authenticator takes a current code from it; a
+ * pending (unfinished) enrolment is dropped without one.
+ */
+export type TotpRemoveRequest = {
+    code?: string;
+};
+
 export type TotpVerifyRequest = {
     code: string;
 };
@@ -10949,11 +10957,24 @@ export type LogoutResponses = {
 export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
 
 export type TotpRemoveData = {
-    body?: never;
+    body: TotpRemoveRequest;
     path?: never;
     query?: never;
     url: '/api/v2/auth/mfa/totp';
 };
+
+export type TotpRemoveErrors = {
+    /**
+     * Missing or invalid code
+     */
+    400: Problem;
+    /**
+     * Too many code attempts
+     */
+    429: Problem;
+};
+
+export type TotpRemoveError = TotpRemoveErrors[keyof TotpRemoveErrors];
 
 export type TotpRemoveResponses = {
     /**
