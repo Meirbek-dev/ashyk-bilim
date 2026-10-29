@@ -5,7 +5,6 @@ import { NextStepLink } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { presentError } from '#/shared/i18n/errors'
@@ -17,6 +16,7 @@ import { DraftEditor } from './draft-editor'
 import { GradeDetails } from './grade-details'
 import { reasonLabels } from './labels'
 import { Receipt } from './receipt'
+import { ReturnedNotice } from './returned-notice'
 import { ReviewNotes } from './review-notes'
 import { useWork } from './use-work'
 
@@ -44,19 +44,7 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
           <AttemptFiles files={state.attempt.files} />
         </>
       ) : null}
-      {returned ? (
-        <>
-          {/* Returned: what happened, what to do, then the teacher's words (the files below stay editable). */}
-          <div className="flex flex-col items-start gap-2">
-            <StatusBadge tone="warning">{m.submission_returned()}</StatusBadge>
-            {/* "Revise and hand in again" only while it can be handed in: past a closed deadline the reason says so. */}
-            {reasons.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{m.submission_returned_hint()}</p>
-            ) : null}
-          </div>
-          <GradeDetails attempt={returned} />
-        </>
-      ) : null}
+      {returned ? <ReturnedNotice attempt={returned} revisable={reasons.length === 0} /> : null}
       {next && reasons.length > 0 ? (
         <ul className="flex flex-col gap-1 text-muted-foreground">
           {reasons.map(reason => (

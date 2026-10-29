@@ -237,7 +237,9 @@ describe('syllabus and progress', () => {
     })
     expect(syllabusSize([])).toEqual({ chapters: 0, activities: 0, byType: [] })
   })
+})
 
+describe('progress in the syllabus', () => {
   test('B-CRS-10 completion and availability come from the learner state as the server sent them', () => {
     expect(outlineSyllabus(state({ enrolled: true }))[0]?.activities[0]).toMatchObject({
       complete: true,
@@ -358,13 +360,15 @@ test('B-CRS-17 «Далее» says why the server put work first: past due, due 
   )
 })
 
+/** An enrolled learner's state whose first activity carries `patch`. */
+const work = (patch: Partial<LearnerCourseState['outline'][number]['activities'][number]>) => {
+  const base = state({ enrolled: true })
+  const [chapter] = base.outline
+  const [first] = chapter!.activities
+  return { ...base, outline: [{ ...chapter!, activities: [{ ...first!, ...patch }] }] }
+}
+
 test('B-CRS-21 an enrolled learner sees the due date of work still theirs to do, past or not', () => {
-  const work = (patch: Partial<LearnerCourseState['outline'][number]['activities'][number]>) => {
-    const base = state({ enrolled: true })
-    const [chapter] = base.outline
-    const [first] = chapter!.activities
-    return { ...base, outline: [{ ...chapter!, activities: [{ ...first!, ...patch }] }] }
-  }
   const open = { complete: false, state: 'not_started' as const, due_at_unix: 100 }
   expect(outlineSyllabus(work(open), false, 50)[0]?.activities[0]?.due).toEqual({ at: 100, past: false })
   expect(outlineSyllabus(work(open), false, 100)[0]?.activities[0]?.due).toEqual({ at: 100, past: true })

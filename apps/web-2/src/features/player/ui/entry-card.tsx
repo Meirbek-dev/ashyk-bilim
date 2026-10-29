@@ -3,11 +3,11 @@ import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/components/link'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 import { activityKind, type ActivityKind } from '../model/player'
+import { AskTeacherNote } from './ask-teacher-note'
 
 type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'destructive'
 
@@ -72,7 +72,7 @@ export function EntryCard({
     kind !== 'lesson' &&
     open.has(entry.state) &&
     pastDue &&
-    !entry.allowed_actions.some(action => action === 'start' || action === 'continue' || action === 'revise')
+    !entry.allowed_actions.some(allowed => allowed === 'start' || allowed === 'continue' || allowed === 'revise')
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -107,21 +107,11 @@ export function EntryCard({
         <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}
-      {closed ? (
-        <p className="max-w-prose text-sm text-muted-foreground">
-          {m.player_past_due_closed()}{' '}
-          <Link to="/courses/$courseId/discussions" params={{ courseId }}>
-            {m.player_ask_teacher()}
-          </Link>
-        </p>
-      ) : null}
+      {closed ? <AskTeacherNote courseId={courseId}>{m.player_past_due_closed()}</AskTeacherNote> : null}
       {outOfAttempts ? (
-        <p className="max-w-prose text-sm text-muted-foreground">
-          {pastDue ? m.player_past_due_retake() : m.player_out_of_attempts()}{' '}
-          <Link to="/courses/$courseId/discussions" params={{ courseId }}>
-            {m.player_ask_teacher()}
-          </Link>
-        </p>
+        <AskTeacherNote courseId={courseId}>
+          {pastDue ? m.player_past_due_retake() : m.player_out_of_attempts()}
+        </AskTeacherNote>
       ) : null}
       {action}
     </div>

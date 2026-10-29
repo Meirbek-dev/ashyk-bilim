@@ -46,10 +46,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   // Handed in, or reopened on a changed test («Тест изменился»): the confirmation closes either way.
   const handIn = () => submit.handIn(() => setConfirming(false))
   const askToSubmit = () => (setConfirming(true), void reread())
-  const timeUp = useEffectEvent(handIn)
-  useEffect(() => {
-    if (expired) timeUp()
-  }, [expired])
+  useHandInAtZero(expired, handIn)
   return (
     <AttemptFrame
       // Saving shut for good (time, due date, archive): the alert says why; a «Сохраняется» there would never end.
@@ -73,13 +70,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
           guard={guard}
           closed={draft.closed}
           expired={expired ? (due ? 'due' : 'time') : null}
-          // Not on a test shorter than the warning: its whole time would be «running out».
-          runningOut={
-            left !== null &&
-            left > 0 &&
-            left <= WARN_SECONDS &&
-            (due || (assessment.policy.time_limit_seconds ?? 0) > WARN_SECONDS)
-          }
+          runningOut={runningOut(left, due, assessment.policy.time_limit_seconds)}
           changed={submit.changed}
           attemptId={attempt.id}
         />
@@ -113,4 +104,17 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
       />
     </AttemptFrame>
   )
+}
+
+/** At zero the attempt is handed in with what the queue holds. */
+function useHandInAtZero(expired: boolean, handIn: () => void) {
+  const timeUp = useEffectEvent(handIn)
+  useEffect(() => {
+    if (expired) timeUp()
+  }, [expired])
+}
+
+/** The warning before zero; not on a test shorter than the warning: its whole time would be «running out». */
+function runningOut(left: number | null, due: boolean, limit: number | null | undefined) {
+  return left !== null && left > 0 && left <= WARN_SECONDS && (due || (limit ?? 0) > WARN_SECONDS)
 }

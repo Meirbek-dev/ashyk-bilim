@@ -12,6 +12,7 @@ import { formatDate } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { certificatesOptions } from '../queries'
+import { CodeKeptWhole } from './code-kept-whole'
 
 /** Every certificate the caller holds: the course, when and by whom, the PDF and its public verify page. */
 export function MyCertificates() {
@@ -92,18 +93,5 @@ export function MyCertificates() {
         />
       </ListState>
     </section>
-  )
-}
-
-/** The line with the code on one line: a phone broke «FYX8-TPKX-» from «X7EY-XH55» at a dash, as if two codes. */
-function CodeKeptWhole({ text, code }: { text: string; code: string }) {
-  const at = text.indexOf(code)
-  if (at < 0) return text
-  return (
-    <>
-      {text.slice(0, at)}
-      <span className="whitespace-nowrap">{code}</span>
-      {text.slice(at + code.length)}
-    </>
   )
 }

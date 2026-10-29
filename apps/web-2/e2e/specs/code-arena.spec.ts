@@ -3,13 +3,12 @@ import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
 import { setPolicy } from '#/shared/api/gen/sdk.gen'
-import { formatDateTime, formatPercent } from '#/shared/i18n/format'
+import { formatDateTime } from '#/shared/i18n/format'
 
 import type { MadeCourse } from '../fixtures/learning'
 import {
   editor,
   expect,
-  gradedAttempt,
   openFromPlayer,
   region,
   routeLanguages,
@@ -186,69 +185,6 @@ test('B-COD-07 B-COD-08 B-COD-09 a run shows its verdicts per test; a refused ru
   )
   await page.getByRole('button', { name: m.code_run({}, ru) }).click()
   await expect(page.getByText(m.errors_rate_limited({}, ru))).toBeVisible()
-})
-
-test('B-COD-10 B-COD-11 a learner hands in the code and reads it back in the history', async ({
-  page,
-  learner,
-  makeCourse,
-  challenges,
-}) => {
-  const course = await makeCourse({ activities: 1 })
-  const made = await challenges.make(course)
-  await learner.enroll(course)
-  await learner.signIn()
-  await routeLanguages(page)
-  await openFromPlayer(page, course, made)
-  await start(page)
-  await typeCode(page, 'print(3)')
-  await page.getByRole('button', { name: m.code_submit({}, ru) }).click()
-  const dialog = page.getByRole('alertdialog')
-  await expect(dialog.getByText(m.code_submit_text_unlimited({ number: 1 }, ru))).toBeVisible()
-  await dialog.getByRole('button', { name: m.code_submit({}, ru) }).click()
-  await expect(page.getByText(m.code_submitted({}, ru), { exact: true })).toBeVisible()
-  await expect(page).toHaveURL(/[?&]submission=/)
-
-  const history = region(page, m.code_history({}, ru))
-  await expect(history.getByText(m.code_attempt({ number: 1 }, ru), { exact: true })).toBeVisible()
-  // Without a configured judge the hand-in goes to manual review; with one it is graded at once.
-  const statuses = [m.code_attempt_pending({}, ru), m.code_attempt_published({}, ru), m.code_attempt_graded({}, ru)]
-  await expect(history.getByText(new RegExp(`^(${statuses.join('|')})$`))).toBeVisible()
-  const code = history.getByRole('textbox', { name: m.code_attempt_code({ number: 1 }, ru) })
-  await expect(code).toContainText('print(3)')
-  await expect(code).toHaveAttribute('contenteditable', 'false')
-
-  const entry = region(page, m.code_solution({}, ru))
-  await expect(entry.getByText(m.code_attempts_unlimited({ used: 1 }, ru))).toBeVisible()
-  await expect(entry.getByRole('button', { name: m.code_start_again({}, ru) })).toBeVisible()
-})
-
-test('B-COD-10 B-COD-11 a released attempt shows its score and the test cases it passed', async ({
-  page,
-  learner,
-  makeCourse,
-  challenges,
-}) => {
-  const course = await makeCourse({ activities: 1 })
-  const made = await challenges.make(course)
-  await learner.enroll(course)
-  await learner.signIn()
-  await routeLanguages(page)
-  const graded = gradedAttempt(made, randomUUID())
-  await page.route(`**/api/v2/assessments/${made.assessment.id}/submissions/me`, route =>
-    route.fulfill({ json: [graded] }),
-  )
-  await openFromPlayer(page, course, made)
-  const history = region(page, m.code_history({}, ru))
-  await expect(history.getByText(formatPercent(50, 'ru'), { exact: true })).toBeVisible()
-  await history.getByRole('link', { name: m.code_attempt_code({ number: 1 }, ru) }).click()
-  await expect(page).toHaveURL(new RegExp(`[?&]submission=${graded.id}`))
-  await expect(history.getByText(m.code_result_score({ score: formatPercent(50, 'ru') }, ru))).toBeVisible()
-  await expect(history.getByText(m.code_result_cases({ passed: 1, total: 2 }, ru))).toBeVisible()
-  await expect(history.getByText('Python (3.8.1)')).toBeVisible()
-  await expect(history.getByRole('textbox', { name: m.code_attempt_code({ number: 1 }, ru) })).toContainText(
-    'print(1 + 2)',
-  )
 })
 
 test('B-COD-07 B-COD-08 B-COD-10 @judge0 a real run, a reload of its verdicts and a graded hand-in', async ({

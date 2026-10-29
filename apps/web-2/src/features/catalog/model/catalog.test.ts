@@ -88,7 +88,9 @@ describe('catalog model', () => {
     expect(searchKinds(false)).toEqual(['courses', 'lessons', 'collections'])
     expect(searchKinds(true)).toEqual(['courses', 'lessons', 'collections', 'users'])
   })
+})
 
+describe('command palette and landing', () => {
   test('B-CAT-11 palette navigation is the access table: only open sections, per workspace, none for a guest', () => {
     expect(paletteSections(null, '')).toEqual([])
     const student = paletteSections(session([]), '')
