@@ -23,11 +23,12 @@ expect() {
 # up <COMPOSE_PROFILES> <service>...: (re)create them; nginx renders its config from the profiles.
 up() {
   COMPOSE_PROFILES=$1 compose up -d --no-deps --force-recreate "${@:2}" >/dev/null
-  # Ready when every started web answers through the edge (/home is web2's while dual web is on).
-  local probe=/
-  [[ $1 == dual-web ]] && probe='/home'
+  # Ready when every started web answers through the edge: while dual web is on, /api/health is pinned to the old
+  # web and /home to web2 (/ itself goes to web2, so it proves nothing about the old one).
+  local old=/ probe=/
+  [[ $1 == dual-web ]] && old='/api/health' probe='/home'
   for _ in $(seq 30); do
-    compose exec -T nginx curl -fs -o /dev/null -H 'Host: ashyq.test' http://127.0.0.1/ 2>/dev/null &&
+    compose exec -T nginx curl -fs -o /dev/null -H 'Host: ashyq.test' "http://127.0.0.1$old" 2>/dev/null &&
       compose exec -T nginx curl -fs -o /dev/null -H 'Host: ashyq.test' "http://127.0.0.1$probe" 2>/dev/null && return
     sleep 1
   done
