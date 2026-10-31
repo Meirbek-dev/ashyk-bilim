@@ -9,7 +9,6 @@ old completion logs and temporary machine setup are in Git.
 - Cutover, monitoring and rollback: `docs/STAGE-2-CUTOVER.md` sections 1–3.
 - After the owner closes the rollback window: phase 9 in that guide; contract
   removals in `apps/server/docs/phase9-removals.md`.
-- Acceptance requirements: `docs/web/ACCEPTANCE.md`.
 
 Use `just stack up`, `just login-as`, and `just e2e` from the root guide for local work.
 Re-run checks on the release being considered; old green runs are not release evidence.
