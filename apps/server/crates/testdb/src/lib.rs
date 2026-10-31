@@ -187,13 +187,23 @@ async fn clone(admin: &mut PgConnection, template: &str, name: &str) {
     }
 }
 
+/// Cleanup, never a verdict: `FORCE` may not terminate a backend of another role (CI's non-superuser user), so a
+/// refused drop waits for its connections to close and tries plainly; a database still left behind is reported and
+/// swept by `just db test-reset` (CI's cluster is thrown away anyway).
 async fn drop_database(admin: &mut PgConnection, name: &str) {
-    admin
-        .execute(AssertSqlSafe(format!(
-            "DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"
-        )))
-        .await
-        .expect("drop a test database");
+    let forced = format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)");
+    let Err(mut last) = admin.execute(AssertSqlSafe(forced)).await else {
+        return;
+    };
+    for _ in 0..20 {
+        tokio::time::sleep(Duration::from_millis(250)).await;
+        let plain = format!("DROP DATABASE IF EXISTS \"{name}\"");
+        match admin.execute(AssertSqlSafe(plain)).await {
+            Ok(_) => return,
+            Err(err) => last = err,
+        }
+    }
+    eprintln!("ab_testdb: left {name} behind ({last}); `just db test-reset` removes it");
 }
 
 /// FNV-1a: stable across processes and Rust versions, unlike `DefaultHasher`.
