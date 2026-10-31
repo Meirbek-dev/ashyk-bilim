@@ -57,7 +57,7 @@ networks:
 services:
   # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
   db:
-    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:5895949dfcdf308eb0cd31c950c93c14895c77f33fbedfecf1fa511ab1d4bcd2
     # Keep these logging flags in compose.dev.yaml's command override too.
     command: >-
       postgres

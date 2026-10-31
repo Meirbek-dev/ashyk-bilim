@@ -61,6 +61,11 @@
       schedule: ['before 6am on the first day of the month'],
     },
     {
+      // gates/ and codegen run the TypeScript 6 compiler API through this alias (TypeScript 7 has none).
+      matchDepNames: ['typescript-6'],
+      allowedVersions: '<7',
+    },
+    {
       matchManagers: ['github-actions'],
       groupName: 'github actions',
     },
