@@ -1119,6 +1119,13 @@ fn unique_ip() -> String {
     )
 }
 
+/// Unknown login names unique per run (`ip` from `unique_ip`): the name limit
+/// (`rl:login:name:*`, 15 min) also lives in shared Redis, and three tests
+/// reusing `ghost-N` hit 429 on the fourth suite run within the window.
+fn ghost(ip: &str, i: usize) -> String {
+    format!("ghost-{}-{i}", ip.replace('.', "-"))
+}
+
 async fn login_from(app: &TestApp, ip: &str, body: &serde_json::Value) -> ab_testkit::TestResponse {
     app.send(
         Request::builder()
@@ -1157,13 +1164,13 @@ async fn ip_limit_counts_failed_logins_only(pool: PgPool) {
     // Twenty failures (distinct unknown names: the account lock stays out
     // of the way) fill the IP window; the 21st is throttled.
     for i in 0..20 {
-        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        let body = serde_json::json!({ "login": ghost(&ip, i), "password": "x" });
         assert_eq!(
             login_from(&app, &ip, &body).await.status,
             StatusCode::UNAUTHORIZED
         );
     }
-    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    let body = serde_json::json!({ "login": ghost(&ip, 21), "password": "x" });
     let res = login_from(&app, &ip, &body).await;
     assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS);
     assert_eq!(res.json()["code"], "rate-limited");
@@ -1198,13 +1205,13 @@ async fn mfa_logins_do_not_fill_the_ip_limit(pool: PgPool) {
         assert_eq!(res.status, StatusCode::OK, "{}", res.text());
     }
     for i in 0..20 {
-        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        let body = serde_json::json!({ "login": ghost(&ip, i), "password": "x" });
         assert_eq!(
             login_from(&app, &ip, &body).await.status,
             StatusCode::UNAUTHORIZED
         );
     }
-    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    let body = serde_json::json!({ "login": ghost(&ip, 21), "password": "x" });
     assert_eq!(
         login_from(&app, &ip, &body).await.status,
         StatusCode::TOO_MANY_REQUESTS
@@ -1519,11 +1526,11 @@ async fn spoofed_forwarded_for_first_hop_is_ignored(pool: PgPool) {
     // window keyed on the proxy hop; the 21st is throttled.
     let limited_hop = unique_ip();
     for i in 0..20 {
-        let body = serde_json::json!({ "login": format!("ghost-{i}"), "password": "x" });
+        let body = serde_json::json!({ "login": ghost(&limited_hop, i), "password": "x" });
         let res = login_from(&app, &format!("198.51.100.{i}, {limited_hop}"), &body).await;
         assert_eq!(res.status, StatusCode::UNAUTHORIZED, "{}", res.text());
     }
-    let body = serde_json::json!({ "login": "ghost-21", "password": "x" });
+    let body = serde_json::json!({ "login": ghost(&limited_hop, 21), "password": "x" });
     let res = login_from(&app, &format!("198.51.100.99, {limited_hop}"), &body).await;
     assert_eq!(res.status, StatusCode::TOO_MANY_REQUESTS, "{}", res.text());
 }

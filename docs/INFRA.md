@@ -320,21 +320,22 @@ zero takes about 30 s; a second run changes nothing.
 ## Build and release
 
 `.github/workflows/ci.yaml` (`push` to `main`, `ci/**`, `release/**`;
-`pull_request`). PRs run the gates only and a newer PR push cancels the running
-one; `main` runs are never cancelled mid-run. `ci/**` builds and smokes images
-without publishing.
+`pull_request`). PRs run the gates only. A newer push to the same ref cancels
+the running run, `main` included: only the newest commit is deployed. `ci/**`
+builds and smokes images without publishing. `coverage.yaml` runs the server's
+line floor (`just cov`) nightly.
 
 | Job | When | What |
 | --- | --- | --- |
 | changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`, `openapi.v2.json`, the web-e2e/restore scripts, `ci.yaml`), `web2` (`apps/web-2/**`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
-| server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `cov` (the nextest suite once, instrumented, plus the line floor); nextest profile `ci`, JUnit report uploaded on failure |
+| server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `test --partition hash:N/2` in two jobs (`sqlx-check` in the first only); nextest profile `ci`, JUnit report uploaded on failure. The line floor (`just cov`) runs nightly in `coverage.yaml` |
 | web-gates | web changed | `just ci-web`: lint, typecheck, unit tests, `check:contracts`, `check:error-codes`, `check:messages` |
 | web2-gates | web2 changed | in the Playwright image, `apps/web-2`: `bun install`, `codegen messages`, `verify` (check, tests, gates; its codegen gate diffs the committed SDK and route tree), `build`, `g15` (contrast of every theme and mode) |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/web-e2e, `bash -n`, `nginx -t`, dual-web routing, Redis persistence), `just test-dev`, shellcheck, actionlint, gitleaks |
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` when `web` changed, `ashyq-web-2` when `web2` changed (all three on `main` and `release/**`); web build args from the repo variable `PROD_DOMAIN` |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` and `just smoke` again |
-| web2-e2e | after images, web2 changed | four stands ("Stage 2 e2e stand"): shards 1-3 `just web2-e2e --grep-invert @judge0 --shard=N/3`, shard `judge0` with the `judge0` profile `--grep @judge0` |
+| web2-e2e | after images, web2 changed | six stands ("Stage 2 e2e stand"): shards 1-5 `just web2-e2e --grep-invert @judge0 --shard=N/5` (`PWTEST_SHARD_WEIGHTS`), shard `judge0` with the `judge0` profile `--grep @judge0`; Playwright retries a failed test once on CI (reported as flaky) |
 | web-release-e2e | after images, web changed | the `ashyq-web:ci-<sha>` image at `PROD_DOMAIN` ("Production web image stand"): smoke, auth, release and video-upload specs, then `just restore-test` |
 | publish | `main` or `release/**`, every gate, stack-smoke and web-release-e2e green (not web2-e2e) | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` |
 | publish-web2 | after publish, web2-e2e green | `ashyq-web-2` `ci-<sha>` -> `<sha>`/`latest` |

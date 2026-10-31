@@ -506,7 +506,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | Contract | `just openapi-check` + `insta` snapshot of the OpenAPI doc | every contract change visible in diff |
 | RBAC sweep | `crates/api/tests/rbac_sweep.rs` over the route list | no unclassified mutating endpoint |
 | Supply chain | `just deny`, `just machete` | advisories, licenses, dead deps |
-| Coverage | `just cov` (`cargo llvm-cov nextest`) | floor: 80% lines, workspace (`main.rs` excluded); ratchet up, never down |
+| Coverage | `just cov` (`cargo llvm-cov nextest`; CI: nightly `coverage.yaml`) | floor: 80% lines, workspace (`main.rs` excluded); ratchet up, never down |
 | E2E | Playwright suites of both webs (`just e2e`, CI `web2-e2e`, `web-release-e2e`) | real browser against a full stack |
 
 `TestApp::spawn(pool)` boots the full router (whole middleware stack) against the test database and returns
@@ -518,8 +518,9 @@ Judge0, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/sr
 Run on pushes to `main`, `ci/**` and `release/**` and on pull requests, when `apps/server/**` or infra files
 change (release branches run every gate). `server-lint`: `fmt-check -> clippy -> deny -> machete ->
 openapi-check` (offline `.sqlx`, no services). `server-test`: `just dev-up` (Postgres 18 + pgvector, Redis,
-Zitadel, RustFS), then `migrate -> sqlx-check -> cov` (`cov` runs the whole nextest suite once and enforces the
-floor). `just ci-server` runs the same list locally. The server image is built by the `images` job in parallel and
+Zitadel, RustFS), then `migrate -> sqlx-check -> test`, the suite split into two jobs (`--partition hash:N/2`, no
+instrumentation). The coverage floor runs nightly (`.github/workflows/coverage.yaml`, `just cov`), off the deploy path.
+`just ci-server` runs all of it locally, `cov` included. The server image is built by the `images` job in parallel and
 published as `<sha>` only after every gate and the full-stack smoke passed (`docs/INFRA.md`). A red pipeline on
 `main` is a stop-the-line event.
 

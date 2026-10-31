@@ -16,7 +16,9 @@ export default defineConfig({
   outputDir: process.env['E2E_OUTPUT_DIR'] ?? '../test-results',
   // Short output for agents (8.4): one line per test; a failure prints the trace path, not the trace.
   reporter: 'line',
-  retries: 0,
+  // CI: one retry, so one flaky test does not cost a shard rerun (~10 min); the summary still lists it as flaky.
+  // Locally a failure fails at once.
+  retries: process.env['CI'] ? 1 : 0,
   forbidOnly: true,
   fullyParallel: true,
   use: {
