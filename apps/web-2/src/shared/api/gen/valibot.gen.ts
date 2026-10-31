@@ -38,6 +38,14 @@ export const vActivityDetails = v.object({
 
 export const vActivityId = v.pipe(v.string(), v.uuid());
 
+export const vActivityDraftStats = v.object({
+    activity_id: vActivityId,
+    activity_name: v.string(),
+    applied: v.pipe(v.number(), v.integer()),
+    drafts: v.pipe(v.number(), v.integer()),
+    ready: v.pipe(v.number(), v.integer())
+});
+
 /**
  * Canonical per-learner activity state (legacy `ActivityProgressState`).
  */
@@ -52,6 +60,11 @@ export const vActivityProgressState = v.picklist([
     'failed',
     'completed'
 ]);
+
+export const vActivityRef = v.object({
+    id: vActivityId,
+    name: v.string()
+});
 
 /**
  * Activity sub-kind; must pair with its [`ActivityType`].
@@ -151,9 +164,16 @@ export const vAiEffectiveConfig = v.object({
     claude_base_url: v.string(),
     claude_model: v.string(),
     claude_timeout_secs: v.number(),
+    concept_graph_enabled: v.boolean(),
     course_analysis_enabled: v.boolean(),
     course_qa_enabled: v.boolean(),
+    embedding_api_key: v.nullable(v.string()),
+    embedding_base_url: v.string(),
+    embedding_model: v.string(),
+    embedding_provider: v.string(),
+    grading_assistant_enabled: v.boolean(),
     lecture_authoring_enabled: v.boolean(),
+    manual_grading_minutes: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     max_output_tokens: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     max_tokens_per_request: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     monthly_token_budget: v.pipe(v.number(), v.integer()),
@@ -168,6 +188,7 @@ export const vAiEffectiveConfig = v.object({
     remediation_enabled: v.boolean(),
     remediation_requests_per_hour_per_user: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     semantic_memory_enabled: v.boolean(),
+    semantic_search_enabled: v.boolean(),
     status: v.string(),
     study_companion_enabled: v.boolean(),
     submission_analysis_enabled: v.boolean()
@@ -206,7 +227,9 @@ export const vAiRunKind = v.picklist([
     'remediation',
     'study_companion',
     'lecture_review',
-    'course_qa'
+    'course_qa',
+    'concept_mapping',
+    'grade_draft'
 ]);
 
 /**
@@ -316,6 +339,8 @@ export const vAnomalyKind = v.picklist([
     'fast_quiz_completion',
     'score_distribution_shift'
 ]);
+
+export const vApproveAction = v.picklist(['save', 'publish']);
 
 /**
  * What the caller may do to an assessment (`Assessment.allowed_actions`).
@@ -784,6 +809,37 @@ export const vCompletionRule = v.picklist([
     'teacher_verified'
 ]);
 
+export const vConceptId = v.pipe(v.string(), v.uuid());
+
+export const vConceptTagId = v.pipe(v.string(), v.uuid());
+
+export const vConceptReviewRequest = v.strictObject({
+    concept_ids: v.optional(v.pipe(v.array(vConceptId), v.maxLength(500))),
+    status: v.string(),
+    tag_ids: v.optional(v.pipe(v.array(vConceptTagId), v.maxLength(2000)))
+});
+
+export const vConceptTagView = v.object({
+    activity_id: vActivityId,
+    concept_id: vConceptId,
+    id: vConceptTagId,
+    item_id: v.nullable(v.pipe(v.string(), v.uuid())),
+    origin: v.string(),
+    rationale: v.string(),
+    status: v.string(),
+    weight: v.number()
+});
+
+export const vConceptView = v.object({
+    description: v.string(),
+    id: vConceptId,
+    name: v.string(),
+    origin: v.string(),
+    position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    slug: v.string(),
+    status: v.string()
+});
+
 export const vConfidence = v.picklist([
     'low',
     'medium',
@@ -803,6 +859,8 @@ export const vContentBottleneckSignal = v.picklist([
     'repeated_assessment_failures',
     'stale_low_performance'
 ]);
+
+export const vContentChunkId = v.pipe(v.string(), v.uuid());
 
 export const vContentHealthSignal = v.picklist([
     'content_freshness',
@@ -1047,6 +1105,18 @@ export const vCreateCollectionRequest = v.strictObject({
     public: v.optional(v.boolean())
 });
 
+export const vCreateConceptRequest = v.strictObject({
+    description: v.optional(v.pipe(v.string(), v.maxLength(2000))),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(200))
+});
+
+export const vCreateConceptTagRequest = v.strictObject({
+    activity_id: vActivityId,
+    concept_id: vConceptId,
+    item_id: v.optional(v.pipe(v.string(), v.uuid())),
+    weight: v.optional(v.number())
+});
+
 export const vCreateCourseRequest = v.strictObject({
     about: v.optional(v.pipe(v.string(), v.maxLength(20000))),
     description: v.optional(v.pipe(v.string(), v.maxLength(5000))),
@@ -1231,6 +1301,13 @@ export const vDisplaySettings = v.object({
 
 export const vDisposition = v.picklist(['attachment', 'inline']);
 
+export const vDriftView = v.object({
+    corrections: v.pipe(v.number(), v.integer()),
+    criterion_key: v.string(),
+    offset: v.number(),
+    part_key: v.string()
+});
+
 export const vDrillMetric = v.picklist([
     'active_learners',
     'completion_rate',
@@ -1355,7 +1432,8 @@ export const vErrorCode = v.picklist([
     'ai-budget-exhausted',
     'ai-rate-limited',
     'ai-run-cancelled',
-    'ai-provider-unavailable'
+    'ai-provider-unavailable',
+    'concept-cycle'
 ]);
 
 export const vEvalSummary = v.object({
@@ -1378,6 +1456,21 @@ export const vEvalDetails = v.object({
     reason: v.optional(v.string()),
     repaired: v.optional(v.boolean()),
     usage: v.optional(vEvalUsage)
+});
+
+export const vEvidence = v.object({
+    quote: v.string(),
+    verified: v.boolean()
+});
+
+export const vEvidenceView = v.object({
+    concept_id: vConceptId,
+    observed_at: v.pipe(v.number(), v.integer()),
+    part_id: v.nullable(v.pipe(v.string(), v.uuid())),
+    score: v.number(),
+    source_id: v.pipe(v.string(), v.uuid()),
+    source_type: v.string(),
+    weight: v.number()
 });
 
 /**
@@ -1576,6 +1669,25 @@ export const vGradeAction = v.picklist([
     'return'
 ]);
 
+export const vGradeDraftId = v.pipe(v.string(), v.uuid());
+
+export const vApproveDraftItem = v.strictObject({
+    draft_id: vGradeDraftId,
+    feedback: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    score: v.optional(v.number())
+});
+
+export const vApproveDraftsRequest = v.strictObject({
+    action: vApproveAction,
+    items: v.pipe(v.array(vApproveDraftItem), v.minLength(1), v.maxLength(200))
+});
+
+export const vApproveOutcome = v.object({
+    draft_id: vGradeDraftId,
+    error: v.nullable(v.string()),
+    result: v.string()
+});
+
 export const vGradePublishedPayload = v.object({
     final_score: v.number(),
     published_at: v.pipe(v.number(), v.integer())
@@ -1606,11 +1718,30 @@ export const vGradebookSummary = v.object({
 
 export const vGradingEntryId = v.pipe(v.string(), v.uuid());
 
+export const vGradingMetrics = v.object({
+    activities: v.array(vActivityDraftStats),
+    applied_adjusted: v.pipe(v.number(), v.integer()),
+    applied_exact: v.pipe(v.number(), v.integer()),
+    days: v.pipe(v.number(), v.integer()),
+    discarded: v.pipe(v.number(), v.integer()),
+    drafts: v.pipe(v.number(), v.integer()),
+    failed: v.pipe(v.number(), v.integer()),
+    mean_abs_delta: v.nullable(v.number()),
+    median_feedback_hours: v.nullable(v.number()),
+    previous_median_feedback_hours: v.nullable(v.number()),
+    ready: v.pipe(v.number(), v.integer()),
+    saved_hours: v.number()
+});
+
 export const vGradingMode = v.picklist([
     'auto',
     'manual',
     'auto_then_manual'
 ]);
+
+export const vGradingSettingsRequest = v.strictObject({
+    auto_grade_drafts: v.boolean()
+});
 
 export const vGradingType = v.picklist(['numeric', 'percentage']);
 
@@ -1634,6 +1765,15 @@ export const vHealth = v.object({
 export const vHistogramBucket = v.object({
     count: v.pipe(v.number(), v.integer()),
     label: v.string()
+});
+
+export const vIndexStatus = v.object({
+    chunks: v.pipe(v.number(), v.integer()),
+    embedded_chunks: v.pipe(v.number(), v.integer()),
+    failed_sources: v.pipe(v.number(), v.integer()),
+    last_indexed_at: v.nullable(v.pipe(v.number(), v.integer())),
+    model: v.string(),
+    sources: v.pipe(v.number(), v.integer())
 });
 
 export const vInsightCategory = v.picklist([
@@ -1974,6 +2114,30 @@ export const vLoginRequest = v.strictObject({
     totp_code: v.optional(v.pipe(v.string(), v.minLength(6), v.maxLength(8)))
 });
 
+/**
+ * What the learner and the teacher see.
+ */
+export const vMasteryLevel = v.picklist([
+    'not_started',
+    'struggling',
+    'learning',
+    'mastered'
+]);
+
+/**
+ * One concept of a mastery view.
+ */
+export const vConceptMastery = v.object({
+    concept_id: vConceptId,
+    evidence_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    last_observed_at: v.nullable(v.pipe(v.number(), v.integer())),
+    level: vMasteryLevel,
+    name: v.string(),
+    p_known: v.number(),
+    review: v.array(vActivityRef),
+    stale: v.boolean()
+});
+
 export const vMatchMode = v.picklist([
     'exact',
     'trimmed',
@@ -2296,6 +2460,24 @@ export const vPlatform = v.object({
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
+export const vPrerequisiteView = v.object({
+    concept_id: vConceptId,
+    requires_id: vConceptId,
+    status: v.string()
+});
+
+export const vConceptGraph = v.object({
+    can_edit: v.boolean(),
+    concepts: v.array(vConceptView),
+    latest_run_id: v.nullable(vAiRunId),
+    prerequisites: v.array(vPrerequisiteView),
+    tags: v.array(vConceptTagView)
+});
+
+export const vPrerequisitesRequest = v.strictObject({
+    requires: v.pipe(v.array(vConceptId), v.maxLength(50))
+});
+
 export const vPrivacyPreferences = v.strictObject({
     showCertificates: v.optional(v.boolean()),
     showOnLeaderboard: v.optional(v.boolean())
@@ -2401,6 +2583,38 @@ export const vLinksSection = v.strictObject({
  */
 export const vProgressUpdated = v.object({
     course_id: vCourseId
+});
+
+export const vProposalCriterion = v.object({
+    ai_score: v.number(),
+    calibrated_score: v.number(),
+    criterion_id: v.string(),
+    evidence: v.array(vEvidence),
+    label: v.string(),
+    max_score: v.number(),
+    rationale: v.string(),
+    unsupported: v.boolean()
+});
+
+export const vProposalPart = v.object({
+    ai_score: v.number(),
+    calibrated_score: v.number(),
+    criteria: v.array(vProposalCriterion),
+    excerpt: v.string(),
+    feedback: v.string(),
+    max_score: v.number(),
+    part_id: v.string(),
+    title: v.string()
+});
+
+export const vProposal = v.object({
+    auto_max: v.number(),
+    auto_points: v.number(),
+    calibration_corrections: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    confidence: v.number(),
+    flags: v.array(v.string()),
+    overall_feedback: v.string(),
+    parts: v.array(vProposalPart)
 });
 
 export const vPublishSummary = v.object({
@@ -2548,6 +2762,15 @@ export const vQuestionDifficultyRow = v.object({
     question_label: v.string(),
     strong_miss_pct: v.nullable(v.number()),
     weak_correct_pct: v.nullable(v.number())
+});
+
+export const vQueueDraftsRequest = v.strictObject({
+    subject_ids: v.optional(v.pipe(v.array(v.pipe(v.string(), v.uuid())), v.maxLength(200)))
+});
+
+export const vQueueReport = v.object({
+    queued: v.array(vGradeDraftId),
+    skipped: v.pipe(v.number(), v.integer(), v.minValue(0))
 });
 
 export const vReactionState = v.object({
@@ -3220,6 +3443,32 @@ export const vCreateItemRequest = v.strictObject({
     title: v.optional(v.pipe(v.string(), v.maxLength(500)))
 });
 
+/**
+ * Where a passage sits in its source: the heading path and block range of a lesson, or the question.
+ */
+export const vSearchAnchor = v.object({
+    block_end: v.optional(v.pipe(v.number(), v.integer())),
+    block_start: v.optional(v.pipe(v.number(), v.integer())),
+    heading_path: v.optional(v.array(v.string())),
+    item_id: v.optional(v.pipe(v.string(), v.uuid()))
+});
+
+export const vSearchHit = v.object({
+    activity_id: v.nullable(vActivityId),
+    anchor: vSearchAnchor,
+    chunk_id: vContentChunkId,
+    excerpt: v.string(),
+    label: v.string(),
+    score: v.number(),
+    source_id: v.pipe(v.string(), v.uuid()),
+    source_type: v.string()
+});
+
+export const vSearchRequest = v.strictObject({
+    limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20))),
+    query: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
+});
+
 export const vSetRolePermissionsRequest = v.strictObject({
     permissions: v.pipe(v.array(v.string()), v.maxLength(200))
 });
@@ -3593,6 +3842,10 @@ export const vSubmissionUpdated = v.object({
 export const vSubmitRequest = v.strictObject({
     answers: v.optional(v.object({})),
     violation_count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
+export const vSuggestConceptsRequest = v.strictObject({
+    chapter_id: v.optional(vChapterId)
 });
 
 export const vSupportAlertCode = v.picklist([
@@ -4456,6 +4709,17 @@ export const vUpdateCollectionRequest = v.strictObject({
     public: v.optional(v.boolean())
 });
 
+export const vUpdateConceptRequest = v.strictObject({
+    description: v.optional(v.pipe(v.string(), v.maxLength(2000))),
+    name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(200))),
+    status: v.optional(v.string())
+});
+
+export const vUpdateConceptTagRequest = v.strictObject({
+    status: v.optional(v.string()),
+    weight: v.optional(v.number())
+});
+
 export const vUpdateContributorRequest = v.strictObject({
     role: v.optional(vContributorRole),
     status: v.optional(vContributorStatus)
@@ -4920,6 +5184,14 @@ export const vDeadlineExtensionRequest = v.strictObject({
     user_ids: v.pipe(v.array(vUserId), v.minLength(1), v.maxLength(500))
 });
 
+export const vDisagreementView = v.object({
+    ai_score: v.number(),
+    draft_id: vGradeDraftId,
+    final_score: v.number(),
+    learner_id: vUserId,
+    subject_id: v.pipe(v.string(), v.uuid())
+});
+
 /**
  * The post's author - no email (unlike the legacy `UserRead`); `null`
  * once the account is gone.
@@ -5015,6 +5287,29 @@ export const vCourseAnalysis = v.object({
     triggered_by: v.nullable(vUserId)
 });
 
+export const vGradeDraftView = v.object({
+    activity_id: vActivityId,
+    agreement: v.nullable(v.string()),
+    ai_score: v.nullable(v.number()),
+    calibrated_score: v.nullable(v.number()),
+    confidence: v.nullable(v.number()),
+    created_at: v.pipe(v.number(), v.integer()),
+    decided_at: v.nullable(v.pipe(v.number(), v.integer())),
+    error_code: v.nullable(v.string()),
+    final_score: v.nullable(v.number()),
+    flags: v.array(v.string()),
+    id: vGradeDraftId,
+    is_file: v.boolean(),
+    learner_id: vUserId,
+    max_score: v.nullable(v.number()),
+    model_name: v.nullable(v.string()),
+    proposal: v.nullable(vProposal),
+    run_id: v.nullable(vAiRunId),
+    status: v.string(),
+    subject_id: v.pipe(v.string(), v.uuid()),
+    subject_version: v.pipe(v.number(), v.integer())
+});
+
 /**
  * One learner's grade-of-record attempt on one graded activity (the
  * projector's best-scored submission or latest scored file attempt).
@@ -5065,6 +5360,11 @@ export const vGradingEntry = v.object({
     penalty_pct: v.number(),
     published_at_unix: v.nullable(vUnixTime),
     raw_score: v.number()
+});
+
+export const vGradingSettings = v.object({
+    auto_grade_drafts: v.boolean(),
+    enabled_by: v.nullable(vUserId)
 });
 
 /**
@@ -5142,6 +5442,41 @@ export const vLeaderboard = v.object({
     entries: v.array(vLeaderboardEntry),
     next_cursor: v.nullable(v.string()),
     total_participants: v.pipe(v.number(), v.integer())
+});
+
+export const vLearnerMastery = v.object({
+    concepts: v.array(vConceptMastery),
+    user_id: vUserId
+});
+
+export const vLearnerRef = v.object({
+    name: v.string(),
+    user_id: vUserId
+});
+
+/**
+ * One concept across the class.
+ */
+export const vClassConcept = v.object({
+    concept_id: vConceptId,
+    learning: v.pipe(v.number(), v.integer()),
+    mastered: v.pipe(v.number(), v.integer()),
+    mean_p: v.nullable(v.number()),
+    name: v.string(),
+    not_started: v.pipe(v.number(), v.integer()),
+    struggling: v.pipe(v.number(), v.integer()),
+    struggling_learners: v.array(vLearnerRef)
+});
+
+export const vClassMastery = v.object({
+    concepts: v.array(vClassConcept),
+    learners: v.pipe(v.number(), v.integer())
+});
+
+export const vLearnerMasteryDetail = v.object({
+    concepts: v.array(vConceptMastery),
+    evidence: v.array(vEvidenceView),
+    learner: vLearnerRef
 });
 
 export const vLectureReview = v.object({
@@ -6031,6 +6366,27 @@ export const vWorkPriority = v.picklist([
     'low'
 ]);
 
+export const vWorkRef = v.object({
+    learner_id: vUserId,
+    learner_name: v.string(),
+    score_pct: v.number(),
+    subject_id: v.pipe(v.string(), v.uuid())
+});
+
+export const vSimilarPairView = v.object({
+    a: vWorkRef,
+    b: vWorkRef,
+    gap: v.number(),
+    part_key: v.string(),
+    similarity: v.number()
+});
+
+export const vConsistencyReport = v.object({
+    disagreements: v.array(vDisagreementView),
+    drift: v.array(vDriftView),
+    pairs: v.array(vSimilarPairView)
+});
+
 /**
  * Which inbox to assemble.
  */
@@ -6588,6 +6944,97 @@ export const vLatestCourseAnalysisPath = v.object({
  */
 export const vLatestCourseAnalysisResponse = v.nullable(vCourseAnalysis);
 
+export const vGradingConsistencyPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * The consistency report
+ */
+export const vGradingConsistencyResponse = vConsistencyReport;
+
+export const vActivityGradeDraftsPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * Drafts
+ */
+export const vActivityGradeDraftsResponse = v.array(vGradeDraftView);
+
+export const vApproveGradeDraftsBody = vApproveDraftsRequest;
+
+export const vApproveGradeDraftsPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * One outcome per draft
+ */
+export const vApproveGradeDraftsResponse = v.array(vApproveOutcome);
+
+export const vQueueGradeDraftsBody = vQueueDraftsRequest;
+
+export const vQueueGradeDraftsPath = v.object({
+    activity_id: vActivityId
+});
+
+/**
+ * Queued drafts
+ */
+export const vQueueGradeDraftsResponse = vQueueReport;
+
+export const vSubjectGradeDraftPath = v.object({
+    subject_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * The draft or null
+ */
+export const vSubjectGradeDraftResponse = v.nullable(vGradeDraftView);
+
+export const vDiscardGradeDraftPath = v.object({
+    draft_id: vGradeDraftId
+});
+
+/**
+ * The discarded draft
+ */
+export const vDiscardGradeDraftResponse = vGradeDraftView;
+
+export const vGradingMetricsPath = v.object({
+    course_id: vCourseId
+});
+
+export const vGradingMetricsQuery = v.object({
+    days: v.nullish(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Draft and feedback-time metrics
+ */
+export const vGradingMetricsResponse = vGradingMetrics;
+
+export const vGradingSettingsPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The course's AI grading settings
+ */
+export const vGradingSettingsResponse = vGradingSettings;
+
+export const vSetGradingSettingsBody = vGradingSettingsRequest;
+
+export const vSetGradingSettingsPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The settings
+ */
+export const vSetGradingSettingsResponse = vGradingSettings;
+
 export const vDismissLectureSuggestionBody = vDismissSuggestionRequest;
 
 export const vDismissLectureSuggestionPath = v.object({
@@ -6733,6 +7180,35 @@ export const vLatestRemediationPath = v.object({
  * The latest session or null
  */
 export const vLatestRemediationResponse = v.nullable(vRemediationSession);
+
+export const vReindexCoursePath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Queued for indexing
+ */
+export const vReindexCourseResponse = vIndexStatus;
+
+export const vSearchCourseBody = vSearchRequest;
+
+export const vSearchCoursePath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Passages, best first
+ */
+export const vSearchCourseResponse = v.array(vSearchHit);
+
+export const vIndexStatusPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The course's index
+ */
+export const vIndexStatusResponse = vIndexStatus;
 
 export const vGetAiRunPath = v.object({
     run_id: vAiRunId
@@ -8173,6 +8649,115 @@ export const vCreateChapterPath = v.object({
  */
 export const vCreateChapterResponse = vChapter;
 
+export const vCreateConceptTagBody = vCreateConceptTagRequest;
+
+export const vCreateConceptTagPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The tag (approved)
+ */
+export const vCreateConceptTagResponse = vConceptTagView;
+
+export const vDeleteConceptTagPath = v.object({
+    course_id: vCourseId,
+    tag_id: vConceptTagId
+});
+
+/**
+ * Deleted
+ */
+export const vDeleteConceptTagResponse = v.void();
+
+export const vUpdateConceptTagBody = vUpdateConceptTagRequest;
+
+export const vUpdateConceptTagPath = v.object({
+    course_id: vCourseId,
+    tag_id: vConceptTagId
+});
+
+/**
+ * The tag
+ */
+export const vUpdateConceptTagResponse = vConceptTagView;
+
+export const vConceptGraphPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The course concept graph
+ */
+export const vConceptGraphResponse = vConceptGraph;
+
+export const vCreateConceptBody = vCreateConceptRequest;
+
+export const vCreateConceptPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The new concept
+ */
+export const vCreateConceptResponse = vConceptView;
+
+export const vReviewConceptsBody = vConceptReviewRequest;
+
+export const vReviewConceptsPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The graph after the decision
+ */
+export const vReviewConceptsResponse = vConceptGraph;
+
+export const vSuggestConceptsBody = vSuggestConceptsRequest;
+
+export const vSuggestConceptsPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Queued run
+ */
+export const vSuggestConceptsResponse = vRunStatus;
+
+export const vDeleteConceptPath = v.object({
+    course_id: vCourseId,
+    concept_id: vConceptId
+});
+
+/**
+ * Deleted with its tags and prerequisites
+ */
+export const vDeleteConceptResponse = v.void();
+
+export const vUpdateConceptBody = vUpdateConceptRequest;
+
+export const vUpdateConceptPath = v.object({
+    course_id: vCourseId,
+    concept_id: vConceptId
+});
+
+/**
+ * The concept
+ */
+export const vUpdateConceptResponse = vConceptView;
+
+export const vSetPrerequisitesBody = vPrerequisitesRequest;
+
+export const vSetPrerequisitesPath = v.object({
+    course_id: vCourseId,
+    concept_id: vConceptId
+});
+
+/**
+ * The concept's prerequisites
+ */
+export const vSetPrerequisitesResponse = v.array(vPrerequisiteView);
+
 export const vListContributorsPath = v.object({
     course_id: vCourseId
 });
@@ -8415,6 +9000,34 @@ export const vCourseLifecyclePath = v.object({
  * Lifecycle changed
  */
 export const vCourseLifecycleResponse = vCourse;
+
+export const vClassMasteryPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Mastery across the class
+ */
+export const vClassMasteryResponse = vClassMastery;
+
+export const vLearnerMasteryPath = v.object({
+    course_id: vCourseId,
+    user_id: vUserId
+});
+
+/**
+ * One learner's mastery with its evidence
+ */
+export const vLearnerMasteryResponse = vLearnerMasteryDetail;
+
+export const vMyMasteryPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * The learner's mastery
+ */
+export const vMyMasteryResponse = vLearnerMastery;
 
 export const vCourseReadinessPath = v.object({
     course_id: vCourseId

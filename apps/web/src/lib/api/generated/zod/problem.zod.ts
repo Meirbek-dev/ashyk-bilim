@@ -64,6 +64,7 @@ export const Problem = zod
         'ai-rate-limited',
         'ai-run-cancelled',
         'ai-provider-unavailable',
+        'concept-cycle',
       ])
       .describe("Stable machine code - the frontend's i18n key."),
     detail: zod.string().optional(),

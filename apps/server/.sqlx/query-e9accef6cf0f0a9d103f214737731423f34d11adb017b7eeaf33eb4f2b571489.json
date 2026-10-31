@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.name, c.description, c.about, c.learnings, c.public,\n                  COALESCE((SELECT array_agg(ch.name ORDER BY ch.position, ch.id)\n                            FROM chapters ch WHERE ch.course_id = c.id), '{}') AS \"chapters!\"\n           FROM courses c WHERE c.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "learnings",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "learnings"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "public",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "public"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "chapters!",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "e9accef6cf0f0a9d103f214737731423f34d11adb017b7eeaf33eb4f2b571489"
+}

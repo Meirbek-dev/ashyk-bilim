@@ -49,6 +49,38 @@ const AUTH_ONLY: &[(&str, &str)] = &[
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.
 const PERMISSION_GATED: &[(&str, &str)] = &[
+    // docs/AI-FIRST.md: pre-grading is the course's graders' (`Action::Grade`), its settings and
+    // index the course's teachers', the concept graph its editors'; search is for members.
+    (
+        "POST",
+        "/api/v2/ai/grading/activities/{activity_id}/drafts/queue",
+    ),
+    (
+        "POST",
+        "/api/v2/ai/grading/activities/{activity_id}/drafts/approve",
+    ),
+    ("POST", "/api/v2/ai/grading/drafts/{draft_id}/discard"),
+    ("PUT", "/api/v2/ai/grading/{course_id}/settings"),
+    ("POST", "/api/v2/ai/retrieval/{course_id}/reindex"),
+    ("POST", "/api/v2/ai/retrieval/{course_id}/search"),
+    ("POST", "/api/v2/courses/{course_id}/concept-tags"),
+    ("PATCH", "/api/v2/courses/{course_id}/concept-tags/{tag_id}"),
+    (
+        "DELETE",
+        "/api/v2/courses/{course_id}/concept-tags/{tag_id}",
+    ),
+    ("POST", "/api/v2/courses/{course_id}/concepts"),
+    ("POST", "/api/v2/courses/{course_id}/concepts/review"),
+    ("POST", "/api/v2/courses/{course_id}/concepts/suggest"),
+    ("PATCH", "/api/v2/courses/{course_id}/concepts/{concept_id}"),
+    (
+        "DELETE",
+        "/api/v2/courses/{course_id}/concepts/{concept_id}",
+    ),
+    (
+        "PUT",
+        "/api/v2/courses/{course_id}/concepts/{concept_id}/prerequisites",
+    ),
     ("DELETE", "/api/v2/courses/{course_id}/learners/{user_id}"),
     // Learner roster: creator / active maintainer / course:manage:platform.
     ("POST", "/api/v2/courses/{course_id}/learners"),

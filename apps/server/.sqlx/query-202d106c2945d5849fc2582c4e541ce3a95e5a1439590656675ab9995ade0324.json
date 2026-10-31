@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM ai_grade_drafts\n                          WHERE (submission_id = $1 OR file_attempt_id = $1)\n                            AND status IN ('queued', 'ready') AND subject_version >= $2) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "202d106c2945d5849fc2582c4e541ce3a95e5a1439590656675ab9995ade0324"
+}

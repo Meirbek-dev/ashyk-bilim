@@ -20,7 +20,7 @@ type AssessmentReviewProps = {
 export function AssessmentReview({ courseId, activityId, submissionId, aside }: AssessmentReviewProps) {
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activityId))
   const { data: submission } = useSuspenseQuery(reviewOptions(submissionId))
-  const ids = { work: { kind: 'assessment', id: assessment.id } as const, courseId, submissionId }
+  const ids = { work: { kind: 'assessment', id: assessment.id } as const, courseId, activityId, submissionId }
   const items = assessment.items.toSorted((a, b) => a.position - b.position)
   return (
     <ReviewFrame work={ids.work} head={submission} aside={aside}>

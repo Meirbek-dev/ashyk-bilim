@@ -18,3 +18,6 @@ export const RemediationGate = lazy(() =>
 
 // Route-side helpers: no UI at runtime.
 export { evalsOptions, prefetchPanel, runsOptions, settingsOptions, usageSummaryOptions } from './queries'
+// A run started from another feature's screen (the concept mapper on `concepts`): the same lifecycle and progress line.
+export { useAiRun } from './ui/use-ai-run'
+export { RunStatus as RunProgress } from './ui/run-status'

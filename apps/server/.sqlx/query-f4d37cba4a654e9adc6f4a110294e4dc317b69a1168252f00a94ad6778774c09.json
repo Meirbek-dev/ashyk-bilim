@@ -1,0 +1,258 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id AS \"id: GradeDraftId\", d.course_id AS \"course_id: CourseId\",\n                  d.activity_id AS \"activity_id: ActivityId\",\n                  d.submission_id AS \"submission_id: SubmissionId\",\n                  d.file_attempt_id AS \"file_attempt_id: FileAttemptId\",\n                  d.learner_id AS \"learner_id: UserId\", d.run_id AS \"run_id: AiRunId\", d.status,\n                  d.subject_version, d.proposal, d.ai_score, d.calibrated_score, d.max_score,\n                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score,\n                  extract(epoch FROM d.decided_at)::bigint AS decided_at,\n                  extract(epoch FROM d.created_at)::bigint AS \"created_at!\"\n               FROM ai_grade_drafts d WHERE d.activity_id = $1 AND d.id = (\n                 SELECT d2.id FROM ai_grade_drafts d2\n                 WHERE d2.activity_id = d.activity_id\n                   AND (d2.submission_id = d.submission_id OR d2.file_attempt_id = d.file_attempt_id)\n                 ORDER BY d2.created_at DESC, d2.id DESC LIMIT 1)\n             ORDER BY d.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GradeDraftId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "file_attempt_id: FileAttemptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "file_attempt_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "learner_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "learner_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "subject_version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "subject_version"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "proposal",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "proposal"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "ai_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "ai_score"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "calibrated_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "calibrated_score"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "max_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "max_score"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "confidence",
+        "type_info": "Float4",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "confidence"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "flags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "flags"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "model_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "model_name"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "error_code",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "error_code"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "agreement",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "agreement"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "final_score",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "final_score"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "decided_at",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "f4d37cba4a654e9adc6f4a110294e4dc317b69a1168252f00a94ad6778774c09"
+}

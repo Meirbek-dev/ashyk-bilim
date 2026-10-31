@@ -446,6 +446,16 @@ pub struct AiEffectiveConfig {
     pub lecture_authoring_enabled: bool,
     pub ai_draft_mode_enabled: bool,
     pub semantic_memory_enabled: bool,
+    pub semantic_search_enabled: bool,
+    pub concept_graph_enabled: bool,
+    pub grading_assistant_enabled: bool,
+    pub embedding_provider: String,
+    pub embedding_base_url: String,
+    /// `"[redacted]"` when set.
+    pub embedding_api_key: Option<String>,
+    pub embedding_model: String,
+    /// Minutes a teacher spends grading one work by hand: the base of the saved-hours metric.
+    pub manual_grading_minutes: i32,
     pub analysis_requests_per_hour_per_user: i32,
     pub remediation_requests_per_hour_per_user: i32,
 }

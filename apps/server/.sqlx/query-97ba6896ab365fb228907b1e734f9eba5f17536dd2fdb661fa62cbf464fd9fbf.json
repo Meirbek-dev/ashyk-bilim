@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM mastery_evidence WHERE source_type = $1 AND source_id = $2\n           RETURNING user_id AS \"user_id: UserId\", concept_id AS \"concept_id: ConceptId\",\n                     course_id AS \"course_id: CourseId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "concept_id: ConceptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "concept_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "course_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "97ba6896ab365fb228907b1e734f9eba5f17536dd2fdb661fa62cbf464fd9fbf"
+}

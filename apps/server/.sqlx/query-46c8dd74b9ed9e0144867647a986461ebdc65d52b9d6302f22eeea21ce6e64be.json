@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_grade_corrections\n               (course_id, activity_id, draft_id, teacher_id, part_key, criterion_key, ai_score,\n                teacher_score, max_score, excerpt, teacher_feedback)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n           ON CONFLICT (draft_id, part_key, criterion_key) DO UPDATE\n           SET teacher_score = EXCLUDED.teacher_score, teacher_feedback = EXCLUDED.teacher_feedback",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "46c8dd74b9ed9e0144867647a986461ebdc65d52b9d6302f22eeea21ce6e64be"
+}

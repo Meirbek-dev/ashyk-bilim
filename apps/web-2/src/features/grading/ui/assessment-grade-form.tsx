@@ -7,10 +7,12 @@ import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
+import { transferToGradeForm } from '../model/ai-draft'
 import { gradeForm, gradeFormSchema, gradeRequest, unscoredManual } from '../model/grade-form'
 import { typedItemsPercent } from '../model/scoring'
 import { type ReviewIds, saveGradeOptions } from '../mutations'
 import { reviewOptions } from '../queries'
+import { AiDraft } from './ai-draft'
 import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
 import { scoreText } from './labels'
@@ -20,7 +22,12 @@ import { useFeedbackDraft } from './feedback-draft'
 
 type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission; items: readonly AssessmentItem[] }
 
-/** Item scores and comments beside each answer, the override and the feedback, then the actions (B-GRD-12..15). */
+/**
+ * Item scores and comments beside each answer, the override and the feedback, then the actions (B-GRD-12..15); above
+ * them the work's AI draft, which can fill the form (B-GRD-43, B-GRD-44). The diff base of a save is the work as last
+ * saved (the cache holds every answer), so only what changed since goes out. Publishing with an answer awaiting manual
+ * review still unscored says which, before the server's bare 409.
+ */
 export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeFormProps) {
   const queryClient = useQueryClient()
   const mutation = useMutation(saveGradeOptions(queryClient, ids))
@@ -35,14 +42,12 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
     submission.version,
     advance,
   )
-  // The diff base is the work as last saved (the cache holds every answer), so only what changed since goes out.
   const form = useAppForm(gradeFormSchema, {
     defaultValues: initial,
     leaveGuard: true,
     onSubmit: values => grade.save(gradeRequest(values, gradeForm(submission, items), action.current)),
   })
   useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))
-  // Publishing with an answer awaiting manual review still unscored: say which, before the server's bare 409.
   const [unscored, setUnscored] = useState<number[]>([])
   const submit = (chosen: GradeAction) => {
     const missing = chosen === 'publish' ? unscoredManual(form.state.values, submission) : []
@@ -53,6 +58,14 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
   }
   return (
     <form noValidate className="flex flex-col gap-gutter" onSubmit={event => event.preventDefault()}>
+      <AiDraft
+        ids={ids}
+        onTransfer={draft => {
+          const next = transferToGradeForm(draft, form.state.values)
+          form.setFieldValue('items', next.items)
+          form.setFieldValue('feedback', next.feedback)
+        }}
+      />
       <ol className="flex flex-col gap-4">
         {items.map((item, index) => (
           <ItemCard key={item.id} item={item} answer={submission.answers[item.id]} graded={graded.get(item.id)}>
@@ -70,9 +83,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
       <form.Subscribe selector={state => state.values.items}>
         {rows => (
           <p className="text-sm text-muted-foreground tabular-nums">
-            {m.grading_items_total({
-              percent: scoreText(typedItemsPercent(rows)),
-            })}
+            {m.grading_items_total({ percent: scoreText(typedItemsPercent(rows)) })}
           </p>
         )}
       </form.Subscribe>

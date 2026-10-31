@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT auto_grade_drafts, enabled_by AS \"enabled_by: UserId\"\n           FROM ai_course_settings WHERE course_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "auto_grade_drafts",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "ai_course_settings",
+            "name": "auto_grade_drafts"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "enabled_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_course_settings",
+            "name": "enabled_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "e8252b23f43932528b04d1cbf2e4d09aa88a6dff30730e71ba77747adcb7e61e"
+}

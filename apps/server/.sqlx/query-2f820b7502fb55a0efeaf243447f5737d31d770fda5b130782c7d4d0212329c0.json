@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_course_settings (course_id, auto_grade_drafts, enabled_by)\n           VALUES ($1, $2, $3)\n           ON CONFLICT (course_id) DO UPDATE\n           SET auto_grade_drafts = EXCLUDED.auto_grade_drafts, enabled_by = EXCLUDED.enabled_by",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2f820b7502fb55a0efeaf243447f5737d31d770fda5b130782c7d4d0212329c0"
+}

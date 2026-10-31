@@ -376,7 +376,9 @@ impl CodeRunner {
             graded.compile_output.as_deref(),
             None,
         )
-        .await
+        .await?;
+        // docs/AI-FIRST.md 3.1: a visible-tests run is mastery evidence (the job decides if it counts).
+        crate::mastery::owe_ingest_now(&self.pool, crate::mastery::SOURCE_CODE_RUN, run_id.0).await
     }
 
     /// The idempotency contract: replay a finished run, refuse a different

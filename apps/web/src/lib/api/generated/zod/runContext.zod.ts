@@ -26,7 +26,16 @@ export const RunContext = zod
     course_id: zod.uuid().optional(),
     file_submission_attempt_id: zod.uuid().optional(),
     kind: zod
-      .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
+      .enum([
+        'course_analysis',
+        'submission_analysis',
+        'remediation',
+        'study_companion',
+        'lecture_review',
+        'course_qa',
+        'concept_mapping',
+        'grade_draft',
+      ])
       .optional()
       .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
     language: zod.string().optional(),

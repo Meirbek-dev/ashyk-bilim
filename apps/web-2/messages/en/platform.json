@@ -59,6 +59,8 @@
   "platform_tab_content": "Content",
   "platform_tab_learners": "Learners",
   "platform_tab_gradebook": "Gradebook",
+  "platform_tab_concepts": "Concepts",
+  "platform_tab_ai_grading": "AI review",
   "platform_tab_team": "Team",
   "platform_tab_settings": "Settings",
   "platform_tab_publish": "Publish",

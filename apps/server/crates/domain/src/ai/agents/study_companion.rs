@@ -185,6 +185,7 @@ impl AiService {
         run: Option<AiRunId>,
     ) -> Result<Admitted> {
         let bundle = context::course_bundle(&self.pool, course_id, false, None).await?;
+        let bundle = self.with_retrieved(bundle, course_id, true, question).await;
         let locale = self.user_locale(user_id).await?;
         self.admit(
             bundle,

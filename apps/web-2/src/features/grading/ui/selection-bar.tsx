@@ -1,10 +1,12 @@
 import { m } from '#/paraglide/messages'
-import type { CourseId } from '#/shared/api/gen/types.gen'
+import type { CourseId, GradeDraftView } from '#/shared/api/gen/types.gen'
 import { formatNumber } from '#/shared/i18n/format'
 import { Button } from '#/shared/ui/button'
 
+import { approvable } from '../model/ai-draft'
 import type { QueueRow } from '../model/queue'
 import type { Work } from '../queries'
+import { ApproveSelected } from './approve-selected'
 import { ExtendDeadline } from './extend-deadline'
 import { ReturnSelected } from './return-selected'
 
@@ -16,14 +18,36 @@ type SelectionBarProps = {
   total: number
   onAll: () => void
   onDone: () => void
+  /** The activity's AI drafts by work; null without access to them (no approval then). */
+  drafts: ReadonlyMap<string, GradeDraftView> | null
+  activityId: string
+  /** Narrows the selection (to the works a batch approval left). */
+  onKeep: (ids: string[]) => void
 }
 
-/** What can be done to the selected rows: return them (B-GRD-08) and extend their deadline (B-GRD-09, B-GRD-25). */
-export function SelectionBar({ work, courseId, rows, total, onAll, onDone }: SelectionBarProps) {
+/**
+ * What can be done to the selected rows: approve their AI drafts (B-GRD-42), return them (B-GRD-08) and extend their
+ * deadline (B-GRD-09, B-GRD-25).
+ */
+export function SelectionBar(props: SelectionBarProps) {
+  const { work, courseId, rows, total, onAll, onDone, drafts, activityId, onKeep } = props
   if (rows.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-2">
       <p className="text-sm tabular-nums">{m.grading_selected({ count: formatNumber(rows.length) })}</p>
+      {drafts && drafts.size > 0 ? (
+        <ApproveSelected
+          work={work}
+          courseId={courseId}
+          activityId={activityId}
+          drafts={approvable(
+            rows.map(row => row.id),
+            drafts,
+          )}
+          rows={rows}
+          onKeep={onKeep}
+        />
+      ) : null}
       <ReturnSelected work={work} courseId={courseId} rows={rows} onDone={onDone} />
       <ExtendDeadline work={work} courseId={courseId} rows={rows} />
       {rows.length < total ? (

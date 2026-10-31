@@ -21,7 +21,7 @@ type FileReviewProps = { courseId: string; activityId: string; submissionId: str
 export function FileReview({ courseId, activityId, submissionId, aside }: FileReviewProps) {
   const { data: task } = useSuspenseQuery(taskOptions(activityId))
   const { data: attempt } = useSuspenseQuery(attemptOptions(submissionId))
-  const ids = { work: { kind: 'file', id: task.id } as const, courseId, submissionId }
+  const ids = { work: { kind: 'file', id: task.id } as const, courseId, activityId, submissionId }
   return (
     <ReviewFrame work={ids.work} head={attempt} aside={aside}>
       {task.instructions.trim() ? (

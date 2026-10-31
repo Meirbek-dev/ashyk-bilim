@@ -7,6 +7,7 @@
   "errors_ai_budget_exhausted": "The AI token budget is used up. Try again later.",
   "errors_ai_disabled": "AI features are turned off.",
   "errors_ai_provider_unavailable": "The AI provider is unavailable. Try again later.",
+  "errors_concept_cycle": "These prerequisites would form a cycle.",
   "errors_ai_rate_limited": "The hourly AI request limit is reached. Try again later.",
   "errors_ai_run_cancelled": "The AI run was canceled.",
   "errors_assessment_read_only": "This assessment can no longer be edited: it is archived, scheduled or already has submissions.",

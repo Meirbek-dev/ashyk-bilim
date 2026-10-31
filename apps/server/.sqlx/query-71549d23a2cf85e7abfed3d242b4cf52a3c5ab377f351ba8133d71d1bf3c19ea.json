@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_grade_drafts SET status = 'discarded', decided_by = $2, decided_at = now()\n           WHERE id = $1 AND status IN ('queued', 'ready')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "71549d23a2cf85e7abfed3d242b4cf52a3c5ab377f351ba8133d71d1bf3c19ea"
+}

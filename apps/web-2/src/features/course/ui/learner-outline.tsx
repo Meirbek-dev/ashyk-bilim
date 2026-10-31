@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Award } from 'lucide-react'
 
+import { CourseSearch, MyConcepts } from '#/features/concepts'
 import { m } from '#/paraglide/messages'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { Link } from '#/shared/components/link'
@@ -76,6 +77,10 @@ export function LearnerOutline({ course }: { course: Course }) {
           )}
         </p>
       ) : null}
+      {/* Where the learner stands per concept and what to review (docs/AI-FIRST.md 5), absent without
+          concepts; then the search over the course material. */}
+      {state.enrolled ? <MyConcepts courseId={course.id} /> : null}
+      {state.enrolled ? <CourseSearch courseId={course.id} /> : null}
       <Syllabus
         courseId={course.id}
         chapters={outlineSyllabus(state, course.allowed_actions.includes('update'), Math.floor(dataUpdatedAt / 1000))}

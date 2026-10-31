@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO concept_prerequisites (concept_id, requires_id, course_id, status, origin)\n           SELECT $1, r, $2, 'approved', 'teacher' FROM unnest($3::uuid[]) r",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0ade5c2965007a8d12ee322cb9493eb3c454242c7ab5e4145578b6bd7fcd6b8c"
+}

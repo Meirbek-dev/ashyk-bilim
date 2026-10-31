@@ -1151,6 +1151,20 @@ impl SubmissionsService {
             }),
         )
         .await?;
+        // docs/AI-FIRST.md 3.3 / 4.3: the hand-in feeds the mastery model and, when the course has
+        // them on, an AI draft for the work waiting for a grade.
+        if !preview {
+            crate::mastery::owe_ingest(&mut attempts, crate::mastery::SOURCE_ITEM, submission.id.0)
+                .await?;
+            if verdict.status == SubmissionStatus::Pending {
+                crate::ai::assist::grading::owe_auto_draft(
+                    &mut attempts,
+                    assessment.activity_id,
+                    submission.id.0,
+                )
+                .await?;
+            }
+        }
         let projector = ProgressProjector::new(pool.clone());
         let followup = if opts.by_learner {
             projector

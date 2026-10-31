@@ -319,6 +319,8 @@ export const AdminRunDetail = zod.object({
               'study_companion',
               'lecture_review',
               'course_qa',
+              'concept_mapping',
+              'grade_draft',
             ])
             .optional()
             .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
@@ -348,6 +350,8 @@ export const AdminRunDetail = zod.object({
           'study_companion',
           'lecture_review',
           'course_qa',
+          'concept_mapping',
+          'grade_draft',
         ])
         .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
       id: zod.uuid(),

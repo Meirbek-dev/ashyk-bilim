@@ -8182,6 +8182,7 @@
       "ai-run-cancelled": "The AI run was cancelled.",
       "grade-not-released": "The grade for this work has not been released yet.",
       "ai-provider-unavailable": "The AI provider is unavailable. Please try again later.",
+      "concept-cycle": "These prerequisites would form a cycle.",
       "username-taken": "This username is already taken.",
       "email-taken": "This email address is already registered.",
       "role-slug-taken": "A role with this slug already exists.",

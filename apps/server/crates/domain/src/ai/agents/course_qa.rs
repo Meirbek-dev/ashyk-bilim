@@ -355,6 +355,12 @@ impl AiService {
         let activity_id = activity.as_ref().map(|a| a.id);
         let bundle =
             context::course_bundle(&self.pool, course_id, include_unpublished, activity_id).await?;
+        let bundle = if activity_id.is_none() {
+            self.with_retrieved(bundle, course_id, !include_unpublished, question)
+                .await
+        } else {
+            bundle
+        };
         self.budget
             .assert_hourly(actor.user_id, BudgetLane::Analysis)
             .await?;
@@ -512,6 +518,9 @@ impl AiService {
             },
         )
         .await?;
+        // docs/AI-FIRST.md 3.1: a question is a weak signal about the concepts it names.
+        crate::mastery::owe_ingest_now(&self.pool, crate::mastery::SOURCE_AI_QUESTION, id.0)
+            .await?;
         ab_db::ai::get_qa_message(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("ai message"))

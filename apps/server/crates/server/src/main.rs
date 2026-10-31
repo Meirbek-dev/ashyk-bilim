@@ -525,12 +525,21 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     .await?;
     ab_db::schedule::upsert(
         &pool,
+        ab_jobs::handlers::ai_first::SWEEP_KIND,
+        std::time::Duration::from_mins(1),
+        serde_json::json!({}),
+    )
+    .await?;
+    ab_db::schedule::upsert(
+        &pool,
         ab_jobs::handlers::analytics::KIND,
         std::time::Duration::from_hours(6),
         serde_json::json!({}),
     )
     .await?;
 
+    let retrieval = ai.retrieval().clone();
+    let mastery = ab_domain::mastery::MasteryService::new(pool.clone(), retrieval.clone());
     let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default())
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
             pool.clone(),
@@ -570,6 +579,12 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         .register(ab_jobs::handlers::grading::BulkActionRunner::new(
             pool, events,
         ))?
+        .register(ab_jobs::handlers::ai_first::RetrievalSweep::new(retrieval))?
+        .register(ab_jobs::handlers::ai_first::MasteryIngest::new(
+            mastery.clone(),
+        ))?
+        .register(ab_jobs::handlers::ai_first::MasteryRebuild::new(mastery))?
+        .register(ab_jobs::handlers::ai_first::AutoGradeDraft::new(ai.clone()))?
         .register(ab_jobs::handlers::ai::ExecuteRunHandler::new(ai))?;
     let cancel = CancellationToken::new();
     let mut handle = tokio::spawn(worker.run(cancel.clone()));

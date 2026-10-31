@@ -18,7 +18,16 @@ export const RunStatus = zod
     id: zod.uuid(),
     input_tokens: zod.int().nullable(),
     kind: zod
-      .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
+      .enum([
+        'course_analysis',
+        'submission_analysis',
+        'remediation',
+        'study_companion',
+        'lecture_review',
+        'course_qa',
+        'concept_mapping',
+        'grade_draft',
+      ])
       .describe('Which agent a run executes (legacy `run_metadata.kind`).'),
     metadata: zod
       .object({
@@ -50,6 +59,8 @@ export const RunStatus = zod
             'study_companion',
             'lecture_review',
             'course_qa',
+            'concept_mapping',
+            'grade_draft',
           ])
           .optional()
           .describe('Which agent a run executes (legacy `run_metadata.kind`).'),

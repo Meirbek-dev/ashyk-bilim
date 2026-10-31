@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod ai_agents;
+pub mod ai_first;
 pub mod analytics;
 pub mod assessments;
 pub mod auth;

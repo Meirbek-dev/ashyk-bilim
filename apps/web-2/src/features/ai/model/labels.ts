@@ -118,6 +118,8 @@ export const kindLabels: Record<AiRunKind, () => string> = {
   study_companion: m.ai_kind_study_companion,
   lecture_review: m.ai_kind_lecture_review,
   course_qa: m.ai_kind_course_qa,
+  concept_mapping: m.ai_kind_concept_mapping,
+  grade_draft: m.ai_kind_grade_draft,
 }
 
 // `FeatureSetting.key` is a plain string in the contract (`AiFeature` in `core/src/ai.rs`).
@@ -129,6 +131,9 @@ const featureLabels: Record<string, () => string> = {
   study_companion_enabled: m.ai_feature_study_companion,
   lecture_authoring_enabled: m.ai_feature_lecture_authoring,
   semantic_memory_enabled: m.ai_feature_semantic_memory,
+  semantic_search_enabled: m.ai_feature_semantic_search,
+  concept_graph_enabled: m.ai_feature_concept_graph,
+  grading_assistant_enabled: m.ai_feature_grading_assistant,
 }
 /** An unknown key shows as itself. */
 export const featureLabel = (key: string) => featureLabels[key]?.() ?? key

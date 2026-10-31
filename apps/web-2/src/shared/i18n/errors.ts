@@ -52,6 +52,7 @@ const messages: Record<ErrorCode, () => string> = {
   'ai-rate-limited': m.errors_ai_rate_limited,
   'ai-run-cancelled': m.errors_ai_run_cancelled,
   'ai-provider-unavailable': m.errors_ai_provider_unavailable,
+  'concept-cycle': m.errors_concept_cycle,
   'reset-code-invalid': m.errors_reset_code_invalid,
   'account-has-roles': m.errors_account_has_roles,
   'account-deleted': m.errors_account_deleted,

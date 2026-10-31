@@ -2,6 +2,7 @@
 //! the registry drift test asserts every enqueue-site kind has a handler.
 
 pub mod ai;
+pub mod ai_first;
 pub mod analytics;
 pub mod assessments;
 pub mod grading;

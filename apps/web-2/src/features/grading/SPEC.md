@@ -1,6 +1,6 @@
 # grading
 
-Операции: getActivity, getActivityAssessment, getActivityFileSubmission, assessmentReviewQueue, fileSubmissionReviewQueue, stats, fileSubmissionReviewStats, itemAnalytics, exportAssessmentSubmissionsCsv, exportFileSubmissionCsv, publishGrades, publishFileGrades, returnGrades, returnFileGrades, extendDeadline, extendFileDeadline, getBulkAction, reviewSubmission, saveGrade, gradingHistory, fileGradingHistory, getAttempt, gradeAttempt, fileUrl, gradebook, exportGradebookCsv, groupsForCourse
+Операции: getActivity, getActivityAssessment, getActivityFileSubmission, assessmentReviewQueue, fileSubmissionReviewQueue, stats, fileSubmissionReviewStats, itemAnalytics, exportAssessmentSubmissionsCsv, exportFileSubmissionCsv, publishGrades, publishFileGrades, returnGrades, returnFileGrades, extendDeadline, extendFileDeadline, getBulkAction, reviewSubmission, saveGrade, gradingHistory, fileGradingHistory, getAttempt, gradeAttempt, fileUrl, gradebook, exportGradebookCsv, groupsForCourse, activityGradeDrafts, queueGradeDrafts, approveGradeDrafts, subjectGradeDraft, discardGradeDraft
 
 Одно место проверки (5.4 «Проверка»): очередь работ активности `.../activities/$activityId/submissions`, проверка одной
 работы `.../submissions/$submissionId` (фокус-режим), сводка `.../results` и журнал оценок курса
@@ -77,6 +77,26 @@
 - B-GRD-30 У открытого ответа под ответом - «Критерии проверки ответа» автора вопроса (`rubric`, markdown), как в старом вебе.
 - B-GRD-31 Правая панель проверки может предложить текст для общего отзыва (`onFeedbackDraft`): он дописывается под написанным в форме (тест или файл), поле не очищается; текст, который уже есть в поле, второй раз не дописывается.
 - B-GRD-32 Работа с файлами: «Поставить как итог» переносит сумму рубрики (в процентах) в итоговую оценку; у опоздавшей работы под итоговой - «После штрафа N за опоздание: X» по правилу сервера (`apply_late`), пока вводится оценка.
+- B-GRD-40 Черновики ИИ (docs/AI-FIRST.md 4): в очереди колонка «ИИ», когда у активности есть черновики
+  (`activityGradeDrafts`): у готового и применённого - предложенный (скорректированный) балл, уверенность и флаги словами
+  (неизвестный флаг - как прислан), у остальных - состояние словом, у работы без черновика - «Нет черновика». Нет доступа
+  к черновикам (403, 404) или ИИ выключен (`ai-disabled`) - ни колонки, ни действий ИИ.
+- B-GRD-41 «Подготовить черновики» (`queueGradeDrafts` без списка - все ждущие проверки без свежего черновика): после -
+  «Поставлено в очередь: N, пропущено: M»; пока черновики готовятся, очередь перечитывает их раз в 5 с и пишет, сколько
+  готовится. Рядом ссылка «Согласованность оценок» (страница активности `consistency`, срез ai-grading). Отказ - на месте.
+- B-GRD-42 Выбранным «Утвердить выбранные (N)» - только готовые черновики выбранных работ: «Сохранить оценки без
+  публикации» или «Опубликовать оценки», подтверждение с числом, один запрос `approveGradeDrafts`; сообщение с числом
+  утверждённых; неутверждённые названы по учащемуся с причиной (работа изменилась, черновик не готов, текст кода ошибки
+  сохранения) и остаются выбранными.
+- B-GRD-43 Проверка работы (оба вида): над формой карточка «Черновик ИИ» готового черновика (`subjectGradeDraft`) - итог
+  (скорректированный; «без калибровки», если поправка его сдвинула), уверенность, «Скорректировано по вашим прошлым
+  оценкам: N», флаги; по вопросу (у файла - одна часть без заголовка) «x из max», по критерию баллы, обоснование и
+  цитаты; цитата не из ответа - «Цитата не найдена в ответе», балл без цитаты - «Балл не подтверждён цитатой»; общий отзыв.
+- B-GRD-44 «Перенести в форму» ничего не сохраняет: баллы вопросов - в шкале вопроса, критерии рубрики - в шкале
+  критерия, у файла итог - скорректированный процент; комментарии и отзыв дописываются под написанным (B-GRD-31);
+  черновик без текста работы (`no_text`) переносит только слова. Сохраняет преподаватель; сохранение закрывает черновик.
+- B-GRD-45 «Отклонить» спрашивает подтверждение и отклоняет черновик (`discardGradeDraft`), карточка уходит. Без
+  черновика, с черновиком не в состоянии «готов», без доступа или с выключенным ИИ карточки нет.
 
 ## Изменено
 

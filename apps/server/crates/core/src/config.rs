@@ -201,6 +201,31 @@ pub struct AiConfig {
     pub ai_draft_mode_enabled: bool,
     #[serde(default = "AiConfig::default_true")]
     pub semantic_memory_enabled: bool,
+    /// docs/AI-FIRST.md 1: hybrid search over course chunks (lexical always, vectors when embedded).
+    #[serde(default = "AiConfig::default_true")]
+    pub semantic_search_enabled: bool,
+    /// docs/AI-FIRST.md 2-3: concept suggestions and the mastery model built on approved tags.
+    #[serde(default = "AiConfig::default_true")]
+    pub concept_graph_enabled: bool,
+    /// docs/AI-FIRST.md 4: rubric-based grade drafts.
+    #[serde(default = "AiConfig::default_true")]
+    pub grading_assistant_enabled: bool,
+    /// `hash` (local, deterministic, no network) or `openai_compatible` (`POST {base}/embeddings`).
+    #[serde(default = "AiConfig::default_embedding_provider")]
+    pub embedding_provider: String,
+    #[serde(default = "AiConfig::default_openai_base_url")]
+    pub embedding_base_url: String,
+    pub embedding_api_key: Option<SecretString>,
+    #[serde(default = "AiConfig::default_embedding_model")]
+    pub embedding_model: String,
+    #[serde(default = "AiConfig::default_embedding_timeout_secs")]
+    pub embedding_timeout_secs: f64,
+    /// Texts per embeddings call.
+    #[serde(default = "AiConfig::default_embedding_batch")]
+    pub embedding_batch: u32,
+    /// Minutes a teacher spends grading one work by hand: the "time saved" estimate per applied draft.
+    #[serde(default = "AiConfig::default_manual_grading_minutes")]
+    pub manual_grading_minutes: u32,
     #[serde(default = "AiConfig::default_analysis_requests_per_hour")]
     pub analysis_requests_per_hour_per_user: u32,
     #[serde(default = "AiConfig::default_remediation_requests_per_hour")]
@@ -247,6 +272,21 @@ impl AiConfig {
     const fn default_true() -> bool {
         true
     }
+    fn default_embedding_provider() -> String {
+        "hash".into()
+    }
+    fn default_embedding_model() -> String {
+        "text-embedding-3-small".into()
+    }
+    const fn default_embedding_timeout_secs() -> f64 {
+        20.0
+    }
+    const fn default_embedding_batch() -> u32 {
+        32
+    }
+    const fn default_manual_grading_minutes() -> u32 {
+        6
+    }
     const fn default_analysis_requests_per_hour() -> u32 {
         10
     }
@@ -286,6 +326,9 @@ impl AiConfig {
             AiFeature::StudyCompanion => self.study_companion_enabled,
             AiFeature::LectureAuthoring => self.lecture_authoring_enabled,
             AiFeature::SemanticMemory => self.semantic_memory_enabled,
+            AiFeature::SemanticSearch => self.semantic_search_enabled,
+            AiFeature::ConceptGraph => self.concept_graph_enabled,
+            AiFeature::GradingAssistant => self.grading_assistant_enabled,
         }
     }
 
@@ -325,6 +368,14 @@ impl AiConfig {
             "lecture_authoring_enabled": self.lecture_authoring_enabled,
             "ai_draft_mode_enabled": self.ai_draft_mode_enabled,
             "semantic_memory_enabled": self.semantic_memory_enabled,
+            "semantic_search_enabled": self.semantic_search_enabled,
+            "concept_graph_enabled": self.concept_graph_enabled,
+            "grading_assistant_enabled": self.grading_assistant_enabled,
+            "embedding_provider": self.embedding_provider,
+            "embedding_base_url": self.embedding_base_url,
+            "embedding_api_key": self.embedding_api_key.as_ref().map(|_| "[redacted]"),
+            "embedding_model": self.embedding_model,
+            "manual_grading_minutes": self.manual_grading_minutes,
             "analysis_requests_per_hour_per_user": self.analysis_requests_per_hour_per_user,
             "remediation_requests_per_hour_per_user": self.remediation_requests_per_hour_per_user,
         })
@@ -358,6 +409,16 @@ impl Default for AiConfig {
             lecture_authoring_enabled: true,
             ai_draft_mode_enabled: true,
             semantic_memory_enabled: true,
+            semantic_search_enabled: true,
+            concept_graph_enabled: true,
+            grading_assistant_enabled: true,
+            embedding_provider: Self::default_embedding_provider(),
+            embedding_base_url: Self::default_openai_base_url(),
+            embedding_api_key: None,
+            embedding_model: Self::default_embedding_model(),
+            embedding_timeout_secs: Self::default_embedding_timeout_secs(),
+            embedding_batch: Self::default_embedding_batch(),
+            manual_grading_minutes: Self::default_manual_grading_minutes(),
             analysis_requests_per_hour_per_user: Self::default_analysis_requests_per_hour(),
             remediation_requests_per_hour_per_user: Self::default_remediation_requests_per_hour(),
         }

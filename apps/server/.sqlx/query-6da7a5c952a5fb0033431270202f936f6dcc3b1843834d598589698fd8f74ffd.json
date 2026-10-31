@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"subject_id!\", false AS \"is_file!\", s.user_id AS \"learner_id!: UserId\",\n                  s.version AS \"version!\"\n           FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n           WHERE a.activity_id = $1 AND s.status = 'pending' AND NOT s.preview\n           UNION ALL\n           SELECT t.id, true, t.user_id, t.version\n           FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id\n           WHERE f.activity_id = $1 AND t.status = 'submitted' AND NOT t.preview",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subject_id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_file!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "learner_id!: UserId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "version!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "6da7a5c952a5fb0033431270202f936f6dcc3b1843834d598589698fd8f74ffd"
+}

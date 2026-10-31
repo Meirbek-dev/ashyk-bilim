@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ConceptTagId\", concept_id AS \"concept_id: ConceptId\",\n                  activity_id AS \"activity_id: ActivityId\", item_id, weight, status, origin, rationale\n           FROM concept_tags WHERE course_id = $1\n           ORDER BY activity_id, item_id NULLS FIRST, concept_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ConceptTagId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "concept_id: ConceptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "concept_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "item_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "item_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "weight",
+        "type_info": "Float4",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "weight"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "origin",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "rationale",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "concept_tags",
+            "name": "rationale"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a07592f60e210a0f4aae4d676830de9ad5bf3318b043fc04b54b8e7fec3e9b2c"
+}

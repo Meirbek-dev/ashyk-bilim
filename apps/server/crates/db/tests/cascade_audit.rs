@@ -267,6 +267,21 @@ const NOT_USER_DATA: &[&str] = &[
     "ai_runs",
     "ai_token_ledger",
     "ai_token_reservations",
+    // docs/AI-FIRST.md: the material index and the teacher's concept graph (rebuilt from course
+    // content); mastery evidence and estimates (re-derived from the graded work by
+    // `mastery:rebuild`); AI grade drafts, their calibration rows, settings and answer embeddings
+    // (advice around a grade - the grade itself lives on the submission / attempt).
+    "ai_course_settings",
+    "ai_grade_corrections",
+    "ai_grade_drafts",
+    "ai_work_embeddings",
+    "concept_mastery",
+    "concept_prerequisites",
+    "concept_tags",
+    "content_chunks",
+    "content_index_state",
+    "course_concepts",
+    "mastery_evidence",
     // Legacy ETL bookkeeping.
     "etl_drop_log",
 ];

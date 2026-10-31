@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)\n           VALUES ($1, $2, $3, $4, $5, $6::text::vector)\n           ON CONFLICT (subject_id, part_key) DO UPDATE\n           SET text_hash = EXCLUDED.text_hash, embedding_model = EXCLUDED.embedding_model,\n               embedding = EXCLUDED.embedding, activity_id = EXCLUDED.activity_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0a4d0c1ef1ff6aee8b1327597f71f1591e55971c03c1c2c85d9353c35d7f3145"
+}

@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id AS \"subject_id!\", s.user_id AS \"learner_id!: UserId\",\n                  COALESCE(NULLIF(trim(u.display_name), ''), u.username) AS \"learner_name!\",\n                  gi->>'item_id' AS \"part_key!\",\n                  COALESCE(s.answers -> (gi->>'item_id') ->> 'text',\n                           (s.answers -> (gi->>'item_id') -> 'values')::text, '') AS \"text!\",\n                  COALESCE((gi->>'score')::float8, 0) AS \"score!\",\n                  COALESCE((gi->>'max_score')::float8, 0) AS \"max_score!\"\n           FROM submissions s\n           JOIN assessments a ON a.id = s.assessment_id\n           JOIN users u ON u.id = s.user_id\n           CROSS JOIN LATERAL jsonb_array_elements(COALESCE(s.grading -> 'items', '[]'::jsonb)) gi\n           JOIN assessment_items i ON i.id = (gi->>'item_id')::uuid AND i.kind IN ('open_text', 'form')\n           WHERE a.activity_id = $1 AND NOT s.preview AND s.status IN ('graded', 'published')\n             AND COALESCE((gi->>'needs_manual_review')::boolean, false) = false",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subject_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "learner_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "learner_name!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "part_key!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "text!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "max_score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "8676af894e88abe8fd2ffa59373e0f1c81cde125e9a492bf11df004636f5bc75"
+}

@@ -106,6 +106,7 @@ error_codes! {
     AiRateLimited => ("ai-rate-limited", 429, "Hourly AI request limit reached"),
     AiRunCancelled => ("ai-run-cancelled", 409, "AI run was cancelled"),
     AiProviderUnavailable => ("ai-provider-unavailable", 503, "AI provider unavailable"),
+    ConceptCycle => ("concept-cycle", 422, "These prerequisites would form a cycle"),
 }
 
 impl std::fmt::Display for ErrorCode {

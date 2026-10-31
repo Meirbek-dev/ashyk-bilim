@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT score, weight, kind, extract(epoch FROM observed_at)::bigint AS \"observed_at!\",\n                  source_type, source_id, part_id\n           FROM mastery_evidence WHERE user_id = $1 AND concept_id = $2\n           ORDER BY observed_at, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "score",
+        "type_info": "Float4",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "score"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "weight",
+        "type_info": "Float4",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "weight"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "observed_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "source_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "source_type"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "source_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "source_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "part_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mastery_evidence",
+            "name": "part_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6b8a71781b8117d888ff8a8d7acb538f7c12e5fdabfe6e43d306e573c3c73f25"
+}

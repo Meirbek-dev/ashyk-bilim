@@ -115,7 +115,7 @@ impl AiService {
         };
         let course = self.courses.get(actor, course_id).await?;
         match run.kind {
-            AiRunKind::CourseAnalysis | AiRunKind::LectureReview => {
+            AiRunKind::CourseAnalysis | AiRunKind::LectureReview | AiRunKind::ConceptMapping => {
                 require_course_update(actor, &course)
             }
             _ => Ok(()),

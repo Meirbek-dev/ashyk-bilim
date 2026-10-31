@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM concept_mastery WHERE user_id = $1 AND concept_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e55549d255113468f002e8d05dae784230cd8dd9695b8b3158f535535cc69654"
+}

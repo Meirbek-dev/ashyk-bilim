@@ -622,6 +622,13 @@ impl AiService {
                 AiRunKind::LectureReview => {
                     self.execute_queued_lecture_review(&run, &watch.token).await
                 }
+                AiRunKind::ConceptMapping => {
+                    self.execute_queued_concept_mapping(&run, &watch.token)
+                        .await
+                }
+                AiRunKind::GradeDraft => {
+                    Box::pin(self.execute_queued_grade_draft(&run, &watch.token)).await
+                }
                 AiRunKind::CourseQa => {
                     self.fail_run(run.id, "AI_RUN_KIND_UNSUPPORTED").await;
                     Err(Error::conflict("course_qa runs are streamed, not queued"))
@@ -711,6 +718,9 @@ impl AiService {
             AiFeature::StudyCompanion,
             AiFeature::LectureAuthoring,
             AiFeature::SemanticMemory,
+            AiFeature::SemanticSearch,
+            AiFeature::ConceptGraph,
+            AiFeature::GradingAssistant,
         ]
         .into_iter()
         .map(|feature| FeatureState {

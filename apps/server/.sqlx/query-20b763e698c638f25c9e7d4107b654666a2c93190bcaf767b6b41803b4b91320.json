@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.user_id AS \"user_id: UserId\", m.concept_id AS \"concept_id: ConceptId\", m.p_known,\n                  m.evidence_count, extract(epoch FROM m.last_observed_at)::bigint AS last_observed_at\n           FROM concept_mastery m\n           JOIN course_concepts c ON c.id = m.concept_id AND c.status = 'approved'\n           WHERE m.course_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_mastery",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "concept_id: ConceptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "concept_mastery",
+            "name": "concept_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "p_known",
+        "type_info": "Float4",
+        "origin": {
+          "Table": {
+            "table": "concept_mastery",
+            "name": "p_known"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "evidence_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "concept_mastery",
+            "name": "evidence_count"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_observed_at",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "20b763e698c638f25c9e7d4107b654666a2c93190bcaf767b6b41803b4b91320"
+}

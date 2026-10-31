@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE concept_tags SET status = $3, decided_by = $4, decided_at = now()\n           WHERE course_id = $1 AND id = ANY($2) AND status <> $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e53b7c868fa2d7e75dbcc050819622bd4ac34d7157f55267fd1bf4e0532d7421"
+}

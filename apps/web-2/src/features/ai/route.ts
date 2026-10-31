@@ -31,6 +31,8 @@ export const RUN_KINDS = [
   'study_companion',
   'lecture_review',
   'course_qa',
+  'concept_mapping',
+  'grade_draft',
 ] as const satisfies readonly AiRunKind[]
 
 /** `/admin/ai` URL state: the runs filters and the open run (R-07). 7 days is the server's default too. */

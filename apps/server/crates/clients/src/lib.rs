@@ -14,6 +14,7 @@
 //! Rule: every client is tested against wiremock fixtures that assert request
 //! shape, and takes its base URL from config so tests can point it anywhere.
 
+pub mod embed;
 pub mod google;
 pub mod judge0;
 pub mod link_preview;

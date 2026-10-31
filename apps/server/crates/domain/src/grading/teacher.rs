@@ -1609,6 +1609,19 @@ impl GradingService {
             },
         )
         .await?;
+        // docs/AI-FIRST.md 4.3: a grade of record closes the work's AI draft (agreement, calibration);
+        // 3.3: the grade feeds the mastery model once the learner can see it.
+        if score_of_record.is_some() {
+            crate::ai::assist::grading::settle_submission_draft(
+                &mut tx,
+                id,
+                actor.user_id,
+                &input.item_grades,
+                raw,
+            )
+            .await?;
+        }
+        crate::mastery::owe_ingest(&mut tx, crate::mastery::SOURCE_ITEM, id.0).await?;
         let projector = ProgressProjector::new(self.pool.clone());
         let followup = projector
             .owe_reproject_submission(&mut tx, row.assessment_id, row.user_id)
@@ -1845,6 +1858,8 @@ impl GradingService {
                 skipped += 1;
                 continue;
             }
+            // The released grade becomes mastery evidence (docs/AI-FIRST.md 3.3).
+            crate::mastery::owe_ingest(&mut tx, crate::mastery::SOURCE_ITEM, row.id.0).await?;
             let projector = ProgressProjector::new(self.pool.clone());
             let followup = projector
                 .owe_reproject_submission(&mut tx, assessment_id, row.user_id)

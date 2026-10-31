@@ -1,6 +1,7 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import type { GradeDraftView } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
@@ -9,6 +10,7 @@ import { Checkbox } from '#/shared/ui/checkbox'
 
 import type { QueueRow } from '../model/queue'
 import type { QueueSearch } from '../route'
+import { AiCell } from './ai-cell'
 import { scoreText, statusMeta } from './labels'
 
 type Ids = { courseId: string; activityId: string }
@@ -51,8 +53,16 @@ const selectColumn = (selection: Selection): DataColumn<QueueRow> => ({
   ),
 })
 
-/** The queue's columns (B-GRD-01): the action leads into the review, keeping the queue's filters (B-GRD-10). */
-export function queueColumns(ids: Ids, search: QueueSearch, selection: Selection | null): DataColumn<QueueRow>[] {
+/**
+ * The queue's columns (B-GRD-01): the action leads into the review, keeping the queue's filters (B-GRD-10). With AI
+ * drafts on the activity, an «ИИ» column beside the grade (B-GRD-40).
+ */
+export function queueColumns(
+  ids: Ids,
+  search: QueueSearch,
+  selection: Selection | null,
+  drafts: ReadonlyMap<string, GradeDraftView> | null = null,
+): DataColumn<QueueRow>[] {
   return [
     ...(selection ? [selectColumn(selection)] : []),
     { id: 'learner', header: m.grading_col_learner(), priority: 1, cell: row => <Learner row={row} /> },
@@ -90,6 +100,16 @@ export function queueColumns(ids: Ids, search: QueueSearch, selection: Selection
       sortable: true,
       cell: row => <span className="tabular-nums">{scoreText(row.final_score)}</span>,
     },
+    ...(drafts && drafts.size > 0
+      ? [
+          {
+            id: 'ai',
+            header: m.grading_col_ai(),
+            priority: 2,
+            cell: (row: QueueRow) => <AiCell draft={drafts.get(row.id)} />,
+          } satisfies DataColumn<QueueRow>,
+        ]
+      : []),
     {
       id: 'action',
       header: m.grading_col_action(),

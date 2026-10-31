@@ -1,6 +1,5 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId, FileReviewStats, Stats } from '#/shared/api/gen/types.gen'
@@ -11,15 +10,18 @@ import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
+import { draftsBySubject } from '../model/ai-draft'
 import { queueCsvHref } from '../model/exports'
 import { activeFilters, sortSearch, statusCounts, tableSort } from '../model/queue'
-import { queueOptions, type Work } from '../queries'
+import { draftsOptions, queueOptions, type Work } from '../queries'
 import { GroupFilter } from './group-filter'
 import { LearnerSearch } from './learner-search'
+import { PrepareDrafts } from './prepare-drafts'
 import { PublishAll } from './publish-all'
 import { queueColumns } from './queue-columns'
 import { QueueFilters } from './queue-filters'
 import { SelectionBar } from './selection-bar'
+import { useRowSelection } from './use-row-selection'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
 
@@ -32,21 +34,19 @@ type QueueViewProps = {
   canGrade: boolean
 }
 
-/** One queue for both kinds of work (B-GRD-01..09, 24, 25): filters, sort and cursor in the URL, server counts. */
+/**
+ * One queue for both kinds of work (B-GRD-01..09, 24, 25): filters, sort and cursor in the URL, server counts; AI drafts
+ * beside the grades (B-GRD-40..42).
+ */
 export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
   const ids = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
   const navigate = useNavigate({ from: '/teach/courses/$courseId/activities/$activityId/submissions' })
   const query = useSuspenseInfiniteQuery(queueOptions(work, search))
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const { data: draftList } = useSuspenseQuery(draftsOptions(ids.activityId))
+  const drafts = draftList ? draftsBySubject(draftList) : null
   const rows = query.data.pages.flatMap(page => page.items)
-  const toggle = (id: string) =>
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (!next.delete(id)) next.add(id)
-      return next
-    })
-  const picked = rows.filter(row => selected.has(row.id)).length
+  const selection = useRowSelection(rows)
   const active = activeFilters(search)
   return (
     <ListPage
@@ -69,13 +69,19 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
       }
       activeFilters={active}
     >
+      {drafts && canGrade ? (
+        <PrepareDrafts ids={ids} preparing={draftList?.filter(draft => draft.status === 'queued').length ?? 0} />
+      ) : null}
       <SelectionBar
         work={work}
         courseId={courseId}
-        rows={rows.filter(row => selected.has(row.id))}
+        rows={selection.picked}
         total={rows.length}
-        onAll={() => setSelected(new Set(rows.map(row => row.id)))}
-        onDone={() => setSelected(new Set())}
+        onAll={() => selection.select(rows.map(row => row.id))}
+        onDone={() => selection.select([])}
+        drafts={drafts}
+        activityId={ids.activityId}
+        onKeep={selection.select}
       />
       <ListState
         pending={false}
@@ -89,12 +95,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
         <DataTable
           label={m.grading_queue_table()}
           rows={rows}
-          columns={queueColumns(ids, search, {
-            has: id => selected.has(id),
-            toggle,
-            all: rows.length > 0 && picked === rows.length,
-            toggleAll: () => setSelected(picked === rows.length ? new Set() : new Set(rows.map(row => row.id))),
-          })}
+          columns={queueColumns(ids, search, selection, drafts)}
           getKey={row => row.id}
           sort={tableSort(search)}
           onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}

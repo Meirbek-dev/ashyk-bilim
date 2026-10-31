@@ -86,6 +86,42 @@ const MATRIX: &[(&str, &str, u8)] = &[
     // A course the caller cannot see answers "unavailable: course-not-found",
     // exactly like an unknown id - no data, no existence signal.
     ("GET", "/api/v2/ai/capabilities/scope/{course_id}", SIGNED),
+    // docs/AI-FIRST.md: pre-grading is for whoever grades the course (`Action::Grade`), metrics and
+    // settings for its teachers; no draft exists in this world, so a draft id or a work without one
+    // answers no one. Approval is gated by the activity, then each item by its own draft.
+    (
+        "POST",
+        "/api/v2/ai/grading/activities/{activity_id}/drafts/queue",
+        STAFF,
+    ),
+    (
+        "GET",
+        "/api/v2/ai/grading/activities/{activity_id}/drafts",
+        STAFF,
+    ),
+    (
+        "GET",
+        "/api/v2/ai/grading/activities/{activity_id}/consistency",
+        STAFF,
+    ),
+    (
+        "GET",
+        "/api/v2/ai/grading/drafts/subject/{subject_id}",
+        NONE,
+    ),
+    (
+        "POST",
+        "/api/v2/ai/grading/activities/{activity_id}/drafts/approve",
+        STAFF,
+    ),
+    ("POST", "/api/v2/ai/grading/drafts/{draft_id}/discard", NONE),
+    ("GET", "/api/v2/ai/grading/{course_id}/metrics", STAFF),
+    ("GET", "/api/v2/ai/grading/{course_id}/settings", STAFF),
+    ("PUT", "/api/v2/ai/grading/{course_id}/settings", STAFF),
+    // Search answers whoever sees the course (learners: published material only); the index is staff's.
+    ("POST", "/api/v2/ai/retrieval/{course_id}/search", MEMBER),
+    ("GET", "/api/v2/ai/retrieval/{course_id}/status", STAFF),
+    ("POST", "/api/v2/ai/retrieval/{course_id}/reindex", STAFF),
     (
         "POST",
         "/api/v2/ai/course-analysis/{analysis_id}/findings/review",
@@ -423,6 +459,49 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("GET", "/api/v2/courses/{course_id}/certifications", STAFF),
     ("POST", "/api/v2/courses/{course_id}/chapters", STAFF),
     // The authors' roster is shown to whoever sees the course.
+    // The concept graph: members read the approved graph, staff curate it; the world has no concept,
+    // tag or mastery row, so those ids answer no one.
+    ("GET", "/api/v2/courses/{course_id}/concepts", MEMBER),
+    ("POST", "/api/v2/courses/{course_id}/concepts", STAFF),
+    ("POST", "/api/v2/courses/{course_id}/concepts/review", STAFF),
+    (
+        "POST",
+        "/api/v2/courses/{course_id}/concepts/suggest",
+        STAFF,
+    ),
+    (
+        "PATCH",
+        "/api/v2/courses/{course_id}/concepts/{concept_id}",
+        NONE,
+    ),
+    (
+        "DELETE",
+        "/api/v2/courses/{course_id}/concepts/{concept_id}",
+        NONE,
+    ),
+    (
+        "PUT",
+        "/api/v2/courses/{course_id}/concepts/{concept_id}/prerequisites",
+        NONE,
+    ),
+    ("POST", "/api/v2/courses/{course_id}/concept-tags", STAFF),
+    (
+        "PATCH",
+        "/api/v2/courses/{course_id}/concept-tags/{tag_id}",
+        NONE,
+    ),
+    (
+        "DELETE",
+        "/api/v2/courses/{course_id}/concept-tags/{tag_id}",
+        NONE,
+    ),
+    ("GET", "/api/v2/courses/{course_id}/mastery", STAFF),
+    ("GET", "/api/v2/courses/{course_id}/mastery/me", MEMBER),
+    (
+        "GET",
+        "/api/v2/courses/{course_id}/mastery/learners/{user_id}",
+        NONE,
+    ),
     ("GET", "/api/v2/courses/{course_id}/contributors", MEMBER),
     ("POST", "/api/v2/courses/{course_id}/contributors", STAFF),
     (

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_grade_drafts\n           SET status = 'applied', agreement = $3, final_score = $4, decided_by = $2, decided_at = now()\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7519ab4a7423031a7234557fa757f4852af5d871dc068903abc9530bf2bd8503"
+}

@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.course_id AS \"course_id: CourseId\", a.name, a.activity_type, a.published,\n                  ch.name AS chapter_name, a.content, a.details,\n                  fs.instructions AS \"instructions?\", fs.rubric AS \"rubric?\"\n           FROM activities a\n           JOIN chapters ch ON ch.id = a.chapter_id\n           LEFT JOIN file_submissions fs ON fs.activity_id = a.id\n           WHERE a.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "activity_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "activity_type"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "published",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "published"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "chapter_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "chapters",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "content",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "details",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "details"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "instructions?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "instructions"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rubric?",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "rubric"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "0d69c02bd50ddda21fab4bb869c7633265558c86147b79da6e33144a89b39ebb"
+}

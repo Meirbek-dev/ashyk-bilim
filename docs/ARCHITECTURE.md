@@ -555,6 +555,23 @@ Redis — one source of truth for coordination.
   in Redis (ports `AIConfig` semantics); `ai-budget-exhausted` error code.
 - Evals: `ai_eval_results` retained; `ashyq admin ai-eval` runs the fixture suite
   against live providers (manual/cron, not CI).
+- AI-first foundation (docs/AI-FIRST.md, the source of truth for its rules):
+  - `ab-domain::retrieval`: course material cut into `content_chunks` (heading-path anchors,
+    `vector(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
+    minute, version comparison, no write-path hooks); hybrid search = HNSW cosine + full text fused
+    by RRF. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`; without a provider a
+    deterministic hashed n-gram embedder). `course_qa` and `study_companion` put the passages that
+    answer the question in front of the course outline.
+  - Concept graph (`course_concepts`, `concept_prerequisites`, `concept_tags`) curated by teachers
+    over the `concept_mapping` agent's suggestions; `ab-domain::mastery` turns visible results
+    (test items, file grades, visible-test code runs, practice sessions, AI questions) into
+    `mastery_evidence` and replays BKT with partial credit into `concept_mastery`
+    (`mastery:ingest` owed in the writer's transaction, `mastery:rebuild` after graph changes).
+  - AI pre-grading: the `grade_draft` agent proposes per-criterion scores with quotes the server
+    verifies; `ai_grade_drafts` holds one live draft per work; approval goes through
+    `GradingService::save_grade` / `FileSubmissionsService::grade`, whose transactions settle the
+    draft (`applied`, agreement) and write `ai_grade_corrections`, the calibration input.
+    `ai:grade-draft` queues auto drafts on hand-in when the course switched them on.
 
 ## 13. Observability
 

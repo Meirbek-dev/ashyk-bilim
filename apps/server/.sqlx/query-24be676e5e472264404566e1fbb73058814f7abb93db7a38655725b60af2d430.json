@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO content_index_state\n               (source_type, source_id, course_id, activity_id, source_version, chunk_count,\n                embedding_model, indexed_at, error)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8)\n           ON CONFLICT (source_type, source_id) DO UPDATE\n           SET course_id = EXCLUDED.course_id, activity_id = EXCLUDED.activity_id,\n               source_version = EXCLUDED.source_version, chunk_count = EXCLUDED.chunk_count,\n               embedding_model = EXCLUDED.embedding_model, indexed_at = now(),\n               error = EXCLUDED.error",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "24be676e5e472264404566e1fbb73058814f7abb93db7a38655725b60af2d430"
+}

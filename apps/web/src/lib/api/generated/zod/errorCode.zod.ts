@@ -60,6 +60,7 @@ export const ErrorCode = zod
     'ai-rate-limited',
     'ai-run-cancelled',
     'ai-provider-unavailable',
+    'concept-cycle',
   ])
   .describe('Stable, closed set of machine-readable error codes.')
 

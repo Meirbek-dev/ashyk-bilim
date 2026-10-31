@@ -71,6 +71,10 @@ expression: registry
     422,
     "Source code does not compile"
   ],
+  "concept-cycle": [
+    422,
+    "These prerequisites would form a cycle"
+  ],
   "conflict": [
     409,
     "Conflict"

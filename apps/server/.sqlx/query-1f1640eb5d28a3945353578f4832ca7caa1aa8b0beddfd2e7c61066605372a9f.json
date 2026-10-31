@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch FROM first_pub - submitted_at) / 3600.0)::float8 AS \"hours!\"\n           FROM (\n               SELECT s.submitted_at,\n                      (SELECT min(g.published_at) FROM grading_entries g\n                       WHERE g.submission_id = s.id AND g.published_at IS NOT NULL\n                         AND g.graded_by IS NOT NULL) AS first_pub\n               FROM submissions s\n               WHERE s.course_id = $1 AND NOT s.preview AND s.submitted_at IS NOT NULL\n               UNION ALL\n               SELECT t.submitted_at,\n                      (SELECT min(e.created_at) FROM file_grading_entries e\n                       WHERE e.attempt_id = t.id AND e.status = 'published')\n               FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id\n               WHERE f.course_id = $1 AND NOT t.preview AND t.submitted_at IS NOT NULL\n           ) w\n           WHERE first_pub IS NOT NULL\n             AND first_pub >= to_timestamp($2::bigint) AND first_pub < to_timestamp($3::bigint)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "hours!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1f1640eb5d28a3945353578f4832ca7caa1aa8b0beddfd2e7c61066605372a9f"
+}

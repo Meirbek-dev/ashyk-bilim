@@ -9,6 +9,7 @@ import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
+  activityGradeDraftsQueryKey,
   assessmentReviewQueueInfiniteQueryKey,
   fileGradingHistoryQueryKey,
   fileSubmissionReviewQueueInfiniteQueryKey,
@@ -26,14 +27,17 @@ import {
   languagesOptions,
   reviewSubmissionOptions,
   statsOptions,
+  subjectGradeDraftQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import {
+  activityGradeDrafts,
   assessmentReviewQueue,
   fileGradingHistory,
   fileSubmissionReviewQueue,
   gradebook,
   gradingHistory,
   groupsForCourse,
+  subjectGradeDraft,
 } from '#/shared/api/gen/sdk.gen'
 import type {
   ActivityId,
@@ -47,6 +51,7 @@ import type {
   GradingEntry,
 } from '#/shared/api/gen/types.gen'
 
+import { anyQueued } from './model/ai-draft'
 import { gradebookQuery } from './model/gradebook'
 import { assessmentQuery, fileQuery, nextQueueCursor, type QueuePage, workKind } from './model/queue'
 import type { GradebookSearch, QueueSearch } from './route'
@@ -102,6 +107,39 @@ export const groupsOptions = (courseId: CourseId) =>
         },
       ),
   })
+/**
+ * AI drafts are an extra beside grading: a grader who may not read them (403, 404) or the feature switched off
+ * (`ai-disabled`) reads as "none" (null), never as a broken queue or review.
+ */
+const orNoDrafts = (error: unknown): null => {
+  if (error instanceof ApiError && (error.status === 403 || error.status === 404 || error.code === 'ai-disabled'))
+    return null
+  throw error
+}
+
+/** The newest AI draft of each work of the activity (B-GRD-40); read again every 5 s while one is being written. */
+export const draftsOptions = (activityId: ActivityId) =>
+  queryOptions({
+    queryKey: activityGradeDraftsQueryKey({ path: { activity_id: activityId } }),
+    queryFn: async ({ signal }) =>
+      activityGradeDrafts({ path: { activity_id: activityId }, signal, throwOnError: true }).then(
+        response => response.data,
+        orNoDrafts,
+      ),
+    refetchInterval: query => (anyQueued(query.state.data) ? 5000 : false),
+  })
+
+/** The newest AI draft of the work under review, or null (B-GRD-43, B-GRD-45). */
+export const subjectDraftOptions = (subjectId: string) =>
+  queryOptions({
+    queryKey: subjectGradeDraftQueryKey({ path: { subject_id: subjectId } }),
+    queryFn: async ({ signal }) =>
+      subjectGradeDraft({ path: { subject_id: subjectId }, signal, throwOnError: true }).then(
+        response => response.data,
+        orNoDrafts,
+      ),
+  })
+
 /** A short-lived signed URL of a learner's file (1 h): asked for on click, not prefetched per file. */
 /** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
 export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
@@ -173,6 +211,7 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
       ? queryClient.query({ ...statsOptionsOf(work.id, search.group), staleTime: 'static' })
       : queryClient.query({ ...fileStatsOptions(work.id, search.group), staleTime: 'static' }),
     queryClient.query({ ...groupsOptions(courseId), staleTime: 'static' }),
+    queryClient.query({ ...draftsOptions(activityId), staleTime: 'static' }),
   ])
 }
 
@@ -198,6 +237,7 @@ export async function ensureReview(
       : queryClient.query({ ...attemptOptions(submissionId), staleTime: 'static' })
     ).catch(orNotFound),
     queryClient.infiniteQuery({ ...queueOptions(work, search), staleTime: 'static' }),
+    queryClient.query({ ...subjectDraftOptions(submissionId), staleTime: 'static' }),
     // Only a test with a code question needs it; without it (runner not configured) the language shows as its id.
     work.kind === 'assessment' && hasCodeItem(queryClient, activityId)
       ? queryClient.query({ ...codeLanguagesOptions(), staleTime: 'static' }).catch(() => null)

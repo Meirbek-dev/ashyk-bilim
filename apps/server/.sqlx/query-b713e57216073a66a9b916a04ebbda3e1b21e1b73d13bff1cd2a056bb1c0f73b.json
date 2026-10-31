@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.activity_id AS \"activity_id: ActivityId\", a.name AS activity_name,\n                  count(*) AS \"drafts!\",\n                  count(*) FILTER (WHERE d.status = 'ready') AS \"ready!\",\n                  count(*) FILTER (WHERE d.status = 'applied') AS \"applied!\"\n           FROM ai_grade_drafts d JOIN activities a ON a.id = d.activity_id\n           WHERE d.course_id = $1 AND d.status <> 'superseded'\n           GROUP BY d.activity_id, a.name, a.position\n           ORDER BY a.position, a.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_grade_drafts",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "drafts!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "ready!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "applied!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "b713e57216073a66a9b916a04ebbda3e1b21e1b73d13bff1cd2a056bb1c0f73b"
+}

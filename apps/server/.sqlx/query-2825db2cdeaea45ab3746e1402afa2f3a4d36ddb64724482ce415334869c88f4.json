@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 'item' AS \"kind!\", s.id AS \"id!\" FROM submissions s\n           WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('graded', 'published')\n           UNION ALL\n           SELECT 'file_attempt', t.id FROM file_submission_attempts t\n           JOIN file_submissions f ON f.id = t.file_submission_id\n           WHERE f.course_id = $1 AND NOT t.preview AND t.status = 'published'\n           UNION ALL\n           SELECT 'code_run', r.id FROM code_runs r JOIN assessments a ON a.id = r.assessment_id\n           WHERE a.course_id = $1 AND r.purpose = 'visible'\n           UNION ALL\n           SELECT 'remediation', r.id FROM ai_remediation_sessions r\n           JOIN activities a ON a.id = r.activity_id\n           WHERE a.course_id = $1 AND r.status IN ('passed', 'failed')\n           UNION ALL\n           SELECT 'ai_question', m.id FROM ai_qa_messages m\n           WHERE m.course_id = $1 AND m.role = 'user' AND m.user_id IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "2825db2cdeaea45ab3746e1402afa2f3a4d36ddb64724482ce415334869c88f4"
+}

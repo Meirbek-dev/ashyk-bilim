@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM ai_work_embeddings\n                          WHERE subject_id = $1 AND part_key = $2 AND text_hash = $3\n                            AND embedding_model = $4) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "84299e2838cee76eded7f786bf5e1a9cf8f7b4d5f82b46df577eb974d843e540"
+}

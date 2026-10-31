@@ -233,6 +233,33 @@ expression: json
         },
         "type": "object"
       },
+      "ActivityDraftStats": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "activity_name": {
+            "type": "string"
+          },
+          "applied": {
+            "type": "integer"
+          },
+          "drafts": {
+            "type": "integer"
+          },
+          "ready": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activity_id",
+          "activity_name",
+          "drafts",
+          "ready",
+          "applied"
+        ],
+        "type": "object"
+      },
       "ActivityDropoffRow": {
         "properties": {
           "activity_id": {
@@ -287,6 +314,21 @@ expression: json
           "completed"
         ],
         "type": "string"
+      },
+      "ActivityRef": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
       },
       "ActivitySettings": {
         "additionalProperties": {
@@ -1331,14 +1373,41 @@ expression: json
             "format": "double",
             "type": "number"
           },
+          "concept_graph_enabled": {
+            "type": "boolean"
+          },
           "course_analysis_enabled": {
             "type": "boolean"
           },
           "course_qa_enabled": {
             "type": "boolean"
           },
+          "embedding_api_key": {
+            "description": "`\"[redacted]\"` when set.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "embedding_base_url": {
+            "type": "string"
+          },
+          "embedding_model": {
+            "type": "string"
+          },
+          "embedding_provider": {
+            "type": "string"
+          },
+          "grading_assistant_enabled": {
+            "type": "boolean"
+          },
           "lecture_authoring_enabled": {
             "type": "boolean"
+          },
+          "manual_grading_minutes": {
+            "description": "Minutes a teacher spends grading one work by hand: the base of the saved-hours metric.",
+            "format": "int32",
+            "type": "integer"
           },
           "max_output_tokens": {
             "format": "int32",
@@ -1395,6 +1464,9 @@ expression: json
           "semantic_memory_enabled": {
             "type": "boolean"
           },
+          "semantic_search_enabled": {
+            "type": "boolean"
+          },
           "status": {
             "description": "`enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.",
             "type": "string"
@@ -1429,9 +1501,17 @@ expression: json
           "lecture_authoring_enabled",
           "ai_draft_mode_enabled",
           "semantic_memory_enabled",
+          "semantic_search_enabled",
+          "concept_graph_enabled",
+          "grading_assistant_enabled",
+          "embedding_provider",
+          "embedding_base_url",
+          "embedding_model",
+          "manual_grading_minutes",
           "analysis_requests_per_hour_per_user",
           "remediation_requests_per_hour_per_user",
           "claude_api_key",
+          "embedding_api_key",
           "openai_api_key",
           "openrouter_api_key"
         ],
@@ -1495,7 +1575,9 @@ expression: json
           "remediation",
           "study_companion",
           "lecture_review",
-          "course_qa"
+          "course_qa",
+          "concept_mapping",
+          "grade_draft"
         ],
         "type": "string"
       },
@@ -1818,6 +1900,80 @@ expression: json
           "score_distribution_shift"
         ],
         "type": "string"
+      },
+      "ApproveAction": {
+        "enum": [
+          "save",
+          "publish"
+        ],
+        "type": "string"
+      },
+      "ApproveDraftItem": {
+        "additionalProperties": false,
+        "properties": {
+          "draft_id": {
+            "$ref": "#/components/schemas/GradeDraftId"
+          },
+          "feedback": {
+            "description": "Overall feedback instead of the draft's.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "score": {
+            "description": "A work-level percentage instead of the draft's.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "draft_id"
+        ],
+        "type": "object"
+      },
+      "ApproveDraftsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ApproveAction"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApproveDraftItem"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "action"
+        ],
+        "type": "object"
+      },
+      "ApproveOutcome": {
+        "properties": {
+          "draft_id": {
+            "$ref": "#/components/schemas/GradeDraftId"
+          },
+          "error": {
+            "description": "The error code of a failed item.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "description": "`applied`, `stale` (the work changed), `not_ready` or `failed`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft_id",
+          "result",
+          "error"
+        ],
+        "type": "object"
       },
       "Assessment": {
         "properties": {
@@ -4176,6 +4332,73 @@ expression: json
         },
         "type": "object"
       },
+      "ClassConcept": {
+        "description": "One concept across the class.",
+        "properties": {
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "learning": {
+            "type": "integer"
+          },
+          "mastered": {
+            "type": "integer"
+          },
+          "mean_p": {
+            "description": "Mean `p_known` over learners with evidence; `None` without any.",
+            "format": "float",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "not_started": {
+            "type": "integer"
+          },
+          "struggling": {
+            "type": "integer"
+          },
+          "struggling_learners": {
+            "description": "The learners struggling with it (lowest first, at most 20).",
+            "items": {
+              "$ref": "#/components/schemas/LearnerRef"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "concept_id",
+          "name",
+          "not_started",
+          "struggling",
+          "learning",
+          "mastered",
+          "struggling_learners",
+          "mean_p"
+        ],
+        "type": "object"
+      },
+      "ClassMastery": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ClassConcept"
+            },
+            "type": "array"
+          },
+          "learners": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "learners",
+          "concepts"
+        ],
+        "type": "object"
+      },
       "CodeBody": {
         "properties": {
           "constraints": {
@@ -4668,6 +4891,220 @@ expression: json
         ],
         "type": "string"
       },
+      "ConceptGraph": {
+        "properties": {
+          "can_edit": {
+            "description": "The caller may curate the graph.",
+            "type": "boolean"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptView"
+            },
+            "type": "array"
+          },
+          "latest_run_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiRunId",
+                "description": "The newest concept-mapping run of the course (teachers only)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prerequisites": {
+            "items": {
+              "$ref": "#/components/schemas/PrerequisiteView"
+            },
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptTagView"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "concepts",
+          "prerequisites",
+          "tags",
+          "can_edit",
+          "latest_run_id"
+        ],
+        "type": "object"
+      },
+      "ConceptId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "ConceptMastery": {
+        "description": "One concept of a mastery view.",
+        "properties": {
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "evidence_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "last_observed_at": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "level": {
+            "$ref": "#/components/schemas/MasteryLevel"
+          },
+          "name": {
+            "type": "string"
+          },
+          "p_known": {
+            "description": "Probability the concept is known, 0..1.",
+            "format": "float",
+            "type": "number"
+          },
+          "review": {
+            "description": "Activities to revisit (weak concepts only), strongest tag first.",
+            "items": {
+              "$ref": "#/components/schemas/ActivityRef"
+            },
+            "type": "array"
+          },
+          "stale": {
+            "description": "No evidence for a long time: the estimate may be out of date.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "concept_id",
+          "name",
+          "level",
+          "p_known",
+          "evidence_count",
+          "stale",
+          "review",
+          "last_observed_at"
+        ],
+        "type": "object"
+      },
+      "ConceptReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "concept_ids": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptId"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "status": {
+            "description": "`approved` or `rejected`.",
+            "type": "string"
+          },
+          "tag_ids": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptTagId"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "ConceptTagId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "ConceptTagView": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ConceptTagId"
+          },
+          "item_id": {
+            "description": "A question of the activity; `None` tags the whole activity.",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "weight": {
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "concept_id",
+          "activity_id",
+          "weight",
+          "status",
+          "origin",
+          "rationale",
+          "item_id"
+        ],
+        "type": "object"
+      },
+      "ConceptView": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "description": "`ai` or `teacher`.",
+            "type": "string"
+          },
+          "position": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "description": "`suggested`, `approved` or `rejected`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "status",
+          "origin",
+          "position"
+        ],
+        "type": "object"
+      },
       "Confidence": {
         "enum": [
           "low",
@@ -4762,6 +5199,34 @@ expression: json
         ],
         "type": "object"
       },
+      "ConsistencyReport": {
+        "properties": {
+          "disagreements": {
+            "items": {
+              "$ref": "#/components/schemas/DisagreementView"
+            },
+            "type": "array"
+          },
+          "drift": {
+            "items": {
+              "$ref": "#/components/schemas/DriftView"
+            },
+            "type": "array"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarPairView"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pairs",
+          "disagreements",
+          "drift"
+        ],
+        "type": "object"
+      },
       "ContentBottleneckRow": {
         "properties": {
           "activity_id": {
@@ -4847,6 +5312,10 @@ expression: json
           "repeated_assessment_failures",
           "stale_low_performance"
         ],
+        "type": "string"
+      },
+      "ContentChunkId": {
+        "format": "uuid",
         "type": "string"
       },
       "ContentHealthRow": {
@@ -6375,6 +6844,50 @@ expression: json
         ],
         "type": "object"
       },
+      "CreateConceptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreateConceptTagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "item_id": {
+            "description": "A question of the activity; absent tags the whole activity.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "weight": {
+            "description": "(0, 1], default 1.",
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "required": [
+          "concept_id",
+          "activity_id"
+        ],
+        "type": "object"
+      },
       "CreateCourseRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7040,6 +7553,36 @@ expression: json
         ],
         "type": "string"
       },
+      "DisagreementView": {
+        "properties": {
+          "ai_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "draft_id": {
+            "$ref": "#/components/schemas/GradeDraftId"
+          },
+          "final_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "learner_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "subject_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft_id",
+          "subject_id",
+          "learner_id",
+          "ai_score",
+          "final_score"
+        ],
+        "type": "object"
+      },
       "Discussion": {
         "properties": {
           "allowed_actions": {
@@ -7357,6 +7900,31 @@ expression: json
             "type": "array"
           }
         },
+        "type": "object"
+      },
+      "DriftView": {
+        "properties": {
+          "corrections": {
+            "type": "integer"
+          },
+          "criterion_key": {
+            "type": "string"
+          },
+          "offset": {
+            "description": "Mean (teacher - ai) / max, shrunk: negative = the AI grades higher than the teacher.",
+            "format": "double",
+            "type": "number"
+          },
+          "part_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "part_key",
+          "criterion_key",
+          "offset",
+          "corrections"
+        ],
         "type": "object"
       },
       "DrillBacklogRow": {
@@ -8044,7 +8612,8 @@ expression: json
           "ai-budget-exhausted",
           "ai-rate-limited",
           "ai-run-cancelled",
-          "ai-provider-unavailable"
+          "ai-provider-unavailable",
+          "concept-cycle"
         ],
         "type": "string"
       },
@@ -8191,6 +8760,65 @@ expression: json
         "required": [
           "input_tokens",
           "output_tokens"
+        ],
+        "type": "object"
+      },
+      "Evidence": {
+        "properties": {
+          "quote": {
+            "type": "string"
+          },
+          "verified": {
+            "description": "The quote is really in the answer (whitespace and case aside).",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "quote",
+          "verified"
+        ],
+        "type": "object"
+      },
+      "EvidenceView": {
+        "properties": {
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "observed_at": {
+            "type": "integer"
+          },
+          "part_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "format": "float",
+            "type": "number"
+          },
+          "source_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source_type": {
+            "description": "`item`, `file_attempt`, `code_run`, `remediation` or `ai_question`.",
+            "type": "string"
+          },
+          "weight": {
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "required": [
+          "concept_id",
+          "source_type",
+          "source_id",
+          "score",
+          "weight",
+          "observed_at",
+          "part_id"
         ],
         "type": "object"
       },
@@ -9272,6 +9900,152 @@ expression: json
         ],
         "type": "string"
       },
+      "GradeDraftId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "GradeDraftView": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "agreement": {
+            "description": "`exact` or `adjusted` once applied.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ai_score": {
+            "description": "Work-level percentages (0..100) as proposed and after calibration.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "calibrated_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "confidence": {
+            "format": "float",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "decided_at": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "$ref": "#/components/schemas/GradeDraftId"
+          },
+          "is_file": {
+            "type": "boolean"
+          },
+          "learner_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "max_score": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "model_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Proposal",
+                "description": "Scores per part and criterion with quotes (ready drafts)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AiRunId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "description": "`queued`, `ready`, `applied`, `discarded`, `superseded` or `failed`.",
+            "type": "string"
+          },
+          "subject_id": {
+            "description": "The submission or file attempt.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "subject_version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "activity_id",
+          "subject_id",
+          "is_file",
+          "learner_id",
+          "status",
+          "subject_version",
+          "flags",
+          "created_at",
+          "agreement",
+          "ai_score",
+          "calibrated_score",
+          "confidence",
+          "decided_at",
+          "error_code",
+          "final_score",
+          "max_score",
+          "model_name",
+          "proposal",
+          "run_id"
+        ],
+        "type": "object"
+      },
       "GradePublishedPayload": {
         "properties": {
           "final_score": {
@@ -9944,6 +10718,80 @@ expression: json
         "format": "uuid",
         "type": "string"
       },
+      "GradingMetrics": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityDraftStats"
+            },
+            "type": "array"
+          },
+          "applied_adjusted": {
+            "type": "integer"
+          },
+          "applied_exact": {
+            "type": "integer"
+          },
+          "days": {
+            "type": "integer"
+          },
+          "discarded": {
+            "type": "integer"
+          },
+          "drafts": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "mean_abs_delta": {
+            "description": "Mean |teacher - draft| in percentage points over applied drafts.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "median_feedback_hours": {
+            "description": "Median hours from hand-in to grade, this period and the one before.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "previous_median_feedback_hours": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ready": {
+            "type": "integer"
+          },
+          "saved_hours": {
+            "description": "Applied drafts × the configured manual grading minutes.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "days",
+          "drafts",
+          "ready",
+          "applied_exact",
+          "applied_adjusted",
+          "discarded",
+          "failed",
+          "saved_hours",
+          "activities",
+          "mean_abs_delta",
+          "median_feedback_hours",
+          "previous_median_feedback_hours"
+        ],
+        "type": "object"
+      },
       "GradingMode": {
         "enum": [
           "auto",
@@ -9951,6 +10799,40 @@ expression: json
           "auto_then_manual"
         ],
         "type": "string"
+      },
+      "GradingSettings": {
+        "properties": {
+          "auto_grade_drafts": {
+            "type": "boolean"
+          },
+          "enabled_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "auto_grade_drafts",
+          "enabled_by"
+        ],
+        "type": "object"
+      },
+      "GradingSettingsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_grade_drafts": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "auto_grade_drafts"
+        ],
+        "type": "object"
       },
       "GradingType": {
         "enum": [
@@ -10104,6 +10986,41 @@ expression: json
           "id",
           "title",
           "images"
+        ],
+        "type": "object"
+      },
+      "IndexStatus": {
+        "properties": {
+          "chunks": {
+            "type": "integer"
+          },
+          "embedded_chunks": {
+            "type": "integer"
+          },
+          "failed_sources": {
+            "type": "integer"
+          },
+          "last_indexed_at": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "The embedder in use (`hash-ngram-v1` without a provider).",
+            "type": "string"
+          },
+          "sources": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chunks",
+          "embedded_chunks",
+          "sources",
+          "failed_sources",
+          "model",
+          "last_indexed_at"
         ],
         "type": "object"
       },
@@ -11160,6 +12077,64 @@ expression: json
         ],
         "type": "object"
       },
+      "LearnerMastery": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "type": "array"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "concepts"
+        ],
+        "type": "object"
+      },
+      "LearnerMasteryDetail": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptMastery"
+            },
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceView"
+            },
+            "type": "array"
+          },
+          "learner": {
+            "$ref": "#/components/schemas/LearnerRef"
+          }
+        },
+        "required": [
+          "learner",
+          "concepts",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "LearnerRef": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "name"
+        ],
+        "type": "object"
+      },
       "LearningInput": {
         "additionalProperties": false,
         "description": "One \"What you'll learn\" entry on write; omit `id` for a new one.",
@@ -11557,6 +12532,16 @@ expression: json
           "password"
         ],
         "type": "object"
+      },
+      "MasteryLevel": {
+        "description": "What the learner and the teacher see.",
+        "enum": [
+          "not_started",
+          "struggling",
+          "learning",
+          "mastered"
+        ],
+        "type": "string"
       },
       "MatchMode": {
         "enum": [
@@ -12949,6 +13934,42 @@ expression: json
         },
         "type": "object"
       },
+      "PrerequisiteView": {
+        "properties": {
+          "concept_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "requires_id": {
+            "$ref": "#/components/schemas/ConceptId"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept_id",
+          "requires_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PrerequisitesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "requires": {
+            "description": "The concepts this one requires (replaces the set).",
+            "items": {
+              "$ref": "#/components/schemas/ConceptId"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "requires"
+        ],
+        "type": "object"
+      },
       "PrivacyPreferences": {
         "additionalProperties": false,
         "properties": {
@@ -13735,6 +14756,145 @@ expression: json
         ],
         "type": "object"
       },
+      "Proposal": {
+        "properties": {
+          "auto_max": {
+            "format": "double",
+            "type": "number"
+          },
+          "auto_points": {
+            "description": "Points the auto-grader already gave (submissions) and their maximum.",
+            "format": "double",
+            "type": "number"
+          },
+          "calibration_corrections": {
+            "description": "Corrections the calibration drew on (0 = none yet).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "overall_feedback": {
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/ProposalPart"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "parts",
+          "overall_feedback",
+          "confidence",
+          "flags",
+          "calibration_corrections",
+          "auto_points",
+          "auto_max"
+        ],
+        "type": "object"
+      },
+      "ProposalCriterion": {
+        "properties": {
+          "ai_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "calibrated_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "criterion_id": {
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          },
+          "max_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "unsupported": {
+            "description": "A non-zero score with no quote found in the answer.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "label",
+          "max_score",
+          "ai_score",
+          "calibrated_score",
+          "evidence",
+          "rationale",
+          "unsupported"
+        ],
+        "type": "object"
+      },
+      "ProposalPart": {
+        "properties": {
+          "ai_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "calibrated_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/ProposalCriterion"
+            },
+            "type": "array"
+          },
+          "excerpt": {
+            "description": "The start of the answer (teacher-side calibration examples).",
+            "type": "string"
+          },
+          "feedback": {
+            "type": "string"
+          },
+          "max_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "part_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "part_id",
+          "title",
+          "max_score",
+          "ai_score",
+          "calibrated_score",
+          "feedback",
+          "criteria",
+          "excerpt"
+        ],
+        "type": "object"
+      },
       "PublicCertificate": {
         "description": "A certificate as the public sees it (no holder id).",
         "properties": {
@@ -14379,6 +15539,41 @@ expression: json
           "discrimination_index",
           "strong_miss_pct",
           "weak_correct_pct"
+        ],
+        "type": "object"
+      },
+      "QueueDraftsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "subject_ids": {
+            "description": "Only these works (submission or file attempt ids); absent = every work waiting for a grade.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "QueueReport": {
+        "properties": {
+          "queued": {
+            "items": {
+              "$ref": "#/components/schemas/GradeDraftId"
+            },
+            "type": "array"
+          },
+          "skipped": {
+            "description": "Works that already have a fresh draft (or are not waiting for a grade).",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queued",
+          "skipped"
         ],
         "type": "object"
       },
@@ -16444,6 +17639,99 @@ expression: json
         ],
         "type": "string"
       },
+      "SearchAnchor": {
+        "description": "Where a passage sits in its source: the heading path and block range of a lesson, or the question.",
+        "properties": {
+          "block_end": {
+            "type": "integer"
+          },
+          "block_start": {
+            "type": "integer"
+          },
+          "heading_path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchHit": {
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "anchor": {
+            "$ref": "#/components/schemas/SearchAnchor",
+            "description": "The place inside the source for a deep link."
+          },
+          "chunk_id": {
+            "$ref": "#/components/schemas/ContentChunkId"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "label": {
+            "description": "Where it is: activity and heading path.",
+            "type": "string"
+          },
+          "score": {
+            "format": "double",
+            "type": "number"
+          },
+          "source_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source_type": {
+            "description": "`activity`, `item` or `course`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "source_type",
+          "source_id",
+          "label",
+          "excerpt",
+          "anchor",
+          "score",
+          "activity_id"
+        ],
+        "type": "object"
+      },
+      "SearchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "description": "1..=20 (default 8).",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
       "SearchResults": {
         "properties": {
           "collections": {
@@ -16722,6 +18010,36 @@ expression: json
           "expires_at_unix",
           "filename",
           "content_type"
+        ],
+        "type": "object"
+      },
+      "SimilarPairView": {
+        "properties": {
+          "a": {
+            "$ref": "#/components/schemas/WorkRef"
+          },
+          "b": {
+            "$ref": "#/components/schemas/WorkRef"
+          },
+          "gap": {
+            "description": "Percentage points between the two grades.",
+            "format": "double",
+            "type": "number"
+          },
+          "part_key": {
+            "type": "string"
+          },
+          "similarity": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "part_key",
+          "similarity",
+          "a",
+          "b",
+          "gap"
         ],
         "type": "object"
       },
@@ -17567,6 +18885,16 @@ expression: json
             "format": "int32",
             "minimum": 0,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "SuggestConceptsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_id": {
+            "$ref": "#/components/schemas/ChapterId",
+            "description": "Map one chapter only."
           }
         },
         "type": "object"
@@ -18986,6 +20314,38 @@ expression: json
           },
           "public": {
             "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateConceptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "`suggested`, `approved` or `rejected`.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateConceptTagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "weight": {
+            "format": "float",
+            "type": "number"
           }
         },
         "type": "object"
@@ -20516,6 +21876,32 @@ expression: json
         ],
         "type": "object"
       },
+      "WorkRef": {
+        "properties": {
+          "learner_id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "learner_name": {
+            "type": "string"
+          },
+          "score_pct": {
+            "description": "Percentage of the part's maximum.",
+            "format": "double",
+            "type": "number"
+          },
+          "subject_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_id",
+          "learner_id",
+          "learner_name",
+          "score_pct"
+        ],
+        "type": "object"
+      },
       "WorkRole": {
         "description": "Which inbox to assemble.",
         "enum": [
@@ -21713,6 +23099,364 @@ expression: json
         ]
       }
     },
+    "/api/v2/ai/grading/activities/{activity_id}/consistency": {
+      "get": {
+        "operationId": "grading_consistency",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsistencyReport"
+                }
+              }
+            },
+            "description": "The consistency report"
+          }
+        },
+        "summary": "Similar works graded apart, drafts the teacher disagreed with, the AI's drift.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/activities/{activity_id}/drafts": {
+      "get": {
+        "operationId": "activity_grade_drafts",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GradeDraftView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Drafts"
+          }
+        },
+        "summary": "The newest draft of each work of the activity.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/activities/{activity_id}/drafts/approve": {
+      "post": {
+        "operationId": "approve_grade_drafts",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDraftsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApproveOutcome"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "One outcome per draft"
+          }
+        },
+        "summary": "Batch approval of the activity's drafts through the ordinary grade save; one result per item.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/activities/{activity_id}/drafts/queue": {
+      "post": {
+        "operationId": "queue_grade_drafts",
+        "parameters": [
+          {
+            "description": "Activity id",
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ActivityId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueDraftsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueReport"
+                }
+              }
+            },
+            "description": "Queued drafts"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "AI disabled or budget exhausted"
+          }
+        },
+        "summary": "Queue drafts for the activity's works waiting for a grade (or the listed ones).",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/drafts/subject/{subject_id}": {
+      "get": {
+        "operationId": "subject_grade_draft",
+        "parameters": [
+          {
+            "description": "Submission or file attempt id",
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GradeDraftView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The draft or null"
+          }
+        },
+        "summary": "The newest draft of one work (submission or file attempt), or null.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/drafts/{draft_id}/discard": {
+      "post": {
+        "operationId": "discard_grade_draft",
+        "parameters": [
+          {
+            "description": "Draft id",
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GradeDraftId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeDraftView"
+                }
+              }
+            },
+            "description": "The discarded draft"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The draft is no longer live"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/{course_id}/metrics": {
+      "get": {
+        "operationId": "grading_metrics",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "1..=365 (default 30).",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingMetrics"
+                }
+              }
+            },
+            "description": "Draft and feedback-time metrics"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/grading/{course_id}/settings": {
+      "get": {
+        "operationId": "grading_settings",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingSettings"
+                }
+              }
+            },
+            "description": "The course's AI grading settings"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      },
+      "put": {
+        "operationId": "set_grading_settings",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingSettings"
+                }
+              }
+            },
+            "description": "The settings"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v2/ai/lecture-authoring/reviews/{review_id}/dismiss": {
       "post": {
         "operationId": "dismiss_lecture_suggestion",
@@ -22378,6 +24122,124 @@ expression: json
           }
         },
         "summary": "The newest remediation session on a submission - `null` when none -\nfor whoever may read the work (the grader's gate card, UX-115).",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/retrieval/{course_id}/reindex": {
+      "post": {
+        "operationId": "reindex_course",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexStatus"
+                }
+              }
+            },
+            "description": "Queued for indexing"
+          }
+        },
+        "summary": "Forgets the course's index; the minute sweep rebuilds it.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/retrieval/{course_id}/search": {
+      "post": {
+        "operationId": "search_course",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SearchHit"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Passages, best first"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible course"
+          }
+        },
+        "summary": "Hybrid (meaning + words) search over the course material the caller can open.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/ai/retrieval/{course_id}/status": {
+      "get": {
+        "operationId": "index_status",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexStatus"
+                }
+              }
+            },
+            "description": "The course's index"
+          }
+        },
         "tags": [
           "ai"
         ]
@@ -30351,6 +32213,509 @@ expression: json
         ]
       }
     },
+    "/api/v2/courses/{course_id}/concept-tags": {
+      "post": {
+        "operationId": "create_concept_tag",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConceptTagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptTagView"
+                }
+              }
+            },
+            "description": "The tag (approved)"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Concept, activity or question outside the course"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concept-tags/{tag_id}": {
+      "delete": {
+        "operationId": "delete_concept_tag",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Tag id",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConceptTagId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible tag"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      },
+      "patch": {
+        "operationId": "update_concept_tag",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Tag id",
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConceptTagId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConceptTagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptTagView"
+                }
+              }
+            },
+            "description": "The tag"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible tag"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concepts": {
+      "get": {
+        "operationId": "concept_graph",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptGraph"
+                }
+              }
+            },
+            "description": "The course concept graph"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible course"
+          }
+        },
+        "summary": "Teachers see every suggestion; learners the approved graph.",
+        "tags": [
+          "ai"
+        ]
+      },
+      "post": {
+        "operationId": "create_concept",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConceptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptView"
+                }
+              }
+            },
+            "description": "The new concept"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a teacher of the course"
+          }
+        },
+        "summary": "A teacher's own concept (approved at once).",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concepts/review": {
+      "post": {
+        "operationId": "review_concepts",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConceptReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptGraph"
+                }
+              }
+            },
+            "description": "The graph after the decision"
+          }
+        },
+        "summary": "Batch decision over suggested concepts and tags.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concepts/suggest": {
+      "post": {
+        "operationId": "suggest_concepts",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestConceptsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            },
+            "description": "Queued run"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "AI disabled or budget exhausted"
+          }
+        },
+        "summary": "The concept mapper reads the course and suggests concepts and tags (queued run).",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concepts/{concept_id}": {
+      "delete": {
+        "operationId": "delete_concept",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Concept id",
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConceptId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted with its tags and prerequisites"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible concept"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      },
+      "patch": {
+        "operationId": "update_concept",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Concept id",
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConceptId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConceptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptView"
+                }
+              }
+            },
+            "description": "The concept"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible concept"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/concepts/{concept_id}/prerequisites": {
+      "put": {
+        "operationId": "set_prerequisites",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Concept id",
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConceptId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrerequisitesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PrerequisiteView"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "The concept's prerequisites"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown concept or a cycle"
+          }
+        },
+        "summary": "Replaces what the concept requires; 422 `concept-cycle` when that would close a loop.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v2/courses/{course_id}/contributors": {
       "get": {
         "operationId": "list_contributors",
@@ -31660,6 +34025,130 @@ expression: json
         "summary": "Lifecycle: `publish` / `unpublish` (course write access, readiness\ngated), `archive` / `restore` (creator, active maintainer or\n`course:manage:platform`; see docs/COURSE_ARCHIVING.md).",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/mastery": {
+      "get": {
+        "operationId": "class_mastery",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassMastery"
+                }
+              }
+            },
+            "description": "Mastery across the class"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a teacher of the course"
+          }
+        },
+        "summary": "The class map for the course's teachers.",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/mastery/learners/{user_id}": {
+      "get": {
+        "operationId": "learner_mastery",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "Learner id",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerMasteryDetail"
+                }
+              }
+            },
+            "description": "One learner's mastery with its evidence"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a learner of the course"
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/mastery/me": {
+      "get": {
+        "operationId": "my_mastery",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnerMastery"
+                }
+              }
+            },
+            "description": "The learner's mastery"
+          }
+        },
+        "summary": "The caller's own concept estimates and what to revisit.",
+        "tags": [
+          "ai"
         ]
       }
     },

@@ -4,7 +4,12 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+  # Unmaintained, no known vulnerability and no maintained release of lopdf without it. It reaches us only
+  # through pdf-extract, which reads submitted PDFs for AI pre-grading inside catch_unwind on a blocking
+  # thread (domain files/text.rs); drop pdf-extract or move to a fontations-based lopdf to clear it.
+  { id = "RUSTSEC-2026-0192", reason = "ttf-parser via pdf-extract; see the comment above" },
+]
 
 [licenses]
 version = 2

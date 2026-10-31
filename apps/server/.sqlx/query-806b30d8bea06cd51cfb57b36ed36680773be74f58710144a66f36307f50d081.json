@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO mastery_evidence\n                   (course_id, user_id, concept_id, source_type, source_id, part_id, score, weight,\n                    kind, observed_at)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, to_timestamp($10::bigint))\n               ON CONFLICT (source_type, source_id, concept_id, part_id, user_id) DO UPDATE\n               SET score = EXCLUDED.score, weight = EXCLUDED.weight, kind = EXCLUDED.kind,\n                   observed_at = EXCLUDED.observed_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Float4",
+        "Float4",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "806b30d8bea06cd51cfb57b36ed36680773be74f58710144a66f36307f50d081"
+}

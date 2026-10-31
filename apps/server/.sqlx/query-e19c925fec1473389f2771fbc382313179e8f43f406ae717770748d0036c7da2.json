@@ -1,0 +1,111 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ContentChunkId\", source_type, source_id,\n                  activity_id AS \"activity_id: ActivityId\", label, body, anchor,\n                  (1 - (embedding <=> $3::text::vector))::float8 AS \"score!\"\n           FROM content_chunks\n           WHERE course_id = $1 AND embedding_model = $4\n             AND (NOT $2 OR (audience = 'learner' AND published))\n           ORDER BY embedding <=> $3::text::vector\n           LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ContentChunkId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "source_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_type"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "source_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "anchor",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "anchor"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "e19c925fec1473389f2771fbc382313179e8f43f406ae717770748d0036c7da2"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (SELECT count(*) FROM content_chunks WHERE course_id = $1) AS \"chunks!\",\n                  (SELECT count(*) FROM content_chunks\n                   WHERE course_id = $1 AND embedding_model = $2) AS \"embedded_chunks!\",\n                  (SELECT count(*) FROM content_index_state WHERE course_id = $1) AS \"sources!\",\n                  (SELECT count(*) FROM content_index_state\n                   WHERE course_id = $1 AND error IS NOT NULL) AS \"failed_sources!\",\n                  (SELECT extract(epoch FROM max(indexed_at))::bigint\n                   FROM content_index_state WHERE course_id = $1) AS \"last_indexed_at?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chunks!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "embedded_chunks!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "sources!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "failed_sources!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_indexed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "9dcea1e3938884ddc4c2cc776b8eeda674e768a3012fc57d1aeb0afe3b8e634f"
+}

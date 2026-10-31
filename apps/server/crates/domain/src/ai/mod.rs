@@ -9,6 +9,7 @@
 //! to execute. Model access goes through `ab_clients::llm::LlmClient` only.
 
 pub mod agents;
+pub mod assist;
 pub mod budget;
 pub mod capabilities;
 pub mod context;
@@ -68,6 +69,8 @@ pub struct AiService {
     /// Reads submitted text files back for the file-attempt context;
     /// `None` (no storage configured) leaves files described by name only.
     pub(crate) storage: Option<Arc<StorageClient>>,
+    /// Course material search (docs/AI-FIRST.md 1); its embedder comes from `AB__AI__EMBEDDING_*`.
+    pub(crate) retrieval: crate::retrieval::Retrieval,
 }
 
 impl AiService {
@@ -83,7 +86,9 @@ impl AiService {
         limiter: Option<RateLimiter>,
     ) -> Self {
         let config = Arc::new(config);
+        let embedder = Arc::new(ab_clients::embed::Embedder::from_ai_config(&config));
         Self {
+            retrieval: crate::retrieval::Retrieval::new(pool.clone(), embedder),
             budget: TokenBudget::new(Arc::clone(&config), limiter),
             courses: CoursesService::new(pool.clone()),
             pool,
@@ -104,6 +109,12 @@ impl AiService {
     #[must_use]
     pub fn config(&self) -> &AiConfig {
         &self.config
+    }
+
+    /// The material index (the worker's sweep; searches go through [`AiService::search_course`]).
+    #[must_use]
+    pub const fn retrieval(&self) -> &crate::retrieval::Retrieval {
+        &self.retrieval
     }
 
     /// The model client, when the master switch is on and a provider is

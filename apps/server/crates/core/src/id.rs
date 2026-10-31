@@ -111,6 +111,11 @@ typed_id!(AiCourseAnalysisId);
 typed_id!(AiLectureReviewId);
 typed_id!(AiRemediationSessionId);
 typed_id!(AiStudentMemoryId);
+// docs/AI-FIRST.md: retrieval, concept graph, AI pre-grading.
+typed_id!(ContentChunkId);
+typed_id!(ConceptId);
+typed_id!(ConceptTagId);
+typed_id!(GradeDraftId);
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

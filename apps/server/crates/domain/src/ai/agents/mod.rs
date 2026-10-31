@@ -10,8 +10,10 @@
 //! redaction → [`AiService::finish_run`]; the agent adds its feature record
 //! to the open completion and commits it ([`AiService::commit_finish`]).
 
+pub mod concept_mapper;
 pub mod course_analyst;
 pub mod course_qa;
+pub mod grade_assistant;
 pub mod lecture_author;
 pub mod remediation_generator;
 pub mod study_companion;

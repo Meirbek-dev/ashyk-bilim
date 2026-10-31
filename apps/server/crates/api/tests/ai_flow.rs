@@ -718,7 +718,7 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(settings["provider_ready"], true);
     assert_eq!(settings["model"], ab_testkit::llm::TEST_MODEL);
     assert_eq!(settings["effective"]["openai_api_key"], "[redacted]");
-    assert_eq!(settings["features"].as_array().unwrap().len(), 7);
+    assert_eq!(settings["features"].as_array().unwrap().len(), 10);
     let evals = app.get_as(&admin, "/api/v2/ai/admin/evals").await;
     assert_eq!(evals.status, StatusCode::OK);
     assert_eq!(evals.json()["runs"]["succeeded"], 2);

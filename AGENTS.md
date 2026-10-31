@@ -18,6 +18,7 @@
 - `docs/RUNBOOK.md` - deploy, rollback, backup, restore, certificates, incidents.
 - `docs/FINDINGS.md` - open production and infra issues.
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
+- `docs/AI-FIRST.md` - concept graph, mastery model, material search and AI pre-grading (rules, API, UI).
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
 - `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
 - `docs/REWRITE.md` - proposed v3 rewrite (ops fixes first, then delete-in-place to one binary,

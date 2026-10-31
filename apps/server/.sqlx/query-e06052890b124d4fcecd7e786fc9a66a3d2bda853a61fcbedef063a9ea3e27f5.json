@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT x.subject_id AS \"a!\", y.subject_id AS \"b!\", x.part_key AS \"part_key!\",\n                  (1 - (x.embedding <=> y.embedding))::float8 AS \"similarity!\"\n           FROM ai_work_embeddings x\n           JOIN ai_work_embeddings y\n             ON y.activity_id = x.activity_id AND y.part_key = x.part_key\n            AND y.subject_id > x.subject_id AND y.embedding_model = x.embedding_model\n           WHERE x.activity_id = $1 AND x.embedding_model = $2\n             AND 1 - (x.embedding <=> y.embedding) >= $3\n           ORDER BY 4 DESC\n           LIMIT 200",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "a!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_work_embeddings",
+            "name": "subject_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "b!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_work_embeddings",
+            "name": "subject_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "part_key!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_work_embeddings",
+            "name": "part_key"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "similarity!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "e06052890b124d4fcecd7e786fc9a66a3d2bda853a61fcbedef063a9ea3e27f5"
+}

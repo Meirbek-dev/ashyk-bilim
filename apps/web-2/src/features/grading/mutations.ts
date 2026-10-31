@@ -2,15 +2,20 @@ import { asyncRetry } from '@tanstack/react-pacer'
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query'
 
 import {
+  activityGradeDraftsQueryKey,
+  approveGradeDraftsMutation,
+  discardGradeDraftMutation,
   fileGradingHistoryQueryKey,
   fileSubmissionReviewStatsQueryKey,
   getAttemptQueryKey,
   gradeAttemptMutation,
   gradebookInfiniteQueryKey,
   gradingHistoryQueryKey,
+  queueGradeDraftsMutation,
   reviewSubmissionQueryKey,
   saveGradeMutation,
   statsQueryKey,
+  subjectGradeDraftQueryKey,
   workQueueInfiniteQueryKey,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import {
@@ -23,6 +28,7 @@ import {
   returnGrades,
 } from '#/shared/api/gen/sdk.gen'
 import type {
+  ActivityId,
   Attempt,
   BulkActionId,
   BulkGradeSummary,
@@ -55,7 +61,7 @@ function patchQueue(queryClient: QueryClient, work: Work, saved: TeacherSubmissi
   )
 }
 
-export type ReviewIds = { work: Work; courseId: CourseId; submissionId: string }
+export type ReviewIds = { work: Work; courseId: CourseId; activityId: ActivityId; submissionId: string }
 
 /** The work's counts, whatever group they were asked for. */
 const statsKey = (work: Work): QueryKey =>
@@ -64,13 +70,16 @@ const statsKey = (work: Work): QueryKey =>
     : fileSubmissionReviewStatsQueryKey({ path: { file_submission_id: work.id } })
 
 // Counts, history, the course gradebook and the teacher inbox change with a grade: read again where shown next.
-const afterGrade = ({ work, courseId, submissionId }: ReviewIds): QueryKey[] => [
+// A saved grade closes the work's AI draft (docs/AI-FIRST.md 4.3): the review card and the queue column change too.
+const afterGrade = ({ work, courseId, activityId, submissionId }: ReviewIds): QueryKey[] => [
   statsKey(work),
   work.kind === 'assessment'
     ? gradingHistoryQueryKey({ path: { submission_id: submissionId } })
     : fileGradingHistoryQueryKey({ path: { attempt_id: submissionId } }),
   gradebookInfiniteQueryKey({ path: { course_id: courseId } }),
   workQueueInfiniteQueryKey(),
+  subjectGradeDraftQueryKey({ path: { subject_id: submissionId } }),
+  activityGradeDraftsQueryKey({ path: { activity_id: activityId } }),
 ]
 
 export const saveGradeOptions = (queryClient: QueryClient, ids: ReviewIds) => ({
@@ -162,4 +171,29 @@ export const extendOptions = (work: Work, courseId: CourseId) => ({
     return settle(action.id)
   },
   meta: bulkMeta(work, courseId),
+})
+
+// ---- AI drafts (docs/AI-FIRST.md 4.3) ----
+
+const draftsKey = (activityId: ActivityId) => activityGradeDraftsQueryKey({ path: { activity_id: activityId } })
+
+/** «Подготовить черновики» (B-GRD-41): every work waiting for a grade without a fresh draft; the queue polls them. */
+export const queueDraftsOptions = (activityId: ActivityId) => ({
+  ...queueGradeDraftsMutation(),
+  meta: { invalidates: [draftsKey(activityId)] },
+})
+
+/**
+ * «Утвердить выбранные» (B-GRD-42): each draft through the ordinary grade save; one result per draft. The queue, its
+ * counts, the gradebook and the drafts change.
+ */
+export const approveDraftsOptions = (work: Work, courseId: CourseId, activityId: ActivityId) => ({
+  ...approveGradeDraftsMutation(),
+  meta: { invalidates: [...bulkMeta(work, courseId).invalidates, draftsKey(activityId)] },
+})
+
+/** «Отклонить» on the review's draft card (B-GRD-45). */
+export const discardDraftOptions = (activityId: ActivityId, subjectId: string) => ({
+  ...discardGradeDraftMutation(),
+  meta: { invalidates: [draftsKey(activityId), subjectGradeDraftQueryKey({ path: { subject_id: subjectId } })] },
 })

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM concept_mastery WHERE course_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "085c5630cb3c9b592aa5d39c1ca6f46f67f9e2d8cc2287c6c5fb3d9e6e281f51"
+}

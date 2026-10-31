@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_grade_drafts SET status = 'superseded' WHERE id = $1 AND status IN ('queued', 'ready')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9b7cf3af0ad33ce3797baa68b24fb09131218f299ed304d67d27e4f67ac37d0"
+}

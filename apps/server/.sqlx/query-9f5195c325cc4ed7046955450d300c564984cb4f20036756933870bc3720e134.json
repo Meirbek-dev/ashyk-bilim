@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH sources AS (\n               SELECT CASE a.activity_type\n                          WHEN 'dynamic' THEN 'lesson'\n                          WHEN 'file_submission' THEN 'assignment'\n                          ELSE 'activity' END AS source_type,\n                      a.id AS source_id, a.course_id, a.id AS activity_id,\n                      a.version::bigint * 2000000 + COALESCE(fs.version, 0)::bigint * 2\n                          + a.published::int AS version\n               FROM activities a\n               JOIN courses c ON c.id = a.course_id AND c.archived_at IS NULL\n               LEFT JOIN file_submissions fs ON fs.activity_id = a.id\n               WHERE a.activity_type IN ('dynamic', 'video', 'document', 'file_submission')\n               UNION ALL\n               SELECT 'item', s.id, a.course_id, a.id,\n                      s.content_version::bigint * 2000000 + a.version::bigint * 2 + a.published::int\n               FROM assessments s\n               JOIN activities a ON a.id = s.activity_id\n               JOIN courses c ON c.id = a.course_id AND c.archived_at IS NULL\n               UNION ALL\n               SELECT 'course', c.id, c.id, NULL::uuid,\n                      c.version::bigint * 2000000\n                          + COALESCE((SELECT sum(ch.version) + count(*) FROM chapters ch\n                                      WHERE ch.course_id = c.id), 0)::bigint\n               FROM courses c WHERE c.archived_at IS NULL\n           )\n           SELECT s.source_type AS \"source_type!\", s.source_id AS \"source_id!\",\n                  s.course_id AS \"course_id!: CourseId\", s.activity_id AS \"activity_id: ActivityId\",\n                  s.version AS \"version!\"\n           FROM sources s\n           LEFT JOIN content_index_state st\n                  ON st.source_type = s.source_type AND st.source_id = s.source_id\n           WHERE st.source_id IS NULL\n              OR st.source_version <> s.version\n              OR (st.chunk_count > 0 AND st.embedding_model IS DISTINCT FROM $1)\n              OR (st.error IS NOT NULL AND st.indexed_at < now() - interval '10 minutes')\n           ORDER BY st.indexed_at NULLS FIRST\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "source_type!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "source_id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "version!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "9f5195c325cc4ed7046955450d300c564984cb4f20036756933870bc3720e134"
+}

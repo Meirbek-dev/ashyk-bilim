@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"total!\",\n                  count(*) FILTER (WHERE status = 'ready') AS \"ready!\",\n                  count(*) FILTER (WHERE agreement = 'exact') AS \"applied_exact!\",\n                  count(*) FILTER (WHERE agreement = 'adjusted') AS \"applied_adjusted!\",\n                  count(*) FILTER (WHERE status = 'discarded') AS \"discarded!\",\n                  count(*) FILTER (WHERE status = 'failed') AS \"failed!\",\n                  avg(abs(final_score - calibrated_score))\n                      FILTER (WHERE status = 'applied' AND final_score IS NOT NULL\n                              AND calibrated_score IS NOT NULL) AS mean_abs_delta\n           FROM ai_grade_drafts\n           WHERE course_id = $1 AND status <> 'superseded'\n             AND created_at >= to_timestamp($2::bigint)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "ready!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "applied_exact!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "applied_adjusted!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "discarded!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "failed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "mean_abs_delta",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a71d7a1ab0172d056621b4bf44cc1eb8a4ee76a807d3f730a530373e286e0320"
+}

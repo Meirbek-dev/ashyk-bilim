@@ -69,6 +69,8 @@ import { Route as AuthedLearnCourseIdActivityIdAttemptRouteImport } from './rout
 import { Route as AuthedLearnCourseIdActivityIdCodeRouteImport } from './routes/_authed/learn/$courseId/$activityId_/code'
 import { Route as AuthedLearnCourseIdActivityIdSubmissionRouteImport } from './routes/_authed/learn/$courseId/$activityId_/submission'
 import { Route as AuthedTeachCoursesCourseIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId/index'
+import { Route as AuthedTeachCoursesCourseIdAiGradingRouteImport } from './routes/_authed/teach/courses/$courseId/ai-grading'
+import { Route as AuthedTeachCoursesCourseIdConceptsRouteImport } from './routes/_authed/teach/courses/$courseId/concepts'
 import { Route as AuthedTeachCoursesCourseIdContentRouteImport } from './routes/_authed/teach/courses/$courseId/content'
 import { Route as AuthedTeachCoursesCourseIdGradebookRouteImport } from './routes/_authed/teach/courses/$courseId/gradebook'
 import { Route as AuthedTeachCoursesCourseIdLearnersRouteImport } from './routes/_authed/teach/courses/$courseId/learners'
@@ -79,6 +81,7 @@ import { Route as AuthedTeachCoursesCourseIdTeamRouteImport } from './routes/_au
 import { Route as PublicLocaleCertificatesCertificateIdVerifyRouteImport } from './routes/_public/$locale/certificates/$certificateId/verify'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/index'
+import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/consistency'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdEditRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/edit'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/results'
 import { Route as AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRouteImport } from './routes/_authed/teach/courses/$courseId_/activities/$activityId/settings'
@@ -405,6 +408,18 @@ const AuthedTeachCoursesCourseIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
   } as any)
+const AuthedTeachCoursesCourseIdAiGradingRoute =
+  AuthedTeachCoursesCourseIdAiGradingRouteImport.update({
+    id: '/ai-grading',
+    path: '/ai-grading',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdConceptsRoute =
+  AuthedTeachCoursesCourseIdConceptsRouteImport.update({
+    id: '/concepts',
+    path: '/concepts',
+    getParentRoute: () => AuthedTeachCoursesCourseIdRoute,
+  } as any)
 const AuthedTeachCoursesCourseIdContentRoute =
   AuthedTeachCoursesCourseIdContentRouteImport.update({
     id: '/content',
@@ -463,6 +478,12 @@ const AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRoute =
   AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport.update({
     id: '/',
     path: '/',
+    getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
+  } as any)
+const AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute =
+  AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRouteImport.update({
+    id: '/consistency',
+    path: '/consistency',
     getParentRoute: () => AuthedTeachCoursesCourseIdActivitiesActivityIdRoute,
   } as any)
 const AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute =
@@ -555,6 +576,8 @@ export interface FileRoutesByFullPath {
   '/learn/$courseId/$activityId/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
   '/learn/$courseId/$activityId/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
   '/learn/$courseId/$activityId/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
+  '/teach/courses/$courseId/ai-grading': typeof AuthedTeachCoursesCourseIdAiGradingRoute
+  '/teach/courses/$courseId/concepts': typeof AuthedTeachCoursesCourseIdConceptsRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -565,6 +588,7 @@ export interface FileRoutesByFullPath {
   '/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
   '/teach/courses/$courseId/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
+  '/teach/courses/$courseId/activities/$activityId/consistency': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute
   '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
   '/teach/courses/$courseId/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
   '/teach/courses/$courseId/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
@@ -623,6 +647,8 @@ export interface FileRoutesByTo {
   '/learn/$courseId/$activityId/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
   '/learn/$courseId/$activityId/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
   '/learn/$courseId/$activityId/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
+  '/teach/courses/$courseId/ai-grading': typeof AuthedTeachCoursesCourseIdAiGradingRoute
+  '/teach/courses/$courseId/concepts': typeof AuthedTeachCoursesCourseIdConceptsRoute
   '/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -632,6 +658,7 @@ export interface FileRoutesByTo {
   '/teach/courses/$courseId/team': typeof AuthedTeachCoursesCourseIdTeamRoute
   '/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdIndexRoute
+  '/teach/courses/$courseId/activities/$activityId/consistency': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute
   '/teach/courses/$courseId/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
   '/teach/courses/$courseId/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
   '/teach/courses/$courseId/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
@@ -700,6 +727,8 @@ export interface FileRoutesById {
   '/_authed/learn/$courseId/$activityId_/attempt': typeof AuthedLearnCourseIdActivityIdAttemptRoute
   '/_authed/learn/$courseId/$activityId_/code': typeof AuthedLearnCourseIdActivityIdCodeRoute
   '/_authed/learn/$courseId/$activityId_/submission': typeof AuthedLearnCourseIdActivityIdSubmissionRoute
+  '/_authed/teach/courses/$courseId/ai-grading': typeof AuthedTeachCoursesCourseIdAiGradingRoute
+  '/_authed/teach/courses/$courseId/concepts': typeof AuthedTeachCoursesCourseIdConceptsRoute
   '/_authed/teach/courses/$courseId/content': typeof AuthedTeachCoursesCourseIdContentRoute
   '/_authed/teach/courses/$courseId/gradebook': typeof AuthedTeachCoursesCourseIdGradebookRoute
   '/_authed/teach/courses/$courseId/learners': typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -710,6 +739,7 @@ export interface FileRoutesById {
   '/_public/$locale/certificates/$certificateId/verify': typeof PublicLocaleCertificatesCertificateIdVerifyRoute
   '/_authed/teach/courses/$courseId/': typeof AuthedTeachCoursesCourseIdIndexRoute
   '/_authed/teach/courses/$courseId_/activities/$activityId': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRouteWithChildren
+  '/_authed/teach/courses/$courseId_/activities/$activityId/consistency': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute
   '/_authed/teach/courses/$courseId_/activities/$activityId/edit': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
   '/_authed/teach/courses/$courseId_/activities/$activityId/results': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
   '/_authed/teach/courses/$courseId_/activities/$activityId/settings': typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
@@ -776,6 +806,8 @@ export interface FileRouteTypes {
     | '/learn/$courseId/$activityId/attempt'
     | '/learn/$courseId/$activityId/code'
     | '/learn/$courseId/$activityId/submission'
+    | '/teach/courses/$courseId/ai-grading'
+    | '/teach/courses/$courseId/concepts'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
     | '/teach/courses/$courseId/learners'
@@ -786,6 +818,7 @@ export interface FileRouteTypes {
     | '/$locale/certificates/$certificateId/verify'
     | '/teach/courses/$courseId/'
     | '/teach/courses/$courseId/activities/$activityId'
+    | '/teach/courses/$courseId/activities/$activityId/consistency'
     | '/teach/courses/$courseId/activities/$activityId/edit'
     | '/teach/courses/$courseId/activities/$activityId/results'
     | '/teach/courses/$courseId/activities/$activityId/settings'
@@ -844,6 +877,8 @@ export interface FileRouteTypes {
     | '/learn/$courseId/$activityId/attempt'
     | '/learn/$courseId/$activityId/code'
     | '/learn/$courseId/$activityId/submission'
+    | '/teach/courses/$courseId/ai-grading'
+    | '/teach/courses/$courseId/concepts'
     | '/teach/courses/$courseId/content'
     | '/teach/courses/$courseId/gradebook'
     | '/teach/courses/$courseId/learners'
@@ -853,6 +888,7 @@ export interface FileRouteTypes {
     | '/teach/courses/$courseId/team'
     | '/$locale/certificates/$certificateId/verify'
     | '/teach/courses/$courseId'
+    | '/teach/courses/$courseId/activities/$activityId/consistency'
     | '/teach/courses/$courseId/activities/$activityId/edit'
     | '/teach/courses/$courseId/activities/$activityId/results'
     | '/teach/courses/$courseId/activities/$activityId/settings'
@@ -920,6 +956,8 @@ export interface FileRouteTypes {
     | '/_authed/learn/$courseId/$activityId_/attempt'
     | '/_authed/learn/$courseId/$activityId_/code'
     | '/_authed/learn/$courseId/$activityId_/submission'
+    | '/_authed/teach/courses/$courseId/ai-grading'
+    | '/_authed/teach/courses/$courseId/concepts'
     | '/_authed/teach/courses/$courseId/content'
     | '/_authed/teach/courses/$courseId/gradebook'
     | '/_authed/teach/courses/$courseId/learners'
@@ -930,6 +968,7 @@ export interface FileRouteTypes {
     | '/_public/$locale/certificates/$certificateId/verify'
     | '/_authed/teach/courses/$courseId/'
     | '/_authed/teach/courses/$courseId_/activities/$activityId'
+    | '/_authed/teach/courses/$courseId_/activities/$activityId/consistency'
     | '/_authed/teach/courses/$courseId_/activities/$activityId/edit'
     | '/_authed/teach/courses/$courseId_/activities/$activityId/results'
     | '/_authed/teach/courses/$courseId_/activities/$activityId/settings'
@@ -1369,6 +1408,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTeachCoursesCourseIdIndexRouteImport
       parentRoute: typeof AuthedTeachCoursesCourseIdRoute
     }
+    '/_authed/teach/courses/$courseId/ai-grading': {
+      id: '/_authed/teach/courses/$courseId/ai-grading'
+      path: '/ai-grading'
+      fullPath: '/teach/courses/$courseId/ai-grading'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdAiGradingRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
+    '/_authed/teach/courses/$courseId/concepts': {
+      id: '/_authed/teach/courses/$courseId/concepts'
+      path: '/concepts'
+      fullPath: '/teach/courses/$courseId/concepts'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdConceptsRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdRoute
+    }
     '/_authed/teach/courses/$courseId/content': {
       id: '/_authed/teach/courses/$courseId/content'
       path: '/content'
@@ -1437,6 +1490,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/teach/courses/$courseId/activities/$activityId/'
       preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdIndexRouteImport
+      parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
+    }
+    '/_authed/teach/courses/$courseId_/activities/$activityId/consistency': {
+      id: '/_authed/teach/courses/$courseId_/activities/$activityId/consistency'
+      path: '/consistency'
+      fullPath: '/teach/courses/$courseId/activities/$activityId/consistency'
+      preLoaderRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRouteImport
       parentRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdRoute
     }
     '/_authed/teach/courses/$courseId_/activities/$activityId/edit': {
@@ -1543,6 +1603,8 @@ const AuthedTeachAnalyticsRouteWithChildren =
   AuthedTeachAnalyticsRoute._addFileChildren(AuthedTeachAnalyticsRouteChildren)
 
 interface AuthedTeachCoursesCourseIdRouteChildren {
+  AuthedTeachCoursesCourseIdAiGradingRoute: typeof AuthedTeachCoursesCourseIdAiGradingRoute
+  AuthedTeachCoursesCourseIdConceptsRoute: typeof AuthedTeachCoursesCourseIdConceptsRoute
   AuthedTeachCoursesCourseIdContentRoute: typeof AuthedTeachCoursesCourseIdContentRoute
   AuthedTeachCoursesCourseIdGradebookRoute: typeof AuthedTeachCoursesCourseIdGradebookRoute
   AuthedTeachCoursesCourseIdLearnersRoute: typeof AuthedTeachCoursesCourseIdLearnersRoute
@@ -1555,6 +1617,10 @@ interface AuthedTeachCoursesCourseIdRouteChildren {
 
 const AuthedTeachCoursesCourseIdRouteChildren: AuthedTeachCoursesCourseIdRouteChildren =
   {
+    AuthedTeachCoursesCourseIdAiGradingRoute:
+      AuthedTeachCoursesCourseIdAiGradingRoute,
+    AuthedTeachCoursesCourseIdConceptsRoute:
+      AuthedTeachCoursesCourseIdConceptsRoute,
     AuthedTeachCoursesCourseIdContentRoute:
       AuthedTeachCoursesCourseIdContentRoute,
     AuthedTeachCoursesCourseIdGradebookRoute:
@@ -1577,6 +1643,7 @@ const AuthedTeachCoursesCourseIdRouteWithChildren =
   )
 
 interface AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren {
+  AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute
   AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute
   AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute
   AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute: typeof AuthedTeachCoursesCourseIdActivitiesActivityIdSettingsRoute
@@ -1586,6 +1653,8 @@ interface AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren {
 
 const AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren: AuthedTeachCoursesCourseIdActivitiesActivityIdRouteChildren =
   {
+    AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute:
+      AuthedTeachCoursesCourseIdActivitiesActivityIdConsistencyRoute,
     AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute:
       AuthedTeachCoursesCourseIdActivitiesActivityIdEditRoute,
     AuthedTeachCoursesCourseIdActivitiesActivityIdResultsRoute:

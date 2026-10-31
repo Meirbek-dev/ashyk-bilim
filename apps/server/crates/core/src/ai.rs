@@ -73,6 +73,8 @@ text_enum!(
         StudyCompanion => "study_companion",
         LectureReview => "lecture_review",
         CourseQa => "course_qa",
+        ConceptMapping => "concept_mapping",
+        GradeDraft => "grade_draft",
     }
 );
 
@@ -124,6 +126,9 @@ text_enum!(
         StudyCompanion => "study_companion_enabled",
         LectureAuthoring => "lecture_authoring_enabled",
         SemanticMemory => "semantic_memory_enabled",
+        SemanticSearch => "semantic_search_enabled",
+        ConceptGraph => "concept_graph_enabled",
+        GradingAssistant => "grading_assistant_enabled",
     }
 );
 

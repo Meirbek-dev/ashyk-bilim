@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE course_concepts SET status = $3, decided_by = $4, decided_at = now()\n           WHERE course_id = $1 AND id = ANY($2) AND status <> $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2e8a69d294c3e1d2bc299423d5715ccc37b5f0de397449a316e56d25c9e4a4ec"
+}

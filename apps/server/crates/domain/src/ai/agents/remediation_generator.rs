@@ -467,6 +467,9 @@ impl AiService {
         if !ab_db::ai::complete_remediation_session(&self.pool, id, score, status).await? {
             return Err(Error::conflict("remediation session already passed"));
         }
+        // docs/AI-FIRST.md 3.3: practice results are mastery evidence (written without a transaction).
+        crate::mastery::owe_ingest_now(&self.pool, crate::mastery::SOURCE_REMEDIATION, id.0)
+            .await?;
         ab_db::ai::get_remediation_session(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("remediation session"))

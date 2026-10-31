@@ -8,7 +8,16 @@
 import * as zod from 'zod'
 
 export const AiRunKind = zod
-  .enum(['course_analysis', 'submission_analysis', 'remediation', 'study_companion', 'lecture_review', 'course_qa'])
+  .enum([
+    'course_analysis',
+    'submission_analysis',
+    'remediation',
+    'study_companion',
+    'lecture_review',
+    'course_qa',
+    'concept_mapping',
+    'grade_draft',
+  ])
   .describe('Which agent a run executes (legacy `run_metadata.kind`).')
 
 export type AiRunKind = zod.input<typeof AiRunKind>

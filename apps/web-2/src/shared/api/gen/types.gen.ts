@@ -101,6 +101,14 @@ export type ActivityDetails = {
     startTime?: number;
 };
 
+export type ActivityDraftStats = {
+    activity_id: ActivityId;
+    activity_name: string;
+    applied: number;
+    drafts: number;
+    ready: number;
+};
+
 export type ActivityDropoffRow = {
     activity_id: ActivityId;
     activity_name: string;
@@ -117,6 +125,11 @@ export type ActivityId = string;
  * Canonical per-learner activity state (legacy `ActivityProgressState`).
  */
 export type ActivityProgressState = 'not_started' | 'in_progress' | 'submitted' | 'needs_grading' | 'returned' | 'graded' | 'passed' | 'failed' | 'completed';
+
+export type ActivityRef = {
+    id: ActivityId;
+    name: string;
+};
 
 /**
  * `activities.settings`.
@@ -487,9 +500,22 @@ export type AiEffectiveConfig = {
     claude_base_url: string;
     claude_model: string;
     claude_timeout_secs: number;
+    concept_graph_enabled: boolean;
     course_analysis_enabled: boolean;
     course_qa_enabled: boolean;
+    /**
+     * `"[redacted]"` when set.
+     */
+    embedding_api_key: string | null;
+    embedding_base_url: string;
+    embedding_model: string;
+    embedding_provider: string;
+    grading_assistant_enabled: boolean;
     lecture_authoring_enabled: boolean;
+    /**
+     * Minutes a teacher spends grading one work by hand: the base of the saved-hours metric.
+     */
+    manual_grading_minutes: number;
     max_output_tokens: number;
     max_tokens_per_request: number;
     monthly_token_budget: number;
@@ -510,6 +536,7 @@ export type AiEffectiveConfig = {
     remediation_enabled: boolean;
     remediation_requests_per_hour_per_user: number;
     semantic_memory_enabled: boolean;
+    semantic_search_enabled: boolean;
     /**
      * `enabled`, `disabled: ai_enabled=false` or `disabled: no provider key`.
      */
@@ -548,7 +575,7 @@ export type AiRunId = string;
 /**
  * Which agent a run executes (legacy `run_metadata.kind`).
  */
-export type AiRunKind = 'course_analysis' | 'submission_analysis' | 'remediation' | 'study_companion' | 'lecture_review' | 'course_qa';
+export type AiRunKind = 'course_analysis' | 'submission_analysis' | 'remediation' | 'study_companion' | 'lecture_review' | 'course_qa' | 'concept_mapping' | 'grade_draft';
 
 /**
  * Run lifecycle (ARCHITECTURE §12): `queued → running → {succeeded,
@@ -645,6 +672,37 @@ export type AnomalyItem = {
 };
 
 export type AnomalyKind = 'engagement_drop' | 'submission_spike' | 'fast_quiz_completion' | 'score_distribution_shift';
+
+export type ApproveAction = 'save' | 'publish';
+
+export type ApproveDraftItem = {
+    draft_id: GradeDraftId;
+    /**
+     * Overall feedback instead of the draft's.
+     */
+    feedback?: string;
+    /**
+     * A work-level percentage instead of the draft's.
+     */
+    score?: number;
+};
+
+export type ApproveDraftsRequest = {
+    action: ApproveAction;
+    items: Array<ApproveDraftItem>;
+};
+
+export type ApproveOutcome = {
+    draft_id: GradeDraftId;
+    /**
+     * The error code of a failed item.
+     */
+    error: string | null;
+    /**
+     * `applied`, `stale` (the work changed), `not_ready` or `failed`.
+     */
+    result: string;
+};
 
 export type Assessment = {
     access_mode: AccessMode;
@@ -1384,6 +1442,31 @@ export type CitationValidation = {
     validation?: 'not_applicable';
 };
 
+/**
+ * One concept across the class.
+ */
+export type ClassConcept = {
+    concept_id: ConceptId;
+    learning: number;
+    mastered: number;
+    /**
+     * Mean `p_known` over learners with evidence; `None` without any.
+     */
+    mean_p: number | null;
+    name: string;
+    not_started: number;
+    struggling: number;
+    /**
+     * The learners struggling with it (lowest first, at most 20).
+     */
+    struggling_learners: Array<LearnerRef>;
+};
+
+export type ClassMastery = {
+    concepts: Array<ClassConcept>;
+    learners: number;
+};
+
 export type CodeBody = {
     constraints?: Array<string>;
     input_spec?: string;
@@ -1555,6 +1638,83 @@ export type CompleteMultipartRequest = {
 
 export type CompletionRule = 'viewed' | 'submitted' | 'graded' | 'passed' | 'teacher_verified';
 
+export type ConceptGraph = {
+    /**
+     * The caller may curate the graph.
+     */
+    can_edit: boolean;
+    concepts: Array<ConceptView>;
+    latest_run_id: AiRunId | null;
+    prerequisites: Array<PrerequisiteView>;
+    tags: Array<ConceptTagView>;
+};
+
+export type ConceptId = string;
+
+/**
+ * One concept of a mastery view.
+ */
+export type ConceptMastery = {
+    concept_id: ConceptId;
+    evidence_count: number;
+    last_observed_at: number | null;
+    level: MasteryLevel;
+    name: string;
+    /**
+     * Probability the concept is known, 0..1.
+     */
+    p_known: number;
+    /**
+     * Activities to revisit (weak concepts only), strongest tag first.
+     */
+    review: Array<ActivityRef>;
+    /**
+     * No evidence for a long time: the estimate may be out of date.
+     */
+    stale: boolean;
+};
+
+export type ConceptReviewRequest = {
+    concept_ids?: Array<ConceptId>;
+    /**
+     * `approved` or `rejected`.
+     */
+    status: string;
+    tag_ids?: Array<ConceptTagId>;
+};
+
+export type ConceptTagId = string;
+
+export type ConceptTagView = {
+    activity_id: ActivityId;
+    concept_id: ConceptId;
+    id: ConceptTagId;
+    /**
+     * A question of the activity; `None` tags the whole activity.
+     */
+    item_id: string | null;
+    origin: string;
+    rationale: string;
+    status: string;
+    weight: number;
+};
+
+export type ConceptView = {
+    description: string;
+    id: ConceptId;
+    name: string;
+    /**
+     * `ai` or `teacher`.
+     */
+    origin: string;
+    position: number;
+    slug: string;
+    /**
+     * `suggested`, `approved` or `rejected`.
+     */
+    status: string;
+};
+
 export type Confidence = 'low' | 'medium' | 'high';
 
 /**
@@ -1589,6 +1749,12 @@ export type ConfirmEmailChangeRequest = {
     code: string;
 };
 
+export type ConsistencyReport = {
+    disagreements: Array<DisagreementView>;
+    drift: Array<DriftView>;
+    pairs: Array<SimilarPairView>;
+};
+
 export type ContentBottleneckRow = {
     activity_id: ActivityId;
     activity_name: string;
@@ -1608,6 +1774,8 @@ export type ContentBottleneckRow = {
 };
 
 export type ContentBottleneckSignal = 'high_time_low_completion' | 'exit_after_open' | 'repeated_assessment_failures' | 'stale_low_performance';
+
+export type ContentChunkId = string;
 
 export type ContentHealthRow = {
     course_id: CourseId;
@@ -2208,6 +2376,24 @@ export type CreateCollectionRequest = {
     public?: boolean;
 };
 
+export type CreateConceptRequest = {
+    description?: string;
+    name: string;
+};
+
+export type CreateConceptTagRequest = {
+    activity_id: ActivityId;
+    concept_id: ConceptId;
+    /**
+     * A question of the activity; absent tags the whole activity.
+     */
+    item_id?: string;
+    /**
+     * (0, 1], default 1.
+     */
+    weight?: number;
+};
+
 export type CreateCourseRequest = {
     about?: string;
     description?: string;
@@ -2481,6 +2667,14 @@ export type Direction = 'up' | 'down' | 'flat';
  */
 export type DisabledReason = 'NOT_PUBLISHED' | 'SCHEDULED_NOT_OPEN' | 'ARCHIVED' | 'COURSE_ARCHIVED' | 'PAST_DUE' | 'MAX_ATTEMPTS_REACHED' | 'TIME_LIMIT_EXPIRED' | 'REMEDIATION_REQUIRED' | 'ACCESS_RESTRICTED' | 'NOT_ENROLLED';
 
+export type DisagreementView = {
+    ai_score: number;
+    draft_id: GradeDraftId;
+    final_score: number;
+    learner_id: UserId;
+    subject_id: string;
+};
+
 export type Discussion = {
     /**
      * What the caller may do to this post now (supersedes the `can_*` flags).
@@ -2606,6 +2800,16 @@ export type Disposition = 'attachment' | 'inline';
  */
 export type DraftRequest = {
     files?: Array<FileRefRequest>;
+};
+
+export type DriftView = {
+    corrections: number;
+    criterion_key: string;
+    /**
+     * Mean (teacher - ai) / max, shrunk: negative = the AI grades higher than the teacher.
+     */
+    offset: number;
+    part_key: string;
 };
 
 export type DrillBacklogRow = {
@@ -2836,7 +3040,7 @@ export type Enrollments = {
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -2884,6 +3088,27 @@ export type EvalSummary = {
 export type EvalUsage = {
     input_tokens: number | null;
     output_tokens: number | null;
+};
+
+export type Evidence = {
+    quote: string;
+    /**
+     * The quote is really in the answer (whitespace and case aside).
+     */
+    verified: boolean;
+};
+
+export type EvidenceView = {
+    concept_id: ConceptId;
+    observed_at: number;
+    part_id: string | null;
+    score: number;
+    source_id: string;
+    /**
+     * `item`, `file_attempt`, `code_run`, `remediation` or `ai_question`.
+     */
+    source_type: string;
+    weight: number;
 };
 
 export type ExperienceSection = {
@@ -3284,6 +3509,43 @@ export type GamificationSettings = {
 
 export type GradeAction = 'save' | 'publish' | 'return';
 
+export type GradeDraftId = string;
+
+export type GradeDraftView = {
+    activity_id: ActivityId;
+    /**
+     * `exact` or `adjusted` once applied.
+     */
+    agreement: string | null;
+    /**
+     * Work-level percentages (0..100) as proposed and after calibration.
+     */
+    ai_score: number | null;
+    calibrated_score: number | null;
+    confidence: number | null;
+    created_at: number;
+    decided_at: number | null;
+    error_code: string | null;
+    final_score: number | null;
+    flags: Array<string>;
+    id: GradeDraftId;
+    is_file: boolean;
+    learner_id: UserId;
+    max_score: number | null;
+    model_name: string | null;
+    proposal: Proposal | null;
+    run_id: AiRunId | null;
+    /**
+     * `queued`, `ready`, `applied`, `discarded`, `superseded` or `failed`.
+     */
+    status: string;
+    /**
+     * The submission or file attempt.
+     */
+    subject_id: string;
+    subject_version: number;
+};
+
 export type GradePublishedPayload = {
     final_score: number;
     /**
@@ -3521,7 +3783,40 @@ export type GradingEntry = {
 
 export type GradingEntryId = string;
 
+export type GradingMetrics = {
+    activities: Array<ActivityDraftStats>;
+    applied_adjusted: number;
+    applied_exact: number;
+    days: number;
+    discarded: number;
+    drafts: number;
+    failed: number;
+    /**
+     * Mean |teacher - draft| in percentage points over applied drafts.
+     */
+    mean_abs_delta: number | null;
+    /**
+     * Median hours from hand-in to grade, this period and the one before.
+     */
+    median_feedback_hours: number | null;
+    previous_median_feedback_hours: number | null;
+    ready: number;
+    /**
+     * Applied drafts × the configured manual grading minutes.
+     */
+    saved_hours: number;
+};
+
 export type GradingMode = 'auto' | 'manual' | 'auto_then_manual';
+
+export type GradingSettings = {
+    auto_grade_drafts: boolean;
+    enabled_by: UserId | null;
+};
+
+export type GradingSettingsRequest = {
+    auto_grade_drafts: boolean;
+};
 
 export type GradingType = 'numeric' | 'percentage';
 
@@ -3584,6 +3879,18 @@ export type ImageGallerySection = {
     id: string;
     images: Array<ProfileImage>;
     title: string;
+};
+
+export type IndexStatus = {
+    chunks: number;
+    embedded_chunks: number;
+    failed_sources: number;
+    last_indexed_at: number | null;
+    /**
+     * The embedder in use (`hash-ngram-v1` without a provider).
+     */
+    model: string;
+    sources: number;
 };
 
 export type InsightCategory = 'risk' | 'assessment' | 'content' | 'workload' | 'completion' | 'intervention';
@@ -3876,6 +4183,22 @@ export type LearnerCourseState = {
     title: string;
 };
 
+export type LearnerMastery = {
+    concepts: Array<ConceptMastery>;
+    user_id: UserId;
+};
+
+export type LearnerMasteryDetail = {
+    concepts: Array<ConceptMastery>;
+    evidence: Array<EvidenceView>;
+    learner: LearnerRef;
+};
+
+export type LearnerRef = {
+    name: string;
+    user_id: UserId;
+};
+
 /**
  * One "What you'll learn" entry on write; omit `id` for a new one.
  */
@@ -4018,6 +4341,11 @@ export type LoginRequest = {
      */
     totp_code?: string;
 };
+
+/**
+ * What the learner and the teacher see.
+ */
+export type MasteryLevel = 'not_started' | 'struggling' | 'learning' | 'mastered';
 
 export type MatchMode = 'exact' | 'trimmed' | 'ignore_whitespace' | 'numeric_tolerance' | 'custom_checker';
 
@@ -4507,6 +4835,19 @@ export type PreferencesPatch = {
     privacy?: PrivacyPreferences | null;
 };
 
+export type PrerequisiteView = {
+    concept_id: ConceptId;
+    requires_id: ConceptId;
+    status: string;
+};
+
+export type PrerequisitesRequest = {
+    /**
+     * The concepts this one requires (replaces the set).
+     */
+    requires: Array<ConceptId>;
+};
+
 export type PrivacyPreferences = {
     /**
      * `true` lists the certificates on the public profile
@@ -4776,6 +5117,50 @@ export type ProgressUpdated = {
     course_id: CourseId;
 };
 
+export type Proposal = {
+    auto_max: number;
+    /**
+     * Points the auto-grader already gave (submissions) and their maximum.
+     */
+    auto_points: number;
+    /**
+     * Corrections the calibration drew on (0 = none yet).
+     */
+    calibration_corrections: number;
+    confidence: number;
+    flags: Array<string>;
+    overall_feedback: string;
+    parts: Array<ProposalPart>;
+};
+
+export type ProposalCriterion = {
+    ai_score: number;
+    calibrated_score: number;
+    criterion_id: string;
+    evidence: Array<Evidence>;
+    label: string;
+    max_score: number;
+    rationale: string;
+    /**
+     * A non-zero score with no quote found in the answer.
+     */
+    unsupported: boolean;
+};
+
+export type ProposalPart = {
+    ai_score: number;
+    calibrated_score: number;
+    criteria: Array<ProposalCriterion>;
+    /**
+     * The start of the answer (teacher-side calibration examples).
+     */
+    excerpt: string;
+    feedback: string;
+    max_score: number;
+    part_id: string;
+    title: string;
+};
+
 /**
  * A certificate as the public sees it (no holder id).
  */
@@ -4996,6 +5381,21 @@ export type QuestionDifficultyRow = {
     question_label: string;
     strong_miss_pct: number | null;
     weak_correct_pct: number | null;
+};
+
+export type QueueDraftsRequest = {
+    /**
+     * Only these works (submission or file attempt ids); absent = every work waiting for a grade.
+     */
+    subject_ids?: Array<string>;
+};
+
+export type QueueReport = {
+    queued: Array<GradeDraftId>;
+    /**
+     * Works that already have a fresh draft (or are not waiting for a grade).
+     */
+    skipped: number;
 };
 
 export type ReactionState = {
@@ -5717,6 +6117,44 @@ export type ScoreBucket = {
 
 export type ScoringStrategy = 'partial_credit' | 'all_or_nothing' | 'best_submission' | 'latest_submission';
 
+/**
+ * Where a passage sits in its source: the heading path and block range of a lesson, or the question.
+ */
+export type SearchAnchor = {
+    block_end?: number;
+    block_start?: number;
+    heading_path?: Array<string>;
+    item_id?: string;
+};
+
+export type SearchHit = {
+    activity_id: ActivityId | null;
+    /**
+     * The place inside the source for a deep link.
+     */
+    anchor: SearchAnchor;
+    chunk_id: ContentChunkId;
+    excerpt: string;
+    /**
+     * Where it is: activity and heading path.
+     */
+    label: string;
+    score: number;
+    source_id: string;
+    /**
+     * `activity`, `item` or `course`.
+     */
+    source_type: string;
+};
+
+export type SearchRequest = {
+    /**
+     * 1..=20 (default 8).
+     */
+    limit?: number;
+    query: string;
+};
+
 export type SearchResults = {
     collections: Array<CollectionHit>;
     /**
@@ -5855,6 +6293,17 @@ export type SignedDownload = {
      * (`AB__STORAGE__ENDPOINT`: the public origin in production).
      */
     url: string;
+};
+
+export type SimilarPairView = {
+    a: WorkRef;
+    b: WorkRef;
+    /**
+     * Percentage points between the two grades.
+     */
+    gap: number;
+    part_key: string;
+    similarity: number;
 };
 
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
@@ -6098,6 +6547,13 @@ export type SubmitRequest = {
      * The client's anti-cheat count; the server's own count wins when higher.
      */
     violation_count?: number;
+};
+
+export type SuggestConceptsRequest = {
+    /**
+     * Map one chapter only.
+     */
+    chapter_id?: ChapterId;
 };
 
 export type SupportAlertCode = 'grading_slo_breached' | 'grading_slo_warning' | 'suspicious_attempts' | 'missing_scores';
@@ -6484,6 +6940,20 @@ export type UpdateCollectionRequest = {
     description?: string;
     name?: string;
     public?: boolean;
+};
+
+export type UpdateConceptRequest = {
+    description?: string;
+    name?: string;
+    /**
+     * `suggested`, `approved` or `rejected`.
+     */
+    status?: string;
+};
+
+export type UpdateConceptTagRequest = {
+    status?: string;
+    weight?: number;
 };
 
 export type UpdateContributorRequest = {
@@ -7071,6 +7541,16 @@ export type WorkQueue = {
     kind_counts: Array<WorkKindCount>;
     next_cursor: string | null;
     total: number;
+};
+
+export type WorkRef = {
+    learner_id: UserId;
+    learner_name: string;
+    /**
+     * Percentage of the part's maximum.
+     */
+    score_pct: number;
+    subject_id: string;
 };
 
 /**
@@ -7708,6 +8188,218 @@ export type LatestCourseAnalysisResponses = {
 
 export type LatestCourseAnalysisResponse = LatestCourseAnalysisResponses[keyof LatestCourseAnalysisResponses];
 
+export type GradingConsistencyData = {
+    body?: never;
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/activities/{activity_id}/consistency';
+};
+
+export type GradingConsistencyResponses = {
+    /**
+     * The consistency report
+     */
+    200: ConsistencyReport;
+};
+
+export type GradingConsistencyResponse = GradingConsistencyResponses[keyof GradingConsistencyResponses];
+
+export type ActivityGradeDraftsData = {
+    body?: never;
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/activities/{activity_id}/drafts';
+};
+
+export type ActivityGradeDraftsResponses = {
+    /**
+     * Drafts
+     */
+    200: Array<GradeDraftView>;
+};
+
+export type ActivityGradeDraftsResponse = ActivityGradeDraftsResponses[keyof ActivityGradeDraftsResponses];
+
+export type ApproveGradeDraftsData = {
+    body: ApproveDraftsRequest;
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/activities/{activity_id}/drafts/approve';
+};
+
+export type ApproveGradeDraftsResponses = {
+    /**
+     * One outcome per draft
+     */
+    200: Array<ApproveOutcome>;
+};
+
+export type ApproveGradeDraftsResponse = ApproveGradeDraftsResponses[keyof ApproveGradeDraftsResponses];
+
+export type QueueGradeDraftsData = {
+    body: QueueDraftsRequest;
+    path: {
+        /**
+         * Activity id
+         */
+        activity_id: ActivityId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/activities/{activity_id}/drafts/queue';
+};
+
+export type QueueGradeDraftsErrors = {
+    /**
+     * AI disabled or budget exhausted
+     */
+    503: Problem;
+};
+
+export type QueueGradeDraftsError = QueueGradeDraftsErrors[keyof QueueGradeDraftsErrors];
+
+export type QueueGradeDraftsResponses = {
+    /**
+     * Queued drafts
+     */
+    202: QueueReport;
+};
+
+export type QueueGradeDraftsResponse = QueueGradeDraftsResponses[keyof QueueGradeDraftsResponses];
+
+export type SubjectGradeDraftData = {
+    body?: never;
+    path: {
+        /**
+         * Submission or file attempt id
+         */
+        subject_id: string;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/drafts/subject/{subject_id}';
+};
+
+export type SubjectGradeDraftResponses = {
+    /**
+     * The draft or null
+     */
+    200: GradeDraftView | null;
+};
+
+export type SubjectGradeDraftResponse = SubjectGradeDraftResponses[keyof SubjectGradeDraftResponses];
+
+export type DiscardGradeDraftData = {
+    body?: never;
+    path: {
+        /**
+         * Draft id
+         */
+        draft_id: GradeDraftId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/drafts/{draft_id}/discard';
+};
+
+export type DiscardGradeDraftErrors = {
+    /**
+     * The draft is no longer live
+     */
+    409: Problem;
+};
+
+export type DiscardGradeDraftError = DiscardGradeDraftErrors[keyof DiscardGradeDraftErrors];
+
+export type DiscardGradeDraftResponses = {
+    /**
+     * The discarded draft
+     */
+    200: GradeDraftView;
+};
+
+export type DiscardGradeDraftResponse = DiscardGradeDraftResponses[keyof DiscardGradeDraftResponses];
+
+export type GradingMetricsData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: {
+        /**
+         * 1..=365 (default 30).
+         */
+        days?: number | null;
+    };
+    url: '/api/v2/ai/grading/{course_id}/metrics';
+};
+
+export type GradingMetricsResponses = {
+    /**
+     * Draft and feedback-time metrics
+     */
+    200: GradingMetrics;
+};
+
+export type GradingMetricsResponse = GradingMetricsResponses[keyof GradingMetricsResponses];
+
+export type GradingSettingsData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/{course_id}/settings';
+};
+
+export type GradingSettingsResponses = {
+    /**
+     * The course's AI grading settings
+     */
+    200: GradingSettings;
+};
+
+export type GradingSettingsResponse = GradingSettingsResponses[keyof GradingSettingsResponses];
+
+export type SetGradingSettingsData = {
+    body: GradingSettingsRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/ai/grading/{course_id}/settings';
+};
+
+export type SetGradingSettingsResponses = {
+    /**
+     * The settings
+     */
+    200: GradingSettings;
+};
+
+export type SetGradingSettingsResponse = SetGradingSettingsResponses[keyof SetGradingSettingsResponses];
+
 export type DismissLectureSuggestionData = {
     body: DismissSuggestionRequest;
     path: {
@@ -8107,6 +8799,78 @@ export type LatestRemediationResponses = {
 };
 
 export type LatestRemediationResponse = LatestRemediationResponses[keyof LatestRemediationResponses];
+
+export type ReindexCourseData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/ai/retrieval/{course_id}/reindex';
+};
+
+export type ReindexCourseResponses = {
+    /**
+     * Queued for indexing
+     */
+    202: IndexStatus;
+};
+
+export type ReindexCourseResponse = ReindexCourseResponses[keyof ReindexCourseResponses];
+
+export type SearchCourseData = {
+    body: SearchRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/ai/retrieval/{course_id}/search';
+};
+
+export type SearchCourseErrors = {
+    /**
+     * Unknown or inaccessible course
+     */
+    404: Problem;
+};
+
+export type SearchCourseError = SearchCourseErrors[keyof SearchCourseErrors];
+
+export type SearchCourseResponses = {
+    /**
+     * Passages, best first
+     */
+    200: Array<SearchHit>;
+};
+
+export type SearchCourseResponse = SearchCourseResponses[keyof SearchCourseResponses];
+
+export type IndexStatusData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/ai/retrieval/{course_id}/status';
+};
+
+export type IndexStatusResponses = {
+    /**
+     * The course's index
+     */
+    200: IndexStatus;
+};
+
+export type IndexStatusResponse = IndexStatusResponses[keyof IndexStatusResponses];
 
 export type GetAiRunData = {
     body?: never;
@@ -12469,6 +13233,317 @@ export type CreateChapterResponses = {
 
 export type CreateChapterResponse = CreateChapterResponses[keyof CreateChapterResponses];
 
+export type CreateConceptTagData = {
+    body: CreateConceptTagRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concept-tags';
+};
+
+export type CreateConceptTagErrors = {
+    /**
+     * Concept, activity or question outside the course
+     */
+    422: Problem;
+};
+
+export type CreateConceptTagError = CreateConceptTagErrors[keyof CreateConceptTagErrors];
+
+export type CreateConceptTagResponses = {
+    /**
+     * The tag (approved)
+     */
+    201: ConceptTagView;
+};
+
+export type CreateConceptTagResponse = CreateConceptTagResponses[keyof CreateConceptTagResponses];
+
+export type DeleteConceptTagData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Tag id
+         */
+        tag_id: ConceptTagId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concept-tags/{tag_id}';
+};
+
+export type DeleteConceptTagErrors = {
+    /**
+     * Unknown or inaccessible tag
+     */
+    404: Problem;
+};
+
+export type DeleteConceptTagError = DeleteConceptTagErrors[keyof DeleteConceptTagErrors];
+
+export type DeleteConceptTagResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteConceptTagResponse = DeleteConceptTagResponses[keyof DeleteConceptTagResponses];
+
+export type UpdateConceptTagData = {
+    body: UpdateConceptTagRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Tag id
+         */
+        tag_id: ConceptTagId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concept-tags/{tag_id}';
+};
+
+export type UpdateConceptTagErrors = {
+    /**
+     * Unknown or inaccessible tag
+     */
+    404: Problem;
+};
+
+export type UpdateConceptTagError = UpdateConceptTagErrors[keyof UpdateConceptTagErrors];
+
+export type UpdateConceptTagResponses = {
+    /**
+     * The tag
+     */
+    200: ConceptTagView;
+};
+
+export type UpdateConceptTagResponse = UpdateConceptTagResponses[keyof UpdateConceptTagResponses];
+
+export type ConceptGraphData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts';
+};
+
+export type ConceptGraphErrors = {
+    /**
+     * Unknown or inaccessible course
+     */
+    404: Problem;
+};
+
+export type ConceptGraphError = ConceptGraphErrors[keyof ConceptGraphErrors];
+
+export type ConceptGraphResponses = {
+    /**
+     * The course concept graph
+     */
+    200: ConceptGraph;
+};
+
+export type ConceptGraphResponse = ConceptGraphResponses[keyof ConceptGraphResponses];
+
+export type CreateConceptData = {
+    body: CreateConceptRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts';
+};
+
+export type CreateConceptErrors = {
+    /**
+     * Not a teacher of the course
+     */
+    403: Problem;
+};
+
+export type CreateConceptError = CreateConceptErrors[keyof CreateConceptErrors];
+
+export type CreateConceptResponses = {
+    /**
+     * The new concept
+     */
+    201: ConceptView;
+};
+
+export type CreateConceptResponse = CreateConceptResponses[keyof CreateConceptResponses];
+
+export type ReviewConceptsData = {
+    body: ConceptReviewRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts/review';
+};
+
+export type ReviewConceptsResponses = {
+    /**
+     * The graph after the decision
+     */
+    200: ConceptGraph;
+};
+
+export type ReviewConceptsResponse = ReviewConceptsResponses[keyof ReviewConceptsResponses];
+
+export type SuggestConceptsData = {
+    body: SuggestConceptsRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts/suggest';
+};
+
+export type SuggestConceptsErrors = {
+    /**
+     * AI disabled or budget exhausted
+     */
+    503: Problem;
+};
+
+export type SuggestConceptsError = SuggestConceptsErrors[keyof SuggestConceptsErrors];
+
+export type SuggestConceptsResponses = {
+    /**
+     * Queued run
+     */
+    202: RunStatus;
+};
+
+export type SuggestConceptsResponse = SuggestConceptsResponses[keyof SuggestConceptsResponses];
+
+export type DeleteConceptData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Concept id
+         */
+        concept_id: ConceptId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts/{concept_id}';
+};
+
+export type DeleteConceptErrors = {
+    /**
+     * Unknown or inaccessible concept
+     */
+    404: Problem;
+};
+
+export type DeleteConceptError = DeleteConceptErrors[keyof DeleteConceptErrors];
+
+export type DeleteConceptResponses = {
+    /**
+     * Deleted with its tags and prerequisites
+     */
+    204: void;
+};
+
+export type DeleteConceptResponse = DeleteConceptResponses[keyof DeleteConceptResponses];
+
+export type UpdateConceptData = {
+    body: UpdateConceptRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Concept id
+         */
+        concept_id: ConceptId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts/{concept_id}';
+};
+
+export type UpdateConceptErrors = {
+    /**
+     * Unknown or inaccessible concept
+     */
+    404: Problem;
+};
+
+export type UpdateConceptError = UpdateConceptErrors[keyof UpdateConceptErrors];
+
+export type UpdateConceptResponses = {
+    /**
+     * The concept
+     */
+    200: ConceptView;
+};
+
+export type UpdateConceptResponse = UpdateConceptResponses[keyof UpdateConceptResponses];
+
+export type SetPrerequisitesData = {
+    body: PrerequisitesRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Concept id
+         */
+        concept_id: ConceptId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/concepts/{concept_id}/prerequisites';
+};
+
+export type SetPrerequisitesErrors = {
+    /**
+     * Unknown concept or a cycle
+     */
+    422: Problem;
+};
+
+export type SetPrerequisitesError = SetPrerequisitesErrors[keyof SetPrerequisitesErrors];
+
+export type SetPrerequisitesResponses = {
+    /**
+     * The concept's prerequisites
+     */
+    200: Array<PrerequisiteView>;
+};
+
+export type SetPrerequisitesResponse = SetPrerequisitesResponses[keyof SetPrerequisitesResponses];
+
 export type ListContributorsData = {
     body?: never;
     path: {
@@ -13203,6 +14278,91 @@ export type CourseLifecycleResponses = {
 };
 
 export type CourseLifecycleResponse = CourseLifecycleResponses[keyof CourseLifecycleResponses];
+
+export type ClassMasteryData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/mastery';
+};
+
+export type ClassMasteryErrors = {
+    /**
+     * Not a teacher of the course
+     */
+    403: Problem;
+};
+
+export type ClassMasteryError = ClassMasteryErrors[keyof ClassMasteryErrors];
+
+export type ClassMasteryResponses = {
+    /**
+     * Mastery across the class
+     */
+    200: ClassMastery;
+};
+
+export type ClassMasteryResponse = ClassMasteryResponses[keyof ClassMasteryResponses];
+
+export type LearnerMasteryData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+        /**
+         * Learner id
+         */
+        user_id: UserId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/mastery/learners/{user_id}';
+};
+
+export type LearnerMasteryErrors = {
+    /**
+     * Not a learner of the course
+     */
+    404: Problem;
+};
+
+export type LearnerMasteryError = LearnerMasteryErrors[keyof LearnerMasteryErrors];
+
+export type LearnerMasteryResponses = {
+    /**
+     * One learner's mastery with its evidence
+     */
+    200: LearnerMasteryDetail;
+};
+
+export type LearnerMasteryResponse = LearnerMasteryResponses[keyof LearnerMasteryResponses];
+
+export type MyMasteryData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/mastery/me';
+};
+
+export type MyMasteryResponses = {
+    /**
+     * The learner's mastery
+     */
+    200: LearnerMastery;
+};
+
+export type MyMasteryResponse = MyMasteryResponses[keyof MyMasteryResponses];
 
 export type CourseReadinessData = {
     body?: never;

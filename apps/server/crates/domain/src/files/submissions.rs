@@ -1414,6 +1414,10 @@ impl FileSubmissionsService {
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(version, latest.version));
         }
+        if !attempt.preview {
+            crate::ai::assist::grading::owe_auto_draft(&mut tx, row.activity_id, attempt.id.0)
+                .await?;
+        }
         let followup = self
             .projector
             .owe_file_attempt(&mut tx, row.id, actor.user_id, attempt.preview)
@@ -1630,6 +1634,21 @@ impl FileSubmissionsService {
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(expected_version, latest.version));
         }
+        // docs/AI-FIRST.md 4.3 / 3.3: close the AI draft, feed the mastery model.
+        if status != FileAttemptStatus::Returned
+            && let Some(raw) = raw_score
+        {
+            crate::ai::assist::grading::settle_file_draft(
+                &mut tx,
+                id,
+                actor.user_id,
+                raw,
+                input.rubric_scores.as_ref(),
+                input.feedback.as_deref(),
+            )
+            .await?;
+        }
+        crate::mastery::owe_ingest(&mut tx, crate::mastery::SOURCE_FILE_ATTEMPT, id.0).await?;
         let followup = self
             .projector
             .owe_reproject_file_attempt(&mut tx, attempt.file_submission_id, attempt.user_id)

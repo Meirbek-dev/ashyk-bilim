@@ -142,6 +142,7 @@ fn analytics_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::analytics::export_assessment_outcomes))
         .merge(ai_routes())
         .merge(ai_agent_routes())
+        .merge(ai_first_routes())
 }
 
 fn ai_routes() -> OpenApiRouter<AppState> {
@@ -188,6 +189,32 @@ fn ai_agent_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::ai_agents::latest_remediation))
         .routes(routes!(routes::ai_agents::complete_remediation))
         .routes(routes!(routes::ai_agents::student_remediation))
+}
+
+fn ai_first_routes() -> OpenApiRouter<AppState> {
+    use routes::ai_first as r;
+    OpenApiRouter::new()
+        .routes(routes!(r::concept_graph, r::create_concept))
+        .routes(routes!(r::update_concept, r::delete_concept))
+        .routes(routes!(r::set_prerequisites))
+        .routes(routes!(r::create_concept_tag))
+        .routes(routes!(r::update_concept_tag, r::delete_concept_tag))
+        .routes(routes!(r::review_concepts))
+        .routes(routes!(r::suggest_concepts))
+        .routes(routes!(r::my_mastery))
+        .routes(routes!(r::class_mastery))
+        .routes(routes!(r::learner_mastery))
+        .routes(routes!(r::search_course))
+        .routes(routes!(r::index_status))
+        .routes(routes!(r::reindex_course))
+        .routes(routes!(r::queue_grade_drafts))
+        .routes(routes!(r::activity_grade_drafts))
+        .routes(routes!(r::subject_grade_draft))
+        .routes(routes!(r::approve_grade_drafts))
+        .routes(routes!(r::discard_grade_draft))
+        .routes(routes!(r::grading_consistency))
+        .routes(routes!(r::grading_metrics))
+        .routes(routes!(r::grading_settings, r::set_grading_settings))
 }
 
 fn work_queue_routes() -> OpenApiRouter<AppState> {

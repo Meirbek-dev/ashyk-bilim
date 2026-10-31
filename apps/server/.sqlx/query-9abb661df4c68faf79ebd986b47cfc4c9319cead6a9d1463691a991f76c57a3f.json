@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.id AS \"subject_id!\", t.user_id AS \"learner_id!: UserId\",\n                  COALESCE(NULLIF(trim(u.display_name), ''), u.username) AS \"learner_name!\",\n                  'file' AS \"part_key!\", '' AS \"text!\",\n                  COALESCE(t.final_score, 0) AS \"score!\", 100::float8 AS \"max_score!\"\n           FROM file_submission_attempts t\n           JOIN file_submissions f ON f.id = t.file_submission_id\n           JOIN users u ON u.id = t.user_id\n           WHERE f.activity_id = $1 AND NOT t.preview AND t.status IN ('graded', 'published')\n             AND t.final_score IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subject_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "learner_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "learner_name!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "part_key!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "text!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "max_score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "9abb661df4c68faf79ebd986b47cfc4c9319cead6a9d1463691a991f76c57a3f"
+}

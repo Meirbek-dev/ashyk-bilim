@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: ContentChunkId\", source_type, source_id,\n                  activity_id AS \"activity_id: ActivityId\", label, body, anchor,\n                  ts_rank_cd(lexeme, q)::float8 AS \"score!\"\n           FROM content_chunks, to_tsquery('simple', search_fold($3)) q\n           WHERE course_id = $1 AND lexeme @@ q\n             AND (NOT $2 OR (audience = 'learner' AND published))\n           ORDER BY ts_rank_cd(lexeme, q) DESC, id\n           LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ContentChunkId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "source_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_type"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "source_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "anchor",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "anchor"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "f1399f099c3734a44dcdc50eb720d05b532f7ffed78bc4987c078fd2927805ae"
+}

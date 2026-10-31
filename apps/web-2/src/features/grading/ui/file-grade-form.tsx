@@ -6,9 +6,11 @@ import type { Attempt, FileGradeRequest, FileRubric, GradeAction } from '#/share
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
+import { transferToFileForm } from '../model/ai-draft'
 import { fileGradeForm, fileGradeRequest, fileGradeSchema } from '../model/grade-form'
 import { gradeAttemptOptions, type ReviewIds } from '../mutations'
 import { attemptOptions } from '../queries'
+import { AiDraft } from './ai-draft'
 import { GradeActions } from './grade-actions'
 import { LatePenaltyNote } from './late-penalty-note'
 import { RubricTotal } from './rubric-total'
@@ -47,6 +49,15 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
   }
   return (
     <form noValidate className="flex flex-col gap-4" onSubmit={event => event.preventDefault()}>
+      <AiDraft
+        ids={ids}
+        onTransfer={draft => {
+          const next = transferToFileForm(draft, form.state.values)
+          form.setFieldValue('criteria', next.criteria)
+          form.setFieldValue('final_score', next.final_score)
+          form.setFieldValue('feedback', next.feedback)
+        }}
+      />
       {initial.criteria.length > 0 ? (
         <fieldset className="flex flex-col gap-4">
           <legend className="mb-2 text-xl font-semibold">{m.grading_rubric()}</legend>

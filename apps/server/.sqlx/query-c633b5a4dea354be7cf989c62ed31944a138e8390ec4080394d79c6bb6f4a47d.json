@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM concept_prerequisites WHERE concept_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c633b5a4dea354be7cf989c62ed31944a138e8390ec4080394d79c6bb6f4a47d"
+}
