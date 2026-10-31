@@ -39,7 +39,7 @@ up() {
 
 up dual-web nginx web web2
 # Paths only one web has, whatever the cookie says.
-for cookie in '' 'ab_ui=v2'; do
+for cookie in '' 'ab_ui=classic'; do
   expect classic /_next/static/x.js "$cookie"
   expect classic /api/health "$cookie"
   expect classic /app_logo.svg "$cookie"
@@ -50,19 +50,19 @@ for cookie in '' 'ab_ui=v2'; do
   expect new /assets/index-1.js "$cookie"
   expect new /courses/0199 "$cookie"
 done
-# Shared paths follow the cookie; the old web is the default.
+# Shared paths follow the cookie; the new web is the default (ab_ui=v2: set by an older /ui/new).
 for path in / /courses /collections /search /ru/course/x /certificates/X/verify; do
-  expect classic "$path"
-  expect classic "$path" 'ab_ui=classic'
+  expect new "$path"
   expect new "$path" 'ab_ui=v2'
+  expect classic "$path" 'ab_ui=classic'
 done
 
 # The switch: a cookie and a relative redirect home; every web response offers it while on.
 headers=$(compose exec -T nginx curl -s -o /dev/null -D - -H 'Host: ashyq.test' http://127.0.0.1/ui/new)
-grep -qi '^set-cookie: ab_ui=v2;' <<<"$headers" || { log "FAIL /ui/new sets no ab_ui=v2"; fails=$((fails + 1)); }
+grep -qi '^set-cookie: ab_ui=;.*max-age=0' <<<"$headers" || { log "FAIL /ui/new keeps ab_ui"; fails=$((fails + 1)); }
 grep -qi '^location: /\s*$' <<<"$headers" || { log "FAIL /ui/new does not redirect to /"; fails=$((fails + 1)); }
 headers=$(compose exec -T nginx curl -s -o /dev/null -D - -H 'Host: ashyq.test' http://127.0.0.1/ui/classic)
-grep -qi '^set-cookie: ab_ui=;.*max-age=0' <<<"$headers" || { log "FAIL /ui/classic keeps ab_ui"; fails=$((fails + 1)); }
+grep -qi '^set-cookie: ab_ui=classic;' <<<"$headers" || { log "FAIL /ui/classic sets no ab_ui=classic"; fails=$((fails + 1)); }
 headers=$(compose exec -T nginx curl -s -o /dev/null -D - -H 'Host: ashyq.test' http://127.0.0.1/courses)
 grep -qi '^set-cookie: ab_dual=1;' <<<"$headers" || { log "FAIL no ab_dual on a page"; fails=$((fails + 1)); }
 grep -qi '^x-content-type-options: nosniff' <<<"$headers" || { log "FAIL page lost the baseline headers"; fails=$((fails + 1)); }
@@ -70,7 +70,7 @@ grep -qi '^x-content-type-options: nosniff' <<<"$headers" || { log "FAIL page lo
 # Off: one web, the cookie means nothing, no switch offered.
 up '' nginx web
 for path in / /home /courses/0199 /assets/index-1.js; do
-  expect classic "$path" 'ab_ui=v2'
+  expect classic "$path"
 done
 headers=$(compose exec -T nginx curl -s -o /dev/null -D - -H 'Host: ashyq.test' http://127.0.0.1/courses)
 if grep -qi '^set-cookie: ab_dual' <<<"$headers"; then log "FAIL ab_dual sent while off"; fails=$((fails + 1)); fi

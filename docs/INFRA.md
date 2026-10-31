@@ -541,7 +541,7 @@ stand network.
 
 ## Dual web
 
-Both webs on one origin while the new one is opt-in (RUNBOOK 3.12). `dual-web` in
+Both webs on one origin, the new one by default and the old one opt-in (RUNBOOK 3.12). `dual-web` in
 `COMPOSE_PROFILES` starts `web2` (`ashyq-web-2:${IMAGE_TAG}`, `WEB2_IMAGE`
 overrides, 512m) and switches the edge's routing on; without it everything goes
 to `web` and the cookies below mean nothing.
@@ -550,9 +550,9 @@ to `web` and the cookies below mean nothing.
 | --- | --- |
 | `/_next/*`, `/api/*` (not `/api/v2`), `/app_logo*`, `/empty_*` | `web` (old) |
 | `/home`, `/learning`, `/achievements`, `/notifications`, `/login`, `/signup`, `/reset-password`, `/verify-email`, `/_client-error`, `/learn/*`, `/teach/*`, `/admin/*`, `/settings/*`, `/assets/*`, `/themes/*`, `/courses/<id>`, `/collections/<id>`, `/users/<name>` | `web2` (new): only it has them, so a link someone copied in the new web always opens |
-| everything else (`/`, `/courses`, `/search`, `/<locale>/...`, `/certificates/...`) | `web2` with cookie `ab_ui=v2`, else `web` |
+| everything else (`/`, `/courses`, `/search`, `/<locale>/...`, `/certificates/...`) | `web` with cookie `ab_ui=classic`, else `web2` |
 
-- `/ui/new` sets `ab_ui=v2` (a year), `/ui/classic` clears it; both answer `302 /`
+- `/ui/classic` sets `ab_ui=classic` (a year), `/ui/new` clears it; both answer `302 /`
   (relative). Each web's profile menu links the other while the edge sets
   `ab_dual=1` (readable, 1 day) on web responses.
 - One session for both: same origin, same `ab_session`, same `/api/v2`. Emails
