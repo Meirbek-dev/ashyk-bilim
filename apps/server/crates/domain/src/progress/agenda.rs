@@ -72,6 +72,8 @@ pub struct ContinueLearning {
     pub activity_type: String,
     /// Null before the projection wrote the course's progress.
     pub progress_pct: Option<f64>,
+    /// Anything done or handed in (the run's `learning_status` is not `not_started`): «Продолжить», else «Начать».
+    pub started: bool,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -245,6 +247,7 @@ impl AgendaService {
                 activity_name: activity.name,
                 activity_type: activity.activity_type,
                 progress_pct: run.progress_pct,
+                started: run.started(),
             });
         }
         Ok(out)

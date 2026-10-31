@@ -256,7 +256,7 @@ export const Trail = zod
         learning_status: zod
           .enum(['not_started', 'in_progress', 'completed'])
           .describe(
-            'The real state (`status` is always `in_progress`, legacy):\n`completed` at 100 %, `not_started` with no progress and no steps.',
+            'The real state (`status` is always `in_progress`, legacy):\n`completed` at 100 %, `not_started` with no progress, no steps and no\nactivity past `not_started` (handed-in work makes it `in_progress`).',
           ),
         next_activity_id: zod.union([
           zod

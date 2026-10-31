@@ -38,11 +38,20 @@ pub struct TrailRun {
     /// The learner's `course_progress` percent - what `learner-state`
     /// reports - or `None` before the projection wrote a row (UX-250).
     pub progress_pct: Option<f64>,
+    /// Some activity is past `not_started` (handed-in work waiting for a grade).
+    pub has_work: bool,
     pub steps: Vec<TrailStep>,
     /// The activity the course page's next step names (returned work, then
     /// overdue, in progress, due soon, the next required one, optional);
     /// `None` when nothing is left to open.
     pub next_activity_id: Option<ActivityId>,
+}
+
+impl TrailRun {
+    /// Any progress, a trail step or work handed in: «В процессе», «Продолжить» (learn-B).
+    pub fn started(&self) -> bool {
+        self.progress_pct.unwrap_or(0.0) > 0.0 || self.has_work || !self.steps.is_empty()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -304,15 +313,14 @@ impl TrailService {
                     })
             })
             .collect();
+        let pct = pcts.iter().find(|p| p.course_id == run.course_id);
         Ok(Some(TrailRun {
             course_total_steps: totals
                 .iter()
                 .find(|t| t.course_id == run.course_id)
                 .map_or(0, |t| t.total),
-            progress_pct: pcts
-                .iter()
-                .find(|p| p.course_id == run.course_id)
-                .map(|p| p.progress_pct),
+            progress_pct: pct.map(|p| p.progress_pct),
+            has_work: pct.is_some_and(|p| p.started),
             steps: run_steps,
             next_activity_id,
             row: run,

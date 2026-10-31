@@ -11,8 +11,8 @@ import { activityTypeMeta } from '#/shared/i18n/labels'
 
 export const percentOf = (item: ContinueLearning) => (item.progress_pct === null ? null : Math.round(item.progress_pct))
 
-/** Nothing done yet (no progress row or 0 %, as «Мои курсы» counts it): the button says «Начать», not «Продолжить». */
-export const notStarted = (item: ContinueLearning) => !item.progress_pct
+/** Nothing done or handed in yet (the server's `started`, as «Мои курсы» counts it): «Начать», not «Продолжить». */
+export const notStarted = (item: ContinueLearning) => !item.started
 
 /**
  * The most recent started course, the page's hero: its picture beside the course, the next activity (type icon and

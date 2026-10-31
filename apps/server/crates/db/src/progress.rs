@@ -775,11 +775,15 @@ pub async fn delete_trail_step<'e>(
     Ok(deleted.rows_affected() > 0)
 }
 
-/// One learner's `course_progress.progress_pct` per course, in one query
-/// (UX-250: the trail run carries what `learner-state` shows).
+/// One learner's `course_progress.progress_pct` per course, in one query.
+///
+/// UX-250: the trail run carries what `learner-state` shows. `started`: any
+/// activity of the course is past `not_started` for them (work handed in, a
+/// test opened), so handed-in work reads «В процессе» before it is graded.
 pub struct CourseProgressPctRow {
     pub course_id: CourseId,
     pub progress_pct: f64,
+    pub started: bool,
 }
 
 pub async fn course_progress_pcts(
@@ -790,8 +794,11 @@ pub async fn course_progress_pcts(
     let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
     let rows = sqlx::query_as!(
         CourseProgressPctRow,
-        r#"SELECT course_id AS "course_id: CourseId", progress_pct
-           FROM course_progress WHERE user_id = $1 AND course_id = ANY($2)"#,
+        r#"SELECT c.course_id AS "course_id: CourseId", c.progress_pct,
+                  EXISTS (SELECT 1 FROM activity_progress p
+                           WHERE p.course_id = c.course_id AND p.user_id = c.user_id
+                             AND p.state <> 'not_started') AS "started!"
+           FROM course_progress c WHERE c.user_id = $1 AND c.course_id = ANY($2)"#,
         user_id.0,
         &ids
     )

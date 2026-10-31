@@ -6,6 +6,9 @@ import type { Enrollment } from '#/shared/api/gen/types.gen'
 import { learningSearchSchema } from '../route'
 import { countByState, nextActivity, orderRuns, runState } from './learning'
 
+const statusOf = (progress: number | null): Enrollment['learning_status'] =>
+  (progress ?? 0) >= 100 ? 'completed' : (progress ?? 0) > 0 ? 'in_progress' : 'not_started'
+
 function run(id: string, progress: number | null, archived = false): Enrollment {
   return {
     id,
@@ -14,7 +17,7 @@ function run(id: string, progress: number | null, archived = false): Enrollment 
     created_at_unix: 0,
     updated_at_unix: 0,
     progress_pct: progress,
-    learning_status: 'in_progress',
+    learning_status: statusOf(progress),
     next_activity_id: null,
     course: {
       id,
@@ -26,12 +29,11 @@ function run(id: string, progress: number | null, archived = false): Enrollment 
 }
 
 describe('learning model', () => {
-  test('B-LRN-02 the state follows the server rule: 100 % is completed, no progress row or 0 % is not started', () => {
-    expect(runState({ progress_pct: null })).toBe('not_started')
-    expect(runState({ progress_pct: 0 })).toBe('not_started')
-    expect(runState({ progress_pct: 0.5 })).toBe('in_progress')
-    expect(runState({ progress_pct: 99.9 })).toBe('in_progress')
-    expect(runState({ progress_pct: 100 })).toBe('completed')
+  test('B-LRN-02 the state is the server rule: work handed in at 0 % is already in progress', () => {
+    expect(runState({ learning_status: 'not_started' })).toBe('not_started')
+    expect(runState({ learning_status: 'in_progress' })).toBe('in_progress')
+    expect(runState({ learning_status: 'completed' })).toBe('completed')
+    expect(runState({ ...run('handed-in', 0), learning_status: 'in_progress' })).toBe('in_progress')
     expect(countByState([run('a', null), run('b', 40), run('c', 100), run('d', 100)])).toEqual({
       not_started: 1,
       in_progress: 1,
@@ -57,10 +59,12 @@ describe('learning model', () => {
 
   test('B-LRN-04 the card goes to the next activity until the course is completed or archived', () => {
     const open = { archived_at_unix: null }
-    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x', course: open })).toBe('x')
-    expect(nextActivity({ progress_pct: null, next_activity_id: 'x', course: open })).toBe('x')
-    expect(nextActivity({ progress_pct: 100, next_activity_id: 'x', course: open })).toBeNull()
-    expect(nextActivity({ progress_pct: 40, next_activity_id: null, course: open })).toBeNull()
-    expect(nextActivity({ progress_pct: 40, next_activity_id: 'x', course: { archived_at_unix: 1 } })).toBeNull()
+    expect(nextActivity({ learning_status: 'in_progress', next_activity_id: 'x', course: open })).toBe('x')
+    expect(nextActivity({ learning_status: 'not_started', next_activity_id: 'x', course: open })).toBe('x')
+    expect(nextActivity({ learning_status: 'completed', next_activity_id: 'x', course: open })).toBeNull()
+    expect(nextActivity({ learning_status: 'in_progress', next_activity_id: null, course: open })).toBeNull()
+    expect(
+      nextActivity({ learning_status: 'in_progress', next_activity_id: 'x', course: { archived_at_unix: 1 } }),
+    ).toBeNull()
   })
 })

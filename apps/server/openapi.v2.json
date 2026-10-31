@@ -4953,6 +4953,10 @@
               "null"
             ]
           },
+          "started": {
+            "description": "Anything done or handed in (the run's `learning_status` is not `not_started`): «Продолжить», else «Начать».",
+            "type": "boolean"
+          },
           "thumbnail_key": {
             "description": "The course's uploaded thumbnail (storage key); null shows the web's ornament.",
             "type": [
@@ -4967,6 +4971,7 @@
           "activity_id",
           "activity_name",
           "activity_type",
+          "started",
           "progress_pct",
           "thumbnail_key"
         ],
@@ -18677,7 +18682,7 @@
           },
           "learning_status": {
             "$ref": "#/components/schemas/LearningStatus",
-            "description": "The real state (`status` is always `in_progress`, legacy):\n`completed` at 100 %, `not_started` with no progress and no steps."
+            "description": "The real state (`status` is always `in_progress`, legacy):\n`completed` at 100 %, `not_started` with no progress, no steps and no\nactivity past `not_started` (handed-in work makes it `in_progress`)."
           },
           "next_activity_id": {
             "oneOf": [

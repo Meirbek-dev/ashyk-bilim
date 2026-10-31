@@ -53,7 +53,8 @@ pub struct TrailRun {
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
     /// The real state (`status` is always `in_progress`, legacy):
-    /// `completed` at 100 %, `not_started` with no progress and no steps.
+    /// `completed` at 100 %, `not_started` with no progress, no steps and no
+    /// activity past `not_started` (handed-in work makes it `in_progress`).
     pub learning_status: LearningStatus,
     /// The "continue" target: the activity the course page's next step names
     /// (learner-state `next_action`); `null` when none is left.
@@ -162,10 +163,9 @@ impl Trail {
 impl TrailRun {
     fn for_actor(r: domain::TrailRun, actor: &ab_domain::identity::Actor) -> Self {
         let editable = ab_domain::catalog::CurriculumService::editable(actor, &r.course);
-        let pct = r.progress_pct.unwrap_or(0.0);
-        let learning_status = if pct >= 100.0 {
+        let learning_status = if r.progress_pct.unwrap_or(0.0) >= 100.0 {
             LearningStatus::Completed
-        } else if pct > 0.0 || !r.steps.is_empty() {
+        } else if r.started() {
             LearningStatus::InProgress
         } else {
             LearningStatus::NotStarted

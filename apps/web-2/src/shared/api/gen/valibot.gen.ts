@@ -924,6 +924,7 @@ export const vContinueLearning = v.object({
     course_id: vCourseId,
     course_name: v.string(),
     progress_pct: v.nullable(v.number()),
+    started: v.boolean(),
     thumbnail_key: v.nullable(v.string())
 });
 

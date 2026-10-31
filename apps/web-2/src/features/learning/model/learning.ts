@@ -5,14 +5,10 @@ import type { RunState } from '../route'
 export { RUN_STATES, type RunState } from '../route'
 
 /**
- * The server's own rule (learner-state `enrollment_state`: completed from 100 %), read from the run's
- * `progress_pct`; no progress row yet (null) or 0 % is "not started". Nothing is recounted here.
+ * The server's own rule, `learning_status`: completed from 100 %, in progress once anything is done or handed in
+ * (work waiting for a grade counts, learn-B). Nothing is recounted here.
  */
-export function runState(run: Pick<Enrollment, 'progress_pct'>): RunState {
-  const percent = run.progress_pct ?? 0
-  if (percent >= 100) return 'completed'
-  return percent > 0 ? 'in_progress' : 'not_started'
-}
+export const runState = (run: Pick<Enrollment, 'learning_status'>): RunState => run.learning_status
 
 const STATE_ORDER: Record<RunState, number> = { in_progress: 0, not_started: 1, completed: 2 }
 const rank = (run: Enrollment) => (run.course.archived_at_unix ? 3 : STATE_ORDER[runState(run)])
@@ -29,7 +25,7 @@ export const countByState = (runs: readonly Enrollment[]): Record<RunState, numb
   return counts
 }
 
-type NextOf = Pick<Enrollment, 'progress_pct' | 'next_activity_id'> & {
+type NextOf = Pick<Enrollment, 'learning_status' | 'next_activity_id'> & {
   course: Pick<Enrollment['course'], 'archived_at_unix'>
 }
 

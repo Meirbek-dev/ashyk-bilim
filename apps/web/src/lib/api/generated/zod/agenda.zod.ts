@@ -21,6 +21,11 @@ export const Agenda = zod
             course_id: zod.uuid(),
             course_name: zod.string(),
             progress_pct: zod.number().nullable().describe("Null before the projection wrote the course's progress."),
+            started: zod
+              .boolean()
+              .describe(
+                "Anything done or handed in (the run's `learning_status` is not `not_started`): «Продолжить», else «Начать».",
+              ),
             thumbnail_key: zod
               .string()
               .nullable()

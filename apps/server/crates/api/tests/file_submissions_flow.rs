@@ -2082,3 +2082,62 @@ async fn results_carry_the_average_and_the_distribution(pool: PgPool) {
         .collect();
     assert_eq!(buckets, [("40-50".to_owned(), 1), ("90-100".to_owned(), 1)]);
 }
+
+/// learn-B: work handed in and waiting for a grade makes the course «В процессе» on «Мои курсы»
+/// (`learning_status`) and «Продолжить» on «Сегодня» (`started`), as the course page already said; nothing is
+/// complete yet.
+#[ab_testdb::test]
+async fn handed_in_work_puts_the_course_in_progress(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let id = published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    // A second task, so «Сегодня» has a next activity once the first is handed in.
+    published_activity(&app, &teacher, &chapter_id, serde_json::json!({})).await;
+    let user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let alice = app
+        .mint_session_for(
+            user,
+            &[
+                "assessment:submit:assigned",
+                "assessment:read:assigned",
+                "file:create:own",
+                "trail:read:all",
+                "trail:submit:assigned",
+            ],
+        )
+        .await;
+    let joined = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert!(joined.status.is_success(), "{}", joined.text());
+    let status = |body: serde_json::Value| body["runs"][0]["learning_status"].clone();
+    let before = app.get_as(&alice, "/api/v2/enrollments").await;
+    assert_eq!(status(before.json()), "not_started", "{}", before.text());
+
+    let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF v1").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let after = app.get_as(&alice, "/api/v2/enrollments").await;
+    assert_eq!(status(after.json()), "in_progress", "{}", after.text());
+    assert_eq!(after.json()["runs"][0]["progress_pct"], 0.0);
+    let agenda = app.get_as(&alice, "/api/v2/me/agenda").await;
+    assert_eq!(
+        agenda.json()["continue_learning"][0]["started"],
+        true,
+        "{}",
+        agenda.text()
+    );
+}

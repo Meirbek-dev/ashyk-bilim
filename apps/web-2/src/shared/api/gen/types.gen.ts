@@ -1648,6 +1648,10 @@ export type ContinueLearning = {
      */
     progress_pct: number | null;
     /**
+     * Anything done or handed in (the run's `learning_status` is not `not_started`): «Продолжить», else «Начать».
+     */
+    started: boolean;
+    /**
      * The course's uploaded thumbnail (storage key); null shows the web's ornament.
      */
     thumbnail_key: string | null;
@@ -6368,7 +6372,8 @@ export type TrailRun = {
     id: TrailRunId;
     /**
      * The real state (`status` is always `in_progress`, legacy):
-     * `completed` at 100 %, `not_started` with no progress and no steps.
+     * `completed` at 100 %, `not_started` with no progress, no steps and no
+     * activity past `not_started` (handed-in work makes it `in_progress`).
      */
     learning_status: LearningStatus;
     next_activity_id: ActivityId | null;
