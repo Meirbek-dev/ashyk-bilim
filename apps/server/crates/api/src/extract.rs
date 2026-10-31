@@ -457,7 +457,7 @@ where
 const IDEMPOTENT_HEARTBEAT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// How long a concurrent duplicate waits for the owner's reply.
-// ponytail: 50 ms polling of the key row; LISTEN/NOTIFY if the wait shows up in latency.
+// Deliberately simple: 50 ms polling of the key row; LISTEN/NOTIFY if the wait shows up in latency.
 const IN_PROGRESS_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 const IN_PROGRESS_POLL: std::time::Duration = std::time::Duration::from_millis(50);
 
@@ -517,7 +517,7 @@ async fn reserve_or_replay(
 ///
 /// Call it after the write's permission gate (a 412 must not reveal more
 /// than the 403/404 would).
-// ponytail: check-then-write, so a save landing in the milliseconds between
+// Deliberately simple: check-then-write, so a save landing in the milliseconds between
 // this read and the UPDATE is not caught; move the guard into each UPDATE's
 // WHERE (the collections pattern) if two-tab races ever show up in logs.
 pub async fn require_if_match(
