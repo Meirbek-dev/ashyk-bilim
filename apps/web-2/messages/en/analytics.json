@@ -83,7 +83,7 @@
   "analytics_export_course_progress": "CSV: course progress",
   "analytics_export_assessment_outcomes": "CSV: assessment outcomes",
   "analytics_export_grading_backlog": "CSV: review queue",
-  "analytics_interventions_title": "Intervention history",
+  "analytics_interventions_title": "Learner intervention history",
   "analytics_interventions_empty": "No interventions yet.",
   "analytics_intervention_new": "New intervention",
   "analytics_intervention_edit": "Edit intervention",

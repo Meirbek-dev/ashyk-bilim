@@ -33,7 +33,7 @@ const tombstone: Discussion = {
 }
 
 describe('PostItem', () => {
-  test('a tombstone shows «Сообщение удалено», no author, no actions, and still opens its replies', async () => {
+  test('a tombstone shows «Тема удалена», no author, no actions, and still opens its replies', async () => {
     const screen = await renderInRouter(
       <QueryClientProvider client={new QueryClient()}>
         <PostItem item={tombstone} />

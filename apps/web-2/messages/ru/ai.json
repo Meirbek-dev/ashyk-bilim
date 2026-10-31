@@ -140,7 +140,7 @@
   "ai_admin_evals": "Контроль качества",
   "ai_enabled": "ИИ включён",
   "ai_provider_ready": "Провайдер готов",
-  "ai_draft_mode": "Заготовки, когда провайдер недоступен",
+  "ai_draft_mode": "Шаблонные ответы без провайдера",
   "ai_model": "Модель: {model}",
   "ai_run_course": "Курс: {course}",
   "ai_max_request": "Токенов на запрос: {count}",

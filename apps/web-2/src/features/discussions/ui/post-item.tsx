@@ -32,7 +32,7 @@ type PostItemProps = {
 
 /**
  * One post or reply: author and date, the content, and only the actions its `allowed_actions` lists. A deleted post
- * other people replied to is a tombstone: «Сообщение удалено» instead of its author and text, its replies still open.
+ * other people replied to is a tombstone: «Тема удалена» instead of its author and text, its replies still open.
  */
 export function PostItem({ item, open = false }: PostItemProps) {
   const [editing, setEditing] = useState(false)
