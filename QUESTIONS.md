@@ -14,9 +14,6 @@ they count as required, so learners of those courses can never reach 100% (same 
 legacy). Choose: (a) teachers configure them (nothing else to do), (b) unpublish them,
 or (c) mark them not required — (b)/(c) are a one-off SQL update. Not blocking.
 
-**Related: certificate holders and completion.** Imported certificates can belong to
-learners whose current required activities are incomplete (courses grew after issue).
-Analytics now shows their real progress percentage (DECISIONS, 2026-10-11), but a
-certificate still counts as completed for completion rates. Decide whether to retain
-that completion rule, use only current step eligibility, or backfill course completion
-for legacy certificate holders. No data correction has been authorized here.
+**Answered 2026-10-31: (b) unpublish them.** Pending: the one-off SQL in production after a fresh
+backup; remove this item once it has run. Certificate holders keep counting as completed (rule in
+DECISIONS, 2026-10-11, retained by the owner).

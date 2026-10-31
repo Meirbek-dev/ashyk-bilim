@@ -10,11 +10,6 @@ old completion logs and temporary machine setup are in Git.
 - After the owner closes the rollback window: phase 9 in that guide; contract
   removals in `apps/server/docs/phase9-removals.md`.
 - Acceptance requirements: `docs/web/ACCEPTANCE.md`.
-- Outstanding browser check: verify real Safari. Windows WebKit (Playwright's WinCairo
-  build) occasionally crashes the renderer when a signed-in page is resized, and after
-  `pagehide` reports a navigation to the page being left ("goto interrupted"); a standalone
-  script reproduces both without the suite (a few percent of runs, load-dependent, never on
-  guest pages) and no app history call is involved. Linux WebKit (CI) is the evidence.
 - Performance, not started: a lesson page renders its stored document with read-only Tiptap
   (~460 KB raw / ~140 KB gzip, the largest chunk of the most visited learner page). A static
   renderer (React elements per node, the custom node views as plain components) would drop it.
