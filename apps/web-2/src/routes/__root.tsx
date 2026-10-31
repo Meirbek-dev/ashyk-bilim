@@ -8,7 +8,7 @@ import { sessionOptions } from '#/shared/auth/session'
 import { documentTitle, ogLocale, pageTitle, pageUrl, siteOrigin } from '#/shared/lib/document-title'
 import { ssrStatusHeaders } from '#/shared/lib/ssr-status'
 import appCss from '#/styles/globals.css?url'
-import brandPalette from '../../public/brand/palette.json'
+import brandPalette from '#/shared/lib/brand-palette.json'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => ({
