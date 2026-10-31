@@ -10,7 +10,8 @@ on:
     # ci/**: image build + stack smoke for a branch, never published.
     # release/**: every gate runs regardless of paths, then publishes (a release
     # cut from a commit other than main's head, e.g. while main is red).
-    branches: [main, 'ci/**', 'release/**']
+    # renovate/**: dependency updates (renovate.json5); Renovate fast-forwards main once this is green.
+    branches: [main, 'ci/**', 'release/**', 'renovate/**']
   pull_request:
 
 # A newer push to the same ref cancels the running one, main included: only the newest commit is

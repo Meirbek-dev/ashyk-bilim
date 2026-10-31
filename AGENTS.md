@@ -35,6 +35,9 @@
 - Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
 - Never edit an applied migration; add a new one.
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
+- Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
+  is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, Judge0, restic) wait as PRs. Its
+  Dependency Dashboard issue lists what is pending.
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
   `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.

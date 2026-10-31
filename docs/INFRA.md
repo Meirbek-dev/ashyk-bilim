@@ -327,10 +327,12 @@ zero takes about 30 s; a second run changes nothing.
 
 ## Build and release
 
-`.github/workflows/ci.yaml` (`push` to `main`, `ci/**`, `release/**`;
+`.github/workflows/ci.yaml` (`push` to `main`, `ci/**`, `release/**`, `renovate/**`;
 `pull_request`). PRs run the gates only. A newer push to the same ref cancels
 the running run, `main` included: only the newest commit is deployed. `ci/**`
-builds and smokes images without publishing. `coverage.yaml` runs the server's
+builds and smokes images without publishing. `renovate/**` are dependency updates
+(`renovate.json5`, Mend Renovate app): Renovate fast-forwards `main` when the
+branch is green, and opens a PR for a red branch, a major or a stateful image. `coverage.yaml` runs the server's
 line floor (`just cov`) nightly.
 
 | Job | When | What |
