@@ -13,6 +13,7 @@ pub use ab_db::catalog::{
     ChapterRow as Chapter,
 };
 
+use crate::catalog::access::Caps;
 use crate::catalog::courses::{Course, CoursesService};
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
@@ -211,9 +212,10 @@ impl CurriculumService {
     /// 404 for invisible courses, 403 for visible-but-not-writable, 409
     /// for archived ones (every caller mutates the curriculum).
     async fn writable_course(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
-        let course = self.courses.get(actor, course_id).await?;
-        CoursesService::require_write(actor, &course)?;
-        course.ensure_not_archived()
+        self.courses
+            .ctx(actor, course_id)
+            .await?
+            .require(Caps::EDIT)
     }
 
     /// [`Self::editable`] by course id (404 when the course is invisible).

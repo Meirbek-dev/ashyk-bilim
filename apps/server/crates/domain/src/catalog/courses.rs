@@ -10,12 +10,15 @@
 //! maintainers/contributors author on the course like the creator").
 //!
 //! Archive (docs/COURSE_ARCHIVING.md): `archived_at` freezes the course for
-//! every role - each mutating method here and in the other course-scoped
-//! services calls `Course::ensure_not_archived` after its access gate (never
-//! inside the shared gates, which author reads go through too). Archive and
-//! restore take the roster-manager gate (`contributors.rs`).
+//! every role. The catalog's writes go through `CourseCtx::require`
+//! (`access.rs`), which turns an archived course's write into 409; the other
+//! course-scoped services still call `Course::ensure_not_archived` after their
+//! gate (REWRITE 6.3 moves them module by module). Archive and restore take the
+//! roster-manager gate (`contributors.rs`).
 
 use std::collections::HashMap;
+
+use super::access::{Caps, granted};
 
 use ab_core::id::{CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -198,16 +201,14 @@ impl CoursesService {
     /// (403), not archived (409). UX-311: the write handlers check it
     /// before reading the body.
     pub async fn require_writable(&self, actor: &Actor, id: CourseId) -> Result<()> {
-        let course = self.get(actor, id).await?;
-        Self::require_write(actor, &course)?;
-        course.ensure_not_archived()
+        self.ctx(actor, id).await?.require(Caps::EDIT)
     }
 
     /// The lifecycle gate before the body (UX-311): visible (404), then a
     /// writer or roster manager (403); the action picks its own gate after.
     pub async fn require_lifecycle(&self, actor: &Actor, id: CourseId) -> Result<()> {
-        let course = self.get(actor, id).await?;
-        if Self::require_write(actor, &course).is_ok() || Self::manages_roster(actor, &course) {
+        let ctx = self.ctx(actor, id).await?;
+        if ctx.granted(Caps::EDIT) || ctx.granted(Caps::MANAGE_STAFF) {
             Ok(())
         } else {
             Err(Error::forbidden("no lifecycle access to this course"))
@@ -223,7 +224,7 @@ impl CoursesService {
     /// active maintainer / contributor - authorship is the `:own` scope).
     /// Shared with the curriculum service (chapters/activities inherit it).
     pub(crate) fn require_write(actor: &Actor, course: &Course) -> Result<()> {
-        if actor.has(perm(Action::Update, Scope::Platform)) || course.is_author(actor.user_id) {
+        if granted(actor, course).contains(Caps::EDIT) {
             return Ok(());
         }
         Err(Error::forbidden("no write access to this course"))
@@ -232,9 +233,7 @@ impl CoursesService {
     /// The delete gate: platform deleters, or the creator with the delete
     /// grant (legacy matrix: course:delete:own) - stricter than update.
     fn may_delete(actor: &Actor, course: &Course) -> bool {
-        actor.has(perm(Action::Delete, Scope::Platform))
-            || (course.creator_id == Some(actor.user_id)
-                && actor.has(perm(Action::Delete, Scope::Own)))
+        granted(actor, course).contains(Caps::DELETE)
     }
 
     /// `Course.allowed_actions`: the same predicates the mutations enforce
@@ -242,16 +241,20 @@ impl CoursesService {
     /// that would answer 403 or 409 is not listed.
     #[must_use]
     pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<CourseAction> {
-        let write = Self::require_write(actor, course).is_ok();
-        let roster = Self::manages_roster(actor, course);
+        let caps = granted(actor, course);
         let open = course.archived_at.is_none();
+        // `caps` before the archive rule: restore is the one roster action an archived course offers.
+        let (write, roster) = (
+            caps.contains(Caps::EDIT) && open,
+            caps.contains(Caps::MANAGE_STAFF),
+        );
         [
-            (CourseAction::Update, write && open),
-            (CourseAction::Publish, write && open && !course.public),
-            (CourseAction::Unpublish, write && open && course.public),
+            (CourseAction::Update, write),
+            (CourseAction::Publish, write && !course.public),
+            (CourseAction::Unpublish, write && course.public),
             (CourseAction::Archive, roster && open),
             (CourseAction::Restore, roster && !open),
-            (CourseAction::Delete, Self::may_delete(actor, course)),
+            (CourseAction::Delete, caps.contains(Caps::DELETE)),
             (CourseAction::ManageContributors, roster && open),
             (
                 CourseAction::ApplyContributor,
@@ -268,7 +271,7 @@ impl CoursesService {
     /// The caller's actions on the course's announcements.
     #[must_use]
     pub fn update_actions(actor: &Actor, course: &Course) -> Vec<CourseUpdateAction> {
-        if Self::require_write(actor, course).is_ok() && course.archived_at.is_none() {
+        if granted(actor, course).contains(Caps::EDIT) && course.archived_at.is_none() {
             vec![CourseUpdateAction::Update, CourseUpdateAction::Delete]
         } else {
             Vec::new()
@@ -414,9 +417,8 @@ impl CoursesService {
         changes: CourseChanges,
     ) -> Result<Course> {
         // Invisible courses do not exist (404), even to would-be writers.
-        let course = self.get(actor, id).await?;
-        Self::require_write(actor, &course)?;
-        course.ensure_not_archived()?;
+        let ctx = self.ctx(actor, id).await?;
+        ctx.require(Caps::EDIT)?;
         let name = changes
             .name
             .as_deref()
@@ -490,9 +492,7 @@ impl CoursesService {
     /// Publish/unpublish (legacy `CourseLifecycleUpdate` semantics).
     pub async fn set_public(&self, actor: &Actor, id: CourseId, public: bool) -> Result<Course> {
         // Invisible courses do not exist (404), even to would-be writers.
-        let course = self.get(actor, id).await?;
-        Self::require_write(actor, &course)?;
-        course.ensure_not_archived()?;
+        self.ctx(actor, id).await?.require(Caps::EDIT)?;
         ab_db::catalog::set_course_public(&self.pool, id, public).await?;
         ab_db::catalog::get_course(&self.pool, id)
             .await?
@@ -585,9 +585,9 @@ impl CoursesService {
         title: &str,
         content: &str,
     ) -> Result<CourseUpdate> {
-        let course = self.get(actor, id).await?;
-        Self::require_write(actor, &course)?;
-        course.ensure_not_archived()?;
+        let ctx = self.ctx(actor, id).await?;
+        ctx.require(Caps::EDIT)?;
+        let course = ctx.course;
         let update_id =
             ab_db::catalog::insert_course_update(&self.pool, id, title, content, actor.user_id)
                 .await?;
@@ -620,9 +620,9 @@ impl CoursesService {
         let update = ab_db::catalog::get_course_update(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("course update"))?;
-        let course = self.get(actor, update.course_id).await?;
-        Self::require_write(actor, &course)?;
-        course.ensure_not_archived()?;
+        self.ctx(actor, update.course_id)
+            .await?
+            .require(Caps::EDIT)?;
         Ok(update)
     }
 

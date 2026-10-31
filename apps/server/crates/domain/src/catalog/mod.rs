@@ -1,6 +1,7 @@
 //! Catalog context: courses (+ updates feed), curriculum (chapters/
 //! activities/blocks), collections, and the platform singleton.
 
+pub mod access;
 pub mod collections;
 pub mod contributors;
 pub mod course_copy;
@@ -10,6 +11,7 @@ pub mod platform;
 pub mod readiness;
 pub mod search;
 
+pub use access::{Caps, CourseCtx};
 pub use collections::CollectionsService;
 pub use courses::CoursesService;
 pub use curriculum::CurriculumService;

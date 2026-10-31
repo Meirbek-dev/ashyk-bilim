@@ -177,6 +177,12 @@ CREATE OR REPLACE FUNCTION collection_listable(...)  -- + AND c.archived_at IS N
 вызывающих мутаций. Выбор за реализатором, корректность доказывает матрица
 тестов (раздел 11).
 
+Каталог (курс, программа, соавторы) уже перешёл на `CourseCtx` (`catalog/access.rs`,
+REWRITE 6.3): `ctx.require(Caps::EDIT | MANAGE_STAFF)` даёт 403, если права не было,
+и 409 `course-archived`, если его отнял архив; правило архива живёт только там, а
+`granted()` отдаёт права до архива для авторских чтений. Остальные модули пока
+вызывают `ensure_not_archived` и переходят на `CourseCtx` по одному.
+
 | Подсистема | Запрещено (409 `course-archived`) | Разрешено |
 |---|---|---|
 | Курс (`domain/catalog/courses.rs`) | `PATCH`, обложка, publish/unpublish, объявления (create/edit/delete) | `GET`, archive-preview, restore, delete |

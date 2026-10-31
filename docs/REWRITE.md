@@ -974,8 +974,11 @@ checked.
 Started 2026-10-31, across modules (4.3): progress re-projections are owed in the writer's
 transaction (`Followup`, ARCHITECTURE 9) instead of enqueued after commit; chapter and
 activity delete/move/renumber run in one transaction; a quiz hand-in commits with its
-snapshots, grade entry and audit row. Left: role grant changes (with 6.3), `CourseCtx`,
-typed bodies, the remaining `&PgPool` db functions.
+snapshots, grade entry and audit row. `CourseCtx`/`Caps` (6.3) in the catalog module (courses,
+curriculum, contributors) on the v2 permission model: one load, `require(Caps)`, the archive
+rule in one place, `allowed_actions` from the same caps. Left: `CourseCtx` in the other
+modules and as an axum extractor, role grant changes (with 6.3), typed bodies (5.3), the
+remaining `&PgPool` db functions.
 
 **Phase 6 — removal.** After a final archived dump: Zitadel, Redis and RustFS volumes, the
 v2 tables left only for rollback, the `cs_mooc` database if the owner agrees. Docs rewritten

@@ -9,12 +9,12 @@
 //! an active maintainer, or `course:manage:platform`.
 
 use ab_core::id::{CourseId, UserId};
-use ab_core::permission::{Action, Scope};
 use ab_core::{Error, Result};
 
 pub use ab_db::catalog::ContributorRow as Contributor;
 
-use super::courses::{Course, CoursesService, perm};
+use super::access::{Caps, granted};
+use super::courses::{Course, CoursesService};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
 
@@ -43,28 +43,26 @@ impl CoursesService {
     /// The roster-write gate on its own (+ not archived, 409).
     /// UX-311: the write handlers check it before reading the body.
     pub async fn require_roster_manager(&self, actor: &Actor, course_id: CourseId) -> Result<()> {
-        self.manageable(actor, course_id)
+        self.ctx(actor, course_id)
             .await?
-            .ensure_not_archived()
+            .require(Caps::MANAGE_STAFF)
     }
 
     /// Visible course (404) + roster-management rights (403). Also the
     /// archive / restore gate (`courses.rs`), so no archive check here.
     pub(crate) async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
-        let course = self.get(actor, course_id).await?;
-        if Self::manages_roster(actor, &course) {
-            return Ok(course);
+        let ctx = self.ctx(actor, course_id).await?;
+        if ctx.granted(Caps::MANAGE_STAFF) {
+            return Ok(ctx.course);
         }
         Err(Error::forbidden(
             "no contributor management access to this course",
         ))
     }
 
-    /// The creator, an active maintainer, or `course:manage:platform`.
+    /// The creator, an active maintainer, or `course:manage:platform` ([`Caps::MANAGE_STAFF`]).
     pub(crate) fn manages_roster(actor: &Actor, course: &Course) -> bool {
-        actor.has(perm(Action::Manage, Scope::Platform))
-            || course.creator_id == Some(actor.user_id)
-            || course.maintainer_ids.contains(&actor.user_id)
+        granted(actor, course).contains(Caps::MANAGE_STAFF)
     }
 
     /// The gates of the roster writes, for one row (never on the creator).
@@ -143,8 +141,9 @@ impl CoursesService {
         target: Target,
         role: &str,
     ) -> Result<Contributor> {
-        let course = self.manageable(actor, course_id).await?;
-        course.ensure_not_archived()?;
+        let ctx = self.ctx(actor, course_id).await?;
+        ctx.require(Caps::MANAGE_STAFF)?;
+        let course = ctx.course;
         let user_id = match target {
             Target::UserId(id) => ab_db::identity::user_status(&self.pool, id)
                 .await?
@@ -182,8 +181,9 @@ impl CoursesService {
         role: Option<&str>,
         status: Option<&str>,
     ) -> Result<Contributor> {
-        let course = self.manageable(actor, course_id).await?;
-        course.ensure_not_archived()?;
+        let ctx = self.ctx(actor, course_id).await?;
+        ctx.require(Caps::MANAGE_STAFF)?;
+        let course = ctx.course;
         Self::not_creator(&course, user_id)?;
         let before = ab_db::catalog::get_contributor(&self.pool, course_id, user_id).await?;
         let was_pending = before.as_ref().is_some_and(|c| c.status == "pending");
