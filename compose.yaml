@@ -219,7 +219,7 @@ services:
 
   # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
   storage-init:
-    image: docker.io/amazon/aws-cli:2.39.0
+    image: docker.io/amazon/aws-cli:2.39.3
     entrypoint: ['bash', '/storage/init.sh']
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}
