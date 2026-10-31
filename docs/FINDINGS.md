@@ -16,6 +16,8 @@ risk. Stage 1 reduced what it can: snapshots are logical dumps plus volumes and
 secrets, restorable by one script and checked by `just restore-drill`
 (RUNBOOK 3.5). Copying the repository off the host by hand before risky work is
 the only offsite protection left (`restic copy` to any second repository).
+`docs/REWRITE.md` phase 0 proposes a restic repository on a second machine the owner
+controls (owner decision 16.4 there).
 
 ## Medium
 
@@ -26,7 +28,8 @@ check, no dead-man ping). Covered at deploy time only: `preflight` warns on
 Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over
 85%, and `smoke` checks readiness after every deploy and rollback. Between
 deploys an outage, a failed nightly backup or a filling disk goes unnoticed
-until someone looks.
+until someone looks. `docs/REWRITE.md` phase 0 proposes a dead-man check (owner
+decisions 16.4 and 16.5 there).
 
 ### 31. University proxy response-header limit (operating constraint)
 The university proxy answers 502 when response headers overflow its 4 KiB buffer.
@@ -35,27 +38,15 @@ below 3500 bytes. Preserve both guards when switching frontends: the Stage 2 web
 contract forbids preload `Link` headers. See `docs/INFRA.md` for the proxy contract.
 
 ### 32. University proxy rejects large single PUTs (operating constraint)
-Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT
-declaring 308 MiB or 2 GiB (100 MiB is accepted). The same 308 MiB PUT
-directly through the stack's nginx succeeds in 2.7 seconds. Both the app
-and the stack already permit 2 GiB; the outer university TLS proxy is the
-remaining blocker. University IT must raise its bucket-route body limit
-and disable request buffering as described in RUNBOOK.md "Other". SSH to
-that proxy was unreachable from the production host. The web fix preserves
-storage HTTP status and translates 413 as `payload-too-large` instead of
-claiming the user is offline. Large single PUTs stay blocked; multipart covers
-video uploads as below.
+The public origin returns HTTP 413 for a signed PUT declaring 308 MiB or more (100 MiB is accepted);
+the same PUT through the stack's nginx succeeds, and the app and stack permit 2 GiB. The outer university
+TLS proxy is the limit. **Owner decision 2026-10-31: multipart is the permanent answer**; no proxy change
+will be requested from university IT.
 
-Mitigation 2026-10-13: both frontends now use 32 MiB multipart requests for
-videos above 32 MiB. A production storage probe sent 308 MiB through the
-public hostname as ten parts, completed the object, verified its MIME,
-size and first/last bytes, and removed the object/session. The outer
-single-request limit remains; old cached clients still need a reload or
-the proxy configuration change.
-
-**Owner decision 2026-10-31: multipart is the permanent answer**; no proxy change
-will be requested from university IT. Keep the multipart path and the 413 mapping. Server tests cover assembly/finalize,
-ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
+Both frontends send videos above 32 MiB as 32 MiB multipart parts (a 308 MiB production probe through the
+public hostname completed and verified, 2026-10-13), and map a storage 413 to `payload-too-large` instead
+of claiming the user is offline. Keep the multipart path and the 413 mapping. Server tests cover
+assembly/finalize, ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
 
 ## Low
 
@@ -69,7 +60,7 @@ shadcn drops the affected dependency or a compatible patched version becomes ava
 
 ### 34. Tiptap mathematics has not declared KaTeX 0.19 compatibility
 
-`apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.32.0` declares
+`apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.32.2` declares
 `^0.16.4 || ^0.17.0 || ^0.18.0` as its peer range. The markdown round-trip and browser math tests pass with
 the pinned version; this is an upstream compatibility declaration gap, not an observed rendering failure.
 Keep those tests when updating either package. Remove this finding when the extension's peer range includes
