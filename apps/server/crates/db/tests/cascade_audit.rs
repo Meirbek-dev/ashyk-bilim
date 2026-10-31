@@ -271,7 +271,7 @@ const NOT_USER_DATA: &[&str] = &[
     "etl_drop_log",
 ];
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_cascade_onto_user_data_is_reviewed(pool: PgPool) {
     let cascades: Vec<(String, String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, \

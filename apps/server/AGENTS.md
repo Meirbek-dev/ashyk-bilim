@@ -1,7 +1,8 @@
 # Server agent guide
 
 Rust production API (`/api/v2`) and worker. Read architecture sections relevant to your change:
-`docs/ARCHITECTURE.md`; deviations need a dated entry in `docs/DECISIONS.md`.
+`docs/ARCHITECTURE.md`; a deviation updates that section in place, its commit message says why (`docs/DECISIONS.md`
+is frozen history).
 Fixtures, auth limits, cutover switches and local services: `apps/server/docs/DEVELOPMENT.md`.
 
 ## Commands (from the repository root)
@@ -23,12 +24,14 @@ Fixtures, auth limits, cutover switches and local services: `apps/server/docs/DE
 - `just server dev` / `serve`: watch / run the API.
 
 Keep workspace builds: selecting a crate with `-p` changes TLS feature unification on Windows.
-Use nextest filters instead. Build jobs default to 4 (`CARGO_BUILD_JOBS` overrides).
+Use nextest filters instead. Build jobs default to 4, 16 on a 24+ CPU host (`CARGO_BUILD_JOBS` overrides).
 Dev debuginfo is disabled. `CARGO_TARGET_DIR` overrides the cache; Windows otherwise uses
 `LOCALAPPDATA/ashyq-bilim/cargo-target`, off the checkout drive. Do not delete the cache routinely.
 Rust is pinned in `rust-toolchain.toml` and Docker; tools in `tools.env`. Upgrade together.
 Run coverage sequentially per cache: llvm-cov cleans the instrumented workspace artifacts.
-Nextest runs four tests at once; `--test-threads` overrides. The latency stampede test runs alone.
+Nextest runs 4 tests at once, 12 on a 24+ CPU host (`NEXTEST_TEST_THREADS` / `--test-threads` override). The latency
+stampede test runs alone. DB tests use `#[ab_testdb::test]` (a clone of one migrated template per migration set, ~0.2 s)
+with `async fn name(pool: PgPool)`; `#[sqlx::test(migrations = false)]` only for a test that migrates itself.
 `just server cov --no-clean -E 'test(name)'` reuses coverage artifacts for a focused follow-up.
 Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check` always use the database.
 

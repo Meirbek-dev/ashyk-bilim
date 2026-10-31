@@ -134,7 +134,7 @@ async fn world(pool: PgPool) -> World {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_edited_resource_is_version_guarded(pool: PgPool) {
     let World {
         app,
@@ -360,7 +360,7 @@ async fn every_edited_resource_is_version_guarded(pool: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn stale_if_match_is_checked_after_the_permission_gate(pool: PgPool) {
     let World { app, course, .. } = world(pool).await;
     app.publish_course(&course).await;
@@ -377,7 +377,7 @@ async fn stale_if_match_is_checked_after_the_permission_gate(pool: PgPool) {
     assert_eq!(res.status, StatusCode::FORBIDDEN, "{}", res.text());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn creates_replay_under_idempotency_key(pool: PgPool) {
     let World {
         app,
@@ -470,7 +470,7 @@ async fn creates_replay_under_idempotency_key(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn admin_writes_answer_the_resource_on_request(pool: PgPool) {
     let World { app, admin, .. } = world(pool).await;
     let target = app
@@ -616,7 +616,7 @@ async fn lesson(app: &TestApp, admin: &MintedSession, chapter: &str, name: &str)
     activity
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learner_flow_gaps(pool: PgPool) {
     let World {
         app,
@@ -787,7 +787,7 @@ async fn learner_flow_gaps(pool: PgPool) {
 /// page name the same next activity. A chapter moved to the top leads the
 /// outline: the course page took chapters in creation order and named the
 /// moved chapter's lesson last.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn home_my_courses_and_the_course_page_agree_on_next(pool: PgPool) {
     let World {
         app,
@@ -838,7 +838,7 @@ async fn home_my_courses_and_the_course_page_agree_on_next(pool: PgPool) {
     assert_eq!(agenda.json()["continue_learning"][0]["activity_id"], first);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn keyset_pages_and_teacher_gaps(pool: PgPool) {
     let World {
         app, admin, course, ..

@@ -70,7 +70,7 @@ async fn mount_register(
     rx
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("mfauser", "mfa@example.com", &["user"])
@@ -103,7 +103,7 @@ async fn totp_enrolled_login_requires_second_factor(pool: PgPool) {
 /// Branch #13: discarding the pre-MFA Zitadel session is best effort - a
 /// Zitadel failure there is logged, and the caller still gets `mfa-required`
 /// with no cookie (never a 503 that would leak the enrolment state).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn pre_mfa_session_discard_failure_still_demands_the_code(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("mfauser", "mfa@example.com", &["user"])
@@ -134,7 +134,7 @@ async fn pre_mfa_session_discard_failure_still_demands_the_code(pool: PgPool) {
     assert!(res.session_cookie().is_none());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn totp_code_completes_the_login_in_one_shot(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("mfauser", "mfa@example.com", &["user"])
@@ -171,7 +171,7 @@ async fn totp_code_completes_the_login_in_one_shot(pool: PgPool) {
     assert!(res.session_cookie().is_some());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("mfauser", "mfa@example.com", &["user"])
@@ -201,7 +201,7 @@ async fn wrong_totp_code_is_distinguished_from_bad_password(pool: PgPool) {
 /// A code sent for an account with no authenticator: Zitadel answers code 9
 /// "Multifactor OTP (OneTimePassword) isn't ready" (COMMAND-3Mif9s, captured
 /// live 2026-09-13) - a bad second factor, not an outage.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn totp_code_for_an_unenrolled_account_is_invalid_not_an_outage(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("nototp", "nototp@example.com", &["user"])
@@ -226,7 +226,7 @@ async fn totp_code_for_an_unenrolled_account_is_invalid_not_an_outage(pool: PgPo
     assert_eq!(res.json()["code"], "invalid-totp-code");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn enrollment_activation_and_removal(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -341,7 +341,7 @@ async fn enrollment_activation_and_removal(pool: PgPool) {
 
 // ── `mfa_enabled` on the wire (DECISIONS 2026-09-12, Q-7) ───────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("mfauser", "mfa@example.com", &["user"])
@@ -445,7 +445,7 @@ async fn mfa_enabled_reflects_enrollment_on_session_and_profile(pool: PgPool) {
 /// BUG-132: activating with no enrolment started answers Zitadel code 5
 /// "Multifactor OTP (OneTimePassword) doesn't exist" (COMMAND-3Mif9s,
 /// captured live 2026-09-13) - the caller's state, a 409, not a 503.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn verifying_without_a_pending_enrolment_is_a_conflict(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let session = app.mint_session(&[]).await;
@@ -472,7 +472,7 @@ async fn verifying_without_a_pending_enrolment_is_a_conflict(pool: PgPool) {
 
 /// Branch #56: enrolling an already-active authenticator is a 409 (Zitadel
 /// code 6 "Multifactor OTP is already set up", COMMAND-do9se).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn enrolling_twice_is_a_conflict(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let session = app.mint_session(&[]).await;
@@ -497,7 +497,7 @@ async fn enrolling_twice_is_a_conflict(pool: PgPool) {
 /// `idempotency-in-progress` while the first is at Zitadel (never registering
 /// a secret of its own), and its retry gets the first tab's pending secret.
 /// Only activation ends the pending enrolment: the next start registers anew.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -551,7 +551,7 @@ async fn concurrent_enrolment_starts_share_one_secret(pool: PgPool) {
 /// UX-158: a TOTP login fenced by a role rewrite mid-flight retries without
 /// resending the (now replayed) code - the first attempt verified it - and
 /// opens the session instead of answering `invalid-totp-code`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -642,7 +642,7 @@ async fn fenced_totp_login_retries_without_replaying_the_code(pool: PgPool) {
 /// lock used to go before the pending secret was stored, and the pending
 /// key was not re-read under it: a start in that gap re-registered at
 /// Zitadel and every secret handed out before it died.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_burst_of_enrolment_starts_registers_one_secret(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let session = app.mint_session(&[]).await;
@@ -670,7 +670,7 @@ async fn a_burst_of_enrolment_starts_registers_one_secret(pool: PgPool) {
 
 /// The pending secret survives a wrong code, and ends on a verify conflict
 /// (no enrolment at Zitadel) and on removal: each next start registers anew.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn pending_enrolment_outlives_a_wrong_code_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -743,7 +743,7 @@ async fn pending_enrolment_outlives_a_wrong_code_only(pool: PgPool) {
 /// A start whose client hangs up at Zitadel still stores the secret and
 /// hands the lock back (the route is detached): the next start gets that
 /// secret, not `idempotency-in-progress` or a new one.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn aborted_enrolment_start_still_stores_and_unlocks(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let session = app.mint_session(&[]).await;
@@ -771,7 +771,7 @@ async fn aborted_enrolment_start_still_stores_and_unlocks(pool: PgPool) {
 
 /// An unreadable pending entry is no enrolment: the start registers anew
 /// and replaces it instead of answering 500 for the whole TTL.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn corrupt_pending_enrolment_is_replaced(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let session = app.mint_session(&[]).await;

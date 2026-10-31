@@ -248,7 +248,7 @@ fn events(body: &str) -> Vec<serde_json::Value> {
         .collect()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -473,7 +473,7 @@ async fn course_qa_streams_persists_and_replays(pool: PgPool) {
     assert_eq!(after.json().as_array().unwrap().len(), 0);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -737,7 +737,7 @@ async fn submission_analysis_inline_queued_cancelled_and_reported(pool: PgPool) 
     assert_eq!(usage["users"].as_array().unwrap().len(), 2);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn budget_and_master_switch_answer_503(pool: PgPool) {
     let app = TestApp::spawn_with(pool.clone(), |config| {
         config.ai.monthly_token_budget = 5;
@@ -803,7 +803,7 @@ async fn budget_and_master_switch_answer_503(pool: PgPool) {
 
 /// Without a provider key and without draft answers every AI call answers 503: capabilities say so up front,
 /// so the teacher sees «AI is off» instead of buttons that fail.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn no_provider_and_no_draft_mode_reads_as_ai_disabled(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.ai.openai_api_key = None;
@@ -827,7 +827,7 @@ async fn no_provider_and_no_draft_mode_reads_as_ai_disabled(pool: PgPool) {
 
 /// UX-037: without a provider, draft mode answers in the requested
 /// language (the legacy text was Russian regardless).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn draft_mode_answers_in_the_requested_language(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.ai.openai_api_key = None;
@@ -871,7 +871,7 @@ async fn draft_mode_answers_in_the_requested_language(pool: PgPool) {
 
 /// BUG-325: a course whose context is far over the per-request cap is
 /// answered from the leading sources that fit, not refused with 503.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_qa_fits_a_large_course_into_the_request_cap(pool: PgPool) {
     const CAP: u32 = 32_000;
     const MODEL: &str = "gpt-4o-mini";
@@ -945,7 +945,7 @@ async fn course_qa_fits_a_large_course_into_the_request_cap(pool: PgPool) {
     assert!((2..201).contains(&kept), "{kept} sources kept of 201");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn capabilities_follow_role_and_surface(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1131,7 +1131,7 @@ fn remediation_reply() -> serde_json::Value {
 /// the attempt id, the context carries the submitted text, the records
 /// point at the attempt, the owner and the teacher may look, strangers 404,
 /// and the queued path re-derives the subject from the run.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1490,7 +1490,7 @@ async fn file_attempts_are_analysed_and_remediated(pool: PgPool) {
 /// A failed test behind an unpassed gate offers `remediate` first in
 /// learner-state: the player card leads to the remediation, not to «no
 /// attempts left, ask the teacher».
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_test_behind_a_gate_offers_the_remediation(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |c| {
         c.server.web_links = ab_core::links::LinkScheme::V2;
@@ -1551,7 +1551,7 @@ async fn failed_test_behind_a_gate_offers_the_remediation(pool: PgPool) {
 /// BUG-126: a gate-mode remediation blocks new attempts on the activity
 /// (`REMEDIATION_REQUIRED`, `can_start false`, start → 403) until the
 /// learner passes it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
     // web-2 is the live web: REM-SCORE ignores a posted score and reads hide
     // the answer key from the learner (S-GAPS-3).
@@ -1758,7 +1758,7 @@ async fn gate_mode_remediation_blocks_new_attempts_until_passed(pool: PgPool) {
 /// that — and the context of a learner-triggered run is the learner's view
 /// (no answer key, grading redacted by `review_visibility`); the grader's
 /// run keeps the full grading.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn owner_analysis_waits_for_release_and_gets_the_learner_context(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1946,7 +1946,7 @@ async fn owner_analysis_waits_for_release_and_gets_the_learner_context(pool: PgP
 /// BUG-185: two queued gates enqueued inside the worker latency both pass
 /// the enqueue-time check; executing them yields one `assigned` gate — the
 /// other run fails and `latest` names the survivor.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn queued_gates_cannot_stack(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2032,7 +2032,7 @@ async fn queued_gates_cannot_stack(pool: PgPool) {
 
 /// BUG-189: the hourly lanes are counted apart — remediation requests never
 /// spend the analysis allowance.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn remediation_calls_never_consume_the_analysis_lane(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.ai.analysis_requests_per_hour_per_user = 1;
@@ -2079,7 +2079,7 @@ async fn remediation_calls_never_consume_the_analysis_lane(pool: PgPool) {
 
 /// The hourly AI limiter over HTTP: past `analysis_requests_per_hour_per_user`
 /// the analyst answers 429 `ai-rate-limited` with the limit in `details`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn hourly_limit_answers_429(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.ai.analysis_requests_per_hour_per_user = 0;
@@ -2113,7 +2113,7 @@ async fn hourly_limit_answers_429(pool: PgPool) {
 
 /// BUG-128: `language` is `auto`/ru/kk/en (422 otherwise) and a finding
 /// review names a finding of the report (`finding-{index}` or its id).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_analysis_rejects_unknown_language_and_finding(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.ai.openai_api_key = None;
@@ -2212,7 +2212,7 @@ async fn course_analysis_rejects_unknown_language_and_finding(pool: PgPool) {
 
 /// BUG-198: an open draft is 409 for the AI surface as for the grader —
 /// analysis (inline and queued), remediation, `latest` and the review read.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn ai_refuses_an_open_draft(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2326,7 +2326,7 @@ async fn ai_refuses_an_open_draft(pool: PgPool) {
 
 /// BUG-302: a learner promoted to maintainer may not set a blocking gate on
 /// their own released attempt — a gate is a grader's action (BUG-286).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gate_is_refused_on_the_callers_own_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2369,7 +2369,7 @@ async fn gate_is_refused_on_the_callers_own_attempt(pool: PgPool) {
 /// UX-136: a maintainer queues an analysis, the creator sets them
 /// inactive before the worker runs — the run fails (`AI_ACCESS_REVOKED`),
 /// no analysis is recorded, and the demoted user's run reads answer 404.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn queued_analysis_fails_for_a_demoted_maintainer(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2461,7 +2461,7 @@ async fn queued_analysis_fails_for_a_demoted_maintainer(pool: PgPool) {
 /// or before the answer stream is read) must not leave the run `running`
 /// — a stuck run 409s every retry of the turn. The model is slow, so only
 /// the drop can settle it: `aborted`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_qa_chat_aborts_its_run(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2522,7 +2522,7 @@ async fn ask_study(
 /// BUG-348: a run's success commits together with its artifact, evidence,
 /// ledger and `finished` event — a reader never sees `succeeded` without
 /// the result. The artifact INSERT is held on a table lock.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn ai_success_commits_with_its_artifact(pool: PgPool) {
     let app = std::sync::Arc::new(TestApp::spawn(pool).await);
     let teacher = instructor(&app, "teacher").await;
@@ -2567,7 +2567,7 @@ async fn ai_success_commits_with_its_artifact(pool: PgPool) {
 
 /// BUG-349 (AUD-022): the ledger records the provider's reported prompt
 /// tokens (the fake reports 42 in, 7 out), not the admission estimate.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn ai_ledger_records_reported_usage(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2593,7 +2593,7 @@ async fn ai_ledger_records_reported_usage(pool: PgPool) {
 /// BUG-349 (AUD-023): admission reserves input + the output bound, so two
 /// in-flight requests cannot both spend the month's last room; a released
 /// or expired reservation frees it again.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn monthly_budget_reserves_inflight_requests(pool: PgPool) {
     use ab_core::config::AiConfig;
     use ab_domain::ai::budget::TokenBudget;
@@ -2633,7 +2633,7 @@ async fn monthly_budget_reserves_inflight_requests(pool: PgPool) {
 /// BUG-349 (AUD-024): the per-request cap covers the whole message set
 /// sent — the system prompt and the wrappers, not just question + context:
 /// it is fitted under the cap or refused, never sent over it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn study_request_cap_covers_the_system_prompt(pool: PgPool) {
     // Question + course context alone estimate ~215 tokens here.
     const CAP: u32 = 300;
@@ -2697,7 +2697,7 @@ fn sent_tokens(request: &wiremock::Request) -> usize {
 
 /// BUG-349: a structured repair round is a second paid call — both calls'
 /// usage reaches the ledger (the fake reports 42 in / 7 out per call).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn repair_round_usage_is_recorded(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2721,7 +2721,7 @@ async fn repair_round_usage_is_recorded(pool: PgPool) {
 /// instruction) is admitted like the first — one over the per-request cap
 /// is never sent; the run fails cleanly, releases its reservations and
 /// still charges the first call it paid for (42 in / 7 out).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn repair_round_stays_under_the_request_cap(pool: PgPool) {
     const CAP: u32 = 700;
     let app = TestApp::spawn_with(pool, |config| config.ai.max_tokens_per_request = CAP).await;
@@ -2762,7 +2762,7 @@ async fn failed_run_charges(app: &TestApp) -> (String, i64, i64, i64) {
 
 /// BUG-349: a run that fails after paying for both rounds (two unparsable
 /// replies) charges both calls to the ledger.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_run_charges_its_paid_calls(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2790,7 +2790,7 @@ async fn failed_run_charges_its_paid_calls(pool: PgPool) {
 /// BUG-357 (c): `forwardedProps.thread_id` naming no thread of the caller
 /// is a 404, `language: zz` a 422 on `forwarded_props.language` — both
 /// before any run, reservation or provider call.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn qa_chat_rejects_an_unknown_thread_and_language(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2848,7 +2848,7 @@ async fn qa_chat_rejects_an_unknown_thread_and_language(pool: PgPool) {
 /// BUG-356: a request admitted (reserved) whose run then fails to be
 /// created releases its reservation at once — nothing else would, and the
 /// 15-minute lease would hold the estimate plus the output bound meanwhile.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_run_creation_releases_its_reservation(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2883,7 +2883,7 @@ async fn failed_run_creation_releases_its_reservation(pool: PgPool) {
 
 /// BUG-349: a streamed Q&A answer that proves unusable was still paid for —
 /// the failed run charges it (the fake stream reports 42 in / 9 out).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_qa_turn_charges_its_paid_call(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

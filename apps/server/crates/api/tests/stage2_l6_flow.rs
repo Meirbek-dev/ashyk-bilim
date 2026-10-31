@@ -162,7 +162,7 @@ async fn hand_in(app: &TestApp, who: &MintedSession, fs: &str) -> Value {
     submitted.json()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_review_has_assessment_parity(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -497,7 +497,7 @@ async fn essay_quiz(
     (course_id, id, subs)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessment_queue_groups_gradebook_filters_and_bulk_return(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -632,7 +632,7 @@ async fn read_stream(
         .collect()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn connected_carries_the_position_and_extensions_are_streamed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let base = app.serve().await;

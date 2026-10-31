@@ -10,6 +10,7 @@ dependencies = [
  "ab-core",
  "ab-db",
  "ab-domain",
+ "ab-testdb",
  "ab-testkit",
  "async-stream",
  "axum",
@@ -90,6 +91,7 @@ name = "ab-db"
 version = "0.1.0"
 dependencies = [
  "ab-core",
+ "ab-testdb",
  "secrecy",
  "serde_json",
  "sqlx",
@@ -134,6 +136,7 @@ dependencies = [
  "ab-core",
  "ab-db",
  "ab-domain",
+ "ab-testdb",
  "futures",
  "secrecy",
  "serde_json",
@@ -142,6 +145,25 @@ dependencies = [
  "tokio-util",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "ab-testdb"
+version = "0.1.0"
+dependencies = [
+ "ab-db",
+ "ab-testdb-macros",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "ab-testdb-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

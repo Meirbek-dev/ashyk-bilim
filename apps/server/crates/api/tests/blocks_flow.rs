@@ -98,7 +98,7 @@ async fn finalized_upload(
     id
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn video_block_claim_replays_without_duplicate_references(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "video-author").await;
@@ -139,7 +139,7 @@ async fn video_block_claim_replays_without_duplicate_references(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -244,7 +244,7 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
     assert_eq!(changed.json()["activity_type"], "video");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -340,7 +340,7 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
 /// An activity DELETE that wins the race turns the insert into a 404 and
 /// the claim rolls back - the upload re-enters the reaper's queue instead
 /// of sitting at `referenced_count 1, expires_at null` forever.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -413,7 +413,7 @@ async fn block(app: &TestApp, session: &MintedSession, activity: &str, upload: &
 /// BUG-242: a block that commits while a chapter/course DELETE waits on its
 /// activity is released by that DELETE - the cascade used to drop it after
 /// the release had read its snapshot, pinning the upload forever.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -465,7 +465,7 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
 /// the activity DELETE never deadlocks (one lock order: activity, then
 /// upload); a block DELETE ×2 or ∥ the activity DELETE releases only the
 /// block rows actually deleted - the count always equals the live blocks.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -523,7 +523,7 @@ async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
 /// Remove click - a save without the node releases it, a later save that
 /// brings it back (undo) re-claims it, and a delete cascade releases only
 /// blocks that still hold a reference.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn block_uploads_follow_the_saved_content(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -607,7 +607,7 @@ async fn block_uploads_follow_the_saved_content(pool: PgPool) {
 /// referenced in storage forever. The saved `content.filename` decides which
 /// block of a video / document activity holds its file; switching to a
 /// YouTube link releases the last one.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;

@@ -121,7 +121,7 @@ async fn quiz(w: &World) -> (String, i64) {
     (id(&created), created.json()["version"].as_i64().unwrap())
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessment_items_are_guarded_and_answer_the_version(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     let (quiz_id, v0) = quiz(&w).await;
@@ -313,7 +313,7 @@ async fn assessment_items_are_guarded_and_answer_the_version(pool: PgPool) {
     assert_eq!(archived.json()["allowed_transitions"], json!(["draft"]));
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn overrides_name_people_and_notify_the_learner(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     let (quiz_id, _) = quiz(&w).await;
@@ -360,7 +360,7 @@ async fn overrides_name_people_and_notify_the_learner(pool: PgPool) {
     assert!(types.iter().any(|t| t.contains("deadline")), "{types:?}");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn past_due_refusal_has_a_typed_code(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     let (quiz_id, _) = quiz(&w).await;
@@ -419,7 +419,7 @@ async fn past_due_refusal_has_a_typed_code(pool: PgPool) {
     assert_eq!(refused.json()["details"]["reasons"], json!(["PAST_DUE"]));
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn v2_link_scheme_switches_built_links(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |c| {
         c.server.web_links = ab_core::links::LinkScheme::V2;
@@ -440,7 +440,7 @@ async fn v2_link_scheme_switches_built_links(pool: PgPool) {
     assert!(location.starts_with("/login?error="), "{location}");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn legacy_link_scheme_is_the_default(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     w.app.publish_course(&w.course).await;
@@ -457,7 +457,7 @@ async fn legacy_link_scheme_is_the_default(pool: PgPool) {
     assert!(location.starts_with("/auth/login?error="), "{location}");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn s10_names_answer_like_the_old_paths(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     let app = &w.app;
@@ -511,7 +511,7 @@ async fn s10_names_answer_like_the_old_paths(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn preferences_take_snake_case_and_locales_are_stored_short(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user_id = app
@@ -577,7 +577,7 @@ async fn preferences_take_snake_case_and_locales_are_stored_short(pool: PgPool) 
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn duplicate_course_copies_content_as_drafts(pool: PgPool) {
     let w = world(TestApp::spawn(pool).await).await;
     let app = &w.app;

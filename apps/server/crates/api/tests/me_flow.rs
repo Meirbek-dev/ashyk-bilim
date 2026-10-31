@@ -219,7 +219,7 @@ async fn stream_events(base: &str, who: &MintedSession) -> Vec<(String, serde_js
         .collect()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn announcements_notify_enrolled_learners_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = teacher(&app, "teacher").await;
@@ -353,7 +353,7 @@ async fn announcements_notify_enrolled_learners_only(pool: PgPool) {
     assert!(stream_events(&base, &bob).await.is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = teacher(&app, "teacher").await;
@@ -502,7 +502,7 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     assert_eq!(agenda["recent_results"][0]["passed"], true, "{agenda}");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = teacher(&app, "teacher").await;
@@ -617,7 +617,7 @@ async fn replies_applications_and_xp_reach_their_people(pool: PgPool) {
     assert!(admin_award["payload"]["total_xp"].as_i64().unwrap() >= 50);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn hand_ins_reach_the_teachers_one_unread_row_per_activity(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = teacher(&app, "teacher").await;
@@ -712,7 +712,7 @@ async fn hand_ins_reach_the_teachers_one_unread_row_per_activity(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_reminders_go_out_once_per_due_date(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = teacher(&app, "teacher").await;
@@ -735,7 +735,7 @@ async fn deadline_reminders_go_out_once_per_due_date(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn me_routes_need_a_session(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     for path in [

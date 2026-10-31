@@ -53,7 +53,7 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     (UserId(user), CourseId(course), AssessmentId(assessment))
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
 
@@ -155,7 +155,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grading_ledger_is_append_only(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
     let submission = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
@@ -215,7 +215,7 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     assert_eq!(remaining, 0);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn idempotency_keys_replay_and_sweep(pool: PgPool) {
     let (user, _, _) = seed(&pool).await;
     let response = serde_json::json!({ "id": "x" });
@@ -250,7 +250,7 @@ async fn idempotency_keys_replay_and_sweep(pool: PgPool) {
 
 /// BUG-212 nit: a heartbeat keeps a long-running reservation from being
 /// taken over; without one the stale window (30 s) still applies.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
     let (user, _, _) = seed(&pool).await;
     let backdate = async |secs: i32| {

@@ -83,7 +83,7 @@ fn put_json(session: &MintedSession, uri: &str, body: &serde_json::Value) -> Req
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -427,7 +427,7 @@ async fn xp_flows_from_completion_and_admin_awards(pool: PgPool) {
 
 /// BUG-252: parallel awards on a fresh profile serialize on the profile row
 /// lock - the daily cap (500 by default) holds and the ledger matches totals.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     use ab_core::assessments::XpSource;
     use ab_domain::gamification::{AwardRequest, GamificationService};
@@ -471,7 +471,7 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
 
 /// UX-172: one rank rule - competition rank (ties share, the next skips) on
 /// the board, the dashboard and `/rank`, with a stable order inside a tie.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn tied_learners_share_a_rank_everywhere(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

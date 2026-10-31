@@ -105,7 +105,7 @@ async fn private_course_with_quiz(app: &TestApp, teacher: &MintedSession) -> (St
     (course_id, id)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -389,7 +389,7 @@ async fn cohorts_allowlists_and_attempt_state(pool: PgPool) {
     assert_eq!(tab_b.json()["code"], "precondition-failed");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn overrides_shape_the_effective_policy(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -538,7 +538,7 @@ async fn overrides_shape_the_effective_policy(pool: PgPool) {
 /// Unknown user ids in access lists and overrides are 422s, not FK 500s
 /// (BUG-106); an unpublished assessment has no attempt state for learners,
 /// just as it has no detail (BUG-108).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -651,7 +651,7 @@ async fn unknown_users_and_drafts_are_client_errors(pool: PgPool) {
 /// BUG-212: every `*_unix` request field is bounded by the `timestamptz`
 /// range - a huge epoch is a 422 with the field named, not a Postgres
 /// «timestamp out of range» 500 (BUG-206 bounded only `new_due_at_unix`).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn out_of_range_epochs_are_client_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -803,7 +803,7 @@ async fn held_leave(
 /// BUG-273: override create / update check membership under the learner's
 /// trail lock - a leave committing mid-request is a 422 `not-in-course`,
 /// never an override written for a non-member.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -877,7 +877,7 @@ async fn overrides_racing_a_leave_are_not_in_course(pool: PgPool) {
 /// read-back (the post-commit lateness settle in between is held on the
 /// submissions table; the audit commits with the write since BUG-313) -
 /// still 422 `not-in-course`, never 404 «override not found».
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -932,7 +932,7 @@ async fn override_read_back_after_a_leave_is_not_in_course(pool: PgPool) {
 /// BUG-281: a leave takes the leaver off the allowlist and drops their
 /// overrides; the restricted reach counts course members only (a group
 /// member who never joined is not reached), like the course-wide mode.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_leave_drops_allowlist_and_overrides(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1023,7 +1023,7 @@ async fn a_leave_drops_allowlist_and_overrides(pool: PgPool) {
 /// BUG-303: joining the staff (roster add, RBAC role) drops the member's
 /// allowlist and override rows like a leave (BUG-281) - the unchanged list
 /// saves again. A staffer never edits or deletes their own override (403).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1129,7 +1129,7 @@ async fn joining_the_staff_drops_allowlist_and_overrides(pool: PgPool) {
 /// BUG-305: a roster add outlives a client that hangs up while the member
 /// lock is busy - the access sweep still runs once it frees - and a failing
 /// sweep never turns the committed add into an error: it is queued instead.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1216,7 +1216,7 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
 /// short inline wait answers 201 well before the request timeout (never a
 /// 408 for a landed add), and the queued `progress:staff-change` job
 /// finishes the sweep once the lock frees.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roster_add_past_the_inline_wait_is_201_and_the_job_sweeps(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1278,7 +1278,7 @@ async fn roster_add_past_the_inline_wait_is_201_and_the_job_sweeps(pool: PgPool)
 /// UX-210: a role change whose members' locks are all held waits one
 /// inline budget for the lot, not one per member back to back, and each
 /// member's queued job sweeps them once the locks free.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn role_change_over_busy_members_waits_once(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1372,7 +1372,7 @@ async fn role_change_over_busy_members_waits_once(pool: PgPool) {
 /// until promoted to contributor; a custom role keeps them until its grant
 /// set gains `assessment:author`. UX-206: a stale save naming a staffer
 /// answers `staff`, not `not-in-course`; UX-207: so do the override doors.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1542,7 +1542,7 @@ async fn staff_sweep_via_reporter_promotion_and_grant_set(pool: PgPool) {
 /// counts as enrolled; off restores the open rule; a draft opened while the
 /// course was open stays readable but frozen until its owner enrols again;
 /// only course writers flip it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessments_require_enrollment(pool: PgPool) {
     fn draft_request(
         session: &MintedSession,

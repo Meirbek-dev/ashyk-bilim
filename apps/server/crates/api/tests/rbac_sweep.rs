@@ -310,7 +310,7 @@ fn concretize(path: &str) -> String {
     out
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_mutating_operation_is_classified_and_gated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let doc = ab_api::openapi_doc();
@@ -391,7 +391,7 @@ async fn every_mutating_operation_is_classified_and_gated(pool: PgPool) {
 const LEARNER_MAY_WRITE: &[(&str, &str)] =
     &[("PATCH", "/api/v2/users/me"), ("POST", "/api/v2/uploads")];
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_learner_is_refused_before_the_body_is_read(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     // The seeded learner role's own grants.

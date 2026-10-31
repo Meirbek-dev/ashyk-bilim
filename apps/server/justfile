@@ -13,8 +13,11 @@ set script-interpreter := ["bash", "-eu"]
 [windows]
 set script-interpreter := ["sh", "-eu"]
 
-# Bounds Windows linker memory; override on larger machines.
-export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", "4")
+# 4 build jobs and 4 test threads bound a Windows laptop's linker memory and the dev Postgres; a 24+ CPU host builds
+# with 16 and tests with 12 (a test holds up to 6 of the cluster's 100 connections). infra/dev/cargo-target.ts agrees.
+_big := if num_cpus() =~ '^(2[4-9]|[3-9][0-9]|[1-9][0-9]{2,})$' { "true" } else { "" }
+export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", if _big == "true" { "16" } else { "4" })
+export NEXTEST_TEST_THREADS := env("NEXTEST_TEST_THREADS", if _big == "true" { "12" } else { "4" })
 export SQLX_OFFLINE := env("SQLX_OFFLINE", "true")
 # A linked git worktree builds into `<target>-<worktree id>`: cargo names artifacts the same in every checkout, so a
 # shared dir runs another tree's code (same rule as infra/dev/cargo-target.ts).

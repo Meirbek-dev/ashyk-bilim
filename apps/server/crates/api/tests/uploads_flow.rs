@@ -11,7 +11,7 @@ use axum::http::{Request, StatusCode};
 use secrecy::SecretString;
 use sqlx::PgPool;
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn multipart_video_assembles_retries_and_stays_immutable(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -137,7 +137,7 @@ async fn multipart_video_assembles_retries_and_stays_immutable(pool: PgPool) {
     assert_eq!(&bytes[size - 7..], &[1; 7]);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn multipart_cancel_reap_and_size_validation(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -233,7 +233,7 @@ async fn multipart_cancel_reap_and_size_validation(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn full_upload_finalize_download_flow(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -320,7 +320,7 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     assert_eq!(fetched.bytes().await.unwrap().to_vec(), payload);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -400,7 +400,7 @@ async fn policy_rejects_oversize_and_wrong_mime(pool: PgPool) {
     assert_eq!(bad_purpose.status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn finalize_without_object_is_a_conflict(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("ghost", "g@example.com", &["user"]).await;
@@ -440,7 +440,7 @@ async fn finalize_without_object_is_a_conflict(pool: PgPool) {
 /// Declare `image/png`, store HTML: the signed PUT refuses the header, and
 /// an object that still lands with another type is rejected on finalize and
 /// deleted - nothing served from the public bucket as `text/html`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("xss", "x@example.com", &["user"]).await;
@@ -508,7 +508,7 @@ async fn finalize_rejects_a_content_type_mismatch(pool: PgPool) {
 /// BUG-359: finalize verifies the declared size (ARCHITECTURE §11) - the
 /// cap was checked against the intent, so a body of another length is
 /// refused and the object dropped, never recorded with the "real" size.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn finalize_rejects_a_size_mismatch(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("sizer", "s@example.com", &["user"]).await;
@@ -574,7 +574,7 @@ async fn finalize_rejects_a_size_mismatch(pool: PgPool) {
 /// BUG-200: `file:create:own` covers the learner purposes only - platform
 /// branding needs the platform grant, thumbnails and content blocks course
 /// write access; a learner gets 403 before any presign.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn authoring_and_platform_purposes_need_their_grant(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -614,7 +614,7 @@ async fn authoring_and_platform_purposes_need_their_grant(pool: PgPool) {
 /// REVIEW-1 H4: a file submission may be any type, but an active one
 /// (HTML here) is stored for download only - the signed URL serves it as
 /// `application/octet-stream` + `attachment`, never as `text/html`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn html_file_submission_downloads_as_an_attachment(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("html", "h@example.com", &["user"]).await;
@@ -666,7 +666,7 @@ async fn html_file_submission_downloads_as_an_attachment(pool: PgPool) {
 /// BUG-B-9: the purpose policy and the uploads table's purpose CHECK drifted
 /// (`discussion-image` answered 500). Every purpose the API accepts can be
 /// stored.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_policy_purpose_can_be_stored(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("author", "a@example.com", &["user"]).await;

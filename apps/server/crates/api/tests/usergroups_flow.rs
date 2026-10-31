@@ -21,7 +21,7 @@ async fn organizer(app: &TestApp, name: &str) -> MintedSession {
     .await
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn lifecycle_membership_and_course_links(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = organizer(&app, "owner").await;
@@ -162,7 +162,7 @@ async fn lifecycle_membership_and_course_links(pool: PgPool) {
 }
 
 /// BUG-109: unknown member / course ids are 422s, not FK 500s.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unknown_member_and_course_ids_are_validation_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = organizer(&app, "owner").await;
@@ -212,7 +212,7 @@ async fn unknown_member_and_course_ids_are_validation_errors(pool: PgPool) {
 /// BUG-142: a blank name is 422 `name`/`required` (create and rename);
 /// surrounding whitespace is trimmed. Plus the manage grant: a non-creator
 /// holding `usergroup:manage:platform` can rename and delete.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = organizer(&app, "owner").await;
@@ -286,7 +286,7 @@ async fn blank_names_are_rejected_and_managers_can_write(pool: PgPool) {
 /// a visible one the caller does not author is a 403, and the private course
 /// never becomes readable through the group. Plus the `writable` miss (404
 /// before the write check) and the members/courses read gate (403).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn linking_a_course_requires_write_access_on_it(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app

@@ -56,7 +56,7 @@ async fn add_chapter(app: &TestApp, session: &MintedSession, course_id: &str) ->
     .status
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn apply_approve_author_and_deactivate(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -203,7 +203,7 @@ async fn apply_approve_author_and_deactivate(pool: PgPool) {
     assert!(none.json()["items"].as_array().unwrap().is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roster_management_rules(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -389,7 +389,7 @@ async fn roster_management_rules(pool: PgPool) {
 /// contributor writes on the course like the creator; a reporter reads the
 /// draft and the roster but never writes; a stranger with the `:own` grant
 /// still gets 403.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn user_role_authors_write_reporters_read(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -521,7 +521,7 @@ async fn user_role_authors_write_reporters_read(pool: PgPool) {
 /// A pending applicant may withdraw their own application (`DELETE
 /// contributors/{self}` → 204, DECISIONS 2026-09-13); once active the row
 /// belongs to the roster managers again.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn applicant_withdraws_pending_application(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -571,7 +571,7 @@ async fn applicant_withdraws_pending_application(pool: PgPool) {
 /// nothing; re-sending is idempotent; the list searches and shows emails;
 /// learners, other teachers and anonymous callers are refused; archived
 /// courses take no enrolments.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roster_enrols_by_email_or_username(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;

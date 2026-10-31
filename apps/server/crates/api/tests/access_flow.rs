@@ -65,7 +65,7 @@ fn check(who: &str, action: &str, listed: &[String], status: StatusCode, body: &
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn session_carries_user_and_capabilities(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let student = as_role(&app, "stu", "user").await;
@@ -127,7 +127,7 @@ async fn session_carries_user_and_capabilities(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_actions_match_enforcement(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = as_role(&app, "owner", "instructor").await;
@@ -226,7 +226,7 @@ async fn course_actions_match_enforcement(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn collection_actions_match_enforcement(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = as_role(&app, "owner", "instructor").await;
@@ -277,7 +277,7 @@ async fn collection_actions_match_enforcement(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn discussion_actions_match_enforcement(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = as_role(&app, "teacher", "instructor").await;
@@ -402,7 +402,7 @@ async fn mount_zitadel_create(app: &TestApp) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     mount_zitadel_create(&app).await;
@@ -492,7 +492,7 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
     assert_eq!(courses, 1);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn seed_e2e_refuses_production(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.environment = ab_core::config::Environment::Production;

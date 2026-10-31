@@ -314,7 +314,7 @@ fn find_row<'a>(
     items.as_array().unwrap().iter().find(|r| r[key] == value)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1012,7 +1012,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
 }
 
 /// BUG-119 / BUG-120: unknown ids and blank names are 422s, never FK/CHECK 500s.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1107,7 +1107,7 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
 
 /// BUG-228: a 19-digit `page` or `bucket_start` used to panic (500) in
 /// `offset()` / week arithmetic; the page is clamped (empty), the epoch is 422.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn extreme_page_and_bucket_start_are_not_panics(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1139,7 +1139,7 @@ async fn extreme_page_and_bucket_start_are_not_panics(pool: PgPool) {
 
 /// BUG-121: `cohort_ids` need usergroup read + existing groups;
 /// `teacher_user_id` is refused (not ignored) under the assigned scope.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cohort_and_teacher_filters_are_gated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1205,7 +1205,7 @@ async fn cohort_and_teacher_filters_are_gated(pool: PgPool) {
 /// `teacher_user_id` is a 422; `POST interventions` honours
 /// `Idempotency-Key`. Plus the out-of-scope course on list-interventions /
 /// drill-through (404) and exports (403).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1406,7 +1406,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
 /// user even when an admin inspects another teacher via `teacher_user_id`;
 /// the idempotent replay is gated by the analytics scope. Plus an unknown
 /// `sort_by` is a 422 instead of a silent default order.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1638,7 +1638,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
 /// honours `page`/`page_size`; a `reporter` roster row does not put the
 /// course into the reporter's analytics scope; `""` and `"   "` answer the
 /// same 422 `required`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1778,7 +1778,7 @@ fn grade(session: &MintedSession, id: &str, body: &serde_json::Value) -> Request
 /// saved-unreleased (100) retake never outranks the published 30 in the
 /// assessment summary, the learner rows, the pass-rate drill-through or
 /// the outcomes CSV (the BUG-187 `GradeKey` rule).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2014,7 +2014,7 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
 /// UX-142: a code-challenge attempt that is graded but not released is not
 /// an outcome - `repeated_failures` appears only once the failing score is
 /// published.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2075,7 +2075,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
 /// UX-261: an exam's and a code challenge's «common failures» carry the
 /// catalogued workflow codes as `key` (what the web resolves), the same
 /// two the quiz-side workflow rows use - never ad-hoc `late`/`ungraded`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2144,7 +2144,7 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
 /// chapter/activity drop-off and `certificates_issued` follow (cohort filter
 /// included), and the remaining member's failed quiz does not turn into a
 /// «repeated failures» bottleneck built from the leavers' progress rows.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2275,7 +2275,7 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
 
 /// BUG-338: `completed` is a share of `enrolled` - learners who finished
 /// earlier are not in `active_7d`, which made the share 300 %.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2318,7 +2318,7 @@ async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
 /// UX-183: the admin workload comparison groups courses by the teacher
 /// scope rule (`scope::resolve`: creator + active non-reporter co-authors),
 /// so a co-author's row matches inspecting that teacher.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let alpha = instructor(&app, "alpha").await;
@@ -2388,7 +2388,7 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
 /// BUG-273: the intervention's membership check and insert run under the
 /// learner's trail lock - a leave committing mid-request is a 422
 /// `not-in-course`, never an intervention for a non-member.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2438,7 +2438,7 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
 /// enrol door is a 409 and learner-state says why - and a staff run made
 /// before the fix (or a learner who joined the staff) is in no member set:
 /// the gradebook, analytics rates and at-risk count the learners only.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2529,7 +2529,7 @@ async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
 /// UX-192: the data-quality panel counts the attempts it leaves out - staff
 /// previews, and a learner-turned-co-author's earlier attempt - and the
 /// assessment audit history never lists a preview's grade.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2587,7 +2587,7 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
 /// a cohort of three, a leaver and a learner-turned-co-author are out, so
 /// the one active stayer is 1 of 1 - and the data-quality excluded counters
 /// follow the cohort filter like every other figure.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2721,7 +2721,7 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
 
 /// An exam's «Частые ошибки» lists the questions most learners missed, like a
 /// quiz's (it said «no cluster» next to a 0 % question); 1 of 3 missed is 33.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;

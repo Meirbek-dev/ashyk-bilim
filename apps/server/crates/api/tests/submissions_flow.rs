@@ -166,7 +166,7 @@ fn submit(
     builder.body(Body::from(body.to_string())).unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -430,7 +430,7 @@ async fn quiz_attempt_draft_lock_submit_replay_and_attempt_cap(pool: PgPool) {
 /// BUG-112: `review_visibility` is enforced on the wire for the owner's
 /// read - `score_only` strips correctness and the correct answers,
 /// `none` hides the item breakdown; scores stay visible in both.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn review_visibility_redacts_the_learner_breakdown(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -496,7 +496,7 @@ async fn review_visibility_redacts_the_learner_breakdown(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn batch_release_hides_scores_and_open_text_waits_for_review(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -592,7 +592,7 @@ async fn batch_release_hides_scores_and_open_text_waits_for_review(pool: PgPool)
     assert_eq!(entries, 0);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -702,7 +702,7 @@ async fn timer_sweep_auto_submits_expired_drafts(pool: PgPool) {
 /// QA-D: with late work off, a draft still open at the due date is handed in
 /// by the sweep with what was saved (`deadline_passed`, submitted at the due
 /// date); a learner whose override extends the date keeps working.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -802,7 +802,7 @@ async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
 /// the page's own hand-in at that moment - a submit landing a few seconds
 /// past it - is recorded as the sweep would (`deadline_passed`, at the due
 /// date), while a submit long after it is still refused.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn strict_due_date_counts_down_and_the_page_hands_in_at_it(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -910,7 +910,7 @@ fn unix_now() -> i64 {
 /// graded by the late
 /// policy as of the cutoff (late, no penalty yet); a waived learner and one
 /// whose own due date runs past the cutoff keep working until theirs.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1052,7 +1052,7 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
 /// Cluster G: on the first deploy the date hand-in leaves drafts whose date
 /// passed before it went live alone (old gradebooks do not change); a date
 /// that passes later is handed in.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_sweep_ignores_dates_before_it_went_live(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1110,7 +1110,7 @@ async fn deadline_sweep_ignores_dates_before_it_went_live(pool: PgPool) {
 
 /// BUG-326: the grace period extends the timer - the sweep waits for it
 /// and a submit past the limit but inside the grace is accepted.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
     async fn start_aged(app: &TestApp, who: &MintedSession, id: &str, secs: f64) -> String {
         let draft = app
@@ -1181,7 +1181,7 @@ async fn grace_period_extends_the_timer_for_submit_and_sweep(pool: PgPool) {
     assert_eq!(mine.json()["auto_submit_reason"], "time_expired");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn violations_past_the_threshold_zero_the_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1290,7 +1290,7 @@ async fn violations_past_the_threshold_zero_the_attempt(pool: PgPool) {
 /// 409 - CAS lost or already submitted), the fourth submit inside the window
 /// is 429, and a draft opened before the deadline is 403 `PAST_DUE` at submit
 /// once the deadline passes with `allow_late = false` (critic12 branch list).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1444,7 +1444,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
 
 /// UX-111: only submits that pass validation spend the 3/10 s budget -
 /// four 422s must not lock the learner out of the real submit.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submit_limiter_counts_only_accepted_submits(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1516,7 +1516,7 @@ async fn submit_limiter_counts_only_accepted_submits(pool: PgPool) {
 /// BUG-169: a perfect attempt is exactly 100 whatever the item count
 /// (6 equal items used to sum to 100.02, 3 to 99.99) and passes at
 /// `passing_score: 100`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn perfect_attempt_scores_exactly_100_and_passes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1577,7 +1577,7 @@ async fn perfect_attempt_scores_exactly_100_and_passes(pool: PgPool) {
 /// action runs; a failed action releases the key; and a request whose
 /// connection drops after the reservation still runs to completion - the
 /// retry with the same key replays the stored 200.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgPool) {
     use ab_db::submissions::{IDEMPOTENT_IN_PROGRESS, reserve_idempotent};
     use std::time::Duration;
@@ -1711,7 +1711,7 @@ async fn keyed_submit_in_progress_stale_release_and_dropped_connection(pool: PgP
 /// quiz with no submissions serialize on the assessment row - the draft is
 /// never behind the assessment's `content_version`, and a draft that is
 /// (unpublish → add → republish) cannot be submitted until reopened.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn start_and_item_writes_serialize_and_stale_drafts_reopen(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1840,7 +1840,7 @@ async fn start_and_item_writes_serialize_and_stale_drafts_reopen(pool: PgPool) {
 
 /// BUG-240: parallel violation reports all count (no lost update), the
 /// stored count annuls the attempt, and a submitted attempt takes none.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn parallel_violation_reports_all_count(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1905,7 +1905,7 @@ async fn parallel_violation_reports_all_count(pool: PgPool) {
 /// BUG-239: starts racing the submit of the only allowed attempt never open
 /// a second one (nor 404), and the timer sweep never grades a draft past
 /// the cap.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1959,7 +1959,7 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
 /// BUG-256: the cap bars opening an attempt, never finishing one - a draft
 /// opened under an override stays submittable (manual and timer sweep)
 /// after the override is deleted.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2034,7 +2034,7 @@ async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
 /// BUG-257: only what the learner answers or is scored on stales a draft -
 /// a title edit (the editor re-sends the unchanged body) or a reorder made
 /// while unpublished leaves it submittable and auto-scored; an option change still answers 409.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cosmetic_item_edits_keep_open_drafts_current(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2126,7 +2126,7 @@ async fn cosmetic_item_edits_keep_open_drafts_current(pool: PgPool) {
 /// BUG-237: a timed draft left behind by unpublish → add item → republish
 /// is never auto-scored by the timer sweep - the item it never showed
 /// would score `no-answer`; the attempt waits for a teacher instead.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2205,7 +2205,7 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
 /// BUG-279: the timer sweep builds a preview's policy by the preview rule
 /// (BUG-278) - an author's expired, past-due preview closes with no late
 /// penalty.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2262,7 +2262,7 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
 /// BUG-315: a timed draft whose clock ran out before the due date is on time
 /// however late the sweep gets to it - judged, and handed in, at the moment
 /// its time expired.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2322,7 +2322,7 @@ async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
 /// longer fit the items) is handed in ungraded on the last allowed try -
 /// pending review, answers as stored, at the clock-out moment - never
 /// left a draft nobody can finish or see.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2456,7 +2456,7 @@ async fn set_maintainer(
 /// BUG-294: a counted draft opened as a learner stays counted after its
 /// owner joins the staff - past a hard due date attempt-state, save and
 /// submit agree (PAST_DUE), none judges by the caller's new role.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2510,7 +2510,7 @@ async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
 /// BUG-295: a preview draft opened while staff is never resumed once its
 /// owner is a learner - attempt-state offers a new attempt, the preview
 /// refuses save/submit (404), and start discards it for a counted draft.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2591,7 +2591,7 @@ async fn a_learner_never_resumes_a_preview_draft(pool: PgPool) {
 /// grades is never overwritten by the draft that was graded - the violation
 /// re-grades the attempt (zeroed past the threshold), a pinned draft version
 /// that moved is a 409.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submit_never_overwrites_a_draft_changed_while_grading(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2683,7 +2683,7 @@ async fn submit_never_overwrites_a_draft_changed_while_grading(pool: PgPool) {
 /// the submit budget once, not once per round (two more accepted submits
 /// go through, the fourth is the 429); the timer sweep gives up the same
 /// way and backs the draft off instead of looping.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2844,7 +2844,7 @@ async fn hand_in_gives_up_after_three_regrade_rounds(pool: PgPool) {
 /// holds `lock_attempts` from grading to the row write) and answers the
 /// settled state - the next attempt as a draft, never attempt 1 still as
 /// a draft while the submit turns it `pending`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2918,7 +2918,7 @@ async fn start_waits_for_an_in_flight_submit(pool: PgPool) {
 /// concurrent submits than the pool has connections all land, where the
 /// UX-260 lock on its own connection plus pool writes inside it used to
 /// deadlock the pool (`PoolTimedOut` after the acquire timeout).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_submits_beyond_the_pool_size_all_land(pool: PgPool) {
     const POOL: u32 = 3;
     let small = sqlx::postgres::PgPoolOptions::new()
@@ -2968,7 +2968,7 @@ async fn concurrent_submits_beyond_the_pool_size_all_land(pool: PgPool) {
 
 /// A revision of returned work opens with the returned answers, not a blank
 /// page: the learner fixes what the teacher asked for.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_revision_starts_from_the_returned_answers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3030,7 +3030,7 @@ async fn a_revision_starts_from_the_returned_answers(pool: PgPool) {
 /// OPEN-learn-b: the save a closing page sends (`last`) goes through right
 /// after an autosave instead of a 429, so answers typed in the last seconds
 /// are not lost - but only a few a minute; a normal save stays throttled.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_last_save_skips_the_autosave_throttle_a_few_times_a_minute(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

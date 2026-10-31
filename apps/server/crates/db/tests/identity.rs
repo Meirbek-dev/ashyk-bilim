@@ -4,7 +4,7 @@
 use ab_core::permission::{Action, Permission, PermissionSet, ResourceType, Scope};
 use sqlx::PgPool;
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn six_system_roles_are_seeded(pool: PgPool) {
     let roles: Vec<(String, i32)> =
         sqlx::query_as("SELECT slug, priority FROM roles WHERE is_system ORDER BY priority DESC")
@@ -28,7 +28,7 @@ async fn six_system_roles_are_seeded(pool: PgPool) {
 
 /// Every seeded grant string must parse through the typed permission engine -
 /// the DB seeds and the Rust registry cannot drift apart.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn all_seeded_grants_parse(pool: PgPool) {
     let grants: Vec<String> =
         sqlx::query_scalar("SELECT DISTINCT permission FROM role_permissions")
@@ -49,7 +49,7 @@ async fn all_seeded_grants_parse(pool: PgPool) {
 
 /// Spot-check ported semantics: instructor can grade own assessments, a plain
 /// user cannot; guest reads courses.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn role_grant_semantics_spot_checks(pool: PgPool) {
     let load = |slug: &'static str| {
         let pool = pool.clone();
@@ -82,7 +82,7 @@ async fn role_grant_semantics_spot_checks(pool: PgPool) {
     assert!(!load("guest").await.grants(&grade_own));
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn user_constraints_and_role_cascade(pool: PgPool) {
     let user_id: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO users (zitadel_user_id, username, email)

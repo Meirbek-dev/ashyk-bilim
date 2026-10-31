@@ -95,7 +95,7 @@ fn activity<'a>(state: &'a serde_json::Value, id: &str) -> &'a serde_json::Value
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -341,7 +341,7 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessment_submissions_project_into_progress(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -447,7 +447,7 @@ async fn assessment_submissions_project_into_progress(pool: PgPool) {
 /// unpublishing / deleting an activity re-aggregates every learner so
 /// `total_required_count` follows the published set (BUG-098). Leaving an
 /// unknown or invisible course is a 404 like joining it (BUG-100).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -537,7 +537,7 @@ async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
 /// Studio lifecycle transitions flip the activity like the curriculum
 /// toggle does, so persisted totals follow (BUG-150): a learner at 3/3 goes
 /// to 3/4 when the studio publishes a quiz and back to 3/3 on unpublish.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -599,7 +599,7 @@ async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
 /// BUG-161: deleting a chapter cascades its activities, so the learner
 /// totals are recalculated like `delete_activity` does: 2/3 with the
 /// completed lecture in the deleted chapter → 1/2.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn chapter_delete_recalculates_totals(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -644,7 +644,7 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
 /// BUG-176: quiz / exam / code / file-submission activities complete through
 /// their pipelines only - marking one by hand is a 409 and leaves no trail
 /// step, no progress row and no XP behind.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -713,7 +713,7 @@ async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
 /// but the learner can still leave it and un-mark their own steps; with no
 /// own step, an invisible course's activity is a 404 like an unknown one
 /// (BUG-183).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -824,7 +824,7 @@ async fn learner_can_always_leave_an_unpublished_course(pool: PgPool) {
 /// Mark ∥ leave for the same course never 500s and never leaves the trail
 /// and the projection disagreeing: either the step exists and the lesson
 /// is complete, or neither does (BUG-210). Twenty rounds of both orders.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn mark_and_leave_race_stays_consistent(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -893,7 +893,7 @@ async fn mark_and_leave_race_stays_consistent(pool: PgPool) {
 /// 200, and a bystander's request in the middle of the stampede is not
 /// starved of a pool connection (the waiters spin on `try_lock`, they do
 /// not park a connection each).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn mark_stampede_never_exhausts_the_pool(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -925,7 +925,7 @@ async fn mark_stampede_never_exhausts_the_pool(pool: PgPool) {
 /// pool has connections, at once. The hooks (analytics, course XP) run after
 /// the lock commits, so no holder waits on a second connection: all 200 and
 /// every event and award lands.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
     let learners = pool.options().get_max_connections() + 2;
     let app = TestApp::spawn(pool).await;
@@ -969,7 +969,7 @@ async fn trail_lock_held(pool: &PgPool) -> bool {
 /// BUG-221: the client hangs up while a mark (then a leave) is inside its
 /// transaction. Both still land whole: the step with its completion, the
 /// run's removal with every un-completion - never one without the other.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn mark_and_leave_dropped_mid_flight_still_land_whole(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1069,7 +1069,7 @@ async fn quiz(
 /// BUG-268: a leaver who passed 1 of 2 required quizzes is no member, so the
 /// course-wide recalculation after unpublishing or deleting the other quiz
 /// leaves them alone - no completion, certificate or course XP.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_recalculation_skips_leavers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1144,7 +1144,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
 /// recalculation read them as members; it waits for each member's trail lock
 /// and re-checks the run inside it, so no leaver completes once the leave
 /// commits, while the members who stay do.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1235,7 +1235,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
 /// wait while the teacher unpublishes the other quiz - the course-wide
 /// recalculation waits for it instead of aborting, so every member
 /// (the held one included) completes.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1307,7 +1307,7 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
 /// while a member's trail lock holds up the course-wide recalculation still
 /// gets it once the lock frees: the learner with A done and only B left is
 /// 1/1 and eligible after B is unpublished.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unpublish_dropped_under_a_member_lock_still_recalculates(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1476,7 +1476,7 @@ async fn graded_while_away(
 /// BUG-275: a grade and a lesson published while the learner was away both
 /// reach them on rejoin - through `POST trail/courses` and through a mark
 /// that re-creates the run.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1543,7 +1543,7 @@ async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
 /// BUG-276 / UX-187: a learner who passed and left reads as not enrolled,
 /// and asking for their certificates once one is configured issues none;
 /// on rejoin it is issued.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1638,7 +1638,7 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
 
 /// BUG-289: a learner who rejoins by submitting another quiz (no
 /// `POST trail/courses`) picks up the grade published while they were away.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1702,7 +1702,7 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
 /// BUG-291: a learner who joins the staff and leaves it again - removed,
 /// deactivated, demoted to reporter, or a platform grant revoked - is a
 /// member again and picks up the grade published while they were staff.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1804,7 +1804,7 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
 /// BUG-292: a member who joins the course's staff keeps the run but is no
 /// member - `/trail` stops listing the course and learner-state shows no
 /// progress of theirs; leaving the staff brings both back.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_staffed_run_is_not_listed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1858,7 +1858,7 @@ async fn a_staffed_run_is_not_listed(pool: PgPool) {
 /// restricted to an allowlist they are not on is neither required nor their
 /// next step, so the rest completes the course; adding them to the list makes
 /// it required again (the access change re-aggregates the members).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2039,7 +2039,7 @@ async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
 
 /// UX-213: dropped from a quiz's allowlist, a learner can no longer take it
 /// but still reads their own attempts and results.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2127,7 +2127,7 @@ async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
 /// ETL-loaded learners arrive with trail steps but no projection rows: the
 /// backfill turns each complete step into a `completed` lesson row and the
 /// course aggregate, and pays no XP for those old completions.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2212,7 +2212,7 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
 /// UX-250 edges: a run with no `course_progress` row (a migrated run before
 /// the backfill) reports `progress_pct: null`, not a guessed 0; the batch
 /// query takes an empty id list (a trail whose runs are all hidden).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2247,7 +2247,7 @@ async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
 /// courses first (by `course_progress.progress_pct`), then the rest by
 /// progress and newest update - one keyset across pages, so an in-progress
 /// course never hides on page 2 behind courses the learner never opened.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2312,7 +2312,7 @@ async fn catalog_sort_progress_puts_in_progress_first_across_pages(pool: PgPool)
 /// `GET /courses` items name their authors and carry the caller's
 /// progress once enrolled (`null` before, and for anonymous callers); the
 /// teacher's own list (`mine=true`) carries the teaching numbers, others not.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_list_items_carry_authors_and_progress(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2375,7 +2375,7 @@ fn now_unix() -> i64 {
 /// A learner's extended due date - a test's (a bulk job) and a file task's -
 /// is the one their player card and next step read; the projection keeps the
 /// task's own date, which the others still see.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learner_state_reads_each_learners_extended_due_date(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

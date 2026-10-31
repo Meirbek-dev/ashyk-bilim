@@ -169,7 +169,7 @@ async fn referenced_count(app: &TestApp, upload_id: &str) -> i32 {
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn author_attempt_grade_and_download(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -754,7 +754,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
 
 /// BUG-113: a submit retried with the same `Idempotency-Key` replays the
 /// stored response instead of opening and submitting a second attempt.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submit_replays_under_an_idempotency_key(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -796,7 +796,7 @@ async fn submit_replays_under_an_idempotency_key(pool: PgPool) {
     assert_eq!(mine.json().as_array().unwrap().len(), 1, "{}", mine.text());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -981,7 +981,7 @@ async fn late_work_is_refused_or_penalised_by_policy(pool: PgPool) {
 
 /// BUG-316: a settings change to the late rules re-prices every existing
 /// file hand-in - the rate (80 → 56 → 32) and the due date (→ on time, 80).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1072,7 +1072,7 @@ async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
 
 /// BUG-129: completion is sticky. A second attempt that is only submitted
 /// (not yet published) keeps the course completed and the certificate.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1158,7 +1158,7 @@ async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
 /// UX-105: a published config whose activity the curriculum toggle hid is
 /// 404 for a learner on the config read AND on the draft (no existence
 /// leak, no misleading 409); the author still sees it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1231,7 +1231,7 @@ async fn hidden_activity_is_404_for_learner_writes_too(pool: PgPool) {
 /// the instructions is a 409 with the readiness code, learners keep the old
 /// text, and course readiness names a published-but-blank config
 /// `file-submission-not-ready` (not `-unpublished`).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1293,7 +1293,7 @@ async fn live_config_edits_must_keep_it_ready(pool: PgPool) {
 /// published config with blank instructions - both run under the config
 /// row lock. BUG-232: publish flips the activity flag in the same
 /// transaction, so a client that hangs up mid-publish leaves no torn pair.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_and_config_edits_serialize(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1368,7 +1368,7 @@ async fn publish_and_config_edits_serialize(pool: PgPool) {
 
 /// BUG-230: a refused config PATCH writes nothing - the title travels in
 /// the same transaction as the config it was refused with.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn refused_config_patch_keeps_the_title(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1403,7 +1403,7 @@ async fn refused_config_patch_keeps_the_title(pool: PgPool) {
 
 /// UX-154: the config `rubric` is an object, like the grade route's
 /// `rubric_scores` - a list or a string is a 422, on create and on patch.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn config_rubric_must_be_an_object(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1428,7 +1428,7 @@ async fn config_rubric_must_be_an_object(pool: PgPool) {
 /// BUG-241: a draft file swap whose client hangs up mid-request still moves
 /// both reference counts with the file rows, and the reaper skips (never
 /// fails on) an expired upload a file row still points at.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1506,7 +1506,7 @@ async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
 
 /// BUG-258: two drafts of one learner swapping shared uploads at once lock
 /// them in key order - never a 40P01 deadlock, and the counts stay exact.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1549,7 +1549,7 @@ async fn concurrent_draft_swaps_of_shared_uploads_never_deadlock(pool: PgPool) {
 /// rows, never the reference. The activity or chapter holding it is not
 /// deleted at all (409 `activity-has-learner-work`, owner 2026-10-14): the
 /// file stays referenced.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deletes_release_submitted_file_uploads(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1623,7 +1623,7 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
 
 /// BUG-260: a grade published for a learner who left the course is
 /// recorded - and nothing more: no completion, no certificate.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1722,7 +1722,7 @@ async fn set_maintainer(
 
 /// BUG-296: an open file attempt is judged by its own preview flag - a
 /// counted draft stays gated (PAST_DUE) after its owner joins the staff.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1776,7 +1776,7 @@ async fn a_counted_file_draft_keeps_its_gates_after_promotion(pool: PgPool) {
 /// BUG-295: a file preview draft is never resumed by a learner - hidden
 /// from `GET draft`, discarded by their next write (upload reference
 /// released), which opens a counted attempt.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1830,7 +1830,7 @@ async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
 /// BUG-314: the client hangs up the moment a file grade's publish commits.
 /// The progress projection still runs (detached, durable post-commit
 /// path): the activity completes and the certificate is issued.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1890,7 +1890,7 @@ async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
 /// A revision handed in after «Вернуть на доработку» opens a new review
 /// round: the grader's form no longer carries the return comment (typing a
 /// new one appended to it), the grading history still does.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_resubmitted_revision_clears_the_return_comment(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1974,7 +1974,7 @@ async fn a_resubmitted_revision_clears_the_return_comment(pool: PgPool) {
 /// (`assessments_require_enrollment`, the default) shows a stranger the
 /// task with `NOT_ENROLLED` and refuses the draft with a typed 403;
 /// enrolled, they start.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_task_requires_enrollment(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2022,7 +2022,7 @@ async fn file_task_requires_enrollment(pool: PgPool) {
 /// «Результаты» of a file task: the average and the ten-bucket distribution
 /// of graded and published hand-ins beside the counts, as a test's stats;
 /// work still waiting counts but has no score.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn results_carry_the_average_and_the_distribution(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

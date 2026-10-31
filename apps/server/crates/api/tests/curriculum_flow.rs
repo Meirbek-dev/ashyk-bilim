@@ -114,7 +114,7 @@ async fn chapter_names(app: &TestApp, session: &MintedSession, course_id: &str) 
         .collect()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn chapters_append_move_and_renumber(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -181,7 +181,7 @@ async fn chapters_append_move_and_renumber(pool: PgPool) {
     assert_eq!(positions, [1, 2], "delete must renumber contiguously");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn activities_order_within_and_across_chapters(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -279,7 +279,7 @@ async fn activities_order_within_and_across_chapters(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn curriculum_respects_course_access(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -418,7 +418,7 @@ async fn curriculum_respects_course_access(pool: PgPool) {
 /// The raw activity toggle refuses to publish a file-submission activity
 /// whose config is still a draft (409 `activity-not-ready`); publishing the
 /// config flips both.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -502,7 +502,7 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
 /// The raw publish toggle refuses an assessment-backed activity whose
 /// assessment is not `published` (BUG-102), and the gate reads the type
 /// this PATCH sets, not the stored one (BUG-104).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -655,7 +655,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
 /// Unpublished activities exist for editors only: learners and anonymous
 /// callers get a curriculum without them and a 404 for the activity and
 /// its blocks (BUG-099).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn drafts_are_visible_to_editors_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -706,7 +706,7 @@ async fn drafts_are_visible_to_editors_only(pool: PgPool) {
 
 /// UX-027: the editor autosave (`content`) is an optimistic-lock write -
 /// `If-Match` required, stale version 412, new version in the body + `ETag`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn content_writes_are_version_locked(pool: PgPool) {
     use axum::body::Body;
     use axum::http::{Request, header};
@@ -799,7 +799,7 @@ async fn content_writes_are_version_locked(pool: PgPool) {
 
 /// UX-317: an activity delete that loses the race to another delete is
 /// 404 - never a 412 whose `expected` equals its `actual`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
     use axum::body::Body;
     use axum::http::{Request, header};
@@ -839,7 +839,7 @@ async fn an_activity_delete_that_lost_the_race_is_404(pool: PgPool) {
 
 /// BUG-358: a metadata PATCH honours `If-Match` under the row lock - two
 /// renames racing with the same version end 200 + 412, never 200 + 200.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) {
     use axum::body::Body;
     use axum::http::{Request, header};
@@ -911,7 +911,7 @@ async fn concurrent_renames_with_the_same_if_match_are_serialized(pool: PgPool) 
 /// the row - the curriculum PATCH (type pair included), the assessment
 /// title sync, lifecycle transitions, the auto-publish sweep and the
 /// file-submission title/publish - and on none that changes nothing.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -1074,7 +1074,7 @@ async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
 
 /// BUG-168: blank names (`""` / `"   "`) are 422 `name`/`required` on
 /// create and update, and stored names are trimmed.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1171,7 +1171,7 @@ async fn published_quiz(
 /// BUG-186: a refused PATCH writes nothing. An archived quiz is read-only;
 /// renaming it together with a type change is refused (409 `conflict`)
 /// before the activity write runs - the row keeps its type and name.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn refused_activity_patch_writes_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -1225,7 +1225,7 @@ async fn refused_activity_patch_writes_nothing(pool: PgPool) {
 /// `activity-has-learner-work`, nothing goes, and `allowed_actions` stop
 /// offering `delete` (the webs offer unpublish). A staff preview attempt is
 /// no learner work: the delete still goes through, with the preview.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deleting_an_activity_with_learner_work_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -1356,7 +1356,7 @@ async fn deleting_an_activity_with_learner_work_is_refused(pool: PgPool) {
 /// like a live one - otherwise its later `published` transition would flip a
 /// `dynamic` activity live with a quiz behind it (409 `conflict`, row
 /// untouched). Archived: BUG-186's `refused_activity_patch_writes_nothing`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -1406,7 +1406,7 @@ async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
 /// insert (a DELETE holds the row until the create's FK check lines up
 /// behind it). The create is one transaction: 404 on the chapter, no
 /// orphan activity left behind, never a 500.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn create_against_a_vanishing_chapter_is_a_404_without_an_orphan(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -1455,7 +1455,7 @@ async fn create_against_a_vanishing_chapter_is_a_404_without_an_orphan(pool: PgP
 /// Migrated rows store `details` as JSON `null` (documents, file tasks) and
 /// the web writes `"endTime": null` on videos: the read answers the
 /// contract's object without null keys, or the web refuses the lesson.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn activity_details_never_carry_nulls(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1493,7 +1493,7 @@ async fn activity_details_never_carry_nulls(pool: PgPool) {
 /// uploaded video or a document needs its file, a YouTube lesson its link
 /// (409 `activity-media-missing`, `details.reason` names what is missing). A
 /// published lesson cannot have its media emptied either.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn media_lessons_publish_only_with_their_media(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

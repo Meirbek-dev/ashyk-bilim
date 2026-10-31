@@ -137,7 +137,7 @@ fn open(
     request
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn stream_delivers_grade_events_and_resumes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -239,7 +239,7 @@ async fn stream_delivers_grade_events_and_resumes(pool: PgPool) {
     assert!(buffer.contains(&format!("id: {event_id}")));
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_streams_are_capped_per_user(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -274,7 +274,7 @@ async fn concurrent_streams_are_capped_per_user(pool: PgPool) {
 
 /// Q-2026-09-12-2 #2: graders follow every grade change on a course over
 /// `GET /courses/{id}/grading/events`; learners get 403.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn course_stream_fans_out_grade_changes_to_graders(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -357,7 +357,7 @@ async fn course_stream_fans_out_grade_changes_to_graders(pool: PgPool) {
 /// BUG-188: the course stream re-checks grading access before each batch,
 /// so a maintainer demoted mid-stream gets a terminal `closed` instead of
 /// the next `grade.published`; reconnecting is refused like any read.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn demoted_maintainer_stream_closes_before_the_next_event(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -532,12 +532,12 @@ async fn platform_grader_streams_close(pool: PgPool, revoke: Revoke) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn platform_grader_streams_close_when_the_role_is_removed(pool: PgPool) {
     platform_grader_streams_close(pool, Revoke::Role).await;
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn platform_grader_streams_close_on_logout(pool: PgPool) {
     platform_grader_streams_close(pool, Revoke::Logout).await;
 }

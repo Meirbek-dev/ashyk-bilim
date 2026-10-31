@@ -34,7 +34,7 @@ async fn create_course(app: &TestApp, session: &MintedSession, name: &str) -> St
     res.json()["id"].as_str().unwrap().to_owned()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn crud_lifecycle_and_visibility(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -154,7 +154,7 @@ async fn crud_lifecycle_and_visibility(pool: PgPool) {
 
 /// Restore regression: `learnings` round-trip, legacy garbage reads as
 /// typed entries (or nothing), and the video thumbnail key is exposed.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -252,7 +252,7 @@ async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
     assert_eq!(app.get(&url).await.status, StatusCode::NOT_FOUND);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn listing_paginates_and_respects_visibility(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "prolific").await;
@@ -302,7 +302,7 @@ async fn listing_paginates_and_respects_visibility(pool: PgPool) {
     assert_eq!(mine.json()["items"].as_array().unwrap().len(), 5);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn announcements_follow_course_access(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "announcer").await;
@@ -362,7 +362,7 @@ async fn announcements_follow_course_access(pool: PgPool) {
     assert!(empty.json().as_array().unwrap().is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn creation_requires_the_grant(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let learner = app.mint_session(&["course:read:all"]).await;
@@ -414,7 +414,7 @@ async fn finalized_upload(
     (id, finalized.json()["key"].as_str().unwrap().to_owned())
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -569,7 +569,7 @@ async fn upload_refs(app: &TestApp, upload_id: &str) -> (i32, bool) {
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -661,7 +661,7 @@ async fn mine_listing_filters_sorts_and_summarizes(pool: PgPool) {
     assert_eq!(learner_mine.json()["summary"]["total"], 0);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -779,7 +779,7 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
 
 /// Writes on an invisible course are 404s like the read (no existence
 /// leak), and delete needs `course:delete:own` even for the creator.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn invisible_course_writes_are_404s_and_delete_needs_the_grant(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -826,7 +826,7 @@ async fn invisible_course_writes_are_404s_and_delete_needs_the_grant(pool: PgPoo
 
 /// BUG-255: two concurrent thumbnail PATCHes - only the thumbnail that won
 /// stays referenced.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -879,7 +879,7 @@ async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
 /// BUG-261: a thumbnail PATCH locks the course row before the upload rows
 /// (the order a course delete takes) - PATCH ∥ DELETE and PATCH ∥ PATCH never
 /// deadlock (40P01 → 500).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn thumbnail_patch_races_do_not_deadlock(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

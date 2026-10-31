@@ -71,7 +71,7 @@ async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: boo
     id
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn search_respects_visibility_and_gates_people(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "rustacean").await;
@@ -211,7 +211,7 @@ async fn search_respects_visibility_and_gates_people(pool: PgPool) {
 
 /// BUG-190: search uses the catalogue's visibility predicate, usergroup arm
 /// included - a cohort member finds the private course, anon does not.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cohort_member_finds_the_usergroup_shared_course(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "rustacean").await;
@@ -235,7 +235,7 @@ async fn cohort_member_finds_the_usergroup_shared_course(pool: PgPool) {
     assert!(anon.json()["courses"].as_array().unwrap().is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn anonymous_browsing_sees_public_catalog_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -295,7 +295,7 @@ async fn anonymous_browsing_sees_public_catalog_only(pool: PgPool) {
 /// UX-222: `/search` and `courses?q=` share one matching rule - symbols
 /// count (`C#`, `C++`), a one-letter word matches whole (and unfolded), and a
 /// Cyrillic look-alike «С#» is found by the Latin `C#`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -355,7 +355,7 @@ async fn search_and_course_filter_agree_on_symbols_and_short_words(pool: PgPool)
 
 /// A Kazakh name typed on a Russian keyboard (қ as к, і as и...) and ё typed
 /// as е still find the course, in `/search` and `courses?q=` alike.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn search_folds_kazakh_letters_and_yo(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -417,7 +417,7 @@ async fn search_folds_kazakh_letters_and_yo(pool: PgPool) {
 
 /// `cursor` pages every section by the same offset; `next_cursor` is set
 /// while any section has more; a malformed cursor is 422.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn search_pages_by_cursor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "teacher").await;
@@ -494,7 +494,7 @@ async fn lesson(
 /// CONTRACT-REQ-G-6: the «Уроки» group finds published lessons of published
 /// courses by name - never a draft lesson, never a lesson of a draft course,
 /// for a stranger and for the author alike.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn lessons_are_found_only_when_published_in_a_published_course(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = author(&app, "lessonauthor").await;

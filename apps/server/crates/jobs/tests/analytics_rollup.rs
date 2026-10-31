@@ -10,7 +10,7 @@ async fn count(pool: &PgPool, sql: &'static str) -> i64 {
     sqlx::query_scalar(sql).fetch_one(pool).await.unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn rollup_prunes_rows_past_the_retention_windows(pool: PgPool) {
     // Events: 401 days is out, 399 days stays.
     sqlx::query(

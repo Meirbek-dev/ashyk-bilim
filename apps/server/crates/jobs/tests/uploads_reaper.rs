@@ -23,7 +23,7 @@ fn storage() -> Arc<StorageClient> {
     )
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn reaper_removes_expired_rows_and_objects(pool: PgPool) {
     let storage = storage();
     let user: uuid::Uuid = sqlx::query_scalar(
@@ -80,7 +80,7 @@ async fn reaper_removes_expired_rows_and_objects(pool: PgPool) {
 
 /// AUD (reaper retry gap): a failed object delete must not drop the row, or the
 /// object is orphaned forever - the row stays and the next sweep reaps both.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_object_delete_keeps_the_row_for_the_next_sweep(pool: PgPool) {
     let storage = storage();
     let user: uuid::Uuid = sqlx::query_scalar(
@@ -183,7 +183,7 @@ async fn keys_left(pool: &PgPool) -> Vec<String> {
 
 /// A row claimed (locked) between the listing and the lock is skipped, not
 /// waited on - `lock_expired` answers `None` - and reaped by a later sweep.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_locked_row_is_skipped_until_the_next_sweep(pool: PgPool) {
     let storage = storage();
     let user = reapee(&pool, "locked").await;
@@ -209,7 +209,7 @@ async fn a_locked_row_is_skipped_until_the_next_sweep(pool: PgPool) {
 /// Three failed object deletes in a row end the sweep; a success in between
 /// resets the count. The private bucket name is invalid, so exactly the
 /// private rows fail.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn three_failures_in_a_row_end_the_sweep(pool: PgPool) {
     let half_down = StorageClient::new(&StorageConfig {
         endpoint: std::env::var("TEST_S3_ENDPOINT")
@@ -247,7 +247,7 @@ async fn three_failures_in_a_row_end_the_sweep(pool: PgPool) {
 }
 
 /// One sweep takes at most 500 rows; the rest wait for the next one.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_sweep_reaps_at_most_one_batch(pool: PgPool) {
     let storage = storage();
     let user = reapee(&pool, "batch").await;

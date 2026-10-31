@@ -19,7 +19,7 @@ fn encoded(url: &str) -> String {
         .replace('?', "%3F")
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn open_graph_preview_cache_guard_and_timeout(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.mint_session(&[]).await;
@@ -172,7 +172,7 @@ async fn open_graph_preview_cache_guard_and_timeout(pool: PgPool) {
 /// Malformed query strings and path parameters answer in the problem+json
 /// envelope (422 `validation-failed` with a `query` / `path` field error),
 /// never axum's plain-text 400 (BUG-101).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn malformed_query_and_path_are_problem_json(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     for (path, field) in [
@@ -199,7 +199,7 @@ async fn malformed_query_and_path_are_problem_json(pool: PgPool) {
 /// U+0000 in a query string, a path parameter or any JSON string is a 422
 /// `validation-failed` (`query` / `path` / `body` field error) - never a
 /// Postgres 22021 turned 500 (BUG-211).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn nul_in_any_string_is_validation_failed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.mint_session(&["user:update:own"]).await;

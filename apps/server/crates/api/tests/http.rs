@@ -7,7 +7,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn health_live_and_ready(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
 
@@ -19,7 +19,7 @@ async fn health_live_and_ready(pool: PgPool) {
     assert_eq!(ready.status, StatusCode::OK);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_response_carries_a_request_id(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app.get("/api/v2/health").await;
@@ -27,7 +27,7 @@ async fn every_response_carries_a_request_id(pool: PgPool) {
     assert!(!request_id.to_str().unwrap().is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unknown_routes_answer_problem_json(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app.get("/api/v2/definitely-not-a-route").await;
@@ -41,7 +41,7 @@ async fn unknown_routes_answer_problem_json(pool: PgPool) {
 }
 
 /// UX-110: a known route with the wrong verb answers in the envelope too.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn wrong_verbs_answer_problem_json(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app
@@ -62,7 +62,7 @@ async fn wrong_verbs_answer_problem_json(pool: PgPool) {
 
 /// The problem+json body carries the same correlation id as the header -
 /// a user copying the JSON gets something support can grep for.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn problem_bodies_carry_the_request_id(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app.get("/api/v2/definitely-not-a-route").await;
@@ -109,7 +109,7 @@ async fn problem_bodies_carry_the_request_id(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn openapi_json_is_served(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app.get("/api/v2/openapi.json").await;
@@ -119,7 +119,7 @@ async fn openapi_json_is_served(pool: PgPool) {
 
 // ── Sessions & auth ─────────────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn session_endpoint_requires_authentication(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
 
@@ -128,7 +128,7 @@ async fn session_endpoint_requires_authentication(pool: PgPool) {
     assert_eq!(anon.json()["code"], "unauthenticated");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn minted_session_authenticates_and_carries_grants(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     // The session answer reads the account row (`user`).
@@ -147,7 +147,7 @@ async fn minted_session_authenticates_and_carries_grants(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn garbage_session_cookie_is_session_expired(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app
@@ -165,7 +165,7 @@ async fn garbage_session_cookie_is_session_expired(pool: PgPool) {
 
 // ── CSRF guard ──────────────────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cross_site_mutations_are_rejected(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app
@@ -183,7 +183,7 @@ async fn cross_site_mutations_are_rejected(pool: PgPool) {
     assert_eq!(res.json()["code"], "csrf-rejected");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     for site in ["same-origin", "same-site", "none"] {
@@ -222,7 +222,7 @@ async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
 /// deployments (and always in local dev). It stamps `traceparent` on every
 /// request and `If-Match` on locked writes, and reads `ETag` back - a preflight
 /// that omits any of those silently breaks every browser-side call.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.server.cors_origins = vec!["http://localhost:3000".to_owned()];
@@ -262,7 +262,7 @@ async fn cors_preflight_allows_the_headers_the_web_client_sends(pool: PgPool) {
 /// preflight. Without it a cross-origin caller cannot read `ETag` (the new
 /// version after a locked write), `x-request-id` (shown in error toasts) or
 /// `Content-Disposition` (the CSV export's filename - UX-122).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.server.cors_origins = vec!["http://localhost:3000".to_owned()];
@@ -296,7 +296,7 @@ async fn cors_exposes_the_response_headers_the_web_client_reads(pool: PgPool) {
 /// QA-D: a body past the limit answers 413 problem+json - on raw-body routes
 /// (axum's plain-text rejection before the handler) and on `ValidJson` ones
 /// (was a 422 «invalid-json» field error).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn oversized_bodies_answer_problem_json_413(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("big", "big@example.com", &["user"]).await;

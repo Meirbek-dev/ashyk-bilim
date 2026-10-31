@@ -74,7 +74,7 @@ async fn wait_for_status(pool: &PgPool, status: &str, expected: i64) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn worker_executes_jobs_and_drains_on_cancel(pool: PgPool) {
     let hits = Arc::new(AtomicUsize::new(0));
     let worker = Worker::new(pool.clone(), fast_config())
@@ -102,7 +102,7 @@ async fn worker_executes_jobs_and_drains_on_cancel(pool: PgPool) {
     handle.await.unwrap().unwrap();
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failing_job_exhausts_attempts_and_dead_letters(pool: PgPool) {
     let worker = Worker::new(pool.clone(), fast_config())
         .register(AlwaysFails)
@@ -129,7 +129,7 @@ async fn failing_job_exhausts_attempts_and_dead_letters(pool: PgPool) {
     handle.await.unwrap().unwrap();
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unknown_kind_is_dead_lettered_not_retried(pool: PgPool) {
     let worker = Worker::new(pool.clone(), fast_config());
 
@@ -171,7 +171,7 @@ impl JobHandler for Panics {
 /// (here: a panic) must stop being heartbeated, so the reaper recovers it.
 /// Before the fix the worker renewed every `running` row it owned and this
 /// job stayed `running` forever.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn abandoned_job_is_not_heartbeated_and_gets_reaped(pool: PgPool) {
     let config = WorkerConfig {
         heartbeat_interval: Duration::from_millis(50),

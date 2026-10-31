@@ -176,7 +176,7 @@ fn feature(list: &Value, key: &str) -> Value {
         .clone()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn ai_feature_switches_toggle_at_runtime(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app
@@ -248,7 +248,7 @@ async fn ai_feature_switches_toggle_at_runtime(pool: PgPool) {
     assert_eq!(feature(&reopened, qa)["enabled"], true);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_extensions_notify_and_move_the_reminder(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -342,7 +342,7 @@ async fn read_stream(base: &str, who: &MintedSession, needle: &str) -> Vec<(Stri
         .collect()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn platform_admins_get_grading_updates(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let base = app.serve().await;
@@ -364,7 +364,7 @@ async fn platform_admins_get_grading_updates(pool: PgPool) {
     assert_eq!(graded[0].1["payload"]["course_id"], course_id.as_str());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assessment_stats_filter_by_group(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -413,7 +413,7 @@ async fn assessment_stats_filter_by_group(pool: PgPool) {
 /// INBOX-DATA: teacher items carry the submission, the learner and a
 /// translatable message; `kind` / `course_id` filter, `sort` pages by
 /// its own key.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn work_queue_items_name_the_work_and_filter(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -505,7 +505,7 @@ async fn send_with(
 /// IFM: deletes and the remaining replace/patch writes take `If-Match`
 /// (stale -> 412, current -> the write); a like does not move a post's
 /// version.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn if_match_guards_deletes_and_config_writes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -687,7 +687,7 @@ async fn if_match_guards_deletes_and_config_writes(pool: PgPool) {
 /// FSB-UNPUB: a published task goes back to draft (the activity leaves the
 /// learners' view), `allowed_actions` follows the lifecycle, learners and
 /// drafts are refused.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn file_submissions_unpublish(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -744,7 +744,7 @@ async fn file_submissions_unpublish(pool: PgPool) {
 
 /// EXAM-CONSENT: the start flag stamps the attempt once; GAMIF: the XP
 /// history pages by cursor and the display switches round-trip.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -838,7 +838,7 @@ async fn exam_consent_xp_history_and_display_switches(pool: PgPool) {
 
 /// LIVE: admin lists, discussions, progress and collections reach the
 /// user stream of the people who show them (the writer's other tabs too).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn live_events_reach_their_readers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let base = app.serve().await;

@@ -263,7 +263,7 @@ fn far_future() -> i64 {
 
 // ── 1. lifecycle ────────────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn archive_and_restore_lifecycle(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "teacher").await;
@@ -335,7 +335,7 @@ async fn add_author(
     session
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roster_managers_archive_and_restore(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let creator = staff(&app, "creator").await;
@@ -424,7 +424,7 @@ async fn roster_managers_archive_and_restore(pool: PgPool) {
 
 // ── 3. visibility ───────────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn enrolled_learners_keep_a_private_archived_course(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "teacher").await;
@@ -478,7 +478,7 @@ async fn enrolled_learners_keep_a_private_archived_course(pool: PgPool) {
     assert_eq!(app.get(&path).await.status, StatusCode::NOT_FOUND);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_public_archived_course_is_undiscoverable(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "author").await;
@@ -682,7 +682,7 @@ impl<'a> Call<'a> {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = staff(&app, "teacher").await;
@@ -1656,7 +1656,7 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
 
 // ── 5. scheduled → draft ────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn archive_unschedules_assessments_and_the_sweep_publishes_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "teacher").await;
@@ -1724,7 +1724,7 @@ async fn archive_unschedules_assessments_and_the_sweep_publishes_nothing(pool: P
 
 // ── 6. auto-submit ──────────────────────────────────────────────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn the_timer_sweep_still_finalizes_expired_drafts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "teacher").await;
@@ -1820,7 +1820,7 @@ async fn upload_refs(app: &TestApp, upload_id: &str) -> (i32, bool) {
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn archive_releases_no_uploads(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = staff(&app, "teacher").await;

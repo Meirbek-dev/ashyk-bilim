@@ -4,7 +4,8 @@
 //   template [--from <db>]  build ashyq_seed: migrated + `ashyq admin seed-e2e` (once; ~1-2 min)
 //   fresh <name>            drop <name> and clone it from ashyq_seed (CREATE DATABASE ... TEMPLATE, ~1 s)
 //   drop <name>             drop <name>
-//   test-reset [--force]    recreate ashyq_test migrated; drop leftover _sqlx_test_* (refuses while tests run)
+//   test-reset [--force]    recreate ashyq_test migrated; drop leftover test databases and templates
+//                           (_ab_test_*, _ab_template_*, _sqlx_test_*; refuses while tests run)
 //   ls                      list databases with their size
 //   sql [--slot N | --db NAME] "<sql>" | -f <file>
 //                           run SQL (several statements too) on a slot's database (default slot 0; no slot running:
@@ -211,9 +212,12 @@ async function testReset(force: boolean): Promise<void> {
     return [
       names(
         await sql`SELECT DISTINCT datname FROM pg_stat_activity
-                       WHERE datname = ${TEST_DB} OR datname LIKE '\_sqlx\_test\_%'`,
+                       WHERE datname = ${TEST_DB} OR datname LIKE '\_sqlx\_test\_%' OR datname LIKE '\_ab\_%'`,
       ),
-      names(await sql`SELECT datname FROM pg_database WHERE datname LIKE '\_sqlx\_test\_%'`),
+      names(
+        await sql`SELECT datname FROM pg_database
+                   WHERE datname LIKE '\_sqlx\_test\_%' OR datname LIKE '\_ab\_test\_%' OR datname LIKE '\_ab\_template\_%'`,
+      ),
     ]
   })
   // Another session's tests hold these: dropping them would fail its run.
@@ -223,7 +227,9 @@ async function testReset(force: boolean): Promise<void> {
   await dropDb(TEST_DB)
   await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(TEST_DB)}`))
   ashyq(TEST_DB, ['migrate'], 'test-reset')
-  console.log(`db: ${TEST_DB} recreated and migrated; ${leftovers.length} leftover _sqlx_test_* dropped`)
+  console.log(
+    `db: ${TEST_DB} recreated and migrated; ${leftovers.length} leftover test databases and templates dropped`,
+  )
 }
 
 async function list(): Promise<void> {

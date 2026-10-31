@@ -186,7 +186,7 @@ fn grade(
     builder.body(Body::from(body.to_string())).unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn review_grade_publish_return_and_release(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -677,7 +677,7 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
 /// The cap is lifted for a revision at start (`attempt-state`) *and* at
 /// submit: a returned attempt on a `max_attempts: 1` quiz could be started
 /// again but its hand-in answered 403 `MAX_ATTEMPTS_REACHED`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_returned_attempt_can_be_handed_in_again_at_the_cap(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -735,7 +735,7 @@ async fn a_returned_attempt_can_be_handed_in_again_at_the_cap(pool: PgPool) {
 
 /// BUG-111: the teacher's grade is capped by the attempt penalty exactly
 /// like the auto path - attempt 2 with a 20 % cap graded 100 lands at 80.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -777,7 +777,7 @@ async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
 /// the attempt learner progress scores: the best published attempt, not
 /// the latest one. Attempt 2 published 76 %, attempt 3 zeroed → the cell
 /// is attempt 2, 76 %, passed; the CSV says `76`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -839,7 +839,7 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
 /// BUG-351: `sort`/`order` order the whole queue, not one page - a walk of
 /// one-row pages through the cursors yields the full order (ungraded work
 /// scores lowest; ties newest first).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -944,7 +944,7 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
 /// BUG-355: a review cursor is bound to the queue, sort and order it was
 /// minted for - another assessment's, another sort's or order's cursor and
 /// a garbage one are 422, never a silent re-key or an empty page.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn review_cursor_is_bound_to_its_queue_sort_and_order(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1006,7 +1006,7 @@ async fn review_cursor_is_bound_to_its_queue_sort_and_order(pool: PgPool) {
 /// raw - a feedback-only republish that re-sends every item keeps 55, and
 /// the grader's view reports the override; dropping it takes an explicit
 /// `final_score: null`; without an override an edited item recomputes.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn override_survives_a_feedback_only_republish(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1079,7 +1079,7 @@ async fn override_survives_a_feedback_only_republish(pool: PgPool) {
 /// BUG-174: an integrity-annulled attempt (auto 0) keeps its 0 through a
 /// feedback-only republish that re-sends the item scores; only an explicit
 /// `final_score` moves it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1161,7 +1161,7 @@ async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
 /// UX-215: re-pricing lateness never lifts an annulled attempt off 0 -
 /// a waiver and its removal re-score it from the ledger, where the
 /// annulment wrote 0 (`settle_lateness`).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn settling_lateness_keeps_an_annulled_attempt_at_zero(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1245,7 +1245,7 @@ async fn settling_lateness_keeps_an_annulled_attempt_at_zero(pool: PgPool) {
 
 /// BUG-175: the cell keeps the grade of record (published attempt 1) and
 /// flags the newer attempt awaiting grading.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1288,7 +1288,7 @@ async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPo
 /// high its partial auto score (choice 10/20 = 50 here). Bob: attempt 1
 /// published 40 < pending 50 → the cell is 40 published, `pending_attempt`
 /// 2, learner-state 40 passed, CSV `40`. Alice: a 50 tie → published wins.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn pending_retake_never_outranks_the_released_grade(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1358,7 +1358,7 @@ async fn pending_retake_never_outranks_the_released_grade(pool: PgPool) {
 /// the published 30 in the cell / CSV, as in the learner's projection; the
 /// unreleased attempt 3 is the cell's «pending» flag. A whitespace-only
 /// `feedback` is stored trimmed.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn returned_or_unreleased_retake_never_outranks_the_released_grade(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1440,7 +1440,7 @@ async fn returned_or_unreleased_retake_never_outranks_the_released_grade(pool: P
 /// an omitted `feedback` keeps the stored one; `audit_note` lands in the
 /// audit trail only. Also the small refusals: an unparsable `If-Match`,
 /// a draft, and another learner's feedback.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1541,7 +1541,7 @@ async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
 
 /// BUG-139: an extension that makes a late hand-in on time clears the late
 /// penalty and re-scores graded work (the legacy kept deducting).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1625,7 +1625,7 @@ async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool)
 /// BUG-284: a per-learner override that waives the penalty settles the
 /// learner's late work like the bulk extension does - not late, no
 /// penalty, and a grade saved after it publishes unpenalised.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn override_waiver_settles_late_work(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1668,7 +1668,7 @@ async fn override_waiver_settles_late_work(pool: PgPool) {
 
 /// BUG-297: lateness settles both ways - a waiver revoked (PUT) or deleted
 /// puts the policy's penalty back on the published grade.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn revoked_or_deleted_waiver_reapplies_the_late_penalty(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1827,7 +1827,7 @@ fn put_json(cookie: &str, uri: &str, body: &serde_json::Value) -> Request<Body> 
 
 /// BUG-306: a leave and a staff join drop the override rows - the waiver
 /// goes and the penalty comes back, as on a teacher's delete (BUG-297).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_waiver_settles_on_leave_and_staff_join(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1874,7 +1874,7 @@ async fn dropped_waiver_settles_on_leave_and_staff_join(pool: PgPool) {
 
 /// BUG-307: a waiver in force at the hand-in keeps applying to it after it
 /// expires - a note-only PUT after the expiry moves nothing.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn waiver_expiry_after_the_hand_in_changes_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1918,7 +1918,7 @@ async fn waiver_expiry_after_the_hand_in_changes_nothing(pool: PgPool) {
 /// BUG-312: a late-policy change re-prices every hand-in - a learner with
 /// an unrelated override and one without always agree, and a note-only PUT
 /// afterwards moves nothing. Both the penalty rate and the due date.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2032,7 +2032,7 @@ async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
 
 /// BUG-316: a policy change that only moves `attempt_penalty_percent`
 /// re-scores the hand-ins it caps - attempt 2 graded 100 goes 100 → 70.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn an_attempt_penalty_change_rescores_hand_ins(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2092,7 +2092,7 @@ async fn an_attempt_penalty_change_rescores_hand_ins(pool: PgPool) {
 
 /// BUG-285: previews a maintainer made never count once they are a learner
 /// - not toward the cap, not in the attempt number, not in their own list.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn previews_never_count_after_a_role_change(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2166,7 +2166,7 @@ async fn previews_never_count_after_a_role_change(pool: PgPool) {
 
 /// BUG-286: a learner who becomes a maintainer may not grade the attempt
 /// they made as a learner.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2220,7 +2220,7 @@ async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
 /// others refuse them) and their own grader actions never reach their own
 /// counted attempt: override 403, extension 422 naming them, publish-all
 /// skips their row.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2348,7 +2348,7 @@ async fn grader_actions_never_reach_the_callers_own_attempt(pool: PgPool) {
 
 /// BUG-283: an extension over an expired override applies - the expiry is
 /// cleared, and the expired grant's extra attempts are not resurrected.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_over_an_expired_override_applies(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2400,7 +2400,7 @@ async fn deadline_extension_over_an_expired_override_applies(pool: PgPool) {
 /// with the first learner's override committed but not settled; the
 /// reaped job's retry resumes - it settles that learner, extends the rest
 /// and finishes the row - instead of returning with the row stuck.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_retry_resumes_a_crashed_run(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2470,7 +2470,7 @@ async fn deadline_extension_retry_resumes_a_crashed_run(pool: PgPool) {
 
 /// BUG-300: an extension over a live override keeps the grants' expiry -
 /// the extra attempts and the waiver lapse on time, the new due date stays.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_over_a_live_override_keeps_its_expiry(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2535,7 +2535,7 @@ async fn deadline_extension_over_a_live_override_keeps_its_expiry(pool: PgPool) 
 /// BUG-308: a PUT that re-sends an extended override's values unchanged
 /// keeps the extension's due date past the grants' expiry - only a PUT that
 /// changes the date ends the extension.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn override_put_keeps_the_extension_unless_the_date_changes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2603,7 +2603,7 @@ async fn override_put_keeps_the_extension_unless_the_date_changes(pool: PgPool) 
     assert_ne!(effective["due_at_unix"], new_due + 60, "{effective}");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2760,7 +2760,7 @@ fn with_if_match(
 /// the same cell shape as assessment submissions (keyset on
 /// `(user, activity)`), and `GET /courses/{id}/gradebook/export` is the
 /// matrix as CSV with the header in the `Accept-Language` language.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2957,7 +2957,7 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
 /// gradebook cursor is 422 `cursor`/`invalid`; a publish-only save of a
 /// never-graded attempt scores the breakdown (choice 10/20 → 50); the
 /// attempt cap and the late penalty compose (100 → 80 → 72).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grade_path_edges_over_http(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3085,7 +3085,7 @@ async fn grade_path_edges_over_http(pool: PgPool) {
 /// BUG-197: a save that leaves an essay unscored is a draft - the attempt
 /// stays `pending` (feedback kept), out of the bulk release, and a publish
 /// is 409; scoring every manual item makes it `graded`, then released.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3185,7 +3185,7 @@ async fn feedback_only_save_keeps_the_attempt_pending(pool: PgPool) {
 /// BUG-205: an explicit `final_score` equal to the item-derived score is
 /// still an override - the attempt is graded, survives a feedback-only save
 /// and is released by the bulk publish.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3250,7 +3250,7 @@ async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) 
 /// loses its penalty but gains no score; its ledger entry carries no
 /// final either. Nits: `new_due_at_unix` outside the timestamp range is
 /// 422; the route honours `Idempotency-Key` (a replay is the same action).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_leaves_a_pending_attempt_unscored(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3358,7 +3358,7 @@ async fn deadline_extension_leaves_a_pending_attempt_unscored(pool: PgPool) {
 /// UX-136: a maintainer's queued deadline extension fails at execution
 /// once the creator has set them inactive - the grant is checked when the
 /// worker runs, not only at the enqueue.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3431,7 +3431,7 @@ async fn queued_extension_fails_for_a_demoted_maintainer(pool: PgPool) {
 /// loses access before the run is skipped and named in the log. The run's
 /// override write is one upsert, so a racing `PUT overrides/{user}` never
 /// loses its other fields.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3599,7 +3599,7 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
 
 /// BUG-251: a grader's action never enrols - a learner who left keeps no
 /// trail run after a grade publish or a deadline extension run.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3694,7 +3694,7 @@ async fn commit_after(leave: sqlx::Transaction<'static, sqlx::Postgres>) {
 /// BUG-270: grades released while a leave is in flight - the projection
 /// waits for the leaver's trail lock, finds no run, and pays nothing (no
 /// activity progress, no XP); the member who stays is paid.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_grades_racing_a_leave_pays_the_leaver_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3743,7 +3743,7 @@ async fn publish_grades_racing_a_leave_pays_the_leaver_nothing(pool: PgPool) {
 /// BUG-271: a deadline-extension run racing a leave in flight writes no
 /// override for the leaver - membership is checked and the override
 /// written under the member's trail lock.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_racing_a_leave_writes_no_override(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3803,7 +3803,7 @@ async fn deadline_extension_racing_a_leave_writes_no_override(pool: PgPool) {
 /// BUG-215: an integrity-annulled attempt's 0 is an explicit override -
 /// right or wrong choice, a feedback-only save keeps it `graded 0`, the
 /// review reports `score_override 0`, and the bulk release takes it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3917,7 +3917,7 @@ async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
 /// never leaves the penalised final behind - whichever lands first, the
 /// other one either re-scores (worker) or is refused as stale and retried
 /// (save). Both orders, twenty rounds.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -3998,7 +3998,7 @@ async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(po
 /// BUG-217: an item added between an unpublish and a republish, graded on
 /// an attempt that predates it, joins the breakdown as a share of 100 -
 /// the raw score weights it like its siblings (10/30), not 10/110.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4058,7 +4058,7 @@ async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
 /// BUG-225: an item whose `max_score` was set to 0 while the quiz was
 /// unpublished accepts only a 0 - a 500 on it used to be stored on the
 /// item's 50-point share (final 556 %).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn zero_max_item_accepts_only_zero(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4137,7 +4137,7 @@ async fn zero_max_item_accepts_only_zero(pool: PgPool) {
 /// row. Whoever commits first wins; the other is a 412 (save) or a skipped
 /// row (release) - never a `published` row with the stale ledger score
 /// over a 200 save, and a returned attempt is never released.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4230,7 +4230,7 @@ async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: 
 /// committed its row and ledger. The SSE fan-out, the progress projection
 /// and the analytics hook still run - the learner sees the score, not a
 /// hidden grade forever.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4313,7 +4313,7 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
 /// BUG-265: the gradebook pages by learner - each page is whole member rows
 /// (every graded activity), so the page count follows the members and the
 /// last member's pending cell is on the last page, not past a key cap.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4371,7 +4371,7 @@ async fn gradebook_pages_whole_learner_rows(pool: PgPool) {
 /// UX-182: the course author's own attempt is a preview - no trail run,
 /// not in the review queue, stats or gradebook - and a course with members
 /// but no graded activity still lists its members.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn staff_attempts_are_previews(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4464,7 +4464,7 @@ async fn staff_attempts_are_previews(pool: PgPool) {
 
 /// BUG-280: the author's own submitted preview never locks authoring; the
 /// first learner submission still does.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn staff_preview_does_not_lock_editing(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4498,7 +4498,7 @@ async fn staff_preview_does_not_lock_editing(pool: PgPool) {
 /// UX-169: the gradebook lists the course members (trail runs, the UX-150
 /// predicate) - a member without attempts has a row, a leaver's attempts
 /// drop out - and the CSV follows.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn gradebook_lists_members_not_leavers(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4558,7 +4558,7 @@ async fn gradebook_lists_members_not_leavers(pool: PgPool) {
 
 /// UX-167: review rows say whether the learner is a course member, so the
 /// bulk extension can leave a leaver out instead of 422-ing the batch.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn review_rows_carry_membership(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4595,7 +4595,7 @@ async fn review_rows_carry_membership(pool: PgPool) {
 /// audit lands with the write, and the lateness settle still runs (detached,
 /// durable post-commit path): a dropped waiver POST clears the penalty, a
 /// dropped DELETE puts it back.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_override_writes_still_settle_and_audit(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -4684,7 +4684,7 @@ fn shape(cell: &str) -> String {
 /// OPEN-E-6: a failed quiz with an attempt left offers the retake first
 /// in learner-state (`start` before `view_feedback`); at the cap it offers
 /// the result only.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_quiz_with_attempts_left_offers_the_retake(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

@@ -72,7 +72,7 @@ fn put(session: &MintedSession, uri: String) -> Request<Body> {
 
 /// BUG-153: a post retried with the same `Idempotency-Key` replays the
 /// created post instead of posting twice; the key with another body is 422.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn create_replays_under_an_idempotency_key(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -110,7 +110,7 @@ async fn create_replays_under_an_idempotency_key(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn posts_replies_reactions_and_moderation(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -508,7 +508,7 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn listing_pages_by_cursor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -562,7 +562,7 @@ async fn listing_pages_by_cursor(pool: PgPool) {
 
 /// BUG-298: concurrent likes and replies all count - the triggers move the
 /// counters by atomic deltas instead of a racing recount.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -619,7 +619,7 @@ async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
 /// BUG-346: an owner edit carrying an unchanged `status` never writes the
 /// column - a moderator hide committed while the edit waits on the row lock
 /// survives it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -680,7 +680,7 @@ async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
 /// embed framing the platform's own origin, a traversal out of
 /// `/content/` and a script link are 422 with the node's field; HTML posts
 /// (the old web) and a clean document pass.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn document_posts_with_unsafe_urls_are_refused(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.server.web_url = Some("https://ashyq.test".into());
@@ -762,7 +762,7 @@ async fn document_posts_with_unsafe_urls_are_refused(pool: PgPool) {
 /// `discussion-image` - the uploads table refused that purpose (500), so no
 /// image could be added to a post. Every purpose of the policy must be
 /// storable.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_post_claims_its_uploaded_image(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -847,7 +847,7 @@ async fn enrol(app: &TestApp, who: &MintedSession, course_id: &str) {
 /// posting, replying and reacting need an enrolment (or the course staff):
 /// 403 `discussion-enrollment-required`, and the page's `can_post` /
 /// `allowed_actions` tell the web to offer «enrol» instead of the composer.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn posting_needs_an_enrolment(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

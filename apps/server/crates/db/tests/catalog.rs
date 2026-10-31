@@ -29,7 +29,7 @@ async fn seed_course(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid, uuid::Uuid) {
     (course, chapter, activity)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn platform_is_a_singleton(pool: PgPool) {
     // Migration 0008 seeds the row; any further insert must be rejected.
     let seeded: i64 = sqlx::query_scalar("SELECT count(*) FROM platforms")
@@ -43,7 +43,7 @@ async fn platform_is_a_singleton(pool: PgPool) {
     assert!(second.is_err(), "second platform row must be rejected");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn invalid_type_subtype_pairs_are_rejected(pool: PgPool) {
     let (course, chapter, _activity) = seed_course(&pool).await;
     let bad = sqlx::query(
@@ -60,7 +60,7 @@ async fn invalid_type_subtype_pairs_are_rejected(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cascades_flow_course_to_blocks(pool: PgPool) {
     let (course, _chapter, activity) = seed_course(&pool).await;
     sqlx::query(
@@ -88,7 +88,7 @@ async fn cascades_flow_course_to_blocks(pool: PgPool) {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn collection_membership_cannot_duplicate(pool: PgPool) {
     let (course, _c, _a) = seed_course(&pool).await;
     let collection: uuid::Uuid =
@@ -114,7 +114,7 @@ async fn collection_membership_cannot_duplicate(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
     let (course, _c, _a) = seed_course(&pool).await;
     let user: uuid::Uuid = sqlx::query_scalar(
@@ -173,7 +173,7 @@ async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn resource_authors_require_exactly_one_target(pool: PgPool) {
     let (course, _c, _a) = seed_course(&pool).await;
     let collection: uuid::Uuid =
@@ -227,7 +227,7 @@ async fn resource_authors_require_exactly_one_target(pool: PgPool) {
     assert!(dup.is_err());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn full_text_search_matches_course_names(pool: PgPool) {
     sqlx::query("INSERT INTO courses (name, description) VALUES ('Введение в Rust', 'системное программирование')")
         .execute(&pool)
@@ -284,7 +284,7 @@ async fn prompt_of(pool: &PgPool, item: uuid::Uuid) -> String {
         .unwrap()
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn legacy_code_statement_moves_into_an_empty_prompt_only(pool: PgPool) {
     let legacy = seed_code_challenge(&pool, "Print \"Hello\".", "").await;
     let written = seed_code_challenge(&pool, "Old text", "The teacher's statement").await;
@@ -331,4 +331,63 @@ async fn populated_previous_schema_upgrades_without_replacing_authored_prompts(p
         prompt_of(&pool, authored).await,
         "Teacher's current statement"
     );
+}
+
+async fn seed_user(pool: &PgPool, name: &str) -> uuid::Uuid {
+    sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email) VALUES ($1, $1, $1 || '@example.com') RETURNING id",
+    )
+    .bind(name)
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+async fn seed_code_runs(pool: &PgPool, item: uuid::Uuid, user: uuid::Uuid, runs: i32) {
+    sqlx::query(
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256)
+         SELECT i.assessment_id, i.id, $2, 'custom', 'accepted', 71, md5(g::text)
+           FROM assessment_items i CROSS JOIN generate_series(1, $3) g WHERE i.id = $1",
+    )
+    .bind(item)
+    .bind(user)
+    .bind(runs)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+/// A code run is learner work only when someone outside the course staff made it: the creator's runs, however many
+/// (one staff account held 41k in production), never stop a delete; one learner run does.
+#[ab_testdb::test]
+async fn only_a_learners_code_run_is_learner_work(pool: PgPool) {
+    let item = seed_code_challenge(&pool, "Print", "").await;
+    let (activity, course): (uuid::Uuid, uuid::Uuid) = sqlx::query_as(
+        "SELECT s.activity_id, s.course_id FROM assessment_items i JOIN assessments s ON s.id = i.assessment_id
+          WHERE i.id = $1",
+    )
+    .bind(item)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let teacher = seed_user(&pool, "teacher").await;
+    let learner = seed_user(&pool, "learner").await;
+    sqlx::query("UPDATE courses SET creator_id = $2 WHERE id = $1")
+        .bind(course)
+        .bind(teacher)
+        .execute(&pool)
+        .await
+        .unwrap();
+    seed_code_runs(&pool, item, teacher, 200).await;
+    let with_work = |pool: PgPool| async move {
+        ab_db::catalog::activities_with_learner_work(&pool, &[activity])
+            .await
+            .unwrap()
+            .into_iter()
+            .map(uuid::Uuid::from)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(with_work(pool.clone()).await, Vec::<uuid::Uuid>::new());
+    seed_code_runs(&pool, item, learner, 1).await;
+    assert_eq!(with_work(pool.clone()).await, vec![activity]);
 }

@@ -316,7 +316,7 @@ fn item_for<'a>(queue: &'a serde_json::Value, activity_id: &str) -> Option<&'a s
         .find(|i| i["activity_id"] == activity_id)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -598,7 +598,7 @@ async fn learner_and_teacher_queues_follow_the_grading_lifecycle(pool: PgPool) {
 /// teacher work in any grading mode. BUG-127: only roster members who may
 /// grade (creator, maintainer, contributor) get it - a reporter reads the
 /// course but has no review access, so its teacher queue stays empty.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn pending_manual_items_reach_graders_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -640,7 +640,7 @@ async fn pending_manual_items_reach_graders_only(pool: PgPool) {
 /// BUG-299: the learner queue lists member courses only - a leaver, or a
 /// learner now on the course's staff, sees no work there; leaving the
 /// staff brings it back.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn learner_queue_follows_membership(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -682,7 +682,7 @@ async fn learner_queue_follows_membership(pool: PgPool) {
 /// teacher queue (pass 23) - their row is never re-projected, so the queue
 /// reads the attempts: a saved grade moves it to release, publishing (or a
 /// published file grade) takes it off.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn teacher_queue_drops_graded_work_of_non_members(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

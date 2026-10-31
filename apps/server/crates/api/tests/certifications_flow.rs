@@ -79,7 +79,7 @@ async fn course_with_lesson(app: &TestApp, teacher: &MintedSession) -> (String, 
     (course_id, activity_id)
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -510,7 +510,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(state.json()["certificate"]["configured"], true);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_template_nobody_holds_is_deleted(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -539,7 +539,7 @@ async fn a_template_nobody_holds_is_deleted(pool: PgPool) {
 
 /// A course has one template: turning it on twice (a double click) keeps one row, with the later
 /// config, so a learner who completes gets one certificate, not one per click.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;

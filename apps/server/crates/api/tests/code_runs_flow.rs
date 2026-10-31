@@ -163,7 +163,7 @@ fn run(
 
 const SQUARE: &str = "print(int(input())**2)  # square";
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;
@@ -323,7 +323,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
     assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;
@@ -485,7 +485,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
 /// before `due_at` (no late hand-ins), Judge0 answers «busy» only after the
 /// due date has passed - the attempt is on time (judged at arrival) and
 /// lands for manual review: 200 `pending`, counted in the teacher's stats.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;
@@ -532,7 +532,7 @@ async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool
     assert_eq!(stats.json()["needs_grading"], 1);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn degraded_runner_and_languages(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;
@@ -654,7 +654,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
 
 /// BUG-369: a program printing a NUL byte is a wrong answer, not a 500 -
 /// on a visible run and at submit, and no run is left `running`.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     FakeJudge::mount(&app.judge0, fake_python).await;
@@ -703,7 +703,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
 
 /// BUG-371: a key whose run is still executing answers 409 - never a
 /// second execution; an abandoned run (crash) frees the key after a while.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;
@@ -785,7 +785,7 @@ async fn code_draft(
 /// sweep always finalizes - internal error / a run it cannot finish go to
 /// manual review, a compile error, a disallowed language or NUL output
 /// score what they earned.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     FakeJudge::mount(&app.judge0, fake_python).await;
@@ -885,7 +885,7 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
 /// final run by `submission_id` + `purpose=final`), the per-item reference
 /// check replays under its `Idempotency-Key` with a typed status, and
 /// `GET /code/runner` answers the runner state with the languages.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let judge = FakeJudge::mount(&app.judge0, fake_python).await;

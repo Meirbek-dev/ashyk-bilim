@@ -2,7 +2,7 @@
 //!
 //! [`TestApp`] wraps the real router (full middleware stack) around a test
 //! database pool, the test Redis, and a wiremock Zitadel - pair it with
-//! `#[sqlx::test]` for a fresh migrated DB per test. Requests go through
+//! `#[ab_testdb::test]` for a fresh migrated DB per test. Requests go through
 //! `tower::ServiceExt::oneshot`; no sockets.
 //!
 //! Tests may use `unwrap`/`expect`/`panic` freely - this crate is never in a
@@ -106,7 +106,7 @@ pub const TEST_GOOGLE_CLIENT_ID: &str = "test-google-client";
 impl TestApp {
     /// Build the full application (real router, real middleware) over the
     /// given pool + test Redis + fresh Zitadel/Google mocks. Use with
-    /// `#[sqlx::test]`.
+    /// `#[ab_testdb::test]`.
     pub async fn spawn(pool: PgPool) -> Self {
         Self::spawn_with(pool, |_| {}).await
     }

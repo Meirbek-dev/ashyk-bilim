@@ -41,7 +41,7 @@ async fn course(app: &TestApp, session: &MintedSession, name: &str, publish: boo
     id
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn crud_membership_and_visibility(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -168,7 +168,7 @@ async fn crud_membership_and_visibility(pool: PgPool) {
     assert_eq!(course_alive.status, StatusCode::OK);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -199,7 +199,7 @@ async fn attaching_unreadable_courses_is_refused(pool: PgPool) {
 /// unreadable course in `courses` is a 404 and the name stays; and a
 /// collection the caller cannot read is a 404 on PATCH/DELETE too (not a
 /// 403 existence oracle).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn update_validates_before_writing_and_hides_unreadable(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -247,7 +247,7 @@ async fn update_validates_before_writing_and_hides_unreadable(pool: PgPool) {
 
 /// BUG-168: a whitespace-only name is 422 `name`/`required` on create and
 /// update; stored names are trimmed.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -282,7 +282,7 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
 /// UX-140: `length(max = 500)` counted UTF-8 bytes, so a 260-char Cyrillic
 /// name (520 bytes) was refused as «length is greater than 500». Text limits
 /// count chars.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn text_limits_count_chars_not_bytes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -301,7 +301,7 @@ async fn text_limits_count_chars_not_bytes(pool: PgPool) {
 /// UX-119: a public collection whose attached courses are all invisible to
 /// the viewer is left out of the list (it would render as «0 courses»),
 /// and so is an empty one (UX-127); the creator still sees both.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -352,7 +352,7 @@ async fn collections_with_no_visible_course_are_omitted_from_the_list(pool: PgPo
 /// BUG-190: `collection_listable` shares the course-visibility predicate -
 /// a public collection whose only course is usergroup-shared is listed,
 /// searchable and shows the course for the cohort member; anon sees nothing.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -437,7 +437,7 @@ async fn cohort_shared_course_makes_the_collection_listable(pool: PgPool) {
 /// UX-279: collections carry a version; `PATCH` bumps it and answers the new
 /// one as `ETag`, a stale `If-Match` is 412 with nothing written, and a
 /// `PATCH` without `If-Match` still lands (last writer wins by choice).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn stale_if_match_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -531,7 +531,7 @@ async fn stale_if_match_is_refused(pool: PgPool) {
 
 /// UX-317: a delete that loses the race to another delete is 404 - the row
 /// is gone - never a 412 claiming the version moved (`expected == actual`).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -574,7 +574,7 @@ async fn a_delete_that_lost_the_race_is_404(pool: PgPool) {
 // UX-322: a curator holding `collection:update:own` who does not own this
 // public collection gets 403 before the body is read - never a 422 that
 // lists the accepted fields.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn foreign_patch_is_refused_before_the_body(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -648,7 +648,7 @@ async fn released(app: &TestApp, upload: &str) -> bool {
 
 /// Cover image: claimed on create, swapped and removed on PATCH (the old
 /// upload released), released on delete; a wrong purpose is 422.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn cover_travels_the_upload_pipeline(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;
@@ -734,7 +734,7 @@ async fn cover_travels_the_upload_pipeline(pool: PgPool) {
 
 /// `q` filters by name/description words; `sort=name` pages A-Z by cursor;
 /// an unknown sort falls back to newest.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn list_filters_and_sorts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = curator(&app, "owner").await;

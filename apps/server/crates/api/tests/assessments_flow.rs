@@ -66,7 +66,7 @@ fn far_future() -> i64 {
     i64::try_from(now).unwrap() + 3600
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn quiz_authoring_and_lifecycle(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -351,7 +351,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
     assert_eq!(items[0]["position"], 1);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -506,7 +506,7 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -638,7 +638,7 @@ async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
 /// (two columns, right one shuffled, stable across reloads, no `pairs`);
 /// the answer names the column ids and the grader scores it against the
 /// author's pairs, reporting the verdict as a code (Q-2026-09-11-2).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -799,7 +799,7 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
 /// BUG-193: duplicate picks and several rights per left count once (legacy
 /// `set(selected)` / `{left: right}`); no item or attempt scores above its
 /// maximum, and the stored answer is the deduped one.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn duplicate_picks_do_not_inflate_grades(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -924,7 +924,7 @@ async fn duplicate_picks_do_not_inflate_grades(pool: PgPool) {
 /// (`ensure_content_unlocked`), and the lock lifts on published→draft
 /// (legacy parity); a learner without `assessment:submit:*` is 403; the
 /// item cap is 200.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1143,7 +1143,7 @@ async fn studio_locks_schedule_bounds_and_item_cap(pool: PgPool) {
 /// a visible non-author cannot transition it (403); the curriculum toggle
 /// hides a published assessment from learners exactly like the activity
 /// read (404 on get / attempt-state / start - BUG-151).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1239,7 +1239,7 @@ async fn live_assessments_keep_an_item_and_hide_with_their_activity(pool: PgPool
 /// BUG-160: `randomize_questions` / `randomize_options` are applied on the
 /// learner read - a stable order per learner (reload keeps it), a different
 /// one for another learner; authors keep the authored order.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1354,7 +1354,7 @@ async fn randomize_flags_shuffle_the_learner_read_per_learner(pool: PgPool) {
 /// first) - its readiness was gated at schedule time; and the auto-publish
 /// sweep re-checks readiness, leaving a blocked schedule `scheduled` with
 /// an audit row instead of going live past due.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1495,7 +1495,7 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
 /// BUG-177: a whitespace-only title is 422 `title`/`required` on create and
 /// update (garde's `min=1` saw the untrimmed string); stored titles are
 /// trimmed on both the assessment and its activity.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn blank_titles_are_rejected_and_trimmed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1602,7 +1602,7 @@ async fn blank_titles_are_rejected_and_trimmed(pool: PgPool) {
 /// options share an id is refused at create and patch (422
 /// `choice.option_id_duplicate` on `body.options`), not stored and graded
 /// as «correct» for whichever text the learner picked.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn duplicate_choice_option_ids_are_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1662,7 +1662,7 @@ async fn duplicate_choice_option_ids_are_refused(pool: PgPool) {
 /// UX-137: item titles are stored trimmed; legal-but-odd policy combinations
 /// (due date in the past, cutoff before due, penalty while late is off) show
 /// up as readiness warnings that never block publishing.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn policy_oddities_warn_and_item_titles_are_trimmed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1749,7 +1749,7 @@ async fn policy_oddities_warn_and_item_titles_are_trimmed(pool: PgPool) {
 /// BUG-207: a published assessment (no submissions) stays ready - an item
 /// add/patch that would fail readiness is a 409 carrying the codes, while a
 /// ready edit still lands.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1843,7 +1843,7 @@ async fn live_assessment_edits_must_keep_it_ready(pool: PgPool) {
 /// BUG-333: a published assessment already unready (a legacy blocker the
 /// migration carried in) still takes edits that add no blocker - a due-date
 /// change lands - while an edit adding a new blocker is still a 409.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unready_live_assessment_refuses_only_new_blockers(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1936,7 +1936,7 @@ async fn unready_live_assessment_refuses_only_new_blockers(pool: PgPool) {
 /// BUG-208: `max_score` is capped at 10 000 and `weight` at 100 (422), so
 /// the grade shares and the course average stay finite; a perfect attempt
 /// on capped scores is still 100. UX-143: item body size caps.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn scores_and_weights_are_bounded(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2084,7 +2084,7 @@ async fn scores_and_weights_are_bounded(pool: PgPool) {
 /// BUG-218: publish racing an item edit (or the delete of the only item)
 /// must never leave a published assessment unready - `transition` and the
 /// item writes serialize on the assessment row.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn publish_and_item_writes_serialize(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2156,7 +2156,7 @@ async fn publish_and_item_writes_serialize(pool: PgPool) {
 /// BUG-231: a schedule racing an unready item add must never leave a
 /// scheduled assessment the scheduler will refuse to open - every item
 /// write re-reads the lifecycle under the row lock.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn schedule_and_item_add_serialize(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2231,7 +2231,7 @@ async fn schedule_and_item_add_serialize(pool: PgPool) {
 /// one transaction - an unpublish racing the curriculum publish toggle, or
 /// a client that hangs up mid-transition, never leaves a torn pair (a
 /// listed quiz that answers 404).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2311,7 +2311,7 @@ async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
 /// write - the title PATCH moves the assessment title and the activity name
 /// together, and a duplicate never leaves an activity without its
 /// assessment.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2383,7 +2383,7 @@ async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
 /// BUG-262: the curriculum rename reads the assessment lifecycle under the
 /// assessment row lock - a schedule queued ahead of it commits first and the
 /// rename answers 409 instead of retitling a scheduled quiz.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2454,7 +2454,7 @@ async fn curriculum_rename_queued_behind_a_schedule_is_refused(pool: PgPool) {
 /// BUG-375: the reorder list is checked under the assessment row lock - a
 /// delete that commits while the reorder waits on it makes the (now stale)
 /// full list 422, never a renumber with a gap.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn reorder_checks_the_list_under_the_lock(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2526,7 +2526,7 @@ async fn reorder_checks_the_list_under_the_lock(pool: PgPool) {
 /// DECISIONS 2026-10-11: a published test with submissions can still be
 /// renamed (title only - no content change), from the test and from the
 /// outline, and both names stay one; any other details change stays locked.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn published_assessment_with_submissions_can_be_renamed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
@@ -2639,7 +2639,7 @@ async fn published_assessment_with_submissions_can_be_renamed(pool: PgPool) {
 /// OPEN-B-2: an answered live quiz takes wording fixes (item title, prompt,
 /// option text, explanation) as a new content version with an audit row,
 /// and an open draft keeps submitting; a key or points change stays 409.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn answered_assessment_takes_wording_edits_but_not_key_edits(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;

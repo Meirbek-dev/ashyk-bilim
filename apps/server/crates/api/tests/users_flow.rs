@@ -5,7 +5,7 @@ use ab_testkit::{TestApp, drop_request_when};
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn profile_read_and_partial_update(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("meirbek", "m@example.com", &["user"]).await;
@@ -72,7 +72,7 @@ async fn profile_read_and_partial_update(pool: PgPool) {
     assert_eq!(blank.json()["field_errors"][0]["field"], "organization");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn profile_update_requires_the_permission(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("noperm", "n@example.com", &[]).await;
@@ -95,7 +95,7 @@ async fn profile_update_requires_the_permission(pool: PgPool) {
     assert_eq!(res.json()["code"], "forbidden");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unsupported_locale_is_rejected(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("loc", "l@example.com", &["user"]).await;
@@ -118,7 +118,7 @@ async fn unsupported_locale_is_rejected(pool: PgPool) {
     assert_eq!(res.json()["field_errors"][0]["field"], "locale");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn blank_display_name_is_rejected_and_names_are_trimmed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("blank", "b@example.com", &["user"]).await;
@@ -180,7 +180,7 @@ async fn blank_display_name_is_rejected_and_names_are_trimmed(pool: PgPool) {
     assert_eq!(res.json()["field_errors"][0]["code"], "required");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -304,7 +304,7 @@ async fn avatar_claims_upload_and_releases_replaced(pool: PgPool) {
     assert!(released, "a removed avatar must re-enter the reaper queue");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app
@@ -376,7 +376,7 @@ async fn admin_lists_users_and_disables_accounts(pool: PgPool) {
     assert_eq!(enabled.status, StatusCode::NO_CONTENT);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn disabling_the_last_admin_is_refused(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let operator = app.mint_session(&["platform:manage:platform"]).await;
@@ -409,7 +409,7 @@ async fn disabling_the_last_admin_is_refused(pool: PgPool) {
 
 // ── Admin account creation (`POST /users`, DECISIONS 2026-09-12) ────────────
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn admin_creates_accounts_with_roles(pool: PgPool) {
     use wiremock::matchers::{body_partial_json, method, path};
     use wiremock::{Mock, ResponseTemplate};
@@ -506,7 +506,7 @@ async fn admin_creates_accounts_with_roles(pool: PgPool) {
     assert_eq!(res.status, StatusCode::FORBIDDEN);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let author = app
@@ -648,7 +648,7 @@ async fn user_courses_lists_authored_and_co_authored_courses(pool: PgPool) {
 
 /// Claiming another user's upload as an avatar is a 403 (never a takeover,
 /// never a 404 that leaks the upload's existence).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn claiming_a_foreign_upload_as_avatar_is_forbidden(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let owner = app
@@ -683,7 +683,7 @@ async fn claiming_a_foreign_upload_as_avatar_is_forbidden(pool: PgPool) {
 
 /// `GET /users` refuses a `limit` outside 1..=100 (422, UX-156) and walks
 /// by cursor; an unknown id on the status route is a 404.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn user_listing_bounds_limit_and_walks_the_cursor(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app
@@ -764,7 +764,7 @@ async fn finalized_row(app: &TestApp, user: ab_core::id::UserId, purpose: &str) 
 
 /// BUG-255: two concurrent avatar PATCHes each release the key their own
 /// swap replaced - only the avatar that won stays referenced.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -806,7 +806,7 @@ async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
 /// UX-211: the client hangs up the moment the avatar upload counts as
 /// referenced - the claim and the swap land together or not at all, so no
 /// upload stays pinned without being the avatar.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app
@@ -848,7 +848,7 @@ async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
 
 /// BUG-361/362: the profile builder document and the UI theme round-trip
 /// through `PATCH /users/me`; the sections are public, the theme is not.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn profile_sections_and_theme_round_trip(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("builder", "b@example.com", &["user"]).await;
@@ -938,7 +938,7 @@ async fn profile_sections_and_theme_round_trip(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn profile_sections_and_theme_are_validated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("strict", "s@example.com", &["user"]).await;
@@ -1051,7 +1051,7 @@ async fn profile_sections_and_theme_are_validated(pool: PgPool) {
 /// BUG-367: `PATCH /users/me` with `If-Match` is an optimistic lock on the
 /// profile document - the second of two tabs gets 412, not a silent
 /// overwrite; a theme write never moves the version.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn profile_document_write_is_version_checked(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let user = app.create_user("twotabs", "t@example.com", &["user"]).await;

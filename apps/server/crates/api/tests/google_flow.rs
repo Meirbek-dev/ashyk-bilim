@@ -86,7 +86,7 @@ async fn start_and_get_state(app: &TestApp, callback: &str) -> String {
         .expect("state param")
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn google_signup_creates_user_and_session(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     mock_zitadel_user_create(&app, 1).await;
@@ -142,7 +142,7 @@ async fn google_signup_creates_user_and_session(pool: PgPool) {
     assert_eq!(linked, 1);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn repeat_google_login_reuses_the_account(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     mock_zitadel_user_create(&app, 1).await; // only the first login creates
@@ -165,7 +165,7 @@ async fn repeat_google_login_reuses_the_account(pool: PgPool) {
     assert_eq!(users, 1);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn google_login_links_to_existing_email_account(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let existing = app
@@ -199,7 +199,7 @@ async fn google_login_links_to_existing_email_account(pool: PgPool) {
     assert_eq!(me.json()["has_password"], true);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn stale_state_redirects_to_login_with_error(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let res = app
@@ -213,7 +213,7 @@ async fn stale_state_redirects_to_login_with_error(pool: PgPool) {
     assert!(res.session_cookie().is_none());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn absolute_callback_urls_are_rejected(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     for evil in ["https://evil.example", "//evil.example"] {
@@ -231,7 +231,7 @@ async fn absolute_callback_urls_are_rejected(pool: PgPool) {
 
 /// `AB__SERVER__WEB_URL` anchors both browser-facing redirects (the API may
 /// live on another origin than the web app) - DECISIONS 2026-09-12.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn web_url_makes_browser_redirects_absolute(pool: PgPool) {
     let app = TestApp::spawn_with(pool, |config| {
         config.server.web_url = Some("https://app.example/".into());
@@ -267,7 +267,7 @@ async fn web_url_makes_browser_redirects_absolute(pool: PgPool) {
 
 /// Branch #71: a disabled account cannot sign in through Google either -
 /// back to login with `?error=account-disabled`, no cookie.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("banned", "banned@example.com", &["user"])
@@ -318,7 +318,7 @@ impl wiremock::Respond for Parked {
 /// BUG-203: the Google callback is fenced like the password login - a
 /// disable landing while the account is being read (methods listing parked
 /// by a slow Zitadel) yields `account-disabled`, never a session.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let boss = app
@@ -402,7 +402,7 @@ async fn link_sub(app: &TestApp, user: ab_core::id::UserId, sub: &str, email: &s
 /// BUG-253: the Google email of a sub-linked account moved to an address
 /// nobody here holds - the session opens for the linked account (was 500
 /// «google user vanished», locking a passwordless account out).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn sub_linked_login_survives_a_changed_google_email(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let linked = app.create_user("moved", "old@gmail.com", &["user"]).await;
@@ -418,7 +418,7 @@ async fn sub_linked_login_survives_a_changed_google_email(pool: PgPool) {
 
 /// BUG-253: the new Google email is another account's - status and the
 /// session come from the sub-linked account, never from that other row.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let linked = app
@@ -456,7 +456,7 @@ async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool)
 /// BUG-254: a sub miss matching an existing email links only when Google
 /// and the local account both verified the address; otherwise the browser
 /// goes back to login with `account-exists` - no link, no session.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn google_login_refuses_to_link_an_unverified_email(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("squatted", "victim@gmail.com", &["user"])
@@ -487,7 +487,7 @@ async fn google_login_refuses_to_link_an_unverified_email(pool: PgPool) {
 /// F03: a new account from a Google address Google did not verify must not
 /// reach Zitadel pre-verified (`isVerified: true`) - the BUG-254 link check
 /// would later trust it.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn unverified_google_email_creates_an_unverified_zitadel_user(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     mock_zitadel_user_create(&app, 1).await;
@@ -507,7 +507,7 @@ async fn unverified_google_email_creates_an_unverified_zitadel_user(pool: PgPool
 
 /// UX-188: a Google-only account (no password method in Zitadel) reads as
 /// such in `users/me`, so the security page offers no change-password form.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn google_only_profile_has_no_password_and_a_google_link(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     mock_zitadel_user_create(&app, 1).await;

@@ -109,8 +109,8 @@ Gotchas (this machine):
   Check free space before building; do not delete the cache routinely.
 - **Page file.** Linking the ~15 `ab-api` integration-test binaries in
   parallel can exhaust the Windows page file (`os error 1455`, surfacing as
-  bogus `can't find crate` errors). Recipes default `CARGO_BUILD_JOBS` to 4;
-  override it only when the machine has enough memory. Dev debuginfo is disabled.
+  bogus `can't find crate` errors). Recipes default `CARGO_BUILD_JOBS` to 4 (16 on a 24+ CPU
+  host); override it only when the machine has enough memory. Dev debuginfo is disabled.
 - **Git Bash mangles container paths** (`/data` becomes
   `C:/Program Files/Git/data`). `infra/scripts/lib.sh` sets
   `MSYS_NO_PATHCONV=1` for every recipe; set it yourself only for ad-hoc

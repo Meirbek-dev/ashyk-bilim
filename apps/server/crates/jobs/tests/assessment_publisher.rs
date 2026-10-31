@@ -68,7 +68,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     assessment
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn due_schedules_publish_and_future_ones_wait(pool: PgPool) {
     let due = scheduled_assessment(&pool, "due", "-1 minute").await;
     let later = scheduled_assessment(&pool, "later", "1 hour").await;

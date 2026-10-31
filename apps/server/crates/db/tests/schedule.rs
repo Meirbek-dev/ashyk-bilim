@@ -16,7 +16,7 @@ async fn make_due(pool: &PgPool, kind: &str) {
     .unwrap();
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn due_schedule_enqueues_and_advances(pool: PgPool) {
     schedule::upsert(
         &pool,
@@ -47,7 +47,7 @@ async fn due_schedule_enqueues_and_advances(pool: PgPool) {
     assert_eq!(schedule::tick(&pool).await.unwrap(), 0);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn upsert_is_idempotent_and_tightens_interval(pool: PgPool) {
     schedule::upsert(
         &pool,
@@ -85,7 +85,7 @@ async fn upsert_is_idempotent_and_tightens_interval(pool: PgPool) {
     assert!(soon);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn disabled_schedules_do_not_fire(pool: PgPool) {
     schedule::upsert(
         &pool,
@@ -104,7 +104,7 @@ async fn disabled_schedules_do_not_fire(pool: PgPool) {
     assert!(queue::claim(&pool, "w1", 10).await.unwrap().is_empty());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn same_occurrence_cannot_double_enqueue(pool: PgPool) {
     schedule::upsert(
         &pool,

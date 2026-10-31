@@ -6,7 +6,7 @@ use ab_testkit::TestApp;
 use axum::http::StatusCode;
 use sqlx::PgPool;
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn role_assignment_propagates_to_live_sessions(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin = app.mint_session(&["*:*:*"]).await;
@@ -64,7 +64,7 @@ async fn role_assignment_propagates_to_live_sessions(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn roles_listing_shows_grants(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin = app.mint_session(&["role:read:platform"]).await;
@@ -79,7 +79,7 @@ async fn roles_listing_shows_grants(pool: PgPool) {
     assert!(roles.iter().all(|r| r["is_system"] == true));
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn assigning_unknown_role_is_not_found(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin = app.mint_session(&["*:*:*"]).await;
@@ -95,7 +95,7 @@ async fn assigning_unknown_role_is_not_found(pool: PgPool) {
     assert_eq!(res.status, StatusCode::NOT_FOUND);
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin = app
@@ -256,7 +256,7 @@ async fn custom_role_lifecycle_propagates_to_sessions(pool: PgPool) {
     );
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn last_admin_role_cannot_be_removed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let boss = app
@@ -285,7 +285,7 @@ async fn last_admin_role_cannot_be_removed(pool: PgPool) {
 /// so exactly one removal lands and one active admin always remains. The
 /// loser is 409 (guard) or, when the winner committed before its permission
 /// check, 403 (it is no longer an admin).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let boss = app
@@ -326,7 +326,7 @@ async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
 /// BUG-118 / UX-043 / UX-045: unknown user → 404 (not an FK 500); removing a
 /// role the user does not hold → 404 before the last-admin guard; a bad grant
 /// names itself without the `internal:` prefix.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn role_errors_are_typed(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let boss = app
@@ -391,7 +391,7 @@ async fn role_errors_are_typed(pool: PgPool) {
 /// BUG-144: the last-admin guard asks "would another *active* admin remain",
 /// so a disabled admin can lose the role (or be disabled again) while one
 /// other admin is active - and the only active admin still cannot.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn disabled_admin_can_lose_the_role_while_another_is_active(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let boss = app
@@ -438,7 +438,7 @@ async fn disabled_admin_can_lose_the_role_while_another_is_active(pool: PgPool) 
 
 /// `GET /rbac/roles` needs `role:read:platform`; system roles cannot be
 /// deleted even by an admin.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn role_reads_are_gated_and_system_roles_are_undeletable(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = app.mint_session(&["course:create:platform"]).await;
@@ -455,7 +455,7 @@ async fn role_reads_are_gated_and_system_roles_are_undeletable(pool: PgPool) {
 /// `POST /rbac/roles` body validation: an out-of-range priority is a 422
 /// field error (a blank display name is the service's `required`, see
 /// `whitespace_display_name_is_required_on_create_and_rename`).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let boss = app
@@ -486,7 +486,7 @@ async fn create_role_rejects_bad_display_name_and_priority(pool: PgPool) {
 
 /// A whitespace-only display name is blank after trimming: 422
 /// `display_name`/`required` on create and on rename alike (UX-100).
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin = app.mint_session(&["role:manage:platform"]).await;
@@ -545,7 +545,7 @@ async fn whitespace_display_name_is_required_on_create_and_rename(pool: PgPool) 
 /// Redis fault) the change still holds - 204, audited - because the session
 /// is fenced on the user row's bumped `rbac_version`: the revoked grant is
 /// gone on its next request, with nothing left for a retry to repair.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn failed_session_rewrite_cannot_keep_a_revoked_grant(pool: PgPool) {
     use redis::AsyncCommands;
     async fn grants(app: &TestApp, session: &ab_testkit::MintedSession) -> Vec<serde_json::Value> {

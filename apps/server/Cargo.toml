@@ -16,6 +16,8 @@ ab-domain = { path = "crates/domain" }
 ab-api = { path = "crates/api" }
 ab-jobs = { path = "crates/jobs" }
 ab-testkit = { path = "crates/testkit" }
+ab-testdb = { path = "crates/testdb" }
+ab-testdb-macros = { path = "crates/testdb-macros" }
 
 # Runtime & web
 tokio = { version = "1.54.1", features = ["full"] }
@@ -102,6 +104,9 @@ subsetter = { version = "0.2.6", default-features = false }
 
 # Misc
 futures = "0.3.34"
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = { version = "2.0.119", features = ["full"] }
 http = "1.5.0"
 async-stream = "0.3.6"
 

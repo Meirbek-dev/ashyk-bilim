@@ -48,7 +48,7 @@ async fn upload_branding(
     (id, finalized.json()["key"].as_str().unwrap().to_owned())
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn read_is_public_and_update_is_gated(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
 
@@ -189,7 +189,7 @@ async fn read_is_public_and_update_is_gated(pool: PgPool) {
     assert_eq!(stripped.json()["about"], "x\ty");
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app
@@ -326,7 +326,7 @@ async fn branding_claims_uploads_and_releases_replaced(pool: PgPool) {
 /// logo upload counts as referenced - the claim, the swap and the release
 /// land together or not at all, so no upload stays pinned without being the
 /// logo.
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn dropped_branding_patch_leaks_no_reference(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let admin_user = app

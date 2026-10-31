@@ -1302,7 +1302,7 @@ fn names(mask: u8) -> String {
     }
 }
 
-#[sqlx::test(migrations = "../../migrations")]
+#[ab_testdb::test]
 async fn every_route_answers_only_the_callers_it_should(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let doc = ab_api::openapi_doc();
