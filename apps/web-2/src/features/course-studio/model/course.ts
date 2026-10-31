@@ -16,9 +16,14 @@ export const can = (course: Pick<Course, 'allowed_actions'>, action: CourseActio
 export const opensWorkspace = (course: Pick<Course, 'allowed_actions'>): boolean =>
   can(course, 'update') || can(course, 'restore')
 
-/** The refusal code of a course the caller cannot open or change: archived (its team included), or not theirs. */
-export const refusalCode = (course: Pick<Course, 'archived_at_unix'> | null): 'course-archived' | 'forbidden' =>
-  course?.archived_at_unix ? 'course-archived' : 'forbidden'
+/**
+ * The refusal of a course the caller cannot open or change, as the server answers a write to it: 409
+ * `course-archived` when it is archived (its team included), 403 `forbidden` when it is not theirs.
+ */
+export const courseRefusal = (course: Pick<Course, 'archived_at_unix'> | null): ApiError =>
+  course?.archived_at_unix
+    ? new ApiError({ status: 409, code: 'course-archived', fieldErrors: [], requestId: null, retryAfter: null })
+    : new ApiError({ status: 403, code: 'forbidden', fieldErrors: [], requestId: null, retryAfter: null })
 
 /** A 412: someone saved the object after this page loaded it (its `version` is stale). */
 export const isStale = (error: unknown): boolean => error instanceof ApiError && error.status === 412

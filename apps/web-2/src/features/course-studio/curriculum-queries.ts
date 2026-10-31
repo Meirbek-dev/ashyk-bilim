@@ -23,7 +23,7 @@ import {
 import { updateActivity } from '#/shared/api/gen/sdk.gen'
 import type { Activity, ActivityDetail, Chapter, CourseId, Curriculum } from '#/shared/api/gen/types.gen'
 
-import { refusalCode } from './model/course'
+import { courseRefusal } from './model/course'
 import { withActivity, withChapter, withoutActivity, withoutChapter } from './model/curriculum'
 import { courseOptions } from './queries'
 
@@ -148,7 +148,10 @@ export const deleteActivityOptions = (queryClient: QueryClient, courseId: Course
 /** Claims an upload as a file block of the activity (otherwise storage reaps it). */
 export const claimOptions = () => createBlockMutation()
 
-/** Studio loader: an unknown activity is "not found"; one the caller may not change is a 403 in place. */
+/**
+ * Studio loader: an unknown activity is "not found"; one the caller may not change is refused in place (403, or 409
+ * `course-archived`).
+ */
 export async function ensureStudio(queryClient: QueryClient, courseId: CourseId, activityId: string) {
   const activity = await queryClient
     .query({ ...activityOptions(activityId), staleTime: 'static' })
@@ -161,7 +164,7 @@ export async function ensureStudio(queryClient: QueryClient, courseId: CourseId,
     // An archived course refuses `update` to its own team as well: that is «the course is archived», not «you are not
     // on the team» (its creator was told to ask the creator).
     const course = await queryClient.query({ ...courseOptions(courseId), staleTime: 'static' }).catch(() => null)
-    throw new ApiError({ status: 403, code: refusalCode(course), fieldErrors: [], requestId: null, retryAfter: null })
+    throw courseRefusal(course)
   }
   return activity
 }

@@ -10,7 +10,7 @@ import { can } from '../model/course'
 import { courseOptions } from '../queries'
 
 /**
- * The 403 of an archived course (code `course-archived`): read-only for its team too, so «not on the team» would be
+ * The 409 `course-archived` of an archived course: read-only for its team too, so «not on the team» would be
  * false. Who may restore it gets the way to the settings; a co-author learns who can.
  */
 export function ArchivedCourse({ courseId }: { courseId: string }) {

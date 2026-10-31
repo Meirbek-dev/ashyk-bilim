@@ -43,8 +43,9 @@ test('B-CST-12 a studio outside the caller team says so inside the focus frame, 
   await expect.element(screen.getByRole('link', { name: m.studio_not_on_team_mine() })).toBeVisible()
 })
 
+// What the server answers a write on an archived course, and what the studio loader throws for it.
 const archived = new ApiError({
-  status: 403,
+  status: 409,
   code: 'course-archived',
   fieldErrors: [],
   requestId: null,
