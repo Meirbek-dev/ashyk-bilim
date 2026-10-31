@@ -27,7 +27,7 @@ env:
 
 jobs:
   changes:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 5
     outputs:
       server: ${{ steps.filter.outputs.server == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
@@ -95,7 +95,7 @@ jobs:
   server-lint:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     defaults:
       run:
@@ -138,7 +138,7 @@ jobs:
   server-test:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     defaults:
       run:
@@ -198,7 +198,7 @@ jobs:
 
   infra-gates:
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -235,7 +235,7 @@ jobs:
   web-gates:
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -263,7 +263,7 @@ jobs:
   web2-gates:
     needs: changes
     if: needs.changes.outputs.web2 == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     container:
       image: ${{ needs.changes.outputs.playwright-image }}
       options: --ipc=host
@@ -312,7 +312,7 @@ jobs:
   images:
     needs: changes
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 40
     permissions:
       contents: read
@@ -378,7 +378,7 @@ jobs:
   stack-smoke:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     permissions:
       contents: read
@@ -452,7 +452,7 @@ jobs:
   web2-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: ${{ matrix.shard == 'judge0' && 45 || 30 }}
     strategy:
       fail-fast: false
@@ -567,7 +567,7 @@ jobs:
   web-release-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 35
     permissions:
       contents: read
@@ -626,7 +626,7 @@ jobs:
       needs.web-gates.result == 'success' && needs.web2-gates.result == 'success' &&
       needs.infra-gates.result == 'success' && needs.stack-smoke.result == 'success' &&
       needs.web-release-e2e.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: read
@@ -662,7 +662,7 @@ jobs:
   publish-web2:
     needs: [changes, publish, web2-e2e]
     if: ${{ !cancelled() && needs.publish.result == 'success' && needs.web2-e2e.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: read
