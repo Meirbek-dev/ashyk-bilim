@@ -86,6 +86,10 @@ Goals:
 Non-goals:
 
 - Multi-tenancy, federation/OIDC, passkeys, push/email notification feeds.
+- Interop until a named pilot asks (owner decision 2026-10-31): LTI 1.3 waits for a concrete
+  platform/tool and a teacher using it; Platonus waits for its API docs and test access from TOU IT.
+  SCORM is dropped: packages run arbitrary teacher JS, and the owner rejects both a separate
+  origin and an iframe sandbox, the only safe ways to serve them.
 - Feature parity with v2 for anything on the cut list (section 10).
 - Horizontal scaling. One process on one host handles 100× today's load.
 
