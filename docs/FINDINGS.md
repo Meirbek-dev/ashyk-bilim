@@ -34,7 +34,7 @@ The edge hides `Link` on web responses and deployment smoke checks require heade
 below 3500 bytes. Preserve both guards when switching frontends: the Stage 2 web
 contract forbids preload `Link` headers. See `docs/INFRA.md` for the proxy contract.
 
-### 32. University proxy rejects large single PUTs (multipart workaround)
+### 32. University proxy rejects large single PUTs (operating constraint)
 Confirmed 2026-10-11: the public origin returns HTTP 413 for a signed PUT
 declaring 308 MiB or 2 GiB (100 MiB is accepted). The same 308 MiB PUT
 directly through the stack's nginx succeeds in 2.7 seconds. Both the app
@@ -43,15 +43,18 @@ remaining blocker. University IT must raise its bucket-route body limit
 and disable request buffering as described in RUNBOOK.md "Other". SSH to
 that proxy was unreachable from the production host. The web fix preserves
 storage HTTP status and translates 413 as `payload-too-large` instead of
-claiming the user is offline. **Open for large single PUTs until the outer
-proxy is changed; multipart mitigates video uploads as below.**
+claiming the user is offline. Large single PUTs stay blocked; multipart covers
+video uploads as below.
 
 Mitigation 2026-10-13: both frontends now use 32 MiB multipart requests for
 videos above 32 MiB. A production storage probe sent 308 MiB through the
 public hostname as ten parts, completed the object, verified its MIME,
 size and first/last bytes, and removed the object/session. The outer
 single-request limit remains; old cached clients still need a reload or
-the proxy configuration change. Server tests cover assembly/finalize,
+the proxy configuration change.
+
+**Owner decision 2026-10-31: multipart is the permanent answer**; no proxy change
+will be requested from university IT. Keep the multipart path and the 413 mapping. Server tests cover assembly/finalize,
 ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
 
 ## Low
@@ -75,9 +78,9 @@ Keep those tests when updating either package. Remove this finding when the exte
 ### 18. The per-assessment `required` flag does not drive progress
 Legacy progress hard-coded `required = True` for every submission-backed
 activity; v2 keeps that behaviour (so migrated courses complete the same way) and
-carries the flag as `assessments.required`. Owner decision pending on whether the
-flag should start driving progress (most existing assessments would become
-optional overnight).
+carries the flag as `assessments.required`. Owner decision 2026-10-31: keep it
+inert until after the Stage 2 cutover, then revisit (switching it on now would make
+most existing assessments optional overnight).
 
 ### 25. Imported data: duplicate email addresses
 Two imported users shared `Nurgul287@mail.ru`; the import gave the duplicates

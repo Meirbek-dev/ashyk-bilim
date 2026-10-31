@@ -4,7 +4,7 @@
   "discussions_empty": "Әзірге талқылаулар жоқ. Біріншісін бастаңыз.",
   "discussions_empty_readonly": "Әзірге талқылаулар жоқ.",
   "discussions_members_only": "Талқылауда курс қатысушылары жаза, жауап бере және бағалай алады. Қосылу үшін курсқа тіркеліңіз.",
-  "discussions_new": "Жаңа жазба",
+  "discussions_new": "Жаңа тақырып",
   "discussions_start": "Сұрақ қою немесе талқылау бастау",
   "discussions_publish": "Жариялау",
   "discussions_published": "Жарияланды",
@@ -17,8 +17,8 @@
   "discussions_edit": "Өзгерту",
   "discussions_saved": "Сақталды",
   "discussions_delete": "Жою",
-  "discussions_delete_post_title": "Жазбаны жою керек пе?",
-  "discussions_delete_post_consequence": "Сіздің жауаптарыңыз онымен бірге жойылады. Басқа қатысушылар жауап берсе, оның орнында «Хабарлама жойылды» белгісі қалады, ал олардың жауаптары сақталады.",
+  "discussions_delete_post_title": "Тақырыпты жою керек пе?",
+  "discussions_delete_post_consequence": "Сіздің жауаптарыңыз онымен бірге жойылады. Басқа қатысушылар жауап берсе, оның орнында «Тақырып жойылды» белгісі қалады, ал олардың жауаптары сақталады.",
   "discussions_delete_reply_title": "Жауапты жою керек пе?",
   "discussions_delete_reply_consequence": "Жауап қалпына келтірусіз жойылады.",
   "discussions_deleted": "Жойылды",
@@ -30,6 +30,6 @@
   "discussions_like": "Ұнайды: {count}",
   "discussions_dislike": "Ұнамайды: {count}",
   "discussions_unknown_author": "Жойылған пайдаланушы",
-  "discussions_post_deleted": "Хабарлама жойылды",
+  "discussions_post_deleted": "Тақырып жойылды",
   "discussions_archived": "Курс мұрағатта: талқылау тек оқу үшін ашық."
 }

@@ -134,7 +134,7 @@
   "settings_user_present": "present",
   "settings_user_period": "{start} – {end}",
   "settings_email_title": "Email",
-  "settings_email_hint": "Codes and notifications go here. A new address starts working once you enter the code we send to it.",
+  "settings_email_hint": "Verification codes go here. A new address starts working once you enter the code we send to it.",
   "settings_email_current": "Current: {email}",
   "settings_field_new_email": "New email",
   "settings_email_send": "Send code",

@@ -134,7 +134,7 @@
   "settings_user_present": "қазіргі уақыт",
   "settings_user_period": "{start} – {end} аралығы",
   "settings_email_title": "Пошта",
-  "settings_email_hint": "Кодтар мен хабарламалар осында келеді. Жаңа мекенжай оған келген хаттағы кодты енгізгеннен кейін іске қосылады.",
+  "settings_email_hint": "Растау кодтары осында келеді. Жаңа мекенжай оған келген хаттағы кодты енгізгеннен кейін іске қосылады.",
   "settings_email_current": "Қазір: {email}",
   "settings_field_new_email": "Жаңа пошта",
   "settings_email_send": "Код жіберу",

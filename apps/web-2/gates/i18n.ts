@@ -108,23 +108,33 @@ function checkMessage(key: string, feature: string, values: Record<string, unkno
   }
 }
 
+type Term = { ru?: string; kk?: string; en?: string; not?: string[] }
+
+/** The ru stem starts a word (so "курс" skips "дискурс") and that word is not one of `not` ("курсив", "работает"). */
+function usesTerm(ruText: string, term: Term): boolean {
+  const stem = term.ru
+  if (!stem) return false
+  return ruText
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .some((_, index, words) => {
+      const rest = words.slice(index).join(' ')
+      return rest.startsWith(stem) && !(term.not ?? []).some(word => rest.startsWith(word))
+    })
+}
+
 function checkGlossary(catalogs: Record<string, Catalog>, feature: string, findings: Finding[]): void {
-  const glossary: { terms: Record<string, string>[] } = JSON.parse(read('messages/glossary.json'))
+  const glossary: { terms: Term[] } = JSON.parse(read('messages/glossary.json'))
   for (const [key, ruValue] of Object.entries(catalogs['ru'] ?? {})) {
     for (const term of glossary.terms) {
-      if (
-        !text(ruValue)
-          .toLowerCase()
-          .includes(term['ru'] ?? '\0')
-      )
-        continue
-      for (const [locale, required] of Object.entries(term)) {
-        const value = text(catalogs[locale]?.[key]).toLowerCase()
-        if (locale !== 'ru' && !value.includes(required)) {
+      if (!usesTerm(text(ruValue), term)) continue
+      for (const locale of ['kk', 'en'] as const) {
+        const required = term[locale]
+        if (required && !text(catalogs[locale]?.[key]).toLowerCase().includes(required)) {
           findings.push({
             file: `messages/${locale}/${feature}.json`,
             rule: 'i18n-glossary',
-            fix: `"${key}" must use the glossary term "${required}" (ru "${term['ru']}")`,
+            fix: `"${key}" must use the glossary term "${required}" (ru "${term.ru}")`,
           })
         }
       }

@@ -1,12 +1,17 @@
 {
-  "$comment": "Required term translations (spec 7.9). Each value is a lowercase stem; a message whose ru text contains the ru stem must contain the kk and en stems (gate G-03); a term without a locale leaves it free (en says score, points or credit for балл by context). Wording follows the legacy catalogs (apps/web/src/messages).",
+  "$comment": "Required term translations (spec 7.9). Each value is a lowercase stem; a message with a ru word starting with the ru stem must contain the kk and en stems (gate G-03), unless the text there starts with one of `not` (курсив is not курс); a term without a locale leaves it free (en says score, points or credit for балл by context). Wording follows the legacy catalogs (apps/web/src/messages).",
   "terms": [
-    { "ru": "курс", "kk": "курс", "en": "course" },
+    { "ru": "курс", "kk": "курс", "en": "course", "not": ["курсив", "курсор"] },
     { "ru": "глава", "kk": "тарау", "en": "chapter" },
     { "ru": "активност", "kk": "белсенділ", "en": "activit" },
     { "ru": "оценивани", "kk": "бағалау", "en": "assessment" },
     { "ru": "попытк", "kk": "әрекет", "en": "attempt" },
-    { "ru": "работ", "kk": "жұмыс", "en": "submi" },
+    {
+      "ru": "работ",
+      "kk": "жұмыс",
+      "en": "submi",
+      "not": ["работает", "работают", "работал", "работать", "работающ", "работа с учащ", "работы с учащ"]
+    },
     { "ru": "оценк", "kk": "баға", "en": "grade" },
     { "ru": "журнал оценок", "kk": "баға", "en": "gradebook" },
     { "ru": "коллекци", "kk": "жинақ", "en": "collection" },

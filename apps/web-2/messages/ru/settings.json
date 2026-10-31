@@ -134,7 +134,7 @@
   "settings_user_present": "настоящее время",
   "settings_user_period": "с {start} по {end}",
   "settings_email_title": "Почта",
-  "settings_email_hint": "Сюда приходят коды и уведомления. Новый адрес активируется, когда вы введёте код из письма на него.",
+  "settings_email_hint": "Сюда приходят коды подтверждения. Новый адрес активируется, когда вы введёте код из письма на него.",
   "settings_email_current": "Сейчас: {email}",
   "settings_field_new_email": "Новая почта",
   "settings_email_send": "Отправить код",
