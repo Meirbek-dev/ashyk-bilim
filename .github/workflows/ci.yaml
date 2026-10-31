@@ -170,10 +170,13 @@ jobs:
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
 
+      # Own key: the cache under the job's default key held -C instrument-coverage artifacts
+      # (the old `just cov`), so every plain build recompiled the dependencies.
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/server
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          key: plain
+          save-if: ${{ github.ref == 'refs/heads/main' && matrix.partition == 1 }}
 
       - uses: taiki-e/install-action@v2
         with:
