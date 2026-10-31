@@ -1,7 +1,8 @@
 # Rewrite spec (v3)
 
 Status: proposed 2026-10-21, revised the same day after a system audit (prod host, public
-site, repo). Not started. Replaces `apps/web`, the current stack topology and the shape of
+site, repo). In progress: parts of phase 0 and the first phase-5 restructuring are done (section 15),
+phase 1 waits for the owner's date (section 16). Replaces `apps/web`, the current stack topology and the shape of
 `apps/server`; `apps/web-2` survives as the frontend (converted to an SPA). Until phase 6
 lands, `ARCHITECTURE.md`, `INFRA.md` and `RUNBOOK.md` describe production; this file
 describes where it goes and in what order.
@@ -903,11 +904,10 @@ items return `code-runner-unavailable` and nothing else breaks.
 
 ## 14. Docs
 
-- `DECISIONS.md` is frozen now: no appends. New decisions go into this file until
-  phase 6.
-- Deleted after phase 1: `MODERNIZATION-STAGE-2.md`, `STAGE-2-CUTOVER.md`,
-  `web/ACCEPTANCE.md`, `apps/server/docs/phase9-removals.md`, the web-2 `SPEC.md` files,
-  the empty `docs/archive/`.
+- `DECISIONS.md` is frozen (2026-10-31): no appends. A new decision changes the doc that
+  describes the behavior in place, and its commit message says why.
+- Deleted after phase 1: `STAGE-2-CUTOVER.md` (it absorbed the stage 2 scope and acceptance
+  docs), `apps/server/docs/phase9-removals.md`, the web-2 `SPEC.md` files.
 - End state after phase 6, under 1,500 lines: `README.md`, `ARCHITECTURE.md` (v3, with
   `COURSE_ARCHIVING.md` folded in), `OPERATIONS.md` (`INFRA.md` + `RUNBOOK.md` merged),
   `FINDINGS.md`, the `AGENTS.md` files. `DECISIONS.md` and this file are deleted; their

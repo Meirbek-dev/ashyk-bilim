@@ -23,8 +23,8 @@
 - `docs/REWRITE.md` - proposed v3 rewrite (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
   Not started; current docs still describe production.
-- `docs/MODERNIZATION-STAGE-2.md`, `docs/STAGE-2-CUTOVER.md`, `docs/web/ACCEPTANCE.md` -
-  remaining frontend rollout scope, procedure and acceptance; `apps/web-2/BACKLOG.md` lists open work.
+- `docs/STAGE-2-CUTOVER.md` - frontend rollout: constraints, acceptance, cutover, rollback, cleanup;
+  `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
   use `rg -n '^##' <doc>` as the index; read only the matching section.
 - Keep docs about current behavior, constraints, operations and unfinished work.
