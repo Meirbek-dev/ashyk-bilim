@@ -1,3 +1,5 @@
 /target
+# Linked worktrees build into target-<worktree id> (justfile `_wt_suffix`).
+/target-*/
 .env
 coverage/
