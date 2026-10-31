@@ -27,7 +27,7 @@ env:
 
 jobs:
   changes:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 5
     outputs:
       server: ${{ steps.filter.outputs.server == 'true' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
@@ -95,7 +95,7 @@ jobs:
   server-lint:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-16vcpu-ubuntu-2404
     timeout-minutes: 20
     defaults:
       run:
@@ -138,7 +138,7 @@ jobs:
   server-test:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-16vcpu-ubuntu-2404
     timeout-minutes: 30
     defaults:
       run:
@@ -235,7 +235,7 @@ jobs:
   web-gates:
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -258,12 +258,12 @@ jobs:
       - name: just ci-web
         run: just ci-web
 
-  # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
+  # Stage 2 (docs/STAGE-2-CUTOVER.md, Acceptance): `vp run verify` = check + tests + gates.ts, then the
   # production build. Regeneration must not repair uncommitted artifacts silently.
   web2-gates:
     needs: changes
     if: needs.changes.outputs.web2 == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     container:
       image: ${{ needs.changes.outputs.playwright-image }}
       options: --ipc=host
@@ -312,7 +312,7 @@ jobs:
   images:
     needs: changes
     if: github.event_name == 'push'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-16vcpu-ubuntu-2404
     timeout-minutes: 40
     permissions:
       contents: read
@@ -344,8 +344,8 @@ jobs:
             echo 'EOF'
           } >>"$GITHUB_OUTPUT"
 
-      # The release compile ran out of disk on stock runners (runs #45/#46). Today's runners
-      # have ~75 GB free and the rm costs ~3 min, so only when short.
+      # The release compile ran out of disk on stock GitHub runners (runs #45/#46); the rm
+      # costs ~3 min, so only when short.
       - name: Free runner disk for the release build
         if: matrix.image == 'server'
         run: |
@@ -354,7 +354,8 @@ jobs:
             sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
               /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
 
-      - uses: docker/setup-buildx-action@v4
+      # Blacksmith keeps Docker layers on a sticky disk per image; type=gha would still go to GitHub.
+      - uses: useblacksmith/setup-docker-builder@v1
 
       - uses: docker/login-action@v4
         with:
@@ -362,7 +363,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v7
+      - uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: apps/${{ matrix.image }}/Dockerfile
@@ -370,15 +371,13 @@ jobs:
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           build-args: ${{ steps.args.outputs.list }}
-          cache-from: type=gha,scope=${{ matrix.image }}-image
-          cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
 
   # success() is false when ANY ancestor was skipped (a path-filtered gate),
   # so the jobs after `images` test their direct dependency explicitly.
   stack-smoke:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 30
     permissions:
       contents: read
@@ -452,7 +451,7 @@ jobs:
   web2-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: ${{ matrix.shard == 'judge0' && 45 || 30 }}
     strategy:
       fail-fast: false
@@ -567,7 +566,7 @@ jobs:
   web-release-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 35
     permissions:
       contents: read
@@ -626,7 +625,7 @@ jobs:
       needs.web-gates.result == 'success' && needs.web2-gates.result == 'success' &&
       needs.infra-gates.result == 'success' && needs.stack-smoke.result == 'success' &&
       needs.web-release-e2e.result == 'success'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: read
@@ -662,7 +661,7 @@ jobs:
   publish-web2:
     needs: [changes, publish, web2-e2e]
     if: ${{ !cancelled() && needs.publish.result == 'success' && needs.web2-e2e.result == 'success' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: read

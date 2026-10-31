@@ -322,7 +322,10 @@ zero takes about 30 s; a second run changes nothing.
 `.github/workflows/ci.yaml` (`push` to `main`, `ci/**`, `release/**`;
 `pull_request`). PRs run the gates only and a newer PR push cancels the running
 one; `main` runs are never cancelled mid-run. `ci/**` builds and smokes images
-without publishing.
+without publishing. Jobs run on Blacksmith runners (`blacksmith-<n>vcpu-ubuntu-2404`; the Blacksmith GitHub
+app must stay installed on the repository, or every job queues forever). `actions/cache` and `Swatinem/rust-cache`
+go to Blacksmith's cache transparently; `images` builds with `useblacksmith/build-push-action`, whose layer cache
+lives on a per-image sticky disk instead of `type=gha`.
 
 | Job | When | What |
 | --- | --- | --- |
