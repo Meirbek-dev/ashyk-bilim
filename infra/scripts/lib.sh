@@ -138,6 +138,6 @@ use_stack() {
     smoke) use_smoke ;;
     web2) use_web2 ;;
     web-e2e) use_web_e2e ;;
-    *) die "STACK must be dev, prod, smoke or web2 (got '$STACK')" ;;
+    *) die "STACK must be dev, prod, smoke, web2 or web-e2e (got '$STACK')" ;;
   esac
 }

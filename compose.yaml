@@ -3,6 +3,7 @@
 #   prod  = compose.yaml:compose.prod.yaml
 #   dev   = compose.yaml:compose.dev.yaml                  (just dev-up)
 #   smoke = compose.yaml:compose.prod.yaml:compose.smoke.yaml
+#   web2 = smoke + compose.web2.yaml; web-e2e = web2 + compose.web-e2e.yaml
 #
 # Networks: edge-net (nginx and everything it or the apps must reach, has egress),
 # data-net (internal: db, redis, zitadel, rustfs, init jobs), exec-net (internal: Judge0).

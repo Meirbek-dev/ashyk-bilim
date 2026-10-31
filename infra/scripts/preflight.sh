@@ -51,7 +51,7 @@ if [[ -z $exp ]] || ! exp_ts=$(date -d "$exp" +%s 2>/dev/null); then
 else
   days=$(((exp_ts - $(date +%s)) / 86400))
   if ((exp_ts <= $(date +%s))); then
-    fail "Zitadel PAT expired; issue a new one (RUNBOOK: PAT rotation)"
+    fail "Zitadel PAT expired; issue a new one (RUNBOOK 3.9)"
   elif ((days < 30)); then
     warn "Zitadel PAT expires in $days days"
   fi
