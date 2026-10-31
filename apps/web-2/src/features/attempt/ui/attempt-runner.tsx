@@ -49,7 +49,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   useHandInAtZero(expired, handIn)
   return (
     <AttemptFrame
-      // Saving shut for good (time, due date, archive): the alert says why; a «Сохраняется» there would never end.
+      // Saving shut for good (time, due date, archive): the alert says why; a «Сохраняется…» there would never end.
       saveStatus={draft.closed ? null : <SaveIndicator status={draft.status} />}
       actions={
         <RunnerActions

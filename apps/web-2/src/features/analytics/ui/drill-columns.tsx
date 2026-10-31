@@ -59,7 +59,7 @@ const passRate = (): Column[] => [
     id: 'result',
     header: m.analytics_col_result(),
     priority: 2,
-    // No score yet (awaiting grading, returned for revision) is not «Не сдал».
+    // No score yet (awaiting grading, returned for revision) is not «Не сдано».
     cell: row =>
       row.passed ? (
         <StatusBadge tone="success">{m.analytics_passed()}</StatusBadge>

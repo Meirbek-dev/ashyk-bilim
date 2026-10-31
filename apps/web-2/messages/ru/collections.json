@@ -1,7 +1,7 @@
 {
   "collections_title": "Коллекции",
   "collections_lead": "Курсы одной темы, собранные преподавателями в подборки.",
-  "collections_empty": "Коллекций пока нет: их собирают преподаватели из курсов одной темы.",
+  "collections_empty": "Коллекций пока нет. Их составляют преподаватели из курсов на одну тему.",
   "collections_updated": "Обновлено {date}",
   "collections_course_count": [
     {
@@ -36,7 +36,7 @@
   "collections_edit_section": "Основное",
   "collections_edit_section_hint": "Название, описание и видимость.",
   "collections_saved": "Сохранено",
-  "collections_hidden_warning": "Курсы этой коллекции закрыты — другие пользователи её не увидят.",
+  "collections_hidden_warning": "Все курсы этой коллекции скрыты, поэтому другие пользователи её не увидят.",
   "collections_cover_title": "Обложка",
   "collections_cover_hint": "Изображение на странице коллекции.",
   "collections_cover_field": "Новая обложка",
@@ -49,7 +49,7 @@
   "collections_delete_consequence": "Курсы останутся на платформе, исчезнет только коллекция.",
   "collections_deleted": "Коллекция удалена",
   "collections_field_courses": "Курсы",
-  "collections_field_courses_hint": "Найдите курс по названию и выберите его; в коллекции курсы идут в этом порядке.",
+  "collections_field_courses_hint": "Найдите курс по названию и выберите его. В коллекции курсы идут в том же порядке.",
   "collections_courses_placeholder": "Название курса",
   "collections_to_catalog": "Перейти в каталог курсов"
 }

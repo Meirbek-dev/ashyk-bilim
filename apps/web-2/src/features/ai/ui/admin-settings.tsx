@@ -43,7 +43,7 @@ export function AdminSettings() {
       </p>
       <div className="flex flex-col gap-1">
         <h3 className="font-medium">{m.ai_features()}</h3>
-        {/* «…по настройкам сервера» beside working switches read as if they could not be changed: say what one does. */}
+        {/* «Управляется в настройках сервера» beside working switches read as if they could not be changed: say what one does. */}
         {source || canSwitch ? (
           <p className="text-sm text-muted-foreground">
             {[

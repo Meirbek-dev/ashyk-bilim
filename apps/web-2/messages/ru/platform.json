@@ -15,7 +15,7 @@
   "platform_not_found_home": "На главную",
   "platform_forbidden_title": "Нет доступа",
   "platform_not_found_text": "Возможно, ссылка устарела или в адресе опечатка. Начните с главной или найдите нужное через поиск.",
-  "platform_forbidden_text": "Эта страница открыта не всем. Если вам нужен доступ, обратитесь к администратору платформы.",
+  "platform_forbidden_text": "У вас нет доступа к этой странице. Если он нужен, обратитесь к администратору платформы.",
   "platform_workspace_label": "Пространство",
   "platform_workspace_learn": "Учёба",
   "platform_workspace_teach": "Преподавание",

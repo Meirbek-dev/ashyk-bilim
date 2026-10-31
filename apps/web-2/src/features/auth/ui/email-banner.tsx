@@ -11,7 +11,7 @@ import { EmailBannerForm } from './email-banner-form'
 const dismissed = storageItem('ab.email-banner-hidden', v.string(), 'session')
 
 /**
- * «Подтвердите email» above the content while the account's address is unconfirmed (`email_verified`, B-AUTH-15):
+ * «Подтвердите почту» above the content while the account's address is unconfirmed (`email_verified`, B-AUTH-15):
  * the emailed code confirms it in place, «Отправить код ещё раз» mails a new one, «Скрыть» hides it until the next
  * browser session. Sign-in never depends on it.
  */

@@ -30,7 +30,7 @@
   "notifications_type_deadline_approaching": "Срок приближается",
   "notifications_type_course_update": "Объявление курса",
   "notifications_type_discussion_reply": "Ответ в обсуждении",
-  "notifications_type_contributor_application": "Заявка соавтора",
+  "notifications_type_contributor_application": "Заявка в соавторы",
   "notifications_type_discussion_post": "Новая тема в обсуждении",
   "notifications_type_course_team_added": "Добавление в команду курса",
   "notifications_type_work_submitted": "Работа на проверку",
@@ -56,10 +56,10 @@
   "notifications_text_post": "Новая тема от {author} в обсуждении курса «{course}»",
   "notifications_text_excerpt": "«{text}»",
   "notifications_text_team_added": "Вас добавили в команду курса «{course}»",
-  "notifications_text_team_observer": "Вас добавили наблюдателем курса «{course}»: вы видите его, даже черновик, но ничего не меняете",
+  "notifications_text_team_observer": "Вас добавили в курс «{course}» наблюдателем: вы видите курс, даже если он в черновике, но не можете ничего изменять",
   "notifications_text_remediation_gate": "Перед следующей попыткой пройдите разбор ошибок, который подготовил преподаватель",
   "notifications_text_remediation": "Преподаватель подготовил для вас разбор ошибок",
-  "notifications_text_work": "{learner} — работа ждёт проверки",
+  "notifications_text_work": "{learner}: работа ждёт проверки",
   "notifications_text_works": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -74,7 +74,7 @@
   ],
   "notifications_xp_awarded": "Начислено {amount} XP",
   "notifications_prefs_title": "Что присылать",
-  "notifications_prefs_hint": "Уведомления приходят только в приложение: на колокольчик и страницу «Уведомления».",
+  "notifications_prefs_hint": "Уведомления приходят только на платформу: в колокольчик и на страницу «Уведомления».",
   "notifications_prefs_saved": "Настройки уведомлений сохранены",
   "notifications_level_up": "Новый уровень: {level}"
 }

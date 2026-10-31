@@ -59,7 +59,7 @@ test('B-NOT-18 a hand-in row names the activity, then who handed in, or how many
   }
   expect(notificationLines(payload)).toEqual([
     m.notifications_text_activity({ activity: 'Эссе', course: 'Алгебра' }),
-    'Аня — работа ждёт проверки',
+    'Аня: работа ждёт проверки',
   ])
   expect(notificationLines({ ...payload, count: 3 })[1]).toBe('3 новые работы ждут проверки, последняя — Аня')
   expect(notificationLines({ ...payload, count: 5 })[1]).toBe('5 новых работ ждут проверки, последняя — Аня')

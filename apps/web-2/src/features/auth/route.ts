@@ -56,7 +56,7 @@ export const opensEmailLink = (
 
 const Banner = lazy(() => import('./ui/email-banner').then(module => ({ default: module.EmailBanner })))
 
-/** The shell's «Подтвердите email» banner: browser only (it reads session storage), its module loaded on demand. */
+/** The shell's «Подтвердите почту» banner: browser only (it reads session storage), its module loaded on demand. */
 export function EmailBannerSlot() {
   const hydrated = useHydrated()
   return hydrated ? createElement(Suspense, { fallback: null }, createElement(Banner)) : null

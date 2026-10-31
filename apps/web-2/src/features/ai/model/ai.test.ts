@@ -96,8 +96,8 @@ describe('remediation and admin helpers', () => {
 
   test('B-AI-08 error codes read as their texts: API codes, a lost stream, the agents own codes', () => {
     expect(runErrorText('ai-budget-exhausted')).toBe('Лимит токенов ИИ исчерпан. Повторите позже.')
-    expect(runErrorText(STREAM_LOST)).toContain('Связь с запуском потеряна')
-    expect(runErrorText('AI_RUN_FAILED')).toBe('Запуск ИИ не удался.')
+    expect(runErrorText(STREAM_LOST)).toContain('Связь прервалась')
+    expect(runErrorText('AI_RUN_FAILED')).toBe('Не удалось выполнить запрос к ИИ.')
   })
 })
 
