@@ -924,14 +924,13 @@ phase starts while the previous one has open items.
 - Backups: restic to the second machine (11.4) replaces the `backup` container; first
   restore drill passes there.
 - Alerting: dead-man check (11.5) live.
-- Prod host: stray `ashyq-dual-*` containers removed; agents and editors out of
-  `~/cs-mooc`; deploys only through `just deploy`; the leftover databases
-  `ashyq_backup_verify_20260930`, `ashyq_final_backup_verify_20260930` and
-  `zitadel_bootstrap_failed_20260930` dropped (`cs_mooc`, ex-`openu`, stays, owner decision); IT asked to
-  turn off SSH password auth and the proxy's duplicate headers.
+- Prod host: agents and editors out of `~/cs-mooc`; deploys only through `just deploy`; IT asked to
+  turn off SSH password auth and the proxy's duplicate headers. Done 2026-10-31: no `ashyq-dual-*` containers left;
+  `ashyq_backup_verify_20260930`, `ashyq_final_backup_verify_20260930` and `zitadel_bootstrap_failed_20260930`
+  dropped after a `pg_dump -Fc` each (kept off Git on the host); `cs_mooc`, ex-`openu`, stays (owner decision).
 - The slow `activities … is_course_staff` query fixed. Done 2026-10-31: `activities_with_learner_work` checks
   staff per distinct author plus an index on `code_runs (assessment_id, user_id)` (1.4 s -> 27 ms on 41k runs).
-- Dev box: `temp-restore/` deleted, `git gc`.
+- Dev box: `temp-restore/` deleted, `git gc`. Done 2026-10-31.
 - Freeze: no new features; v2 gets only security, data-loss and phase-0 fixes. Flaky e2e
   quarantined (section 12); `DECISIONS.md` frozen.
 
