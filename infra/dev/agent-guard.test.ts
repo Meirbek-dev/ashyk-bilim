@@ -32,3 +32,24 @@ test('a backtick inside node -e "..." is refused; single quotes, heredocs and pl
   expect(verdict('node -e "console.log(1)" && echo `date`')).toBeNull()
   expect(verdict("node - <<'EOF'\nconst s = `x`\nEOF")).toBeNull()
 })
+
+test('commits and pushes that skip the checks are refused; just commit/push and reads pass', () => {
+  for (const command of [
+    'jj commit -m x',
+    'cd a && jj git push',
+    'jj ci -m x',
+    'git commit --no-verify -m x',
+    'git push -n origin main',
+  ])
+    expect(verdict(command)).toContain('just commit')
+  for (const command of [
+    'just commit -m x',
+    'just push',
+    'jj log -r @',
+    'jj git fetch',
+    'git commit -m x',
+    'jj describe -m x',
+    'echo jj commit',
+  ])
+    expect(verdict(command)).toBeNull()
+})

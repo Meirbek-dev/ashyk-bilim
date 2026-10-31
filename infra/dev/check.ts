@@ -12,6 +12,7 @@ import { delimiter, dirname, resolve } from 'node:path'
 
 import { databaseUrl, devEnv, machineEnv } from './lib.ts'
 import { checkDatabase } from './check-db.ts'
+import { recordHits } from './ledger.ts'
 
 const root = resolve(import.meta.dir, '../..')
 const logDir = resolve(root, 'tmp/check')
@@ -267,15 +268,25 @@ async function main(): Promise<void> {
       )
     ).flat()
     const failed = results.filter(r => !r.ok)
+    recordHits(
+      'check',
+      failed.map(r => ({ gate: r.gate.name })),
+    )
     for (const r of failed.slice(0, 2)) {
       const tail = readFileSync(r.log, 'utf8').trim().split('\n').slice(-8)
       console.log(`--- ${r.gate.name}: ${r.log}\n${tail.join('\n')}`)
     }
     if (failed.length > 2) console.log(`--- and ${failed.length - 2} more failed gate(s): see tmp/check/`)
-    console.log(
+    const verdict =
       failed.length === 0
         ? `check: ${results.length} gate(s) passed`
-        : `check: ${failed.length} of ${results.length} failed`,
+        : `check: ${failed.length} of ${results.length} failed`
+    console.log(verdict)
+    // `just brief` reads the last verdict; the gate logs stay beside it.
+    mkdirSync(logDir, { recursive: true })
+    writeFileSync(
+      resolve(logDir, 'last.txt'),
+      `${new Date().toISOString()} ${verdict}${failed.length ? `: ${failed.map(r => r.gate.name).join(', ')}` : ''}\n`,
     )
     process.exitCode = failed.length === 0 ? 0 : 1
   } finally {

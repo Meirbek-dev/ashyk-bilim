@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { availableParallelism, tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { test } from 'node:test'
 
 const root = resolve(import.meta.dirname, '../..')
 const just = process.env.JUST_EXECUTABLE ?? 'just'
+// Recipe default for CARGO_BUILD_JOBS: 16 on a 24+ CPU host, else 4 (apps/server/justfile).
+const jobs = `jobs=${availableParallelism() >= 24 ? 16 : 4}`
 const run = (command, args, options = {}) => spawnSync(command, args, { encoding: 'utf8', ...options })
 
 test('production release and replacement stands keep separate identity configuration', () => {
@@ -74,12 +76,12 @@ test('root server proxy preserves filters, bounds build jobs and defaults to cac
     })
     assert.equal(result.status, 0, result.stderr)
     assert.deepEqual(result.stdout.trim().split(/\r?\n/), [
-      'nextest', 'run', '--locked', '--workspace', '--lib', '--bins', '-E', filter, 'jobs=4', 'offline=true',
+      'nextest', 'run', '--locked', '--workspace', '--lib', '--bins', '-E', filter, jobs, 'offline=true',
     ])
     const online = run(just, ['server', 'sqlx-check'], { cwd: root, env: { ...env, SQLX_OFFLINE: 'true' } })
     assert.equal(online.status, 0, online.stderr)
     assert.deepEqual(online.stdout.trim().split(/\r?\n/), [
-      'sqlx', 'prepare', '--check', '--workspace', '--', '--locked', 'jobs=4', 'offline=false',
+      'sqlx', 'prepare', '--check', '--workspace', '--', '--locked', jobs, 'offline=false',
     ])
   } finally {
     rmSync(dir, { recursive: true, force: true })
@@ -142,7 +144,7 @@ test('pre-commit checks the staged snapshot, not the working copy, and refuses e
   try {
     for (const sub of ['.vite-hooks', 'infra/dev', 'apps/server/src', 'apps/server/migrations', 'bin'])
       mkdirSync(join(dir, sub), { recursive: true })
-    for (const file of ['.vite-hooks/pre-commit', 'infra/dev/hooks.ts'])
+    for (const file of ['.vite-hooks/pre-commit', 'infra/dev/hooks.ts', 'infra/dev/ledger.ts'])
       writeFileSync(join(dir, file), readFileSync(join(root, file)))
     writeFileSync(join(dir, 'apps/server/Cargo.toml'), '[workspace.package]\nedition = "2024"\n')
     writeFileSync(join(dir, 'bin/rustfmt'), '#!/bin/sh\nfor f; do :; done\n! grep -q BAD "$f"\n', { mode: 0o755 })

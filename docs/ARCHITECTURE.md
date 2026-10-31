@@ -2,7 +2,8 @@
 
 **Status:** authoritative. Decisions here were ratified by the owner on 2026-08-16
 (30-question review); the Rust backend replaced the legacy Python API in production on
-2026-09-30. Deviations require a written note in `docs/DECISIONS.md` with rationale.
+2026-09-30. Deviations update the relevant section here in place, with the rationale in the commit message
+(`docs/DECISIONS.md` is frozen history since 2026-10-31).
 
 Companion documents:
 - [`docs/DECISIONS.md`](DECISIONS.md) — design deltas since ratification
@@ -640,4 +641,4 @@ The Next.js frontend remains live until `docs/STAGE-2-CUTOVER.md` is completed.
 | Zitadel session API coupling | confined to `ab-clients::zitadel`; wiremock fixtures pin the wire contract; Zitadel pinned to a specific minor, upgraded deliberately |
 | Hand-rolled queue correctness | property-style tests (concurrent claim, crash-requeue, backoff), soak test in P0 exit gate |
 | Windows dev machine w/o local Docker in some sessions | all DB-dependent tests skippable locally (`just test-unit`), full suite in CI; `.sqlx` cache keeps builds green without a DB |
-| Agent drift across sessions | AGENTS.md + DECISIONS.md are the durable memory; every session ends with them current |
+| Agent drift across sessions | AGENTS.md and the docs of current behavior are the durable memory; every session ends with them current |

@@ -53,6 +53,20 @@ fmt +files:
 brand-assets:
     node apps/web/scripts/generate-brand-assets.mjs
 
+# jj runs no git hooks: a failed check undoes the jj commit (`jj op restore`); git runs its own hook.
+# Commit with the pre-commit checks under git or jj: `just commit -m "msg" [paths | jj filesets]`.
+commit *args:
+    @bun infra/dev/hooks.ts commit "$@"
+
+# `jj git push` skips the pre-push check; under jj the bookmark first moves forward to @-.
+# Push through git so the pre-push check runs: `just push [bookmark, default main]`.
+push *args:
+    @bun infra/dev/hooks.ts push "$@"
+
+# Scaffold a slice: `just new feature <name>` (web-2), `endpoint <tag> <op>` (server test + checklist), `migration <name>`.
+new *args:
+    @bun infra/dev/new.ts "$@"
+
 # Parallel work in ../ashyq-wt/<name> (own bun install and cargo target dir): `just wt new|ls|land|rm <name>`.
 wt *args:
     bun infra/dev/wt.ts "$@"
@@ -156,6 +170,22 @@ ci-watch run:
 ci-retry run:
     @gh run rerun {{ run }} --failed
 
+# The state before work in one call: vcs, stack, last check/e2e, owner questions, production health.
+brief:
+    @bun infra/dev/brief.ts
+
+# Sizes agents read, build and keep green (code, tables, operations, docs, skills, tooling): `just metrics [--json]`.
+metrics *args:
+    @bun infra/dev/metrics.ts "$@"
+
+# Read-only production health on its host (errors by message, 5xx by route, dead jobs): `just prod-report [--since 24h]`.
+prod-report *args:
+    @bun infra/dev/prod-report.ts "$@"
+
+# Old e2e stands and logs; `--deep` also cargo incremental/coverage caches (`--dry-run` lists): `just clean [--deep]`.
+clean *args:
+    @bun infra/dev/clean.ts "$@"
+
 # Bounded log/trace excerpts; complete originals stay on disk.
 diagnose *args:
     @bun infra/dev/diagnose.ts "$@"
@@ -243,6 +273,17 @@ ci-infra:
     for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
+    # A shared daemon can run out of bridge subnets (31 default pools, ai-server 2026-10-31): the stack checks below
+    # need networks of their own, so they are skipped here and run in hosted CI.
+    if ! probe=$("$CTR" network create "ashyq-ci-probe-$$" 2>&1); then
+        if [[ $probe == *"address pools"* ]]; then
+            log "no free container network address pool: nginx -t, dual-web and redis checks skipped (CI runs them)"
+            exit 0
+        fi
+        echo "$probe" >&2
+        exit 1
+    fi
+    "$CTR" network rm "ashyq-ci-probe-$$" >/dev/null
     {{ smoke_cert }}
     use_smoke
     export COMPOSE_PROJECT_NAME=ashyq-ci-$$ IMAGE_TAG=ci

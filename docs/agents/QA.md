@@ -7,6 +7,9 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
 
 ## Orchestration
 
+- Start from real failures: `just prod-report --since 7d` and `just brief`. Production errors and dead jobs outrank
+  anything a sweep finds; a sweep lane without a production signal tests what real users hit most (below).
+- Run sweep lanes on a fast model; the orchestrator and the contract lane on the strongest one.
 - At most 3 agents per checkout at once (or one per worktree: `just wt new <name>`, `just wt land <name>`).
 - One lane owns contract changes (server DTO/route, `openapi.v2.json`, both generated clients): `just contract`.
   Other lanes ask the orchestrator; they never run codegen themselves.
@@ -43,8 +46,9 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
   then re-run the failing scenario.
 - Messages: web-2 `apps/web-2/messages/<locale>/<feature>.json`, legacy `apps/web/src/messages/*.json`; all three
   locales; small edits, never rewrite a catalog.
-- Commit only your files: `git commit -F msg.txt -- <paths>` (never `add -A`, `commit -a`, stash, checkout or
-  reset of files you did not edit, never `--no-verify`). Subject `fix(web-2|web|server): <user-visible outcome>`,
+- Commit only your files: `just commit -m "<subject>" <paths>` (jj runs no git hooks; this runs the checks and
+  undoes a failing commit). Never `add -A`, `commit -a`, stash, checkout or reset of files you did not edit, never
+  `--no-verify`. Subject `fix(web-2|web|server): <user-visible outcome>`,
   body ends with the `Co-Authored-By` line. The pre-commit hook checks only what you stage (`just fmt <files>`
   fixes formatting); `just check` runs the gates for what changed.
 

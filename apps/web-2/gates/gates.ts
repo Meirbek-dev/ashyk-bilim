@@ -1,6 +1,8 @@
 // Every check that lint cannot express (spec 9). `bun gates/gates.ts <gate|all> [--phase N]`; `next-id <feature>`.
 // Output is errors only: `file:line rule - what to do`, at most 30 lines per gate plus a count (8.4).
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 
 import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
@@ -60,6 +62,23 @@ const GATES: Record<string, () => Finding[] | Promise<Finding[]>> = {
   docs, // 8.2
 }
 
+// One line per finding in <main checkout>/tmp/gates/hits.jsonl (infra/dev/ledger.ts): `just metrics` shows which gates
+// caught something lately. Local runs only; never fails a gate.
+function recordHits(gate: string, findings: Finding[]): void {
+  if (process.env['CI']) return
+  try {
+    const common = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' })
+    if (common.status !== 0) return
+    const ledger = join(dirname(common.stdout.trim()), 'tmp', 'gates', 'hits.jsonl')
+    mkdirSync(dirname(ledger), { recursive: true })
+    const at = new Date().toISOString()
+    const lines = findings.map(f => JSON.stringify({ at, source: 'web2-gates', gate, rule: f.rule, file: f.file }))
+    appendFileSync(ledger, `${lines.join('\n')}\n`)
+  } catch {
+    // A statistic only.
+  }
+}
+
 function print(gate: string, findings: Finding[]): void {
   const lines = findings.map(f => `${f.file}${f.line ? `:${f.line}` : ''} ${f.rule} - ${f.fix}`)
   const shown = lines.slice(0, MAX_LINES)
@@ -93,6 +112,7 @@ for (const name of names) {
   if (findings.length > 0) {
     failed += 1
     print(name, findings)
+    recordHits(name, findings)
   }
 }
 if (failed > 0) {

@@ -12,7 +12,8 @@
 
 ## Docs
 
-- `docs/ARCHITECTURE.md` - server design; `docs/DECISIONS.md` - deviations from it.
+- `docs/ARCHITECTURE.md` - server design; `docs/DECISIONS.md` - frozen history of deviations (2026-10-31): a new
+  decision updates the doc of the behavior in place and the commit message says why.
 - `docs/INFRA.md` - stack, networks, secrets, web contract.
 - `docs/RUNBOOK.md` - deploy, rollback, backup, restore, certificates, incidents.
 - `docs/FINDINGS.md` - open production and infra issues.
@@ -37,18 +38,35 @@
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
   `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.
+- Commit with `just commit -m "..." [paths]` and push with `just push` (skill `ship`). The checkout is jj colocated
+  with git; jj runs no git hooks, so plain `jj commit` / `jj git push` skip every check. `just commit` runs the
+  pre-commit checks on the new commit and undoes it (`jj op restore`) when they fail; `just push` moves `main` to `@-` and
+  pushes through git so pre-push runs. Plain git users get the same hooks natively.
 - Hooks (`.vite-hooks`, `infra/dev/hooks.ts`) check a checkout of what you commit/push, never the working
   tree, so other people's unstaged work cannot fail them. pre-commit (< 30 s): format + type-aware lint of
   the staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
   pre-push: `just check` on the pushed commit (only CI skips it). Never `--no-verify`.
+- Every red gate (check, hooks, web-2 gates) is logged to `tmp/gates/hits.jsonl`; `just metrics` lists the gates that
+  caught nothing in 30 days. Propose deleting such a gate to the owner instead of satisfying it mechanically.
 - `just fmt <files>` formats exactly like the hook (root `vite.config.ts` holds the one web format config,
   same result from any cwd; rustfmt for `.rs`). `just eol` rewrites CRLF working copies (Windows) as LF.
 - Run focused checks during an edit batch. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs
   all three); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
 - `.agents/skills` is canonical. `.claude/skills` is an ignored compatibility copy made by
-  `just skills-sync`; never edit the copy. Read only the instructions/docs relevant to the task.
+  `just skills-sync`; never edit the copy. Project skills: `server-slice`, `web2-slice`, `debug-e2e`, `ship`;
+  third-party ones (`skills-lock.json`) only where the app uses the library. Read only the docs relevant to the task.
+- Every `AGENTS.md` has a sibling `CLAUDE.md` holding `@AGENTS.md` (a plain file: Windows checkouts flatten symlinks,
+  and Claude Code loads only CLAUDE.md); `bun test ./infra/dev` checks it.
 
 ## Working with agents
+
+- Start with `just brief`: vcs state, running slots, the last check/e2e verdict, open owner questions, production
+  health. Real failures come first: `just prod-report [--since 24h]` (read-only, on the production host) lists server
+  warnings/errors by message, 5xx by route and dead jobs.
+- Scaffold instead of copying a reference: `just new feature <name>` (web-2), `just new endpoint <tag> <op>` (server
+  test plus a `file:line` checklist), `just new migration <name>`.
+- Models: exploration, QA sweeps and log triage suit a fast model (Sonnet/Haiku class); contract, auth, migrations
+  and cross-app design need the strongest one. One writer per file set; reviewers read.
 
 - For repeated browser debugging, start `just e2e web2 --serve` once and run focused tests with
   `just e2e web2 --reuse <playwright args>`. Test edits reuse the build and database; application edits
@@ -71,6 +89,10 @@
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
 - One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
   `just db fresh <name>`, `just db sql "<sql>"`, `just check [--wip|--all]`, `just contract`,
-  `just e2e [web2 --changed]`, `just shoot` (screenshots as real accounts), `just restore-media`, `just fmt <files>`.
+  `just e2e [web2 --changed]`, `just shoot` (screenshots as real accounts), `just restore-media`, `just fmt <files>`,
+  `just metrics` (sizes to shrink), `just clean [--deep]` (old stands, logs, cargo incremental caches).
+- Server DB tests clone one migrated template per migration set (`#[ab_testdb::test]`); the suite runs 12 at once on
+  a 24+ CPU host (~2 min), 4 elsewhere.
 - `.claude/settings.json` runs `infra/dev/agent-guard.ts` before every shell command: it refuses a bare `python`
-  (an endless REPL in Git Bash) and backticks inside `node -e "..."` (bash runs them first).
+  (an endless REPL in Git Bash), backticks inside `node -e "..."` (bash runs them first) and `jj commit`,
+  `jj git push` or `--no-verify` (they skip the checks: use `just commit` / `just push`).

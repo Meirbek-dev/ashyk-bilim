@@ -1,5 +1,9 @@
 # Decision log (deviations & refinements vs ARCHITECTURE.md)
 
+**Frozen 2026-10-31: history, no new entries** (docs/REWRITE.md section 14; 53 appends in October made it the largest
+doc nobody reads whole). A new decision changes the doc that describes the behavior (ARCHITECTURE, INFRA, RUNBOOK,
+a SPEC.md) in place, and its commit message says why. Find old entries with `rg -n '^## ' docs/DECISIONS.md`.
+
 ## 2026-10-14 — A discussion post others replied to leaves a tombstone
 
 Owner decision. `DELETE /discussions/{id}` of a post that has replies by other

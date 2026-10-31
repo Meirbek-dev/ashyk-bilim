@@ -10,6 +10,8 @@
 import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 
+import { recordHits } from './ledger.ts'
+
 const MAX_LINES = 30
 const WEB2_GATES = ['i18n', 'tokens', 'suppressions', 'trace', 'docs']
 const FMT = /\.(ts|tsx|mts|js|mjs|json|jsonc|css|md)$/
@@ -102,13 +104,14 @@ function under(files: string[], prefix: string): string[] {
   return files.filter(f => f.startsWith(prefix)).map(f => f.slice(prefix.length))
 }
 
-// Migrations on origin/main (else main) are applied somewhere: only new files may be staged.
-function migrationEdits(): string[] {
+// Migrations on origin/main (else main) are applied somewhere: only new files may be committed. `diff`: the git diff
+// arguments of the change (`--cached` for the index), `blob`: the object of a path in the new content.
+function migrationEdits(diff: string[], blob: (path: string) => string): string[] {
   const base = ['origin/main', 'main'].find(ref => git('rev-parse', '-q', '--verify', `${ref}^{commit}`).code === 0)
   if (!base) return []
   const changed = git(
     'diff',
-    '--cached',
+    ...diff,
     '--no-renames',
     '--diff-filter=MD',
     '--name-only',
@@ -121,7 +124,7 @@ function migrationEdits(): string[] {
     .filter(Boolean)
     .filter(path => {
       const applied = git('rev-parse', '-q', '--verify', `${base}:${path}`)
-      return applied.code === 0 && git('rev-parse', '-q', '--verify', `:${path}`).out !== applied.out
+      return applied.code === 0 && git('rev-parse', '-q', '--verify', blob(path)).out !== applied.out
     })
 }
 
@@ -229,6 +232,11 @@ function server(snap: string, files: string[]): Promise<Result>[] {
 
 function report(hook: string, results: Result[], started: number): number {
   const failed = results.filter(r => r.code !== 0)
+  recordHits(
+    hook,
+    failed.map(r => ({ gate: r.name })),
+    top,
+  )
   const log = join(top, 'tmp', 'hooks', `${hook}.log`)
   mkdirSync(dirname(log), { recursive: true })
   writeFileSync(log, results.map(r => `== ${r.name} (exit ${r.code})\n${r.out}\n`).join('\n'))
@@ -250,37 +258,108 @@ function report(hook: string, results: Result[], started: number): number {
     if (lines.length > budget) console.log(`  ... ${lines.length - budget} more lines`)
     if (r.fix) console.log(`  fix: ${r.fix}`)
   }
-  console.log(`${hook}: ${failed.length} check(s) failed in ${seconds}s; staged content only; full log ${log}`)
+  console.log(
+    `${hook}: ${failed.length} check(s) failed in ${seconds}s; ${hook === 'pre-commit' ? 'staged content only' : 'the commit only'}; full log ${log}`,
+  )
   return 1
 }
 
 async function preCommit(): Promise<number> {
-  const started = performance.now()
   const staged = git('diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z').out.split('\0').filter(Boolean)
+  // The index being committed (GIT_INDEX_FILE), written as a tree only when a check needs a checkout.
+  const tree = () => {
+    const written = git('write-tree')
+    if (written.code !== 0) throw new Error(`git write-tree: ${written.out}`)
+    return written.out
+  }
+  return checkChange(
+    'pre-commit',
+    staged,
+    tree,
+    migrationEdits(['--cached'], path => `:${path}`),
+  )
+}
+
+// The pre-commit checks on a commit already made (jj runs no git hooks): its files against its first parent.
+function verifyCommit(sha: string): Promise<number> {
+  const parent = git('rev-parse', '-q', '--verify', `${sha}^`).out || git('hash-object', '-t', 'tree', '/dev/null').out
+  const files = git('diff', '--name-only', '--diff-filter=ACMR', '-z', parent, sha).out.split('\0').filter(Boolean)
+  return checkChange(
+    'commit-check',
+    files,
+    () => sha,
+    migrationEdits([parent, sha], path => `${sha}:${path}`),
+  )
+}
+
+async function checkChange(hook: string, changed: string[], tree: () => string, migrations: string[]): Promise<number> {
+  const started = performance.now()
   const results: Result[] = []
-  const migrations = migrationEdits()
   if (migrations.length)
     results.push({
       name: 'applied migrations',
       code: 1,
       out: migrations.map(m => `${m} is on origin/main: never edit an applied migration`).join('\n'),
-      fix: 'unstage it (git restore --staged <file>) and add a new migration (just server migration <name>)',
+      fix: 'take the edit out of this commit and add a new migration (just server migration <name>)',
     })
   const files = {
-    web2: under(staged, 'apps/web-2/'),
-    web: under(staged, 'apps/web/'),
-    server: under(staged, 'apps/server/'),
+    web2: under(changed, 'apps/web-2/'),
+    web: under(changed, 'apps/web/'),
+    server: under(changed, 'apps/server/'),
   }
   if (files.web2.length || files.web.length || files.server.some(f => f.endsWith('.rs'))) {
-    const tree = git('write-tree') // the index being committed (GIT_INDEX_FILE)
-    if (tree.code !== 0) throw new Error(`git write-tree: ${tree.out}`)
-    const snap = snapshot(tree.out)
-    prepare(snap, tree.out, files.web2.length > 0)
+    const treeish = tree()
+    const snap = snapshot(treeish)
+    prepare(snap, treeish, files.web2.length > 0)
     results.push(
       ...(await Promise.all([...web2(snap, files.web2), ...web(snap, files.web), ...server(snap, files.server)])),
     )
   }
-  return report('pre-commit', results, started)
+  return report(hook, results, started)
+}
+
+const jj = () => exists(join(top, '.jj')) && sync(['jj', '--version']).code === 0
+
+// `just commit -m "msg" [jj filesets | git paths]`. git runs its own hook. jj runs none: `jj commit`, then the
+// pre-commit checks on the new commit; a failure restores the operation before it (`jj op restore`), leaving the
+// changes in the working copy. Not `jj undo`: the checks' files can add a snapshot operation that undo would take.
+async function commit(args: string[]): Promise<number> {
+  const tool = jj() ? 'jj' : 'git'
+  // `jj status` snapshots the working copy first, so the recorded operation holds the changes being committed.
+  const before =
+    tool === 'jj' && sync(['jj', 'status'], top).code === 0
+      ? sync(['jj', 'op', 'log', '-n', '1', '--no-graph', '-T', 'id', '--ignore-working-copy'], top).out
+      : ''
+  const made = Bun.spawnSync([tool, 'commit', ...args], { cwd: top, stdio: ['inherit', 'inherit', 'inherit'] })
+  if (made.exitCode !== 0 || tool === 'git') return made.exitCode ?? 1
+  const sha = sync(['jj', 'log', '-r', '@-', '--no-graph', '-T', 'commit_id', '--ignore-working-copy'], top).out
+  const code = await verifyCommit(sha)
+  if (code !== 0) {
+    const restored = before ? sync(['jj', 'op', 'restore', before], top) : { code: 1, out: 'no operation recorded' }
+    console.log(
+      restored.code === 0
+        ? 'commit: undone (jj op restore); the changes are back in the working copy. Fix the findings, then commit again.'
+        : `commit: the checks failed and the commit could not be undone (${restored.out}); \`jj op log\`, then \`jj op restore <id>\``,
+    )
+  }
+  return code
+}
+
+// `just push [bookmark]` (default main). git push runs the pre-push hook; `jj git push` would skip it. Under jj the
+// bookmark first moves forward to @- (the last commit; jj refuses a backwards or sideways move).
+function push(args: string[]): number {
+  const bookmark = args[0] ?? 'main'
+  if (jj()) {
+    const moved = Bun.spawnSync(['jj', 'bookmark', 'move', bookmark, '--to', '@-'], {
+      cwd: top,
+      stdio: ['inherit', 'inherit', 'inherit'],
+    })
+    if (moved.exitCode !== 0) return moved.exitCode ?? 1
+  }
+  return (
+    Bun.spawnSync(['git', 'push', 'origin', bookmark], { cwd: top, stdio: ['inherit', 'inherit', 'inherit'] })
+      .exitCode ?? 1
+  )
 }
 
 // stdin: "<local ref> <local sha> <remote ref> <remote sha>" per pushed ref. `just check --base <remote sha>` runs in
@@ -350,6 +429,9 @@ const [command = '', ...args] = process.argv.slice(2)
 const commands: Record<string, () => Promise<number>> = {
   'pre-commit': preCommit,
   'pre-push': prePush,
+  'verify-commit': () => verifyCommit(git('rev-parse', '--verify', `${args[0] ?? 'HEAD'}^{commit}`).out),
+  commit: () => commit(args),
+  push: async () => push(args),
   fmt: () => fmt(args),
 }
 const handler = commands[command]

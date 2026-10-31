@@ -230,8 +230,36 @@ async function playwright(o: ReturnType<typeof parse>, env: Record<string, strin
   })
   children.push(child)
   const [code] = await Promise.all([child.exited, pipeToLog(child.stdout, logPath), pipeToLog(child.stderr, logPath)])
-  say(tail(logPath, 25))
+  say(playwrightSummary(readFileSync(logPath, 'utf8'), logPath) ?? tail(logPath, 25))
   return code
+}
+
+const COUNT = /^ {2}(\d+) (failed|flaky|interrupted|skipped|did not run|passed)\b/
+
+/** Playwright's closing block with every count kept (a plain tail dropped `N failed` above a long list), each listed
+ *  category capped at `max` tests; null when the run printed no summary. */
+export function playwrightSummary(log: string, logPath: string, max = 15): string | null {
+  const lines = log.split(/\r?\n/)
+  let end = lines.length - 1
+  while (end >= 0 && !COUNT.test(lines[end]!)) end--
+  if (end < 0) return null
+  let start = end
+  while (start > 0 && (COUNT.test(lines[start - 1]!) || /^ {4}\S/.test(lines[start - 1]!))) start--
+  const counts: string[] = []
+  const out: string[] = []
+  let listed = 0
+  for (const line of lines.slice(start, end + 1)) {
+    if (COUNT.test(line)) {
+      counts.push(line.trim())
+      out.push(line)
+      listed = 0
+    } else if (++listed <= max) out.push(line)
+    else if (listed === max + 1) out.push('    … more in the log')
+  }
+  const failed = counts.some(c => / (failed|flaky|interrupted)\b/.test(c))
+  return [`e2e: ${counts.join(' · ')}`, ...(failed ? [...out, `first errors: just diagnose ${logPath}`] : [])].join(
+    '\n',
+  )
 }
 
 const judge0Up = async (env: Record<string, string>) =>

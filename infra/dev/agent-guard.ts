@@ -1,11 +1,13 @@
 #!/usr/bin/env bun
-// Claude Code PreToolUse hook (.claude/settings.json) on Bash and PowerShell: refuses the two shell commands that
-// cost agents whole turns on this machine. Exit 2 = blocked; the message on stderr goes back to the agent.
+// Claude Code PreToolUse hook (.claude/settings.json) on Bash and PowerShell: refuses the shell commands that cost
+// agents whole turns, and the commits that skip this repo's checks. Exit 2 = blocked; stderr goes back to the agent.
 //
 // 1. A bare `python` / `python3` (or `python -` with no heredoc and nothing piped in): in Git Bash the Windows
 //    launcher opens an interactive REPL that never ends and floods its output file (64 MB seen).
 // 2. `node -e "..."` / `bun -e "..."` whose double-quoted script holds a backtick: bash runs the backtick as a command
 //    substitution before node sees it, and the edit lands mangled.
+// 3. `jj commit`, `jj git push` and `--no-verify`: jj runs no git hooks, so these land unchecked work (the 2026-10-28
+//    night sweep committed 35 type-aware lint errors that only the final `just check` caught). `just commit` / `just push` run the same checks under jj and git.
 
 export function verdict(command: string): string | null {
   if (!command.includes('<<')) {
@@ -23,6 +25,11 @@ export function verdict(command: string): string | null {
     if (command.slice(match.index + match[0].length, end).includes('`'))
       return `agent-guard: a backtick inside ${match[1]} -e "..." is run by bash as a command before ${match[1]} sees it. Write the script with the Write tool or a quoted heredoc (\`${match[1]} - <<'EOF'\`), or edit the file with the Edit tool.`
   }
+  const vcs = /(^|[;&|(\n])\s*(jj\s+(commit|ci|git\s+push)\b|git\s+(commit|push)\b[^;&|\n]*\s(--no-verify|-n)\b)/.exec(
+    command,
+  )
+  if (vcs)
+    return `agent-guard: \`${vcs[2]!.trim()}\` skips this repo's commit/push checks (jj runs no git hooks). Use \`just commit -m "..." [paths]\` and \`just push\` (skill ship); never --no-verify.`
   return null
 }
 
