@@ -1,5 +1,8 @@
 # QA + fix sweep (reusable brief for agents)
 
+On hold: `docs/REWRITE.md` section 13 allows no QA sweep loops until its phase 6 ends. Until then use this brief
+only for a sweep the owner asks for by name; a single bug fix follows the app's `AGENTS.md` and the skills.
+
 Hand this file to every QA/fix agent together with its lane (cluster of features). The owner wants every function
 to work for every role; agents test exhaustively, fix at the root cause, verify, and commit. Locales: ru (default),
 kk, en. Apps: `apps/server` (Rust API), `apps/web-2` (new frontend), `apps/web` (legacy, in production: keep it
@@ -31,7 +34,8 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
 
 ## How to test
 
-- Drive the real UI with Playwright scripts in your scratch dir (headless Chromium); screenshot and look at the shots.
+- Drive the real UI with Playwright scripts in your scratch dir (headless Chromium); screenshot and look at the shots
+  (`just shoot --page name=/path --as <login>` for web-2 pages as a real account).
 - Hit the API directly for edge cases, races and permissions. Watch the browser console, failed requests and the
   API log for 5xx/panics on every page.
 - ru and en always, kk spot checks; 390 px phone width for main flows; keyboard for dialogs.

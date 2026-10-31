@@ -20,9 +20,9 @@
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
 - `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
-- `docs/REWRITE.md` - proposed v3 rewrite (ops fixes first, then delete-in-place to one binary,
+- `docs/REWRITE.md` - v3 rewrite plan (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
-  Not started; current docs still describe production.
+  In progress (its section 15); the other docs describe production as it runs now.
 - `docs/STAGE-2-CUTOVER.md` - frontend rollout: constraints, acceptance, cutover, rollback, cleanup;
   `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
@@ -81,9 +81,8 @@
   minified matches, complete CI logs or cleanup logs. For minified bundles print filenames/counts or bounded excerpts.
   For pulls use `git pull --quiet --ff-only` and report the old/new revision. Test tools print summaries and retain logs.
 
-- QA/fix sweeps: hand each agent `docs/agents/QA.md` plus its lane; it covers roles, accounts, testing,
-  fixing, report format and orchestration (max 3 agents per checkout, one lane owns contract changes,
-  commit per finished item, never leave files staged, progress in a report file).
+- QA/fix sweeps are on hold until REWRITE phase 6 unless the owner asks for one; then hand each agent
+  `docs/agents/QA.md` plus its lane (roles, accounts, testing, fixing, report format, orchestration).
 - Parallel work without blocking: `just wt new <name>` (worktree in `../ashyq-wt/<name>`, own
   `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
