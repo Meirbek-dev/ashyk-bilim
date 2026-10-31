@@ -125,7 +125,12 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
     areas.web2 = [
       all || checkable.length === 0
         ? { name: 'web2:check', cwd: web2, cmd: ['bunx', 'vp', 'check'] }
-        : { name: 'web2:check', cwd: web2, cmd: ['bunx', 'vp', 'check', ...checkable] },
+        : // A JSON-only list leaves lint nothing to match, which vp treats as an error.
+          {
+            name: 'web2:check',
+            cwd: web2,
+            cmd: ['bunx', 'vp', 'check', '--no-error-on-unmatched-pattern', ...checkable],
+          },
       ...(all
         ? [{ name: 'web2:test', cwd: web2, cmd: ['bunx', 'vp', 'test', 'run', '--maxWorkers=2'] }]
         : tests.length > 0
