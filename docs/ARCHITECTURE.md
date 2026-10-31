@@ -414,8 +414,9 @@ not the template. Redesign rules:
 5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE`
    only for owned children like items/blocks). No soft-delete convention; archival
    is a domain status where the domain needs it (courses, assessments).
-6. Full-text search: `tsvector` **generated stored columns** + GIN (legacy built
-   vectors in queries); `document_chunks` keeps pgvector `vector` + HNSW.
+6. Search: `search_matches()` over `search_fold()`ed text decides what matches (no index serves it; plan for
+   pg_trgm in REWRITE §5); the `tsvector` generated columns on courses/collections only rank (`ts_rank_cd`), so
+   they carry no GIN index (dropped 2026-11, never used by a query). `document_chunks` keeps pgvector `vector` + HNSW.
 7. Optimistic concurrency: one integer `version` per edited resource (see
    section 6, S-04; 412 on a stale `If-Match`), plus the per-column-family
    counters where genuinely concurrent (grading vs. draft; the draft save keeps
@@ -434,6 +435,20 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   (`submissions_attempt_number_key`, `file_submission_attempts_attempt_number_key`, both `WHERE NOT preview`).
 - **Notifications** carry generated `course_id` / `activity_id` columns (from the typed payload) with
   `ON DELETE CASCADE`: deleting a course or activity removes the notifications that link into it.
+- **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
+  `UNIQUE (id, course_id)`; their children reference `(parent_id, course_id)` (activities → chapters,
+  assessments/file tasks/progress/trail steps → activities, submissions → assessments, file attempts → file
+  tasks, replies → posts) with `ON UPDATE CASCADE`, keeping the old constraint names.
+- **Sibling positions are unique** per course (chapters), chapter (activities), assessment (items) and
+  collection (courses), `DEFERRABLE INITIALLY DEFERRED` so a reorder inside one transaction may pass through
+  duplicates; `>= 1`. Two concurrent appends that both took `MAX(position) + 1` get 409 `conflict` (retry).
+- **Coherence, bounds, shapes** (`20261101220200_integrity_checks.sql`): a handed-in attempt has `submitted_at`,
+  a published/archived assessment its stamp, a reply its post (and a post none); scores and penalties are
+  percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
+  20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
+  50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
+  body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
+  `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead

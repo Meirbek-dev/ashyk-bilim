@@ -40,9 +40,9 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     .await
     .unwrap();
     let assessment: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle,
+        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)

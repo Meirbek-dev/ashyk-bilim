@@ -148,6 +148,20 @@ DELETE FROM users WHERE id = :'uid';             -- the rest cascades; a remaini
 COMMIT;
 ```
 
+### 2.4 Integrity checks skipped by a migration
+
+A migration adds a CHECK through `schema_try_check` (apps/server/AGENTS.md): when existing rows violate it,
+the check is not added, the migrate log shows `WARNING: schema_try_check: <name> skipped`, and the
+check is recorded. After a deploy:
+
+```bash
+dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_at FROM schema_skipped_checks'
+```
+
+Zero rows is the expected state. For each row: find the offenders (`SELECT id FROM <table_name> WHERE NOT
+(<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
+migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
+
 ## 3. Routine
 
 ### 3.1 Deploy

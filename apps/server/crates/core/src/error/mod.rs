@@ -176,6 +176,16 @@ impl From<sqlx::Error> for Error {
         let Some(db) = err.as_database_error() else {
             return Self::Db(err);
         };
+        // Two writers appending to the same chapter/course/assessment at once
+        // both took MAX(position) + 1: the sibling-position key refuses the
+        // second (schema review item 5). A retry appends after the first.
+        if db.is_unique_violation()
+            && db
+                .constraint()
+                .is_some_and(|c| c.ends_with("_position_key"))
+        {
+            return Self::conflict("another change moved these items at the same time; retry");
+        }
         if !db.is_foreign_key_violation() || !db.message().starts_with("insert or update") {
             return Self::Db(err);
         }

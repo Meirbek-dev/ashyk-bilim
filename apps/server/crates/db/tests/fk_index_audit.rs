@@ -54,9 +54,10 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
 
 #[ab_testdb::test]
 async fn every_foreign_key_has_a_leading_index(pool: PgPool) {
-    // A key is covered when some index starts with exactly its columns (in
-    // any order) and is either complete or partial only on `<col> IS NOT
-    // NULL` (a key check never looks for NULL).
+    // A key is covered when some index starts with the key's first column
+    // (a composite (parent_id, course_id) key is served by the parent_id
+    // index) and is either complete or partial only on `<col> IS NOT NULL`
+    // (a key check never looks for NULL).
     let missing: Vec<(String, String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, \
                 (SELECT string_agg(a.attname, ',' ORDER BY a.attnum) FROM pg_attribute a \
@@ -69,8 +70,7 @@ async fn every_foreign_key_has_a_leading_index(pool: PgPool) {
                  WHERE i.indrelid = c.conrelid \
                    AND (i.indpred IS NULL \
                         OR pg_get_expr(i.indpred, i.indrelid) ~ '^\\(*[a-z_]+ IS NOT NULL\\)*$') \
-                   AND (i.indkey::int2[])[0:cardinality(c.conkey) - 1] @> c.conkey \
-                   AND (i.indkey::int2[])[0:cardinality(c.conkey) - 1] <@ c.conkey) \
+                   AND i.indkey[0] = c.conkey[1]) \
           ORDER BY 1, 2",
     )
     .fetch_all(&pool)

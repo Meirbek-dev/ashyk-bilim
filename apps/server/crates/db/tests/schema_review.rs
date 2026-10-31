@@ -8,6 +8,12 @@
 //!   either removes the notifications that link into it.
 //! - item 24: the retention sweep deletes old operational logs and keeps
 //!   learner work (graded code-run output, live jobs).
+//! - item 1: a row repeating its parent's course_id cannot disagree with it,
+//!   and follows a parent that changes course.
+//! - item 5: sibling positions are unique at commit; a reorder inside one
+//!   transaction passes through duplicates.
+//! - items 6, 7, 28: the coherence / bounds / shape checks exist (none was
+//!   skipped on the clean test database) and bite.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::config::RetentionConfig;
@@ -59,9 +65,9 @@ async fn world(pool: &PgPool) -> World {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle,
+        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)
@@ -276,4 +282,129 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(again, ab_db::retention::RetentionCounts::default());
+}
+
+#[ab_testdb::test]
+async fn course_scoped_children_follow_their_parent(pool: PgPool) {
+    let w = world(&pool).await;
+    let other: Uuid =
+        sqlx::query_scalar("INSERT INTO courses (name) VALUES ('other') RETURNING id")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    // A submission claiming another course than its assessment's is refused.
+    let wrong = sqlx::query(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number)
+         VALUES ($1, $2, $3, 1)",
+    )
+    .bind(w.assessment)
+    .bind(other)
+    .bind(w.user)
+    .execute(&pool)
+    .await;
+    assert!(wrong.is_err(), "course_id must match the assessment's");
+    // A reply lives in its post's course.
+    let post: Uuid = sqlx::query_scalar(
+        "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let reply = sqlx::query(
+        "INSERT INTO course_discussions (course_id, user_id, parent_id, kind, content)
+         VALUES ($1, $2, $3, 'reply', 'r')",
+    )
+    .bind(other)
+    .bind(w.user)
+    .bind(post)
+    .execute(&pool)
+    .await;
+    assert!(reply.is_err(), "a reply must stay in its post's course");
+    let no_parent = sqlx::query(
+        "INSERT INTO course_discussions (course_id, user_id, kind, content) VALUES ($1, $2, 'reply', 'r')",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .execute(&pool)
+    .await;
+    assert!(no_parent.is_err(), "a reply needs its post");
+}
+
+#[ab_testdb::test]
+async fn sibling_positions_are_unique_at_commit(pool: PgPool) {
+    let w = world(&pool).await;
+    let chapter: Uuid = sqlx::query_scalar("SELECT chapter_id FROM activities WHERE id = $1")
+        .bind(w.activity)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let second: Uuid = sqlx::query_scalar(
+        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+         VALUES ($1, $2, 'b', 'dynamic', 'dynamic_page', 2) RETURNING id",
+    )
+    .bind(chapter)
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // A swap one row at a time passes through a duplicate inside the transaction.
+    let mut tx = pool.begin().await.unwrap();
+    for (id, position) in [(second, 1), (w.activity, 2)] {
+        sqlx::query("UPDATE activities SET position = $2 WHERE id = $1")
+            .bind(id)
+            .bind(position)
+            .execute(&mut *tx)
+            .await
+            .unwrap();
+    }
+    tx.commit().await.unwrap();
+    // A duplicate that outlives its statement is refused.
+    let dup = sqlx::query("UPDATE activities SET position = 1 WHERE id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await;
+    assert!(dup.is_err(), "two activities at position 1");
+}
+
+#[ab_testdb::test]
+async fn integrity_checks_exist_and_bite(pool: PgPool) {
+    let skipped: i64 = sqlx::query_scalar("SELECT count(*) FROM schema_skipped_checks")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(skipped, 0, "a review check was skipped on a clean database");
+    let w = world(&pool).await;
+    for bad in [
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, status)
+         VALUES ($1, $2, $3, 7, 'pending')",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, final_score)
+         VALUES ($1, $2, $3, 8, 100.5)",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, answers)
+         VALUES ($1, $2, $3, 9, '[]')",
+    ] {
+        let refused = sqlx::query(bad)
+            .bind(w.assessment)
+            .bind(w.course)
+            .bind(w.user)
+            .execute(&pool)
+            .await;
+        assert!(refused.is_err(), "{bad}");
+    }
+    let mismatched = sqlx::query(
+        "INSERT INTO assessment_items (assessment_id, kind, body) VALUES ($1, 'code', '{\"kind\": \"choice\"}')",
+    )
+    .bind(w.assessment)
+    .execute(&pool)
+    .await;
+    assert!(mismatched.is_err(), "an item body is tagged with its kind");
+    let unpublished = sqlx::query("UPDATE assessments SET published_at = NULL WHERE id = $1")
+        .bind(w.assessment)
+        .execute(&pool)
+        .await;
+    assert!(
+        unpublished.is_err(),
+        "a published assessment keeps published_at"
+    );
 }

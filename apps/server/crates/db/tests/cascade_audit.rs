@@ -45,7 +45,7 @@ const ATTEMPT_DELETE: &str = "only preview attempts are deleted on their own";
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
     (
         "activity_progress",
-        "activity_id",
+        "course_id,activity_id",
         "activities",
         ACTIVITY_DELETE,
     ),
@@ -127,7 +127,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("course_discussions", "course_id", "courses", COURSE_DELETE),
     (
         "course_discussions",
-        "parent_id",
+        "course_id,parent_id",
         "course_discussions",
         "a post others replied to stays as a tombstone (2026-10-14); only its author's own replies cascade",
     ),
@@ -153,7 +153,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "file_submission_attempts",
-        "file_submission_id",
+        "file_submission_id,course_id",
         "file_submissions",
         "a file task goes only with its activity or course (ACTIVITY_DELETE)",
     ),
@@ -191,7 +191,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("notifications", "user_id", "users", USER_ERASURE),
     (
         "submissions",
-        "assessment_id",
+        "assessment_id,course_id",
         "assessments",
         "an assessment goes only with its activity or course (ACTIVITY_DELETE)",
     ),
@@ -203,7 +203,12 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "trails",
         "a trail is the user's own enrolment list",
     ),
-    ("trail_steps", "activity_id", "activities", ACTIVITY_DELETE),
+    (
+        "trail_steps",
+        "activity_id,course_id",
+        "activities",
+        ACTIVITY_DELETE,
+    ),
     ("trail_steps", "course_id", "courses", COURSE_DELETE),
     (
         "trail_steps",
