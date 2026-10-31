@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar'
 import GradeForm from '@/features/grading/review/components/GradeForm'
@@ -187,6 +187,13 @@ describe('teacher review controls', () => {
     mocks.saveGradeMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.saveGradingDraftMock.mockResolvedValue(createSubmission({ status: 'PUBLISHED' }))
     mocks.mutateMock.mockResolvedValue(undefined)
+    // "Tomorrow" must sit in the calendar's month: on the last day of a month it is the next one (CI 2026-10-31).
+    vi.useFakeTimers({ toFake: ['Date'], shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 5, 15, 9))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows publish preview dialog and publishes only grade-ready submissions', async () => {
