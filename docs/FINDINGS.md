@@ -28,14 +28,6 @@ Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over
 deploys an outage, a failed nightly backup or a filling disk goes unnoticed
 until someone looks.
 
-### 13. Production release gate awaits its first hosted run
-The `web-release-e2e` CI job now gates production publication on browser checks
-against the built image and a synthetic backup/restore integrity drill. Focused
-production browser and fixture checks pass; the complete image/restore lane still needs
-its first hosted validation. The four real Judge0 verdict, reload and graded-hand-in
-checks pass locally; their hosted shard still needs validation. The longer production
-journey remains a local regression suite.
-
 ### 31. University proxy response-header limit (operating constraint)
 The university proxy answers 502 when response headers overflow its 4 KiB buffer.
 The edge hides `Link` on web responses and deployment smoke checks require headers

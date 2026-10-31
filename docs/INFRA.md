@@ -445,7 +445,7 @@ Next.js leftovers stage 2 must remove:
 - Hard-coded `cs-mooc.tou.edu.kz` in `apps/web/next.config.ts`
   (`serverActions.allowedOrigins`, `allowedDevOrigins`) and the dev-only
   `CONTENT_REWRITE_TARGET` rewrite.
-- `scripts/run-vitest.mjs` Vitest pin (FINDINGS #13); `test` script name is
+- `scripts/run-vitest.mjs` Vitest pin; `test` script name is
   fine, `e2e` is today `test:e2e`.
 
 ## Stage 2 e2e stand
