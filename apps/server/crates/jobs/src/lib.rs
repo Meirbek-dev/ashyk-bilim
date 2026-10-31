@@ -6,9 +6,6 @@
 //! `LISTEN jobs_new` with an interval poll as the safety net. Heartbeats keep
 //! claims fresh; a reaper tick recovers jobs from dead workers. Cancellation
 //! drains in-flight jobs before returning (compose `stop_grace_period`).
-//!
-//! Remaining for slice 0.8: the cron leader (job_schedules ticker behind a
-//! Postgres advisory lock).
 
 pub mod handlers;
 

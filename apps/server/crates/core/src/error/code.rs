@@ -3,8 +3,8 @@
 //! Every user-visible failure mode has exactly one entry here. The wire code is
 //! the kebab-case string; the frontend's i18n catalogs key off it. Adding a code:
 //! add one row to the macro invocation - the snapshot test below makes the
-//! addition visible in the diff, and a sync script propagates codes to the web
-//! app's message catalogs (phase P9).
+//! addition visible in the diff, and the contract carries it to the webs (web-2's
+//! `presentError` map fails its type check until the code has a text).
 
 use serde::{Deserialize, Serialize};
 

@@ -2,9 +2,9 @@
 //! provisioner machine-user PAT.
 //!
 //! Wire shapes are pinned by wiremock fixtures in `tests/zitadel.rs` that
-//! replicate responses captured from a live Zitadel (2026-08-16, image digest
-//! in docker-compose.rewrite.yml). If Zitadel changes shape on upgrade, those
-//! tests are the tripwire.
+//! replicate responses captured from a live Zitadel (2026-08-16; the image is
+//! pinned in compose.yaml). If Zitadel changes shape on upgrade, those tests
+//! are the tripwire.
 
 use ab_core::{Error, ErrorCode, Result};
 use secrecy::{ExposeSecret, SecretString};
