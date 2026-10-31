@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM auth_audit_log WHERE id IN (\n             SELECT id FROM auth_audit_log\n             WHERE created_at < now() - make_interval(days => $1) LIMIT 5000)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "36e599ff22987930e96ecb0dd7683e0842adb8567bad257accd03cb6e10e9fbe"
+}

@@ -1114,40 +1114,48 @@ impl FileSubmissionsService {
         preview: bool,
     ) -> Result<AttemptRow> {
         let user_id = actor.user_id;
-        // BUG-285: a learner's cap and numbering never count previews.
-        let completed =
-            ab_db::file_submissions::count_completed_attempts(&self.pool, row.id, user_id, preview)
-                .await?;
-        if !preview
-            && let Some(max) = row.max_attempts
-            && completed >= i64::from(max)
-        {
-            return Err(Error::app_with_details(
-                ErrorCode::Conflict,
-                "maximum number of attempts reached",
-                serde_json::json!({ "completed_attempts": completed, "max_attempts": max }),
-            ));
+        // A submit landing between the count and the insert takes the number
+        // (unique per learner and task): count again once.
+        for _ in 0..2 {
+            // BUG-285: a learner's cap and numbering never count previews.
+            let completed = ab_db::file_submissions::count_completed_attempts(
+                &self.pool, row.id, user_id, preview,
+            )
+            .await?;
+            if !preview
+                && let Some(max) = row.max_attempts
+                && completed >= i64::from(max)
+            {
+                return Err(Error::app_with_details(
+                    ErrorCode::Conflict,
+                    "maximum number of attempts reached",
+                    serde_json::json!({ "completed_attempts": completed, "max_attempts": max }),
+                ));
+            }
+            let number = i32::try_from(completed)
+                .unwrap_or(i32::MAX)
+                .saturating_add(1);
+            let id = ab_db::file_submissions::insert_attempt(
+                &self.pool,
+                row.id,
+                row.course_id,
+                user_id,
+                number,
+                preview,
+            )
+            .await?;
+            if let Some(id) = id {
+                return ab_db::file_submissions::get_attempt(&self.pool, id)
+                    .await?
+                    .ok_or_else(|| Error::not_found("attempt"));
+            }
+            if let Some(open) =
+                ab_db::file_submissions::open_attempt(&self.pool, row.id, user_id).await?
+            {
+                return Ok(open);
+            }
         }
-        let number = i32::try_from(completed)
-            .unwrap_or(i32::MAX)
-            .saturating_add(1);
-        let id = ab_db::file_submissions::insert_attempt(
-            &self.pool,
-            row.id,
-            row.course_id,
-            user_id,
-            number,
-            preview,
-        )
-        .await?;
-        let Some(id) = id else {
-            return ab_db::file_submissions::open_attempt(&self.pool, row.id, user_id)
-                .await?
-                .ok_or_else(|| Error::not_found("attempt"));
-        };
-        ab_db::file_submissions::get_attempt(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("attempt"))
+        Err(Error::conflict("another attempt was just opened"))
     }
 
     /// A draft opened or its files replaced (each committed on its own): the learner is working on the course.

@@ -33,6 +33,13 @@ pub async fn insert_many(
            JOIN users u ON u.id = r.user_id AND u.status = 'active'
            WHERE NOT EXISTS (SELECT 1 FROM notification_preferences p
                              WHERE p.user_id = r.user_id AND $2 = ANY (p.disabled))
+             -- A link into a course or activity deleted meanwhile is not sent (the
+             -- generated course_id / activity_id columns are foreign keys).
+             AND ($3::jsonb->>'course_id' IS NULL
+                  OR EXISTS (SELECT 1 FROM courses c WHERE c.id = ($3::jsonb->>'course_id')::uuid))
+             AND ($3::jsonb->>'activity_id' IS NULL
+                  OR EXISTS (SELECT 1 FROM activities a
+                             WHERE a.id = ($3::jsonb->>'activity_id')::uuid))
            ON CONFLICT (user_id, dedup_key) DO NOTHING
            RETURNING id AS "id: NotificationId", user_id AS "user_id: UserId",
                      kind AS "kind: NotificationType", payload,
@@ -73,7 +80,7 @@ pub async fn upsert_work_submitted(
            folded AS (
                DELETE FROM notifications n USING recipients r
                WHERE n.user_id = r.user_id AND n.kind = 'work_submitted'
-                 AND n.read_at IS NULL AND n.payload->>'activity_id' = $2::text
+                 AND n.read_at IS NULL AND n.activity_id = $2
                RETURNING n.user_id, COALESCE((n.payload->>'count')::bigint, 1) AS works)
            INSERT INTO notifications (user_id, kind, payload)
            SELECT r.user_id, 'work_submitted',
@@ -81,12 +88,13 @@ pub async fn upsert_work_submitted(
                             to_jsonb(1 + COALESCE((SELECT sum(f.works) FROM folded f
                                                    WHERE f.user_id = r.user_id), 0)))
            FROM recipients r
+           WHERE EXISTS (SELECT 1 FROM activities a WHERE a.id = $2)
            RETURNING id AS "id: NotificationId", user_id AS "user_id: UserId",
                      kind AS "kind: NotificationType", payload,
                      (extract(epoch FROM created_at))::bigint AS "created_at!",
                      (extract(epoch FROM read_at))::bigint AS "read_at?""#,
         &ids,
-        activity_id.0.to_string(),
+        activity_id.0,
         payload,
     )
     .fetch_all(pool)

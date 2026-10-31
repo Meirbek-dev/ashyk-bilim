@@ -118,6 +118,36 @@ just backup
 `ALTER ROLE` back to the value in `.env.pre-pgpass`, restore both
 `.pre-pgpass` files, `dc up -d --wait`.
 
+### 2.3 Erasing a person
+
+The app never deletes a `users` row: an admin disables the account, the person's own
+account deletion anonymises it (`users.deleted_at`). A legal erasure request is done by hand.
+Learning records reference `users` with `ON DELETE RESTRICT` (ARCHITECTURE §8 "Schema
+guarantees"), so a bare `DELETE FROM users` fails while the person has submissions, file attempts,
+code runs, certificates, progress, enrolments, XP or uploads. Prefer anonymising (what self-deletion
+does: the row stays, the name/email/avatar go); grades and certificates others rely on stay valid.
+Only when the records themselves must go, in one transaction after `just backup`:
+
+```sql
+BEGIN;
+-- the person's work (grading_entries and item_feedback go with the submissions)
+DELETE FROM code_runs WHERE user_id = :'uid';
+DELETE FROM submissions WHERE user_id = :'uid';
+DELETE FROM file_submission_attempts WHERE user_id = :'uid';
+DELETE FROM certificate_users WHERE user_id = :'uid';
+DELETE FROM trail_steps WHERE user_id = :'uid';
+DELETE FROM trail_runs WHERE user_id = :'uid';
+DELETE FROM trails WHERE user_id = :'uid';
+DELETE FROM activity_progress WHERE user_id = :'uid';
+DELETE FROM course_progress WHERE user_id = :'uid';
+DELETE FROM xp_transactions WHERE user_id = :'uid';
+DELETE FROM gamification_completions WHERE user_id = :'uid';
+DELETE FROM gamification_profiles WHERE user_id = :'uid';
+DELETE FROM uploads WHERE created_by = :'uid';   -- objects are reaped by uploads:reap only when unreferenced
+DELETE FROM users WHERE id = :'uid';             -- the rest cascades; a remaining RESTRICT names the table
+COMMIT;
+```
+
 ## 3. Routine
 
 ### 3.1 Deploy

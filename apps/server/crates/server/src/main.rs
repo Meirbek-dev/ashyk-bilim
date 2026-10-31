@@ -530,6 +530,13 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         serde_json::json!({}),
     )
     .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::maintenance::RETENTION_KIND,
+        std::time::Duration::from_hours(24),
+        serde_json::json!({}),
+    )
+    .await?;
 
     let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default())
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
@@ -554,6 +561,10 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::notifications::NotificationPruner::new(
             pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::maintenance::RetentionSweep::new(
+            pool.clone(),
+            config.retention,
         ))?
         .register(ab_jobs::handlers::progress::ProgressJob::staff_change(
             pool.clone(),

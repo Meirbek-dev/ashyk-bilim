@@ -421,6 +421,26 @@ not the template. Redesign rules:
    counters where genuinely concurrent (grading vs. draft; the draft save keeps
    its 409 until phase 9).
 
+### Schema guarantees (2026-11 schema review)
+
+The database enforces these itself; `crates/db/tests/schema_review.rs` holds one test per rule.
+
+- **No cascade from `users` onto learning records.** Submissions, file attempts, code runs, issued
+  certificates, progress, trails/enrolments, XP and uploads reference `users` with `ON DELETE RESTRICT`
+  (accounts are disabled or anonymised, never deleted by the app; manual erasure: RUNBOOK 2.3).
+  Settings-like rows (roles, preferences, notifications, reactions, analytics) still cascade.
+  `crates/db/tests/cascade_audit.rs` lists every remaining cascade with its reason.
+- **Attempt numbers** are unique per learner and task among counted attempts
+  (`submissions_attempt_number_key`, `file_submission_attempts_attempt_number_key`, both `WHERE NOT preview`).
+- **Notifications** carry generated `course_id` / `activity_id` columns (from the typed payload) with
+  `ON DELETE CASCADE`: deleting a course or activity removes the notifications that link into it.
+- **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
+  actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
+- **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead
+  jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
+  `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
+  timestamp for these sweeps and the analytics prune.
+
 ### SQLx usage
 
 - `query!` / `query_as!` (compile-time checked) for all static SQL. Offline cache
@@ -494,6 +514,9 @@ CREATE TABLE jobs (
   **2 years**, in 5 000-row batches through the primary key
   (`ab_db::analytics::prune_retention`), summarised in one tracing line.
   Dashboards only ever read the last 180 days.
+- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes
+  finished jobs, old sign-in audit rows and AI event logs and clears old
+  practice code-run output; windows in §8 "Schema guarantees".
 
 ## 10. Redis usage map
 
