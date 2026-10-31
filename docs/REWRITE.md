@@ -929,7 +929,8 @@ phase starts while the previous one has open items.
   `ashyq_backup_verify_20260930`, `ashyq_final_backup_verify_20260930` and
   `zitadel_bootstrap_failed_20260930` dropped (`cs_mooc`, ex-`openu`, stays, owner decision); IT asked to
   turn off SSH password auth and the proxy's duplicate headers.
-- The slow `activities … is_course_staff` query fixed.
+- The slow `activities … is_course_staff` query fixed. Done 2026-10-31: `activities_with_learner_work` checks
+  staff per distinct author plus an index on `code_runs (assessment_id, user_id)` (1.4 s -> 27 ms on 41k runs).
 - Dev box: `temp-restore/` deleted, `git gc`.
 - Freeze: no new features; v2 gets only security, data-loss and phase-0 fixes. Flaky e2e
   quarantined (section 12); `DECISIONS.md` frozen.

@@ -800,6 +800,10 @@ pub async fn update_chapter(
 /// or a code run, by someone outside the course staff (`is_course_staff`).
 /// Such an activity (or its chapter) is unpublished, never deleted
 /// (DECISIONS 2026-10-14).
+///
+/// `is_course_staff` runs once per distinct author, not per row: `OFFSET 0`
+/// keeps the planner from pushing it into the scan. Pushed down, one staff
+/// account's 41k code runs cost 1.2-1.4 s in production (2026-10-29).
 pub async fn activities_with_learner_work<'e>(
     db: impl sqlx::PgExecutor<'e>,
     ids: &[uuid::Uuid],
@@ -807,15 +811,18 @@ pub async fn activities_with_learner_work<'e>(
     let rows = sqlx::query_scalar!(
         r#"SELECT a.id AS "id!: ActivityId" FROM activities a
            WHERE a.id = ANY($1) AND (
-               EXISTS (SELECT 1 FROM assessments s JOIN submissions u ON u.assessment_id = s.id
-                       WHERE s.activity_id = a.id AND NOT u.preview
-                         AND NOT is_course_staff(a.course_id, u.user_id))
-               OR EXISTS (SELECT 1 FROM assessments s JOIN code_runs r ON r.assessment_id = s.id
-                          WHERE s.activity_id = a.id AND NOT is_course_staff(a.course_id, r.user_id))
-               OR EXISTS (SELECT 1 FROM file_submissions f
-                          JOIN file_submission_attempts t ON t.file_submission_id = f.id
-                          WHERE f.activity_id = a.id AND NOT t.preview
-                            AND NOT is_course_staff(a.course_id, t.user_id)))"#,
+               EXISTS (SELECT 1 FROM (SELECT DISTINCT u.user_id FROM assessments s
+                                      JOIN submissions u ON u.assessment_id = s.id
+                                      WHERE s.activity_id = a.id AND NOT u.preview OFFSET 0) w
+                       WHERE NOT is_course_staff(a.course_id, w.user_id))
+               OR EXISTS (SELECT 1 FROM (SELECT DISTINCT r.user_id FROM assessments s
+                                         JOIN code_runs r ON r.assessment_id = s.id
+                                         WHERE s.activity_id = a.id OFFSET 0) w
+                          WHERE NOT is_course_staff(a.course_id, w.user_id))
+               OR EXISTS (SELECT 1 FROM (SELECT DISTINCT t.user_id FROM file_submissions f
+                                         JOIN file_submission_attempts t ON t.file_submission_id = f.id
+                                         WHERE f.activity_id = a.id AND NOT t.preview OFFSET 0) w
+                          WHERE NOT is_course_staff(a.course_id, w.user_id)))"#,
         ids
     )
     .fetch_all(db)
