@@ -155,15 +155,18 @@ impl CoursesService {
                 .ok_or_else(|| Error::not_found("user"))?,
         };
         Self::not_creator(&course, user_id)?;
-        if !ab_db::catalog::insert_contributor(&self.pool, course_id, user_id, role, "active")
-            .await?
+        let projector = ProgressProjector::new(self.pool.clone());
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::catalog::insert_contributor(&mut *tx, course_id, user_id, role, "active").await?
         {
             return Err(Error::conflict("user is already on the course roster"));
         }
         // BUG-303: a member joining the staff leaves the allowlists/overrides.
-        ProgressProjector::new(self.pool.clone())
-            .after_staff_change(user_id, Some(course_id))
-            .await;
+        let followup = projector
+            .owe_staff_change(&mut tx, user_id, Some(course_id))
+            .await?;
+        tx.commit().await?;
+        projector.settle(followup).await;
         Self::notify_joined(&self.pool, &course, user_id, role).await;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
@@ -184,20 +187,23 @@ impl CoursesService {
         Self::not_creator(&course, user_id)?;
         let before = ab_db::catalog::get_contributor(&self.pool, course_id, user_id).await?;
         let was_pending = before.as_ref().is_some_and(|c| c.status == "pending");
-        if !ab_db::catalog::update_contributor(&self.pool, course_id, user_id, role, status).await?
-        {
+        let projector = ProgressProjector::new(self.pool.clone());
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::catalog::update_contributor(&mut *tx, course_id, user_id, role, status).await? {
             return Err(Error::not_found("contributor"));
         }
+        // BUG-291: a deactivated / demoted author with a run is a member again.
+        let followup = projector
+            .owe_staff_change(&mut tx, user_id, Some(course_id))
+            .await?;
+        tx.commit().await?;
+        projector.settle(followup).await;
         if was_pending && status == Some("active") {
             let joined_as = role
                 .or_else(|| before.as_ref().map(|c| c.role.as_str()))
                 .unwrap_or("contributor");
             Self::notify_joined(&self.pool, &course, user_id, joined_as).await;
         }
-        // BUG-291: a deactivated / demoted author with a run is a member again.
-        ProgressProjector::new(self.pool.clone())
-            .after_staff_change(user_id, Some(course_id))
-            .await;
         ab_db::catalog::get_contributor(&self.pool, course_id, user_id)
             .await?
             .ok_or_else(|| Error::not_found("contributor"))
@@ -232,13 +238,17 @@ impl CoursesService {
             self.manageable(actor, course_id).await?;
             Self::not_creator(&course, user_id)?;
         }
-        if !ab_db::catalog::delete_contributor(&self.pool, course_id, user_id).await? {
+        let projector = ProgressProjector::new(self.pool.clone());
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::catalog::delete_contributor(&mut *tx, course_id, user_id).await? {
             return Err(Error::not_found("contributor"));
         }
         // BUG-291: a removed author with a run is a member again.
-        ProgressProjector::new(self.pool.clone())
-            .after_staff_change(user_id, Some(course_id))
-            .await;
+        let followup = projector
+            .owe_staff_change(&mut tx, user_id, Some(course_id))
+            .await?;
+        tx.commit().await?;
+        projector.settle(followup).await;
         Ok(())
     }
 

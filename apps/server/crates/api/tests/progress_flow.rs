@@ -639,6 +639,51 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
     assert_eq!(after["total_required_count"], 2, "{after}");
     assert_eq!(after["completed_required_count"], 1, "{after}");
     assert_eq!(after["progress_pct"], 50.0, "{after}");
+    // The pass was owed in the delete's transaction and done inline: its job is gone, not waiting for a worker.
+    assert_eq!(progress_jobs(&app.pool).await, 0);
+}
+
+async fn progress_jobs(pool: &PgPool) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM jobs WHERE kind LIKE 'progress:%'")
+        .fetch_one(pool)
+        .await
+        .unwrap()
+}
+
+/// REWRITE 4.3: a progress pass is owed in the writer's transaction. A rolled-back write owes nothing; a committed
+/// one whose writer died before settling still has its job, due after the grace.
+#[ab_testdb::test]
+async fn a_progress_pass_lands_or_rolls_back_with_its_write(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _) = public_course(&app, &teacher, "Followups 101").await;
+    let course = ab_core::id::CourseId(course_id.parse().unwrap());
+    let projector = ab_domain::progress::ProgressProjector::new(app.pool.clone());
+
+    let mut tx = app.pool.begin().await.unwrap();
+    let rolled_back = projector.owe_course_change(&mut tx, course).await.unwrap();
+    drop(tx);
+    projector.settle(rolled_back).await;
+    assert_eq!(
+        progress_jobs(&app.pool).await,
+        0,
+        "a rolled-back write owes nothing"
+    );
+
+    let mut tx = app.pool.begin().await.unwrap();
+    let _crashed = projector.owe_course_change(&mut tx, course).await.unwrap();
+    tx.commit().await.unwrap();
+    let (status, waiting): (String, bool) = sqlx::query_as(
+        "SELECT status, run_at > now() FROM jobs WHERE kind = 'progress:course-change'",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (status.as_str(), waiting),
+        ("queued", true),
+        "the worker takes it after the grace"
+    );
 }
 
 /// BUG-176: quiz / exam / code / file-submission activities complete through

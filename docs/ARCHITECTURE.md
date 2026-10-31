@@ -459,6 +459,15 @@ CREATE TABLE jobs (
 
 - **Enqueue is an INSERT in the caller's transaction** — a grade publish and its
   audit/XP/email jobs commit or roll back together (no outbox needed).
+- **Progress follow-ups** (`ProgressProjector::owe_*` → `Followup`, REWRITE 4.3): every
+  writer that changes what progress counts (curriculum deletes/moves/publish, roster and
+  group membership, overrides and late rules, hand-ins and grades) records the
+  re-projection as a job delayed by one minute in its own transaction, then hands the
+  `Followup` to `settle` after the commit: the work runs inline (at most 5 s on the
+  request), the job is deleted when it succeeded and made due at once when it did not.
+  A process that dies between commit and settle leaves the job, which the worker runs
+  after the grace. Role grant changes still owe theirs in a second transaction
+  (the role tables go with REWRITE 6.3).
 - Claim: `FOR UPDATE SKIP LOCKED` batch; wakeup via `LISTEN/NOTIFY` with 1s poll
   fallback; heartbeat every 15s; a reaper requeues `running` jobs with stale
   heartbeats; exponential backoff with jitter; after `max_attempts` → `dead` with
@@ -575,7 +584,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | Format | `cargo fmt --check` | |
 | Query validity | `cargo sqlx prepare --check` | SQL matches schema at build time |
 | Unit | nextest | pure domain logic |
-| DB | `#[sqlx::test]` (per-test DB, auto-migrated) | queries, constraints, queue semantics |
+| DB | `#[ab_testdb::test]` (per-test clone of one migrated template) | queries, constraints, queue semantics |
 | HTTP | testkit harness: real Axum app + test DB + wiremock for Zitadel/Judge0/Resend/LLM | handlers, auth, RBAC, error envelopes — asserted via `insta` snapshots with id/time redactions |
 | Contract | `insta` snapshot of full OpenAPI doc + `oasdiff` label | every contract change visible in diff |
 | RBAC sweep | table-driven test over route list | no unprotected mutating endpoint |

@@ -2,7 +2,7 @@
 
 use ab_core::Result;
 use ab_core::id::{CourseId, UserId, UsergroupId};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 pub struct UsergroupRow {
     pub id: UsergroupId,
@@ -110,9 +110,9 @@ pub async fn update_usergroup(
     Ok(updated.rows_affected() == 1)
 }
 
-pub async fn delete_usergroup(pool: &PgPool, id: UsergroupId) -> Result<bool> {
+pub async fn delete_usergroup(db: impl sqlx::PgExecutor<'_>, id: UsergroupId) -> Result<bool> {
     let deleted = sqlx::query!("DELETE FROM usergroups WHERE id = $1", id.0)
-        .execute(pool)
+        .execute(db)
         .await?;
     Ok(deleted.rows_affected() == 1)
 }
@@ -129,8 +129,11 @@ pub async fn existing_ids(pool: &PgPool, ids: &[UsergroupId]) -> Result<Vec<User
 }
 
 /// Batch add; the service checks the users exist, duplicates are ignored.
-pub async fn add_members(pool: &PgPool, id: UsergroupId, user_ids: &[UserId]) -> Result<()> {
-    let mut tx = pool.begin().await?;
+pub async fn add_members(
+    conn: &mut PgConnection,
+    id: UsergroupId,
+    user_ids: &[UserId],
+) -> Result<()> {
     for user_id in user_ids {
         sqlx::query!(
             r#"INSERT INTO usergroup_members (usergroup_id, user_id)
@@ -138,20 +141,23 @@ pub async fn add_members(pool: &PgPool, id: UsergroupId, user_ids: &[UserId]) ->
             id.0,
             user_id.0
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 
-pub async fn remove_members(pool: &PgPool, id: UsergroupId, user_ids: &[UserId]) -> Result<()> {
+pub async fn remove_members(
+    db: impl sqlx::PgExecutor<'_>,
+    id: UsergroupId,
+    user_ids: &[UserId],
+) -> Result<()> {
     sqlx::query!(
         "DELETE FROM usergroup_members WHERE usergroup_id = $1 AND user_id = ANY($2)",
         id.0,
         &user_ids.iter().map(|u| u.0).collect::<Vec<_>>()
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -219,7 +225,10 @@ pub async fn list_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<Cours
 /// BUG-318: courses whose progress depends on the group's membership -
 /// linked ones and those with an assessment allowlisting the group (the
 /// access check ignores the link).
-pub async fn affected_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<CourseId>> {
+pub async fn affected_course_ids(
+    db: impl sqlx::PgExecutor<'_>,
+    id: UsergroupId,
+) -> Result<Vec<CourseId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT course_id AS "course_id!: CourseId"
            FROM usergroup_courses WHERE usergroup_id = $1
@@ -228,7 +237,7 @@ pub async fn affected_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<C
            JOIN assessments s ON s.id = g.assessment_id WHERE g.usergroup_id = $1"#,
         id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(ids)
 }

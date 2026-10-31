@@ -357,6 +357,8 @@ struct FinalizeOptions {
     /// judged at arrival, so a hand-in that re-grades or waits for Judge0
     /// past the due date is still on time. `None` is now.
     arrived_at: Option<i64>,
+    /// The learner handed it in themselves (enrols them, BUG-251); `false` is the timer's auto-submit.
+    by_learner: bool,
 }
 
 #[derive(Clone)]
@@ -690,15 +692,16 @@ impl SubmissionsService {
         let draft = ab_db::submissions::get_submission(&mut *tx, id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
+        let followup = self
+            .projector
+            .owe_submission(&mut tx, assessment_id, actor.user_id, draft.preview)
+            .await?;
         tx.commit().await?;
+        self.projector.settle(followup).await;
         let total =
             usize::try_from(ab_db::assessments::count_items(&self.pool, assessment_id).await?)
                 .unwrap_or(0);
-        let preview = draft.preview;
         let submission = self.student_view(draft, &state.effective, total).await?;
-        self.projector
-            .after_submission(assessment_id, actor.user_id, preview)
-            .await;
         Ok(Started {
             submission,
             created,
@@ -813,25 +816,30 @@ impl SubmissionsService {
                 serde_json::json!({ "retry_after_seconds": retry_after }),
             ));
         }
+        let mut tx = self.pool.begin().await?;
         if !ab_db::submissions::save_draft_answers(
-            &self.pool,
+            &mut *tx,
             id,
             &answers_to_value(&merged),
             expected_draft_version,
         )
         .await?
         {
+            drop(tx);
             let latest = ab_db::submissions::get_submission(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("submission"))?;
             return Err(stale_draft(expected_draft_version, latest.draft_version));
         }
-        let fresh = ab_db::submissions::get_submission(&self.pool, id)
+        let fresh = ab_db::submissions::get_submission(&mut *tx, id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
-        self.projector
-            .after_submission(fresh.assessment_id, fresh.user_id, ctx.preview)
-            .await;
+        let followup = self
+            .projector
+            .owe_submission(&mut tx, fresh.assessment_id, fresh.user_id, ctx.preview)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         let total = ctx.items.len();
         self.student_view(fresh, &ctx.effective, total).await
     }
@@ -954,15 +962,13 @@ impl SubmissionsService {
                     auto_submit_reason,
                     submitted_at: due_hand_in.map(|(at, _)| at),
                     arrived_at: Some(due_hand_in.map_or(arrived_at, |(at, _)| at)),
+                    by_learner: true,
                 },
             )
             .await?
             else {
                 continue;
             };
-            self.projector
-                .after_submission(fresh.assessment_id, fresh.user_id, preview)
-                .await;
             return self.student_view(fresh, &effective, total).await;
         }
         Err(Error::conflict(
@@ -1099,20 +1105,27 @@ impl SubmissionsService {
             },
         )
         .await?;
-        attempts.commit().await?;
         if !written {
+            drop(attempts);
             let row = ab_db::submissions::get_submission(pool, submission.id).await?;
             if row.is_some_and(|row| row.status == SubmissionStatus::Draft) {
                 return Ok(None);
             }
             return Err(Error::conflict("submission was already submitted"));
         }
+        // The hand-in, its snapshots, grade entry, audit row and the progress it owes commit together: a crash
+        // in between used to leave a submitted attempt with no grade entry.
         let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
-        ab_db::submissions::set_snapshots(pool, submission.id, &items_snapshot, &policy_snapshot)
-            .await?;
+        ab_db::submissions::set_snapshots(
+            &mut *attempts,
+            submission.id,
+            &items_snapshot,
+            &policy_snapshot,
+        )
+        .await?;
         if !verdict.manual {
             ab_db::submissions::insert_grading_entry(
-                pool,
+                &mut *attempts,
                 NewGradingEntry {
                     submission_id: submission.id,
                     graded_by: None,
@@ -1128,7 +1141,7 @@ impl SubmissionsService {
             .await?;
         }
         ab_db::assessments::insert_audit_event(
-            pool,
+            &mut *attempts,
             assessment.id,
             Some(submission.user_id),
             ab_core::assessments::AuditEventKind::SubmissionSubmitted,
@@ -1138,6 +1151,18 @@ impl SubmissionsService {
             }),
         )
         .await?;
+        let projector = ProgressProjector::new(pool.clone());
+        let followup = if opts.by_learner {
+            projector
+                .owe_submission(&mut attempts, assessment.id, submission.user_id, preview)
+                .await?
+        } else {
+            projector
+                .owe_reproject_submission(&mut attempts, assessment.id, submission.user_id)
+                .await?
+        };
+        attempts.commit().await?;
+        projector.settle(followup).await;
         let fresh = ab_db::submissions::get_submission(pool, submission.id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
@@ -1453,7 +1478,6 @@ impl SubmissionsService {
             )?)
         };
         let violation_count = submission.violation_count;
-        let (assessment_id, user_id) = (submission.assessment_id, submission.user_id);
         if Self::finalize(
             runner,
             events,
@@ -1471,6 +1495,7 @@ impl SubmissionsService {
                 auto_submit_reason: Some(reason),
                 submitted_at: Some(submitted_at),
                 arrived_at: None,
+                by_learner: false,
             },
         )
         .await?
@@ -1478,9 +1503,6 @@ impl SubmissionsService {
         {
             return Ok(false);
         }
-        ProgressProjector::new(pool.clone())
-            .reproject_submission(assessment_id, user_id)
-            .await;
         Ok(true)
     }
 }

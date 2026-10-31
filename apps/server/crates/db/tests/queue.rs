@@ -212,3 +212,44 @@ async fn stale_claim_cannot_resolve_a_newer_claim(pool: PgPool) {
 
     assert!(queue::succeed(&pool, &b).await.unwrap());
 }
+
+/// A writer that did the work inline drops its still-queued job; one a worker already claimed stays theirs.
+#[ab_testdb::test]
+async fn cancel_queued_drops_only_a_waiting_job(pool: PgPool) {
+    let job = NewJob::new("progress:course-change", serde_json::json!({}))
+        .delayed(Duration::from_mins(1));
+    let waiting = queue::enqueue(&pool, &job).await.unwrap().unwrap();
+    assert!(queue::cancel_queued(&pool, waiting).await.unwrap());
+    assert!(
+        !queue::cancel_queued(&pool, waiting).await.unwrap(),
+        "already gone"
+    );
+
+    let taken = queue::enqueue(
+        &pool,
+        &NewJob::new("progress:course-change", serde_json::json!({})),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(queue::claim(&pool, "w1", 10).await.unwrap().len(), 1);
+    assert!(
+        !queue::cancel_queued(&pool, taken).await.unwrap(),
+        "a running job is not cancelled"
+    );
+}
+
+/// A writer whose inline attempt failed makes its delayed job due at once: the next claim takes it.
+#[ab_testdb::test]
+async fn run_now_makes_a_delayed_job_due(pool: PgPool) {
+    let job =
+        NewJob::new("progress:learner", serde_json::json!({})).delayed(Duration::from_mins(1));
+    let id = queue::enqueue(&pool, &job).await.unwrap().unwrap();
+    assert!(
+        queue::claim(&pool, "w1", 10).await.unwrap().is_empty(),
+        "still in its grace"
+    );
+    queue::run_now(&pool, id).await.unwrap();
+    let claimed = queue::claim(&pool, "w1", 10).await.unwrap();
+    assert_eq!(claimed.iter().map(|j| j.id).collect::<Vec<_>>(), vec![id]);
+}

@@ -16,7 +16,7 @@ pub use ab_db::catalog::{
 use crate::catalog::courses::{Course, CoursesService};
 use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
-use crate::progress::ProgressProjector;
+use crate::progress::{Followup, ProgressProjector};
 
 /// The legacy `_VALID_SUBTYPES` map, mirrored by the DB CHECK constraint.
 pub const TYPE_SUBTYPES: &[(&str, &[&str])] = &[
@@ -326,19 +326,24 @@ impl CurriculumService {
 
     pub async fn delete_chapter(&self, actor: &Actor, chapter_id: ChapterId) -> Result<()> {
         let chapter = self.writable_chapter(actor, chapter_id).await?;
+        let mut tx = self.pool.begin().await?;
         // BUG-209: block uploads under it are released with the cascade.
-        ab_db::catalog::delete_chapter(&self.pool, chapter_id, UNREFERENCED_GRACE.as_secs_f64())
+        ab_db::catalog::delete_chapter(&mut tx, chapter_id, UNREFERENCED_GRACE.as_secs_f64())
             .await?;
         // Close the gap left behind.
-        let remaining: Vec<ChapterId> =
-            ab_db::catalog::list_chapters(&self.pool, chapter.course_id)
-                .await?
-                .into_iter()
-                .map(|c| c.id)
-                .collect();
-        ab_db::catalog::renumber_chapters(&self.pool, &remaining).await?;
+        let remaining: Vec<ChapterId> = ab_db::catalog::list_chapters(&mut *tx, chapter.course_id)
+            .await?
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        ab_db::catalog::renumber_chapters(&mut tx, &remaining).await?;
         // Its activities' progress rows cascaded away; refresh the totals.
-        self.projector.after_course_change(chapter.course_id).await;
+        let followup = self
+            .projector
+            .owe_course_change(&mut tx, chapter.course_id)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         Ok(())
     }
 
@@ -358,7 +363,9 @@ impl CurriculumService {
         ids.retain(|id| *id != chapter_id);
         let target = clamp_position(position, ids.len());
         ids.insert(target, chapter_id);
-        ab_db::catalog::renumber_chapters(&self.pool, &ids).await
+        let mut tx = self.pool.begin().await?;
+        ab_db::catalog::renumber_chapters(&mut tx, &ids).await?;
+        Ok(tx.commit().await?)
     }
 
     pub async fn add_activity(
@@ -666,10 +673,16 @@ impl CurriculumService {
                 .await?;
             }
         }
+        let followup = match published {
+            Some(_) => {
+                self.projector
+                    .owe_course_change(&mut tx, activity.course_id)
+                    .await?
+            }
+            None => Followup::none(),
+        };
         tx.commit().await?;
-        if published.is_some() {
-            self.projector.after_course_change(activity.course_id).await;
-        }
+        self.projector.settle(followup).await;
         self.activity_detail(actor, activity_id).await
     }
 
@@ -682,9 +695,10 @@ impl CurriculumService {
         expected_version: Option<i32>,
     ) -> Result<()> {
         let activity = self.writable_activity(actor, activity_id).await?;
+        let mut tx = self.pool.begin().await?;
         // BUG-209: block uploads under it are released with the cascade.
         if !ab_db::catalog::delete_activity(
-            &self.pool,
+            &mut tx,
             activity_id,
             expected_version,
             UNREFERENCED_GRACE.as_secs_f64(),
@@ -704,10 +718,15 @@ impl CurriculumService {
             });
         }
         let remaining =
-            ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
-        ab_db::catalog::renumber_activities(&self.pool, &remaining).await?;
+            ab_db::catalog::list_chapter_activity_ids(&mut *tx, activity.chapter_id).await?;
+        ab_db::catalog::renumber_activities(&mut tx, &remaining).await?;
         // Its progress rows cascaded away; refresh the learner totals.
-        self.projector.after_course_change(activity.course_id).await;
+        let followup = self
+            .projector
+            .owe_course_change(&mut tx, activity.course_id)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         Ok(())
     }
 
@@ -737,18 +756,20 @@ impl CurriculumService {
             }
         };
 
+        let mut tx = self.pool.begin().await?;
         if destination != activity.chapter_id {
-            ab_db::catalog::set_activity_chapter(&self.pool, activity_id, destination).await?;
+            ab_db::catalog::set_activity_chapter(&mut *tx, activity_id, destination).await?;
             // Close the gap in the source chapter.
             let source =
-                ab_db::catalog::list_chapter_activity_ids(&self.pool, activity.chapter_id).await?;
-            ab_db::catalog::renumber_activities(&self.pool, &source).await?;
+                ab_db::catalog::list_chapter_activity_ids(&mut *tx, activity.chapter_id).await?;
+            ab_db::catalog::renumber_activities(&mut tx, &source).await?;
         }
-        let mut ids = ab_db::catalog::list_chapter_activity_ids(&self.pool, destination).await?;
+        let mut ids = ab_db::catalog::list_chapter_activity_ids(&mut *tx, destination).await?;
         ids.retain(|id| *id != activity_id);
         let target = clamp_position(position, ids.len());
         ids.insert(target, activity_id);
-        ab_db::catalog::renumber_activities(&self.pool, &ids).await
+        ab_db::catalog::renumber_activities(&mut tx, &ids).await?;
+        Ok(tx.commit().await?)
     }
 
     /// Attach a file block: claims a finalized upload the actor owns whose

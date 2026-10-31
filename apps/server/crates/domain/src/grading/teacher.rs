@@ -1609,7 +1609,12 @@ impl GradingService {
             },
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_reproject_submission(&mut tx, row.assessment_id, row.user_id)
+            .await?;
         tx.commit().await?;
+        projector.settle(followup).await;
         match target {
             SubmissionStatus::Published => {
                 self.emit(
@@ -1632,9 +1637,6 @@ impl GradingService {
         self.emit_course(&row, assessment.activity_id, target, final_score, &feedback)
             .await;
         let fresh = self.load_submission(id).await?;
-        ProgressProjector::new(self.pool.clone())
-            .reproject_submission(fresh.assessment_id, fresh.user_id)
-            .await;
         crate::analytics::events::hooks::submission_status(
             &self.pool,
             fresh.id,
@@ -1843,10 +1845,12 @@ impl GradingService {
                 skipped += 1;
                 continue;
             }
+            let projector = ProgressProjector::new(self.pool.clone());
+            let followup = projector
+                .owe_reproject_submission(&mut tx, assessment_id, row.user_id)
+                .await?;
             tx.commit().await?;
-            ProgressProjector::new(self.pool.clone())
-                .reproject_submission(assessment_id, row.user_id)
-                .await;
+            projector.settle(followup).await;
             crate::analytics::events::hooks::submission_status(
                 &self.pool,
                 row.id,

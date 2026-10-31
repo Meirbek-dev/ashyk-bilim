@@ -552,11 +552,11 @@ impl AssessmentsService {
             serde_json::json!({ "mode": mode, "users": users.len(), "usergroups": groups.len() }),
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector.owe_course_change(&mut tx, course.id).await?;
         tx.commit().await?;
         // BUG-318: who may take it decides who must - re-aggregate the members.
-        ProgressProjector::new(self.pool.clone())
-            .after_course_change(course.id)
-            .await;
+        projector.settle(followup).await;
         self.access(actor, id).await
     }
 
@@ -607,12 +607,14 @@ impl AssessmentsService {
             ab_core::assessments::AuditEventKind::OverrideCreated,
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_lateness_change(&mut tx, id, Some(user_id), Some(actor.user_id))
+            .await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
-        ProgressProjector::new(self.pool.clone())
-            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
-            .await;
+        projector.settle(followup).await;
         if let Some(due) = input.due_at_override {
             self.notify_extension(&assessment, user_id, due).await;
         }
@@ -658,12 +660,14 @@ impl AssessmentsService {
             ab_core::assessments::AuditEventKind::OverrideUpdated,
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_lateness_change(&mut tx, id, Some(user_id), Some(actor.user_id))
+            .await?;
         tx.commit().await?;
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
-        ProgressProjector::new(self.pool.clone())
-            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
-            .await;
+        projector.settle(followup).await;
         if let Some(due) = input.due_at_override
             && previous_due != Some(due)
         {
@@ -692,13 +696,15 @@ impl AssessmentsService {
             ab_core::assessments::AuditEventKind::OverrideDeleted,
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_lateness_change(&mut tx, id, Some(user_id), Some(actor.user_id))
+            .await?;
         tx.commit().await?;
         // BUG-297: the waiver/extension is gone - the penalty comes back.
         // BUG-313: settled after commit on the durable path (a retried
         // job when it fails), never on the request future.
-        ProgressProjector::new(self.pool.clone())
-            .after_lateness_change(id, Some(user_id), Some(actor.user_id))
-            .await;
+        projector.settle(followup).await;
         Ok(())
     }
 

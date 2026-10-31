@@ -289,7 +289,7 @@ pub async fn list_user_submissions<'e>(
 /// Learner draft save under optimistic lock (`draft_version`). `false` =
 /// version mismatch or not a draft any more.
 pub async fn save_draft_answers(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     id: SubmissionId,
     answers: &serde_json::Value,
     expected_draft_version: i64,
@@ -302,7 +302,7 @@ pub async fn save_draft_answers(
         answers,
         expected_draft_version
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -334,7 +334,7 @@ pub async fn record_violation(
 
 /// Write-once snapshots of what the learner answered against.
 pub async fn set_snapshots(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     id: SubmissionId,
     items: &serde_json::Value,
     policy: &serde_json::Value,
@@ -346,7 +346,7 @@ pub async fn set_snapshots(
         items,
         policy
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }

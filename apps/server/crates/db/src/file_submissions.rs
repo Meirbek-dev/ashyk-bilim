@@ -328,7 +328,7 @@ impl AttemptRow {
 /// Open a draft (started now). `None` when the learner already has an open
 /// (draft or returned) attempt - the partial unique index absorbs the race.
 pub async fn insert_attempt(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     file_submission_id: FileSubmissionId,
     course_id: CourseId,
     user_id: UserId,
@@ -348,7 +348,7 @@ pub async fn insert_attempt(
         attempt_number,
         preview
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(id)
 }
@@ -507,7 +507,7 @@ pub async fn touch_attempt<'e>(
 
 /// Draft/returned → submitted under the lock.
 pub async fn submit_attempt(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     id: FileAttemptId,
     expected_version: i64,
     is_late: bool,
@@ -526,7 +526,7 @@ pub async fn submit_attempt(
         is_late,
         late_penalty_pct
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -545,7 +545,7 @@ pub struct GradeWrite<'a> {
 
 /// Grader write under the lock.
 pub async fn grade_attempt(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     id: FileAttemptId,
     expected_version: i64,
     grade: GradeWrite<'_>,
@@ -573,7 +573,7 @@ pub async fn grade_attempt(
         grade.graded_by.0,
         grade.raw_score
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }

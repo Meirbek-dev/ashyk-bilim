@@ -398,10 +398,15 @@ pub(crate) async fn settle_override(
     }
     // BUG-251: only a target with work has lateness to re-project, and an
     // override never enrols (no trail run from a grader's action).
+    // This pass is itself a retried job: a retry after a crash finds the work again and re-projects it.
     if !submitted.is_empty() {
-        ProgressProjector::new(pool.clone())
-            .reproject_submission(assessment.id, user_id)
-            .await;
+        let projector = ProgressProjector::new(pool.clone());
+        let mut tx = pool.begin().await?;
+        let followup = projector
+            .owe_reproject_submission(&mut tx, assessment.id, user_id)
+            .await?;
+        tx.commit().await?;
+        projector.settle(followup).await;
     }
     Ok(submitted)
 }

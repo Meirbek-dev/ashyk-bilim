@@ -4,7 +4,7 @@
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 #[derive(Debug, Clone)]
 pub struct CourseRow {
@@ -761,7 +761,10 @@ pub async fn get_chapter(pool: &PgPool, id: ChapterId) -> Result<Option<ChapterR
     Ok(row)
 }
 
-pub async fn list_chapters(pool: &PgPool, course_id: CourseId) -> Result<Vec<ChapterRow>> {
+pub async fn list_chapters(
+    db: impl sqlx::PgExecutor<'_>,
+    course_id: CourseId,
+) -> Result<Vec<ChapterRow>> {
     let rows = sqlx::query_as!(
         ChapterRow,
         r#"SELECT id AS "id: ChapterId", course_id AS "course_id: CourseId",
@@ -769,7 +772,7 @@ pub async fn list_chapters(pool: &PgPool, course_id: CourseId) -> Result<Vec<Cha
            FROM chapters WHERE course_id = $1 ORDER BY position, id"#,
         course_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(rows)
 }
@@ -864,30 +867,31 @@ async fn refuse_learner_work(
 /// Delete a chapter, releasing the uploads of the media blocks under it
 /// (BUG-209/242 - see [`delete_course`]; lock order chapter → activities →
 /// uploads).
-pub async fn delete_chapter(pool: &PgPool, id: ChapterId, grace_secs: f64) -> Result<bool> {
-    let mut tx = pool.begin().await?;
+pub async fn delete_chapter(
+    conn: &mut PgConnection,
+    id: ChapterId,
+    grace_secs: f64,
+) -> Result<bool> {
     sqlx::query_scalar!("SELECT id FROM chapters WHERE id = $1 FOR UPDATE", id.0)
-        .fetch_optional(&mut *tx)
+        .fetch_optional(&mut *conn)
         .await?;
     let activities = sqlx::query_scalar!(
         "SELECT id FROM activities WHERE chapter_id = $1 ORDER BY id FOR UPDATE",
         id.0
     )
-    .fetch_all(&mut *tx)
+    .fetch_all(&mut *conn)
     .await?;
-    refuse_learner_work(&mut tx, &activities).await?;
-    crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
-    delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
+    refuse_learner_work(&mut *conn, &activities).await?;
+    crate::file_submissions::delete_files_releasing(&mut *conn, &activities, grace_secs).await?;
+    delete_blocks_releasing(&mut *conn, &activities, None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
-    tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 
 /// Rewrite chapter positions 1..n (legacy clamp-and-renumber move).
-pub async fn renumber_chapters(pool: &PgPool, ordered_ids: &[ChapterId]) -> Result<()> {
-    let mut tx = pool.begin().await?;
+pub async fn renumber_chapters(conn: &mut PgConnection, ordered_ids: &[ChapterId]) -> Result<()> {
     for (index, id) in ordered_ids.iter().enumerate() {
         let position = i32::try_from(index).unwrap_or(i32::MAX).saturating_add(1);
         sqlx::query!(
@@ -895,10 +899,9 @@ pub async fn renumber_chapters(pool: &PgPool, ordered_ids: &[ChapterId]) -> Resu
             id.0,
             position
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 
@@ -981,7 +984,7 @@ pub async fn list_activities<'e>(
 }
 
 pub async fn list_chapter_activity_ids(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     chapter_id: ChapterId,
 ) -> Result<Vec<ActivityId>> {
     let ids = sqlx::query_scalar!(
@@ -989,7 +992,7 @@ pub async fn list_chapter_activity_ids(
            FROM activities WHERE chapter_id = $1 ORDER BY position, id"#,
         chapter_id.0
     )
-    .fetch_all(pool)
+    .fetch_all(db)
     .await?;
     Ok(ids)
 }
@@ -1071,35 +1074,33 @@ pub async fn update_activity(
 /// `false` when the activity is gone or, with `expected_version` (UX-313),
 /// no longer at that version - nothing is deleted then.
 pub async fn delete_activity(
-    pool: &PgPool,
+    conn: &mut PgConnection,
     id: ActivityId,
     expected_version: Option<i32>,
     grace_secs: f64,
 ) -> Result<bool> {
-    let mut tx = pool.begin().await?;
     let Some(locked) = sqlx::query_scalar!(
         "SELECT id FROM activities WHERE id = $1 AND ($2::int IS NULL OR version = $2) FOR UPDATE",
         id.0,
         expected_version
     )
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut *conn)
     .await?
     else {
         return Ok(false);
     };
-    refuse_learner_work(&mut tx, &[locked]).await?;
-    crate::file_submissions::delete_files_releasing(&mut tx, &[locked], grace_secs).await?;
-    delete_blocks_releasing(&mut tx, &[locked], None, grace_secs).await?;
+    refuse_learner_work(&mut *conn, &[locked]).await?;
+    crate::file_submissions::delete_files_releasing(&mut *conn, &[locked], grace_secs).await?;
+    delete_blocks_releasing(&mut *conn, &[locked], None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
-    tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 
 /// Reparent + renumber for a cross-chapter move (same course only).
 pub async fn set_activity_chapter(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     id: ActivityId,
     chapter_id: ChapterId,
 ) -> Result<()> {
@@ -1108,7 +1109,7 @@ pub async fn set_activity_chapter(
         id.0,
         chapter_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
@@ -1134,8 +1135,10 @@ pub async fn get_activity_content<'e>(
     Ok(row)
 }
 
-pub async fn renumber_activities(pool: &PgPool, ordered_ids: &[ActivityId]) -> Result<()> {
-    let mut tx = pool.begin().await?;
+pub async fn renumber_activities(
+    conn: &mut PgConnection,
+    ordered_ids: &[ActivityId],
+) -> Result<()> {
     for (index, id) in ordered_ids.iter().enumerate() {
         let position = i32::try_from(index).unwrap_or(i32::MAX).saturating_add(1);
         sqlx::query!(
@@ -1143,10 +1146,9 @@ pub async fn renumber_activities(pool: &PgPool, ordered_ids: &[ActivityId]) -> R
             id.0,
             position
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 
@@ -1385,7 +1387,7 @@ pub async fn get_contributor(
 
 /// Insert; `false` when the user already has a row on this course.
 pub async fn insert_contributor(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     course_id: CourseId,
     user_id: UserId,
     role: &str,
@@ -1400,13 +1402,13 @@ pub async fn insert_contributor(
         role,
         status
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(inserted.rows_affected() == 1)
 }
 
 pub async fn update_contributor(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     course_id: CourseId,
     user_id: UserId,
     role: Option<&str>,
@@ -1422,13 +1424,13 @@ pub async fn update_contributor(
         role,
         status
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
 
 pub async fn delete_contributor(
-    pool: &PgPool,
+    db: impl sqlx::PgExecutor<'_>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<bool> {
@@ -1437,7 +1439,7 @@ pub async fn delete_contributor(
         course_id.0,
         user_id.0
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(deleted.rows_affected() == 1)
 }

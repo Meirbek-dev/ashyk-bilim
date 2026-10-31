@@ -235,6 +235,37 @@ where
     Ok(done.rows_affected() == 1)
 }
 
+/// Drop a job still waiting in the queue: its writer did the work inline (a progress `Followup`). A job a worker
+/// already claimed is left alone. `false`: nothing was waiting.
+pub async fn cancel_queued<'e, E>(executor: E, id: JobId) -> Result<bool>
+where
+    E: sqlx::PgExecutor<'e>,
+{
+    let done = sqlx::query("DELETE FROM jobs WHERE id = $1 AND status = 'queued'")
+        .bind(id)
+        .execute(executor)
+        .await?;
+    Ok(done.rows_affected() == 1)
+}
+
+/// Make a queued job due now and wake the workers: its writer's inline attempt failed or ran out of time.
+pub async fn run_now<'e, E>(executor: E, id: JobId) -> Result<()>
+where
+    E: sqlx::PgExecutor<'e>,
+{
+    sqlx::query(
+        r"WITH due AS (
+              UPDATE jobs SET run_at = now() WHERE id = $1 AND status = 'queued' RETURNING kind
+          )
+          SELECT pg_notify($2, due.kind) FROM due",
+    )
+    .bind(id)
+    .bind(NOTIFY_CHANNEL)
+    .execute(executor)
+    .await?;
+    Ok(())
+}
+
 /// Return stale `running` jobs (dead worker) to the queue, or dead-letter them
 /// if attempts are exhausted. Returns how many jobs were recovered.
 pub async fn reap<'e, E>(executor: E, stale_after: Duration) -> Result<u64>

@@ -880,14 +880,19 @@ async fn live_events_reach_their_readers(pool: PgPool) {
         quiet.iter().all(|(e, _)| e != "progress.updated"),
         "{quiet:?}"
     );
+    let projector = ab_domain::progress::ProgressProjector::new(app.pool.clone());
+    let mut tx = app.pool.begin().await.unwrap();
     sqlx::query("UPDATE activities SET published = false WHERE course_id = $1::uuid")
         .bind(&course_id)
-        .execute(&app.pool)
+        .execute(&mut *tx)
         .await
         .unwrap();
-    ab_domain::progress::ProgressProjector::new(app.pool.clone())
-        .after_course_change(ab_core::id::CourseId(course_id.parse().unwrap()))
-        .await;
+    let followup = projector
+        .owe_course_change(&mut tx, ab_core::id::CourseId(course_id.parse().unwrap()))
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    projector.settle(followup).await;
     let events = read_stream(&base, &alice, "event: progress.updated").await;
     assert!(
         events.iter().any(

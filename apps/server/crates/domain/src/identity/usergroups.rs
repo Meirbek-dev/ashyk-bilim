@@ -199,10 +199,11 @@ impl UsergroupsService {
         self.writable(actor, id).await?;
         // BUG-318: the allowlist rows cascade away with the group - collect
         // the courses first.
-        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
-        ab_db::usergroups::delete_usergroup(&self.pool, id).await?;
+        let mut tx = self.pool.begin().await?;
+        let courses = ab_db::usergroups::affected_course_ids(&mut *tx, id).await?;
+        ab_db::usergroups::delete_usergroup(&mut *tx, id).await?;
+        self.reaggregate(tx, courses).await?;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
-        Self::reaggregate(&self.pool, courses).await;
         Ok(())
     }
 
@@ -224,8 +225,9 @@ impl UsergroupsService {
             .map(|u| u.id)
             .collect();
         reject_unknown("user_ids", "user", user_ids, &known)?;
-        ab_db::usergroups::add_members(&self.pool, id, user_ids).await?;
-        self.after_membership_change(id).await
+        let mut tx = self.pool.begin().await?;
+        ab_db::usergroups::add_members(&mut tx, id, user_ids).await?;
+        self.after_membership_change(tx, id).await
     }
 
     pub async fn remove_members(
@@ -235,24 +237,38 @@ impl UsergroupsService {
         user_ids: &[UserId],
     ) -> Result<()> {
         self.writable(actor, id).await?;
-        ab_db::usergroups::remove_members(&self.pool, id, user_ids).await?;
-        self.after_membership_change(id).await
+        let mut tx = self.pool.begin().await?;
+        ab_db::usergroups::remove_members(&mut *tx, id, user_ids).await?;
+        self.after_membership_change(tx, id).await
     }
 
     /// BUG-318: a group on an assessment's allowlist decides who must take
     /// it - re-aggregate every course it is linked to or allowlisted in.
-    async fn after_membership_change(&self, id: UsergroupId) -> Result<()> {
+    async fn after_membership_change(
+        &self,
+        mut tx: sqlx::Transaction<'static, sqlx::Postgres>,
+        id: UsergroupId,
+    ) -> Result<()> {
+        let courses = ab_db::usergroups::affected_course_ids(&mut *tx, id).await?;
+        self.reaggregate(tx, courses).await?;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Groups).await;
-        let courses = ab_db::usergroups::affected_course_ids(&self.pool, id).await?;
-        Self::reaggregate(&self.pool, courses).await;
         Ok(())
     }
 
-    async fn reaggregate(pool: &PgPool, course_ids: Vec<CourseId>) {
-        let projector = crate::progress::ProgressProjector::new(pool.clone());
+    /// Owe each course's re-aggregation in the membership write's transaction, commit, then settle them.
+    async fn reaggregate(
+        &self,
+        mut tx: sqlx::Transaction<'static, sqlx::Postgres>,
+        course_ids: Vec<CourseId>,
+    ) -> Result<()> {
+        let projector = crate::progress::ProgressProjector::new(self.pool.clone());
+        let mut followups = Vec::with_capacity(course_ids.len());
         for course_id in course_ids {
-            projector.after_course_change(course_id).await;
+            followups.push(projector.owe_course_change(&mut tx, course_id).await?);
         }
+        tx.commit().await?;
+        projector.settle_all(followups).await;
+        Ok(())
     }
 
     pub async fn linked_course_ids(&self, actor: &Actor, id: UsergroupId) -> Result<Vec<CourseId>> {

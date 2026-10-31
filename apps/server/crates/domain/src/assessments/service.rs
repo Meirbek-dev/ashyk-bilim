@@ -1056,13 +1056,15 @@ impl AssessmentsService {
         };
         Self::ensure_stays_ready((&assessment, &items), (&would_be, &items))?;
         ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_lateness_change(&mut tx, id, None, Some(actor.user_id))
+            .await?;
         tx.commit().await?;
         // BUG-312: one lateness rule for every learner - the new policy
         // re-prices every existing hand-in, as an override write does its
         // learner's, so a later unrelated write never moves a score.
-        ProgressProjector::new(self.pool.clone())
-            .after_lateness_change(id, None, Some(actor.user_id))
-            .await;
+        projector.settle(followup).await;
 
         self.detail(id).await
     }
@@ -1281,10 +1283,12 @@ impl AssessmentsService {
             },
         )
         .await?;
+        let projector = ProgressProjector::new(self.pool.clone());
+        let followup = projector
+            .owe_course_change(&mut tx, assessment.course_id)
+            .await?;
         tx.commit().await?;
-        ProgressProjector::new(self.pool.clone())
-            .after_course_change(assessment.course_id)
-            .await;
+        projector.settle(followup).await;
         ab_db::assessments::insert_audit_event(
             &self.pool,
             id,
@@ -1346,10 +1350,12 @@ impl AssessmentsService {
                 },
             )
             .await?;
+            let projector = ProgressProjector::new(pool.clone());
+            let followup = projector
+                .owe_course_change(&mut tx, assessment.course_id)
+                .await?;
             tx.commit().await?;
-            ProgressProjector::new(pool.clone())
-                .after_course_change(assessment.course_id)
-                .await;
+            projector.settle(followup).await;
             ab_db::assessments::insert_audit_event(
                 pool,
                 id,

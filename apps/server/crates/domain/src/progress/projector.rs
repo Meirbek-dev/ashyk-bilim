@@ -26,16 +26,44 @@ pub const STAFF_CHANGE_JOB: &str = "progress:staff-change";
 /// Queue kind of a deferred [`ProgressProjector::recalculate_course_for_all`];
 /// payload `{ course_id }` (BUG-310).
 pub const COURSE_CHANGE_JOB: &str = "progress:course-change";
-/// Queue kind of a deferred lateness settle ([`ProgressProjector::after_lateness_change`]);
+/// Queue kind of a deferred lateness settle ([`ProgressProjector::owe_lateness_change`]);
 /// payload `{ assessment_id, user_id | null, granted_by | null }` (BUG-312).
 pub const LATENESS_JOB: &str = "progress:lateness";
 
-/// Queue kind of a deferred grader-side re-projection of one learner.
+/// Queue kind of a deferred re-projection of one learner.
 ///
-/// ([`ProgressProjector::reproject_submission`] /
-/// [`ProgressProjector::reproject_file_attempt`]); payload
-/// `{ assessment_id | file_submission_id, user_id }` (BUG-313/314).
+/// ([`ProgressProjector::owe_submission`], [`ProgressProjector::owe_reproject_submission`] and their file-attempt
+/// twins); payload `{ assessment_id | file_submission_id, user_id, enrol? }` (BUG-313/314; `enrol` only for the
+/// learner's own work).
 pub const LEARNER_JOB: &str = "progress:learner";
+
+/// How long a follow-up's job waits before a worker may take it: the writer runs the work itself right after its
+/// commit ([`ProgressProjector::settle`]), so the job only matters when that process dies first.
+const FOLLOWUP_GRACE: std::time::Duration = std::time::Duration::from_mins(1);
+
+/// Progress work a writer owes once it commits.
+///
+/// Recorded as a delayed job in the writer's own transaction (REWRITE 4.3): the write and the promise to finish it
+/// land or roll back together. Hand it to
+/// [`ProgressProjector::settle`] after the commit; one never settled still runs, from the queue.
+#[must_use = "settle it after the commit (it still runs from the queue if dropped)"]
+#[derive(Debug)]
+pub struct Followup {
+    job: Option<ab_core::id::JobId>,
+    kind: &'static str,
+    payload: serde_json::Value,
+}
+
+impl Followup {
+    /// Nothing owed (a staff preview).
+    pub const fn none() -> Self {
+        Self {
+            job: None,
+            kind: "",
+            payload: serde_json::Value::Null,
+        }
+    }
+}
 
 /// How long a post-commit re-projection holds the response (UX-209): far
 /// under the 30 s request timeout, so a busy member lock never turns a
@@ -111,89 +139,66 @@ impl ProgressProjector {
     }
 
     // ── Entry points for write paths ────────────────────────────────────
+    //
+    // Each `owe_*` records its job in the writer's transaction; the writer hands the result to [`Self::settle`]
+    // after its commit.
 
-    /// After the learner's own submission work (start, save, submit) -
-    /// working on a course enrols them. A staff `preview` (UX-182) neither
-    /// enrols nor projects. Never fails the caller: projection errors are
-    /// logged and the next write (or a backfill) repairs them.
-    pub async fn after_submission(
+    /// The learner's own submission work (start, save, submit) - working on a course enrols them. A staff `preview`
+    /// (UX-182) neither enrols nor projects.
+    pub async fn owe_submission(
         &self,
+        conn: &mut PgConnection,
         assessment_id: AssessmentId,
         user_id: UserId,
         preview: bool,
-    ) {
-        if !preview {
-            self.submission_changed(assessment_id, user_id, true).await;
+    ) -> Result<Followup> {
+        if preview {
+            return Ok(Followup::none());
         }
+        let payload = serde_json::json!({ "assessment_id": assessment_id, "user_id": user_id, "enrol": true });
+        Self::owe(conn, LEARNER_JOB, payload).await
     }
 
-    /// After a change the learner did not make (grade, publish, deadline
-    /// extension, timer auto-submit): re-projects without enrolling -
-    /// BUG-251, a grader's action never creates a trail run.
-    ///
-    /// Goes through [`Self::after_commit`] (BUG-313/314): a busy member lock
-    /// or a failed pass is retried by a [`LEARNER_JOB`], never lost.
-    pub async fn reproject_submission(&self, assessment_id: AssessmentId, user_id: UserId) {
-        let this = self.clone();
-        self.after_commit(
-            LEARNER_JOB,
-            serde_json::json!({ "assessment_id": assessment_id, "user_id": user_id }),
-            async move { this.project_submission(assessment_id, user_id, false).await },
-        )
-        .await;
-    }
-
-    async fn submission_changed(&self, assessment_id: AssessmentId, user_id: UserId, enrol: bool) {
-        if let Err(err) = self.project_submission(assessment_id, user_id, enrol).await {
-            tracing::warn!(%assessment_id, %user_id, error = %err, "progress projection failed");
-        }
-    }
-
-    /// After the learner's own file-attempt change (best-effort, enrols;
-    /// a staff `preview` neither enrols nor projects, UX-182).
-    pub async fn after_file_attempt(
+    /// A change the learner did not make (grade, publish, deadline extension, timer auto-submit): re-projects
+    /// without enrolling - BUG-251, a grader's action never creates a trail run. A busy member lock or a failed pass
+    /// is retried by the [`LEARNER_JOB`], never lost (BUG-313/314).
+    pub async fn owe_reproject_submission(
         &self,
+        conn: &mut PgConnection,
+        assessment_id: AssessmentId,
+        user_id: UserId,
+    ) -> Result<Followup> {
+        let payload = serde_json::json!({ "assessment_id": assessment_id, "user_id": user_id });
+        Self::owe(conn, LEARNER_JOB, payload).await
+    }
+
+    /// The learner's own file-attempt change (enrols; a staff `preview` neither enrols nor projects, UX-182).
+    pub async fn owe_file_attempt(
+        &self,
+        conn: &mut PgConnection,
         file_submission_id: FileSubmissionId,
         user_id: UserId,
         preview: bool,
-    ) {
-        if !preview {
-            self.file_attempt_changed(file_submission_id, user_id, true)
-                .await;
+    ) -> Result<Followup> {
+        if preview {
+            return Ok(Followup::none());
         }
+        let payload = serde_json::json!({
+            "file_submission_id": file_submission_id, "user_id": user_id, "enrol": true,
+        });
+        Self::owe(conn, LEARNER_JOB, payload).await
     }
 
-    /// After a grader's file-attempt change (never enrols), through
-    /// [`Self::after_commit`] like [`Self::reproject_submission`].
-    pub async fn reproject_file_attempt(
+    /// A grader's file-attempt change (never enrols), like [`Self::owe_reproject_submission`].
+    pub async fn owe_reproject_file_attempt(
         &self,
+        conn: &mut PgConnection,
         file_submission_id: FileSubmissionId,
         user_id: UserId,
-    ) {
-        let this = self.clone();
-        self.after_commit(
-            LEARNER_JOB,
-            serde_json::json!({ "file_submission_id": file_submission_id, "user_id": user_id }),
-            async move {
-                this.project_file_attempt(file_submission_id, user_id, false)
-                    .await
-            },
-        )
-        .await;
-    }
-
-    async fn file_attempt_changed(
-        &self,
-        file_submission_id: FileSubmissionId,
-        user_id: UserId,
-        enrol: bool,
-    ) {
-        if let Err(err) = self
-            .project_file_attempt(file_submission_id, user_id, enrol)
-            .await
-        {
-            tracing::warn!(%file_submission_id, %user_id, error = %err, "progress projection failed");
-        }
+    ) -> Result<Followup> {
+        let payload =
+            serde_json::json!({ "file_submission_id": file_submission_id, "user_id": user_id });
+        Self::owe(conn, LEARNER_JOB, payload).await
     }
 
     async fn project_submission(
@@ -509,98 +514,118 @@ impl ProgressProjector {
         outcome.map(|()| report)
     }
 
-    /// Every roster / RBAC writer's post-commit step (BUG-305): see
-    /// [`Self::after_commit`].
-    pub async fn after_staff_change(&self, user_id: UserId, course_id: Option<CourseId>) {
-        let this = self.clone();
-        self.after_commit(
-            STAFF_CHANGE_JOB,
-            serde_json::json!({ "user_id": user_id, "course_id": course_id }),
-            async move { this.reproject_staff_change(user_id, course_id).await },
-        )
-        .await;
+    /// Every roster / RBAC writer (BUG-305): the user's course-staff standing may have changed.
+    pub async fn owe_staff_change(
+        &self,
+        conn: &mut PgConnection,
+        user_id: UserId,
+        course_id: Option<CourseId>,
+    ) -> Result<Followup> {
+        let payload = serde_json::json!({ "user_id": user_id, "course_id": course_id });
+        Self::owe(conn, STAFF_CHANGE_JOB, payload).await
     }
 
-    /// Every writer that changed a course's published set (curriculum
-    /// toggle, deletes, assessment lifecycle, file-submission publish),
-    /// after commit (BUG-310): see [`Self::after_commit`].
-    pub async fn after_course_change(&self, course_id: CourseId) {
-        let this = self.clone();
-        self.after_commit(
+    /// Every writer that changed a course's published set (curriculum toggle, deletes, assessment lifecycle,
+    /// file-submission publish; BUG-310).
+    pub async fn owe_course_change(
+        &self,
+        conn: &mut PgConnection,
+        course_id: CourseId,
+    ) -> Result<Followup> {
+        Self::owe(
+            conn,
             COURSE_CHANGE_JOB,
             serde_json::json!({ "course_id": course_id }),
-            async move { this.recalculate_course_for_all(course_id).await },
         )
-        .await;
+        .await
     }
 
-    /// Every writer that changes what a hand-in pays for lateness, after
-    /// commit (BUG-312): the assessment policy (`user_id: None` - every
-    /// learner's hand-ins) or one learner's override. See
-    /// [`Self::after_commit`]; `granted_by` signs the re-score entries.
-    pub async fn after_lateness_change(
+    /// Every writer that changes what a hand-in pays for lateness (BUG-312): the assessment policy (`user_id: None`
+    /// - every learner's hand-ins) or one learner's override; `granted_by` signs the re-score entries.
+    pub async fn owe_lateness_change(
         &self,
+        conn: &mut PgConnection,
         assessment_id: AssessmentId,
         user_id: Option<UserId>,
         granted_by: Option<UserId>,
-    ) {
-        let pool = self.pool.clone();
-        self.after_commit(
-            LATENESS_JOB,
-            serde_json::json!({
-                "assessment_id": assessment_id, "user_id": user_id, "granted_by": granted_by,
-            }),
-            async move {
-                crate::grading::bulk::settle_assessment(&pool, assessment_id, user_id, granted_by)
-                    .await
-            },
-        )
-        .await;
+    ) -> Result<Followup> {
+        let payload = serde_json::json!({
+            "assessment_id": assessment_id, "user_id": user_id, "granted_by": granted_by,
+        });
+        Self::owe(conn, LATENESS_JOB, payload).await
     }
 
-    /// A file submission's late rules changed (BUG-316): every learner's
-    /// file hand-ins re-priced, through [`Self::after_commit`] on the
-    /// [`LATENESS_JOB`] kind (payload `{ file_submission_id }`).
-    pub async fn after_file_lateness_change(&self, file_submission_id: FileSubmissionId) {
-        let pool = self.pool.clone();
-        self.after_commit(
-            LATENESS_JOB,
-            serde_json::json!({ "file_submission_id": file_submission_id }),
-            async move { crate::files::submissions::settle_lateness(&pool, file_submission_id).await },
-        )
-        .await;
-    }
-
-    /// The one durable post-commit path for course-wide progress work: the
-    /// write already landed, so it never fails the caller. `work` runs on
-    /// its own task (a hang-up or timeout of the request cannot drop it);
-    /// the caller waits at most [`INLINE_WAIT`] (UX-209). Failed or not done
-    /// by then → a `kind` job the worker retries with backoff (idempotent,
-    /// so racing the still-running task is harmless).
-    // ponytail: a crash between the commit and the enqueue loses the pass
-    // (the next change or a backfill repairs it); enqueue in the writer's
-    // transaction if that window ever matters.
-    async fn after_commit(
+    /// A file submission's late rules changed (BUG-316): every learner's file hand-ins re-priced.
+    pub async fn owe_file_lateness_change(
         &self,
+        conn: &mut PgConnection,
+        file_submission_id: FileSubmissionId,
+    ) -> Result<Followup> {
+        let payload = serde_json::json!({ "file_submission_id": file_submission_id });
+        Self::owe(conn, LATENESS_JOB, payload).await
+    }
+
+    async fn owe(
+        conn: &mut PgConnection,
         kind: &'static str,
         payload: serde_json::Value,
-        work: impl Future<Output = Result<()>> + Send + 'static,
-    ) {
-        let task = tokio::spawn(work);
-        if matches!(
-            tokio::time::timeout(INLINE_WAIT, task).await,
-            Ok(Ok(Ok(())))
-        ) {
+    ) -> Result<Followup> {
+        let job = ab_db::queue::NewJob::new(kind, payload.clone())
+            .max_attempts(10)
+            .delayed(FOLLOWUP_GRACE);
+        let job = ab_db::queue::enqueue(conn, &job).await?;
+        Ok(Followup { job, kind, payload })
+    }
+
+    /// After the writer's commit: do the owed work now. It runs on its own task (a hang-up or timeout of the
+    /// request cannot drop it); the caller waits at most [`INLINE_WAIT`] (UX-209) and never fails, the write
+    /// already landed. Done → the queued job is dropped; failed or still running → the job is made due now and the
+    /// worker retries it with backoff (idempotent, so racing the still-running task is harmless).
+    pub async fn settle(&self, followup: Followup) {
+        let Followup { job, kind, payload } = followup;
+        if kind.is_empty() {
             return;
         }
-        let job = ab_db::queue::NewJob::new(kind, payload.clone()).max_attempts(10);
-        if let Err(err) = ab_db::queue::enqueue(&self.pool, &job).await {
-            tracing::error!(kind, %payload, error = %err, "progress job not enqueued");
+        let this = self.clone();
+        let work = payload.clone();
+        let task = tokio::spawn(async move { this.run_job(kind, &work).await });
+        let done = matches!(
+            tokio::time::timeout(INLINE_WAIT, task).await,
+            Ok(Ok(Ok(())))
+        );
+        let Some(id) = job else {
+            // An identical job is already queued (dedupe): it runs anyway.
+            return;
+        };
+        let handed_over = if done {
+            ab_db::queue::cancel_queued(&self.pool, id).await.map(drop)
+        } else {
+            ab_db::queue::run_now(&self.pool, id).await
+        };
+        if let Err(err) = handed_over {
+            // The job stays queued and runs after its grace: late, not lost.
+            tracing::warn!(kind, %payload, error = %err, "progress follow-up not handed over");
         }
     }
 
-    /// The worker's side of [`Self::after_commit`]'s jobs.
-    pub async fn run_job(&self, kind: &str, payload: &serde_json::Value) -> Result<()> {
+    /// [`Self::settle`] each, in order.
+    pub async fn settle_all(&self, followups: impl IntoIterator<Item = Followup>) {
+        for followup in followups {
+            self.settle(followup).await;
+        }
+    }
+
+    /// The worker's side of the [`Followup`] jobs, and [`Self::settle`]'s inline run. Boxed: a lateness pass
+    /// settles the re-projections it owes, so this future contains its own type and needs a stated `Send`.
+    pub fn run_job<'a>(
+        &'a self,
+        kind: &'a str,
+        payload: &'a serde_json::Value,
+    ) -> futures::future::BoxFuture<'a, Result<()>> {
+        Box::pin(self.run_job_inline(kind, payload))
+    }
+
+    async fn run_job_inline(&self, kind: &str, payload: &serde_json::Value) -> Result<()> {
         fn field<T: serde::de::DeserializeOwned>(
             payload: &serde_json::Value,
             key: &str,
@@ -638,11 +663,13 @@ impl ProgressProjector {
             }
             LEARNER_JOB => {
                 let user_id = field(payload, "user_id")?;
+                // The learner's own work enrols them; a grader's change never does (BUG-251).
+                let enrol = payload["enrol"].as_bool().unwrap_or(false);
                 if payload["file_submission_id"].is_null() {
-                    self.project_submission(field(payload, "assessment_id")?, user_id, false)
+                    self.project_submission(field(payload, "assessment_id")?, user_id, enrol)
                         .await
                 } else {
-                    self.project_file_attempt(field(payload, "file_submission_id")?, user_id, false)
+                    self.project_file_attempt(field(payload, "file_submission_id")?, user_id, enrol)
                         .await
                 }
             }

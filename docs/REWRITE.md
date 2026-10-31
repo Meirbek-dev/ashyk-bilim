@@ -971,6 +971,12 @@ changes (section 8) and its permission-matrix slice; the crates collapse into
 `apps/ashyq` as their contents move. Exit: one crate, the size expectations of section 2
 checked.
 
+Started 2026-10-31, across modules (4.3): progress re-projections are owed in the writer's
+transaction (`Followup`, ARCHITECTURE 9) instead of enqueued after commit; chapter and
+activity delete/move/renumber run in one transaction; a quiz hand-in commits with its
+snapshots, grade entry and audit row. Left: role grant changes (with 6.3), `CourseCtx`,
+typed bodies, the remaining `&PgPool` db functions.
+
 **Phase 6 — removal.** After a final archived dump: Zitadel, Redis and RustFS volumes, the
 v2 tables left only for rollback, the `cs_mooc` database if the owner agrees. Docs rewritten
 per section 14.

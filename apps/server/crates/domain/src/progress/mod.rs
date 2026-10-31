@@ -10,6 +10,6 @@ pub mod work_queue;
 
 pub use agenda::AgendaService;
 pub use learner_state::LearnerStateService;
-pub use projector::ProgressProjector;
+pub use projector::{Followup, ProgressProjector};
 pub use trail::TrailService;
 pub use work_queue::WorkQueueService;

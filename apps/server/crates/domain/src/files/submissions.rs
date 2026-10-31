@@ -41,7 +41,7 @@ use crate::grading::teacher::{
     csv_datetime, csv_row, score_buckets,
 };
 use crate::identity::Actor;
-use crate::progress::ProgressProjector;
+use crate::progress::{Followup, ProgressProjector};
 
 /// Presigned download validity (legacy 1h).
 pub const DOWNLOAD_TTL: Duration = Duration::from_secs(3600);
@@ -266,12 +266,16 @@ const fn late_policy_of(row: &FileSubmissionRow) -> LatePolicy {
 }
 
 /// BUG-316: every learner's file hand-ins judged by the late rules as they
-/// stand - the worker side of `ProgressProjector::after_file_lateness_change`.
+/// stand - the worker side of `ProgressProjector::owe_file_lateness_change`.
 /// Each attempt reads the config under the lock a settings PATCH takes, so a
 /// pass racing a newer PATCH never prices a row by the older rules (the
 /// newer PATCH's own pass runs after it). Previews are never late.
 pub(crate) async fn settle_lateness(pool: &PgPool, id: FileSubmissionId) -> Result<()> {
-    let mut changed = Vec::new();
+    let projector = ProgressProjector::new(pool.clone());
+    // One re-projection per learner, owed in the transaction of their first re-priced attempt: a retry of this
+    // pass finds the attempt already priced and would never re-project them.
+    let mut owed = std::collections::HashSet::new();
+    let mut followups = Vec::new();
     for attempt in ab_db::file_submissions::list_attempts(pool, id).await? {
         let Some(at) = attempt.submitted_at else {
             continue;
@@ -297,15 +301,16 @@ pub(crate) async fn settle_lateness(pool: &PgPool, id: FileSubmissionId) -> Resu
         let final_score = raw.map(|s| apply_late(s, pct));
         ab_db::file_submissions::set_attempt_lateness(&mut tx, attempt.id, late, pct, final_score)
             .await?;
+        if owed.insert(attempt.user_id) {
+            followups.push(
+                projector
+                    .owe_reproject_file_attempt(&mut tx, id, attempt.user_id)
+                    .await?,
+            );
+        }
         tx.commit().await?;
-        changed.push(attempt.user_id);
     }
-    changed.sort_unstable();
-    changed.dedup();
-    let projector = ProgressProjector::new(pool.clone());
-    for user_id in changed {
-        projector.reproject_file_attempt(id, user_id).await;
-    }
+    projector.settle_all(followups).await;
     Ok(())
 }
 
@@ -815,14 +820,17 @@ impl FileSubmissionsService {
             .await?;
         }
         ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
-        tx.commit().await?;
         // BUG-316: like a quiz policy PUT (BUG-312), new late rules re-price
         // every existing hand-in - one rule for every learner.
-        if (row.due_at, row.allow_late, late_policy_of(&row))
-            != (merged.due_at, merged.allow_late, late_policy_of(&merged))
+        let followup = if (row.due_at, row.allow_late, late_policy_of(&row))
+            == (merged.due_at, merged.allow_late, late_policy_of(&merged))
         {
-            self.projector.after_file_lateness_change(id).await;
-        }
+            Followup::none()
+        } else {
+            self.projector.owe_file_lateness_change(&mut tx, id).await?
+        };
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }
@@ -881,8 +889,12 @@ impl FileSubmissionsService {
             },
         )
         .await?;
+        let followup = self
+            .projector
+            .owe_course_change(&mut tx, row.course_id)
+            .await?;
         tx.commit().await?;
-        self.projector.after_course_change(row.course_id).await;
+        self.projector.settle(followup).await;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }
@@ -916,8 +928,12 @@ impl FileSubmissionsService {
             },
         )
         .await?;
+        let followup = self
+            .projector
+            .owe_course_change(&mut tx, row.course_id)
+            .await?;
         tx.commit().await?;
-        self.projector.after_course_change(row.course_id).await;
+        self.projector.settle(followup).await;
         let row = self.load(id).await?;
         self.view(None, row, Vec::new()).await
     }
@@ -1085,9 +1101,7 @@ impl FileSubmissionsService {
             return Ok((self.attempt_view(open, false, true).await?, false));
         }
         let attempt = self.open_new_attempt(&row, actor, is_author).await?;
-        self.projector
-            .after_file_attempt(row.id, actor.user_id, is_author)
-            .await;
+        self.draft_changed(&row, actor, is_author).await?;
         Ok((self.attempt_view(attempt, false, true).await?, true))
     }
 
@@ -1136,6 +1150,24 @@ impl FileSubmissionsService {
             .ok_or_else(|| Error::not_found("attempt"))
     }
 
+    /// A draft opened or its files replaced (each committed on its own): the learner is working on the course.
+    /// A crash before this commit loses only that in-progress mark; their next write owes it again.
+    async fn draft_changed(
+        &self,
+        row: &FileSubmissionRow,
+        actor: &Actor,
+        preview: bool,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        let followup = self
+            .projector
+            .owe_file_attempt(&mut tx, row.id, actor.user_id, preview)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
+        Ok(())
+    }
+
     /// Replace the draft's files (opens a draft when there is none).
     pub async fn save_draft(
         &self,
@@ -1169,9 +1201,7 @@ impl FileSubmissionsService {
             return Err(stale(expected, attempt.version));
         }
         self.replace_files(&attempt, files, &uploads).await?;
-        self.projector
-            .after_file_attempt(row.id, actor.user_id, attempt.preview)
-            .await;
+        self.draft_changed(&row, actor, attempt.preview).await?;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
@@ -1374,19 +1404,22 @@ impl FileSubmissionsService {
         } else {
             late_penalty_pct(late_policy_of(&row), due, now, row.allow_late)
         };
-        if !ab_db::file_submissions::submit_attempt(
-            &self.pool, attempt.id, version, is_late, penalty,
-        )
-        .await?
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::file_submissions::submit_attempt(&mut *tx, attempt.id, version, is_late, penalty)
+            .await?
         {
+            drop(tx);
             let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
                 .await?
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(version, latest.version));
         }
-        self.projector
-            .after_file_attempt(row.id, actor.user_id, attempt.preview)
-            .await;
+        let followup = self
+            .projector
+            .owe_file_attempt(&mut tx, row.id, actor.user_id, attempt.preview)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         attempt = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
@@ -1589,15 +1622,20 @@ impl FileSubmissionsService {
             rubric_scores: input.rubric_scores.as_ref(),
             graded_by: actor.user_id,
         };
-        if !ab_db::file_submissions::grade_attempt(&self.pool, id, expected_version, write).await? {
+        let mut tx = self.pool.begin().await?;
+        if !ab_db::file_submissions::grade_attempt(&mut *tx, id, expected_version, write).await? {
+            drop(tx);
             let latest = ab_db::file_submissions::get_attempt(&self.pool, id)
                 .await?
                 .ok_or_else(|| Error::not_found("attempt"))?;
             return Err(stale(expected_version, latest.version));
         }
-        self.projector
-            .reproject_file_attempt(attempt.file_submission_id, attempt.user_id)
-            .await;
+        let followup = self
+            .projector
+            .owe_reproject_file_attempt(&mut tx, attempt.file_submission_id, attempt.user_id)
+            .await?;
+        tx.commit().await?;
+        self.projector.settle(followup).await;
         let fresh = ab_db::file_submissions::get_attempt(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("attempt"))?;
@@ -1952,8 +1990,9 @@ impl FileSubmissionsService {
             )
             .await?;
         }
+        let followup = self.projector.owe_file_lateness_change(&mut tx, id).await?;
         tx.commit().await?;
-        self.projector.after_file_lateness_change(id).await;
+        self.projector.settle(followup).await;
         for &user_id in &targets {
             crate::events::user::deadline_extended(
                 user_id,

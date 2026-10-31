@@ -510,12 +510,12 @@ impl RbacAdminService {
             self.push_grants(user_id, version).await;
         }
         let projector = ProgressProjector::new(self.pool.clone());
-        futures::future::join_all(
-            holders
-                .iter()
-                .map(|&(user_id, _)| projector.after_staff_change(user_id, None)),
-        )
-        .await;
+        let mut followups = Vec::with_capacity(holders.len());
+        for &(user_id, _) in holders {
+            followups.push(owe_staff_change(&self.pool, &projector, user_id).await);
+        }
+        futures::future::join_all(followups.into_iter().flatten().map(|f| projector.settle(f)))
+            .await;
     }
 
     /// [`Self::push_grants`], then re-project the courses they hold a run
@@ -523,9 +523,10 @@ impl RbacAdminService {
     /// (`is_course_staff`, BUG-291).
     async fn propagate(&self, user_id: UserId, rbac_version: i64) {
         self.push_grants(user_id, rbac_version).await;
-        ProgressProjector::new(self.pool.clone())
-            .after_staff_change(user_id, None)
-            .await;
+        let projector = ProgressProjector::new(self.pool.clone());
+        if let Some(followup) = owe_staff_change(&self.pool, &projector, user_id).await {
+            projector.settle(followup).await;
+        }
     }
 
     /// Push the user's fresh grants into every live session. Best-effort:
@@ -557,4 +558,26 @@ impl RbacAdminService {
 /// `display_name`/`required` when blank (UX-163).
 fn trimmed_display_name(name: &str) -> Result<String> {
     ab_core::required_text("display_name", name)
+}
+
+/// A staff re-projection owed after a role change that already committed. The window between that commit and this
+/// one stays open: the role tables go away with REWRITE 6.3 (three roles in code) rather than gaining transactions.
+async fn owe_staff_change(
+    pool: &sqlx::PgPool,
+    projector: &ProgressProjector,
+    user_id: UserId,
+) -> Option<crate::progress::Followup> {
+    let owed = async {
+        let mut tx = pool.begin().await?;
+        let followup = projector.owe_staff_change(&mut tx, user_id, None).await?;
+        tx.commit().await?;
+        Ok::<_, ab_core::Error>(followup)
+    };
+    match owed.await {
+        Ok(followup) => Some(followup),
+        Err(err) => {
+            tracing::error!(%user_id, error = %err, "staff re-projection not owed");
+            None
+        }
+    }
 }
