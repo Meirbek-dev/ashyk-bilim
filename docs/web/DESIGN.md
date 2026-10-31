@@ -5,7 +5,7 @@ rule below is checked by a gate, a lint rule or the reference slice; a rule nobo
 
 ## 1. Principles
 
-1. A study tool people look forward to opening. A screen answers one question (5.1), shows one next step and the
+1. A study tool people look forward to opening. A screen answers one question, shows one next step and the
    learner's progress (rings, XP, streaks) where they act.
 2. Identity: Ashyq Bilim x Toraighyrov University (`BrandMark`, `UniversityMark`): its blue acts, its orange marks
    the selected place and rewards. `CourseCover` (a brand tone + the emblem in a hairline per id) and `BrandPanel` are
@@ -62,21 +62,20 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
 | informational notice, new item   | `info`        | at most one info notice per view                                     |
 | failed, error, delete            | `destructive` | field errors sit under the field; destructive buttons need a confirm |
 
-Activity types come from one `activityTypeMeta` table (icon, label key, token). The table is exhaustive over the
-enum, and no other component maps a type to an icon or a color.
+Activity types: one `activityTypeMeta` table (icon, label key, token), exhaustive over `ActivityType`; nothing else
+maps a type to an icon or a color. The type color goes on the icon (`text-activity-*`) and may go on a `/10` chip
+behind it; it never colors a title, a row or a card background.
 
 | Type              | Lucide icon      | Token                      |
 | ----------------- | ---------------- | -------------------------- |
-| `page`            | `NotebookText`   | `activity-page`            |
+| `dynamic` (page)  | `NotebookText`   | `activity-page`            |
 | `video`           | `Video`          | `activity-video`           |
 | `document`        | `FileText`       | `activity-document`        |
-| `file-submission` | `FileUp`         | `activity-file-submission` |
+| `file_submission` | `FileUp`         | `activity-file-submission` |
 | `quiz`            | `ListChecks`     | `activity-quiz`            |
 | `exam`            | `ClipboardCheck` | `activity-exam`            |
-| `code`            | `CodeXml`        | `activity-code`            |
-
-The type color goes on the icon (`text-activity-*`) and may go on a `/10` chip behind it. It never colors a
-title, a row or a card background.
+| `code_challenge`  | `CodeXml`        | `activity-code`            |
+| `custom` (legacy) | `Puzzle`         | `activity-page`            |
 
 ## 4. Typography
 
@@ -116,15 +115,16 @@ title, a row or a card background.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role, 5.2). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark and `UniversityMark` (from md), space switcher
-(only with more than one space), a search field with its `Ctrl+K`, notifications and the profile menu. Below it, a
-sidebar `w-60` (current item: tint plus a primary bar) holding the current space's navigation, then the content. At
-390 px: mark only, search icon, notifications and profile; the space switcher moves into the profile menu, and the
-navigation becomes a bottom bar `h-14` of at most 5 icon + label items (current: a pill behind the icon). Guests
-get the same shell without navigation. Auth pages use the full wordmark. Navy artwork switches to white in dark mode,
-including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
+**App shell** (one for every role). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark and
+`UniversityMark` (from md), space switcher (only with more than one space), a search field with its `Ctrl+K`,
+notifications and the profile menu. Below it, a sidebar `w-60`, collapsible to icons (current item: tint plus a
+primary bar) holding the current space's navigation, then the content. At 390 px: mark only, search icon,
+notifications and profile; the space switcher moves into the profile menu, and the navigation becomes a bottom bar
+`h-14` of at most 5 icon + label items (current: a pill behind the icon). Guests get the same shell without
+navigation. Auth pages use the full wordmark. Navy artwork switches to white in dark mode, including system mode
+before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
-**Focus layout** (5.2): no navigation. Top bar (sticky, like the side panels): back, context title (`text-lg`,
+**Focus layout**: no navigation. Top bar (sticky, like the side panels): back, context title (`text-lg`,
 truncated), save status, actions right. Used by the activity player, attempt, activity editor and single-submission review.
 
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
@@ -151,14 +151,13 @@ Every data region renders exactly one of the kit's four states:
 
 ## 8. Kit: shadcn base-nova + our composites
 
-- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI): `bunx shadcn@4.23.0 add <name>` when a
-  feature needs a primitive, `shadcn diff` shows registry drift. No hand edits beyond those listed in docs/DECISIONS.md.
+- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI; how to add: `apps/web-2/AGENTS.md`),
+  `shadcn diff` shows registry drift. No hand edits beyond those listed in docs/DECISIONS.md.
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status
   tones, link looks, a dialog width) is a variant there; features pass layout classes only, never restyle.
-- Features use stock props (`variant`, `size`, `render`); a route link that looks like a button is the router `Link`
-  with `className={buttonVariants({ variant })}` from `shared/components/button-variants` (merged by `cn`). Pending:
-  `disabled` + `<Spinner data-icon="inline-start" />`.
+- Features use stock props (`variant`, `size`, `render`); a link that looks like a button and the pending state:
+  AGENTS.md "Button looks"; the spinner sits `data-icon="inline-start"`.
 
 ## 9. Component rules
 
@@ -171,8 +170,8 @@ Every data region renders exactly one of the kit's four states:
 - Tabs are route links (`<Link>`); the label and the URL segment are the same word. No tabs in component state.
 - Icons are lucide named imports, `size-4` next to `text-sm`, `size-5` next to `text-base`, only when they carry
   meaning (type, status, a known action). Icon-only buttons have an `aria-label` and a tooltip.
-- A toast appears only from a mutation's `onSuccess`, in the past tense of the button's verb. Errors stay on the
-  page: inline, under the field or in the region.
+- A toast appears only from a mutation's `onSuccess` (wording: section 11). Errors stay on the page: inline, under
+  the field or in the region.
 - Status badges: an exhaustive `Record<Status, {label, token}>`; a list's usual state is quiet text, a badge the exception.
 - A card is one object; sections are split by headings and spacing. Dashboard numbers: `KpiStrip` of `KpiTile`s, not cards.
 
