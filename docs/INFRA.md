@@ -115,6 +115,13 @@ in the stack uses or backs them up.
 
 ## Postgres roles and databases
 
+The shared `db` service logs statements taking at least 300 ms to stderr (the
+rotating container log), with timestamp, PID, user, database and application.
+`PG_LOG_MIN_DURATION_STATEMENT` overrides the threshold in milliseconds (`-1`
+disables it; `0` logs every statement). Bound parameter values are suppressed;
+SQL text, including any inline literals, is still logged. Startup flags apply to
+existing volumes too; changing them requires recreating the `db` container.
+
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |
 | `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup and pre-deploy dumps (local socket) |
@@ -171,6 +178,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
 | Web | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | web |
 | Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db (initdb only), db-init, zitadel-init |
+| | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db slow-query log |
 | | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init |
 | Zitadel | `ZITADEL_MASTERKEY` (exactly 32 chars; losing it loses every account) | zitadel; preflight |
 | | `ZITADEL_DB_PASSWORD` | db-init, zitadel-init, zitadel |

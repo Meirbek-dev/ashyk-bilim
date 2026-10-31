@@ -58,6 +58,12 @@ services:
   # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
   db:
     image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+    # Keep these logging flags in compose.dev.yaml's command override too.
+    command: >-
+      postgres
+      -c log_min_duration_statement=${PG_LOG_MIN_DURATION_STATEMENT:-300}
+      -c log_parameter_max_length=0
+      -c "log_line_prefix=%m [%p] user=%u db=%d app=%a "
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
