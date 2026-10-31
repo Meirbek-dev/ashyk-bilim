@@ -79,6 +79,9 @@ use_prod() {
 }
 
 use_dev() {
+  # The dev volume's superuser is dev.env's. A shell that sourced a production env (POSTGRES_USER=openu, 2026-10-29)
+  # would win the interpolation, and db-init then fails at every boot: dev never takes these from the shell.
+  unset POSTGRES_USER POSTGRES_PASSWORD
   export COMPOSE_FILE=compose.yaml:compose.dev.yaml
   export COMPOSE_ENV_FILES=infra/env/dev.env
   export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-dev}
