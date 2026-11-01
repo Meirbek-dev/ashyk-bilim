@@ -66,7 +66,10 @@ export const test = base.extend<{ course: ReleaseCourse }>({
       await body(await teacher.post(`courses/${course.id}/lifecycle`, { data: { action: 'publish' } }))
       await use({ id: course.id, name, activity: quiz.activity_id, assessment: quiz.id, teacher, student })
     } finally {
-      expect((await teacher.delete(`courses/${course.id}`)).ok(), 'remove release fixture').toBe(true)
+      expect(
+        (await teacher.delete(`courses/${course.id}?acknowledge_learner_work=true`)).ok(),
+        'remove release fixture',
+      ).toBe(true)
       await teacher.dispose()
       await student.dispose()
     }

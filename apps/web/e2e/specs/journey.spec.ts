@@ -15,7 +15,7 @@ test.describe.serial('Author → learner → grader → archive', () => {
     if (!course) return
     const api = await apiAs('teacher')
     try {
-      const response = await api.delete(`courses/${course}`)
+      const response = await api.delete(`courses/${course}?acknowledge_learner_work=true`)
       if (!response.ok()) throw new Error(`journey cleanup: HTTP ${response.status()}`)
     } finally {
       await api.dispose()
