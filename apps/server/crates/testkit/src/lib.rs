@@ -61,6 +61,7 @@ pub fn test_config() -> Config {
             url: SecretString::from("postgres://injected-pool-unused"),
             max_connections: 5,
             min_connections: 0,
+            limits: ab_core::config::DatabaseLimits::default(),
         },
         redis: RedisConfig { url: None },
         zitadel: None,

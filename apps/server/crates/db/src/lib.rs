@@ -33,25 +33,85 @@ pub mod usergroups;
 pub mod versions;
 pub mod work_queue;
 
+use std::str::FromStr;
 use std::time::Duration;
 
 use ab_core::Result;
 use ab_core::config::DatabaseConfig;
 use secrecy::ExposeSecret;
 use sqlx::PgPool;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 
 /// All migrations, embedded at compile time from `apps/server/migrations/`.
 pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../migrations");
 
+/// The process that opens a pool: names its sessions (`application_name`,
+/// seen in `pg_stat_activity`, `pg_stat_statements` and the Postgres log)
+/// and picks its limits (`DatabaseLimits`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Process {
+    Serve,
+    Worker,
+    /// `ashyq admin ...`: one-shot backfills an operator watches; no
+    /// statement limit.
+    Admin,
+    /// `ashyq migrate`: no statement or lock limit (index builds; each
+    /// transactional file sets its own `lock_timeout`).
+    Migrate,
+}
+
+impl Process {
+    #[must_use]
+    pub const fn application_name(self) -> &'static str {
+        match self {
+            Self::Serve => "ashyq-serve",
+            Self::Worker => "ashyq-worker",
+            Self::Admin => "ashyq-admin",
+            Self::Migrate => "ashyq-migrate",
+        }
+    }
+}
+
 /// Build the application pool. Fail-fast: connection errors surface at boot,
 /// not on the first request.
-pub async fn connect(config: &DatabaseConfig) -> Result<PgPool> {
+pub async fn connect(config: &DatabaseConfig, process: Process) -> Result<PgPool> {
+    let options = PgConnectOptions::from_str(config.url.expose_secret())?;
+    connect_with(options, config, process).await
+}
+
+/// [`connect`] with parsed options (tests reuse a test database's options).
+///
+/// The limits go into the startup packet, so they hold for any role and
+/// override its `ALTER ROLE ... SET` defaults.
+pub async fn connect_with(
+    options: PgConnectOptions,
+    config: &DatabaseConfig,
+    process: Process,
+) -> Result<PgPool> {
+    let limits = config.limits;
+    let statement = match process {
+        Process::Serve | Process::Worker => limits.statement_timeout_secs,
+        Process::Admin | Process::Migrate => 0,
+    };
+    let lock = match process {
+        Process::Migrate => 0,
+        _ => limits.lock_timeout_secs,
+    };
+    let options = options
+        .application_name(process.application_name())
+        .options([
+            ("statement_timeout", format!("{statement}s")),
+            (
+                "idle_in_transaction_session_timeout",
+                format!("{}s", limits.idle_in_transaction_timeout_secs),
+            ),
+            ("lock_timeout", format!("{lock}s")),
+        ]);
     let pool = PgPoolOptions::new()
         .max_connections(config.max_connections)
         .min_connections(config.min_connections)
         .acquire_timeout(Duration::from_secs(10))
-        .connect(config.url.expose_secret())
+        .connect_with(options)
         .await?;
     Ok(pool)
 }

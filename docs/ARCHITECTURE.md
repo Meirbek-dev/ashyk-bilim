@@ -625,6 +625,12 @@ Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` f
   (`AB__DATABASE__URL` set; in production a non-empty, non-wildcard CORS allowlist, JSON logs, auth limits not
   relaxed past their defaults). `serve` refuses to start without Redis, Zitadel or storage settings.
 - `ashyq admin config-check` prints the effective config with secrets redacted.
+- Database sessions are bounded on connect (`ab_db::connect`, startup options, so they hold for any role and
+  win over `ALTER ROLE ... SET`): `statement_timeout` 120 s, `idle_in_transaction_session_timeout` 60 s,
+  `lock_timeout` 30 s (`AB__DATABASE__LIMITS__STATEMENT_TIMEOUT_SECS`, `..._IDLE_IN_TRANSACTION_TIMEOUT_SECS`,
+  `..._LOCK_TIMEOUT_SECS`; 0 = off) and `application_name` `ashyq-serve|worker|admin|migrate`. `ashyq migrate`
+  runs without statement and lock limits, `ashyq admin` without a statement limit; a job that needs longer
+  statements sets `SET LOCAL statement_timeout` in its own transaction.
 - Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
   `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
   the operator's schedule (`docs/STAGE-2-CUTOVER.md`).

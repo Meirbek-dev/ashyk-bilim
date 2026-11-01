@@ -165,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
                 .map(|c| c.parse::<ab_core::id::CourseId>())
                 .transpose()
                 .map_err(|e| anyhow::anyhow!("--course must be a uuid: {e}"))?;
-            let pool = ab_db::connect(&config.database).await?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::progress::ProgressProjector::new(pool)
                 .backfill(course)
                 .await?;
@@ -201,7 +201,7 @@ async fn main() -> anyhow::Result<()> {
                     after_cutover,
                 },
         } => {
-            let pool = ab_db::connect(&config.database).await?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report =
                 ab_domain::maintenance::migrate_editor_docs(&pool, dry_run, after_cutover).await?;
             print_report("migrate-editor-docs", &report)
@@ -209,14 +209,14 @@ async fn main() -> anyhow::Result<()> {
         Command::Admin {
             command: AdminCommand::MigrateThemes { dry_run },
         } => {
-            let pool = ab_db::connect(&config.database).await?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::maintenance::migrate_themes(&pool, dry_run).await?;
             print_report("migrate-themes", &report)
         }
         Command::Admin {
             command: AdminCommand::MigrateLocales { dry_run },
         } => {
-            let pool = ab_db::connect(&config.database).await?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::maintenance::migrate_locales(&pool, dry_run).await?;
             print_report("migrate-locales", &report)
         }
@@ -245,7 +245,7 @@ async fn main() -> anyhow::Result<()> {
 /// `ashyq admin ai-eval`: the provider smoke check, recorded in
 /// `ai_eval_results`.
 async fn ai_eval(config: Config, dataset: &str) -> anyhow::Result<()> {
-    let pool = ab_db::connect(&config.database).await?;
+    let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
     let llm = ab_clients::llm::LlmClient::from_ai_config(&config.ai)?;
     let ai = ab_domain::ai::AiService::new(
         pool,
@@ -278,7 +278,7 @@ fn print_report(name: &str, report: &ab_domain::maintenance::Report) -> anyhow::
 
 /// `ashyq admin seed-e2e` - see [`ab_api::seed`].
 async fn erase_user(config: Config, user: &str) -> anyhow::Result<()> {
-    let state = build_state(config).await?;
+    let state = build_state(config, ab_db::Process::Admin).await?;
     let id = match user.parse::<ab_core::id::UserId>() {
         Ok(id) => Some(id),
         Err(_) => ab_db::identity::find_user_id_by_username(&state.pool, user).await?,
@@ -302,7 +302,7 @@ async fn seed_e2e(config: Config, learners: u16) -> anyhow::Result<()> {
         .ok_or_else(|| {
             anyhow::anyhow!("E2E_PASSWORD must be set (the seeded accounts' password)")
         })?;
-    let state = build_state(config).await?;
+    let state = build_state(config, ab_db::Process::Admin).await?;
     let report =
         ab_api::seed::seed_e2e(&state, &secrecy::SecretString::from(password), learners).await?;
     writeln!(
@@ -315,7 +315,7 @@ async fn seed_e2e(config: Config, learners: u16) -> anyhow::Result<()> {
 
 async fn serve(config: Config) -> anyhow::Result<()> {
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(build_state(config).await?)?;
+    let router = ab_api::build_router(build_state(config, ab_db::Process::Serve).await?)?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     // The TCP peer is the last-resort client address (`ClientIp`, BUG-147).
@@ -331,8 +331,8 @@ async fn serve(config: Config) -> anyhow::Result<()> {
 
 /// The API's wiring (serve, seed-e2e): DB, sessions, Zitadel, mail,
 /// Google, storage, the code runner.
-async fn build_state(config: Config) -> anyhow::Result<AppState> {
-    let pool = ab_db::connect(&config.database).await?;
+async fn build_state(config: Config, process: ab_db::Process) -> anyhow::Result<AppState> {
+    let pool = ab_db::connect(&config.database, process).await?;
     let pending = ab_db::MIGRATOR.iter().len();
     tracing::info!(migrations = pending, "database connected");
 
@@ -517,7 +517,7 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
 // A flat list of handler registrations + schedules; splitting it would only hide the inventory.
 #[allow(clippy::too_many_lines)]
 async fn worker(config: Config) -> anyhow::Result<()> {
-    let pool = ab_db::connect(&config.database).await?;
+    let pool = ab_db::connect(&config.database, ab_db::Process::Worker).await?;
     let storage = build_storage(&config)?;
     // SSE fan-out from the worker (deadline extensions) needs Redis; the
     // worker still runs without it.
@@ -714,7 +714,7 @@ async fn analytics_rollup(
     let today = ab_domain::analytics::context::utc_date(ab_domain::analytics::context::now_unix());
     let from = from.unwrap_or_else(|| today.clone());
     let to = to.unwrap_or(today);
-    let pool = ab_db::connect(&config.database).await?;
+    let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
     let report = ab_domain::analytics::AnalyticsService::new(pool)
         .run_rollup_range(&from, &to)
         .await?;
@@ -734,7 +734,7 @@ async fn analytics_rollup(
 }
 
 async fn migrate(config: Config) -> anyhow::Result<()> {
-    let pool = ab_db::connect(&config.database).await?;
+    let pool = ab_db::connect(&config.database, ab_db::Process::Migrate).await?;
     ab_db::MIGRATOR.run(&pool).await?;
     tracing::info!("migrations applied");
     Ok(())

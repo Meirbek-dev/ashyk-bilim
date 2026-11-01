@@ -741,8 +741,9 @@ Decided, not done:
    the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
 5. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
    `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
-   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
-   `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
+   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; Zitadel's role gets a
+   connection limit. Done: the pool sets `statement_timeout`, `idle_in_transaction_session_timeout`,
+   `lock_timeout` and `application_name` on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`).
 6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
    retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
    (QUESTIONS Q-2026-11-01-2).
