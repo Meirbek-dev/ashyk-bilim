@@ -795,18 +795,61 @@ in the order it can be done, each step a forward migration on the current schema
       CHECKs. Left: the Rust variants keep their API names (`SubmissionStatus::Pending` = stored
       `submitted`); with the pipeline merge the two enums become one.
     - *One overrides table* (item 3) falls out of the merge: `file_submission_overrides` rows become
-      `assessment_overrides` rows of the assignment's assessment (`due_at_override`, `note` = `reason`).
+      `assessment_overrides` rows of the assignment's assessment (`due_at_override` = `due_at`,
+      `due_extended = true`, `note` = `reason`, `granted_by`, `created_at`; no `expires_at`). Not started:
+      it waits for R1 of the merge below.
       Before the merge the only arc-free shape is per activity, which the merge would undo.
     - *Pipeline merge* (item 1) as in step 6 above; `file_submission_attempts` had 0 rows when 9.1 was
       written, so the data step is small and the work is the code (`files/submissions.rs`, the projector's
       file branch, the AI grading reader, work queue, analytics). The AI tables then lose their
-      `submission_id`/`file_attempt_id` arc.
+      `submission_id`/`file_attempt_id` arc. Not started (review 2, wave 2): no expand step is safe alone,
+      because a file attempt can be a `submissions` row only under an `assessments` row, and an assessment of
+      a file task is a new `AssessmentKind` that every assessment and submission reader sees at once. Ready:
+      both pipelines share the status words (item 2, so the status maps as is) and attempt ids are uuidv7 in
+      both tables (a file attempt keeps its id as a submission: API paths and AI subject ids stay). The
+      mapping, checked against the schema of 2026-11-02:
+      - `file_submissions` → an `assessments` row per task (`activity_id`, `course_id`, `due_at`,
+        `allow_late`, `late_policy_kind`, `late_penalty_*`, `late_cutoff_at`, `max_attempts`,
+        `grade_release_mode`, `lifecycle`, `published_at`, `archived_at`, `version` as they are;
+        `grading_mode = 'manual'`); `file_submissions` stays as the task's typed extension (instructions,
+        rubric, allowed MIME types, file caps, settings) with `assessment_id UNIQUE REFERENCES assessments`,
+        like `assessment_items` for a quiz. Its version's policy holds the file caps and rubric;
+        `max_points` = 100 (file grades are percentages).
+      - `file_submission_attempts` → `submissions` (same `id`, `assessment_id` = the task's, `course_id`,
+        `user_id`, `attempt_number`, `status`, `preview`, `is_late`, `late_penalty_pct`, `final_score`,
+        `started_at` / `submitted_at` / `graded_at`, `version`; `answers = '{}'`, snapshots = the version's);
+        `raw_score`, `feedback`, `rubric_scores`, `graded_by` live only in the grade entries.
+      - `file_submission_files` → `attempt_files (attempt_id → submissions, upload_id, position, display_name,
+        content_type, size_bytes, storage_key, scan_status)`; `upload_referenced` asks it.
+      - `file_grading_entries` → `grading_entries` (`attempt_id` → `submission_id`, `feedback` →
+        `overall_feedback`, `rubric_scores` → `effective_breakdown`, `released` → `published_at` =
+        `created_at`; the journal guard allows the insert).
+      - `file_submission_overrides` → `assessment_overrides` (item 3 below).
+      - AI: `ai_grade_drafts.file_attempt_id`, `ai_remediation_sessions` / `ai_submission_analyses
+        .file_submission_attempt_id` → their `submission_id` (same uuid); `ai_work_embeddings.subject_id` gets
+        a key onto `submissions`.
+      Releases, in order: (R0) `AssessmentKind::Assignment` (an additive API enum value: owner decision, both
+      web clients render or filter it) and every reader of `assessments` / `submissions` that must not see
+      file tasks filters them (`kind <> 'assignment'`, through the activity's type once contract B dropped
+      `assessments.kind`); (R1, expand) the columns/tables above and triggers that mirror every file-task
+      write into the new rows (both releases write the old tables); (R2) readers move to `submissions` and
+      `grading_entries`: the `UNION ALL`s of the two pipelines (gradebook, work queue, teaching and catalog
+      counts, AI pending works, mastery facts, analytics) collapse, the projector's file branch goes;
+      (R3) writers move (`files/submissions.rs` writes submissions, entries, attempt files; reverse
+      triggers keep the file tables for R2's rollback); (R4, contract) drop the file tables, the reverse
+      triggers and the AI arcs with their `num_nonnulls` checks.
     - *Versions as the record* (item 4, rest of step 7): readers move from `items_snapshot`/`policy_snapshot`
       to `assessment_version_id`; a contract release drops the snapshots and `content_version` (BUG-237's
       staleness test becomes "the draft's version is not the assessment's current one"); the policy columns
       of `assessments` move into the version's typed `policy`.
     - *Counters* (item 10): `version` (If-Match) and `draft_version` (autosave 409) stay;
-      `content_version` goes with the snapshots above.
+      `content_version` goes with the snapshots above. Not done (wave 2): a version is created at hand-in,
+      so a draft names none; BUG-237's test needs the draft's version, i.e. versions written at publish and
+      at each content edit while published, and a draft whose cosmetic edit keeps it current
+      (`cosmetic_item_edits_keep_open_drafts_current`) moving to the new version, which the write-once
+      `assessment_version_id` refuses today (allow it while `status = 'draft'`). A version also hashes the
+      policy, so a policy edit would mark drafts stale where `content_version` does not: keep a separate
+      items hash for the staleness test.
     - *Current grade* (item 8, rest): done (ARCHITECTURE §8 "One current grade"): readers use the latest
       entry (`submission_breakdown`), the hand-in's own breakdown moved to `submissions.auto_breakdown`, and
       contract `20261103070100` drops `grading` (it stops the deploy if a legacy row's breakdown differs from
