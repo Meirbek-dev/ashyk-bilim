@@ -345,7 +345,18 @@ One migration set for the database `ashyq`. Rules:
 1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
    `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by the shared `set_updated_at`
    trigger.
-2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations.
+2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Columns added from 2026-11-02 on
+   (`crates/db/tests/naming_rules.rs` checks the migrations):
+   - a key onto `users` is `user_id` for the person the row belongs to or is about (owner, learner, member,
+     recipient), `<verb>_by` for who did something to it (`created_by`, `updated_by`, `graded_by`, `decided_by`,
+     `requested_by`), or a role when the row is about two people and no verb fits (`teacher_id`). Not
+     `creator_id`, `author_id`, `actor_id`, `learner_id`, `student_id`, `*_user_id`;
+   - an entity's label is `name`; `title` only heads authored text (an update, a thread, an item);
+   - a row's variant is `kind` (`<thing>_kind` when a table has two), not `type` / `*_type` (`content_type`
+     is a MIME type); an event log's variant is `event`;
+   - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
+     `<status>_at` timestamps.
+   Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract).
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
