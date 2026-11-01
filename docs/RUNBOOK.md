@@ -97,8 +97,9 @@ COMMIT;
 ### 2.4 Integrity checks skipped by a migration
 
 A migration adds a CHECK through `schema_try_check` (apps/server/AGENTS.md): when existing rows violate it,
-the check is not added, the migrate log shows `WARNING: schema_try_check: <name> skipped`, and the
-check is recorded. After a deploy:
+the check stays on the table as NOT VALID (new rows and every updated row must satisfy it, the old rows are
+exempt until repaired), the migrate log shows `WARNING: schema_try_check: <name> kept NOT VALID`, and the
+check is recorded. An UPDATE of a still-violating old row is refused (500 in the API) until the row is repaired. After a deploy:
 
 ```bash
 dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_at FROM schema_skipped_checks'
@@ -106,7 +107,7 @@ dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_
 
 Zero rows is the expected state. For each row: find the offenders (`SELECT id FROM <table_name> WHERE NOT
 (<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
-migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
+migration that repairs and calls `schema_try_check` again (it validates the existing constraint; the row disappears).
 
 ### 2.5 Least-privilege app roles (prepared, not switched on)
 

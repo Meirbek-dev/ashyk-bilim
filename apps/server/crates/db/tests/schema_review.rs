@@ -25,6 +25,8 @@
 //! - a grader can be erased by hand: both journals keep the grade with
 //!   `graded_by` cleared, and still refuse naming another grader.
 //! - a deleted account cannot be active again.
+//! - review 3, item 24: a check old rows violate stays NOT VALID and bites
+//!   on new rows; it validates after the repair.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -689,4 +691,68 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(reenabled.is_err(), "a deleted account is not re-enabled");
+}
+
+/// Review 3, item 24: a check that old rows violate stays NOT VALID (new and
+/// updated rows are checked), is recorded, and validates once the rows are
+/// repaired and the check is tried again.
+#[ab_testdb::test]
+async fn a_violated_check_stays_not_valid_until_repaired(pool: PgPool) {
+    sqlx::query("CREATE TABLE try_check_probe (n int NOT NULL)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO try_check_probe VALUES (1), (-1)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let try_check =
+        "SELECT schema_try_check('try_check_probe', 'try_check_probe_n_check', 'n >= 0')";
+    let added: bool = sqlx::query_scalar(try_check)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!added);
+    let validated: Option<bool> = sqlx::query_scalar(
+        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
+    )
+    .fetch_optional(&pool)
+    .await
+    .unwrap();
+    assert_eq!(validated, Some(false), "the check stays, NOT VALID");
+    let recorded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(recorded, 1);
+    let refused = sqlx::query("INSERT INTO try_check_probe VALUES (-2)")
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "a new violating row is refused");
+
+    sqlx::query("UPDATE try_check_probe SET n = 0 WHERE n < 0")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let added: bool = sqlx::query_scalar(try_check)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(added, "the repaired table validates the existing check");
+    let validated: bool = sqlx::query_scalar(
+        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(validated);
+    let recorded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(recorded, 0);
 }

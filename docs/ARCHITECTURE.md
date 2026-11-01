@@ -386,8 +386,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
   20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
   50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
-  body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
-  `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
+  body is tagged with its `kind`. A check whose existing rows violate it stays NOT VALID (new and updated rows are
+  checked) with a WARNING and a `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4;
+  `20261102010000_schema_try_check_not_valid` also re-added the checks skipped before as NOT VALID).
 - **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only
   its `published_at`, a `file_grading_entries` row never changes; neither is deleted except by the cascade
   from its submission / attempt. The guards compare the whole row, so a new column is frozen too. The one

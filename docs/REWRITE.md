@@ -719,6 +719,7 @@ Done:
 - Grade journals guard the whole row (`file_grading_entries` had no guard; `grading_entries` compared a column
   list): `20261102000000_ledger_guards`, `schema_review.rs`.
 - Skipped checks are reported, not fatal: `just prod-report` lists `schema_skipped_checks`, `just brief` names them.
+  Since `20261102010000` such a check stays NOT VALID (guards new and updated rows) instead of being dropped.
 - Migrations deploy during classes: `migration_rules.rs` enforces `lock_timeout`, CONCURRENTLY indexes in
   `-- no-transaction` files, and expand/contract (`-- contract:` marker) from 2026-11-02 on. The 2026-11-01
   migrations predate it: their first deploy builds ~45 indexes in one transaction, so it goes in a quiet window.
