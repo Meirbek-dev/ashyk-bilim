@@ -10,7 +10,9 @@ import { join } from 'node:path'
 import {
   type ServiceSpec,
   alive,
+  appRoleFor,
   databaseUrl,
+  type DbRole,
   devLogin,
   devEnv,
   exe,
@@ -234,11 +236,11 @@ function slotTsconfig(slot: string): string {
   return name
 }
 
-function services(o: UpOptions, env: Record<string, string>): ServiceSpec[] {
+function services(o: UpOptions, env: Record<string, string>, role: DbRole = 'owner'): ServiceSpec[] {
   const ports = slotPorts(Number(o.slot))
   const dir = slotDir(o.slot)
   const origins = webOrigins(ports)
-  const server = serverEnv({ ...ports, db: o.db, origins, webUrl: `http://localhost:${ports.web}` })
+  const server = serverEnv({ ...ports, db: o.db, origins, webUrl: `http://localhost:${ports.web}`, role })
   const bun = process.execPath
   const all: ServiceSpec[] = [
     ...(['api', 'worker'] as const).map(name => ({
@@ -331,7 +333,10 @@ async function up(o: UpOptions): Promise<void> {
   await adoptLfChecksums(env, o.db)
   ashyq(o.slot, ['migrate'], cli, join(dir, 'migrate.log'))
   if (o.seed || created) seed(o.slot, o.db)
-  const specs = services(o, env)
+  // Like production: the API and worker as ashyq_app (no DDL, insert-only journals), migrations as the owner.
+  const role = await appRoleFor(env, o.db)
+  if (role === 'owner') say(`api/worker connect as the owner ashyq (no ashyq_app grants on ${o.db}: \`just dev-up\`)`)
+  const specs = services(o, env, role)
   const origins = webOrigins(ports)
   writeJson(join(dir, 'services.json'), {
     slot: o.slot,

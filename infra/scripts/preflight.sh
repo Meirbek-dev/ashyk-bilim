@@ -34,6 +34,29 @@ for key in AB__DATABASE__URL AB__ZITADEL__PAT; do
   [[ -n $(env_get "$key" server.env) ]] || fail "server.env: $key is not set"
 done
 
+# RUNBOOK 2.5: the server and worker run as ashyq_app; the owner only migrates (compose.prod.yaml).
+db_user=$(env_get AB__DATABASE__URL server.env | sed -n 's|^postgres://\([^:@]*\).*|\1|p')
+if [[ $db_user == ashyq ]]; then
+  warn "server.env: AB__DATABASE__URL connects as the owner ashyq; switch to ashyq_app (RUNBOOK 2.5)"
+elif [[ $db_user == ashyq_app && -z $(env_get ASHYQ_APP_DB_PASSWORD) ]]; then
+  fail "server.env connects as ashyq_app but .env has no ASHYQ_APP_DB_PASSWORD (db-init creates the role from it)"
+fi
+
+# RUNBOOK 3.15: Zitadel's database in its own instance. Pointing Zitadel at zitadel-db while its data is still in
+# db would start a new, empty Zitadel instance (every account unable to sign in).
+zhost=$(env_get ZITADEL_DB_HOST)
+case ${zhost:-db} in
+  db) warn ".env: Zitadel's database shares the app's db; move it with just zitadel-db-move (RUNBOOK 3.15)" ;;
+  zitadel-db)
+    # shellcheck disable=SC2016 # expanded in the db container
+    if [[ -n $(compose ps -q db 2>/dev/null) ]] &&
+      [[ $(compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -XAtc "SELECT 1 FROM pg_database WHERE datname = '\''zitadel'\''"' 2>/dev/null) == 1 ]]; then
+      fail ".env: ZITADEL_DB_HOST=zitadel-db, but db still holds the zitadel database: run just zitadel-db-move instead"
+    fi
+    ;;
+  *) fail ".env: ZITADEL_DB_HOST must be db or zitadel-db" ;;
+esac
+
 # The server refuses to start with a Resend key and no sender.
 if [[ -n $(env_get AB__RESEND__API_KEY server.env) && -z $(env_get AB__RESEND__FROM server.env) ]]; then
   fail "server.env: AB__RESEND__API_KEY is set without AB__RESEND__FROM"

@@ -109,19 +109,62 @@ Zero rows is the expected state. For each row: find the offenders (`SELECT id FR
 (<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
 migration that repairs and calls `schema_try_check` again (it validates the existing constraint; the row disappears).
 
-### 2.5 Least-privilege app roles (prepared, not switched on)
+### 2.5 Least-privilege app roles
 
-`infra/postgres/roles.sql` creates `ashyq_app` (server + worker: rows only, no DDL/TRUNCATE, statement 120 s,
-idle-in-transaction 60 s, lock 30 s) and `ashyq_ro` (read-only transactions, statement 30 s) with default
-privileges on what `ashyq` creates later. Nothing runs it yet: the switch waits for QUESTIONS Q-2026-11-01-2.
-The procedure once approved (one window, rollback = restore the old `AB__DATABASE__URL`):
+Owner decision 2026-11-01 (Q-2026-11-01-2): the server does not run as the schema owner.
 
-1. `dc exec -T db psql -U "$POSTGRES_USER" -d ashyq -v ON_ERROR_STOP=1 -v app_password=<new> -v ro_password=<new> -v owner=ashyq -f - < infra/postgres/roles.sql`
-   (re-run after restoring onto a new host; it is idempotent).
-2. Keep migrations on the owner: give `server-migrate` its own URL (`AB__DATABASE__URL` with `ashyq` in an
-   `environment:` override, or a second env file); point `server.env` at `ashyq_app`.
-3. Deploy (3.1), then watch `just prod-report --since 1h` for `permission denied` or `statement timeout`.
-   A job that legitimately needs longer statements gets `SET LOCAL statement_timeout` in its own transaction.
+| Role | Connects | May |
+| --- | --- | --- |
+| `ashyq` | `server-migrate` only (compose.prod.yaml builds its URL from `ASHYQ_DB_PASSWORD`) | own every object, run DDL |
+| `ashyq_app` | server, worker, `dc run --rm server admin ...` (server.env `AB__DATABASE__URL`) | rows of every table, no DDL/TRUNCATE; `grading_entries`, `file_grading_entries`, `assessment_audit_events`, `auth_audit_log` insert-only (retention: SECURITY DEFINER `prune_auth_audit_log`); `_sqlx_migrations` read-only; statement 120 s, idle-in-transaction 60 s, lock 30 s |
+| `ashyq_ro` | people and agents reading prod, analytics | read-only transactions (30 s), no `users.email/bio/profile`, `auth_audit_log.ip/user_agent/metadata`, `google_accounts` ids, `platforms.email`, `idempotency_keys` |
+
+db-init (`infra/postgres/db-init.sh`, every `up`) creates the two roles from `ASHYQ_APP_DB_PASSWORD` /
+`ASHYQ_RO_DB_PASSWORD` in `.env` (`roles.sql`; unset = skipped) and re-applies the grants. What each role may touch
+is schema: `apply_role_grants(owner)` of migration `20261102050200` (`infra/tests/db-roles.sh`, in `just ci-infra`,
+checks it). A new journal or secret-bearing table extends its lists with `CREATE OR REPLACE` in its own migration.
+
+Read prod as `ashyq_ro` (local socket, no password):
+
+```bash
+dc exec -T db psql -U ashyq_ro -d ashyq -c 'SELECT count(*) FROM submissions'
+```
+
+Switching production on (one window; not done yet):
+
+1. `.env`: `ASHYQ_APP_DB_PASSWORD` and `ASHYQ_RO_DB_PASSWORD`, each `openssl rand -hex 32`.
+2. `just deploy` of a release that has migration `20261102050200`. db-init creates the roles, server-migrate applies
+   the grants as `ashyq`; the server still connects as `ashyq` (preflight warns). The first deploy with the
+   `pg_stat_statements` / WAL archiving db command recreates the `db` container: Postgres restarts once (seconds).
+3. `dc exec -T db psql -U ashyq_app -d ashyq -c 'SELECT count(*) FROM users'` answers.
+4. `server.env`: `AB__DATABASE__URL=postgres://ashyq_app:<ASHYQ_APP_DB_PASSWORD>@db:5432/ashyq`, then
+   `dc up -d --no-deps --force-recreate server worker`, smoke (0. Conventions), and `just prod-report --since 1h`
+   for `permission denied` or `statement timeout`.
+
+Rollback: `AB__DATABASE__URL` back to `ashyq` and recreate server and worker; the roles and grants can stay. A job
+that legitimately needs longer statements sets `SET LOCAL statement_timeout` in its own transaction.
+
+### 2.6 pgvector into the extensions schema (prepared, not done)
+
+Schema review 43 moves extensions out of `public` before the app tables move into schemas of their own (core,
+learning, ai, analytics, ops: REWRITE 5.7, after this release). db-init already creates an empty `extensions`
+schema (`USAGE` for everyone) in template1 and every app database. Moving pgvector needs the superuser and a
+short window, because sessions opened before keep a search_path without the schema:
+
+```bash
+dc stop server worker
+for d in ashyq template1; do
+  dc exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d $d -v ON_ERROR_STOP=1 -f /pg/vector-to-extensions.sql"
+done
+dc up -d --wait server worker   # then smoke (0. Conventions)
+```
+
+`infra/postgres/vector-to-extensions.sql` sets `search_path = "$user", public, extensions` on the roles `ashyq`,
+`ashyq_app` and `ashyq_ro` (role level: every database, test clones included) and runs
+`ALTER EXTENSION vector SET SCHEMA extensions`: no table is rewritten, `content_chunks.embedding` keeps its type.
+Dev: the same against the dev cluster as its superuser, plus each test database. Back:
+`ALTER EXTENSION vector SET SCHEMA public` (and `ALTER ROLE ... RESET search_path`) in the same way.
+`infra/tests/db-roles.sh` rehearses it on a migrated throwaway database.
 
 ### 2.6 Restoring a deleted course
 
@@ -213,7 +256,8 @@ just bootstrap        # runner-check (restore.sh skips it); PAT and migrations a
 just deploy           # records .deploy-history so rollback works
 ```
 
-`restore.sh` only restores into a project without a `postgres_data` volume.
+`restore.sh` only restores into a project without a `postgres_data` or `zitadel_pg_data` volume; the snapshot's
+`.env` decides where `zitadel` goes (`ZITADEL_DB_HOST`, 3.15).
 On the existing prod host that means `dc down -v` first, which deletes every
 data volume of the project: do it only with a snapshot that passed
 `just restore-drill`. Legacy offen archives (`backup-*.tar.zst`, before
@@ -378,6 +422,8 @@ just restic stats latest
 docker system df
 ```
 
+The PITR archive (`backups/pitr`, 3.14) holds three base backups plus their WAL; `PITR_BASE_KEEP=2` in `.env`
+shrinks it. A growing `pg_wal` inside the db volume means archiving fails (3.14).
 Free space with: old `dumps/pre-*.dump` (nothing prunes them); `docker image
 prune` (deploy.sh keeps 5 releases); `docker builder prune`. Not: `docker volume
 prune` (legacy `app_content` and stopped projects' data), `backups/legacy-final-*`.
@@ -425,6 +471,83 @@ docker volume rm "$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env)_judge0_box" 2>/de
 ```
 
 Stored runs and answers keep their language ids and verdicts; the old runs keep their Judge0 token.
+
+### 3.14 Point-in-time recovery
+
+Owner decision 2026-11-01: a mistake (a wrong `DELETE`, a bad migration, a broken import) can be undone to the
+minute, not only to last night's dump. Postgres archives every WAL segment into `${BACKUP_DIR}/pitr/wal`
+(`infra/postgres/wal-archive.sh`, gzip, at the latest every `PG_ARCHIVE_TIMEOUT` = 300 s: the recovery point), and
+`just backup` (the nightly timer) adds a base backup to `${BACKUP_DIR}/pitr/base/<UTC stamp>` and keeps the newest
+`PITR_BASE_KEEP` (3), deleting WAL older than the oldest kept base. The window is the last three nights; older
+points come from the restic dumps (3.4). Both sit on the backup disk of this host, like the restic repository
+(FINDINGS 3: not a disk-failure protection). Zitadel's own instance (zitadel-db, 3.15) is archived the same way
+into `${BACKUP_DIR}/pitr-zitadel`. `just pitr-test` rehearses it on throwaway containers; `just ci-infra` runs it.
+
+Check it works (expect recent `last archived`, no `FAILING`):
+
+```bash
+just prod-report --since 1h        # section "WAL archive"
+ls -l /data/cs-mooc/backups/pitr/base /data/cs-mooc/backups/pitr/wal | tail
+```
+
+Recover (the whole instance goes back: ashyq, and Zitadel's database while it still shares db; everything written
+after the target is gone, so take `just backup` first if the current state may still be wanted):
+
+```bash
+just pitr-restore '2026-11-02 10:15:00+05'      # just before the mistake; asks, then stops server/worker/db
+just pitr-restore latest                        # everything archived (a lost data directory, same disk)
+PITR_SERVICE=zitadel-db just pitr-restore '<time>'   # Zitadel's own instance only (after 3.15)
+```
+
+It picks the newest base finished before the target, keeps the current data directory in the volume as
+`/var/lib/postgresql/18/docker.before-pitr-<stamp>`, replays and promotes (a new timeline; archiving continues),
+starts the stack and runs smoke. Undo it the same way: stop db, swap the directories back in a one-off container
+(`dc run --rm --no-deps --entrypoint sh db -c 'mv $PGDATA $PGDATA.pitr-failed && mv $PGDATA.before-pitr-<stamp> $PGDATA'`),
+start db. Remove the kept directory once the result is confirmed (it holds a full copy of the cluster).
+
+When `WAL archive` says FAILING: `dc logs db | grep wal-archive`. Postgres keeps every segment it could not
+archive in `pg_wal` (disk pressure, 3.11) and retries. "belongs to cluster" means a new cluster (after `just restore`
+or a new volume) met the old archive: `restore.sh` moves it aside to `pitr/before-restore-<stamp>` itself; by hand,
+move `pitr/wal` and `pitr/base` aside and recreate db. A logical restore always starts a new archive: run `just backup`
+right after it so the new cluster has a base.
+
+### 3.15 Zitadel in its own Postgres instance
+
+Schema review item 47: Zitadel's eventstore (writes on every sign-in and token, its own vacuum and locks) runs in
+the compose service `zitadel-db` (same image and superuser as db, 512m, volume `zitadel_pg_data`), so it cannot
+starve the app's instance and either can be restarted, upgraded or recovered alone. `ZITADEL_DB_HOST` in `.env`
+says where Zitadel's database is: `zitadel-db` on fresh installs (`prod.env.example`, smoke, CI), unset (= `db`) on
+a stack set up before. Never set it by hand on such a stack: Zitadel would start a new, empty instance on
+zitadel-db and nobody could sign in (preflight fails on that).
+
+Move (one window, a few minutes; sign-in is unavailable while Zitadel is stopped, pages and API keep serving;
+rehearsed by `just zitadel-db-move-test`, in `just ci-infra`):
+
+```bash
+just deploy                            # a release with zitadel-db: it starts empty beside db
+just backup                            # a fresh restic snapshot first
+just zitadel-db-move                   # asks; dumps, restores as zitadel, compares every table's row count
+just prod-report --since 1h            # WAL archive: db and zitadel-db
+```
+
+`zitadel-db-move.sh` stops Zitadel, copies db's `zitadel` into zitadel-db (`infra/postgres/zitadel-restore.sh`:
+objects owned by `zitadel`, no grants or extensions of the source), compares the row counts of every table,
+renames the source to `zitadel_moved_<yyyymmdd_hhmmss>` in db, writes `ZITADEL_DB_HOST=zitadel-db` to `.env`,
+starts Zitadel on the copy and runs smoke. A failure before the switch restarts Zitadel on db; one after it
+goes back by itself. From then on backup.sh dumps `zitadel` from zitadel-db, restore.sh loads it there and
+PITR covers it in `pitr-zitadel/`.
+
+Back (sign-in broken after the move, or zitadel-db unusable): `just zitadel-db-move --back` renames
+`zitadel_moved_*` back to `zitadel` in db, keeps the copy as `zitadel_back_<stamp>` in zitadel-db, sets
+`ZITADEL_DB_HOST=db` and restarts Zitadel; writes made on zitadel-db since the move (new accounts, password
+changes, sessions) are lost, so go back soon or not at all. After a week without problems:
+
+```bash
+dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE zitadel_moved_<stamp>"'
+```
+
+The `zitadel` role stays in db (it owns nothing there any more); restores of older snapshots still work: their
+`zitadel.dump` loads into zitadel-db.
 
 ## 4. Troubleshooting
 

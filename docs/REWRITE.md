@@ -725,6 +725,11 @@ in the order it can be done, each step a forward migration on the current schema
 14. **Permissions** (item 19, rest). `Grant::parse` can read `role_permissions.resource/action/scope`
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.
+- **Review queue member test** (found by `query_plans.rs`, 2026-11): `list_teacher_grading_work` asks
+  "is the learner a member" with `EXISTS (trail_runs ... AND NOT is_course_staff(...))` inside a `CASE`; the planner
+  turns it into a hashed scan of every `trail_runs` row, calling `is_course_staff` per enrolment of the platform on
+  each load. Goes with the enrolments table (5): a join on `enrolments (course_id, user_id)`, staff excluded once;
+  then add `trail_runs`/`enrolments` to the case's `no_seq_scan`.
 
 15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 (`naming_rules.rs` holds new
     migrations to it). Existing columns that break it, renamed one table at a time as expand/contract (add the
@@ -771,8 +776,10 @@ Done:
 
 Decided, not done:
 
-1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
-   production host (FINDINGS 3, reconfirmed).
+1. **Recovery point** (changed 2026-11-01, done in the repo): point-in-time recovery through WAL archiving and
+   nightly base backups into the backup directory of the production host (RUNBOOK 3.14), built-in tools only
+   (`archive_command`, `pg_basebackup`, `pg_archivecleanup`: no extra image to build and pin). Backups stay on
+   the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
 2. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
    dates; date parameters bind as `date`; past daily rows are rebuilt once.
 3. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
@@ -787,12 +794,24 @@ Decided, not done:
 6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
    retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
    (QUESTIONS Q-2026-11-01-2).
+   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report` (done:
+   preloaded by the db command, created in `postgres` by db-init, section `top statements`),
+   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
+   `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
+6. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
+   grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
+   through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
 7. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
    carry a `schema_version` in the payload.
 8. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
    AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
 9. **Rollback without restore**: once every migration since the previous release is expand-only (no
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
+10. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
+    `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
+11. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema. Prepared (2026-11): db-init
+    creates the empty `extensions` schema; moving pgvector there is the superuser step of RUNBOOK 2.6. No table
+    has moved; the schemas need the roles' `search_path` (set by that step) and grants per schema.
 
 ## 6. Auth
 

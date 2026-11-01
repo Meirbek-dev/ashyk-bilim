@@ -15,6 +15,7 @@ import { selectSpecs, web2Tree } from './e2e-select.ts'
 import { applyBucketCors, buildServer, builtServer, ensureLocalEnv } from './stack.ts'
 import {
   alive,
+  appRoleFor,
   databaseUrl,
   exe,
   httpUp,
@@ -306,7 +307,7 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     freshDatabase(db, env, dir)
 
     const server = {
-      ...serverEnv({ api: ports.api, redisDb: 15, db, origins, webUrl: origin }),
+      ...serverEnv({ api: ports.api, redisDb: 15, db, origins, webUrl: origin, role: await appRoleFor(env, db) }),
       AB__SERVER__WEB_LINKS: o.app === 'web2' ? 'v2' : 'legacy',
       // Like the CI stand (compose.web2.yaml): a runner that does not answer is switched off, so it reads
       // "not configured" instead of a 503 that fails every code-arena page's health check; @runner specs need it up.

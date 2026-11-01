@@ -47,6 +47,15 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
   start with `SET LOCAL lock_timeout = '5s';`, build an index on an existing table CONCURRENTLY in its own
   `-- no-transaction` file, and DROP COLUMN / DROP TABLE / RENAME only a release after the code stopped using it,
   in a file marked `-- contract: <why>`.
+- The server runs as `ashyq_app` (RUNBOOK 2.5): rows only, no DDL, insert-only journals. A new append-only journal
+  or a table holding secrets/contact data extends `apply_role_grants` (migration `20261102050200`, CREATE OR
+  REPLACE + call) in its own migration; a delete the app must do on a journal goes through a SECURITY DEFINER
+  function owned by the schema owner (`prune_auth_audit_log`).
+- Migrations change schema, not data. A row change in a migration is the backfill of a column/table the change adds
+  or the deterministic repair a new constraint needs; an UPDATE/DELETE/TRUNCATE of a table the file did not create
+  says `-- data-fix: <rule>` (`migration_rules.rs`; a same-file `ADD COLUMN` backfill and a contract file's re-run
+  backfill are exempt). Any other data fix is an `ashyq admin <command>` (idempotent, `--dry-run`, prints counts;
+  `migrate-themes` is the pattern) run by hand after `just backup`. Existing migrations are never squashed.
 - Preserve migrated legacy data: UUIDs, video thumbnails, `custom` activities, certificate layouts,
   and trail steps without projection rows. Imported users authenticate through Zitadel passwap.
 - No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, `dbg!`, or stdout/stderr prints outside

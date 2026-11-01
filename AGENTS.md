@@ -20,7 +20,8 @@
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
 - `docs/AI-FIRST.md` - concept graph, mastery model, material search and AI pre-grading (rules, API, UI).
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
-- `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
+- `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data;
+  `docs/agents/SCHEMA.md` - every table and column, generated (`just schema-docs`), search it with `rg`.
 - `docs/REWRITE.md` - v3 rewrite plan (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
   In progress (its section 15); the other docs describe production as it runs now.
@@ -34,7 +35,8 @@
 ## Rules
 
 - Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
-- Never edit an applied migration; add a new one.
+- Never edit an applied migration; add a new one. Data fixes are `ashyq admin` commands, not migrations
+  (`apps/server/AGENTS.md`).
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
 - Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
   is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, go-judge, restic) wait as PRs. Its
@@ -91,7 +93,7 @@
   `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
 - One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
-  `just db fresh <name>`, `just db sql "<sql>"`, `just check [--wip|--all]`, `just contract`,
+  `just db fresh <name>`, `just db sql "<sql>"` (read-only as `ashyq_ro`, no emails/secrets; `--rw` to write), `just check [--wip|--all]`, `just contract`,
   `just e2e [web2 --changed]`, `just shoot` (screenshots as real accounts), `just restore-media`, `just fmt <files>`,
   `just metrics` (sizes to shrink), `just clean [--deep]` (old stands, logs, cargo incremental caches).
 - Server DB tests clone one migrated template per migration set (`#[ab_testdb::test]`); the suite runs 12 at once on

@@ -6,7 +6,7 @@
 #   web2 = smoke + compose.web2.yaml; web-e2e = web2 + compose.web-e2e.yaml
 #
 # Networks: edge-net (nginx and everything it or the apps must reach, has egress),
-# data-net (internal: db, redis, zitadel, rustfs, init jobs), exec-net (internal: the code runner).
+# data-net (internal: db, zitadel-db, redis, zitadel, rustfs, init jobs), exec-net (internal: the code runner).
 
 x-logging: &logging
   driver: json-file
@@ -14,8 +14,10 @@ x-logging: &logging
     max-size: 10m
     max-file: '5'
 
+# Zitadel's database lives in its own instance (zitadel-db) with ZITADEL_DB_HOST=zitadel-db, else in the app's
+# db: a stack created before 2026-11 until infra/scripts/zitadel-db-move.sh moves it (RUNBOOK 3.15).
 x-zitadel-db: &zitadel-db
-  ZITADEL_DATABASE_POSTGRES_HOST: db
+  ZITADEL_DATABASE_POSTGRES_HOST: ${ZITADEL_DB_HOST:-db}
   ZITADEL_DATABASE_POSTGRES_PORT: 5432
   ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
   ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
@@ -39,6 +41,8 @@ services:
       -c log_min_duration_statement=${PG_LOG_MIN_DURATION_STATEMENT:-300}
       -c log_parameter_max_length=0
       -c "log_line_prefix=%m [%p] user=%u db=%d app=%a "
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=top
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -61,19 +65,43 @@ services:
           cpus: '2.0'
     logging: *logging
 
-  # Roles and databases (infra/postgres/init.sql), idempotent, as the superuser.
+  # Zitadel's own Postgres (same image and superuser as db): its eventstore load, vacuum, locks and memory stay
+  # off the app's instance, and either can be restarted, upgraded or recovered alone. Holds the zitadel database
+  # once ZITADEL_DB_HOST=zitadel-db; idles empty on a stack whose Zitadel still uses db (RUNBOOK 3.15).
+  zitadel-db:
+    image: *pg-image
+    command: >-
+      postgres
+      -c log_min_duration_statement=${PG_LOG_MIN_DURATION_STATEMENT:-300}
+      -c log_parameter_max_length=0
+      -c "log_line_prefix=%m [%p] user=%u db=%d app=%a "
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - zitadel_pg_data:/var/lib/postgresql
+    networks: [data-net]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '1.0'
+    logging: *logging
+
+  # Roles and databases (infra/postgres/init.sql; Zitadel's in zitadel-db: zitadel-db.sql), then the
+  # least-privilege app roles on template1 and every app database (roles.sql; skipped while
+  # ASHYQ_APP/RO_DB_PASSWORD are unset): infra/postgres/db-init.sh. Idempotent, as the superuser.
   db-init:
     image: *pg-image
-    entrypoint:
-      - sh
-      - -c
-      - >-
-        exec psql -v ON_ERROR_STOP=1
-        -v ashyq_password="$$ASHYQ_DB_PASSWORD"
-        -v zitadel_password="$$ZITADEL_DB_PASSWORD"
-        -v databases="$$ASHYQ_DATABASES"
-        -v createdb="$$ASHYQ_DB_CREATEDB"
-        -f /init.sql
+    entrypoint: ['sh', '/pg/db-init.sh']
     environment:
       PGHOST: db
       PGDATABASE: postgres
@@ -83,11 +111,16 @@ services:
       ZITADEL_DB_PASSWORD: ${ZITADEL_DB_PASSWORD:?}
       ASHYQ_DATABASES: ${ASHYQ_DATABASES:-ashyq}
       ASHYQ_DB_CREATEDB: ${ASHYQ_DB_CREATEDB:-false}
+      ASHYQ_APP_DB_PASSWORD: ${ASHYQ_APP_DB_PASSWORD:-}
+      ASHYQ_RO_DB_PASSWORD: ${ASHYQ_RO_DB_PASSWORD:-}
+      ZITADEL_DB_HOST: ${ZITADEL_DB_HOST:-db}
     volumes:
-      - ./infra/postgres/init.sql:/init.sql:ro
+      - ./infra/postgres:/pg:ro
     networks: [data-net]
     depends_on:
       db:
+        condition: service_healthy
+      zitadel-db:
         condition: service_healthy
     logging: *logging
 
@@ -253,6 +286,7 @@ services:
 # Names are load-bearing: prod volumes are <project>_<name>; renaming = empty volumes.
 volumes:
   postgres_data:
+  zitadel_pg_data:
   redis_data:
   rustfs_data:
   zitadel_machinekey:

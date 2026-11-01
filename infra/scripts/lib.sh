@@ -138,6 +138,11 @@ use_stack() {
     smoke) use_smoke ;;
     web2) use_web2 ;;
     web-e2e) use_web_e2e ;;
+    # Throwaway rehearsals (infra/tests/zitadel-db-move.sh): the caller sets the files, env file and project.
+    custom)
+      [[ -n ${COMPOSE_FILE:-} && -n ${COMPOSE_ENV_FILES:-} && -n ${COMPOSE_PROJECT_NAME:-} ]] ||
+        die "STACK=custom needs COMPOSE_FILE, COMPOSE_ENV_FILES and COMPOSE_PROJECT_NAME"
+      ;;
     *) die "STACK must be dev, prod, smoke, web2 or web-e2e (got '$STACK')" ;;
   esac
 }

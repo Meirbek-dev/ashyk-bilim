@@ -357,6 +357,10 @@ One migration set for the database `ashyq`. Rules:
    - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
      `<status>_at` timestamps.
    Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract).
+2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Every table has a `COMMENT ON TABLE`
+   (what one row is, who writes it) in the migration that creates it; `docs/agents/SCHEMA.md` is generated from
+   the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs` fails while it is stale or a table has no
+   comment.
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
@@ -479,7 +483,12 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   see transactions.
 - Migrations: `sqlx migrate` embedded via `migrate!()`; `ashyq migrate` runs them explicitly (compose one-shot
   `server-migrate`, run by bootstrap and deploy; never on boot). A migration on `origin/main` is never edited
-  (pre-commit hook); add a new one (`just new migration <name>`).
+  (pre-commit hook); add a new one (`just new migration <name>`). The set is never squashed: production's
+  `_sqlx_migrations` ledger holds every version.
+- Data fixes are not migrations: a migration holds schema, the backfill of what it adds and the repair a new
+  constraint needs (marked `-- data-fix: <rule>` when it touches rows of an existing table, `migration_rules.rs`).
+  A correction of existing data for its own sake is an idempotent `ashyq admin` command with `--dry-run`
+  (`migrate-themes`, `migrate-locales`), run by hand after a backup, so it can be rehearsed on a copy and re-run.
 
 ## 9. Background jobs (`ab_db::queue` + `ab-jobs`)
 
@@ -636,6 +645,8 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | Type/lint | `just clippy` (`-D warnings`; pedantic+nursery warn-promoted; unwrap/expect/panic/todo/dbg/print denied) | agent slop cannot land |
 | Format | `just fmt-check` | |
 | Query validity | `just sqlx-check` | SQL matches schema at build time |
+| Runtime SQL | `crates/db/tests/runtime_sql.rs` | every `sqlx::query("...")` literal prepares on the migrated schema; each file building SQL at run time (`QueryBuilder`, `AssertSqlSafe`) names the DB test that runs its shapes |
+| Query plans | `crates/db/tests/query_plans.rs` | hot queries (leaderboard, notifications, review queue, learner progress, search) keep their index plans: `EXPLAIN (GENERIC_PLAN)` of the cached SQL over a production-shaped fixture |
 | Unit | nextest (`just test-unit` needs no services) | pure domain logic |
 | DB | `#[ab_testdb::test]` (per-test clone of one migrated template, `crates/testdb`) | queries, constraints, queue semantics |
 | HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for go-judge/LLM) | handlers, auth, RBAC, error envelopes |
