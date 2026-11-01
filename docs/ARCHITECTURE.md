@@ -345,7 +345,10 @@ One migration set for the database `ashyq`. Rules:
 1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
    `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by the shared `set_updated_at`
    trigger.
-2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations.
+2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Every table has a `COMMENT ON TABLE`
+   (what one row is, who writes it) in the migration that creates it; `docs/agents/SCHEMA.md` is generated from
+   the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs` fails while it is stale or a table has no
+   comment.
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape

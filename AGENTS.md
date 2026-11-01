@@ -20,7 +20,8 @@
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
 - `docs/AI-FIRST.md` - concept graph, mastery model, material search and AI pre-grading (rules, API, UI).
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
-- `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
+- `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data;
+  `docs/agents/SCHEMA.md` - every table and column, generated (`just schema-docs`), search it with `rg`.
 - `docs/REWRITE.md` - v3 rewrite plan (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
   In progress (its section 15); the other docs describe production as it runs now.

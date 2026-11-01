@@ -326,6 +326,11 @@ restore-drill *archive:
 restore-test:
     {{ bash_bin }} infra/scripts/restore-test.sh
 
+# Regenerate docs/agents/SCHEMA.md from the migrations (a test template on the dev Postgres); the server suite
+# fails while it is stale.
+schema-docs:
+    UPDATE_SCHEMA_DOCS=1 {{ just_bin }} server test --no-capture -E 'binary(schema_docs) & test(schema_docs_match_the_migrations)'
+
 # Recipes of apps/server/justfile against the dev stack (just server test).
 server *args:
     export TEST_REDIS_URL="${TEST_REDIS_URL:-$(sed -n 's/^TEST_REDIS_URL=//p' infra/env/dev.env)}" && cd apps/server && {{ just_bin }} "$@"
