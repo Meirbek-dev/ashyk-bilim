@@ -69,8 +69,10 @@ const CASES: &[Case] = &[
         no_seq_scan: &["activity_progress"],
         indexes: &["activity_progress_course_user_idx"],
     },
-    // The `/search` course query is built at run time (pg_trgm terms, REWRITE §5.6 n11), so it is not in
-    // the cache: `schema_review::course_search_walks_the_trigram_index` checks its plan on 10 000 courses.
+    // The `/search` course query and the `q` filter of the course/collection listings are built at run
+    // time (pg_trgm terms, REWRITE §5.6 n11), so they are not in the cache:
+    // `schema_review::course_search_walks_the_trigram_index` and
+    // `schema_review::listing_filters_walk_the_trigram_indexes` check their plans on 10 000 rows.
 ];
 
 const FIXTURE: &str = r"

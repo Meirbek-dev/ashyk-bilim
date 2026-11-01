@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM blocks WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42409027a761262a2370153c0bcdc6df16dc4c4d579ea24e476e3af2b2e8060b"
+}

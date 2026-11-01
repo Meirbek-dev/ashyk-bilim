@@ -372,10 +372,10 @@ One migration set for the database `ashyq`. Rules:
    (courses, assessments). The one soft delete is a course's (`deleted_at`, always archived): reads skip it
    (`get_course`, `course_visible`), the retention purge cascades it after the grace period (COURSE_ARCHIVING 6.2).
 6. Search: `search_fold` (`migrations/20260926000001_search_matches.sql`, Kazakh folding since 2026-10) and one
-   word-match rule for `/search`, `courses?q=` and collections. `/search` writes it as one
-   `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`), answered by the
-   `pg_trgm` GIN indexes `*_search_trgm_idx` for words of 3+ characters; the listings' `q` still calls
-   `search_matches` (no index, REWRITE §5.6 n11). A changed `search_fold` body needs a REINDEX of those indexes.
+   word-match rule for `/search`, `courses?q=` and `collections?q=`, written as one
+   `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`, so these queries are
+   `QueryBuilder`s), answered by the `pg_trgm` GIN indexes `*_search_trgm_idx` for words of 3+ characters
+   (`schema_review::*_trigram_ind*` check the plans). A changed `search_fold` body needs a REINDEX of those indexes.
    The `tsvector` generated columns on courses/collections only rank (`ts_rank_cd`), so they carry no GIN index
    (dropped 2026-11). Course material search uses pgvector on `content_chunks` (§12 "AI-first foundation").
 7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the
@@ -489,8 +489,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
-- **Media keys carry upload ids** (`*_upload_id`, `block_uploads`, derived from the key by triggers); the reaper
-  keeps any upload `upload_referenced` names, whatever `referenced_count` says (§11).
+- **Media keys carry upload ids** (`*_upload_id`, `block_uploads` for claimed blocks, `post_uploads` for the
+  discussion images a post's content shows; all derived from the keys/content by triggers); the reaper keeps any
+  upload `upload_referenced` names, and the release paths start the clock only when it names none (§11).
+  `referenced_count` is no longer written by the server; until the contract drops it, `uploads_rollback_guard`
+  keeps the previous release's counter writes from starting the clock of a referenced upload.
 - **Staff per target**: `course_staff (course_id, user_id)` and `collection_staff (collection_id, user_id)`
   replace `resource_authors` (one table, course XOR collection); until its contract migration drops it, triggers
   mirror writes both ways so the previous release sees the same roster.
@@ -661,11 +664,13 @@ Postgres work uses Postgres advisory locks and row locks.
      by `POST /api/v2/uploads/{id}/multipart` (aborted by `DELETE`).
   3. `POST /api/v2/uploads/{id}/finalize` → server HEADs the object, refuses (and deletes) one whose content type
      or size differs from the intent, marks it `finalized`.
-  4. A claim starts and a release restarts the 24 h grace clock (`expires_at`, still driven by
-     `referenced_count`); `uploads:reap` deletes an expired finalized upload only when `upload_referenced(id)` is
-     false - no row names it through an upload foreign key (`*_upload_id` beside every media key, filled from the
-     key by triggers; `block_uploads` for block media; `file_submission_files.upload_id`) - and pending ones after
-     the 12 h claim window. A drifted counter can no longer release a referenced file.
+  4. A claim takes the upload off the 24 h grace clock (`expires_at = NULL`); a release - after the write that
+     dropped the row's key, in the same transaction - restarts it when `upload_referenced(id)` is false: no row
+     names it through an upload foreign key (`*_upload_id` beside every media key, filled from the key by
+     triggers; `block_uploads` for claimed block media; `post_uploads` for the images a post's content shows;
+     `file_submission_files.upload_id`). `uploads:reap` deletes an expired finalized upload only when
+     `upload_referenced(id)` is still false, and pending ones after the 12 h claim window. Course purge, chapter,
+     activity, block, file-attempt and post deletes release what their rows named.
 
 ## 12. AI subsystem
 

@@ -80,12 +80,14 @@ pub async fn mark_finalized<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Claim a reference to a finalized upload (clears the reaper clock).
+/// Claim a finalized upload for a row that names it (clears the reaper clock).
+///
+/// What holds the upload is the row's upload key (`upload_referenced`, schema
+/// review item 18); the claim only takes it off the clock and checks that it is
+/// finalized. `false` when it is not.
 pub async fn add_reference<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE uploads
-           SET referenced_count = referenced_count + 1, expires_at = NULL
-           WHERE id = $1 AND status = 'finalized'"#,
+        "UPDATE uploads SET expires_at = NULL WHERE id = $1 AND status = 'finalized'",
         id
     )
     .execute(db)
@@ -96,7 +98,7 @@ pub async fn add_reference<'e>(db: impl sqlx::PgExecutor<'e>, id: Uuid) -> Resul
 /// Row-lock uploads in key order.
 ///
 /// The one order every multi-upload reference move takes (BUG-242/258), so
-/// two writers sharing uploads never lock them in opposite orders. `NO KEY UPDATE`: what the count UPDATEs
+/// two writers sharing uploads never lock them in opposite orders. `NO KEY UPDATE`: what the clock UPDATEs
 /// take anyway; FK checks from file rows are not blocked.
 pub async fn lock_in_key_order(conn: &mut sqlx::PgConnection, ids: &[Uuid]) -> Result<()> {
     sqlx::query!(
@@ -116,12 +118,8 @@ pub async fn release_reference_by_key<'e>(
     grace_secs: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE uploads
-           SET referenced_count = referenced_count - 1,
-               expires_at = CASE WHEN referenced_count - 1 = 0
-                                 THEN now() + make_interval(secs => $2)
-                                 ELSE expires_at END
-           WHERE key = $1 AND referenced_count > 0"#,
+        r#"UPDATE uploads SET expires_at = now() + make_interval(secs => $2)
+           WHERE key = $1 AND status = 'finalized' AND NOT upload_referenced(id)"#,
         key,
         grace_secs
     )
@@ -130,26 +128,47 @@ pub async fn release_reference_by_key<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Drop a reference; when the last one goes, restart the grace clock so the
-/// reaper eventually collects the orphaned object.
+/// Start the grace clock of an upload no row names any more.
+///
+/// When no row names it (`upload_referenced`), the reaper eventually collects
+/// the object. Call it after the write that dropped the reference, in the
+/// same transaction. `true` when the clock started.
 pub async fn release_reference<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: Uuid,
     grace_secs: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE uploads
-           SET referenced_count = referenced_count - 1,
-               expires_at = CASE WHEN referenced_count - 1 = 0
-                                 THEN now() + make_interval(secs => $2)
-                                 ELSE expires_at END
-           WHERE id = $1 AND referenced_count > 0"#,
+        r#"UPDATE uploads SET expires_at = now() + make_interval(secs => $2)
+           WHERE id = $1 AND status = 'finalized' AND NOT upload_referenced(id)"#,
         id,
         grace_secs
     )
     .execute(db)
     .await?;
     Ok(updated.rows_affected() == 1)
+}
+
+/// [`release_reference`] for several uploads (locked in key order first).
+/// Returns how many started their clock.
+pub async fn release_references(
+    conn: &mut sqlx::PgConnection,
+    ids: &[Uuid],
+    grace_secs: f64,
+) -> Result<u64> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    lock_in_key_order(&mut *conn, ids).await?;
+    let updated = sqlx::query!(
+        r#"UPDATE uploads SET expires_at = now() + make_interval(secs => $2)
+           WHERE id = ANY($1) AND status = 'finalized' AND NOT upload_referenced(id)"#,
+        ids,
+        grace_secs
+    )
+    .execute(conn)
+    .await?;
+    Ok(updated.rows_affected())
 }
 
 pub struct ReapedUpload {
@@ -163,8 +182,9 @@ pub struct ReapedUpload {
 /// (at most `limit`; the next sweep takes the rest).
 ///
 /// "Unreferenced" is SQL `upload_referenced` (schema review item 18): no row names the upload
-/// through an upload foreign key. `referenced_count` only starts the grace clock; a count that
-/// drifted to 0 (BUG-209/241/263) no longer lets a referenced file go.
+/// through an upload foreign key. The clock (`expires_at`, set by the release paths) only says
+/// since when; a clock started while a row named the file (the old counter's drift,
+/// BUG-209/241/263) no longer lets a referenced file go.
 pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,

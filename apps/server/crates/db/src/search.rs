@@ -1,16 +1,16 @@
 //! Platform search (search-lite).
 //!
-//! Matching is the `search_matches` rule (UX-222, shared with `courses?q=`): every
+//! Matching is one rule (UX-222, shared with `courses?q=` and `collections?q=`): every
 //! word matches at a word start (UX-152 prefix), a one-character word only
 //! whole and unfolded, symbols count (`C#`, `C++` - the 'simple' tsvector
 //! drops them), Kazakh letters fold to the Russian keyboard's (қ→к, і→и) and ё to е, and Cyrillic
 //! look-alikes fold to Latin (SQL `search_fold`); `-word` excludes. Hits are ranked by
 //! `ts_rank_cd` over the `search` tsvector, then recency.
 //!
-//! The `/search` queries spell the rule out as one predicate per word ([`push_terms`]), so the
-//! trigram index on each searched text (`*_search_trgm_idx`, `pg_trgm`) answers a word of three
-//! or more characters; shorter words and exclusions filter the rows it found. `search_matches`
-//! (one function over arrays, no index) still serves the catalog listings' `q` filter.
+//! The `/search` queries and the `q` filter of the course and collection listings spell the rule
+//! out as one predicate per word ([`push_terms`]), so the trigram index on each searched text
+//! (`*_search_trgm_idx`, `pg_trgm`) answers a word of three or more characters; shorter words and
+//! exclusions filter the rows it found.
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, CourseId, UserId};
@@ -75,7 +75,7 @@ pub fn prefix_tsquery(query: &str) -> String {
         .join(" & ")
 }
 
-/// `search_matches` word regexes for a query.
+/// Word regexes for a query.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct WordPatterns {
     /// Must match the folded text.
@@ -87,7 +87,7 @@ pub struct WordPatterns {
     pub excluded: Vec<String>,
 }
 
-/// The `search_matches` regexes for each word of `query`.
+/// The regexes for each word of `query`.
 ///
 /// A word must start where a word starts (or the text does) unless it
 /// starts with a symbol; a one-character word must also end there, so `c`
@@ -125,11 +125,14 @@ pub fn word_patterns(query: &str) -> WordPatterns {
     out
 }
 
-/// `AND` one predicate per word of `patterns` over `hay` (a constant SQL expression), the
-/// `search_matches` rule: a word must match the folded text, a one-character word the lower-cased
+/// `AND` one predicate per word of `patterns` over `hay` (a constant SQL expression): a word must match the folded text, a one-character word the lower-cased
 /// one, an excluded word must not match. `search_fold(hay) ~ search_fold($n)` is the form the
 /// trigram expression indexes answer.
-fn push_terms(qb: &mut QueryBuilder<Postgres>, hay: &'static str, patterns: &WordPatterns) {
+pub(crate) fn push_terms(
+    qb: &mut QueryBuilder<Postgres>,
+    hay: &'static str,
+    patterns: &WordPatterns,
+) {
     for word in &patterns.words {
         qb.push(format_args!(" AND search_fold({hay}) ~ search_fold("))
             .push_bind(word.clone())
@@ -148,9 +151,23 @@ fn push_terms(qb: &mut QueryBuilder<Postgres>, hay: &'static str, patterns: &Wor
 }
 
 /// The searched text of a course; `courses_search_trgm_idx` indexes `search_fold` of exactly this.
-const COURSE_HAY: &str = "(name || ' ' || description || ' ' || coalesce(about, ''))";
+pub(crate) const COURSE_HAY: &str = "(name || ' ' || description || ' ' || coalesce(about, ''))";
 /// The searched text of a collection (`collections_search_trgm_idx`).
-const COLLECTION_HAY: &str = "(name || ' ' || description)";
+pub(crate) const COLLECTION_HAY: &str = "(name || ' ' || description)";
+
+/// The [`CourseRow`] columns of a `courses` row (search and the `GET /courses` listing).
+pub(crate) const COURSE_COLUMNS: &str = "SELECT courses.id, name, description, about, tags,
+        public, open_to_contributors, assessments_require_enrollment,
+        thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
+        (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
+        ARRAY(SELECT ra.user_id FROM course_staff ra
+              WHERE ra.course_id = courses.id AND ra.status = 'active'
+                AND ra.authorship <> 'reporter') AS contributor_ids,
+        ARRAY(SELECT ra.user_id FROM course_staff ra
+              WHERE ra.course_id = courses.id AND ra.status = 'active'
+                AND ra.authorship = 'maintainer') AS maintainer_ids,
+        (extract(epoch FROM courses.created_at))::bigint AS created_at,
+        (extract(epoch FROM courses.updated_at))::bigint AS updated_at";
 /// The searched text of a lesson (`activities_search_trgm_idx`).
 const LESSON_HAY: &str = "(a.name)";
 
@@ -185,22 +202,8 @@ fn courses_query(
     offset: i64,
 ) -> QueryBuilder<Postgres> {
     let mut qb = QueryBuilder::<Postgres>::new(prefix);
-    qb.push(
-        "SELECT id, name, description, about, tags,
-                public, open_to_contributors, assessments_require_enrollment,
-                thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
-                (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
-                ARRAY(SELECT ra.user_id FROM course_staff ra
-                      WHERE ra.course_id = courses.id AND ra.status = 'active'
-                        AND ra.authorship <> 'reporter') AS contributor_ids,
-                ARRAY(SELECT ra.user_id FROM course_staff ra
-                      WHERE ra.course_id = courses.id AND ra.status = 'active'
-                        AND ra.authorship = 'maintainer') AS maintainer_ids,
-                (extract(epoch FROM created_at))::bigint AS created_at,
-                (extract(epoch FROM updated_at))::bigint AS updated_at
-         FROM courses
-         WHERE archived_at IS NULL AND course_visible(courses, ",
-    );
+    qb.push(COURSE_COLUMNS)
+        .push(" FROM courses WHERE archived_at IS NULL AND course_visible(courses, ");
     qb.push_bind(viewer.map(|v| v.0))
         .push(", ")
         .push_bind(see_all)
@@ -317,7 +320,8 @@ pub async fn search_users(
            WHERE disabled_at IS NULL
              AND (search_fold(username) LIKE search_fold($1) ESCAPE '\'
                   OR search_fold(display_name) LIKE search_fold($1) ESCAPE '\')
-             AND search_matches(username || ' ' || display_name, ARRAY[]::text[], $4, ARRAY[]::text[])
+             AND NOT EXISTS (SELECT 1 FROM unnest($4::text[]) p
+                             WHERE lower(username || ' ' || display_name) !~ lower(p))
            ORDER BY (search_fold(username) LIKE search_fold($2) ESCAPE '\'
                      OR search_fold(display_name) LIKE search_fold($2) ESCAPE '\') DESC, username, id
            LIMIT $3 OFFSET $5"#,

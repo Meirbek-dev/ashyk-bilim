@@ -161,8 +161,9 @@ fn with_if_match(
     builder.body(Body::from(body.to_string())).unwrap()
 }
 
+/// File rows naming the upload (what holds it off the reaper here).
 async fn referenced_count(app: &TestApp, upload_id: &str) -> i32 {
-    sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1")
+    sqlx::query_scalar("SELECT count(*)::int FROM file_submission_files WHERE upload_id = $1")
         .bind(uuid::Uuid::parse_str(upload_id).unwrap())
         .fetch_one(&app.pool)
         .await
@@ -1473,18 +1474,15 @@ async fn dropped_draft_swap_keeps_references_and_the_reaper_runs(pool: PgPool) {
         .await;
     }
 
-    // An attached upload whose count was torn by an older build: expired,
-    // count 0. The reaper skips it and still collects a genuine orphan.
+    // An attached upload whose clock an older build's torn count started:
+    // expired. The reaper skips it and still collects a genuine orphan.
     let orphan = finalized_upload(&app, &alice, "application/pdf", b"%PDF orphan").await;
     for upload in [&a, &orphan] {
-        sqlx::query(
-            "UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'
-             WHERE id = $1",
-        )
-        .bind(uuid::Uuid::parse_str(upload).unwrap())
-        .execute(&app.pool)
-        .await
-        .unwrap();
+        sqlx::query("UPDATE uploads SET expires_at = now() - interval '1 hour' WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(upload).unwrap())
+            .execute(&app.pool)
+            .await
+            .unwrap();
     }
     let reaped = ab_db::uploads::expired(&app.pool, 500).await.unwrap();
     assert_eq!(reaped.len(), 1);
@@ -1620,7 +1618,7 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
             .await
             .unwrap();
         let (count, expiring): (i32, bool) = sqlx::query_as(
-            "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+            "SELECT upload_referenced(id)::int, expires_at IS NOT NULL FROM uploads WHERE id = $1",
         )
         .bind(uuid::Uuid::parse_str(&upload).unwrap())
         .fetch_one(&app.pool)

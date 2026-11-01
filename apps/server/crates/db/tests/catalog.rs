@@ -392,3 +392,127 @@ async fn only_a_learners_code_run_is_learner_work(pool: PgPool) {
     seed_code_runs(&pool, item, learner, 1).await;
     assert_eq!(with_work(pool.clone()).await, vec![activity]);
 }
+
+/// Review 3, item 35: the `q` filter of `GET /courses` / `GET /collections`
+/// is `/search`'s rule (word-start stems, one-character words whole,
+/// `-word` excluded), built as trigram-indexed terms. Runs every shape the
+/// builders make: each sort with and without a cursor, each preset, `mine`.
+#[ab_testdb::test]
+async fn course_and_collection_listings_run_every_shape(pool: PgPool) {
+    use ab_core::id::{CollectionId, CourseId, UserId};
+    use ab_db::catalog::{CourseFilter, list_courses};
+    use ab_db::collections::{CollectionFilter, list_collections};
+
+    let author: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email)
+         VALUES ('z-author', 'author', 'author@example.com') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    for (name, public, archived) in [
+        ("Базы данных", true, false),
+        ("C# basics", true, false),
+        ("Rust systems", false, false),
+        ("Archived C", true, true),
+    ] {
+        sqlx::query(
+            "INSERT INTO courses (name, description, creator_id, public, archived_at)
+             VALUES ($1, 'about', $2, $3, CASE WHEN $4 THEN now() END)",
+        )
+        .bind(name)
+        .bind(author)
+        .bind(public)
+        .bind(archived)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let collection: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO collections (name, description, public, creator_id)
+         VALUES ('Data tools', 'SQL R', true, $1) RETURNING id",
+    )
+    .bind(author)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO collection_courses (collection_id, course_id, position)
+         SELECT $1, id, 1 FROM courses WHERE name = 'C# basics'",
+    )
+    .bind(collection)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let viewer = Some(UserId(author));
+    let names = async |filter: &CourseFilter<'_>| -> Vec<String> {
+        let mut names: Vec<String> = list_courses(&pool, filter, None, 20)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|c| c.name)
+            .collect();
+        names.sort();
+        names
+    };
+    let anyone = |q: &'static str| CourseFilter {
+        q: Some(q),
+        ..CourseFilter::default()
+    };
+    assert_eq!(names(&anyone("базами")).await, ["Базы данных"]);
+    assert_eq!(names(&anyone("c")).await, ["C# basics"]);
+    assert_eq!(names(&anyone("bas -c#")).await, Vec::<String>::new());
+    let mine = |q: &'static str, preset: &'static str| CourseFilter {
+        viewer,
+        mine: true,
+        q: Some(q),
+        preset,
+        ..CourseFilter::default()
+    };
+    assert_eq!(
+        names(&mine("-rust", "")).await,
+        ["C# basics", "Базы данных"]
+    );
+    assert_eq!(names(&mine("c", "archived")).await, ["Archived C"]);
+    assert_eq!(names(&mine("", "drafts")).await, ["Rust systems"]);
+
+    for sort in ["", "name", "progress"] {
+        for preset in ["", "drafts", "published", "recent", "attention", "archived"] {
+            for (mine, see_all) in [(false, false), (true, false), (true, true)] {
+                let filter = CourseFilter {
+                    viewer,
+                    see_all,
+                    mine,
+                    q: Some("a -zzz"),
+                    sort,
+                    preset,
+                };
+                let first = list_courses(&pool, &filter, None, 1).await.unwrap();
+                let cursor = first.first().map(|c| c.id).or(Some(CourseId(author)));
+                list_courses(&pool, &filter, cursor, 20).await.unwrap();
+            }
+        }
+    }
+
+    for sort in ["", "name", "updated"] {
+        for q in ["dat", "r", "-sql"] {
+            let filter = CollectionFilter { q: Some(q), sort };
+            let found = list_collections(&pool, viewer, false, false, &filter, None, 20)
+                .await
+                .unwrap();
+            assert_eq!(found.len(), usize::from(q != "-sql"), "{sort} {q}");
+            list_collections(
+                &pool,
+                viewer,
+                false,
+                false,
+                &filter,
+                Some(CollectionId(collection)),
+                20,
+            )
+            .await
+            .unwrap();
+        }
+    }
+}

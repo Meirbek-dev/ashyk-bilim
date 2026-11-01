@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE uploads SET expires_at = now() + make_interval(secs => $2)\n           WHERE id = ANY($1) AND status = 'finalized' AND NOT upload_referenced(id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "224107e0964fb1f36d43b181e3958ac652fc51bbc4c5f4bd2c97e28d5ebf852b"
+}

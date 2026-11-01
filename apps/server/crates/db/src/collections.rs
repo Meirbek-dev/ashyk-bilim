@@ -4,7 +4,7 @@
 
 use ab_core::Result;
 use ab_core::id::{CollectionId, CourseId, UserId};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, QueryBuilder};
 
 use crate::catalog::CourseRow;
 
@@ -127,42 +127,81 @@ pub async fn list_collections(
     cursor: Option<CollectionId>,
     limit: i64,
 ) -> Result<Vec<CollectionRow>> {
-    let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
-    let rows = sqlx::query_as!(
-        CollectionRow,
-        r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version, cover_key,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM collections
-           WHERE (public OR $1 OR creator_id = $2)
-             AND collection_listable(id, $2, $5)
-             AND search_matches(name || ' ' || description, $6, $7, $8)
-             AND ($3::uuid IS NULL OR CASE $9::text
-                   WHEN 'name'
-                   THEN (name, id) > (SELECT c.name, c.id FROM collections c WHERE c.id = $3)
-                   WHEN 'updated'
-                   THEN (updated_at, id) < (SELECT c.updated_at, c.id FROM collections c WHERE c.id = $3)
-                   ELSE id < $3
-                 END)
-           ORDER BY CASE WHEN $9::text = 'name' THEN name END ASC,
-                    CASE WHEN $9::text = 'name' THEN id END ASC,
-                    CASE WHEN $9::text = 'updated' THEN updated_at END DESC,
-                    id DESC
-           LIMIT $4"#,
-        see_all,
-        viewer.map(|v| v.0),
-        cursor.map(|c| c.0),
+    let mut qb = collections_list_query(
+        "",
+        viewer,
+        (see_all, see_all_courses),
+        filter,
+        cursor,
         limit,
-        see_all_courses,
-        &patterns.words,
-        &patterns.letters,
-        &patterns.excluded,
-        filter.sort
+    );
+    Ok(qb.build_query_as::<CollectionRow>().fetch_all(pool).await?)
+}
+
+/// The plan of [`list_collections`]'s first page for an anonymous viewer, one
+/// line per row (index regression tests).
+pub async fn explain_list_collections(
+    pool: &PgPool,
+    filter: &CollectionFilter<'_>,
+) -> Result<String> {
+    let mut qb = collections_list_query("EXPLAIN ", None, (false, false), filter, None, 20);
+    let lines: Vec<String> = qb.build_query_scalar().fetch_all(pool).await?;
+    Ok(lines.join("\n"))
+}
+
+/// The SQL of [`list_collections`]: the sort the caller chose is spelled out
+/// in the text, the values bound.
+fn collections_list_query(
+    prefix: &'static str,
+    viewer: Option<UserId>,
+    (see_all, see_all_courses): (bool, bool),
+    filter: &CollectionFilter<'_>,
+    cursor: Option<CollectionId>,
+    limit: i64,
+) -> QueryBuilder<Postgres> {
+    let viewer = viewer.map(|v| v.0);
+    let mut qb = QueryBuilder::<Postgres>::new(prefix);
+    qb.push(
+        "SELECT id, name, description, public, creator_id, version, cover_key,
+                (extract(epoch FROM created_at))::bigint AS created_at,
+                (extract(epoch FROM updated_at))::bigint AS updated_at
+         FROM collections
+         WHERE (public OR ",
     )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    .push_bind(see_all)
+    .push(" OR creator_id = ")
+    .push_bind(viewer)
+    .push(") AND collection_listable(id, ")
+    .push_bind(viewer)
+    .push(", ")
+    .push_bind(see_all_courses)
+    .push(")");
+    // `q` matches like `/search` (the same trigram-indexed terms).
+    crate::search::push_terms(
+        &mut qb,
+        crate::search::COLLECTION_HAY,
+        &crate::search::word_patterns(filter.q.unwrap_or("")),
+    );
+    if let Some(cursor) = cursor {
+        qb.push(match filter.sort {
+            "name" => " AND (name, id) > (SELECT c.name, c.id FROM collections c WHERE c.id = ",
+            "updated" => {
+                " AND (updated_at, id)
+                      < (SELECT c.updated_at, c.id FROM collections c WHERE c.id = "
+            }
+            _ => " AND id < (",
+        })
+        .push_bind(cursor.0)
+        .push(")");
+    }
+    qb.push(match filter.sort {
+        "name" => " ORDER BY name, id",
+        "updated" => " ORDER BY updated_at DESC, id DESC",
+        _ => " ORDER BY id DESC",
+    })
+    .push(" LIMIT ")
+    .push_bind(limit);
+    qb
 }
 
 /// Update the fields and, when given, replace the membership - one

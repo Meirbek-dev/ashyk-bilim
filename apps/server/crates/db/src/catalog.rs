@@ -4,7 +4,7 @@
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
-use sqlx::{PgConnection, PgPool};
+use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder};
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CourseRow {
@@ -162,7 +162,7 @@ pub struct CourseFilter<'a> {
     pub see_all: bool,
     /// Only courses the viewer may edit (creator / active contributor / `see_all`).
     pub mine: bool,
-    /// Case-insensitive substring over name + description.
+    /// Words over name + description + about, matched like `/search`.
     pub q: Option<&'a str>,
     /// `name` (ascending), `progress` (the viewer's in-progress courses
     /// first, UX-274) or anything else = `updated_at` descending.
@@ -187,88 +187,113 @@ pub async fn list_courses(
     cursor: Option<CourseId>,
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
+    let mut qb = courses_list_query("", filter, cursor, limit);
+    Ok(qb.build_query_as::<CourseRow>().fetch_all(pool).await?)
+}
+
+/// The plan of [`list_courses`]'s first page, one line per row (index regression tests).
+pub async fn explain_list_courses(pool: &PgPool, filter: &CourseFilter<'_>) -> Result<String> {
+    let mut qb = courses_list_query("EXPLAIN ", filter, None, 20);
+    let lines: Vec<String> = qb.build_query_scalar().fetch_all(pool).await?;
+    Ok(lines.join("\n"))
+}
+
+/// The SQL of [`list_courses`]: the filters the caller chose are spelled out
+/// in the text, the values bound.
+fn courses_list_query(
+    prefix: &'static str,
+    filter: &CourseFilter<'_>,
+    cursor: Option<CourseId>,
+    limit: i64,
+) -> QueryBuilder<Postgres> {
+    let viewer = filter.viewer.map(|v| v.0);
     let by_name = filter.sort == "name";
     // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on an
     // enrolment) first, then by `course_progress.progress_pct`, then newest
     // update - one keyset over the whole catalog, not a per-page re-sort.
-    let by_progress = filter.sort == "progress";
-    // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
-    let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
-    let rows = sqlx::query_as!(
-        CourseRow,
-        r#"WITH pct AS (
-               SELECT cp.course_id, cp.progress_pct,
-                      cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
-               FROM course_progress cp
-               JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
-               WHERE $11 AND cp.user_id = $2
-           )
-           SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
-                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  archived_by AS "archived_by: UserId",
-                  version,
-                  ARRAY(SELECT ra.user_id FROM course_staff ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
-                      AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM course_staff ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship = 'maintainer')
-                      AS "maintainer_ids!: Vec<UserId>",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM courses
-           LEFT JOIN pct ON pct.course_id = courses.id
-           WHERE course_visible(courses, $2, $1)
-             AND (NOT $5 OR $1 OR creator_id = $2
-                  OR EXISTS (SELECT 1 FROM course_staff ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = $2
-                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $6, $9, $10)
-             AND (archived_at IS NULL) = ($7::text <> 'archived')
-             AND CASE $7::text
-                   WHEN 'drafts' THEN NOT public
-                   WHEN 'published' THEN public
-                   WHEN 'recent' THEN updated_at > now() - interval '7 days'
-                   WHEN 'attention' THEN
-                     (public AND NOT EXISTS (SELECT 1 FROM activities a
-                                             WHERE a.course_id = courses.id AND a.published))
-                     OR (NOT public AND created_at < now() - interval '30 days')
-                   ELSE true
-                 END
-             AND ($3::uuid IS NULL OR CASE
-                   WHEN $8::bool
-                   THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)
-                   WHEN $11::bool
-                   THEN (coalesce(pct.in_progress, false), coalesce(pct.progress_pct, 0), updated_at, id)
-                        < (SELECT coalesce(p.in_progress, false), coalesce(p.progress_pct, 0), c.updated_at, c.id
-                           FROM courses c LEFT JOIN pct p ON p.course_id = c.id WHERE c.id = $3)
-                   ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)
-                 END)
-           ORDER BY CASE WHEN $8 THEN name END ASC,
-                    CASE WHEN $8 THEN id END ASC,
-                    CASE WHEN $11 THEN coalesce(pct.in_progress, false) END DESC,
-                    CASE WHEN $11 THEN coalesce(pct.progress_pct, 0) END DESC,
-                    CASE WHEN NOT $8 THEN updated_at END DESC,
-                    id DESC
-           LIMIT $4"#,
-        filter.see_all,
-        filter.viewer.map(|v| v.0),
-        cursor.map(|c| c.0),
-        limit,
-        filter.mine,
-        &patterns.words,
-        filter.preset,
-        by_name,
-        &patterns.letters,
-        &patterns.excluded,
-        by_progress
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    let by_progress = !by_name && filter.sort == "progress";
+    let mut qb = QueryBuilder::<Postgres>::new(prefix);
+    if by_progress {
+        qb.push(
+            "WITH pct AS (
+                 SELECT cp.course_id, cp.progress_pct,
+                        cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
+                 FROM course_progress cp
+                 JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
+                 WHERE cp.user_id = ",
+        )
+        .push_bind(viewer)
+        .push(") ");
+    }
+    qb.push(crate::search::COURSE_COLUMNS).push(" FROM courses");
+    if by_progress {
+        qb.push(" LEFT JOIN pct ON pct.course_id = courses.id");
+    }
+    qb.push(" WHERE course_visible(courses, ")
+        .push_bind(viewer)
+        .push(", ")
+        .push_bind(filter.see_all)
+        .push(")");
+    if filter.mine && !filter.see_all {
+        qb.push(" AND (creator_id = ")
+            .push_bind(viewer)
+            .push(
+                " OR EXISTS (SELECT 1 FROM course_staff ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = ",
+            )
+            .push_bind(viewer)
+            .push(" AND ra.status = 'active' AND ra.authorship <> 'reporter'))");
+    }
+    // UX-222: `q` matches like `/search` (the same trigram-indexed terms);
+    // UX-143: metacharacters are literal.
+    crate::search::push_terms(
+        &mut qb,
+        crate::search::COURSE_HAY,
+        &crate::search::word_patterns(filter.q.unwrap_or("")),
+    );
+    qb.push(if filter.preset == "archived" {
+        " AND archived_at IS NOT NULL"
+    } else {
+        " AND archived_at IS NULL"
+    });
+    qb.push(match filter.preset {
+        "drafts" => " AND NOT public",
+        "published" => " AND public",
+        "recent" => " AND courses.updated_at > now() - interval '7 days'",
+        "attention" => {
+            " AND ((public AND NOT EXISTS (SELECT 1 FROM activities a
+                                           WHERE a.course_id = courses.id AND a.published))
+                   OR (NOT public AND courses.created_at < now() - interval '30 days'))"
+        }
+        _ => "",
+    });
+    if let Some(cursor) = cursor {
+        qb.push(if by_name {
+            " AND (name, courses.id) > (SELECT c.name, c.id FROM courses c WHERE c.id = "
+        } else if by_progress {
+            " AND (coalesce(pct.in_progress, false), coalesce(pct.progress_pct, 0),
+                   courses.updated_at, courses.id)
+                  < (SELECT coalesce(p.in_progress, false), coalesce(p.progress_pct, 0),
+                            c.updated_at, c.id
+                     FROM courses c LEFT JOIN pct p ON p.course_id = c.id WHERE c.id = "
+        } else {
+            " AND (courses.updated_at, courses.id)
+                  < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = "
+        })
+        .push_bind(cursor.0)
+        .push(")");
+    }
+    qb.push(if by_name {
+        " ORDER BY name, courses.id"
+    } else if by_progress {
+        " ORDER BY coalesce(pct.in_progress, false) DESC, coalesce(pct.progress_pct, 0) DESC,
+                   courses.updated_at DESC, courses.id DESC"
+    } else {
+        " ORDER BY courses.updated_at DESC, courses.id DESC"
+    })
+    .push(" LIMIT ")
+    .push_bind(limit);
+    qb
 }
 
 /// Counts over the editable set (`mine`), ignoring `q`/`preset`/paging.
@@ -538,16 +563,6 @@ pub async fn course_archive_preview(
     Ok(row)
 }
 
-/// Delete a course and release every upload it owns.
-///
-/// Its thumbnail and the media blocks under it re-enter the reaper's queue
-/// after `grace_secs` (BUG-209: the FK cascade drops rows, not
-/// `referenced_count`s).
-///
-/// BUG-242: lock order course → chapters → activities → uploads (the order
-/// every block/upload write uses). With every activity locked no block can
-/// be added or removed under the delete, and the release counts exactly the
-/// block rows the DELETE returned.
 /// What deleting a course takes with it from learners (staff and previews never count).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct CourseLearnerWork {
@@ -725,8 +740,12 @@ pub async fn purge_deleted_courses(
 }
 
 /// The cascade a delete used to run at once: the course with everything under it, learner work
-/// and its grades included; the thumbnail, block and file-task uploads are released in the same
-/// transaction (BUG-209).
+/// and its grades included. The uploads its rows named (thumbnails, chapter thumbnails, blocks,
+/// file-task files, discussion images) start their grace clock in the same transaction when
+/// nothing else names them (BUG-209: the FK cascade drops rows, not the clocks).
+///
+/// BUG-242: lock order course → chapters → activities → uploads (the order every block/upload
+/// write uses). With every activity locked no block can be added or removed under the delete.
 async fn purge_course(
     pool: &PgPool,
     id: CourseId,
@@ -734,8 +753,8 @@ async fn purge_course(
     grace_secs: f64,
 ) -> Result<bool> {
     let mut tx = pool.begin().await?;
-    let Some(thumbnail) = sqlx::query_scalar!(
-        r#"SELECT thumbnail_image_key FROM courses
+    let Some(course) = sqlx::query!(
+        r#"SELECT thumbnail_image_upload_id, thumbnail_video_upload_id FROM courses
            WHERE id = $1 AND deleted_at < now() - make_interval(days => $2) FOR UPDATE"#,
         id.0,
         older_than_days
@@ -745,8 +764,9 @@ async fn purge_course(
     else {
         return Ok(false);
     };
-    sqlx::query_scalar!(
-        "SELECT id FROM chapters WHERE course_id = $1 ORDER BY id FOR UPDATE",
+    let chapter_thumbnails = sqlx::query_scalar!(
+        r#"SELECT thumbnail_upload_id AS "upload_id?" FROM chapters
+           WHERE course_id = $1 ORDER BY id FOR UPDATE"#,
         id.0
     )
     .fetch_all(&mut *tx)
@@ -759,65 +779,67 @@ async fn purge_course(
     .await?;
     crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
-    if let Some(key) = thumbnail {
-        crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
-    }
+    // Discussion images go with the course's posts (post_uploads cascades).
+    let post_images = sqlx::query_scalar!(
+        r#"SELECT DISTINCT p.upload_id FROM post_uploads p
+           JOIN course_discussions d ON d.id = p.discussion_id
+           WHERE d.course_id = $1"#,
+        id.0
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
         .execute(&mut *tx)
         .await?;
+    let released: Vec<uuid::Uuid> = [
+        course.thumbnail_image_upload_id,
+        course.thumbnail_video_upload_id,
+    ]
+    .into_iter()
+    .chain(chapter_thumbnails)
+    .flatten()
+    .chain(post_images)
+    .collect();
+    crate::uploads::release_references(&mut tx, &released, grace_secs).await?;
     tx.commit().await?;
     Ok(deleted.rows_affected() == 1)
 }
 
 /// Delete the blocks of locked activities (all, or only `block_id`).
 ///
-/// One upload reference is released per block row the DELETE actually
-/// returned (BUG-242/244: never from a snapshot read before it). Callers
-/// lock the activity rows first (activity → upload, BUG-243). Returns the
-/// number of blocks deleted.
+/// The uploads the blocks held start their grace clock unless another row
+/// still names them (`upload_referenced`, asked after the DELETE, so a
+/// stale read cannot release a held file: BUG-242/244). Callers lock the
+/// activity rows first (activity → upload, BUG-243). Returns the number of
+/// blocks deleted.
 pub async fn delete_blocks_releasing(
     conn: &mut sqlx::PgConnection,
     activity_ids: &[uuid::Uuid],
     block_id: Option<BlockId>,
     grace_secs: f64,
 ) -> Result<u64> {
-    // Upload rows are locked in key order first, so two cascades sharing
-    // uploads never take them in opposite orders (the activity locks the
-    // caller holds keep new blocks out of this set).
-    sqlx::query!(
-        r#"SELECT u.key FROM uploads u
-           WHERE u.key IN (SELECT content->>'file_key' FROM blocks
-                           WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2))
-           ORDER BY u.key FOR UPDATE"#,
+    // The uploads the blocks hold are locked in key order first, so two
+    // cascades sharing uploads never take them in opposite orders (the activity
+    // locks the caller holds keep new blocks out of this set).
+    let held = sqlx::query_scalar!(
+        r#"SELECT DISTINCT bu.upload_id FROM block_uploads bu
+           JOIN blocks b ON b.id = bu.block_id
+           WHERE b.activity_id = ANY($1) AND ($2::uuid IS NULL OR b.id = $2)"#,
         activity_ids,
         block_id.map(|b| b.0),
     )
     .fetch_all(&mut *conn)
     .await?;
-    let deleted = sqlx::query_scalar!(
-        r#"WITH gone AS (
-               DELETE FROM blocks
-               WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)
-               RETURNING content->>'file_key' AS key, claimed
-           ), refs AS (
-               SELECT key, count(*)::int AS n FROM gone
-               WHERE key IS NOT NULL AND claimed GROUP BY key
-           ), released AS (
-               UPDATE uploads u
-               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
-                   expires_at = CASE WHEN u.referenced_count <= refs.n
-                                     THEN now() + make_interval(secs => $3)
-                                     ELSE u.expires_at END
-               FROM refs WHERE u.key = refs.key AND u.referenced_count > 0
-           )
-           SELECT count(*) AS "n!" FROM gone"#,
+    crate::uploads::lock_in_key_order(&mut *conn, &held).await?;
+    let deleted = sqlx::query!(
+        "DELETE FROM blocks WHERE activity_id = ANY($1) AND ($2::uuid IS NULL OR id = $2)",
         activity_ids,
         block_id.map(|b| b.0),
-        grace_secs
     )
-    .fetch_one(conn)
+    .execute(&mut *conn)
     .await?;
-    Ok(u64::try_from(deleted).unwrap_or(0))
+    crate::uploads::release_references(&mut *conn, &held, grace_secs).await?;
+    Ok(deleted.rows_affected())
 }
 
 /// BUG-263: re-derive which blocks of an activity hold their upload.
@@ -843,7 +865,7 @@ pub async fn sync_block_claims(
     )
     .fetch_all(&mut *conn)
     .await?;
-    sqlx::query!(
+    let flipped = sqlx::query!(
         r#"WITH present AS (
                SELECT DISTINCT v #>> '{}' AS id
                FROM activities a, jsonb_path_query(a.content, 'lax $.**.block_uuid') v
@@ -852,30 +874,33 @@ pub async fn sync_block_claims(
                SELECT b.id::text FROM blocks b JOIN activities a ON a.id = b.activity_id
                WHERE a.id = $1 AND a.activity_type <> 'dynamic'
                  AND b.content->>'file_key' = a.content->>'filename'
-           ), flipped AS (
-               UPDATE blocks b SET claimed = NOT b.claimed
-               WHERE b.activity_id = $1
-                 AND b.claimed <> EXISTS (SELECT 1 FROM present p
-                                          WHERE p.id = b.id::text OR p.id = b.legacy_uuid)
-               RETURNING b.claimed, b.content->>'file_key' AS key
-           ), deltas AS (
-               SELECT key, sum(CASE WHEN claimed THEN 1 ELSE -1 END)::int AS d
-               FROM flipped WHERE key IS NOT NULL GROUP BY key
            )
-           UPDATE uploads u
-           SET referenced_count = greatest(u.referenced_count + d.d, 0),
-               expires_at = CASE WHEN d.d > 0 THEN NULL
-                                 WHEN u.referenced_count + d.d <= 0
-                                 THEN now() + make_interval(secs => $2)
-                                 ELSE u.expires_at END
-           FROM deltas d
-           WHERE u.key = d.key
-             AND ((d.d < 0 AND u.referenced_count > 0)
-                  OR (d.d > 0 AND u.status = 'finalized'))"#,
+           UPDATE blocks b SET claimed = NOT b.claimed
+           WHERE b.activity_id = $1
+             AND b.claimed <> EXISTS (SELECT 1 FROM present p
+                                      WHERE p.id = b.id::text OR p.id = b.legacy_uuid)
+           RETURNING b.claimed, b.content->>'file_key' AS key"#,
         activity_id.0,
+    )
+    .fetch_all(&mut *conn)
+    .await?;
+    // The flip moved block_uploads (trigger); the clocks follow it.
+    let (claimed, released): (Vec<_>, Vec<_>) = flipped.into_iter().partition(|f| f.claimed);
+    let claimed: Vec<String> = claimed.into_iter().filter_map(|f| f.key).collect();
+    let released: Vec<String> = released.into_iter().filter_map(|f| f.key).collect();
+    sqlx::query!(
+        "UPDATE uploads SET expires_at = NULL WHERE key = ANY($1) AND status = 'finalized'",
+        &claimed
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        r#"UPDATE uploads SET expires_at = now() + make_interval(secs => $2)
+           WHERE key = ANY($1) AND status = 'finalized' AND NOT upload_referenced(id)"#,
+        &released,
         grace_secs
     )
-    .execute(conn)
+    .execute(&mut *conn)
     .await?;
     Ok(())
 }
@@ -1043,16 +1068,20 @@ async fn refuse_learner_work(
 }
 
 /// Delete a chapter, releasing the uploads of the media blocks under it
-/// (BUG-209/242 - see [`delete_course`]; lock order chapter → activities →
-/// uploads).
+/// (and its thumbnail; BUG-209/242 - see [`purge_deleted_courses`]; lock order
+/// chapter → activities → uploads).
 pub async fn delete_chapter(
     conn: &mut PgConnection,
     id: ChapterId,
     grace_secs: f64,
 ) -> Result<bool> {
-    sqlx::query_scalar!("SELECT id FROM chapters WHERE id = $1 FOR UPDATE", id.0)
-        .fetch_optional(&mut *conn)
-        .await?;
+    let thumbnail = sqlx::query_scalar!(
+        r#"SELECT thumbnail_upload_id AS "upload_id?" FROM chapters WHERE id = $1 FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    .flatten();
     let activities = sqlx::query_scalar!(
         "SELECT id FROM activities WHERE chapter_id = $1 ORDER BY id FOR UPDATE",
         id.0
@@ -1065,6 +1094,9 @@ pub async fn delete_chapter(
     let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
         .execute(&mut *conn)
         .await?;
+    if let Some(upload) = thumbnail {
+        crate::uploads::release_reference(&mut *conn, upload, grace_secs).await?;
+    }
     Ok(deleted.rows_affected() == 1)
 }
 
@@ -1247,7 +1279,7 @@ pub async fn update_activity(
 }
 
 /// Delete an activity, releasing the uploads of its media blocks
-/// (BUG-209/243 - see [`delete_course`]; lock order activity → uploads).
+/// (BUG-209/243 - see [`purge_deleted_courses`]; lock order activity → uploads).
 ///
 /// `false` when the activity is gone or, with `expected_version` (UX-313),
 /// no longer at that version - nothing is deleted then.

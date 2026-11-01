@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT thumbnail_upload_id AS \"upload_id?\" FROM chapters WHERE id = $1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "upload_id?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "chapters",
+            "name": "thumbnail_upload_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "eb87afae6cfd62550fe8b4f9eb349c53c136a3ed43e4017c0cd73cd35c33613e"
+}

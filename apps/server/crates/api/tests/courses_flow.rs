@@ -580,13 +580,19 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
     assert_eq!(upload_refs(&app, &image).await, (0, true));
 }
 
-/// `(referenced_count, expires_at IS NOT NULL)` of an upload row.
+/// `(rows naming it, expires_at IS NOT NULL)` of an upload row: course
+/// thumbnails and blocks are what these tests reference.
 async fn upload_refs(app: &TestApp, upload_id: &str) -> (i32, bool) {
-    sqlx::query_as("SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1")
-        .bind(uuid::Uuid::parse_str(upload_id).unwrap())
-        .fetch_one(&app.pool)
-        .await
-        .unwrap()
+    sqlx::query_as(
+        "SELECT ((SELECT count(*) FROM courses c WHERE c.thumbnail_image_upload_id = u.id)
+                 + (SELECT count(*) FROM block_uploads b WHERE b.upload_id = u.id))::int,
+                u.expires_at IS NOT NULL
+         FROM uploads u WHERE u.id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(upload_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap()
 }
 
 #[ab_testdb::test]
@@ -886,7 +892,7 @@ async fn concurrent_thumbnail_patches_pin_no_upload(pool: PgPool) {
     }
     let pinned: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM uploads
-         WHERE referenced_count > 0
+         WHERE expires_at IS NULL AND status = 'finalized'
            AND key IS DISTINCT FROM (SELECT thumbnail_image_key FROM courses WHERE id = $1::uuid)",
     )
     .bind(&id)

@@ -22,11 +22,23 @@ use sqlx::{Executor, PgPool, SqlSafeStr};
 
 /// `(source file under crates/, test file under crates/, test function)`:
 /// files that build SQL at run time and the test that executes every shape.
-const DYNAMIC: &[(&str, &str, &str)] = &[(
-    "db/src/search.rs",
-    "api/tests/search_flow.rs",
-    "search_respects_visibility_and_gates_people",
-)];
+const DYNAMIC: &[(&str, &str, &str)] = &[
+    (
+        "db/src/search.rs",
+        "api/tests/search_flow.rs",
+        "search_respects_visibility_and_gates_people",
+    ),
+    (
+        "db/src/catalog.rs",
+        "db/tests/catalog.rs",
+        "course_and_collection_listings_run_every_shape",
+    ),
+    (
+        "db/src/collections.rs",
+        "db/tests/catalog.rs",
+        "course_and_collection_listings_run_every_shape",
+    ),
+];
 
 /// Literals whose parameter types Postgres cannot deduce from the text alone
 /// (one parameter used as two types): prepared with the types the code binds.

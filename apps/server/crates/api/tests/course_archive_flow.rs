@@ -17,7 +17,7 @@
 //! 5. scheduled assessments go back to draft (audited) and the publish-due
 //!    sweep publishes nothing;
 //! 6. the auto-submit sweep still finalizes an expired timed draft;
-//! 7. nothing is released: upload `referenced_count` is unchanged;
+//! 7. nothing is released: the upload stays referenced and off the reaper clock;
 //! 8. deleting an archived course takes the usual delete gate.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -1823,11 +1823,13 @@ async fn finalized_upload(app: &TestApp, session: &MintedSession) -> String {
 }
 
 async fn upload_refs(app: &TestApp, upload_id: &str) -> (i32, bool) {
-    sqlx::query_as("SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1")
-        .bind(uuid::Uuid::parse_str(upload_id).unwrap())
-        .fetch_one(&app.pool)
-        .await
-        .unwrap()
+    sqlx::query_as(
+        "SELECT upload_referenced(id)::int, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(upload_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap()
 }
 
 #[ab_testdb::test]

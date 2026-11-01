@@ -758,26 +758,12 @@ async fn document_posts_with_unsafe_urls_are_refused(pool: PgPool) {
     );
 }
 
-/// BUG-B-9: a post's image goes through the upload pipeline as a
-/// `discussion-image` - the uploads table refused that purpose (500), so no
-/// image could be added to a post. Every purpose of the policy must be
-/// storable.
-#[ab_testdb::test]
-async fn a_post_claims_its_uploaded_image(pool: PgPool) {
-    let app = TestApp::spawn(pool).await;
-    let teacher = instructor(&app, "teacher").await;
-    let course_id = public_course(&app, &teacher, "Forum images").await;
-    let user = app
-        .create_user("alice", "alice@example.com", &["user"])
-        .await;
-    let mut grants = LEARNER_GRANTS.to_vec();
-    grants.push("file:create:own");
-    let alice = app.mint_session_for(user, &grants).await;
-    enrol(&app, &alice, &course_id).await;
+/// A finalized `discussion-image` upload of `who`: `(id, key)`.
+async fn discussion_image(app: &TestApp, who: &MintedSession) -> (String, String) {
     let payload = b"\x89PNG fake".to_vec();
     let slot = app
         .post_as(
-            &alice,
+            who,
             "/api/v2/uploads",
             &serde_json::json!({ "purpose": "discussion-image", "mime": "image/png",
                                   "size_bytes": payload.len() }),
@@ -797,31 +783,129 @@ async fn a_post_claims_its_uploaded_image(pool: PgPool) {
     assert!(put.status().is_success(), "PUT {}", put.status());
     let finalized = app
         .post_as(
-            &alice,
+            who,
             &format!("/api/v2/uploads/{id}/finalize"),
             &serde_json::json!({}),
         )
         .await;
     assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
-    let content = serde_json::json!({ "type": "doc", "content": [
-        { "type": "paragraph", "content": [{ "type": "text", "text": "see" }] },
-        { "type": "image", "attrs": { "src": format!("/content/{key}") } }] })
-    .to_string();
+    (id, key)
+}
+
+/// A post document showing `keys` as images.
+fn post_with_images(keys: &[&str]) -> String {
+    let mut nodes = vec![serde_json::json!(
+        { "type": "paragraph", "content": [{ "type": "text", "text": "see" }] })];
+    nodes.extend(keys.iter().map(
+        |key| serde_json::json!({ "type": "image", "attrs": { "src": format!("/content/{key}") } }),
+    ));
+    serde_json::json!({ "type": "doc", "content": nodes }).to_string()
+}
+
+/// `(held by a post, reaper clock running)` of an upload.
+async fn image_state(app: &TestApp, id: &str) -> (bool, bool) {
+    sqlx::query_as(
+        "SELECT EXISTS (SELECT 1 FROM post_uploads p WHERE p.upload_id = u.id)
+                    AND upload_referenced(u.id),
+                u.expires_at IS NOT NULL
+         FROM uploads u WHERE u.id = $1::uuid",
+    )
+    .bind(id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap()
+}
+
+/// BUG-B-9: a post's image goes through the upload pipeline as a
+/// `discussion-image` - the uploads table refused that purpose (500), so no
+/// image could be added to a post. Every purpose of the policy must be
+/// storable.
+///
+/// Schema review item 18: the content decides what a post holds
+/// (`post_uploads`). A claimed image the content never showed, one an edit
+/// removed and the images of a deleted post start the reaper clock; the
+/// reaper takes them and leaves the ones a post still shows.
+#[ab_testdb::test]
+async fn a_post_holds_the_images_its_content_shows(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let course_id = public_course(&app, &teacher, "Forum images").await;
+    let user = app
+        .create_user("alice", "alice@example.com", &["user"])
+        .await;
+    let mut grants = LEARNER_GRANTS.to_vec();
+    grants.push("file:create:own");
+    let alice = app.mint_session_for(user, &grants).await;
+    enrol(&app, &alice, &course_id).await;
+    let (shown, shown_key) = discussion_image(&app, &alice).await;
+    let (unused, _) = discussion_image(&app, &alice).await;
+    let (kept, kept_key) = discussion_image(&app, &alice).await;
+
     let post = app
         .post_as(
             &alice,
             &format!("/api/v2/courses/{course_id}/discussions"),
-            &serde_json::json!({ "content": content, "upload_ids": [id] }),
+            &serde_json::json!({ "content": post_with_images(&[&shown_key]),
+                                  "upload_ids": [shown, unused] }),
         )
         .await;
     assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
-    let referenced: i32 =
-        sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1::uuid")
-            .bind(&id)
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
-    assert_eq!(referenced, 1);
+    let post_id = post.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(image_state(&app, &shown).await, (true, false));
+    assert_eq!(image_state(&app, &unused).await, (false, true));
+
+    // A second post shows `kept`; an edit swaps the first post's image.
+    let other = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/discussions"),
+            &serde_json::json!({ "content": post_with_images(&[&kept_key]),
+                                  "upload_ids": [kept] }),
+        )
+        .await;
+    assert_eq!(other.status, StatusCode::CREATED, "{}", other.text());
+    let edited = app
+        .patch_as(
+            &alice,
+            &format!("/api/v2/discussions/{post_id}"),
+            &serde_json::json!({ "content": post_with_images(&[&kept_key]) }),
+        )
+        .await;
+    assert_eq!(edited.status, StatusCode::OK, "{}", edited.text());
+    assert_eq!(image_state(&app, &shown).await, (false, true));
+    assert_eq!(image_state(&app, &kept).await, (true, false));
+
+    // Deleting the first post leaves `kept` to the second one.
+    let deleted = app
+        .delete_as(&alice, &format!("/api/v2/discussions/{post_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    assert_eq!(image_state(&app, &kept).await, (true, false));
+
+    sqlx::query(
+        "UPDATE uploads SET expires_at = now() - interval '1 hour' WHERE expires_at IS NOT NULL",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let mut reaped: Vec<String> = ab_db::uploads::expired(&app.pool, 100)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|u| u.id.to_string())
+        .collect();
+    reaped.sort();
+    let mut expected = vec![shown.clone(), unused.clone()];
+    expected.sort();
+    assert_eq!(reaped, expected);
+
+    // The second post's delete releases `kept` too.
+    let other_id = other.json()["id"].as_str().unwrap().to_owned();
+    let deleted = app
+        .delete_as(&alice, &format!("/api/v2/discussions/{other_id}"))
+        .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
+    assert_eq!(image_state(&app, &kept).await, (false, true));
 }
 
 /// Enrol `who` in the course (a trail run, as `POST /enrollments` makes).

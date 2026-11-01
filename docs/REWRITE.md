@@ -659,11 +659,15 @@ in the order it can be done, each step a forward migration on the current schema
    previous release's writes keep them too; writers did not change). The reaper asks `upload_referenced(id)`
    (EXISTS over those and `file_submission_files.upload_id`) instead of `referenced_count`;
    `the_reaper_keeps_referenced_files_whatever_the_counter_says` drifts every counter to 0 and the files stay.
-   Left, a release after that one ran: the claim/release paths set `expires_at` from `upload_referenced`
-   instead of the counter, then `referenced_count` goes (contract) with BUG-209/263's repair code
-   (`catalog.rs` / `file_submissions.rs` bulk recounts, `course_copy.rs` increments). Discussion images have
-   no column (a claimed one is never released, so the reaper never sees it): a `post_uploads` link table
-   before the counter goes.
+   Done (review 3, item 18 rest, `20261102072000`): the claim/release paths set `expires_at` from
+   `upload_referenced` (BUG-209/263's recounts and the copy's increments are gone); `post_uploads (discussion_id,
+   upload_id)` holds the images a post's content shows (trigger from the content, backfilled; edits and deletes
+   release what the post stopped showing); `block_uploads` holds only claimed blocks. The previous release still
+   moves the counter: `uploads_rollback_guard` keeps its writes from starting the clock of a referenced upload;
+   `20261103072000` (contract) drops the guard and `referenced_count`.
+   Left: uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them) are
+   never reaped; a one-off `ashyq admin` sweep (`expires_at = now() + grace` where finalized, NULL and not
+   `upload_referenced`) collects them, also the discussion images of posts deleted before `post_uploads`.
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
    The roster (keyset `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; an old run-id cursor resolves through
@@ -743,9 +747,10 @@ in the order it can be done, each step a forward migration on the current schema
     (`ab_db::search::push_terms`), answered by `pg_trgm` GIN indexes on `search_fold(hay)` of courses,
     collections and activities (users: on `search_fold(username)` / `search_fold(display_name)` for the
     existing `LIKE`); `course_search_walks_the_trigram_index` checks the bitmap index scan over 10 000 courses.
-    Left: the catalog listings' `q` filter (`list_courses`, `list_collections`) still calls `search_matches`
-    inside their static keyset queries; moving them to the same predicates needs those queries as
-    `QueryBuilder` too. The tsvector columns stay while ranking uses `ts_rank_cd`.
+    Done for the listings too (review 3, item 35 rest): `list_courses` / `list_collections` are `QueryBuilder`
+    queries with the same terms (`listing_filters_walk_the_trigram_indexes`), people search's one-letter rule
+    is inline, and `20261103072100` (contract) drops `search_matches`. The tsvector columns stay while ranking
+    uses `ts_rank_cd`.
 12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
     `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
     batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids

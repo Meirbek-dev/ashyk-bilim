@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE uploads u SET expires_at = NULL\n           WHERE u.status = 'finalized' AND u.expires_at IS NOT NULL\n             AND u.id IN (SELECT thumbnail_image_upload_id FROM courses WHERE id = $1\n                          UNION ALL\n                          SELECT thumbnail_video_upload_id FROM courses WHERE id = $1\n                          UNION ALL\n                          SELECT thumbnail_upload_id FROM chapters WHERE course_id = $1\n                          UNION ALL\n                          SELECT bu.upload_id FROM block_uploads bu\n                          JOIN blocks b ON b.id = bu.block_id\n                          JOIN activities a ON a.id = b.activity_id\n                          WHERE a.course_id = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d21e57f1a4213c12ee5592896d5a192a0deba55a09ffeb847613414673ad94bd"
+}

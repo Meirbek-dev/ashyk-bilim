@@ -90,6 +90,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`notification_preferences`](#notification_preferences): Notification kinds an account turned off
 - [`notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
 - [`platforms`](#platforms): The platform's own settings and texts (one row, singleton)
+- [`post_uploads`](#post_uploads): The discussion-image uploads a post's content shows (kept by trigger from the content); the reaper keeps them
 - [`resource_authors`](#resource_authors): Previous release's staff table, mirrored both ways with course_staff / collection_staff until its contract migration drops it
 - [`role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
 - [`roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
@@ -2012,6 +2013,19 @@ The platform's own settings and texts (one row, singleton).
 - Unique `platforms_singleton_key`: `UNIQUE (singleton)`
 - Foreign key `platforms_logo_upload_id_fkey`: `FOREIGN KEY (logo_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `platforms_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+
+## post_uploads
+
+The discussion-image uploads a post's content shows (kept by trigger from the content); the reaper keeps them.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| discussion_id | uuid |  |  |
+| upload_id | uuid |  |  |
+
+- Primary key `post_uploads_pkey`: `PRIMARY KEY (discussion_id, upload_id)`
+- Foreign key `post_uploads_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
+- Foreign key `post_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
 
 ## resource_authors
 
