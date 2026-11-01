@@ -80,7 +80,7 @@ pub async fn insert_file_submission<'e>(
                 max_file_size_mb, due_at, allow_late, late_policy_kind,
                 late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
                 max_attempts, grade_release_mode, settings, creator_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10, $11, $12,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10, $11::float8, $12,
                    to_timestamp($13), $14, $15, $16, $17)
            RETURNING id AS "id: FileSubmissionId""#,
         activity_id.0,
@@ -117,7 +117,7 @@ pub async fn get_file_submission<'e>(
                   max_files, max_file_size_mb,
                   (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
                   late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day, late_penalty_max_days,
+                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
                   lifecycle AS "lifecycle: FileSubmissionLifecycle",
@@ -145,7 +145,7 @@ pub async fn get_file_submission_by_activity<'e>(
                   max_files, max_file_size_mb,
                   (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
                   late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day, late_penalty_max_days,
+                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
                   lifecycle AS "lifecycle: FileSubmissionLifecycle",
@@ -201,7 +201,7 @@ pub async fn update_file_submission<'e>(
         r#"UPDATE file_submissions SET
                instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,
                max_file_size_mb = $6, due_at = to_timestamp($7), allow_late = $8,
-               late_policy_kind = $9, late_penalty_percent_per_day = $10,
+               late_policy_kind = $9, late_penalty_percent_per_day = $10::float8,
                late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),
                max_attempts = $13, grade_release_mode = $14, settings = $15
            WHERE id = $1"#,
@@ -365,7 +365,7 @@ pub async fn get_attempt(pool: &PgPool, id: FileAttemptId) -> Result<Option<Atte
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -392,7 +392,7 @@ pub async fn open_attempt(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -425,7 +425,7 @@ pub async fn list_user_attempts<'e>(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -456,7 +456,7 @@ pub async fn list_attempts(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct, raw_score, final_score, feedback, rubric_scores,
+                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
                   graded_by AS "graded_by: UserId", version, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -519,7 +519,7 @@ pub async fn submit_attempt(
         // A revision handed in starts a new review round: the return comment
         // stays in the grading history, not on the form the grader reopens.
         r#"UPDATE file_submission_attempts SET
-               status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4,
+               status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4::float8,
                feedback = CASE WHEN status = 'returned' THEN '' ELSE feedback END,
                version = version + 1
            WHERE id = $1 AND version = $2 AND status IN ('draft', 'returned')"#,
@@ -557,9 +557,9 @@ pub async fn grade_attempt(
     let updated = sqlx::query!(
         r#"WITH u AS (
                UPDATE file_submission_attempts SET
-                   status = $3, final_score = $4, feedback = COALESCE($5, feedback),
+                   status = $3, final_score = $4::float8, feedback = COALESCE($5, feedback),
                    rubric_scores = COALESCE($6, rubric_scores),
-                   graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8
+                   graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8::float8
                WHERE id = $1 AND version = $2
                RETURNING id, graded_by, status, raw_score, late_penalty_pct, final_score, feedback)
            INSERT INTO file_grading_entries
@@ -587,8 +587,9 @@ pub async fn lock_attempt_lateness(
     id: FileAttemptId,
 ) -> Result<Option<(bool, f64, Option<f64>)>> {
     let row = sqlx::query!(
-        "SELECT is_late, late_penalty_pct, raw_score FROM file_submission_attempts
-         WHERE id = $1 FOR UPDATE",
+        r#"SELECT is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  raw_score::float8 AS "raw_score?"
+           FROM file_submission_attempts WHERE id = $1 FOR UPDATE"#,
         id.0
     )
     .fetch_optional(conn)
@@ -606,8 +607,8 @@ pub async fn set_attempt_lateness(
     final_score: Option<f64>,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3,
-             final_score = $4, version = version + 1
+        "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3::float8,
+             final_score = $4::float8, version = version + 1
          WHERE id = $1",
         id.0,
         is_late,
@@ -672,7 +673,7 @@ pub async fn list_for_review(
                   a.status AS "status: FileAttemptStatus", a.attempt_number,
                   (extract(epoch FROM a.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM a.graded_at))::bigint AS "graded_at?",
-                  a.is_late, a.final_score, a.version,
+                  a.is_late, a.final_score::float8 AS "final_score?", a.version,
                   (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
                       AS "file_count!",
                   EXISTS (SELECT 1 FROM trail_runs r
@@ -766,7 +767,7 @@ pub async fn graded_scores(
     group_id: Option<UsergroupId>,
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
-        r#"SELECT final_score AS "final_score!" FROM file_submission_attempts a
+        r#"SELECT final_score::float8 AS "final_score!" FROM file_submission_attempts a
            WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'published')
              AND a.final_score IS NOT NULL AND NOT a.preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
@@ -817,7 +818,7 @@ pub async fn list_grading_entries(
     let rows = sqlx::query_as!(
         FileGradingEntryRow,
         r#"SELECT id, graded_by AS "graded_by: UserId",
-                  status AS "status: FileAttemptStatus", raw_score, penalty_pct, final_score,
+                  status AS "status: FileAttemptStatus", raw_score::float8 AS "raw_score?", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   feedback, (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM file_grading_entries WHERE attempt_id = $1
            ORDER BY id DESC"#,

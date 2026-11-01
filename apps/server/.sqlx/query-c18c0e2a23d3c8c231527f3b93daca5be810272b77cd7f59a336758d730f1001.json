@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO code_run_cases\n                   (run_id, position, test_id, stdin, expected_output, description,\n                    weight, is_visible, verdict, status_description, passed, stdout, stderr,\n                    compile_output, message, time_seconds, memory_kb)\n               VALUES ($1, $2, $3, $4, $5, $6, $7::float8, $8, $9, $10, $11, $12, $13, $14, $15, $16,\n                       $17)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Bool",
+        "Text",
+        "Text",
+        "Bool",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c18c0e2a23d3c8c231527f3b93daca5be810272b77cd7f59a336758d730f1001"
+}

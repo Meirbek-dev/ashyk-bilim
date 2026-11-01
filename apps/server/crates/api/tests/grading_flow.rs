@@ -1218,11 +1218,13 @@ async fn settling_lateness_keeps_an_annulled_attempt_at_zero(pool: PgPool) {
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
     assert_eq!(published.json()["final_score"], 0.0, "{}", published.text());
     let score = || async {
-        sqlx::query_scalar::<_, Option<f64>>("SELECT final_score FROM submissions WHERE id = $1")
-            .bind(uuid::Uuid::parse_str(&sub).unwrap())
-            .fetch_one(&app.pool)
-            .await
-            .unwrap()
+        sqlx::query_scalar::<_, Option<f64>>(
+            "SELECT final_score::float8 FROM submissions WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(&sub).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
     };
     let path = format!("/api/v2/assessments/{id}/overrides/{}", alice.user_id);
     let waived = app

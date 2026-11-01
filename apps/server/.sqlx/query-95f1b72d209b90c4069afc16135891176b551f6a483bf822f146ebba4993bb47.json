@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO grading_entries\n               (submission_id, graded_by, raw_score, penalty_pct, final_score,\n                raw_breakdown, effective_breakdown, overall_feedback, published_at)\n           VALUES ($1, $2, $3::float8, $4::float8, $5::float8, $6, $7, $8,\n                   CASE WHEN $9 THEN now() ELSE NULL END)\n           RETURNING id AS \"id: GradingEntryId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Jsonb",
+        "Jsonb",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "95f1b72d209b90c4069afc16135891176b551f6a483bf822f146ebba4993bb47"
+}

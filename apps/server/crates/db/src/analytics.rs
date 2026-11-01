@@ -210,7 +210,7 @@ pub async fn list_assessments(
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind", title,
                   lifecycle AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
-                  passing_score, (extract(epoch FROM due_at))::bigint AS "due_at?"
+                  passing_score::float8 AS "passing_score!", (extract(epoch FROM due_at))::bigint AS "due_at?"
            FROM assessments WHERE course_id = ANY($1) ORDER BY id"#,
         &ids
     )
@@ -261,7 +261,7 @@ pub async fn list_submissions(
         SubmissionInfoRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, final_score, is_late,
+                  status AS "status: SubmissionStatus", attempt_number, final_score::float8 AS "final_score?", is_late,
                   violation_count, duration_seconds,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
@@ -616,7 +616,7 @@ pub async fn list_grading_entries_for_assessment(
         GradingEntryAuditRow,
         r#"SELECT e.id AS "id: GradingEntryId", e.submission_id AS "submission_id: SubmissionId",
                   s.user_id AS "user_id: UserId", e.graded_by AS "graded_by: UserId",
-                  e.final_score,
+                  e.final_score::float8 AS "final_score?",
                   (extract(epoch FROM e.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM e.created_at))::bigint AS "created_at!"
            FROM grading_entries e JOIN submissions s ON s.id = e.submission_id

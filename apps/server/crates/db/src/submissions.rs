@@ -189,7 +189,7 @@ pub async fn get_submission<'e>(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -222,7 +222,7 @@ pub async fn open_draft(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -260,7 +260,7 @@ pub async fn list_user_submissions<'e>(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -384,8 +384,8 @@ pub async fn persist_submit<'e>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, answers = $3, grading = $4, auto_score = $5, final_score = $6,
-               is_late = $7, late_penalty_pct = $8, violation_count = $9,
+               status = $2, answers = $3, grading = $4, auto_score = $5::float8, final_score = $6::float8,
+               is_late = $7, late_penalty_pct = $8::float8, violation_count = $9,
                auto_submit_reason = $10,
                auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,
                submitted_at = COALESCE(to_timestamp($13::bigint), now()),
@@ -425,7 +425,7 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, grading = $3, final_score = $4,
+               status = $2, grading = $3, final_score = $4::float8,
                graded_at = now(), version = version + 1
            WHERE id = $1 AND version = $5"#,
         id.0,
@@ -449,7 +449,7 @@ pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
     final_score: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE submissions SET status = 'published', final_score = $2, version = version + 1
+        r#"UPDATE submissions SET status = 'published', final_score = $2::float8, version = version + 1
            WHERE id = $1 AND version = $3"#,
         id.0,
         final_score,
@@ -477,7 +477,7 @@ pub async fn lock_for_lateness(
 ) -> Result<Option<LatenessRow>> {
     let row = sqlx::query_as!(
         LatenessRow,
-        r#"SELECT final_score, late_penalty_pct, is_late FROM submissions WHERE id = $1 FOR UPDATE"#,
+        r#"SELECT final_score::float8 AS "final_score?", late_penalty_pct::float8 AS "late_penalty_pct!", is_late FROM submissions WHERE id = $1 FOR UPDATE"#,
         id.0
     )
     .fetch_optional(tx)
@@ -498,8 +498,8 @@ pub async fn set_lateness<'e, E: sqlx::PgExecutor<'e>>(
     final_score: Option<f64>,
 ) -> Result<()> {
     sqlx::query!(
-        r#"UPDATE submissions SET is_late = $2, late_penalty_pct = $3,
-               final_score = COALESCE($4, final_score), version = version + 1
+        r#"UPDATE submissions SET is_late = $2, late_penalty_pct = $3::float8,
+               final_score = COALESCE($4::float8, final_score), version = version + 1
            WHERE id = $1"#,
         id.0,
         is_late,
@@ -521,7 +521,7 @@ pub async fn list_non_draft(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -752,7 +752,7 @@ pub async fn gradebook_cells(
                        THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
                   CASE WHEN c.status IN ('pending', 'graded') THEN c.status END
                       AS "pending_attempt_status?: SubmissionStatus",
-                  c.final_score AS "final_score?", c.is_late AS "is_late!",
+                  c.final_score::float8 AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
@@ -881,7 +881,7 @@ pub async fn list_for_review(
         ReviewRow,
         r#"SELECT s.id AS "id: SubmissionId", s.user_id AS "user_id: UserId",
                   u.username, u.display_name, s.status AS "status: SubmissionStatus",
-                  s.attempt_number, s.auto_score, s.final_score, s.is_late,
+                  s.attempt_number, s.auto_score::float8 AS "auto_score?", s.final_score::float8 AS "final_score?", s.is_late,
                   (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
                   s.version,
@@ -968,7 +968,7 @@ pub async fn graded_scores(
     group_id: Option<UsergroupId>,
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
-        r#"SELECT final_score AS "final_score!" FROM submissions s
+        r#"SELECT final_score::float8 AS "final_score!" FROM submissions s
            WHERE assessment_id = $1 AND status IN ('graded', 'published')
              AND final_score IS NOT NULL AND NOT preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
@@ -991,7 +991,7 @@ pub async fn list_releasable(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -1026,7 +1026,7 @@ pub async fn list_submitted_for_user(
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers, grading,
-                  auto_score, final_score, is_late, late_penalty_pct,
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -1180,7 +1180,7 @@ pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         r#"INSERT INTO grading_entries
                (submission_id, graded_by, raw_score, penalty_pct, final_score,
                 raw_breakdown, effective_breakdown, overall_feedback, published_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+           VALUES ($1, $2, $3::float8, $4::float8, $5::float8, $6, $7, $8,
                    CASE WHEN $9 THEN now() ELSE NULL END)
            RETURNING id AS "id: GradingEntryId""#,
         e.submission_id.0,
@@ -1205,7 +1205,7 @@ pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
     let row = sqlx::query_as!(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
-                  graded_by AS "graded_by: UserId", raw_score, penalty_pct, final_score,
+                  graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   raw_breakdown, effective_breakdown, overall_feedback, grading_version,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1224,7 +1224,7 @@ pub async fn list_grading_entries(
     let rows = sqlx::query_as!(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
-                  graded_by AS "graded_by: UserId", raw_score, penalty_pct, final_score,
+                  graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   raw_breakdown, effective_breakdown, overall_feedback, grading_version,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1288,7 +1288,7 @@ pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
         r#"INSERT INTO item_feedback
                (grading_entry_id, submission_id, item_id, item_ref, comment, score, max_score,
                 annotation_type, annotation_key, graded_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           VALUES ($1, $2, $3, $4, $5, $6::float8, $7::float8, $8, $9, $10)
            RETURNING id AS "id: ItemFeedbackId""#,
         f.grading_entry_id.0,
         f.submission_id.0,
@@ -1315,7 +1315,7 @@ pub async fn get_item_feedback(
         r#"SELECT id AS "id: ItemFeedbackId",
                   grading_entry_id AS "grading_entry_id: GradingEntryId",
                   submission_id AS "submission_id: SubmissionId",
-                  item_id AS "item_id: AssessmentItemId", item_ref, comment, score, max_score,
+                  item_id AS "item_id: AssessmentItemId", item_ref, comment, score::float8 AS "score?", max_score::float8 AS "max_score?",
                   annotation_type AS "annotation_type: AnnotationType", annotation_key,
                   graded_by AS "graded_by: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -1340,8 +1340,8 @@ pub async fn list_item_feedback(
         r#"SELECT f.id AS "id: ItemFeedbackId",
                   f.grading_entry_id AS "grading_entry_id: GradingEntryId",
                   f.submission_id AS "submission_id: SubmissionId",
-                  f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score,
-                  f.max_score, f.annotation_type AS "annotation_type: AnnotationType",
+                  f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score::float8 AS "score?",
+                  f.max_score::float8 AS "max_score?", f.annotation_type AS "annotation_type: AnnotationType",
                   f.annotation_key, f.graded_by AS "graded_by: UserId",
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
@@ -1368,8 +1368,8 @@ pub async fn update_item_feedback(
     let updated = sqlx::query!(
         r#"UPDATE item_feedback SET
                comment = COALESCE($2, comment),
-               score = CASE WHEN $3 THEN $4 ELSE score END,
-               max_score = CASE WHEN $5 THEN $6 ELSE max_score END,
+               score = CASE WHEN $3 THEN $4::float8 ELSE score END,
+               max_score = CASE WHEN $5 THEN $6::float8 ELSE max_score END,
                annotation_type = COALESCE($7, annotation_type),
                annotation_key = CASE WHEN $8 THEN $9 ELSE annotation_key END
            WHERE id = $1"#,
@@ -1469,7 +1469,7 @@ pub async fn finish_code_run(
     error_message: Option<&str>,
 ) -> Result<()> {
     sqlx::query!(
-        r#"UPDATE code_runs SET status = $2, passed = $3, score = $4, compile_output = $5,
+        r#"UPDATE code_runs SET status = $2, passed = $3, score = $4::float8, compile_output = $5,
                error_message = $6, finished_at = now()
            WHERE id = $1"#,
         id.0,
@@ -1492,7 +1492,7 @@ pub async fn get_code_run(pool: &PgPool, id: CodeRunId) -> Result<Option<CodeRun
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
                   language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
-                  score, compile_output, error_message,
+                  score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1519,7 +1519,7 @@ pub async fn find_idempotent_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
                   language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
-                  score, compile_output, error_message,
+                  score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1559,7 +1559,7 @@ pub async fn latest_final_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
                   language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
-                  score, compile_output, error_message,
+                  score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1606,7 +1606,7 @@ pub async fn insert_code_run_cases(
                    (run_id, position, test_id, stdin, expected_output, description,
                     weight, is_visible, verdict, status_description, passed, stdout, stderr,
                     compile_output, message, time_seconds, memory_kb)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+               VALUES ($1, $2, $3, $4, $5, $6, $7::float8, $8, $9, $10, $11, $12, $13, $14, $15, $16,
                        $17)"#,
             run_id.0,
             c.position,
@@ -1636,7 +1636,7 @@ pub async fn insert_code_run_cases(
 pub async fn list_code_run_cases(pool: &PgPool, run_id: CodeRunId) -> Result<Vec<CodeRunCaseRow>> {
     let rows = sqlx::query_as!(
         CodeRunCaseRow,
-        r#"SELECT position, test_id, stdin, expected_output, description, weight,
+        r#"SELECT position, test_id, stdin, expected_output, description, weight::float8 AS "weight!",
                   is_visible, verdict AS "verdict: TestVerdict", status_description, passed,
                   stdout, stderr,
                   compile_output, message, time_seconds, memory_kb

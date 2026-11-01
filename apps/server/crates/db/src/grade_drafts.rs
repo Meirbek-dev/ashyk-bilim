@@ -49,8 +49,8 @@ pub async fn get_draft(pool: &PgPool, id: GradeDraftId) -> Result<Option<DraftRo
                   d.submission_id AS "submission_id: SubmissionId",
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
-                  d.subject_version, d.proposal, d.ai_score, d.calibrated_score, d.max_score,
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score,
+                  d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
+                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.id = $1"#,
@@ -70,8 +70,8 @@ pub async fn latest_for_subject(pool: &PgPool, subject: uuid::Uuid) -> Result<Op
                   d.submission_id AS "submission_id: SubmissionId",
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
-                  d.subject_version, d.proposal, d.ai_score, d.calibrated_score, d.max_score,
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score,
+                  d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
+                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.submission_id = $1 OR d.file_attempt_id = $1
@@ -92,8 +92,8 @@ pub async fn latest_for_activity(pool: &PgPool, activity_id: ActivityId) -> Resu
                   d.submission_id AS "submission_id: SubmissionId",
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
-                  d.subject_version, d.proposal, d.ai_score, d.calibrated_score, d.max_score,
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score,
+                  d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
+                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.activity_id = $1 AND d.id = (
@@ -137,8 +137,8 @@ pub async fn live_for_subject(
                   d.submission_id AS "submission_id: SubmissionId",
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
-                  d.subject_version, d.proposal, d.ai_score, d.calibrated_score, d.max_score,
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score,
+                  d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
+                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE (d.submission_id = $1 OR d.file_attempt_id = $1)
@@ -234,7 +234,7 @@ pub async fn mark_ready(
 ) -> Result<bool> {
     let done = sqlx::query!(
         r#"UPDATE ai_grade_drafts
-           SET status = 'ready', proposal = $2, ai_score = $3, calibrated_score = $4, max_score = $5,
+           SET status = 'ready', proposal = $2, ai_score = $3::float8, calibrated_score = $4::float8, max_score = $5::float8,
                confidence = $6, flags = $7, model_name = $8
            WHERE id = $1 AND status = 'queued'"#,
         id.0,
@@ -294,7 +294,7 @@ pub async fn mark_applied(
 ) -> Result<()> {
     sqlx::query!(
         r#"UPDATE ai_grade_drafts
-           SET status = 'applied', agreement = $3, final_score = $4, decided_by = $2, decided_at = now()
+           SET status = 'applied', agreement = $3, final_score = $4::float8, decided_by = $2, decided_at = now()
            WHERE id = $1"#,
         id.0,
         by.0,
@@ -325,7 +325,7 @@ pub async fn insert_correction(conn: &mut PgConnection, c: &NewCorrection<'_>) -
         r#"INSERT INTO ai_grade_corrections
                (course_id, activity_id, draft_id, teacher_id, part_key, criterion_key, ai_score,
                 teacher_score, max_score, excerpt, teacher_feedback)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::float8, $8::float8, $9::float8, $10, $11)
            ON CONFLICT (draft_id, part_key, criterion_key) DO UPDATE
            SET teacher_score = EXCLUDED.teacher_score, teacher_feedback = EXCLUDED.teacher_feedback"#,
         c.course_id.0,
@@ -364,7 +364,7 @@ pub async fn recent_corrections(
 ) -> Result<Vec<CorrectionRow>> {
     let rows = sqlx::query_as!(
         CorrectionRow,
-        r#"SELECT part_key, criterion_key, ai_score, teacher_score, max_score, excerpt, teacher_feedback
+        r#"SELECT part_key, criterion_key, ai_score::float8 AS "ai_score!", teacher_score::float8 AS "teacher_score!", max_score::float8 AS "max_score!", excerpt, teacher_feedback
            FROM ai_grade_corrections WHERE activity_id = $1
            ORDER BY created_at DESC, id DESC LIMIT $2"#,
         activity_id.0,
@@ -527,9 +527,9 @@ pub async fn draft_counts(
                   count(*) FILTER (WHERE agreement = 'adjusted') AS "applied_adjusted!",
                   count(*) FILTER (WHERE status = 'discarded') AS "discarded!",
                   count(*) FILTER (WHERE status = 'failed') AS "failed!",
-                  avg(abs(final_score - calibrated_score))
+                  (avg(abs(final_score - calibrated_score))
                       FILTER (WHERE status = 'applied' AND final_score IS NOT NULL
-                              AND calibrated_score IS NOT NULL) AS mean_abs_delta
+                              AND calibrated_score IS NOT NULL))::float8 AS "mean_abs_delta?"
            FROM ai_grade_drafts
            WHERE course_id = $1 AND status <> 'superseded'
              AND created_at >= to_timestamp($2::bigint)"#,
@@ -654,7 +654,7 @@ pub async fn graded_file_attempts(
         r#"SELECT t.id AS "subject_id!", t.user_id AS "learner_id!: UserId",
                   COALESCE(NULLIF(trim(u.display_name), ''), u.username) AS "learner_name!",
                   'file' AS "part_key!", '' AS "text!",
-                  COALESCE(t.final_score, 0) AS "score!", 100::float8 AS "max_score!"
+                  (COALESCE(t.final_score, 0))::float8 AS "score!", 100::float8 AS "max_score!"
            FROM file_submission_attempts t
            JOIN file_submissions f ON f.id = t.file_submission_id
            JOIN users u ON u.id = t.user_id

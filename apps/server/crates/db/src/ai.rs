@@ -1782,7 +1782,7 @@ pub async fn assessments_context(
     let rows = sqlx::query_as!(
         AssessmentContextRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId", title, kind,
-                  grading_mode, passing_score, max_attempts, time_limit_seconds,
+                  grading_mode, passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?"
            FROM assessments WHERE course_id = $1 ORDER BY id"#,
         course_id.0

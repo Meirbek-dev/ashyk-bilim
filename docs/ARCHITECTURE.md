@@ -415,6 +415,15 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **Scores are exact numerics behind domains** (`20261102020100_score_domains`, contract
+  `20261103020000_scores_numeric`): percentages and penalties are `percent` (numeric(5,2), 0..100), points
+  `score_points` and weights `score_weight` (numeric(8,2), >= 0, no `'NaN'`), on submissions, grading entries,
+  file attempts/grades, assessment policy, items, item feedback, code runs and AI grade drafts/corrections.
+  The domain keeps `f64` (grading math and its proptests are unchanged): SQL reads a score as
+  `col::float8 AS "col!"`/`"col?"` and binds one as `$n::float8`, and storing rounds it to two decimals.
+  Chosen over `rust_decimal` because it changes no Rust type, no DTO and no contract, and the same SQL runs on
+  the old double columns (the expand release) and the numeric ones (after the contract). A new query on these
+  columns needs the casts: the SQLx macros refuse `NUMERIC` (no decimal feature).
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the
