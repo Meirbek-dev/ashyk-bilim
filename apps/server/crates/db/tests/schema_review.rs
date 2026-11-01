@@ -29,6 +29,9 @@
 //!   deleted activity leaves the update, an unknown one is refused.
 //! - review item 30: a course's tags are a bounded text[], its learnings a
 //!   jsonb array of `{id, text, emoji?}` within the API's bounds.
+//! - review item 36: embeddings are halfvec(1024); a model's nearest-chunk
+//!   search walks that model's partial HNSW index; the previous release's
+//!   `::vector` statements still run.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -774,4 +777,63 @@ async fn course_lists_keep_the_api_bounds(pool: PgPool) {
     ] {
         assert!(set(refused).await.is_err(), "{refused}");
     }
+}
+
+#[ab_testdb::test]
+async fn embeddings_are_half_precision_with_one_index_per_model(pool: PgPool) {
+    let w = world(&pool).await;
+    for table in ["content_chunks", "ai_work_embeddings"] {
+        let ty: String = sqlx::query_scalar(
+            "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
+              WHERE attrelid = $1::regclass AND attname = 'embedding'",
+        )
+        .bind(table)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(ty, "halfvec(1024)", "{table}");
+    }
+    // The previous release binds `::vector`: insert and search still work.
+    for (ordinal, value) in [(0, "0.1"), (1, "-0.1")] {
+        sqlx::query(
+            "INSERT INTO content_chunks (course_id, source_type, source_id, ordinal, audience,
+                                         published, label, body, token_estimate,
+                                         embedding, embedding_model)
+             VALUES ($1, 'course', $1, $2, 'learner', true, 'l', 'b', 1,
+                     array_fill($3::real, ARRAY[1024])::vector::text::vector, 'hash-ngram-v1')",
+        )
+        .bind(w.course)
+        .bind(ordinal)
+        .bind(value.parse::<f32>().unwrap())
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let probe = format!("[{}]", vec!["0.2"; 1024].join(","));
+    let nearest: i32 = sqlx::query_scalar(
+        "SELECT ordinal FROM content_chunks
+          WHERE course_id = $1 AND embedding_model = 'hash-ngram-v1'
+          ORDER BY embedding <=> $2::text::vector LIMIT 1",
+    )
+    .bind(w.course)
+    .bind(&probe)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(nearest, 0);
+
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query("SET LOCAL enable_seqscan = off")
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let plan: Vec<String> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "EXPLAIN SELECT id FROM content_chunks WHERE embedding_model = 'hash-ngram-v1'
+          ORDER BY embedding <=> '{probe}'::halfvec LIMIT 5"
+    )))
+    .fetch_all(&mut *tx)
+    .await
+    .unwrap();
+    let plan = plan.join("\n");
+    assert!(plan.contains("content_chunks_embedding_hash_idx"), "{plan}");
 }

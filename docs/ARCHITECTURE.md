@@ -417,6 +417,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
+  embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
+  `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
 
@@ -550,7 +553,7 @@ Postgres work uses Postgres advisory locks and row locks.
   provider smoke check only.
 - AI-first foundation (docs/AI-FIRST.md, the source of truth for its rules):
   - `ab-domain::retrieval`: course material cut into `content_chunks` (heading-path anchors,
-    `vector(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
+    `halfvec(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
     minute, version comparison, no write-path hooks); hybrid search = HNSW cosine + full text fused
     by RRF. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`; without a provider a
     deterministic hashed n-gram embedder). `course_qa` and `study_companion` put the passages that

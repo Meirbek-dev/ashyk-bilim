@@ -2,7 +2,7 @@
 //!
 //! A *source* is what gets cut into chunks: a lesson, a media activity, a file assignment, the items of
 //! one assessment, a course card. Its version folds every column the chunks depend on, so the sweep only
-//! has to compare numbers. Vectors cross as pgvector text literals (`$n::text::vector`).
+//! has to compare numbers. Vectors cross as pgvector text literals (`$n::text::halfvec`).
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, ContentChunkId, CourseId};
@@ -195,7 +195,7 @@ pub async fn replace_chunks(
             r#"INSERT INTO content_chunks
                    (course_id, activity_id, source_type, source_id, ordinal, audience, published,
                     label, body, anchor, token_estimate, embedding, embedding_model)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::text::vector, $13)"#,
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::text::halfvec, $13)"#,
             source.course_id.0,
             source.activity_id.map(|a| a.0),
             source.source_type,
@@ -271,19 +271,24 @@ pub async fn vector_candidates(
     limit: i64,
 ) -> Result<Vec<ChunkHit>> {
     let mut tx = pool.begin().await?;
-    // Filtered HNSW scans keep searching until `limit` rows pass the course filter.
-    sqlx::query_scalar!("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
-        .fetch_one(&mut *tx)
-        .await?;
+    // Filtered HNSW scans keep searching until `limit` rows pass the course filter. The HNSW
+    // indexes are partial, one per embedding model: a generic plan (the model a parameter) could
+    // use none of them, so this statement is always planned for its model.
+    sqlx::query!(
+        r#"SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true) AS "scan!",
+                  set_config('plan_cache_mode', 'force_custom_plan', true) AS "plan!""#
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     let rows = sqlx::query_as!(
         ChunkHit,
         r#"SELECT id AS "id: ContentChunkId", source_type, source_id,
                   activity_id AS "activity_id: ActivityId", label, body, anchor,
-                  (1 - (embedding <=> $3::text::vector))::float8 AS "score!"
+                  (1 - (embedding <=> $3::text::halfvec))::float8 AS "score!"
            FROM content_chunks
            WHERE course_id = $1 AND embedding_model = $4
              AND (NOT $2 OR (audience = 'learner' AND published))
-           ORDER BY embedding <=> $3::text::vector
+           ORDER BY embedding <=> $3::text::halfvec
            LIMIT $5"#,
         course_id.0,
         learner_only,

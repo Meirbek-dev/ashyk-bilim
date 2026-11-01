@@ -699,7 +699,7 @@ pub async fn store_embedding(
 ) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
-           VALUES ($1, $2, $3, $4, $5, $6::text::vector)
+           VALUES ($1, $2, $3, $4, $5, $6::text::halfvec)
            ON CONFLICT (subject_id, part_key) DO UPDATE
            SET text_hash = EXCLUDED.text_hash, embedding_model = EXCLUDED.embedding_model,
                embedding = EXCLUDED.embedding, activity_id = EXCLUDED.activity_id"#,

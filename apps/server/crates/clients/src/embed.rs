@@ -281,7 +281,7 @@ pub fn hash_embed(text: &str) -> Vec<f32> {
     normalised(v)
 }
 
-/// A pgvector text literal (`[0.1,0.2,...]`) bound as `$n::text::vector`.
+/// A pgvector text literal (`[0.1,0.2,...]`) bound as `$n::text::halfvec`.
 #[must_use]
 pub fn to_pg_vector(v: &[f32]) -> String {
     use std::fmt::Write as _;

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true) AS \"scan!\",\n                  set_config('plan_cache_mode', 'force_custom_plan', true) AS \"plan!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "scan!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "plan!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "7ba3a86ce4a734161c073b3840dbcf408641e3c2a19db4cbe9619a3e09d0e8c4"
+}

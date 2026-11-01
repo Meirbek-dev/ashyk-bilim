@@ -58,7 +58,10 @@
     Лексический, но без сети и бесплатный.
   - `openai_compatible` - `POST {base}/embeddings` (`model`, `input[]`, `dimensions: 1024`): OpenAI,
     OpenRouter, self-hosted TEI/Infinity/Ollama.
-- Размерность фиксирована - `vector(1024)`; у каждого фрагмента `embedding_model`. Смена модели помечает
+- Размерность фиксирована - `halfvec(1024)` (половинная точность: вдвое меньше таблица и индекс); у каждого
+  фрагмента `embedding_model`. HNSW-индекс частичный, свой на каждую модель (`hash-ngram-v1`,
+  `text-embedding-3-small`); новая модель получает свой индекс миграцией (`CREATE INDEX CONCURRENTLY ... WHERE
+  embedding_model = '...'`), без него поиск по курсу идёт перебором его фрагментов. Смена модели помечает
   индекс устаревшим, переиндексация идёт фоном; поиск использует только векторы текущей модели (иначе -
   только лексическая часть).
 - Конфигурация: `AB__AI__EMBEDDING_PROVIDER` (`hash` | `openai_compatible`), `..._BASE_URL`,
@@ -69,9 +72,9 @@
 ```sql
 content_chunks (id uuid pk, course_id fk, activity_id fk null, source_type, source_id uuid,
   ordinal int, audience ('learner'|'staff'), published bool, label text, body text,
-  anchor jsonb object, token_estimate int, embedding vector(1024) null, embedding_model text null,
+  anchor jsonb object, token_estimate int, embedding halfvec(1024) null, embedding_model text null,
   lexeme tsvector generated (simple, свёрнутый label+body), created_at)
-  индексы: (course_id, audience), HNSW (embedding vector_cosine_ops), GIN (lexeme)
+  индексы: (course_id, audience), HNSW (embedding halfvec_cosine_ops) WHERE embedding_model = <модель>, GIN (lexeme)
 content_index_state (source_type, source_id) pk, course_id, activity_id, source_version bigint,
   chunk_count, embedding_model, indexed_at, error text null
 ```
