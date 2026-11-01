@@ -688,12 +688,14 @@ in the order it can be done, each step a forward migration on the current schema
     `display_name`/`description`: keep only the keys for built-in roles, plain text for custom ones
     (CHECK exactly one set). `profile_version` starts at 0 while every other version starts at 1: leave it
     (the web's If-Match sends what it read).
-11. **Search index** (item 23). `search_matches(hay, words, letters, negated)` applies its regexes inside a
-    function over arrays, so no index applies. Rewrite the search queries with `QueryBuilder`: one `search_fold(title || ' ' || ...) ~ $n` predicate
-    per term in the WHERE clause, then `CREATE INDEX ... USING gin (search_fold(...) gin_trgm_ops)` per
-    searched table (`pg_trgm`, trusted, can be created by `ashyq`). Terms under 3 characters fall back to a scan
-    (trigram limit). Then drop the tsvector columns if ranking moves to `similarity()`. Done when: the
-    existing `search.rs` tests pass and `EXPLAIN` shows a bitmap index scan on a 10 000-course fixture.
+11. **Search index** (item 23). Done for `/search` (review 2 item 35): `search_courses` / `search_collections` /
+    `search_lessons` are `QueryBuilder` queries with one `search_fold(hay) ~ search_fold($n)` predicate per word
+    (`ab_db::search::push_terms`), answered by `pg_trgm` GIN indexes on `search_fold(hay)` of courses,
+    collections and activities (users: on `search_fold(username)` / `search_fold(display_name)` for the
+    existing `LIKE`); `course_search_walks_the_trigram_index` checks the bitmap index scan over 10 000 courses.
+    Left: the catalog listings' `q` filter (`list_courses`, `list_collections`) still calls `search_matches`
+    inside their static keyset queries; moving them to the same predicates needs those queries as
+    `QueryBuilder` too. The tsvector columns stay while ranking uses `ts_rank_cd`.
 12. **Natural keys** (item 26). `activity_progress`, `course_progress`, `gamification_profiles`, the `daily_*`
     rollups and `learner_risk_snapshots` have a uuid PK plus the unique natural key, and code reads the uuid
     (projector rows, prune batches `WHERE id IN (...)`, the leaderboard keyset cursor carries the profile id).

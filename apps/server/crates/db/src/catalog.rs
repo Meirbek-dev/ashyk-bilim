@@ -6,7 +6,7 @@ use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
 use sqlx::{PgConnection, PgPool};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CourseRow {
     pub id: CourseId,
     pub name: String,

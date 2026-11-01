@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::catalog::CourseRow;
 
+#[derive(sqlx::FromRow)]
 pub struct CollectionRow {
     pub id: CollectionId,
     pub name: String,

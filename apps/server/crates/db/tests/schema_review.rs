@@ -32,6 +32,8 @@
 //! - review item 36: embeddings are halfvec(1024); a model's nearest-chunk
 //!   search walks that model's partial HNSW index; the previous release's
 //!   `::vector` statements still run.
+//! - review item 35 (REWRITE 5.6 n11): `/search` over 10 000 courses walks
+//!   the trigram index on the folded text.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -836,4 +838,26 @@ async fn embeddings_are_half_precision_with_one_index_per_model(pool: PgPool) {
     .unwrap();
     let plan = plan.join("\n");
     assert!(plan.contains("content_chunks_embedding_hash_idx"), "{plan}");
+}
+
+#[ab_testdb::test]
+async fn course_search_walks_the_trigram_index(pool: PgPool) {
+    let creator = user(&pool, "author").await;
+    sqlx::query(
+        "INSERT INTO courses (name, description, creator_id, public)
+         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), $1, true
+           FROM generate_series(1, 10000) g",
+    )
+    .bind(creator)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("ANALYZE courses").execute(&pool).await.unwrap();
+    let plan = ab_db::search::explain_search_courses(&pool, "a1b2c3")
+        .await
+        .unwrap();
+    assert!(
+        plan.contains("Bitmap Index Scan on courses_search_trgm_idx"),
+        "{plan}"
+    );
 }

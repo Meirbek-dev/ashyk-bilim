@@ -1,17 +1,20 @@
 //! Platform search (search-lite).
 //!
-//! Matching is `search_matches` (UX-222, shared with `courses?q=`): every
+//! Matching is the `search_matches` rule (UX-222, shared with `courses?q=`): every
 //! word matches at a word start (UX-152 prefix), a one-character word only
 //! whole and unfolded, symbols count (`C#`, `C++` - the 'simple' tsvector
 //! drops them), Kazakh letters fold to the Russian keyboard's (қ→к, і→и) and ё to е, and Cyrillic
 //! look-alikes fold to Latin (SQL `search_fold`); `-word` excludes. Hits are ranked by
 //! `ts_rank_cd` over the `search` tsvector, then recency.
-//! ponytail: a regex scan per row, not the GIN index - fine for hundreds of
-//! courses; a trigram index on the folded text if the catalogue grows.
+//!
+//! The `/search` queries spell the rule out as one predicate per word ([`push_terms`]), so the
+//! trigram index on each searched text (`*_search_trgm_idx`, `pg_trgm`) answers a word of three
+//! or more characters; shorter words and exclusions filter the rows it found. `search_matches`
+//! (one function over arrays, no index) still serves the catalog listings' `q` filter.
 
 use ab_core::Result;
-use ab_core::id::{ActivityId, CollectionId, CourseId, UserId};
-use sqlx::PgPool;
+use ab_core::id::{ActivityId, CourseId, UserId};
+use sqlx::{PgPool, Postgres, QueryBuilder};
 
 use crate::catalog::CourseRow;
 use crate::collections::CollectionRow;
@@ -122,6 +125,35 @@ pub fn word_patterns(query: &str) -> WordPatterns {
     out
 }
 
+/// `AND` one predicate per word of `patterns` over `hay` (a constant SQL expression), the
+/// `search_matches` rule: a word must match the folded text, a one-character word the lower-cased
+/// one, an excluded word must not match. `search_fold(hay) ~ search_fold($n)` is the form the
+/// trigram expression indexes answer.
+fn push_terms(qb: &mut QueryBuilder<Postgres>, hay: &'static str, patterns: &WordPatterns) {
+    for word in &patterns.words {
+        qb.push(format_args!(" AND search_fold({hay}) ~ search_fold("))
+            .push_bind(word.clone())
+            .push(")");
+    }
+    for letter in &patterns.letters {
+        qb.push(format_args!(" AND lower({hay}) ~ lower("))
+            .push_bind(letter.clone())
+            .push(")");
+    }
+    for word in &patterns.excluded {
+        qb.push(format_args!(" AND search_fold({hay}) !~ search_fold("))
+            .push_bind(word.clone())
+            .push(")");
+    }
+}
+
+/// The searched text of a course; `courses_search_trgm_idx` indexes `search_fold` of exactly this.
+const COURSE_HAY: &str = "(name || ' ' || description || ' ' || coalesce(about, ''))";
+/// The searched text of a collection (`collections_search_trgm_idx`).
+const COLLECTION_HAY: &str = "(name || ' ' || description)";
+/// The searched text of a lesson (`activities_search_trgm_idx`).
+const LESSON_HAY: &str = "(a.name)";
+
 /// Visibility = SQL `course_visible` (BUG-190), the predicate shared with
 /// [`crate::catalog::list_courses`] and `collection_listable`.
 pub async fn search_courses(
@@ -132,43 +164,55 @@ pub async fn search_courses(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<CourseRow>> {
-    let patterns = word_patterns(query);
-    let rows = sqlx::query_as!(
-        CourseRow,
-        r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
-                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  archived_by AS "archived_by: UserId",
-                  version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
-                      AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship = 'maintainer')
-                      AS "maintainer_ids!: Vec<UserId>",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM courses
-           WHERE search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $5, $6, $7)
-             AND course_visible(courses, $3, $2)
-             AND archived_at IS NULL
-           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
-           LIMIT $4 OFFSET $8"#,
-        prefix_tsquery(query),
-        see_all,
-        viewer.map(|v| v.0),
-        limit,
-        &patterns.words,
-        &patterns.letters,
-        &patterns.excluded,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    let mut qb = courses_query("", query, viewer, see_all, limit, offset);
+    Ok(qb.build_query_as::<CourseRow>().fetch_all(pool).await?)
+}
+
+/// The plan of [`search_courses`] for an anonymous viewer, one line per row (index regression
+/// tests).
+pub async fn explain_search_courses(pool: &PgPool, query: &str) -> Result<String> {
+    let mut qb = courses_query("EXPLAIN ", query, None, false, 20, 0);
+    let lines: Vec<String> = qb.build_query_scalar().fetch_all(pool).await?;
+    Ok(lines.join("\n"))
+}
+
+fn courses_query(
+    prefix: &'static str,
+    query: &str,
+    viewer: Option<UserId>,
+    see_all: bool,
+    limit: i64,
+    offset: i64,
+) -> QueryBuilder<Postgres> {
+    let mut qb = QueryBuilder::<Postgres>::new(prefix);
+    qb.push(
+        "SELECT id, name, description, about, tags,
+                public, open_to_contributors, assessments_require_enrollment,
+                thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
+                (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
+                ARRAY(SELECT ra.user_id FROM resource_authors ra
+                      WHERE ra.course_id = courses.id AND ra.status = 'active'
+                        AND ra.authorship <> 'reporter') AS contributor_ids,
+                ARRAY(SELECT ra.user_id FROM resource_authors ra
+                      WHERE ra.course_id = courses.id AND ra.status = 'active'
+                        AND ra.authorship = 'maintainer') AS maintainer_ids,
+                (extract(epoch FROM created_at))::bigint AS created_at,
+                (extract(epoch FROM updated_at))::bigint AS updated_at
+         FROM courses
+         WHERE archived_at IS NULL AND course_visible(courses, ",
+    );
+    qb.push_bind(viewer.map(|v| v.0))
+        .push(", ")
+        .push_bind(see_all)
+        .push(")");
+    push_terms(&mut qb, COURSE_HAY, &word_patterns(query));
+    qb.push(" ORDER BY ts_rank_cd(search, to_tsquery('simple', ")
+        .push_bind(prefix_tsquery(query))
+        .push(")) DESC, id DESC LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+    qb
 }
 
 /// Same listing rule as [`crate::collections::list_collections`]
@@ -182,36 +226,34 @@ pub async fn search_collections(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<CollectionRow>> {
-    let patterns = word_patterns(query);
-    let rows = sqlx::query_as!(
-        CollectionRow,
-        r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version, cover_key,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM collections
-           WHERE search_matches(name || ' ' || description, $6, $7, $8)
-             AND (public OR $2 OR creator_id = $3)
-             AND collection_listable(id, $3, $5)
-           ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC
-           LIMIT $4 OFFSET $9"#,
-        prefix_tsquery(query),
-        see_all,
-        viewer.map(|v| v.0),
-        limit,
-        see_all_courses,
-        &patterns.words,
-        &patterns.letters,
-        &patterns.excluded,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    let viewer = viewer.map(|v| v.0);
+    let mut qb = QueryBuilder::<Postgres>::new(
+        "SELECT id, name, description, public, creator_id, version, cover_key,
+                (extract(epoch FROM created_at))::bigint AS created_at,
+                (extract(epoch FROM updated_at))::bigint AS updated_at
+         FROM collections
+         WHERE (public OR ",
+    );
+    qb.push_bind(see_all)
+        .push(" OR creator_id = ")
+        .push_bind(viewer)
+        .push(") AND collection_listable(id, ")
+        .push_bind(viewer)
+        .push(", ")
+        .push_bind(see_all_courses)
+        .push(")");
+    push_terms(&mut qb, COLLECTION_HAY, &word_patterns(query));
+    qb.push(" ORDER BY ts_rank_cd(search, to_tsquery('simple', ")
+        .push_bind(prefix_tsquery(query))
+        .push(")) DESC, id DESC LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+    Ok(qb.build_query_as::<CollectionRow>().fetch_all(pool).await?)
 }
 
 /// A lesson hit: an activity and the course it is in.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct LessonHitRow {
     pub activity_id: ActivityId,
     pub name: String,
@@ -229,25 +271,18 @@ pub async fn search_lessons(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<LessonHitRow>> {
-    let patterns = word_patterns(query);
-    let rows = sqlx::query_as!(
-        LessonHitRow,
-        r#"SELECT a.id AS "activity_id: ActivityId", a.name, a.activity_type,
-                  c.id AS "course_id: CourseId", c.name AS course_name
-           FROM activities a JOIN courses c ON c.id = a.course_id
-           WHERE a.published AND c.public AND c.archived_at IS NULL
-             AND search_matches(a.name, $1, $2, $3)
-           ORDER BY lower(a.name), a.id
-           LIMIT $4 OFFSET $5"#,
-        &patterns.words,
-        &patterns.letters,
-        &patterns.excluded,
-        limit,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    let mut qb = QueryBuilder::<Postgres>::new(
+        "SELECT a.id AS activity_id, a.name, a.activity_type,
+                c.id AS course_id, c.name AS course_name
+         FROM activities a JOIN courses c ON c.id = a.course_id
+         WHERE a.published AND c.public AND c.archived_at IS NULL",
+    );
+    push_terms(&mut qb, LESSON_HAY, &word_patterns(query));
+    qb.push(" ORDER BY lower(a.name), a.id LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+    Ok(qb.build_query_as::<LessonHitRow>().fetch_all(pool).await?)
 }
 
 /// Public-profile projection for people search.
