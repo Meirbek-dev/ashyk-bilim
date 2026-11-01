@@ -4,7 +4,7 @@
 use ab_core::Result;
 use ab_core::assessments::{
     AnnotationType, AutoSubmitReason, BulkActionStatus, BulkActionType, CodeRunPurpose,
-    CodeRunStatus, SubmissionStatus,
+    CodeRunStatus, SubmissionStatus, TestVerdict,
 };
 use ab_core::id::{
     ActivityId, AssessmentId, AssessmentItemId, BulkActionId, CodeRunId, CourseId, FileAttemptId,
@@ -1578,13 +1578,12 @@ pub async fn latest_final_run(
 pub struct CodeRunCaseRow {
     pub position: i32,
     pub test_id: String,
-    pub judge0_token: Option<String>,
     pub stdin: Option<String>,
     pub expected_output: Option<String>,
     pub description: String,
     pub weight: f64,
     pub is_visible: bool,
-    pub status_id: Option<i32>,
+    pub verdict: TestVerdict,
     pub status_description: String,
     pub passed: bool,
     pub stdout: Option<String>,
@@ -1604,21 +1603,20 @@ pub async fn insert_code_run_cases(
     for c in cases {
         sqlx::query!(
             r#"INSERT INTO code_run_cases
-                   (run_id, position, test_id, judge0_token, stdin, expected_output, description,
-                    weight, is_visible, status_id, status_description, passed, stdout, stderr,
+                   (run_id, position, test_id, stdin, expected_output, description,
+                    weight, is_visible, verdict, status_description, passed, stdout, stderr,
                     compile_output, message, time_seconds, memory_kb)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                       $17, $18)"#,
+                       $17)"#,
             run_id.0,
             c.position,
             c.test_id,
-            c.judge0_token,
             c.stdin,
             c.expected_output,
             c.description,
             c.weight,
             c.is_visible,
-            c.status_id,
+            c.verdict.as_str(),
             c.status_description,
             c.passed,
             c.stdout,
@@ -1638,8 +1636,9 @@ pub async fn insert_code_run_cases(
 pub async fn list_code_run_cases(pool: &PgPool, run_id: CodeRunId) -> Result<Vec<CodeRunCaseRow>> {
     let rows = sqlx::query_as!(
         CodeRunCaseRow,
-        r#"SELECT position, test_id, judge0_token, stdin, expected_output, description, weight,
-                  is_visible, status_id, status_description, passed, stdout, stderr,
+        r#"SELECT position, test_id, stdin, expected_output, description, weight,
+                  is_visible, verdict AS "verdict: TestVerdict", status_description, passed,
+                  stdout, stderr,
                   compile_output, message, time_seconds, memory_kb
            FROM code_run_cases WHERE run_id = $1 ORDER BY position"#,
         run_id.0

@@ -6,6 +6,7 @@
 use std::time::Duration;
 
 use ab_clients::gojudge::{Batch, GoJudgeClient, GoJudgeConfig, Limits, RunnerError};
+use ab_core::assessments::TestVerdict;
 use secrecy::SecretString;
 use wiremock::matchers::{body_partial_json, header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -108,11 +109,11 @@ async fn compiles_once_runs_each_input_with_the_artifact_and_frees_it() {
         .await
         .unwrap();
     assert_eq!(outcomes.len(), 2);
-    assert_eq!(outcomes[0].status_id, 3);
+    assert_eq!(outcomes[0].verdict, TestVerdict::Accepted);
     assert_eq!(outcomes[0].stdout.as_deref(), Some("4\n"));
     assert_eq!(outcomes[0].time_seconds, Some(0.012));
     assert_eq!(outcomes[0].memory_kb, Some(3456));
-    assert_eq!(outcomes[1].status_id, 7);
+    assert_eq!(outcomes[1].verdict, TestVerdict::RuntimeError);
     assert_eq!(outcomes[1].status_description, "Runtime Error (SIGSEGV)");
     assert_eq!(outcomes[1].message.as_deref(), Some("Killed by signal 11"));
 }
@@ -144,7 +145,7 @@ async fn a_failed_check_is_every_inputs_compile_error() {
         .unwrap();
     assert_eq!(outcomes.len(), 2);
     for outcome in &outcomes {
-        assert_eq!(outcome.status_id, 6);
+        assert_eq!(outcome.verdict, TestVerdict::CompileError);
         assert_eq!(
             outcome.compile_output.as_deref(),
             Some("  File \"main.py\", line 1\nSyntaxError: invalid syntax")
@@ -190,7 +191,7 @@ async fn python_runs_copy_in_the_source() {
         .run_batch("u", &batch(71, "print(input())", &["x"]))
         .await
         .unwrap();
-    assert_eq!(outcomes[0].status_id, 11);
+    assert_eq!(outcomes[0].verdict, TestVerdict::RuntimeError);
     assert_eq!(outcomes[0].stderr.as_deref(), Some("Traceback\n"));
     assert_eq!(
         outcomes[0].message.as_deref(),

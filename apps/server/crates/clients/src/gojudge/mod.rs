@@ -5,8 +5,8 @@
 //! with one command per request answers when the program is done, a compile
 //! step keeps its output in go-judge's file store (`copyOutCached`) for the
 //! test runs to copy in, and `DELETE /file/{id}` frees it. The image's
-//! commands live in [`languages`]. Verdicts keep Judge0's status ids (the
-//! platform's stored and rendered verdict codes, see [`Outcome::status_id`]);
+//! commands live in [`languages`]. Each outcome is the platform's own
+//! [`TestVerdict`] (the API derives the legacy numeric `status_id` from it);
 //! go-judge's own expected-output comparison is not used, the domain
 //! compares outputs so match modes are ours. Fixtures in `tests/gojudge.rs`
 //! pin the shapes.
@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
+use ab_core::assessments::TestVerdict;
 use ab_core::{Error, Result};
 use secrecy::{ExposeSecret, SecretString};
 
@@ -74,11 +75,10 @@ pub struct Batch<'a> {
 /// One input's outcome.
 #[derive(Debug, Clone)]
 pub struct Outcome {
-    /// Judge0's status ids, kept as the platform's verdict codes: 3 Accepted,
-    /// 4 Wrong Answer, 5 Time Limit Exceeded, 6 Compilation Error, 7-12
-    /// Runtime Error (12 also memory limit and blocked system calls), 13
-    /// Internal Error.
-    pub status_id: i32,
+    /// The sandbox's word; `WrongAnswer` comes from the domain's output
+    /// comparison, never from here.
+    pub verdict: TestVerdict,
+    /// Human label ("Runtime Error (SIGSEGV)").
     pub status_description: String,
     pub stdout: Option<String>,
     pub stderr: Option<String>,

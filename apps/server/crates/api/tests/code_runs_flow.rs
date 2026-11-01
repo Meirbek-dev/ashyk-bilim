@@ -19,7 +19,7 @@ fn fake_python(source: &str, stdin: &str) -> CaseVerdict {
     }
     if source.contains("BOOM") {
         return CaseVerdict {
-            status_id: 13,
+            verdict: ab_core::assessments::TestVerdict::InternalError,
             stdout: None,
             stderr: None,
             compile_output: None,

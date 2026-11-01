@@ -25,6 +25,8 @@
 //! - a grader can be erased by hand: both journals keep the grade with
 //!   `graded_by` cleared, and still refuse naming another grader.
 //! - a deleted account cannot be active again.
+//! - review 2, item 25: a code-run case stores the platform's own verdict;
+//!   the previous release's Judge0 code and the verdict fill each other.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -689,4 +691,74 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(reenabled.is_err(), "a deleted account is not re-enabled");
+}
+
+#[ab_testdb::test]
+async fn a_code_run_case_keeps_its_verdict_and_the_legacy_code_in_step(pool: PgPool) {
+    let w = world(&pool).await;
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let run: Uuid = sqlx::query_scalar(
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
+                                source_sha256)
+         VALUES ($1, $2, $3, 'visible', 'runtime_error', 71, 'x') RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(item)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // The previous release writes Judge0's code, this one the verdict.
+    sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, status_id, status_description)
+         VALUES ($1, 1, 'old', 7, 'Runtime Error (SIGSEGV)'),
+                ($1, 2, 'old-mle', 12, 'Memory Limit Exceeded'),
+                ($1, 3, 'old-none', NULL, '')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, verdict, status_description)
+         VALUES ($1, 4, 'new', 'output_limit', 'Output Limit Exceeded')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let rows: Vec<(String, String, Option<i32>)> = sqlx::query_as(
+        "SELECT test_id, verdict, status_id FROM code_run_cases WHERE run_id = $1 ORDER BY position",
+    )
+    .bind(run)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let rows: Vec<(&str, &str, Option<i32>)> = rows
+        .iter()
+        .map(|(t, v, s)| (t.as_str(), v.as_str(), *s))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            ("old", "runtime_error", Some(7)),
+            ("old-mle", "memory_limit", Some(12)),
+            ("old-none", "wrong_answer", Some(4)),
+            ("new", "output_limit", Some(8)),
+        ]
+    );
+    let unknown = sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 5, 'x', 'ok')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await;
+    assert!(unknown.is_err(), "verdicts are a closed list");
 }

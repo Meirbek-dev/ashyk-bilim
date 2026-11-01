@@ -415,6 +415,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
+  time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
+  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the
+  contract migration drops `status_id` / `judge0_token`, the trigger `code_run_cases_sync` keeps the previous
+  release's code and the verdict in step.
 
 ### SQLx usage
 
