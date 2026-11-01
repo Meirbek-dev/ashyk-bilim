@@ -30,6 +30,9 @@
 //!   `date` both ways.
 //! - lane C, item 11: membership is an `enrolments` row; the previous
 //!   release's trail-run writes are mirrored into it until the contract.
+//! - lane C, items 14/15: course_progress derives its percent and the
+//!   certificate flag from the counts and completed_at; the counts cohere.
+//! - lane C, item 40: projections and rollups are keyed by their natural key.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -754,4 +757,97 @@ async fn trail_runs_of_the_previous_release_mirror_into_enrolments(pool: PgPool)
         .await
         .unwrap();
     assert_eq!(enrolled().await, 0);
+}
+
+#[ab_testdb::test]
+async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
+    let w = world(&pool).await;
+    let derived = || async {
+        sqlx::query_as::<_, (f64, bool)>(
+            "SELECT progress_pct, certificate_eligible FROM course_progress
+             WHERE course_id = $1 AND user_id = $2",
+        )
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, completed_required_count,
+                                      total_required_count)
+         VALUES ($1, $2, 1, 32)",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // 3.125 rounds away from zero, as the projector's round2.
+    assert_eq!(derived().await, (3.13, false));
+    let set = |sql: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(sql)
+                .bind(w.course)
+                .bind(w.user)
+                .execute(&pool)
+                .await
+        }
+    };
+    // All done but no completion stamp (a leaver): not eligible.
+    set("UPDATE course_progress SET completed_required_count = 32
+         WHERE course_id = $1 AND user_id = $2")
+    .await
+    .unwrap();
+    assert_eq!(derived().await, (100.0, false));
+    set("UPDATE course_progress SET completed_at = now() WHERE course_id = $1 AND user_id = $2")
+        .await
+        .unwrap();
+    assert_eq!(derived().await, (100.0, true));
+    // More done than required, or a completion before the end, is refused.
+    let over = set("UPDATE course_progress SET completed_required_count = 33
+                    WHERE course_id = $1 AND user_id = $2")
+    .await;
+    assert!(over.is_err(), "completed <= total");
+    let early = set("UPDATE course_progress SET completed_required_count = 31
+                     WHERE course_id = $1 AND user_id = $2")
+    .await;
+    assert!(early.is_err(), "completed_at only on a completed course");
+}
+
+#[ab_testdb::test]
+async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
+    let keys: Vec<(String, String)> = sqlx::query_as(
+        "SELECT c.conrelid::regclass::text,
+                string_agg(a.attname, ',' ORDER BY k.ord)
+         FROM pg_constraint c
+         CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+         WHERE c.contype = 'p'
+           AND c.conrelid::regclass::text IN ('activity_progress', 'course_progress',
+               'gamification_profiles', 'daily_course_metrics', 'daily_course_engagement',
+               'daily_assessment_metrics', 'daily_user_course_progress', 'learner_risk_snapshots')
+         GROUP BY 1 ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let keys: Vec<(&str, &str)> = keys.iter().map(|(t, k)| (t.as_str(), k.as_str())).collect();
+    assert_eq!(
+        keys,
+        [
+            ("activity_progress", "activity_id,user_id"),
+            ("course_progress", "course_id,user_id"),
+            ("daily_assessment_metrics", "metric_date,assessment_id"),
+            ("daily_course_engagement", "metric_date,activity_id"),
+            ("daily_course_metrics", "metric_date,course_id"),
+            (
+                "daily_user_course_progress",
+                "metric_date,user_id,course_id"
+            ),
+            ("gamification_profiles", "user_id"),
+            ("learner_risk_snapshots", "snapshot_date,user_id,course_id"),
+        ]
+    );
 }

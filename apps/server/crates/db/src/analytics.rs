@@ -736,8 +736,9 @@ pub struct PruneCounts {
 ///
 /// Removes `analytics_events` older than 400 days and every `daily_*` /
 /// `learner_risk_snapshots` row older than 2 years, in 5 000-row batches
-/// through the primary key so a first run over a large backlog never holds
-/// one long lock.
+/// so a first run over a large backlog never holds one long lock. Rollup
+/// batches go by `ctid`: those tables are keyed by their natural key, the
+/// surrogate `id` is on its way out (REWRITE 5.6 n12).
 pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
     macro_rules! prune {
         ($sql:literal) => {{
@@ -757,30 +758,30 @@ pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
             WHERE occurred_at < now() - interval '400 days' LIMIT 5000)"
     );
     let daily_rows = prune!(
-        "DELETE FROM daily_teacher_metrics WHERE id IN (
-            SELECT id FROM daily_teacher_metrics
-            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_teacher_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_teacher_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_course_metrics WHERE id IN (
-            SELECT id FROM daily_course_metrics
-            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_course_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_course_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_course_engagement WHERE id IN (
-            SELECT id FROM daily_course_engagement
-            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_course_engagement WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_course_engagement
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_assessment_metrics WHERE id IN (
-            SELECT id FROM daily_assessment_metrics
-            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_assessment_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_assessment_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_user_course_progress WHERE id IN (
-            SELECT id FROM daily_user_course_progress
-            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_user_course_progress WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_user_course_progress
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     );
     let risk_snapshots = prune!(
-        "DELETE FROM learner_risk_snapshots WHERE id IN (
-            SELECT id FROM learner_risk_snapshots
-            WHERE snapshot_date < platform_date(now()) - interval '2 years' LIMIT 5000)"
+        "DELETE FROM learner_risk_snapshots WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM learner_risk_snapshots
+            WHERE snapshot_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     );
     Ok(PruneCounts {
         events,

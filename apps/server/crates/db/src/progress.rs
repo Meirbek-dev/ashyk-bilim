@@ -4,10 +4,7 @@
 
 use ab_core::Result;
 use ab_core::assessments::{ActivityProgressState, TrailRunStatus};
-use ab_core::id::{
-    ActivityId, ActivityProgressId, CourseId, CourseProgressId, SubmissionId, TrailId, TrailRunId,
-    TrailStepId, UserId,
-};
+use ab_core::id::{ActivityId, CourseId, SubmissionId, TrailId, TrailRunId, TrailStepId, UserId};
 use sqlx::{PgConnection, PgPool};
 
 /// `to_timestamp($n)` wants double precision; epoch seconds fit exactly.
@@ -22,8 +19,8 @@ const fn epoch(t: Option<i64>) -> Option<f64> {
 // ── Activity progress ───────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+/// Keyed by `(activity_id, user_id)` (REWRITE 5.6 n12).
 pub struct ActivityProgressRow {
-    pub id: ActivityProgressId,
     pub course_id: CourseId,
     pub activity_id: ActivityId,
     pub user_id: UserId,
@@ -126,7 +123,7 @@ pub async fn get_activity_progress<'e>(
 ) -> Result<Option<ActivityProgressRow>> {
     let row = sqlx::query_as!(
         ActivityProgressRow,
-        r#"SELECT id AS "id: ActivityProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
                   state AS "state: ActivityProgressState", required, score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
@@ -158,7 +155,7 @@ pub async fn list_course_progress_rows<'e>(
 ) -> Result<Vec<ActivityProgressRow>> {
     let rows = sqlx::query_as!(
         ActivityProgressRow,
-        r#"SELECT id AS "id: ActivityProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
                   state AS "state: ActivityProgressState", required, score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
@@ -296,8 +293,8 @@ pub async fn list_assessment_weights<'e>(
 // ── Course progress ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+/// Keyed by `(course_id, user_id)` (REWRITE 5.6 n12).
 pub struct CourseProgressRow {
-    pub id: CourseProgressId,
     pub course_id: CourseId,
     pub user_id: UserId,
     pub completed_required_count: i32,
@@ -314,18 +311,22 @@ pub struct CourseProgressRow {
 }
 
 #[derive(Debug, Clone)]
+/// What the projector writes. `progress_pct` and `certificate_eligible`
+/// are not written: the database derives them from the counts and
+/// `completed_at` (`course_progress_derive`, items 14/15).
 pub struct CourseProgressWrite {
     pub course_id: CourseId,
     pub user_id: UserId,
     pub completed_required_count: i32,
     pub total_required_count: i32,
-    pub progress_pct: f64,
     pub grade_average: Option<f64>,
     pub weighted_grade_average: Option<f64>,
     pub missing_required_count: i32,
     pub needs_grading_count: i32,
     pub last_activity_at: Option<i64>,
+    /// The course completion; set exactly when `certificate_eligible`.
     pub completed_at: Option<i64>,
+    /// Every required activity done by a member: the stored flag's rule.
     pub certificate_eligible: bool,
 }
 
@@ -336,31 +337,28 @@ pub async fn upsert_course_progress<'e>(
     sqlx::query!(
         r#"INSERT INTO course_progress
                (course_id, user_id, completed_required_count, total_required_count,
-                progress_pct, grade_average, weighted_grade_average, missing_required_count,
-                needs_grading_count, last_activity_at, completed_at, certificate_eligible)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, to_timestamp($10), to_timestamp($11), $12)
+                grade_average, weighted_grade_average, missing_required_count,
+                needs_grading_count, last_activity_at, completed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_timestamp($9), to_timestamp($10))
            ON CONFLICT (course_id, user_id) DO UPDATE SET
                completed_required_count = EXCLUDED.completed_required_count,
                total_required_count = EXCLUDED.total_required_count,
-               progress_pct = EXCLUDED.progress_pct, grade_average = EXCLUDED.grade_average,
+               grade_average = EXCLUDED.grade_average,
                weighted_grade_average = EXCLUDED.weighted_grade_average,
                missing_required_count = EXCLUDED.missing_required_count,
                needs_grading_count = EXCLUDED.needs_grading_count,
                last_activity_at = EXCLUDED.last_activity_at,
-               completed_at = EXCLUDED.completed_at,
-               certificate_eligible = EXCLUDED.certificate_eligible"#,
+               completed_at = EXCLUDED.completed_at"#,
         w.course_id.0,
         w.user_id.0,
         w.completed_required_count,
         w.total_required_count,
-        w.progress_pct,
         w.grade_average,
         w.weighted_grade_average,
         w.missing_required_count,
         w.needs_grading_count,
         epoch(w.last_activity_at),
-        epoch(w.completed_at),
-        w.certificate_eligible
+        epoch(w.completed_at)
     )
     .execute(db)
     .await?;
@@ -374,7 +372,7 @@ pub async fn get_course_progress<'e>(
 ) -> Result<Option<CourseProgressRow>> {
     let row = sqlx::query_as!(
         CourseProgressRow,
-        r#"SELECT id AS "id: CourseProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   user_id AS "user_id: UserId", completed_required_count, total_required_count,
                   progress_pct, grade_average, weighted_grade_average, missing_required_count,
                   needs_grading_count,

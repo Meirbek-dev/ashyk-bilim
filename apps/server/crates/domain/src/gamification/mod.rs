@@ -372,7 +372,7 @@ impl GamificationService {
     }
 
     /// S-05 keyset page: `cursor` is the previous page's `next_cursor`
-    /// (`"<total_xp>.<profile id>"`, opaque to clients).
+    /// (`"<total_xp>.<user id>"`, opaque to clients).
     pub async fn leaderboard_page(
         &self,
         limit: i64,
@@ -395,8 +395,7 @@ impl GamificationService {
         let mut rows = ab_db::gamification::leaderboard_after(&self.pool, limit + 1, after).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            rows.last()
-                .map(|r| format!("{}.{}", r.total_xp, r.profile_id))
+            rows.last().map(|r| format!("{}.{}", r.total_xp, r.user_id))
         } else {
             None
         };
@@ -734,7 +733,6 @@ mod tests {
     #[test]
     fn daily_xp_reads_the_ledger_sum_and_the_cap() {
         let profile = |earned: i32, last: Option<i64>| ProfileRow {
-            id: ab_core::id::GamificationProfileId(uuid::Uuid::nil()),
             user_id: UserId(uuid::Uuid::nil()),
             total_xp: 500,
             level: 3,

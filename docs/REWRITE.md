@@ -695,12 +695,12 @@ in the order it can be done, each step a forward migration on the current schema
     searched table (`pg_trgm`, trusted, can be created by `ashyq`). Terms under 3 characters fall back to a scan
     (trigram limit). Then drop the tsvector columns if ranking moves to `similarity()`. Done when: the
     existing `search.rs` tests pass and `EXPLAIN` shows a bitmap index scan on a 10 000-course fixture.
-12. **Natural keys** (item 26). `activity_progress`, `course_progress`, `gamification_profiles`, the `daily_*`
-    rollups and `learner_risk_snapshots` have a uuid PK plus the unique natural key, and code reads the uuid
-    (projector rows, prune batches `WHERE id IN (...)`, the leaderboard keyset cursor carries the profile id).
-    Switch each reader to the natural key first (prune by `ctid` batches or by date), then promote the unique
-    constraint to the PK and drop `id`. `daily_teacher_metrics` keeps a surrogate key (nullable teacher, `NULLS
-    NOT DISTINCT`).
+12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
+    `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
+    batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids
+    `learner-<kind>-<activity>` / `teacher-<kind>-<activity>.<user>`), the unique index is the primary key. `id`
+    stays (NOT NULL, default) for the previous release; the lane C contract drops it. `daily_teacher_metrics`
+    keeps a surrogate key (nullable teacher, `NULLS NOT DISTINCT`).
 13. **One touch trigger** (item 27). `touch_row()` BEFORE UPDATE: `updated_at = now()` unless
     `ab.bookkeeping`, `version = OLD.version + 1` when the table has `version` and the caller did not set it;
     replaces `set_updated_at` + `bump_version` pairs (trigger order by name today). Version columns stay their

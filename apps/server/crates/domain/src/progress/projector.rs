@@ -446,6 +446,8 @@ impl ProgressProjector {
         if !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
             write.certificate_eligible = false;
             write.completed_at = None;
+        } else if write.certificate_eligible && write.completed_at.is_none() {
+            write.completed_at = Some(now_unix());
         }
         ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
         if write.certificate_eligible {
@@ -1146,8 +1148,15 @@ pub(crate) fn aggregate_course(
         .count();
     let last_activity_at = required.iter().filter_map(|r| r.last_activity_at).max();
     let all_completed = total > 0 && completed >= total;
+    // The course completion needs a time (the stored flag reads it): rows
+    // completed by state alone (legacy `passed` without a stamp) fall back
+    // to the last activity.
     let completed_at = if all_completed {
-        required.iter().filter_map(|r| r.completed_at).max()
+        required
+            .iter()
+            .filter_map(|r| r.completed_at)
+            .max()
+            .or(last_activity_at)
     } else {
         None
     };
@@ -1166,12 +1175,6 @@ pub(crate) fn aggregate_course(
     }
     let count = |n: usize| i32::try_from(n).unwrap_or(i32::MAX);
     #[allow(clippy::cast_precision_loss)]
-    let pct = if total == 0 {
-        0.0
-    } else {
-        round2(completed as f64 / total as f64 * 100.0)
-    };
-    #[allow(clippy::cast_precision_loss)]
     let grade_average = if scored.is_empty() {
         None
     } else {
@@ -1182,7 +1185,6 @@ pub(crate) fn aggregate_course(
         user_id,
         completed_required_count: count(completed),
         total_required_count: count(total),
-        progress_pct: pct,
         grade_average,
         // BUG-208: inf/inf is NaN → JSON null; skip the average instead.
         weighted_grade_average: (denominator > 0.0)

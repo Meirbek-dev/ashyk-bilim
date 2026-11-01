@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM learner_risk_snapshots WHERE ctid = ANY(ARRAY(\n            SELECT ctid FROM learner_risk_snapshots\n            WHERE snapshot_date < platform_date(now()) - interval '2 years' LIMIT 5000))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "ecac997574e453afbfa28a3722269bb2c98bc06f1e24ce2bbb17ee271edccf47"
+}

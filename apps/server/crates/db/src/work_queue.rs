@@ -8,13 +8,12 @@
 
 use ab_core::Result;
 use ab_core::assessments::ActivityProgressState;
-use ab_core::id::{ActivityId, ActivityProgressId, CourseId, UserId};
+use ab_core::id::{ActivityId, CourseId, UserId};
 use sqlx::PgPool;
 
 /// One open activity of the learner (published activities only).
 #[derive(Debug, Clone)]
 pub struct LearnerWorkRow {
-    pub progress_id: ActivityProgressId,
     pub state: ActivityProgressState,
     pub course_id: CourseId,
     pub course_title: String,
@@ -36,8 +35,7 @@ pub struct LearnerWorkRow {
 pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<LearnerWorkRow>> {
     let rows = sqlx::query_as!(
         LearnerWorkRow,
-        r#"SELECT p.id AS "progress_id: ActivityProgressId",
-                  p.state AS "state: ActivityProgressState",
+        r#"SELECT p.state AS "state: ActivityProgressState",
                   c.id AS "course_id: CourseId", c.name AS course_title,
                   a.id AS "activity_id: ActivityId", a.name AS activity_title,
                   (extract(epoch FROM p.started_at))::bigint AS "started_at?",
@@ -53,7 +51,7 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
              AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',
                              'passed', 'failed')
              AND c.archived_at IS NULL
-             AND EXISTS (SELECT 1 FROM trail_runs r
+             AND EXISTS (SELECT 1 FROM enrolments r
                          WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                            AND NOT is_course_staff(r.course_id, r.user_id))"#,
         user_id.0
@@ -67,7 +65,9 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
 /// submission or file attempt the review page should open.
 #[derive(Debug, Clone)]
 pub struct TeacherWorkRow {
-    pub progress_id: ActivityProgressId,
+    /// The learner: with `activity_id` the row's key (the projection's
+    /// natural key, REWRITE 5.6 n12).
+    pub user_id: UserId,
     pub course_id: CourseId,
     pub course_title: String,
     pub activity_id: ActivityId,
@@ -106,7 +106,7 @@ pub async fn list_teacher_grading_work(
 ) -> Result<Vec<TeacherWorkRow>> {
     let rows = sqlx::query_as!(
         TeacherWorkRow,
-        r#"SELECT p.id AS "progress_id: ActivityProgressId",
+        r#"SELECT p.user_id AS "user_id: UserId",
                   c.id AS "course_id: CourseId", c.name AS course_title,
                   a.id AS "activity_id: ActivityId", a.name AS activity_title,
                   u.display_name AS learner_display_name, u.username AS learner_username,
@@ -128,7 +128,7 @@ pub async fn list_teacher_grading_work(
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
            WHERE p.user_id <> $1
-             AND CASE WHEN EXISTS (SELECT 1 FROM trail_runs r
+             AND CASE WHEN EXISTS (SELECT 1 FROM enrolments r
                                    WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                                      AND NOT is_course_staff(r.course_id, r.user_id))
                  THEN p.teacher_action_required
@@ -163,7 +163,7 @@ pub async fn list_teacher_release_work(
 ) -> Result<Vec<TeacherWorkRow>> {
     let rows = sqlx::query_as!(
         TeacherWorkRow,
-        r#"SELECT p.id AS "progress_id: ActivityProgressId",
+        r#"SELECT p.user_id AS "user_id: UserId",
                   c.id AS "course_id: CourseId", c.name AS course_title,
                   a.id AS "activity_id: ActivityId", a.name AS activity_title,
                   u.display_name AS learner_display_name, u.username AS learner_username,
@@ -187,7 +187,7 @@ pub async fn list_teacher_release_work(
            JOIN users u ON u.id = p.user_id
            WHERE p.user_id <> $1
              AND (p.state = 'graded' OR NOT EXISTS (
-                     SELECT 1 FROM trail_runs r
+                     SELECT 1 FROM enrolments r
                      WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                        AND NOT is_course_staff(r.course_id, r.user_id)))
              AND c.archived_at IS NULL
@@ -237,7 +237,7 @@ pub async fn upcoming_deadlines(
     let rows = sqlx::query_as!(
         DeadlineRow,
         r#"WITH members AS (
-               SELECT DISTINCT r.user_id, r.course_id FROM trail_runs r
+               SELECT DISTINCT r.user_id, r.course_id FROM enrolments r
                JOIN courses c ON c.id = r.course_id
                WHERE c.archived_at IS NULL
                  AND ($1::uuid IS NULL OR r.user_id = $1)
@@ -332,7 +332,7 @@ pub async fn recent_results(
              AND p.state IN ('passed', 'failed', 'returned')
              AND CASE WHEN p.state = 'returned' THEN p.updated_at
                       ELSE COALESCE(p.graded_at, p.updated_at) END >= to_timestamp($2::bigint)
-             AND EXISTS (SELECT 1 FROM trail_runs r
+             AND EXISTS (SELECT 1 FROM enrolments r
                          WHERE r.course_id = p.course_id AND r.user_id = p.user_id
                            AND NOT is_course_staff(r.course_id, r.user_id))
            ORDER BY "at!" DESC
@@ -370,7 +370,7 @@ pub async fn recent_course_updates(
            FROM course_updates u
            JOIN courses c ON c.id = u.course_id AND c.archived_at IS NULL
            WHERE u.created_at >= to_timestamp($2::bigint)
-             AND EXISTS (SELECT 1 FROM trail_runs r
+             AND EXISTS (SELECT 1 FROM enrolments r
                          WHERE r.course_id = u.course_id AND r.user_id = $1
                            AND NOT is_course_staff(r.course_id, r.user_id))
            ORDER BY u.created_at DESC

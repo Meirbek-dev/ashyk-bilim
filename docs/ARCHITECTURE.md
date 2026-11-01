@@ -425,6 +425,14 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
   analytics, notifications, `course_visible` for archived courses) reads it, never the staff. A trigger mirrors the
   previous release's trail-run inserts/deletes into it until the lane C contract drops it.
+- **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
+  (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required activity done and
+  `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the
+  counts are `0 <= completed <= total` and `completed_at` only on a completed course. The lane C contract turns
+  both into virtual generated columns.
+- **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
+  `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a
+  surrogate key.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 
 ### SQLx usage

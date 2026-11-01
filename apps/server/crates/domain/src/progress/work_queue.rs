@@ -126,7 +126,8 @@ pub struct WorkFilter {
 }
 
 /// One actionable thing. `id` is stable across calls
-/// (`<role>-<kind>-<progress_id>`) so clients can diff pages.
+/// (`learner-<kind>-<activity_id>`, `teacher-<kind>-<activity_id>.<user_id>`:
+/// the progress row's natural key) so clients can diff pages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkItem {
     pub id: String,
@@ -366,7 +367,7 @@ fn is_stale_feedback(row: &LearnerWorkRow, now: i64) -> bool {
 fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
     let spec = learner_spec(row, now);
     WorkItem {
-        id: format!("learner-{}-{}", spec.id_kind, row.progress_id),
+        id: format!("learner-{}-{}", spec.id_kind, row.activity_id),
         role: WorkRole::Learner,
         kind: spec.kind,
         status: spec.status,
@@ -450,7 +451,7 @@ fn teacher_grading_item(row: &TeacherWorkRow, now: i64) -> WorkItem {
     let submitted_at = row.submitted_at.unwrap_or(row.updated_at);
     let breached = now - submitted_at >= SLA_BREACH_SECS;
     WorkItem {
-        id: format!("teacher-grade-{}", row.progress_id),
+        id: format!("teacher-grade-{}.{}", row.activity_id, row.user_id),
         kind: if breached {
             WorkKind::SlaBreach
         } else {
@@ -479,7 +480,7 @@ fn teacher_grading_item(row: &TeacherWorkRow, now: i64) -> WorkItem {
 fn teacher_release_item(row: &TeacherWorkRow) -> Option<WorkItem> {
     let review_ref = row.review_ref?;
     Some(WorkItem {
-        id: format!("teacher-release-{}", row.progress_id),
+        id: format!("teacher-release-{}.{}", row.activity_id, row.user_id),
         kind: WorkKind::AwaitingRelease,
         status: WorkStatus::GradedHidden,
         title: format!("Release {}", row.activity_title),
@@ -664,7 +665,6 @@ mod tests {
 
     fn learner_row(state: ActivityProgressState, due_at: Option<i64>) -> LearnerWorkRow {
         LearnerWorkRow {
-            progress_id: ab_core::id::ActivityProgressId::new(),
             state,
             course_id: CourseId::new(),
             course_title: "Course".to_owned(),
@@ -726,7 +726,7 @@ mod tests {
 
     fn teacher_row(submitted_at: Option<i64>, review_ref: Option<uuid::Uuid>) -> TeacherWorkRow {
         TeacherWorkRow {
-            progress_id: ab_core::id::ActivityProgressId::new(),
+            user_id: ab_core::id::UserId::new(),
             course_id: CourseId::new(),
             course_title: "Course".to_owned(),
             activity_id: ActivityId::new(),
