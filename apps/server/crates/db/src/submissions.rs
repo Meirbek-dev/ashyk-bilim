@@ -42,9 +42,7 @@ pub struct SubmissionRow {
     pub graded_at: Option<i64>,
     pub version: i64,
     pub draft_version: i64,
-    pub grading_version: i32,
     pub content_version: i32,
-    pub policy_version: i32,
     pub items_snapshot: Option<serde_json::Value>,
     pub policy_snapshot: Option<serde_json::Value>,
     /// A course staff member's attempt (UX-182).
@@ -82,14 +80,13 @@ pub async fn insert_draft<'e>(
     user_id: UserId,
     attempt_number: i32,
     content_version: i32,
-    policy_version: i32,
     preview: bool,
 ) -> Result<Option<SubmissionId>> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO submissions
                (assessment_id, course_id, user_id, attempt_number, content_version,
-                policy_version, preview, started_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+                preview, started_at)
+           VALUES ($1, $2, $3, $4, $5, $6, now())
            ON CONFLICT (assessment_id, user_id) WHERE status = 'draft' DO NOTHING
            RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
@@ -97,7 +94,6 @@ pub async fn insert_draft<'e>(
         user_id.0,
         attempt_number,
         content_version,
-        policy_version,
         preview
     )
     .fetch_optional(db)
@@ -146,16 +142,14 @@ pub async fn resync_draft(
     assessment_id: AssessmentId,
     user_id: UserId,
     content_version: i32,
-    policy_version: i32,
 ) -> Result<Option<SubmissionId>> {
     let id = sqlx::query_scalar!(
-        r#"UPDATE submissions SET content_version = $3, policy_version = $4
+        r#"UPDATE submissions SET content_version = $3
            WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'
            RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
         user_id.0,
-        content_version,
-        policy_version
+        content_version
     )
     .fetch_optional(conn)
     .await?;
@@ -200,7 +194,7 @@ pub async fn get_submission<'e>(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -233,7 +227,7 @@ pub async fn open_draft(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -271,7 +265,7 @@ pub async fn list_user_submissions<'e>(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -521,7 +515,7 @@ pub async fn list_non_draft(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -991,7 +985,7 @@ pub async fn list_releasable(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -1026,7 +1020,7 @@ pub async fn list_submitted_for_user(
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  version, draft_version, grading_version, content_version, policy_version,
+                  version, draft_version, content_version,
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
@@ -1144,7 +1138,6 @@ pub struct GradingEntryRow {
     pub raw_breakdown: serde_json::Value,
     pub effective_breakdown: serde_json::Value,
     pub overall_feedback: String,
-    pub grading_version: i32,
     pub published_at: Option<i64>,
     pub created_at: i64,
 }
@@ -1195,7 +1188,7 @@ pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
-                  raw_breakdown, effective_breakdown, overall_feedback, grading_version,
+                  raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM grading_entries WHERE submission_id = $1 ORDER BY id DESC LIMIT 1"#,
@@ -1214,7 +1207,7 @@ pub async fn list_grading_entries(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
-                  raw_breakdown, effective_breakdown, overall_feedback, grading_version,
+                  raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM grading_entries WHERE submission_id = $1 ORDER BY id DESC"#,

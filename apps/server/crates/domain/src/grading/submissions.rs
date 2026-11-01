@@ -636,7 +636,6 @@ impl SubmissionsService {
             assessment_id,
             actor.user_id,
             assessment.content_version,
-            assessment.policy_version,
         )
         .await?;
         let (id, created) = if let Some(id) = resynced {
@@ -667,7 +666,6 @@ impl SubmissionsService {
                 actor.user_id,
                 attempt_number,
                 assessment.content_version,
-                assessment.policy_version,
                 state.staff,
             )
             .await?

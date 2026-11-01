@@ -57,11 +57,11 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
 async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
 
-    let first = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let first = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap()
         .expect("first draft opens");
-    let second = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let second = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap();
     assert!(second.is_none(), "a second open draft must be refused");
@@ -153,7 +153,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     assert_eq!(prior.len(), 1);
     assert_ne!(prior[0].status, SubmissionStatus::Draft);
     assert!(
-        submissions::insert_draft(&pool, assessment, course, user, 2, 1, 1, false)
+        submissions::insert_draft(&pool, assessment, course, user, 2, 1, false)
             .await
             .unwrap()
             .is_some()
@@ -163,7 +163,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
 #[ab_testdb::test]
 async fn grading_ledger_is_append_only(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
-    let submission = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let submission = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap()
         .unwrap();
