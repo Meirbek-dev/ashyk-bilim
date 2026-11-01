@@ -113,5 +113,29 @@
   "editor_math_vector": "Вектор-столбец",
   "editor_math_system": "Система уравнений",
   "editor_image_expand": "Открыть изображение целиком",
-  "editor_video_failed_author": "Видео не воспроизводится: файл повреждён или в формате, который браузер не поддерживает. Загрузите его заново в MP4 (H.264)."
+  "editor_video_failed_author": "Видео не воспроизводится: файл повреждён или в формате, который браузер не поддерживает. Загрузите его заново в MP4 (H.264).",
+  "editor_text_style_current": "Стиль текста: {style}",
+  "editor_link_edit": "Изменить ссылку",
+  "editor_block_add": "Добавить блок ниже",
+  "editor_block_actions": "Перетащить или открыть действия с блоком",
+  "editor_turn_into": "Превратить в",
+  "editor_block_duplicate": "Дублировать",
+  "editor_block_move_up": "Переместить блок вверх",
+  "editor_block_move_down": "Переместить блок вниз",
+  "editor_block_delete": "Удалить блок",
+  "editor_shortcuts": "Сочетания клавиш",
+  "editor_shortcuts_markdown": "Пока печатаете",
+  "editor_reading_time": "{minutes} мин чтения",
+  "editor_words": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} слово",
+        "countPlural=few": "{count} слова",
+        "countPlural=many": "{count} слов",
+        "countPlural=other": "{count} слова"
+      }
+    }
+  ]
 }

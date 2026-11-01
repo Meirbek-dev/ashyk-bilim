@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { m } from '#/paraglide/messages'
 import { uploadAccept } from '#/shared/api/upload'
 import { FileButton } from '#/shared/components/file-button'
@@ -5,7 +7,9 @@ import { useUpload } from '#/shared/hooks/use-upload'
 
 import type { EditorDocument } from '../model/document'
 import { ContentStyles } from './content-styles'
+import { LinkBubble } from './link-bubble'
 import { EditorToolbar } from './toolbar/editor-toolbar'
+import { LinkDialog } from './toolbar/link-dialog'
 import { DocumentContent } from './tiptap-parts'
 import { useDocumentEditor } from './use-document-editor'
 
@@ -21,6 +25,7 @@ type DiscussionEditorProps = {
 /** A discussion post or reply: rich text, code, links and images (picked or pasted); embeds of old posts are kept. */
 export function DiscussionEditor({ content, onChange, onImage, focusOnMount = false }: DiscussionEditorProps) {
   const upload = useUpload('discussion-image')
+  const [linking, setLinking] = useState(false)
   const insert = async (file: File) => {
     const done = await upload.start(file)
     if (!done || !editor) return
@@ -36,13 +41,20 @@ export function DiscussionEditor({ content, onChange, onImage, focusOnMount = fa
     content,
     onChange,
     onPasteImage: file => void insert(file),
+    onLinkKey: () => setLinking(true),
     focusOnMount,
   })
   return (
     <div className="flex flex-col gap-2">
       <ContentStyles />
-      {editor ? <EditorToolbar editor={editor} /> : null}
+      {editor ? <EditorToolbar editor={editor} onLink={() => setLinking(true)} /> : null}
       <DocumentContent editor={editor} />
+      {editor ? (
+        <>
+          <LinkBubble editor={editor} onEdit={() => setLinking(true)} />
+          <LinkDialog editor={editor} open={linking} onOpenChange={setLinking} />
+        </>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <FileButton
           label={m.editor_image_add()}

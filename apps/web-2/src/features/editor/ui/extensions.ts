@@ -5,6 +5,7 @@ import { ReactNodeViewRenderer } from '@tiptap/react'
 import { m } from '#/paraglide/messages'
 
 import { contentSchema, discussionSchema } from '../model/schema'
+import { BlockKeys } from './block-keys'
 import { CodeHighlight } from './code-highlight'
 import { FileDrop } from './file-drop'
 import { DISCUSSION_VIEWS, VIEWS, type BlockView } from './views'
@@ -25,9 +26,13 @@ const withViews = (extensions: AnyExtension[], views: Record<string, BlockView>)
  * preset renders only what its surface's editor can author (its schema and views).
  */
 export function presetExtensions(preset: Preset): AnyExtension[] {
-  const placeholder = Placeholder.configure({ placeholder: () => m.editor_placeholder() })
+  // An empty heading says which one it is; the empty line under the caret says how to add a block.
+  const placeholder = Placeholder.configure({
+    placeholder: ({ node }) =>
+      node.type.name === 'heading' ? m.editor_heading({ level: Number(node.attrs['level']) }) : m.editor_placeholder(),
+  })
   const presets: Record<Preset, () => AnyExtension[]> = {
-    authoring: () => [...withViews(contentSchema(), VIEWS), CodeHighlight, FileDrop, placeholder],
+    authoring: () => [...withViews(contentSchema(), VIEWS), CodeHighlight, FileDrop, BlockKeys, placeholder],
     view: () => [...withViews(contentSchema(), VIEWS), CodeHighlight],
     discussion: () => [...withViews(discussionSchema(), DISCUSSION_VIEWS), CodeHighlight, placeholder],
     'discussion-view': () => [...withViews(discussionSchema(), DISCUSSION_VIEWS), CodeHighlight],

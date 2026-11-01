@@ -113,5 +113,27 @@
   "editor_math_vector": "Баған-вектор",
   "editor_math_system": "Теңдеулер жүйесі",
   "editor_image_expand": "Суретті толық көлемде ашу",
-  "editor_video_failed_author": "Бейне ойнатылмайды: файл бүлінген немесе браузер қолдамайтын форматта. Оны MP4 (H.264) форматында қайта жүктеңіз."
+  "editor_video_failed_author": "Бейне ойнатылмайды: файл бүлінген немесе браузер қолдамайтын форматта. Оны MP4 (H.264) форматында қайта жүктеңіз.",
+  "editor_text_style_current": "Мәтін стилі: {style}",
+  "editor_link_edit": "Сілтемені өзгерту",
+  "editor_block_add": "Төменге блок қосу",
+  "editor_block_actions": "Блокты сүйреу немесе әрекеттерін ашу",
+  "editor_turn_into": "Мынаған айналдыру",
+  "editor_block_duplicate": "Көшірмесін жасау",
+  "editor_block_move_up": "Блокты жоғары жылжыту",
+  "editor_block_move_down": "Блокты төмен жылжыту",
+  "editor_block_delete": "Блокты жою",
+  "editor_shortcuts": "Пернелер тіркесімдері",
+  "editor_shortcuts_markdown": "Теру кезінде",
+  "editor_reading_time": "{minutes} мин оқу",
+  "editor_words": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} сөз",
+        "countPlural=other": "{count} сөз"
+      }
+    }
+  ]
 }

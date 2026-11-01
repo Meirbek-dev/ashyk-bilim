@@ -1,28 +1,26 @@
 import type { Editor } from '@tiptap/core'
-import { Link2 } from 'lucide-react'
-import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '#/shared/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '#/shared/ui/dialog'
 
 import { linkHref } from '../../model/link'
 import { AttrForm } from '../nodes/attr-form'
 
-/** Link on the selected text: a dialog with the address; an existing link can be removed. */
-export function LinkButton({ editor, active }: { editor: Editor; active: boolean }) {
-  const [open, setOpen] = useState(false)
+type LinkDialogProps = { editor: Editor; open: boolean; onOpenChange: (open: boolean) => void }
+
+/**
+ * The link on the selected text: its address, applied over the whole link under the caret; an existing link can be
+ * removed. Opened by the toolbar, Ctrl/⌘+K and the link's bubble.
+ */
+export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
   const href = String(editor.getAttributes('link')['href'] ?? '')
   const close = (run: () => boolean) => {
     run()
-    setOpen(false)
+    onOpenChange(false)
   }
   return (
-    <Dialog open={open} onOpenChange={next => setOpen(next)}>
-      <DialogTrigger
-        render={<IconButton label={m.editor_link()} icon={<Link2 aria-hidden />} aria-pressed={active} />}
-      />
+    <Dialog open={open} onOpenChange={next => onOpenChange(next)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{m.editor_link()}</DialogTitle>
@@ -41,7 +39,7 @@ export function LinkButton({ editor, active }: { editor: Editor; active: boolean
             )
           }
         />
-        {active ? (
+        {href ? (
           <DialogFooter>
             <Button variant="ghost" onClick={() => close(() => editor.chain().focus().unsetLink().run())}>
               {m.editor_link_remove()}

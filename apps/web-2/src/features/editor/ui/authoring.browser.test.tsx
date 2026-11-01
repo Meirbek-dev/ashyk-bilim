@@ -45,7 +45,8 @@ describe('authoring', () => {
     await expect.element(screen.getByRole('button', { name: m.editor_bold() })).toHaveAttribute('aria-pressed', 'true')
     expect(JSON.stringify(last(onChange))).toContain('{"type":"text","marks":[{"type":"bold"}],"text":"Hello"}')
     // The old editor's six heading levels.
-    await screen.getByRole('button', { name: m.editor_text_style() }).click()
+    // The style button reads the current style in words.
+    await screen.getByRole('button', { name: m.editor_text_style_current({ style: m.editor_paragraph() }) }).click()
     await screen.getByRole('menuitemradio', { name: m.editor_heading({ level: 6 }) }).click()
     await expect.poll(() => find(last(onChange), 'heading')?.attrs?.['level']).toBe(6)
   })

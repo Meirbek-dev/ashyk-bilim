@@ -161,8 +161,10 @@
     overflow-y: hidden;
   }
 
-  /* Editors (block and markdown): empty-document hint, selected block, selected table cells. */
-  .ab-prose .is-editor-empty:first-child::before {
+  /* Editors (block and markdown): empty-document hint, the empty block under the caret (which heading, or how to add a
+     block), selected block, selected table cells. */
+  .ab-prose .is-editor-empty:first-child::before,
+  :is(.ab-prose.ProseMirror-focused, .ab-prose .ProseMirror-focused) > .is-empty::before {
     content: attr(data-placeholder);
     float: inline-start;
     height: 0;

@@ -113,5 +113,27 @@
   "editor_math_vector": "Column vector",
   "editor_math_system": "System of equations",
   "editor_image_expand": "Open the image full size",
-  "editor_video_failed_author": "The video does not play: the file is damaged or in a format this browser does not support. Upload it again as MP4 (H.264)."
+  "editor_video_failed_author": "The video does not play: the file is damaged or in a format this browser does not support. Upload it again as MP4 (H.264).",
+  "editor_text_style_current": "Text style: {style}",
+  "editor_link_edit": "Edit link",
+  "editor_block_add": "Add a block below",
+  "editor_block_actions": "Drag or open block actions",
+  "editor_turn_into": "Turn into",
+  "editor_block_duplicate": "Duplicate",
+  "editor_block_move_up": "Move block up",
+  "editor_block_move_down": "Move block down",
+  "editor_block_delete": "Delete block",
+  "editor_shortcuts": "Keyboard shortcuts",
+  "editor_shortcuts_markdown": "While you type",
+  "editor_reading_time": "{minutes} min read",
+  "editor_words": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} word",
+        "countPlural=other": "{count} words"
+      }
+    }
+  ]
 }
