@@ -43,6 +43,68 @@ The pre-move rollback copy of the former `openu-prod_rustfs_data` volume is a
 tar under `/data/server-maintenance-20261019/cleanup-20261019T173732Z/`; it
 receives no new writes. Restore drills use their own content volume.
 
+## 2. Database
+
+2.1 (database ownership to `ashyq`, done 2026-10-04) and 2.2 (superuser password rotation) are in Git history.
+
+### 2.3 Erasing a person
+
+The app never deletes a `users` row: an admin disables the account, the person's own
+account deletion anonymises it (`users.deleted_at`). A legal erasure request is done by hand.
+Learning records reference `users` with `ON DELETE RESTRICT` (ARCHITECTURE §8 "Schema
+guarantees"), so a bare `DELETE FROM users` fails while the person has submissions, file attempts,
+code runs, certificates, progress, enrolments, XP or uploads. Prefer anonymising (what self-deletion
+does: the row stays, the name/email/avatar go); grades and certificates others rely on stay valid.
+Only when the records themselves must go, in one transaction after `just backup`:
+
+```sql
+BEGIN;
+-- the person's work (grading_entries and item_feedback go with the submissions)
+DELETE FROM code_runs WHERE user_id = :'uid';
+DELETE FROM submissions WHERE user_id = :'uid';
+DELETE FROM file_submission_attempts WHERE user_id = :'uid';
+DELETE FROM certificate_users WHERE user_id = :'uid';
+DELETE FROM trail_steps WHERE user_id = :'uid';
+DELETE FROM trail_runs WHERE user_id = :'uid';
+DELETE FROM trails WHERE user_id = :'uid';
+DELETE FROM activity_progress WHERE user_id = :'uid';
+DELETE FROM course_progress WHERE user_id = :'uid';
+DELETE FROM xp_transactions WHERE user_id = :'uid';
+DELETE FROM gamification_completions WHERE user_id = :'uid';
+DELETE FROM gamification_profiles WHERE user_id = :'uid';
+DELETE FROM uploads WHERE created_by = :'uid';   -- objects are reaped by uploads:reap only when unreferenced
+DELETE FROM users WHERE id = :'uid';             -- the rest cascades; a remaining RESTRICT names the table
+COMMIT;
+```
+
+### 2.4 Integrity checks skipped by a migration
+
+A migration adds a CHECK through `schema_try_check` (apps/server/AGENTS.md): when existing rows violate it,
+the check is not added, the migrate log shows `WARNING: schema_try_check: <name> skipped`, and the
+check is recorded. After a deploy:
+
+```bash
+dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_at FROM schema_skipped_checks'
+```
+
+Zero rows is the expected state. For each row: find the offenders (`SELECT id FROM <table_name> WHERE NOT
+(<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
+migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
+
+### 2.5 Least-privilege app roles (prepared, not switched on)
+
+`infra/postgres/roles.sql` creates `ashyq_app` (server + worker: rows only, no DDL/TRUNCATE, statement 120 s,
+idle-in-transaction 60 s, lock 30 s) and `ashyq_ro` (read-only transactions, statement 30 s) with default
+privileges on what `ashyq` creates later. Nothing runs it yet: the switch waits for QUESTIONS Q-2026-11-01-2.
+The procedure once approved (one window, rollback = restore the old `AB__DATABASE__URL`):
+
+1. `dc exec -T db psql -U "$POSTGRES_USER" -d ashyq -v ON_ERROR_STOP=1 -v app_password=<new> -v ro_password=<new> -v owner=ashyq -f - < infra/postgres/roles.sql`
+   (re-run after restoring onto a new host; it is idempotent).
+2. Keep migrations on the owner: give `server-migrate` its own URL (`AB__DATABASE__URL` with `ashyq` in an
+   `environment:` override, or a second env file); point `server.env` at `ashyq_app`.
+3. Deploy (3.1), then watch `just prod-report --since 1h` for `permission denied` or `statement timeout`.
+   A job that legitimately needs longer statements gets `SET LOCAL statement_timeout` in its own transaction.
+
 ## 3. Routine
 
 ### 3.1 Deploy

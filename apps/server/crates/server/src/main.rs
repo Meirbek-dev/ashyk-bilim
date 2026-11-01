@@ -162,10 +162,11 @@ async fn main() -> anyhow::Result<()> {
                 .await?;
             writeln!(
                 std::io::stdout(),
-                "progress backfilled: {} course(s), {} learner(s), {} activity row(s)",
+                "progress backfilled: {} course(s), {} learner(s), {} activity row(s), {} changed",
                 report.courses,
                 report.learners,
-                report.activity_rows
+                report.activity_rows,
+                report.changed
             )?;
             Ok(())
         }
@@ -537,6 +538,20 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         serde_json::json!({}),
     )
     .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::maintenance::RETENTION_KIND,
+        std::time::Duration::from_hours(24),
+        serde_json::json!({}),
+    )
+    .await?;
+    ab_db::schedule::upsert(
+        &pool,
+        ab_jobs::handlers::maintenance::RECONCILE_KIND,
+        std::time::Duration::from_hours(24 * 7),
+        serde_json::json!({}),
+    )
+    .await?;
 
     let retrieval = ai.retrieval().clone();
     let mastery = ab_domain::mastery::MasteryService::new(pool.clone(), retrieval.clone());
@@ -563,6 +578,11 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::notifications::NotificationPruner::new(
             pool.clone(),
+        ))?
+        .register(ab_jobs::handlers::maintenance::Reconcile::new(pool.clone()))?
+        .register(ab_jobs::handlers::maintenance::RetentionSweep::new(
+            pool.clone(),
+            config.retention,
         ))?
         .register(ab_jobs::handlers::progress::ProgressJob::staff_change(
             pool.clone(),

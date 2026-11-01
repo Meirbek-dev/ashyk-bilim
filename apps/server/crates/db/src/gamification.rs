@@ -455,3 +455,69 @@ pub async fn set_config(
     .await?;
     Ok(())
 }
+
+/// Fix the profiles whose totals disagree with their journals (item 16).
+///
+/// Totals and level are re-derived from `xp_transactions` and
+/// `gamification_completions`; returns the users whose profile was fixed.
+///
+/// Each fix locks the profile row first and reads the journals in the next
+/// statement: an award holds that lock while it writes its ledger row, so
+/// the read sees every award committed before it (READ COMMITTED takes a
+/// fresh snapshot per statement) and none is overwritten. A completion
+/// counted concurrently adds onto the fixed row after this commits.
+/// `daily_xp_earned` stays: it is the daily cap's own counter.
+pub async fn reconcile_profiles(pool: &PgPool) -> Result<Vec<UserId>> {
+    let candidates = sqlx::query_scalar!(
+        r#"SELECT g.user_id AS "user_id: UserId"
+           FROM gamification_profiles g
+           WHERE g.total_xp <> coalesce((SELECT sum(x.amount) FROM xp_transactions x
+                                         WHERE x.user_id = g.user_id), 0)
+              OR g.total_activities_completed
+                 <> (SELECT count(*) FROM gamification_completions c
+                     WHERE c.user_id = g.user_id AND c.kind = 'activity')
+              OR g.total_courses_completed
+                 <> (SELECT count(*) FROM gamification_completions c
+                     WHERE c.user_id = g.user_id AND c.kind = 'course')"#
+    )
+    .fetch_all(pool)
+    .await?;
+    let mut fixed = Vec::new();
+    for user_id in candidates {
+        let mut tx = pool.begin().await?;
+        sqlx::query!(
+            "SELECT 1 AS one FROM gamification_profiles WHERE user_id = $1 FOR UPDATE",
+            user_id.0
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        let changed = sqlx::query!(
+            r#"WITH truth AS (
+                   SELECT coalesce((SELECT sum(amount) FROM xp_transactions
+                                    WHERE user_id = $1), 0)::int AS xp,
+                          (SELECT count(*) FROM gamification_completions
+                           WHERE user_id = $1 AND kind = 'activity')::int AS activities,
+                          (SELECT count(*) FROM gamification_completions
+                           WHERE user_id = $1 AND kind = 'course')::int AS courses)
+               UPDATE gamification_profiles g SET
+                   total_xp = t.xp,
+                   level = LEAST(100, GREATEST(1,
+                       floor((-1 + sqrt(1 + 0.08 * t.xp)) / 2)::int + 1)),
+                   total_activities_completed = t.activities,
+                   total_courses_completed = t.courses
+               FROM truth t
+               WHERE g.user_id = $1
+                 AND (g.total_xp, g.total_activities_completed, g.total_courses_completed)
+                     IS DISTINCT FROM (t.xp, t.activities, t.courses)"#,
+            user_id.0
+        )
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+        tx.commit().await?;
+        if changed > 0 {
+            fixed.push(user_id);
+        }
+    }
+    Ok(fixed)
+}

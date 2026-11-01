@@ -96,7 +96,8 @@ async fn collection_membership_cannot_duplicate(pool: PgPool) {
             .fetch_one(&pool)
             .await
             .unwrap();
-    let insert = "INSERT INTO collection_courses (collection_id, course_id) VALUES ($1, $2)";
+    let insert =
+        "INSERT INTO collection_courses (collection_id, course_id, position) VALUES ($1, $2, 1)";
     sqlx::query(insert)
         .bind(collection)
         .bind(course)
@@ -246,8 +247,8 @@ async fn full_text_search_matches_course_names(pool: PgPool) {
 async fn seed_code_challenge(pool: &PgPool, description: &str, prompt: &str) -> uuid::Uuid {
     let (course, chapter, _) = seed_course(pool).await;
     let activity: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, content)
-         VALUES ($1, $2, 'Hello', 'code_challenge', 'code_general', jsonb_build_object('description', $3::text))
+        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, content, position)
+         VALUES ($1, $2, 'Hello', 'code_challenge', 'code_general', jsonb_build_object('description', $3::text), 2)
          RETURNING id",
     )
     .bind(chapter)

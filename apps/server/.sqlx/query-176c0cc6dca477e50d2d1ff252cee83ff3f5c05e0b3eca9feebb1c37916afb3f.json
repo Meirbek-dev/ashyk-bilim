@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH truth AS (\n                   SELECT coalesce((SELECT sum(amount) FROM xp_transactions\n                                    WHERE user_id = $1), 0)::int AS xp,\n                          (SELECT count(*) FROM gamification_completions\n                           WHERE user_id = $1 AND kind = 'activity')::int AS activities,\n                          (SELECT count(*) FROM gamification_completions\n                           WHERE user_id = $1 AND kind = 'course')::int AS courses)\n               UPDATE gamification_profiles g SET\n                   total_xp = t.xp,\n                   level = LEAST(100, GREATEST(1,\n                       floor((-1 + sqrt(1 + 0.08 * t.xp)) / 2)::int + 1)),\n                   total_activities_completed = t.activities,\n                   total_courses_completed = t.courses\n               FROM truth t\n               WHERE g.user_id = $1\n                 AND (g.total_xp, g.total_activities_completed, g.total_courses_completed)\n                     IS DISTINCT FROM (t.xp, t.activities, t.courses)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "176c0cc6dca477e50d2d1ff252cee83ff3f5c05e0b3eca9feebb1c37916afb3f"
+}

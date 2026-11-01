@@ -233,8 +233,8 @@ own POST response.
 
 The target schema, reached by forward migrations on the existing `ashyq` database in
 phases 3–5 (section 9). Ids are kept by construction, so URLs, certificates and media
-keys stay valid. `legacy_uuid`, `etl_*` and `zitadel_user_id` columns are dropped once
-nothing reads them.
+keys stay valid. `etl_*` and every `legacy_uuid` but `blocks.legacy_uuid` were dropped
+2026-11-01; `blocks.legacy_uuid` and `zitadel_user_id` go once nothing reads them.
 
 Conventions: `uuid` primary keys (`uuidv7()` default), `timestamptz`, `text` + `CHECK` for
 enums, composite foreign keys wherever a row repeats its parent's `course_id`, so the
@@ -571,6 +571,90 @@ create table platform (
 
 The monthly Q&A budget is `sum(input_tokens + output_tokens)` over the current month,
 checked before each call. No ledger or reservation tables.
+
+### 5.6 Schema review 2026-11: what is left
+
+The review's guarantees that landed are in ARCHITECTURE §8 "Schema guarantees". What follows is the rest,
+in the order it can be done, each step a forward migration on the current schema (no rewrite needed first).
+"Done when" is the test that proves it.
+
+1. **Course delete keeps learner records** (item 3; owner: QUESTIONS Q-2026-11-01-1). Domain guard in
+   `catalog::courses::delete`: any `submissions`, `file_submission_attempts` (not preview), `grading_entries` or
+   `certificate_users` row for the course → 409 `course-has-learner-work` ("archive it instead"); new
+   `ErrorCode`, contract regeneration, both webs show the message. Then re-key `submissions`, `grading_entries`,
+   `file_submission_attempts`, `certificate_users` (via `certifications`) from `ON DELETE CASCADE` to `RESTRICT`,
+   and `certifications.course_id` too; drop them from `cascade_audit.rs`. Done when: deleting a course with one
+   graded attempt answers 409 and the row survives; an empty course still deletes.
+2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
+   $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
+   the status set.
+3. **Unchecked references** (item 8). `course_updates.linked_activity_ids` → `course_update_activities
+   (update_id → course_updates ON DELETE CASCADE, activity_id → activities ON DELETE CASCADE, PK both)`, backfilled
+   with `unnest` filtered by `EXISTS`, the array dropped after the writers move. `assessment_items.outcome_ids`
+   names no table: becomes a link table only when outcomes become rows. Kept as text by design (documented):
+   `bulk_actions.target_user_ids` (audit snapshot of a past action; users are never deleted),
+   `xp_transactions.source_id` / `gamification_completions.source_id` (journal entries must outlive a deleted
+   activity or course; their key is `(source, source_id)`), `item_feedback.item_ref` (item id inside a frozen
+   `items_snapshot`, item 13 replaces it), `ai_evidence.source_ref` (AI-owned).
+4. **Upload references** (item 10). Add `upload_id uuid REFERENCES uploads ON DELETE SET NULL` next to each key
+   column (`users.avatar_key`, `courses.thumbnail_image_key`/`thumbnail_video_key`, `chapters.thumbnail_key`,
+   `collections.cover_key`, `platforms.logo_key`/`thumbnail_key`, `item_feedback.annotation_key`) and a
+   `block_uploads (block_id → blocks ON DELETE CASCADE, upload_id → uploads)` table for `blocks.content->>'file_key'`;
+   backfill by `uploads.key`. Writers set the id with the key; the reaper's "referenced" test becomes `EXISTS` over
+   those columns and `block_uploads` instead of `referenced_count`; drop the counter (and BUG-209/263's
+   repair code) once a release ran with both. Done when: the reaper test that drifts the counter by hand still
+   keeps the file.
+5. **Enrolments** (item 11). `enrolments (course_id, user_id, enrolled_at, PK both)` as in 5.4, backfilled from
+   `trail_runs JOIN trails`; `has_trail_run` / `course_members` / `takes_assessments` read it; trail writers
+   insert/delete it in the same transaction; then `trail_runs`/`trails` lose their membership role (steps stay
+   until 7). Done when: `progress_flow` and `permission_matrix` pass with `trails` emptied in a test.
+6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
+   `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
+   overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
+   `file_grading_entries` merges into it). The projector's submission and file-attempt branches
+   (`projector.rs`, legacy `_apply_progress_from_submissions` / `_recalculate_file_submission_progress`) become one. Needs the AI grading reader to move with it: schedule
+   after the AI rubric-draft work lands, behind a contract-compatible read model.
+7. **Assessment versions** (item 13). `assessment_versions (id, assessment_id, number, policy jsonb, items
+   jsonb, created_at, UNIQUE (assessment_id, number))` written when an assessment is published or changed while
+   published; `submissions.assessment_version_id` replaces `items_snapshot`/`policy_snapshot` (backfill: one
+   version per distinct snapshot pair, by md5). The 45 `assessments` columns split into identity/lifecycle
+   (stay) and policy (move to the version's typed `policy`). Same scheduling constraint as 6.
+8. **Projections** (items 15, 16 long term). `maintenance:reconcile` logs drift weekly now; when it reports
+   zero for a month, replace `course_progress` with the 5.4 view over `completions` and compute
+   gamification totals from the journals in the leaderboard query (an index on `xp_transactions (user_id)`
+   already exists), dropping the counters.
+9. **Settings and translations** (item 17). Four mechanisms today: `platforms` columns + `description_kk/_en`,
+   `about_kk/_en` (column per language), `activities.settings` / `file_submissions.settings` JSONB,
+   `gamification_config` (versioned row), `ai_feature_switches` / `feature_activations`. Target: one typed
+   `platform.settings` (5.5) read through a serde struct with defaults, and `translations (entity, entity_id,
+   field, lang, text, PK all but text)` for user-visible platform text; activity settings move into the typed
+   body (5.3).
+10. **Users state** (item 20, rest). `status` + `deleted_at` + nullable `email_verified` → `disabled_at`,
+    `deleted_at`, `email_verified_at` (NULL = not verified; backfill `email_verified IS TRUE` → `created_at`);
+    a CHECK that a deleted user is anonymised. `roles.display_name_key`/`description_key` vs
+    `display_name`/`description`: keep only the keys for built-in roles, plain text for custom ones
+    (CHECK exactly one set). `profile_version` starts at 0 while every other version starts at 1: leave it
+    (the web's If-Match sends what it read).
+11. **Search index** (item 23). `search_matches(hay, words, letters, negated)` applies its regexes inside a
+    function over arrays, so no index applies. Rewrite the search queries with `QueryBuilder`: one `search_fold(title || ' ' || ...) ~ $n` predicate
+    per term in the WHERE clause, then `CREATE INDEX ... USING gin (search_fold(...) gin_trgm_ops)` per
+    searched table (`pg_trgm`, trusted, can be created by `ashyq`). Terms under 3 characters fall back to a scan
+    (trigram limit). Then drop the tsvector columns if ranking moves to `similarity()`. Done when: the
+    existing `search.rs` tests pass and `EXPLAIN` shows a bitmap index scan on a 10 000-course fixture.
+12. **Natural keys** (item 26). `activity_progress`, `course_progress`, `gamification_profiles`, the `daily_*`
+    rollups and `learner_risk_snapshots` have a uuid PK plus the unique natural key, and code reads the uuid
+    (projector rows, prune batches `WHERE id IN (...)`, the leaderboard keyset cursor carries the profile id).
+    Switch each reader to the natural key first (prune by `ctid` batches or by date), then promote the unique
+    constraint to the PK and drop `id`. `daily_teacher_metrics` keeps a surrogate key (nullable teacher, `NULLS
+    NOT DISTINCT`).
+13. **One touch trigger** (item 27). `touch_row()` BEFORE UPDATE: `updated_at = now()` unless
+    `ab.bookkeeping`, `version = OLD.version + 1` when the table has `version` and the caller did not set it;
+    replaces `set_updated_at` + `bump_version` pairs (trigger order by name today). Version columns stay their
+    current type (`submissions`/`file_submission_attempts` bigint, the rest integer): the contract carries
+    them as integers either way. Done when: every optimistic-lock test still answers 412 on a stale write.
+14. **Permissions** (item 19, rest). `Grant::parse` can read `role_permissions.resource/action/scope`
+    directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
+    enum into a lookup table like `notification_kinds`.
 
 ## 6. Auth
 

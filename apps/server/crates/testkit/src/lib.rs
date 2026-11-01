@@ -74,6 +74,7 @@ pub fn test_config() -> Config {
         },
         ai: AiConfig::default(),
         auth: ab_core::config::AuthConfig::default(),
+        retention: ab_core::config::RetentionConfig::default(),
     }
 }
 

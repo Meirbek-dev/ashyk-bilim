@@ -38,6 +38,11 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
 - Commit and push per root `AGENTS.md` (`just commit`, `just push`; skill `ship`). Run focused checks during an
   edit batch and `just ci-server` once before committing server changes. Fix a red hosted pipeline before other work.
 - Never edit an applied migration. Never commit env files, keys, tokens or restored data.
+- A constraint on existing data: repair violating rows with a stated deterministic rule first, or add it with
+  `SELECT schema_try_check(table, name, expr)` (NOT VALID + VALIDATE; skipped with a warning and a
+  `schema_skipped_checks` row when old rows violate it). A growing value list (`kind IN (...)`) is a lookup
+  table with a foreign key (`notification_kinds`, `upload_purposes`), not a CHECK rewritten per value.
+  New foreign keys get an index led by their first column (`fk_index_audit.rs`).
 - Preserve migrated legacy data: UUIDs, video thumbnails, `custom` activities, certificate layouts,
   and trail steps without projection rows. Imported users authenticate through Zitadel passwap.
 - No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, `dbg!`, or stdout/stderr prints outside

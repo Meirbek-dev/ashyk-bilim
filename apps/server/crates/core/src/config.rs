@@ -53,7 +53,41 @@ pub struct Config {
     /// Sign-in throttles (`AB__AUTH__LIMITS__*`).
     #[serde(default)]
     pub auth: AuthConfig,
+    /// Log retention windows (`AB__RETENTION__*`), swept daily.
+    #[serde(default)]
+    pub retention: RetentionConfig,
     pub telemetry: TelemetryConfig,
+}
+
+/// Days operational logs are kept (`maintenance:retention`, daily).
+///
+/// Learner work, grades and anything a person still reads are never swept:
+/// practice code runs lose only their output, graded runs keep it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RetentionConfig {
+    /// Succeeded jobs.
+    pub jobs_succeeded_days: i32,
+    /// Failed / dead-lettered jobs (kept longer for the admin queue view).
+    pub jobs_dead_days: i32,
+    /// `auth_audit_log` rows.
+    pub auth_audit_days: i32,
+    /// stdout/stderr/compile output of practice (non-final) code runs.
+    pub code_run_output_days: i32,
+    /// Event logs of finished AI runs.
+    pub ai_events_days: i32,
+}
+
+impl Default for RetentionConfig {
+    fn default() -> Self {
+        Self {
+            jobs_succeeded_days: 14,
+            jobs_dead_days: 90,
+            auth_audit_days: 365,
+            code_run_output_days: 180,
+            ai_events_days: 180,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -642,6 +676,21 @@ impl Config {
         if self.database.url.expose_secret().is_empty() {
             return Err(Error::config("AB__DATABASE__URL must be set"));
         }
+        let r = self.retention;
+        if [
+            r.jobs_succeeded_days,
+            r.jobs_dead_days,
+            r.auth_audit_days,
+            r.code_run_output_days,
+            r.ai_events_days,
+        ]
+        .iter()
+        .any(|days| *days < 1)
+        {
+            return Err(Error::config(
+                "AB__RETENTION__* windows must be at least 1 day",
+            ));
+        }
         if self.environment.is_production() {
             if self.server.cors_origins.is_empty() {
                 return Err(Error::config(
@@ -744,6 +793,7 @@ mod tests {
             judge0: None,
             ai: AiConfig::default(),
             auth: AuthConfig::default(),
+            retention: RetentionConfig::default(),
             telemetry: TelemetryConfig {
                 json_logs: false,
                 otlp_endpoint: None,

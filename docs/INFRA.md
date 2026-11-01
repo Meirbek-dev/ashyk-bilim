@@ -127,6 +127,7 @@ existing volumes too; changing them requires recreating the `db` container.
 | `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup and pre-deploy dumps (local socket) |
 | `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server, worker, server-migrate |
 | `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing | zitadel |
+| `ashyq_app`, `ashyq_ro` | no | `infra/postgres/roles.sql`, by hand; not created anywhere yet | nothing yet: least-privilege server/worker and read-only roles (RUNBOOK 2.5, QUESTIONS Q-2026-11-01-2) |
 | `judge0` | yes, in `judge0-db` only | judge0-db image | Judge0 |
 
 | Database | Owner | Notes |

@@ -325,8 +325,11 @@ impl AttemptRow {
     }
 }
 
-/// Open a draft (started now). `None` when the learner already has an open
-/// (draft or returned) attempt - the partial unique index absorbs the race.
+/// Open a draft (started now); `None` when a unique index refused it.
+///
+/// Either the learner already has an open (draft or returned) attempt, or a
+/// concurrent submit took `attempt_number`
+/// (`file_submission_attempts_attempt_number_key`); the caller re-reads.
 pub async fn insert_attempt(
     db: impl sqlx::PgExecutor<'_>,
     file_submission_id: FileSubmissionId,
@@ -339,8 +342,7 @@ pub async fn insert_attempt(
         r#"INSERT INTO file_submission_attempts
                (file_submission_id, course_id, user_id, attempt_number, preview, started_at)
            VALUES ($1, $2, $3, $4, $5, now())
-           ON CONFLICT (file_submission_id, user_id) WHERE status IN ('draft', 'returned')
-           DO NOTHING
+           ON CONFLICT DO NOTHING
            RETURNING id AS "id: FileAttemptId""#,
         file_submission_id.0,
         course_id.0,

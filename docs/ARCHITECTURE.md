@@ -354,10 +354,61 @@ One migration set for the database `ashyq`. Rules:
    items/blocks). No soft-delete convention; archival is a domain status where the domain needs it (courses,
    assessments).
 6. Search: `search_matches` / `search_fold` (`migrations/20260926000001_search_matches.sql`), one word-match rule
-   for `/search`, `courses?q=` and collections; the `vector` extension is installed, no column uses it yet.
+   for `/search`, `courses?q=` and collections; no index serves it (pg_trgm plan in REWRITE §5). The `tsvector`
+   generated columns on courses/collections only rank (`ts_rank_cd`), so they carry no GIN index (dropped 2026-11).
+   Course material search uses pgvector on `content_chunks` (§12 "AI-first foundation").
 7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the
    per-column-family counters where genuinely concurrent (grading vs. draft; the draft save keeps its 409 until
    phase 9).
+
+### Schema guarantees (2026-11 schema review)
+
+The database enforces these itself; `crates/db/tests/schema_review.rs` holds one test per rule.
+
+- **No cascade from `users` onto learning records.** Submissions, file attempts, code runs, issued
+  certificates, progress, trails/enrolments, XP and uploads reference `users` with `ON DELETE RESTRICT`
+  (accounts are disabled or anonymised, never deleted by the app; manual erasure: RUNBOOK 2.3).
+  Settings-like rows (roles, preferences, notifications, reactions, analytics) still cascade.
+  `crates/db/tests/cascade_audit.rs` lists every remaining cascade with its reason.
+- **Attempt numbers** are unique per learner and task among counted attempts
+  (`submissions_attempt_number_key`, `file_submission_attempts_attempt_number_key`, both `WHERE NOT preview`).
+- **Notifications** carry generated `course_id` / `activity_id` columns (from the typed payload) with
+  `ON DELETE CASCADE`: deleting a course or activity removes the notifications that link into it.
+- **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
+  `UNIQUE (id, course_id)`; their children reference `(parent_id, course_id)` (activities → chapters,
+  assessments/file tasks/progress/trail steps → activities, submissions → assessments, file attempts → file
+  tasks, replies → posts) with `ON UPDATE CASCADE`, keeping the old constraint names.
+- **Sibling positions are unique** per course (chapters), chapter (activities), assessment (items) and
+  collection (courses), `DEFERRABLE INITIALLY DEFERRED` so a reorder inside one transaction may pass through
+  duplicates; `>= 1`. Two concurrent appends that both took `MAX(position) + 1` get 409 `conflict` (retry).
+- **Coherence, bounds, shapes** (`20261101220200_integrity_checks.sql`): a handed-in attempt has `submitted_at`,
+  a published/archived assessment its stamp, a reply its post (and a post none); scores and penalties are
+  percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
+  20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
+  50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
+  body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
+  `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
+- **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
+  actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
+- **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead
+  jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
+  `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
+  timestamp for these sweeps and the analytics prune.
+- **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
+  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration); `notification_preferences.disabled`
+  is checked against `notification_kinds` by a trigger. Short fixed lists stay CHECKs.
+- **Permission parts are columns**: `role_permissions.resource/action/scope` are generated from the grant
+  string (shape-checked like `Grant::parse`); `is_course_staff` reads them through a partial index, so its
+  role branch is two index probes per call.
+- **HOT room**: `jobs` (fillfactor 70), submissions, activity/course progress, gamification profiles (85) and
+  posts (90) leave space for in-place updates; no index covers `jobs.heartbeat_at` (the reaper finds running
+  jobs through `jobs_status_kind_idx`), so a heartbeat is a HOT update.
+- **Derived aggregates are reconciled** weekly (`maintenance:reconcile`): every member's progress projection
+  is re-projected (the `progress-backfill` pass; changed members are logged) and gamification totals/level
+  are re-derived from `xp_transactions` / `gamification_completions` (`daily_xp_earned` excepted).
+- **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
+  content still links blocks by it) were dropped at T+32d.
+- **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 
 ### SQLx usage
 
@@ -412,8 +463,10 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   worker boot. No elected leader: every worker ticks; a transaction-scoped advisory lock makes ticks exclusive
   and per-occurrence dedupe keys make enqueueing idempotent (`ab_db::schedule`). Current schedules:
   `assessments:publish-due` and `submissions:auto-submit` (1 min), `notifications:deadline-reminders` (15 min),
-  `submissions:sweep-idempotency` (1 h), `uploads:reap` and `analytics:rollup` (6 h), `notifications:prune`
-  (24 h). On-demand kinds: `ai:execute_run`, `grading:bulk-action`, `progress:*` follow-ups.
+  `submissions:sweep-idempotency` (1 h), `uploads:reap` and `analytics:rollup` (6 h), `notifications:prune` and
+  `maintenance:retention` (24 h), `maintenance:reconcile` (7 days), `retrieval:sweep` (1 min). On-demand kinds:
+  `ai:execute_run`, `ai:grade-draft`, `grading:bulk-action`, `mastery:ingest`, `mastery:rebuild`, `progress:*`
+  follow-ups.
 - Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight, heartbeat until done (compose
   `stop_grace_period: 60s`).
 - Notifications: `notifications:deadline-reminders` sends one `deadline_approaching` per (learner, activity, due
@@ -423,6 +476,11 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches through the
   primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
   last 180 days.
+- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows
+  and AI event logs and clears old practice code-run output; windows in §8 "Schema guarantees".
+- Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects
+  every member's progress, logging what it changed (§8 "Schema guarantees"); a steady non-zero count is a projector
+  bug.
 
 ## 10. Redis usage map
 

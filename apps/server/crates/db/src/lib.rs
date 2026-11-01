@@ -23,6 +23,7 @@ pub mod notifications;
 pub mod platform;
 pub mod progress;
 pub mod queue;
+pub mod retention;
 pub mod retrieval;
 pub mod schedule;
 pub mod search;

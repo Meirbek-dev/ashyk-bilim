@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT md5(\n               coalesce((SELECT string_agg((to_jsonb(ap) - 'id' - 'created_at' - 'updated_at')::text,\n                                           ',' ORDER BY ap.activity_id)\n                         FROM activity_progress ap\n                         WHERE ap.course_id = $1 AND ap.user_id = $2), '')\n               || '|' ||\n               coalesce((SELECT (to_jsonb(cp) - 'id' - 'created_at' - 'updated_at')::text\n                         FROM course_progress cp\n                         WHERE cp.course_id = $1 AND cp.user_id = $2), '')) AS \"fingerprint!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "fingerprint!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0ff501cfe2f521bdbeceba70a8381d86f7e15705f24547d52ad781df9c7f1b64"
+}

@@ -16,7 +16,13 @@ use sqlx::PgPool;
 /// Users are never hard-deleted by the app (`PATCH /users/{id}/status`
 /// disables an account; no code path deletes a `users` row): the cascade is
 /// the manual erasure path (a person's right to have their data removed).
+/// Learning records (attempts, submissions, code runs, certificates,
+/// progress, enrolments, XP, uploads) are RESTRICT instead (schema review
+/// item 2): an erasure removes or anonymises them explicitly first.
 const USER_ERASURE: &str = "users are only erased by hand: the app disables accounts";
+/// A notification links into its course / activity (generated key columns):
+/// without them the link answers «not found».
+const NOTIFICATION_LINK: &str = "a notification links into it; dead links go with it";
 /// `DELETE /courses/{id}` is the owner's explicit "delete with its history"
 /// (DECISIONS 2026-10-02 "Course archive is orthogonal to `public`"): archive
 /// is the way out that keeps learner work; the UI confirms the delete.
@@ -39,12 +45,11 @@ const ATTEMPT_DELETE: &str = "only preview attempts are deleted on their own";
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
     (
         "activity_progress",
-        "activity_id",
+        "course_id,activity_id",
         "activities",
         ACTIVITY_DELETE,
     ),
     ("activity_progress", "course_id", "courses", COURSE_DELETE),
-    ("activity_progress", "user_id", "users", USER_ERASURE),
     ("ai_qa_messages", "course_id", "courses", COURSE_DELETE),
     (
         "ai_qa_messages",
@@ -101,7 +106,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "certifications",
         "a certification with issued certificates is disabled, never deleted (delete_certification)",
     ),
-    ("certificate_users", "user_id", "users", USER_ERASURE),
     (
         "code_run_cases",
         "run_id",
@@ -120,16 +124,14 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "assessment_items",
         "scratch runs; item delete is refused once graded work locks the content",
     ),
-    ("code_runs", "user_id", "users", USER_ERASURE),
     ("course_discussions", "course_id", "courses", COURSE_DELETE),
     (
         "course_discussions",
-        "parent_id",
+        "course_id,parent_id",
         "course_discussions",
         "a post others replied to stays as a tombstone (2026-10-14); only its author's own replies cascade",
     ),
     ("course_progress", "course_id", "courses", COURSE_DELETE),
-    ("course_progress", "user_id", "users", USER_ERASURE),
     (
         "discussion_reactions",
         "discussion_id",
@@ -151,19 +153,16 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "file_submission_attempts",
-        "file_submission_id",
+        "file_submission_id,course_id",
         "file_submissions",
         "a file task goes only with its activity or course (ACTIVITY_DELETE)",
     ),
-    ("file_submission_attempts", "user_id", "users", USER_ERASURE),
     (
         "file_submission_files",
         "attempt_id",
         "file_submission_attempts",
         ATTEMPT_DELETE,
     ),
-    ("gamification_completions", "user_id", "users", USER_ERASURE),
-    ("gamification_profiles", "user_id", "users", USER_ERASURE),
     (
         "grading_entries",
         "submission_id",
@@ -182,15 +181,21 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "submissions",
         SUBMISSION_DELETE,
     ),
+    (
+        "notifications",
+        "activity_id",
+        "activities",
+        NOTIFICATION_LINK,
+    ),
+    ("notifications", "course_id", "courses", NOTIFICATION_LINK),
     ("notifications", "user_id", "users", USER_ERASURE),
     (
         "submissions",
-        "assessment_id",
+        "assessment_id,course_id",
         "assessments",
         "an assessment goes only with its activity or course (ACTIVITY_DELETE)",
     ),
     ("submissions", "course_id", "courses", COURSE_DELETE),
-    ("submissions", "user_id", "users", USER_ERASURE),
     ("trail_runs", "course_id", "courses", COURSE_DELETE),
     (
         "trail_runs",
@@ -198,8 +203,12 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "trails",
         "a trail is the user's own enrolment list",
     ),
-    ("trail_runs", "user_id", "users", USER_ERASURE),
-    ("trail_steps", "activity_id", "activities", ACTIVITY_DELETE),
+    (
+        "trail_steps",
+        "activity_id,course_id",
+        "activities",
+        ACTIVITY_DELETE,
+    ),
     ("trail_steps", "course_id", "courses", COURSE_DELETE),
     (
         "trail_steps",
@@ -213,10 +222,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "trail_runs",
         "leaving a course resets its lesson completions (DECISIONS 2026-09-12)",
     ),
-    ("trail_steps", "user_id", "users", USER_ERASURE),
-    ("trails", "user_id", "users", USER_ERASURE),
-    ("uploads", "created_by", "users", USER_ERASURE),
-    ("xp_transactions", "user_id", "users", USER_ERASURE),
 ];
 
 /// Tables a cascade may reach without review: authored content, settings,
@@ -282,8 +287,6 @@ const NOT_USER_DATA: &[&str] = &[
     "content_index_state",
     "course_concepts",
     "mastery_evidence",
-    // Legacy ETL bookkeeping.
-    "etl_drop_log",
 ];
 
 #[ab_testdb::test]

@@ -6,6 +6,7 @@ pub mod ai_first;
 pub mod analytics;
 pub mod assessments;
 pub mod grading;
+pub mod maintenance;
 pub mod notifications;
 pub mod progress;
 pub mod submissions;
