@@ -381,6 +381,22 @@ One migration set for the database `ashyq`. Rules:
 7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the
    per-column-family counters where genuinely concurrent (grading vs. draft; the draft save keeps its 409 until
    phase 9).
+8. **Schemas** (review 43): tables live in `core` (identity, platform, translations, catalog, updates,
+   discussions, notifications, uploads), `learning` (enrolment, progress, assessments, submissions, grades,
+   certificates, gamification, concepts), `ai` (ai_* and the retrieval index), `analytics` (events, daily rollups,
+   risk snapshots) and `ops` (jobs, schedules, idempotency keys, auth audit log, skipped checks); the mapping is
+   `app_table_schema()` (migration 20261102090000). `public` keeps the sqlx ledger, extensions (pgvector until
+   RUNBOOK 2.6), functions and domains. SQL stays unqualified: every session's `search_path` is
+   `public, core, learning, ai, analytics, ops, extensions` (`ab_db::SEARCH_PATH`): the server puts it in each
+   connection's startup packet; the database carries it (`ALTER DATABASE ... SET`, re-applied by every
+   `ashyq migrate` through `ensure_app_search_path()`) for psql, the sqlx CLI, backups and older binaries; clones
+   copy it (`ab_testdb`, `just db fresh`, stack slots), since `CREATE DATABASE ... TEMPLATE` does not. `public` is
+   first because sqlx creates its ledger with `CREATE TABLE IF NOT EXISTS` in the first schema, so a migration
+   names the schema of every table it creates (`CREATE TABLE learning.x`; `migration_rules.rs`), and
+   `schema_review.rs` fails on an app table left in `public`. Partitions are created next to their parent.
+   Grants are per schema (`apply_role_grants`, default privileges in each). The move itself is the contract
+   file 20261103073000 (`place_app_tables()`), a release after the path is set: a session keeps the path it
+   started with.
 
 ### Schema guarantees (2026-11 schema review)
 

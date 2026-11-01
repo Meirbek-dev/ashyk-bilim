@@ -26,7 +26,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { type DbRole, databaseUrl, devEnv, readManifest, root } from './lib.ts'
+import { type DbRole, copyDatabaseSettings, databaseUrl, devEnv, readManifest, root } from './lib.ts'
 
 const TEMPLATE = 'ashyq_seed'
 const TEST_DB = 'ashyq_test'
@@ -226,7 +226,10 @@ async function fresh(name: string): Promise<void> {
   if (!(await exists(TEMPLATE))) die(`no ${TEMPLATE} yet: run \`just db template\` first`)
   const started = performance.now()
   await dropDb(name)
-  await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(name)} TEMPLATE ${ident(TEMPLATE)}`))
+  await admin(async sql => {
+    await sql.unsafe(`CREATE DATABASE ${ident(name)} TEMPLATE ${ident(TEMPLATE)}`)
+    await copyDatabaseSettings(sql, TEMPLATE, name)
+  })
   console.log(
     `db: ${name} cloned from ${TEMPLATE} in ${(performance.now() - started).toFixed(0)} ms -> ${urlFor(name)}`,
   )

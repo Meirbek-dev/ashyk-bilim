@@ -103,6 +103,21 @@ export function databaseUrl(env: Record<string, string>, db: string, role: DbRol
 }
 
 /**
+ * CREATE DATABASE ... TEMPLATE copies no `ALTER DATABASE ... SET`: copy `from`'s settings (the app's search_path,
+ * migration 20261102090000) onto the clone `to`, so psql, `just db sql` and older binaries find the tables.
+ */
+export async function copyDatabaseSettings(sql: InstanceType<typeof Bun.SQL>, from: string, to: string): Promise<void> {
+  const rows: { setting: string }[] = await sql`
+    SELECT unnest(s.setconfig) AS setting FROM pg_db_role_setting s JOIN pg_database d ON d.oid = s.setdatabase
+     WHERE d.datname = ${from} AND s.setrole = 0`
+  for (const { setting } of rows) {
+    const at = setting.indexOf('=')
+    // The value comes from the catalog as Postgres printed it; a list (search_path) must stay unquoted.
+    await sql.unsafe(`ALTER DATABASE "${to}" SET ${setting.slice(0, at)} = ${setting.slice(at + 1)}`)
+  }
+}
+
+/**
  * `app` once db-init created ashyq_app and granted it `db`'s tables (`just dev-up` runs roles.sql on template1,
  * ashyq_dev and ashyq_test; a database created later inherits template1's default privileges), else `owner`:
  * a cluster or a restored copy from before the roles keeps working as before.
@@ -113,8 +128,11 @@ export async function appRoleFor(env: Record<string, string>, db: string): Promi
   try {
     const [row] = await sql`
       SELECT CASE WHEN NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ashyq_app') THEN false
-                  WHEN to_regclass('public.users') IS NULL THEN true
-                  ELSE has_table_privilege('ashyq_app', 'public.users', 'INSERT') END AS ok`
+                  WHEN users.oid IS NULL THEN true
+                  ELSE has_table_privilege('ashyq_app', users.oid, 'INSERT') END AS ok
+        FROM (SELECT (SELECT c.oid FROM pg_class c
+                       WHERE c.relname = 'users' AND c.relkind = 'r'
+                         AND c.relnamespace::regnamespace::text IN ('public', 'core')) AS oid) AS users`
     return row?.ok ? 'app' : 'owner'
   } catch {
     return 'owner'

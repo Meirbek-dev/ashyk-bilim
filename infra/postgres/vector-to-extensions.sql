@@ -8,8 +8,10 @@
 \set ON_ERROR_STOP on
 CREATE SCHEMA IF NOT EXISTS extensions;
 GRANT USAGE ON SCHEMA extensions TO PUBLIC;
--- Role-level, so every database of the cluster (tests clone template1) sees the same path.
-SELECT format('ALTER ROLE %I SET search_path = "$user", public, extensions', rolname)
+-- Role-level, so every database of the cluster (tests clone template1) sees the same path. A role setting
+-- overrides the database one of migration 20261102090000: it is the same path (ab_db::SEARCH_PATH), app
+-- schemas included (schema review 43).
+SELECT format('ALTER ROLE %I SET search_path = public, core, learning, ai, analytics, ops, extensions', rolname)
 FROM pg_roles WHERE rolname IN ('ashyq', 'ashyq_app', 'ashyq_ro') \gexec
 SELECT 'ALTER EXTENSION vector SET SCHEMA extensions'
 FROM pg_extension WHERE extname = 'vector' AND extnamespace <> 'extensions'::regnamespace \gexec

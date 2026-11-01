@@ -17,7 +17,10 @@
 //!   change created). A backfill of a column the same file adds and the
 //!   re-run backfill of a `-- contract:` file need no marker. Any other data
 //!   fix is an `ashyq admin` command (idempotent, `--dry-run`), never a
-//!   migration (ARCHITECTURE §8 "Migrations").
+//!   migration (ARCHITECTURE §8 "Migrations");
+//! - from 20261102090000 on a new table names its schema (`CREATE TABLE
+//!   learning.x`): unqualified it lands in `public`, the first schema of the
+//!   search_path (ARCHITECTURE §8 rule 8).
 //!
 //! The rules read the embedded migrations; no database is needed.
 #![allow(clippy::panic)]
@@ -36,16 +39,37 @@ fn code(sql: &str) -> String {
         .join(" ")
 }
 
-/// Tables named by `create table <name>` in the file.
-fn created(code: &str) -> Vec<String> {
+/// Tables named by `create table <name>` in the file, as written.
+fn created_names(code: &str) -> Vec<&str> {
     code.split("create table ")
         .skip(1)
         .filter_map(|rest| {
             let rest = rest.strip_prefix("if not exists ").unwrap_or(rest);
-            rest.split([' ', '(']).next().map(str::to_owned)
+            rest.split([' ', '(']).next()
         })
         .collect()
 }
+
+/// Tables named by `create table <name>` in the file, without their schema.
+fn created(code: &str) -> Vec<String> {
+    created_names(code)
+        .into_iter()
+        .map(|t| bare(t).to_owned())
+        .collect()
+}
+
+/// The app's schemas (migration 20261102090000).
+const SCHEMAS: &[&str] = &["core", "learning", "ai", "analytics", "ops"];
+
+/// From this version on a migration names the schema of every table it creates.
+const QUALIFIED_FROM: i64 = 20_261_102_090_000;
+
+/// Files from `QUALIFIED_FROM` on that create a table unqualified, each with the
+/// file that places it. Never extended: a new file names the schema instead.
+const UNQUALIFIED_PLACED: &[(i64, &str)] = &[(
+    20_261_103_030_300,
+    "contract C recreates analytics_events in public; 20261103073000 moves it",
+)];
 
 /// Migrations on main before the data-fix rule (2026-11-02) that change rows
 /// without the marker, each with its rule. Never extended: a new file says
@@ -99,8 +123,12 @@ fn tokens(code: &str) -> Vec<&str> {
         .collect()
 }
 
+/// A table name without its schema (`public.x`, `core.x` -> `x`).
 fn bare(table: &str) -> &str {
-    table.strip_prefix("public.").unwrap_or(table)
+    table
+        .split_once('.')
+        .filter(|(schema, _)| *schema == "public" || SCHEMAS.contains(schema))
+        .map_or(table, |(_, name)| name)
 }
 
 /// `(statement, table)` of each UPDATE / DELETE / TRUNCATE the file runs.
@@ -252,7 +280,7 @@ fn new_migrations_lock_briefly_and_expand_before_they_contract() {
                     .and_then(|t| t.strip_prefix("only ").or(Some(t)))
                     .and_then(|t| t.split([' ', '(']).next())
                     .unwrap_or_default();
-                if !fresh.iter().any(|t| t == table) {
+                if !fresh.iter().any(|t| t == bare(table)) {
                     broken.push(format!(
                         "{name}: index on existing table {table} blocks its writes; build it CONCURRENTLY in its own -- no-transaction file"
                     ));
@@ -268,6 +296,52 @@ fn new_migrations_lock_briefly_and_expand_before_they_contract() {
         }
     }
     assert!(broken.is_empty(), "{}", broken.join("\n"));
+}
+
+/// `create table` statements the file runs (not inside a function body) whose
+/// table has no app schema.
+fn unqualified_tables(code: &str) -> Vec<String> {
+    created_names(&executed(code))
+        .into_iter()
+        .filter(|t| {
+            t.split_once('.')
+                .is_none_or(|(schema, _)| !SCHEMAS.contains(&schema))
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
+#[test]
+fn new_tables_name_their_schema() {
+    let mut broken = Vec::new();
+    for m in ab_db::MIGRATOR
+        .iter()
+        .filter(|m| m.version >= QUALIFIED_FROM)
+        .filter(|m| !UNQUALIFIED_PLACED.iter().any(|(v, _)| *v == m.version))
+    {
+        for table in unqualified_tables(&code(m.sql.as_str())) {
+            broken.push(format!(
+                "{}_{}: CREATE TABLE {table} lands in public; name its schema ({}), ARCHITECTURE §8 rule 8",
+                m.version,
+                m.description,
+                SCHEMAS.join(", ")
+            ));
+        }
+    }
+    assert!(broken.is_empty(), "{}", broken.join("\n"));
+}
+
+#[test]
+fn the_schema_rule_sees_what_it_checks() {
+    let sql = code(
+        "CREATE TABLE learning.attempt_files (id uuid);\n\
+         CREATE TABLE IF NOT EXISTS plain (id uuid);\n\
+         CREATE TABLE public.listed (id uuid);\n\
+         CREATE INDEX attempt_files_idx ON learning.attempt_files (id);\n\
+         CREATE FUNCTION f() RETURNS void AS $$ BEGIN EXECUTE 'CREATE TABLE x (id int)'; END $$ LANGUAGE plpgsql;\n",
+    );
+    assert_eq!(unqualified_tables(&sql), vec!["plain", "public.listed"]);
+    assert_eq!(created(&sql)[0], "attempt_files");
 }
 
 #[test]

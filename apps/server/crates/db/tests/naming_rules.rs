@@ -139,7 +139,10 @@ fn columns(tokens: &[String]) -> Vec<(String, bool)> {
                     ";" => break,
                     ")" => depth -= 1,
                     "references" => {
-                        users |= tokens.get(k + 1).map(String::as_str) == Some("users");
+                        users |= matches!(
+                            tokens.get(k + 1).map(String::as_str),
+                            Some("users" | "core.users")
+                        );
                     }
                     _ => {}
                 }
@@ -151,7 +154,10 @@ fn columns(tokens: &[String]) -> Vec<(String, bool)> {
             && tokens.get(i + 2).map(String::as_str) == Some("(")
             && tokens.get(i + 4).map(String::as_str) == Some(")")
             && tokens.get(i + 5).map(String::as_str) == Some("references")
-            && tokens.get(i + 6).map(String::as_str) == Some("users")
+            && matches!(
+                tokens.get(i + 6).map(String::as_str),
+                Some("users" | "core.users")
+            )
             && let Some(col) = tokens.get(i + 3)
         {
             out.push((col.clone(), true));

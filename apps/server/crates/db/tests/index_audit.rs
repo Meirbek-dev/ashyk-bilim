@@ -14,7 +14,7 @@ use sqlx::PgPool;
 /// `(redundant index, covering index)` → reason it stays.
 const ALLOWED: &[(&str, &str, &str)] = &[];
 
-/// `(redundant, covering)` index pairs in the public schema.
+/// `(redundant, covering)` index pairs in the app's schemas.
 async fn duplicates(pool: &PgPool) -> Vec<(String, String)> {
     sqlx::query_as(
         "WITH idx AS (
@@ -28,7 +28,7 @@ async fn duplicates(pool: &PgPool) -> Vec<(String, String)> {
              FROM pg_index i
              JOIN pg_class c ON c.oid = i.indexrelid
              JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE n.nspname = 'public'
+            WHERE n.nspname = 'public' OR n.nspname = ANY (app_schemas())
          )
          SELECT a.indexrelid::regclass::text, b.indexrelid::regclass::text
            FROM idx a

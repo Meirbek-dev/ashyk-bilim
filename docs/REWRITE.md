@@ -861,9 +861,16 @@ Decided, not done:
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
 10. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
     `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
-11. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema. Prepared (2026-11): db-init
-    creates the empty `extensions` schema; moving pgvector there is the superuser step of RUNBOOK 2.6. No table
-    has moved; the schemas need the roles' `search_path` (set by that step) and grants per schema.
+11. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8
+    rule 8). Done in the repo (2026-11): expand `20261102090000` creates the schemas, the mapping
+    `app_table_schema()`, grants and default privileges per schema, and sets the `search_path` on the database
+    (the server also sends it on connect, `ashyq migrate` re-applies it); new tables name their schema. The move
+    of every existing table is the contract file `20261103073000` (`place_app_tables()`), deployed a release
+    later because a session keeps the path it opened with. db-init creates the empty `extensions` schema;
+    moving pgvector there stays the superuser step of RUNBOOK 2.6 (now without stopping the server: its
+    sessions already have `extensions` on the path). Left: functions and domains stay in `public` (moving them
+    changes nothing for queries; do it only with a reason); a role-level `search_path` overrides the database
+    one, so a role setting must carry the same path (vector-to-extensions.sql does).
 
 ## 6. Auth
 

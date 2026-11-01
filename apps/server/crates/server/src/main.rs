@@ -759,7 +759,7 @@ async fn analytics_rollup(
 
 async fn migrate(config: Config) -> anyhow::Result<()> {
     let pool = ab_db::connect(&config.database, ab_db::Process::Migrate).await?;
-    ab_db::MIGRATOR.run(&pool).await?;
+    ab_db::migrate(&pool).await?;
     tracing::info!("migrations applied");
     Ok(())
 }

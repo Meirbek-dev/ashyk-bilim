@@ -45,7 +45,8 @@ async function tables(): Promise<number | string> {
   try {
     const sql = new SQL(databaseUrl(devEnv(), 'ashyq_dev').replace('@localhost:', '@127.0.0.1:'))
     const [row] = await sql`SELECT count(*)::int AS n FROM information_schema.tables
-                             WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '_sqlx_migrations'`
+                             WHERE table_schema IN ('public', 'core', 'learning', 'ai', 'analytics', 'ops')
+                               AND table_type = 'BASE TABLE' AND table_name <> '_sqlx_migrations'`
     await sql.close()
     return row.n
   } catch {
