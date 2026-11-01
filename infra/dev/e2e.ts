@@ -312,6 +312,14 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
       // "not configured" instead of a 503 that fails every code-arena page's health check; @runner specs need it up.
       AB__RUNNER__BASE_URL: (await runnerUp(env)) ? (env['AB__RUNNER__BASE_URL'] ?? '') : '',
     }
+    // ashyq_seed is built once: migrations added since then would be missing from the clone (500 on every query
+    // that reads a new column), so bring it up to date before anything serves it.
+    const migrated = Bun.spawnSync([builtServer, 'migrate'], {
+      cwd: join(root, 'apps/server'),
+      env: { ...process.env, ...server },
+    })
+    writeFileSync(join(dir, 'migrate.log'), Buffer.concat([migrated.stdout, migrated.stderr]))
+    if (migrated.exitCode !== 0) throw new Error(`migrating ${db} failed (log ${join(dir, 'migrate.log')})`)
     for (const role of ['api', 'worker']) {
       const copy = join(dir, `ashyq-${role}${exe}`)
       copyFileSync(builtServer, copy) // keeps the exec bit; Bun.write creates a fresh copy as 0644
