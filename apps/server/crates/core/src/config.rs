@@ -78,6 +78,9 @@ pub struct RetentionConfig {
     pub code_run_output_days: i32,
     /// Event logs of finished AI runs.
     pub ai_events_days: i32,
+    /// Grace period of a deleted course: the purge hard-deletes it (learner work and grades
+    /// included) after this many days; `ashyq admin restore-course` brings it back before.
+    pub deleted_courses_days: i32,
 }
 
 impl Default for RetentionConfig {
@@ -88,6 +91,7 @@ impl Default for RetentionConfig {
             auth_audit_days: 365,
             code_run_output_days: 180,
             ai_events_days: 180,
+            deleted_courses_days: 30,
         }
     }
 }
@@ -673,6 +677,7 @@ impl Config {
             r.auth_audit_days,
             r.code_run_output_days,
             r.ai_events_days,
+            r.deleted_courses_days,
         ]
         .iter()
         .any(|days| *days < 1)

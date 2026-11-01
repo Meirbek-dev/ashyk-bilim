@@ -637,7 +637,9 @@ in the order it can be done, each step a forward migration on the current schema
 "Done when" is the test that proves it.
 
 1. **Course delete with learner work** (item 3): decided 2026-11-01 - allowed after the teacher acknowledges it
-   (COURSE_ARCHIVING 6.2); the cascade from `courses` stays. Nothing left here.
+   (COURSE_ARCHIVING 6.2). Changed the same evening (review 2 item 22, done): the delete is soft (archived +
+   `deleted_at`, gone from every read), and `maintenance:retention` runs the old cascade from `courses` after
+   `AB__RETENTION__DELETED_COURSES_DAYS` (30); `ashyq admin restore-course` undoes it before (RUNBOOK 2.6).
 2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
    $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
    the status set.

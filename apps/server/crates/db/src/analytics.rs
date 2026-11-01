@@ -45,7 +45,7 @@ pub async fn teacher_course_ids(
     let rows = sqlx::query_scalar!(
         r#"SELECT c.id AS "id: CourseId"
            FROM courses c
-           WHERE (c.creator_id = $1 OR EXISTS (
+           WHERE c.deleted_at IS NULL AND (c.creator_id = $1 OR EXISTS (
                  SELECT 1 FROM course_staff ra
                  WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
                    AND ra.authorship <> 'reporter'))
@@ -62,7 +62,7 @@ pub async fn teacher_course_ids(
 pub async fn all_course_ids(pool: &PgPool, include_archived: bool) -> Result<Vec<CourseId>> {
     let rows = sqlx::query_scalar!(
         r#"SELECT id AS "id: CourseId" FROM courses
-           WHERE $1 OR archived_at IS NULL ORDER BY id"#,
+           WHERE deleted_at IS NULL AND ($1 OR archived_at IS NULL) ORDER BY id"#,
         include_archived
     )
     .fetch_all(pool)

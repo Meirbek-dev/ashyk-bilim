@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: CourseId\" FROM courses\n           WHERE deleted_at IS NULL AND ($1 OR archived_at IS NULL) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "44f293e9e5d4a019e1773b8c448e6b97543d290057f8ca2dbb0e431df3f9bfb0"
+}

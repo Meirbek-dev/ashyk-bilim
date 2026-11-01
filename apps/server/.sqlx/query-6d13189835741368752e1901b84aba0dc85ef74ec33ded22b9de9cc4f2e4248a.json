@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE courses SET deleted_at = NULL, deleted_by = NULL\n           WHERE id = $1 AND deleted_at IS NOT NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d13189835741368752e1901b84aba0dc85ef74ec33ded22b9de9cc4f2e4248a"
+}

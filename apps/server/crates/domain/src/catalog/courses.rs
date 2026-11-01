@@ -513,8 +513,25 @@ impl CoursesService {
             Some(Some(_)) => return Err(Error::conflict("course is already archived")),
             Some(None) => {}
         }
-        ab_db::catalog::set_course_archived(&mut tx, id, Some(actor.user_id)).await?;
-        let unscheduled = ab_db::assessments::draft_scheduled_in_course(&mut tx, id).await?;
+        let unscheduled = Self::archive_locked(&mut tx, actor, id, "course archived").await?;
+        tx.commit().await?;
+        tracing::info!(course_id = %id, actor = %actor.user_id, action = "archive",
+            unscheduled = unscheduled.len(), "course archived");
+        ab_db::catalog::get_course(&self.pool, id)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))
+    }
+
+    /// Stamp a locked course archived and pull its `scheduled` assessments back to `draft`,
+    /// audited with `note`; returns the assessments it unscheduled.
+    async fn archive_locked(
+        tx: &mut sqlx::PgConnection,
+        actor: &Actor,
+        id: CourseId,
+        note: &str,
+    ) -> Result<Vec<ab_core::id::AssessmentId>> {
+        ab_db::catalog::set_course_archived(&mut *tx, id, Some(actor.user_id)).await?;
+        let unscheduled = ab_db::assessments::draft_scheduled_in_course(&mut *tx, id).await?;
         for assessment_id in &unscheduled {
             ab_db::assessments::insert_audit_event(
                 &mut *tx,
@@ -523,17 +540,12 @@ impl CoursesService {
                 ab_core::assessments::AuditEventKind::LifecycleTransition,
                 serde_json::json!({
                     "from": "scheduled", "to": "draft", "scheduled_at": null,
-                    "note": "course archived",
+                    "note": note,
                 }),
             )
             .await?;
         }
-        tx.commit().await?;
-        tracing::info!(course_id = %id, actor = %actor.user_id, action = "archive",
-            unscheduled = unscheduled.len(), "course archived");
-        ab_db::catalog::get_course(&self.pool, id)
-            .await?
-            .ok_or_else(|| Error::not_found("course"))
+        Ok(unscheduled)
     }
 
     /// Restore (same gate as [`Self::archive`]): 409 `conflict` when not
@@ -710,19 +722,24 @@ impl CoursesService {
         ab_db::catalog::course_learner_work(&self.pool, id).await
     }
 
-    /// Delete the course with its history. With learner work in it the caller must have acknowledged
-    /// that the work goes too (`acknowledged`), else 409 `course-has-learner-work`; archive keeps it.
+    /// Delete the course (schema review item 22): it is archived if it was not (scheduled work
+    /// back to draft, as an archive does), stamped deleted and gone from every read; the
+    /// `maintenance:retention` purge removes it with its history after
+    /// `AB__RETENTION__DELETED_COURSES_DAYS`. With learner work in it the caller must have
+    /// acknowledged that the work goes too (`acknowledged`), else 409 `course-has-learner-work`;
+    /// archive keeps it.
     pub async fn delete(&self, actor: &Actor, id: CourseId, acknowledged: bool) -> Result<()> {
         self.deletable(actor, id).await?;
-        // BUG-209: the cascade drops the rows; the thumbnail and block
-        // uploads are released inside the same statement.
-        ab_db::catalog::delete_course(
-            &self.pool,
-            id,
-            acknowledged,
-            UNREFERENCED_GRACE.as_secs_f64(),
-        )
-        .await?;
+        let mut tx = self.pool.begin().await?;
+        let archived = ab_db::catalog::lock_course_for_delete(&mut tx, id, acknowledged)
+            .await?
+            .ok_or_else(|| Error::not_found("course"))?;
+        if !archived {
+            Self::archive_locked(&mut tx, actor, id, "course deleted").await?;
+        }
+        ab_db::catalog::mark_course_deleted(&mut tx, id, actor.user_id).await?;
+        tx.commit().await?;
+        tracing::info!(course_id = %id, actor = %actor.user_id, action = "delete", "course deleted");
         Ok(())
     }
 }

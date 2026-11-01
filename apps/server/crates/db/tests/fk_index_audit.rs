@@ -43,6 +43,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("course_updates", "author_id", "users", ACTOR),
     ("courses", "archived_by", "users", ACTOR),
     ("courses", "creator_id", "users", ACTOR),
+    ("courses", "deleted_by", "users", ACTOR),
     ("daily_course_metrics", "teacher_user_id", "users", ACTOR),
     ("file_grading_entries", "graded_by", "users", ACTOR),
     ("file_submission_attempts", "graded_by", "users", ACTOR),

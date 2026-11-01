@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch FROM archived_at))::bigint AS \"archived_at?\"\n           FROM courses WHERE id = $1 AND deleted_at IS NULL FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "archived_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "60a78e849b1fc061ac9186c498a00e0638ad071e88cb7bc53c214af2aeb085c8"
+}

@@ -107,6 +107,14 @@ enum AdminCommand {
         #[arg(long)]
         user: String,
     },
+    /// Bring back a course deleted within the grace period
+    /// (`AB__RETENTION__DELETED_COURSES_DAYS`, RUNBOOK 2.6): it returns
+    /// archived, with its learners' work; its staff restore it from the
+    /// archive. Notifications deleted with it stay deleted.
+    RestoreCourse {
+        #[arg(long)]
+        course: ab_core::id::CourseId,
+    },
     /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
     /// migration 20261003000020; responses keep the legacy `locale`).
     MigrateLocales {
@@ -194,6 +202,19 @@ async fn main() -> anyhow::Result<()> {
         Command::Admin {
             command: AdminCommand::EraseUser { user },
         } => erase_user(config, &user).await,
+        Command::Admin {
+            command: AdminCommand::RestoreCourse { course },
+        } => {
+            let pool = ab_db::connect(&config.database).await?;
+            if !ab_db::catalog::restore_deleted_course(&pool, course).await? {
+                anyhow::bail!("no deleted course {course} (never deleted, or already purged)");
+            }
+            writeln!(
+                std::io::stdout(),
+                "course {course} restored (archived; restore it from the archive to reopen it)"
+            )?;
+            Ok(())
+        }
         Command::Admin {
             command:
                 AdminCommand::MigrateEditorDocs {

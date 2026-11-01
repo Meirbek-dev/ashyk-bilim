@@ -3,7 +3,9 @@
 //! `maintenance:retention` (daily): operational logs past their window go.
 //! Windows: `AB__RETENTION__*` (schema review item 24). Finished jobs,
 //! sign-in audit rows, practice code-run output and finished AI runs' event
-//! logs. See `ab_db::retention` for what is kept.
+//! logs. See `ab_db::retention` for what is kept. Courses deleted longer
+//! than `deleted_courses_days` ago are purged with everything under them
+//! (schema review 2 item 22).
 //!
 //! `maintenance:reconcile` (weekly): the stored aggregates are re-derived
 //! from their sources and fixed where they drifted (schema review items 15,
@@ -43,11 +45,18 @@ impl JobHandler for RetentionSweep {
         let windows = self.windows;
         async move {
             let swept = ab_db::retention::sweep(&pool, &windows).await?;
+            let deleted_courses = ab_db::catalog::purge_deleted_courses(
+                &pool,
+                windows.deleted_courses_days,
+                ab_domain::files::uploads::UNREFERENCED_GRACE.as_secs_f64(),
+            )
+            .await?;
             tracing::info!(
                 jobs = swept.jobs,
                 auth_audit = swept.auth_audit,
                 code_run_outputs = swept.code_run_outputs,
                 ai_events = swept.ai_events,
+                deleted_courses,
                 "retention swept"
             );
             Ok(())

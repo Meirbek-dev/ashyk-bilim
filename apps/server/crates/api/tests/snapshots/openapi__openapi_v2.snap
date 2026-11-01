@@ -31899,7 +31899,7 @@ expression: json
             "description": "Stale `If-Match`"
           }
         },
-        "summary": "Delete a course and everything under it (cascades). While learners have work in it, the caller\nmust pass `acknowledge_learner_work=true`.",
+        "summary": "Delete a course: archived and hidden at once, purged with its learner work after 30 days. While\nlearners have work in it, the caller must pass `acknowledge_learner_work=true`.",
         "tags": [
           "courses"
         ]

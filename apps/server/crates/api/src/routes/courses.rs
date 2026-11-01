@@ -658,8 +658,8 @@ pub async fn course_deletion_preview(
     ))
 }
 
-/// Delete a course and everything under it (cascades). While learners have work in it, the caller
-/// must pass `acknowledge_learner_work=true`.
+/// Delete a course: archived and hidden at once, purged with its learner work after 30 days. While
+/// learners have work in it, the caller must pass `acknowledge_learner_work=true`.
 #[utoipa::path(
     delete,
     path = "/courses/{course_id}",

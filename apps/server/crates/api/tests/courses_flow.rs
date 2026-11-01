@@ -562,6 +562,20 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
     assert_eq!(upload_refs(&app, &image).await, (1, false));
     let gone = app.delete_as(&teacher, &path).await;
     assert_eq!(gone.status, StatusCode::NO_CONTENT);
+    // A deleted course keeps its media until the purge after the grace period.
+    assert_eq!(upload_refs(&app, &fourth).await, (1, false));
+    sqlx::query(
+        "UPDATE courses SET deleted_at = now() - interval '31 days' WHERE deleted_at IS NOT NULL",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        ab_db::catalog::purge_deleted_courses(&app.pool, 30, 60.0)
+            .await
+            .unwrap(),
+        1
+    );
     assert_eq!(upload_refs(&app, &fourth).await, (0, true));
     assert_eq!(upload_refs(&app, &image).await, (0, true));
 }

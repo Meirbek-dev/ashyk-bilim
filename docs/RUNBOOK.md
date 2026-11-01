@@ -122,6 +122,21 @@ The procedure once approved (one window, rollback = restore the old `AB__DATABAS
 3. Deploy (3.1), then watch `just prod-report --since 1h` for `permission denied` or `statement timeout`.
    A job that legitimately needs longer statements gets `SET LOCAL statement_timeout` in its own transaction.
 
+### 2.6 Restoring a deleted course
+
+`DELETE /courses/{id}` is soft: the course is archived, stamped `deleted_at` and gone from every read; the daily
+`maintenance:retention` purges it with everything under it (learner work and grades) once it has been deleted for
+`AB__RETENTION__DELETED_COURSES_DAYS` (30). Within that window:
+
+```sh
+dc exec -T db psql -U "$POSTGRES_USER" -d ashyq -c \
+  "select id, name, deleted_at, deleted_by from courses where deleted_at is not null order by deleted_at desc"
+dc run --rm server admin restore-course --course <uuid>
+```
+
+It comes back archived with its learners' work (its notifications stay deleted); a creator or maintainer restores
+it from the archive to reopen it. After the purge only a backup has it (3.4).
+
 ## 3. Routine
 
 ### 3.1 Deploy

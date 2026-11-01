@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT archived_at IS NOT NULL AS \"archived!\" FROM courses\n           WHERE id = $1 AND deleted_at IS NULL FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "archived!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e3532eda9c27ac9e7c6df4b8cc46454335a513aeedc5224d0cd061584baa1355"
+}

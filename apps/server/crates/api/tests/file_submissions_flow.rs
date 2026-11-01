@@ -1610,6 +1610,15 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
             "{target}: {}",
             deleted.text()
         );
+        // A deleted course releases its files when the purge removes it.
+        assert_eq!(referenced_count(&app, &upload).await, 1, "{target}");
+        sqlx::query("UPDATE courses SET deleted_at = now() - interval '31 days' WHERE deleted_at IS NOT NULL")
+            .execute(&app.pool)
+            .await
+            .unwrap();
+        ab_db::catalog::purge_deleted_courses(&app.pool, 30, 60.0)
+            .await
+            .unwrap();
         let (count, expiring): (i32, bool) = sqlx::query_as(
             "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
         )

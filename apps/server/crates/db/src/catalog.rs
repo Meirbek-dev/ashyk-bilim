@@ -92,7 +92,7 @@ pub async fn insert_course(
 /// the creator, or an active author other than a reporter.
 pub async fn authors_any_course(pool: &PgPool, user_id: UserId) -> Result<bool> {
     let authors = sqlx::query_scalar!(
-        r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1)
+        r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1 AND deleted_at IS NULL)
                OR EXISTS (SELECT 1 FROM course_staff
                           WHERE user_id = $1 AND status = 'active' AND authorship <> 'reporter')
                AS "authors!""#,
@@ -122,7 +122,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                       AS "maintainer_ids!: Vec<UserId>",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM courses WHERE id = $1"#,
+           FROM courses WHERE id = $1 AND deleted_at IS NULL"#,
         id.0
     )
     .fetch_optional(pool)
@@ -297,10 +297,11 @@ pub async fn summarize_courses(
                      OR (NOT public AND created_at < now() - interval '30 days'))) AS "attention!",
                   count(*) FILTER (WHERE archived_at IS NOT NULL) AS "archived!"
            FROM courses
-           WHERE $1 OR creator_id = $2
-              OR EXISTS (SELECT 1 FROM course_staff ra
-                         WHERE ra.course_id = courses.id AND ra.user_id = $2
-                           AND ra.status = 'active' AND ra.authorship <> 'reporter')"#,
+           WHERE deleted_at IS NULL
+             AND ($1 OR creator_id = $2
+                  OR EXISTS (SELECT 1 FROM course_staff ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = $2
+                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))"#,
         see_all,
         viewer.0
     )
@@ -464,7 +465,7 @@ pub async fn lock_course_archive(
 ) -> Result<Option<Option<i64>>> {
     let row = sqlx::query_scalar!(
         r#"SELECT (extract(epoch FROM archived_at))::bigint AS "archived_at?"
-           FROM courses WHERE id = $1 FOR UPDATE"#,
+           FROM courses WHERE id = $1 AND deleted_at IS NULL FOR UPDATE"#,
         id.0
     )
     .fetch_optional(conn)
@@ -606,22 +607,138 @@ pub async fn course_learner_work<'e>(
     })
 }
 
-/// Delete a course with everything under it.
+/// Lock a live course for its delete; returns whether it is archived already (`None`: no such
+/// live course).
 ///
 /// While learners have work in it (`course_learner_work`) the delete needs `acknowledged` (the
-/// teacher confirmed that their work goes too), else 409 `course-has-learner-work` with the counts.
-/// The check runs after the course's assessments and file tasks are locked, so a hand-in racing the
-/// delete cannot slip past an unacknowledged one.
-pub async fn delete_course(
-    pool: &PgPool,
+/// teacher confirmed that their work goes with the purge), else 409 `course-has-learner-work`
+/// with the counts. The check runs after the course's assessments and file tasks are locked, so a
+/// hand-in racing the delete cannot slip past an unacknowledged one.
+pub async fn lock_course_for_delete(
+    conn: &mut PgConnection,
     id: CourseId,
     acknowledged: bool,
+) -> Result<Option<bool>> {
+    let Some(archived) = sqlx::query_scalar!(
+        r#"SELECT archived_at IS NOT NULL AS "archived!" FROM courses
+           WHERE id = $1 AND deleted_at IS NULL FOR UPDATE"#,
+        id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    else {
+        return Ok(None);
+    };
+    if !acknowledged {
+        let activities = sqlx::query_scalar!(
+            "SELECT id FROM activities WHERE course_id = $1 ORDER BY id",
+            id.0
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+        sqlx::query_scalar!(
+            "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+            &activities
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+        sqlx::query_scalar!(
+            "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+            &activities
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+        let work = course_learner_work(&mut *conn, id).await?;
+        if !work.is_empty() {
+            return Err(ab_core::Error::app_with_details(
+                ab_core::ErrorCode::CourseHasLearnerWork,
+                "learners have work in this course; confirm that it is deleted with the course",
+                serde_json::json!({
+                    "learners": work.learners,
+                    "submissions": work.submissions,
+                    "file_attempts": work.file_attempts,
+                    "certificates": work.certificates,
+                }),
+            ));
+        }
+    }
+    Ok(Some(archived))
+}
+
+/// Stamp a locked, archived course as deleted (schema review item 22).
+///
+/// Every read skips it from now on and `maintenance:retention` purges it after the grace period.
+/// Its notifications go now (each links into a course that answers «not found»).
+pub async fn mark_course_deleted(
+    conn: &mut PgConnection,
+    id: CourseId,
+    deleted_by: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        "UPDATE courses SET deleted_at = now(), deleted_by = $2 WHERE id = $1",
+        id.0,
+        deleted_by.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!("DELETE FROM notifications WHERE course_id = $1", id.0)
+        .execute(&mut *conn)
+        .await?;
+    Ok(())
+}
+
+/// Bring a deleted course back within its grace period (`ashyq admin restore-course`). It comes
+/// back archived: its staff restore it from the archive. `false`: no such deleted course.
+pub async fn restore_deleted_course(pool: &PgPool, id: CourseId) -> Result<bool> {
+    let restored = sqlx::query!(
+        r#"UPDATE courses SET deleted_at = NULL, deleted_by = NULL
+           WHERE id = $1 AND deleted_at IS NOT NULL"#,
+        id.0
+    )
+    .execute(pool)
+    .await?;
+    Ok(restored.rows_affected() == 1)
+}
+
+/// Hard-delete every course deleted more than `older_than_days` ago, one transaction each
+/// (`maintenance:retention`); returns how many went. A course restored meanwhile is skipped.
+pub async fn purge_deleted_courses(
+    pool: &PgPool,
+    older_than_days: i32,
+    grace_secs: f64,
+) -> Result<u64> {
+    let due = sqlx::query_scalar!(
+        r#"SELECT id AS "id: CourseId" FROM courses
+           WHERE deleted_at < now() - make_interval(days => $1)
+           ORDER BY deleted_at"#,
+        older_than_days
+    )
+    .fetch_all(pool)
+    .await?;
+    let mut purged = 0;
+    for id in due {
+        if purge_course(pool, id, older_than_days, grace_secs).await? {
+            purged += 1;
+        }
+    }
+    Ok(purged)
+}
+
+/// The cascade a delete used to run at once: the course with everything under it, learner work
+/// and its grades included; the thumbnail, block and file-task uploads are released in the same
+/// transaction (BUG-209).
+async fn purge_course(
+    pool: &PgPool,
+    id: CourseId,
+    older_than_days: i32,
     grace_secs: f64,
 ) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let Some(thumbnail) = sqlx::query_scalar!(
-        "SELECT thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE",
-        id.0
+        r#"SELECT thumbnail_image_key FROM courses
+           WHERE id = $1 AND deleted_at < now() - make_interval(days => $2) FOR UPDATE"#,
+        id.0,
+        older_than_days
     )
     .fetch_optional(&mut *tx)
     .await?
@@ -640,40 +757,11 @@ pub async fn delete_course(
     )
     .fetch_all(&mut *tx)
     .await?;
-    if !acknowledged {
-        sqlx::query_scalar!(
-            "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
-            &activities
-        )
-        .fetch_all(&mut *tx)
-        .await?;
-        sqlx::query_scalar!(
-            "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
-            &activities
-        )
-        .fetch_all(&mut *tx)
-        .await?;
-        let work = course_learner_work(&mut *tx, id).await?;
-        if !work.is_empty() {
-            return Err(ab_core::Error::app_with_details(
-                ab_core::ErrorCode::CourseHasLearnerWork,
-                "learners have work in this course; confirm that it is deleted with the course",
-                serde_json::json!({
-                    "learners": work.learners,
-                    "submissions": work.submissions,
-                    "file_attempts": work.file_attempts,
-                    "certificates": work.certificates,
-                }),
-            ));
-        }
-    }
     crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
     if let Some(key) = thumbnail {
         crate::uploads::release_reference_by_key(&mut *tx, &key, grace_secs).await?;
     }
-    // Its notifications go with it through `notifications.course_id` (ON DELETE CASCADE): each
-    // links into the course, which would answer «not found».
     let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
         .execute(&mut *tx)
         .await?;

@@ -26,7 +26,7 @@ const NOTIFICATION_LINK: &str = "a notification links into it; dead links go wit
 /// `DELETE /courses/{id}` is the owner's explicit "delete with its history"
 /// (DECISIONS 2026-10-02 "Course archive is orthogonal to `public`"): archive
 /// is the way out that keeps learner work; the UI confirms the delete.
-const COURSE_DELETE: &str = "course delete drops its history by design; archive keeps it";
+const COURSE_DELETE: &str = "course delete is soft; the retention purge after the grace drops its history; archive keeps it";
 /// An activity (or its chapter) with learner work - a submission, file
 /// attempt or code run that is no staff preview - is never deleted: 409
 /// `activity-has-learner-work`, the webs offer unpublish (owner 2026-10-14,

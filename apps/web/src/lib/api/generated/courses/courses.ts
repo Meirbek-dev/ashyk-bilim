@@ -1892,8 +1892,8 @@ export const getDeleteCourseUrl = (courseId: CourseId, params?: DeleteCoursePara
 }
 
 /**
- * @summary Delete a course and everything under it (cascades). While learners have work in it, the caller
-must pass `acknowledge_learner_work=true`.
+ * @summary Delete a course: archived and hidden at once, purged with its learner work after 30 days. While
+learners have work in it, the caller must pass `acknowledge_learner_work=true`.
  */
 export const deleteCourse = async (
   courseId: CourseId,
@@ -1946,8 +1946,8 @@ export type DeleteCourseMutationError = ErrorType<Problem>
 export type DeleteCourseMutationVariables = { courseId: CourseId; params?: DeleteCourseParams }
 
 /**
- * @summary Delete a course and everything under it (cascades). While learners have work in it, the caller
-must pass `acknowledge_learner_work=true`.
+ * @summary Delete a course: archived and hidden at once, purged with its learner work after 30 days. While
+learners have work in it, the caller must pass `acknowledge_learner_work=true`.
  */
 export const useDeleteCourse = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {

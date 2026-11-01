@@ -353,8 +353,9 @@ One migration set for the database `ashyq`. Rules:
    strings is `text[]` with a bounds CHECK (`text_list_ok`: `courses.tags`); a list of records the API replaces
    whole is a jsonb array with a shape CHECK (`course_learnings_ok`: `courses.learnings` `{id, text, emoji?}`).
 5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE` only for owned children like
-   items/blocks). No soft-delete convention; archival is a domain status where the domain needs it (courses,
-   assessments).
+   items/blocks). No general soft-delete convention; archival is a domain status where the domain needs it
+   (courses, assessments). The one soft delete is a course's (`deleted_at`, always archived): reads skip it
+   (`get_course`, `course_visible`), the retention purge cascades it after the grace period (COURSE_ARCHIVING 6.2).
 6. Search: `search_fold` (`migrations/20260926000001_search_matches.sql`, Kazakh folding since 2026-10) and one
    word-match rule for `/search`, `courses?q=` and collections. `/search` writes it as one
    `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`), answered by the
@@ -402,7 +403,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
-  (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
+  (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, deleted courses 30 (purged with everything under them), `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
   `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
