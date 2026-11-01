@@ -37,6 +37,9 @@
 //! - review item 21: course staff live in `course_staff` (collection staff
 //!   in `collection_staff`); until the contract, a write on either side of
 //!   `resource_authors` reaches the other, so both releases see one roster.
+//! - review item 18 (REWRITE 5.6 n4): every media key carries its upload id;
+//!   the reaper keeps a referenced file whose counter drifted to 0 and still
+//!   collects a real orphan.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -949,4 +952,89 @@ async fn staff_writes_reach_both_rosters_until_the_contract(pool: PgPool) {
     .execute(&pool)
     .await;
     assert!(twice.is_err(), "one row per (course, user)");
+}
+
+#[ab_testdb::test]
+async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPool) {
+    let w = world(&pool).await;
+    let upload = |purpose: &'static str, key: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_scalar::<_, Uuid>(
+                "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
+                 VALUES ($1, $2, 'public', $3, 'image/png', 1, 'finalized') RETURNING id",
+            )
+            .bind(w.user)
+            .bind(purpose)
+            .bind(key)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    let avatar = upload("avatar", "k/avatar").await;
+    let thumb = upload("course-thumbnail", "k/thumb").await;
+    // Named only by key below: the reaper must keep them too.
+    upload("course-thumbnail", "k/chapter").await;
+    upload("collection-cover", "k/cover").await;
+    upload("platform-logo", "k/logo").await;
+    let media = upload("block-image", "k/block").await;
+    let orphan = upload("block-image", "k/orphan").await;
+    for sql in [
+        "UPDATE users SET avatar_key = 'k/avatar' WHERE id = $1",
+        "UPDATE courses SET thumbnail_image_key = 'k/thumb' WHERE id = $2",
+        "UPDATE chapters SET thumbnail_key = 'k/chapter' WHERE course_id = $2",
+        "INSERT INTO collections (name, creator_id, cover_key) VALUES ('col', $1, 'k/cover')",
+        "UPDATE platforms SET logo_key = 'k/logo'",
+        "INSERT INTO blocks (activity_id, block_type, content)
+         VALUES ($3, 'image', '{\"file_key\": \"k/block\"}')",
+    ] {
+        sqlx::query(sql)
+            .bind(w.user)
+            .bind(w.course)
+            .bind(w.activity)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+    let ids: (Option<Uuid>, Option<Uuid>, Option<Uuid>) = sqlx::query_as(
+        "SELECT (SELECT avatar_upload_id FROM users WHERE id = $1),
+                (SELECT thumbnail_image_upload_id FROM courses WHERE id = $2),
+                (SELECT upload_id FROM block_uploads)",
+    )
+    .bind(w.user)
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(ids, (Some(avatar), Some(thumb), Some(media)));
+
+    // Every counter drifted to 0 with the reaper clock run out.
+    sqlx::query("UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let reaped: Vec<Uuid> = ab_db::uploads::expired(&pool, 100)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|u| u.id)
+        .collect();
+    assert_eq!(reaped, vec![orphan]);
+
+    // A replaced key releases the old upload to the reaper.
+    sqlx::query("UPDATE blocks SET content = '{}'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let mut reaped: Vec<Uuid> = ab_db::uploads::expired(&pool, 100)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|u| u.id)
+        .collect();
+    reaped.sort();
+    let mut expected = vec![orphan, media];
+    expected.sort();
+    assert_eq!(reaped, expected);
 }

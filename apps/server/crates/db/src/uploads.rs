@@ -162,16 +162,16 @@ pub struct ReapedUpload {
 /// Expired pending rows and expired unreferenced finalized rows, oldest first
 /// (at most `limit`; the next sweep takes the rest).
 ///
-/// BUG-241: a row a file submission still points at (`ON DELETE RESTRICT`) is skipped, so one
-/// miscounted upload never fails the whole sweep.
+/// "Unreferenced" is SQL `upload_referenced` (schema review item 18): no row names the upload
+/// through an upload foreign key. `referenced_count` only starts the grace clock; a count that
+/// drifted to 0 (BUG-209/241/263) no longer lets a referenced file go.
 pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,
         r#"SELECT id, bucket, key, multipart_id FROM uploads
            WHERE expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
-                  OR (status = 'finalized' AND referenced_count = 0))
-             AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)
+                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))
            ORDER BY expires_at
            LIMIT $1"#,
         limit
@@ -190,8 +190,7 @@ pub async fn lock_expired(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<Opt
            WHERE id = $1
              AND expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
-                  OR (status = 'finalized' AND referenced_count = 0))
-             AND NOT EXISTS (SELECT 1 FROM file_submission_files f WHERE f.upload_id = uploads.id)
+                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))
            FOR UPDATE SKIP LOCKED"#,
         id
     )

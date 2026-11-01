@@ -649,14 +649,19 @@ in the order it can be done, each step a forward migration on the current schema
    `xp_transactions.source_id` / `gamification_completions.source_id` (journal entries must outlive a deleted
    activity or course; their key is `(source, source_id)`), `item_feedback.item_ref` (item id inside a frozen
    `items_snapshot`, item 13 replaces it), `ai_evidence.source_ref` (AI-owned).
-4. **Upload references** (item 10). Add `upload_id uuid REFERENCES uploads ON DELETE SET NULL` next to each key
-   column (`users.avatar_key`, `courses.thumbnail_image_key`/`thumbnail_video_key`, `chapters.thumbnail_key`,
-   `collections.cover_key`, `platforms.logo_key`/`thumbnail_key`, `item_feedback.annotation_key`) and a
-   `block_uploads (block_id → blocks ON DELETE CASCADE, upload_id → uploads)` table for `blocks.content->>'file_key'`;
-   backfill by `uploads.key`. Writers set the id with the key; the reaper's "referenced" test becomes `EXISTS` over
-   those columns and `block_uploads` instead of `referenced_count`; drop the counter (and BUG-209/263's
-   repair code) once a release ran with both. Done when: the reaper test that drifts the counter by hand still
-   keeps the file.
+4. **Upload references** (item 10). Expand done (review 2 item 18, `20261102041200`): `*_upload_id uuid
+   REFERENCES uploads ON DELETE SET NULL` beside `users.avatar_key`, `courses.thumbnail_image_key` /
+   `thumbnail_video_key`, `chapters.thumbnail_key`, `collections.cover_key`, `platforms.logo_key` /
+   `thumbnail_key`, `item_feedback.annotation_key`, and `block_uploads (block_id, upload_id)` for
+   `blocks.content->>'file_key'`, backfilled by `uploads.key` and kept right by triggers from the key (so the
+   previous release's writes keep them too; writers did not change). The reaper asks `upload_referenced(id)`
+   (EXISTS over those and `file_submission_files.upload_id`) instead of `referenced_count`;
+   `the_reaper_keeps_referenced_files_whatever_the_counter_says` drifts every counter to 0 and the files stay.
+   Left, a release after that one ran: the claim/release paths set `expires_at` from `upload_referenced`
+   instead of the counter, then `referenced_count` goes (contract) with BUG-209/263's repair code
+   (`catalog.rs` / `file_submissions.rs` bulk recounts, `course_copy.rs` increments). Discussion images have
+   no column (a claimed one is never released, so the reaper never sees it): a `post_uploads` link table
+   before the counter goes.
 5. **Enrolments** (item 11). `enrolments (course_id, user_id, enrolled_at, PK both)` as in 5.4, backfilled from
    `trail_runs JOIN trails`; `has_trail_run` / `course_members` / `takes_assessments` read it; trail writers
    insert/delete it in the same transaction; then `trail_runs`/`trails` lose their membership role (steps stay

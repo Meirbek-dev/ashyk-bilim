@@ -423,6 +423,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
+- **Media keys carry upload ids** (`*_upload_id`, `block_uploads`, derived from the key by triggers); the reaper
+  keeps any upload `upload_referenced` names, whatever `referenced_count` says (§11).
 - **Staff per target**: `course_staff (course_id, user_id)` and `collection_staff (collection_id, user_id)`
   replace `resource_authors` (one table, course XOR collection); until its contract migration drops it, triggers
   mirror writes both ways so the previous release sees the same roster.
@@ -532,8 +534,11 @@ Postgres work uses Postgres advisory locks and row locks.
      by `POST /api/v2/uploads/{id}/multipart` (aborted by `DELETE`).
   3. `POST /api/v2/uploads/{id}/finalize` → server HEADs the object, refuses (and deletes) one whose content type
      or size differs from the intent, marks it `finalized`.
-  4. Reference counting (`referenced_count`); `uploads:reap` deletes unreferenced finalized uploads after 24 h
-     and pending ones after the 12 h claim window.
+  4. A claim starts and a release restarts the 24 h grace clock (`expires_at`, still driven by
+     `referenced_count`); `uploads:reap` deletes an expired finalized upload only when `upload_referenced(id)` is
+     false - no row names it through an upload foreign key (`*_upload_id` beside every media key, filled from the
+     key by triggers; `block_uploads` for block media; `file_submission_files.upload_id`) - and pending ones after
+     the 12 h claim window. A drifted counter can no longer release a referenced file.
 
 ## 12. AI subsystem
 

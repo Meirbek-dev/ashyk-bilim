@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, bucket, key, multipart_id FROM uploads\n           WHERE id = $1\n             AND expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))\n           FOR UPDATE SKIP LOCKED",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "bucket",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "bucket"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "key"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "multipart_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "multipart_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "4cc9950b6a7d31227e846c2f39071307aaf331d9b840a806fe85e88d57beb79e"
+}
