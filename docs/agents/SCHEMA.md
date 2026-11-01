@@ -2076,42 +2076,43 @@ CHECK constraints a migration could not add because existing rows violate them (
 
 An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2). preview rows are staff test runs.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| assessment_id | uuid |  |  |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| status | text |  | `'draft'::text` |
-| attempt_number | integer |  |  |
-| answers | jsonb |  | `'{}'::jsonb` |
-| grading | jsonb |  | `'{}'::jsonb` |
-| auto_score | double precision | null |  |
-| final_score | double precision | null |  |
-| is_late | boolean |  | `false` |
-| late_penalty_pct | double precision |  | `0` |
-| violation_count | integer |  | `0` |
-| violations | jsonb |  | `'[]'::jsonb` |
-| auto_submit_reason | text | null |  |
-| auto_submitted_at | timestamp with time zone | null |  |
-| auto_submit_attempts | integer |  | `0` |
-| auto_submit_retry_at | timestamp with time zone | null |  |
-| duration_seconds | integer | null |  |
-| started_at | timestamp with time zone | null |  |
-| submitted_at | timestamp with time zone | null |  |
-| graded_at | timestamp with time zone | null |  |
-| version | bigint |  | `1` |
-| draft_version | bigint |  | `1` |
-| grading_version | integer |  | `1` |
-| content_version | integer |  | `1` |
-| policy_version | integer |  | `1` |
-| items_snapshot | jsonb | null |  |
-| policy_snapshot | jsonb | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| preview | boolean |  | `false` |
-| rules_accepted_at | timestamp with time zone | null |  |
-| assessment_version_id | uuid | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| assessment_id | uuid |  |  |  |
+| course_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| status | text |  | `'draft'::text` |  |
+| attempt_number | integer |  |  |  |
+| answers | jsonb |  | `'{}'::jsonb` |  |
+| grading | jsonb |  | `'{}'::jsonb` |  |
+| auto_score | double precision | null |  |  |
+| final_score | double precision | null |  |  |
+| is_late | boolean |  | `false` |  |
+| late_penalty_pct | double precision |  | `0` |  |
+| violation_count | integer |  | `0` |  |
+| violations | jsonb |  | `'[]'::jsonb` |  |
+| auto_submit_reason | text | null |  |  |
+| auto_submitted_at | timestamp with time zone | null |  |  |
+| auto_submit_attempts | integer |  | `0` |  |
+| auto_submit_retry_at | timestamp with time zone | null |  |  |
+| duration_seconds | integer | null |  |  |
+| started_at | timestamp with time zone | null |  |  |
+| submitted_at | timestamp with time zone | null |  |  |
+| graded_at | timestamp with time zone | null |  |  |
+| version | bigint |  | `1` |  |
+| draft_version | bigint |  | `1` |  |
+| grading_version | integer |  | `1` |  |
+| content_version | integer |  | `1` |  |
+| policy_version | integer |  | `1` |  |
+| items_snapshot | jsonb | null |  |  |
+| policy_snapshot | jsonb | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| preview | boolean |  | `false` |  |
+| rules_accepted_at | timestamp with time zone | null |  |  |
+| assessment_version_id | uuid | null |  |  |
+| auto_breakdown | jsonb | null |  | The auto-grader's breakdown written at hand-in (NULL for a draft); the current breakdown is the latest grading entry's, this one only while there is none. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`

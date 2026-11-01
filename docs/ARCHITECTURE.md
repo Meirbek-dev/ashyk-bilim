@@ -508,9 +508,14 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   a statement later); once written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
   Rows handed in before 2026-11-02 are not re-checked (legacy imports may lack snapshots).
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
-  `submissions.final_score` / `grading` its one current value. At COMMIT a submission with entries has its
-  latest entry's (highest id) `final_score` and `effective_breakdown`; checked when an entry is appended or the
-  submission's score or breakdown changes. A write that changes one without the other fails the transaction.
+  `submissions.final_score` its one current value. At COMMIT a submission with entries has its
+  latest entry's (highest id) `final_score`; checked when an entry is appended or the
+  submission's score changes. A write that changes one without the other fails the transaction. The breakdown
+  has no copy (`20261102070200`): readers call `submission_breakdown(id, auto_breakdown)`, the latest entry's
+  `effective_breakdown`, else `submissions.auto_breakdown` (the auto-grader's breakdown written at hand-in, the
+  teacher's starting point while no entry exists), else `{}`. Until contract `20261103070100` drops
+  `submissions.grading`, triggers keep it equal to that for the previous release (hand-in both ways, every
+  entry mirrored) and the check still compares it.
 - **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
   title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
   join them and nothing writes a copy. An activity with an assessment cannot change its type

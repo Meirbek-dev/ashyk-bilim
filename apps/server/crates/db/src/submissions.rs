@@ -183,7 +183,8 @@ pub async fn get_submission<'e>(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
@@ -216,7 +217,8 @@ pub async fn open_draft(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
@@ -254,7 +256,8 @@ pub async fn list_user_submissions<'e>(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
@@ -331,7 +334,9 @@ pub async fn record_violation(
 pub struct SubmitOutcome<'a> {
     pub status: SubmissionStatus,
     pub answers: &'a serde_json::Value,
-    pub grading: &'a serde_json::Value,
+    /// The auto-grader's breakdown of this hand-in; the current breakdown
+    /// is the latest grade entry's once there is one.
+    pub auto_breakdown: &'a serde_json::Value,
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
     pub is_late: bool,
@@ -367,7 +372,7 @@ pub async fn persist_submit<'e>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, answers = $3, grading = $4, auto_score = $5::float8, final_score = $6::float8,
+               status = $2, answers = $3, auto_breakdown = $4, auto_score = $5::float8, final_score = $6::float8,
                is_late = $7, late_penalty_pct = $8::float8, violation_count = $9,
                auto_submit_reason = $10,
                auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,
@@ -382,7 +387,7 @@ pub async fn persist_submit<'e>(
         id.0,
         o.status.stored(),
         o.answers,
-        o.grading,
+        o.auto_breakdown,
         o.auto_score,
         o.final_score,
         o.is_late,
@@ -404,22 +409,22 @@ pub async fn persist_submit<'e>(
 }
 
 /// Teacher write under optimistic lock (`version`). `false` = mismatch.
+/// The breakdown travels in the grade entry the same transaction appends
+/// (`submission_breakdown` reads it from there).
 pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,
     id: SubmissionId,
     expected_version: i64,
     status: SubmissionStatus,
-    grading: &serde_json::Value,
     final_score: Option<f64>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, grading = $3, final_score = $4::float8,
+               status = $2, final_score = $3::float8,
                graded_at = now(), version = version + 1
-           WHERE id = $1 AND version = $5"#,
+           WHERE id = $1 AND version = $4"#,
         id.0,
         status.stored(),
-        grading,
         final_score,
         expected_version
     )
@@ -509,7 +514,8 @@ pub async fn list_non_draft(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
@@ -979,7 +985,8 @@ pub async fn list_releasable(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
@@ -1014,7 +1021,8 @@ pub async fn list_submitted_for_user(
         SubmissionRow,
         r#"SELECT id AS "id: SubmissionId", assessment_id AS "assessment_id: AssessmentId",
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: SubmissionStatus", attempt_number, answers, grading,
+                  status AS "status: SubmissionStatus", attempt_number, answers,
+                  submission_breakdown(id, auto_breakdown) AS "grading!",
                   auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, violations,
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",

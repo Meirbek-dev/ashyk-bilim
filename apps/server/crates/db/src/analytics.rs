@@ -271,7 +271,7 @@ pub async fn list_submissions(
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
-                  grading
+                  submission_breakdown(id, auto_breakdown) AS "grading!"
            FROM submissions
            WHERE course_id = ANY($1) AND status <> 'draft' AND NOT preview
              AND ($2::double precision IS NULL

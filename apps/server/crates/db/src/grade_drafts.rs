@@ -633,7 +633,7 @@ pub async fn graded_submission_parts(
            FROM submissions s
            JOIN assessments a ON a.id = s.assessment_id
            JOIN users u ON u.id = s.user_id
-           CROSS JOIN LATERAL jsonb_array_elements(COALESCE(s.grading -> 'items', '[]'::jsonb)) gi
+           CROSS JOIN LATERAL jsonb_array_elements(COALESCE(submission_breakdown(s.id, s.auto_breakdown) -> 'items', '[]'::jsonb)) gi
            JOIN assessment_items i ON i.id = (gi->>'item_id')::uuid AND i.kind IN ('open_text', 'form')
            WHERE a.activity_id = $1 AND NOT s.preview AND s.status IN ('graded', 'released', 'published')
              AND COALESCE((gi->>'needs_manual_review')::boolean, false) = false"#,

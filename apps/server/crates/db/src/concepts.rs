@@ -698,7 +698,7 @@ pub async fn submission_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<Sub
                   (s.status IN ('released', 'published') OR (s.status = 'graded' AND EXISTS (
                        SELECT 1 FROM grading_entries g
                        WHERE g.submission_id = s.id AND g.published_at IS NOT NULL))) AS "visible!",
-                  s.grading,
+                  submission_breakdown(s.id, s.auto_breakdown) AS "grading!",
                   COALESCE((SELECT jsonb_object_agg(i.id::text, i.kind) FROM assessment_items i
                             WHERE i.assessment_id = s.assessment_id), '{}'::jsonb) AS "item_kinds!",
                   extract(epoch FROM COALESCE(s.graded_at, s.submitted_at, s.started_at))::bigint

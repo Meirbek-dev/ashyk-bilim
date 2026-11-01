@@ -71,6 +71,9 @@
 //! - review 2, item 6: a grade entry keeps its points of the attempt's
 //!   version (`points_of_percent`, two decimals, half away from zero); a
 //!   percentage that goes through points comes back within 0.5 / max_points.
+//! - review 2, item 8 (rest): a submission's breakdown is its latest grade
+//!   entry's, else its hand-in's `auto_breakdown`; until the contract the old
+//!   `grading` column follows both for the previous release.
 //! - review 2, item 2: attempts share one status vocabulary (`submitted`,
 //!   `released`); a new spelling is accepted and reads back as the same
 //!   status, and until the contract it is stored in the previous spelling.
@@ -586,7 +589,7 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     let entry: Uuid = sqlx::query_scalar(
         "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
                     VALUES ($1, 80, 80) RETURNING id, submission_id, effective_breakdown),
-              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+              current AS (UPDATE submissions s SET final_score = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
     )
@@ -660,7 +663,7 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     let entry: Uuid = sqlx::query_scalar(
         "WITH e AS (INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
                     VALUES ($1, $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
-              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+              current AS (UPDATE submissions s SET final_score = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
     )
@@ -1704,22 +1707,27 @@ async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
         .execute(&mut *tx)
         .await
         .unwrap();
-    sqlx::query(
-        "UPDATE submissions SET final_score = 80, grading = '{\"feedback\": \"ok\"}' WHERE id = $1",
-    )
-    .bind(sub)
-    .execute(&mut *tx)
-    .await
-    .unwrap();
+    sqlx::query("UPDATE submissions SET final_score = 80 WHERE id = $1")
+        .bind(sub)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
     tx.commit().await.unwrap();
 
-    for drift in [
-        "UPDATE submissions SET final_score = 90 WHERE id = $1",
-        "UPDATE submissions SET grading = '{}' WHERE id = $1",
-    ] {
-        let refused = sqlx::query(drift).bind(sub).execute(&pool).await;
-        assert!(refused.is_err(), "{drift}");
-    }
+    let refused = sqlx::query("UPDATE submissions SET final_score = 90 WHERE id = $1")
+        .bind(sub)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "a score the journal does not hold");
+    // The breakdown is read from the journal (item 8, rest).
+    let breakdown: serde_json::Value = sqlx::query_scalar(
+        "SELECT submission_breakdown(id, auto_breakdown) FROM submissions WHERE id = $1",
+    )
+    .bind(sub)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(breakdown, serde_json::json!({ "feedback": "ok" }));
 }
 
 #[ab_testdb::test]
@@ -1914,7 +1922,7 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(points, (3.0, 3.0, 1.0), "round(33.33 * 3 / 100, 2) = 1.00");
-    sqlx::query("UPDATE submissions SET final_score = 33.33, grading = '{}' WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_score = 33.33 WHERE id = $1")
         .bind(sub)
         .execute(&mut *tx)
         .await
@@ -1958,4 +1966,115 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     .unwrap();
     assert_eq!(none, None);
     tx.rollback().await.unwrap();
+}
+
+#[ab_testdb::test]
+async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
+    let w = world(&pool).await;
+    let expand: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'submissions' AND column_name = 'grading')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let draft: Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number)
+         VALUES ($1, $2, $3, 1) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let current = async |id: Uuid| -> serde_json::Value {
+        sqlx::query_scalar(
+            "SELECT submission_breakdown(id, auto_breakdown) FROM submissions WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let old_column = async |id: Uuid| -> serde_json::Value {
+        sqlx::query_scalar("SELECT grading FROM submissions WHERE id = $1")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+    };
+    assert_eq!(current(draft).await, serde_json::json!({}));
+
+    // This release's hand-in writes auto_breakdown.
+    let auto = serde_json::json!({ "items": [], "needs_manual_review": true });
+    sqlx::query(
+        "UPDATE submissions SET status = 'submitted', submitted_at = now(), auto_breakdown = $2,
+                items_snapshot = '{}', policy_snapshot = '{}'
+         WHERE id = $1",
+    )
+    .bind(draft)
+    .bind(&auto)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(current(draft).await, auto, "no entry yet: the hand-in's");
+    if expand {
+        assert_eq!(
+            old_column(draft).await,
+            auto,
+            "the previous release reads it"
+        );
+    }
+
+    // A grade entry is the breakdown from then on.
+    let graded = serde_json::json!({ "items": [], "feedback": "ok" });
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, raw_breakdown, effective_breakdown)
+         VALUES ($1, 70, 70, $2, $3)",
+    )
+    .bind(draft)
+    .bind(&auto)
+    .bind(&graded)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE submissions SET status = 'graded', final_score = 70 WHERE id = $1")
+        .bind(draft)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(current(draft).await, graded);
+    if expand {
+        assert_eq!(
+            old_column(draft).await,
+            graded,
+            "mirrored for the previous release"
+        );
+        // The previous release's hand-in writes grading only.
+        let theirs = serde_json::json!({ "items": [], "theirs": true });
+        let previous: Uuid = sqlx::query_scalar(
+            "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number)
+             VALUES ($1, $2, $3, 2) RETURNING id",
+        )
+        .bind(w.assessment)
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "UPDATE submissions SET status = 'pending', submitted_at = now(), grading = $2,
+                    items_snapshot = '{}', policy_snapshot = '{}'
+             WHERE id = $1",
+        )
+        .bind(previous)
+        .bind(&theirs)
+        .execute(&pool)
+        .await
+        .unwrap();
+        assert_eq!(current(previous).await, theirs);
+    }
 }

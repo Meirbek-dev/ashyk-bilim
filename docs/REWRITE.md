@@ -807,9 +807,10 @@ in the order it can be done, each step a forward migration on the current schema
       of `assessments` move into the version's typed `policy`.
     - *Counters* (item 10): `version` (If-Match) and `draft_version` (autosave 409) stay;
       `content_version` goes with the snapshots above.
-    - *Current grade* (item 8, rest): `submissions.grading` duplicates the latest entry's
-      `effective_breakdown` (enforced equal now); reading the entry instead lets it go. `activity_progress.score`
-      stays a projection (best attempt), reconciled weekly.
+    - *Current grade* (item 8, rest): done (ARCHITECTURE §8 "One current grade"): readers use the latest
+      entry (`submission_breakdown`), the hand-in's own breakdown moved to `submissions.auto_breakdown`, and
+      contract `20261103070100` drops `grading` (it stops the deploy if a legacy row's breakdown differs from
+      its latest entry). `activity_progress.score` stays a projection (best attempt), reconciled weekly.
 
 ### 5.7 Schema review 2 (2026-11-01): owner decisions
 

@@ -2557,7 +2557,7 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     sqlx::query(
         "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score, published_at)
                     VALUES ($1::uuid, 0, 0, now()) RETURNING submission_id, effective_breakdown)
-         UPDATE submissions s SET final_score = 0, grading = e.effective_breakdown
+         UPDATE submissions s SET final_score = 0
          FROM e WHERE s.id = e.submission_id",
     )
     .bind(&preview)
@@ -2758,7 +2758,7 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
         ] });
         sqlx::query(
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                      final_score, grading, submitted_at, graded_at,
+                                      final_score, auto_breakdown, submitted_at, graded_at,
                                       items_snapshot, policy_snapshot)
              VALUES ($1, $2, $3, 'released', 1, $4, $5, now(), now(), '{}', '{}')",
         )

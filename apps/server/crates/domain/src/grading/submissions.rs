@@ -1095,7 +1095,7 @@ impl SubmissionsService {
             SubmitOutcome {
                 status: verdict.status,
                 answers: &answers_value,
-                grading: &breakdown,
+                auto_breakdown: &breakdown,
                 auto_score: Some(verdict.auto_score),
                 final_score: verdict.final_score,
                 is_late: effective.is_late(at),
