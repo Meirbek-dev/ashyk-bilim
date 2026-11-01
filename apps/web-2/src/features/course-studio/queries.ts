@@ -45,7 +45,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 import type { BulkAction } from './model/bulk'
-import { can, opensWorkspace, refusalCode, type CoursesSearch } from './model/course'
+import { can, courseRefusal, opensWorkspace, type CoursesSearch } from './model/course'
 
 const PAGE_SIZE = 20
 const byId = (id: CourseId) => ({ path: { course_id: id } })
@@ -85,7 +85,7 @@ export { contributorsOptions, updatesOptions }
 
 /**
  * Loader of every workspace tab: the course, read once for the layout. An unknown or malformed id is "not found";
- * a course the caller may neither edit nor restore is a 403 shown in place (spec 5.2).
+ * a course the caller may neither edit nor restore is refused in place (spec 5.2): 403, or 409 `course-archived`.
  */
 export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
   const course = await queryClient.query({ ...courseOptions(id), staleTime: 'static' }).catch((error: unknown) => {
@@ -93,7 +93,7 @@ export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
     throw error
   })
   if (!opensWorkspace(course)) {
-    throw new ApiError({ status: 403, code: refusalCode(course), fieldErrors: [], requestId: null, retryAfter: null })
+    throw courseRefusal(course)
   }
   return course
 }

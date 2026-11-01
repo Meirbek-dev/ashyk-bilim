@@ -3,6 +3,7 @@
 #   prod  = compose.yaml:compose.prod.yaml
 #   dev   = compose.yaml:compose.dev.yaml                  (just dev-up)
 #   smoke = compose.yaml:compose.prod.yaml:compose.smoke.yaml
+#   web2 = smoke + compose.web2.yaml; web-e2e = web2 + compose.web-e2e.yaml
 #
 # Networks: edge-net (nginx and everything it or the apps must reach, has egress),
 # data-net (internal: db, redis, zitadel, rustfs, init jobs), exec-net (internal: Judge0).
@@ -56,7 +57,13 @@ networks:
 services:
   # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
   db:
-    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:5895949dfcdf308eb0cd31c950c93c14895c77f33fbedfecf1fa511ab1d4bcd2
+    # Keep these logging flags in compose.dev.yaml's command override too.
+    command: >-
+      postgres
+      -c log_min_duration_statement=${PG_LOG_MIN_DURATION_STATEMENT:-300}
+      -c log_parameter_max_length=0
+      -c "log_line_prefix=%m [%p] user=%u db=%d app=%a "
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -143,7 +150,7 @@ services:
 
   # The only place holding the Postgres admin credentials for Zitadel.
   zitadel-init:
-    image: &zitadel-image ghcr.io/zitadel/zitadel@sha256:9ea0e9ecfdc43115da871242e40a0320f2ece864c7cd8b5d41a863a7f4902499 # v4.20.0
+    image: &zitadel-image ghcr.io/zitadel/zitadel:v4.20.0@sha256:9ea0e9ecfdc43115da871242e40a0320f2ece864c7cd8b5d41a863a7f4902499
     command: ['init']
     environment:
       <<: *zitadel-db

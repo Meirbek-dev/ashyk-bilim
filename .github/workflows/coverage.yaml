@@ -1,0 +1,67 @@
+# The server's line-coverage floor (`just cov`, ratchet up, never down), off the deploy path:
+# instrumented, the suite runs ~60% slower than ci.yaml's plain nextest partitions. A red
+# nightly run is fixed like a red main.
+name: coverage
+
+on:
+  schedule:
+    - cron: '30 22 * * *' # 03:30 Asia/Almaty
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage
+  cancel-in-progress: true
+
+jobs:
+  server-cov:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      SQLX_OFFLINE: 'true'
+      # Must match infra/env/dev.env (services come from `just dev-up`).
+      DATABASE_URL: postgres://ashyq:ashyq@localhost:5433/ashyq_test
+      TEST_REDIS_URL: redis://:ashyq-dev@localhost:6380
+      TEST_S3_ENDPOINT: http://localhost:9002
+      DEV_PG_ARGS: -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+      CARGO_TERM_QUIET: 'true'
+      # Coverage needs no debuginfo (-C instrument-coverage); faster builds, smaller cache.
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      NEXTEST_STATUS_LEVEL: fail
+      NEXTEST_FINAL_STATUS_LEVEL: fail
+      NEXTEST_FAILURE_OUTPUT: final
+      NEXTEST_PROFILE: ci
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: tools
+        working-directory: .
+        run: |
+          source apps/server/tools.env
+          echo "tools=$TEST_TOOLS,$JUST_TOOL" >> "$GITHUB_OUTPUT"
+
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/server
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: ${{ steps.tools.outputs.tools }}
+
+      - name: Dev services (db, redis, zitadel, rustfs)
+        working-directory: .
+        run: just dev-up
+
+      - name: Migrate test database
+        run: just migrate
+
+      - name: Tests (nextest) with coverage floor
+        run: just cov

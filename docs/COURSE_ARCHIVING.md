@@ -1,363 +1,213 @@
-# ТЗ: архивирование курсов
+# Архивирование курсов
 
-Статус: реализовано 2026-10-02 (см. DECISIONS.md, запись от 2026-10-02). Решения, помеченные **[Р1]...[Р5]**, приняты по
-умолчанию (раздел 13).
+Текущее поведение архива и восстановления курса и критерии регрессии. Номера разделов цитирует код (6.2, 7, 8,
+9.1-9.4, 11): не перенумеровывать. Метки **[P1]...[P5]** - правила, на которые ссылаются комментарии в коде.
 
 ## 2. Определение
 
 **Архивный курс** - курс с `archived_at IS NOT NULL`. Он:
 
-1. **не обнаруживается**: его нет в каталоге, поиске, коллекциях, профиле
-   автора, sitemap, очередях работ;
-2. **доступен по прямой ссылке** тем, кто видел его до архивации, и **всем
-   записанным учащимся** (даже если курс приватный);
-3. **полностью только для чтения** для всех ролей, включая админа. Исключения:
-   восстановление, удаление, чтение и экспорт;
-4. **сохраняет всё**: контент, файлы, прогресс, попытки, оценки, сертификаты,
-   обсуждения, аналитику, AI-историю. Ничего не удаляется и не освобождается.
+1. **не обнаруживается**: его нет в каталоге, поиске, коллекциях, профиле автора, очередях работ;
+2. **доступен по прямой ссылке** тем, кто видел его до архивации, и **всем записанным учащимся** (даже если курс
+   приватный). Публичный архивный курс открыт по ссылке всем: лендинг с плашкой **[P4]**;
+3. **только для чтения** для всех ролей, включая админа. Исключения: восстановление, удаление, чтение и экспорт;
+4. **сохраняет всё**: контент, файлы, прогресс, попытки, оценки, сертификаты, обсуждения, аналитику, AI-историю.
+   Ничего не удаляется и не освобождается.
 
-Архив **ортогонален** `public`. Флаг `public` при архивации не трогаем, и
-восстановление возвращает курс ровно в прежнее состояние видимости.
+Архив **ортогонален** `public`: архивация флаг не трогает, восстановление возвращает прежнюю видимость.
 
 ## 5. Модель данных
 
 Миграция `apps/server/migrations/20261002000001_course_archive.sql`:
 
-```sql
-ALTER TABLE courses
-    ADD COLUMN archived_at timestamptz,
-    ADD COLUMN archived_by uuid REFERENCES users (id) ON DELETE SET NULL;
+- `courses.archived_at timestamptz`, `courses.archived_by uuid REFERENCES users ON DELETE SET NULL`;
+- `course_visible(c, viewer, see_all)` получает ветку «архивный курс и у зрителя есть `trail_runs`». Она срабатывает
+  только для архивных курсов, поэтому снятые с публикации курсы по-прежнему скрыты от своих учащихся (BUG-183);
+- `collection_listable` не считает архивный курс поводом показать коллекцию.
 
--- Archived courses stay readable for the learners who enrolled in them,
--- even when the course is private (archive must not hide history).
-CREATE OR REPLACE FUNCTION course_visible(c courses, p_viewer uuid, p_see_all boolean)
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT c.public OR p_see_all OR c.creator_id = p_viewer
-      OR EXISTS (SELECT 1 FROM resource_authors ra
-                 WHERE ra.course_id = c.id AND ra.user_id = p_viewer AND ra.status = 'active')
-      OR EXISTS (SELECT 1 FROM usergroup_courses uc
-                 JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
-                 WHERE uc.course_id = c.id AND m.user_id = p_viewer)
-      OR (c.archived_at IS NOT NULL
-          AND EXISTS (SELECT 1 FROM trail_runs tr
-                      WHERE tr.course_id = c.id AND tr.user_id = p_viewer))
-$$;
-
--- collection_listable: an archived course does not make a collection listable.
-CREATE OR REPLACE FUNCTION collection_listable(...)  -- + AND c.archived_at IS NULL
-```
-
-Примечания:
-
-- Новая ветка `course_visible` срабатывает только для архивных курсов, поэтому
-  поведение снятых с публикации курсов (BUG-183) не меняется. EXISTS идёт по
-  индексу `trail_runs_course_user_idx`.
-- `CourseRow` получает `archived_at: Option<i64>` и `archived_by`. Поля нужно
-  добавить во все проекции: `db/catalog.rs` (`get_course`, `list_courses`,
-  `list_user_courses`, `update_course`), `db/search.rs`, `db/collections.rs`.
-- Индексы не меняем: курсов сотни. `ponytail:` если каталог вырастет до 10k+,
-  нужен частичный индекс `WHERE archived_at IS NULL`.
-- Прошлых значений нет, бэкфилл не нужен.
+`CourseRow` (`crates/db/src/catalog.rs`) несёт `archived_at` / `archived_by` во всех проекциях курса. Отдельного
+индекса нет (курсов сотни); при 10k+ понадобится частичный `WHERE archived_at IS NULL`.
 
 ## 6. API
 
 ### 6.1 Действия жизненного цикла
 
-Расширяем существующий `POST /courses/{id}/lifecycle` вместо новых роутов,
-потому что фронт уже ходит туда через `updateCourseLifecycle`:
+`POST /courses/{course_id}/lifecycle` с `{ "action": "publish" | "unpublish" | "archive" | "restore" }`, ответ -
+`Course`.
 
-```
-{ "action": "publish" | "unpublish" | "archive" | "restore" }
-```
-
-- `valid_action` в `api/src/dto/courses.rs` принимает четыре значения;
-  обновить doc-комментарий.
-- Ответ - `Course` DTO (как сейчас).
-- `archive` на архивном курсе или `restore` на активном - **409 `conflict`**
-  (паттерн `assessments` lifecycle). `publish` или `unpublish` на архивном -
+- `archive` на архивном или `restore` на активном курсе - **409 `conflict`**; `publish` / `unpublish` на архивном -
   **409 `course-archived`**.
-- `restore` **не** проходит проверку готовности (readiness): контент не менялся,
-  а состояние `public` возвращается прежнее. Если readiness-правила с тех пор
-  ужесточились, курс подсветит существующий пресет «Внимание».
+- `restore` не проверяет готовность и возвращает прежний `public` **[P5]**: контент не менялся. Если правила
+  готовности с тех пор ужесточились, курс подсветит пресет «Внимание».
 
-### 6.2 Права **[Р1]**
+### 6.2 Права [P1]
 
-Архивировать и восстанавливать может **тот же круг, что управляет составом
-авторов**: `course:manage:platform` (на практике админ), создатель курса или
-активный автор с ролью `maintainer`. Используем функцию гейта из
-`domain/src/catalog/contributors.rs` (roster manager), новых прав в RBAC не
-заводим. Обычные `contributor` и `reporter` архивировать не могут.
-
-Удаление архивного курса - существующий гейт удаления без изменений.
-
-В `api/tests/rbac_sweep.rs` новых мутирующих роутов нет. Новый GET из 6.3 -
-по тому же гейту.
+Архивировать и восстанавливать может тот же круг, что управляет составом авторов: `course:manage:platform`,
+создатель курса или активный `maintainer` (`Caps::MANAGE_STAFF`, `crates/domain/src/catalog/access.rs`). Обычные
+`contributor` и `reporter` не могут. Удаление архивного курса - обычный гейт удаления (`Caps::DELETE`).
+`Course.allowed_actions` отдаёт `archive` / `restore` по тому же правилу.
 
 ### 6.3 Предпросмотр последствий
 
-`GET /courses/{id}/archive-preview` (гейт как в 6.2) возвращает данные для
-диалога подтверждения:
+`GET /courses/{course_id}/archive-preview` (гейт 6.2) - данные для диалога подтверждения:
 
 ```json
-{
-  "learners_enrolled": 42,
-  "learners_in_progress": 17,
-  "ungraded_submissions": 5,
-  "open_attempts": 3,
-  "scheduled_assessments": 1,
-  "public": true
-}
+{ "learners_enrolled": 42, "learners_in_progress": 17, "ungraded_submissions": 5,
+  "open_attempts": 3, "scheduled_assessments": 1, "public": true }
 ```
 
-- `open_attempts` - незавершённые черновики попыток (тест, код, файл), без
-  превью-попыток staff.
-- `ungraded_submissions` - сданные работы без опубликованной оценки.
-- `scheduled_assessments` - задания в состоянии `scheduled`; при архивации они
-  вернутся в черновик (6.5).
+- `open_attempts` - незавершённые черновики попыток (тест, код, файл), без превью staff;
+- `ungraded_submissions` - сданные работы без опубликованной оценки;
+- `scheduled_assessments` - задания в `scheduled`; архивация вернёт их в черновик (6.5).
 
-Это предупреждения, не блокеры: архивировать можно при любых значениях.
+Это предупреждения, не блокеры.
 
-### 6.4 Изменения DTO и списков
+### 6.4 DTO и списки
 
-| Где | Изменение |
+| Где | Поведение |
 |---|---|
-| `Course` DTO | `archived_at_unix: Option<i64>`, `archived_by: Option<UserId>` (как `archived_at_unix` у assessments) |
-| `GET /courses` | Архивные **исключены** по умолчанию во всех режимах. Новый `preset=archived` возвращает только архивные; допустим только с `mine=true`, иначе 422 |
-| `CourseSummary` (`mine=true`) | Новое поле `archived`; `ready`, `private`, `attention`, `total` считают только неархивные |
-| `GET /users/{username}/courses` | Архивные исключены |
-| `GET /search` | Архивные курсы исключены; коллекции - через `collection_listable` |
-| `GET /collections/{id}` (состав) | Архивные курсы отдаются только создателю коллекции и `see_all`, с `archived_at_unix`; остальным не отдаются |
-| `GET /trail` | Архивные курсы **остаются**; в элементе есть `archived_at_unix` |
-| `GET /courses/{id}/learner-state` | `can_enroll=false`, `next_action=null`, новая причина `course_archived` в перечне причин отказа |
-| `GET /work` (очередь учащегося) | Архивные исключены (иначе висят просроченные задания) |
-| Очереди проверки и выпуска оценок у преподавателя | Архивные исключены (оценивание заморожено, [Р2]) |
+| `Course` | `archived_at_unix`, `archived_by` |
+| `GET /courses` | Архивные исключены во всех режимах; `preset=archived` отдаёт только их и допустим только с `mine=true` (иначе 422) |
+| `CourseSummary` (`mine=true`) | Поле `archived`; `ready`, `private`, `attention`, `total` считают только неархивные |
+| `GET /users/{username}/courses`, `GET /search` | Архивные исключены; коллекции - через `collection_listable` |
+| Состав коллекции | Архивные курсы видят только создатель коллекции и `see_all` |
+| `GET /trail` | Архивные курсы остаются, с `archived_at_unix` |
+| `learner-state` | `can_enroll=false`, `next_action=null`, `denial_reason=course_archived` |
+| `GET /work` (учащийся), очереди проверки и выпуска оценок | Архивные исключены (оценивание заморожено, **[P2]**) |
 
-### 6.5 Что происходит при архивации (одна транзакция)
+### 6.5 Архивация и восстановление
 
-1. `SELECT ... FROM courses WHERE id = $1 FOR UPDATE`. Порядок блокировок
-   «курс → главы → активности» (BUG-242) сохраняется: дальше блокируем только
-   assessments этого курса.
-2. Если `archived_at IS NOT NULL` - 409 `conflict`.
-3. `UPDATE courses SET archived_at = now(), archived_by = $actor`.
-4. Задания в `scheduled` → `draft` с записью `assessment_audit_events`
-   (`lifecycle-transition`, `note: "course archived"`). Иначе
-   `assessments:publish-due` опубликует их в замороженном курсе, а после
-   восстановления просроченное расписание сработает внезапно.
-5. `open_to_contributors` не трогаем: заявки блокирует гейт (раздел 7).
-6. Commit; `tracing::info!(course_id, actor, action = "archive")`.
+Архивация - одна транзакция (`CoursesService::archive`, `crates/domain/src/catalog/courses.rs`):
 
-Восстановление: `FOR UPDATE`, проверка, `archived_at = NULL, archived_by = NULL`,
-лог. Задания, переведённые в черновик, **остаются черновиками**: автор
-перепланирует их сам. Это пишется в диалоге восстановления.
+1. строка курса `FOR UPDATE` (порядок блокировок курс → задания, BUG-242); уже архивный - 409 `conflict`;
+2. `archived_at = now()`, `archived_by = actor`;
+3. задания в `scheduled` → `draft` с `assessment_audit_events` (`lifecycle-transition`, `note: "course archived"`):
+   иначе `assessments:publish-due` опубликовал бы их в замороженном курсе, а после восстановления просроченное
+   расписание сработало бы внезапно;
+4. `open_to_contributors` не меняется: заявки блокирует гейт (раздел 7);
+5. после commit - `tracing::info!(action = "archive")`.
 
-Гонки: запросы, которые прошли гейт до commit архивации, могут дописаться.
-Это приемлемо, дополнительных блокировок в путях записи не вводим.
+Восстановление: `FOR UPDATE`, проверка, `archived_at = NULL, archived_by = NULL`, лог. Задания, переведённые в
+черновик, остаются черновиками: автор перепланирует их сам (об этом говорит диалог восстановления).
 
-### 6.6 Новый код ошибки
+Запросы, прошедшие гейт до commit архивации, могут дописаться: дополнительных блокировок в путях записи нет.
 
-`course-archived`, 409, title «Course is archived»,
-`details: { "archived_at_unix": i64 }`.
+### 6.6 Код ошибки
 
-- Добавить в реестр `core/src/error/code.rs` и обновить snapshot реестра.
-- На вебе `bun run check:error-codes` потребует `Errors.codes.course-archived`
-  в трёх каталогах.
-- Для учащихся в `assessments/access.rs` добавить
-  `DisabledReason::CourseArchived`, чтобы UI показывал причину до клика, а не
-  ловил 409.
+`course-archived`, 409, «Course is archived», `details: { "archived_at_unix": i64 }`
+(`crates/core/src/error/code.rs`). Учащимся причину заранее отдаёт `DisabledReason::CourseArchived`
+(`crates/domain/src/assessments/access.rs`), чтобы UI отключал действие до клика.
 
-## 7. Правило «только чтение»: где включать гейт
+## 7. Правило «только чтение»
 
-**Главная ловушка реализации.** Нельзя просто добавить проверку в
-`CoursesService::require_write`: через него же идут **чтения** с правами автора
-(readiness, журнал оценок, экспорт, аналитика преподавателя, AI-отчёты). Нужен
-отдельный `Course::ensure_not_archived() -> Result<(), Error>`, который
-вызывается в **мутирующих** методах. Общие хелперы, нужные и чтению, и записи
-(`require_write`, `require_scoped`, `grader_context`, `require_submit_access`),
-либо получают явный режим `Read | Mutate`, либо проверка ставится у
-вызывающих мутаций. Выбор за реализатором, корректность доказывает матрица
-тестов (раздел 11).
+Проверку нельзя ставить в общие гейты: через них идут и **чтения** с правами автора (готовность, журнал оценок,
+экспорт, аналитика преподавателя, AI-отчёты). Поэтому архив отнимает только права записи:
 
-Каталог (курс, программа, соавторы) уже перешёл на `CourseCtx` (`catalog/access.rs`,
-REWRITE 6.3): `ctx.require(Caps::EDIT | MANAGE_STAFF)` даёт 403, если права не было,
-и 409 `course-archived`, если его отнял архив; правило архива живёт только там, а
-`granted()` отдаёт права до архива для авторских чтений. Остальные модули пока
-вызывают `ensure_not_archived` и переходят на `CourseCtx` по одному.
+- `CourseCtx` (`crates/domain/src/catalog/access.rs`) - единственное место, где архив снимает права: загружает курс с
+  `Caps` вызывающего и у архивного курса убирает `EDIT` и `MANAGE_STAFF`. `ctx.require(cap)` отвечает 403, если права
+  не было, и 409 `course-archived`, если его отнял архив; `ctx.granted(cap)` - права до архива для авторских чтений
+  и для `restore`. Через него идут правка курса, publish, объявления, программа и управление составом авторов.
+- Остальные модули (и самостоятельные заявка / отзыв заявки в соавторы) после своего гейта вызывают
+  `Course::ensure_not_archived()` (`crates/db/src/catalog.rs`) - тот же 409 - и переходят на `CourseCtx` по одному
+  (`docs/REWRITE.md` 6.3).
 
 | Подсистема | Запрещено (409 `course-archived`) | Разрешено |
 |---|---|---|
-| Курс (`domain/catalog/courses.rs`) | `PATCH`, обложка, publish/unpublish, объявления (create/edit/delete) | `GET`, archive-preview, restore, delete |
-| Программа (`catalog/curriculum.rs`, `writable_course`) | главы, активности, блоки, порядок, загрузки в блоки | чтение |
-| Задания (`assessments/service.rs`: `load_for_author`, `authorable_course`, `require_publishable`) | items, policy, access, overrides, lifecycle, duplicate, reference-check | чтение, `audit` |
-| Попытки учащихся (`grading/submissions.rs`, `code/service.rs`, `files/submissions.rs`) | start, draft, submit, violations, запуск кода (Judge0), загрузка файлов | свои попытки, отзывы, скачивание своих файлов, SSE |
-| Превью staff (`is_teacher_preview`) | старт превью-попытки (превью обходит гейты попыток, нужна явная проверка) | - |
-| Оценивание (`grading/teacher.rs`, `grading/bulk.rs`) **[Р2]** | `save_grade`, `publish_all`, продление дедлайнов (и повторная проверка внутри джоба `grading:bulk-action`), оценка файлов | журнал, экспорт CSV, просмотр работ |
-| Прогресс (`progress/trail.rs`) | запись на курс, **выход из курса** (удаляет историю), отметки активностей | `GET /trail`, learner-state |
-| Обсуждения (`community/discussions.rs`, `postable_course`) | create, update, delete, реакции | чтение |
-| Сертификаты (`certifications`, `scoped_course`) | create, update, delete настройки | `/me/certificates`, `/certificates/{code}`, PDF, `/courses/{id}/certificates/me` |
-| Авторы (`catalog/contributors.rs`) **[Р3]** | заявка, добавление, смена роли, удаление | список |
-| Группы (`identity/usergroups.rs`) | привязка и отвязка курса | список |
-| Коллекции (`catalog/collections.rs`) | добавление архивного курса в коллекцию | удаление из коллекции (это запись коллекции, не курса), существующие связи |
-| AI (`ai/policy.rs`, `ai/mod.rs`) | новые чаты Q&A и study companion, анализ курса, разбор лекции, новые runs по курсу | треды, `latest`, отчёты |
+| Курс (`catalog/courses.rs`) | `PATCH`, обложка, publish/unpublish, объявления | `GET`, archive-preview, restore, delete |
+| Программа (`catalog/curriculum.rs`) | главы, активности, блоки, порядок, загрузки в блоки | чтение |
+| Задания (`assessments/service.rs`) | items, policy, access, overrides, lifecycle, duplicate, reference-check | чтение, `audit` |
+| Попытки учащихся (`grading/submissions.rs`, `code/service.rs`, `files/submissions.rs`) | start, draft, submit, violations, запуск кода, загрузка файлов | свои попытки, отзывы, скачивание своих файлов, SSE |
+| Превью staff | старт превью-попытки (превью обходит гейты попыток, проверка явная) | - |
+| Оценивание (`grading/teacher.rs`, `grading/bulk.rs`) **[P2]** | `save_grade`, `publish_all`, продления дедлайнов, оценка файлов | журнал, экспорт CSV, просмотр работ |
+| Прогресс (`progress/trail.rs`) | запись на курс, выход из курса (удаляет историю), отметки активностей | `GET /trail`, learner-state |
+| Обсуждения (`community/discussions.rs`) | create, update, delete, реакции | чтение |
+| Сертификаты (`certifications`) | create, update, delete настройки | `/me/certificates`, `/certificates/{code}`, PDF, `/courses/{id}/certificates/me` |
+| Авторы (`catalog/contributors.rs`) **[P3]** | заявка, добавление, смена роли, удаление, отзыв своей заявки | список |
+| Группы (`identity/usergroups.rs`) **[P3]** | привязка и отвязка курса | список |
+| Коллекции (`catalog/collections.rs`) | добавление архивного курса | удаление из коллекции (запись коллекции), существующие связи |
+| AI (`ai/`) | новые чаты Q&A и study companion, анализ курса, разбор лекции, новые runs по курсу | треды, `latest`, отчёты |
 | Аналитика | `POST /analytics/teacher/interventions` | дашборд курса, CSV-экспорты |
 
-Единое правило без исключений по мелочам: **меняешь что-то, что принадлежит
-курсу, - сначала восстанови курс**.
+Правило без исключений: **меняешь что-то, что принадлежит курсу, - сначала восстанови курс**. Незакрытые проверки
+нужно закончить до архивации (диалог предупреждает) или временно восстановить курс **[P2]**.
 
 ## 8. Фоновые задачи
 
 | Джоб | Поведение |
 |---|---|
-| `assessments:publish-due` | Без изменений: при архивации `scheduled` уже переведены в `draft` (6.5), а новые не появятся из-за гейта |
-| `submissions:auto-submit` | **Без изменений, явно разрешён**: дофинализирует просроченные таймированные черновики (`sweep_expired_drafts` → `auto_submit_one`, системный актор, гейты пропускаются). Проверку архива **не** ставить в общий `finalize`, только в learner-эндпоинты. Нетаймированные черновики остаются черновиками; диалог (6.3) об этом предупреждает |
-| `analytics:rollup` | `all_course_ids` / `teacher_course_ids` исключают архивные из `learner_risk_snapshots` и списков «в зоне риска»; исторические строки не удаляем; `managed_course_count` считает только активные |
+| `assessments:publish-due` | Без изменений: `scheduled` уже переведены в `draft` (6.5), новые не появятся из-за гейта |
+| `submissions:auto-submit` | Явно разрешён: дофинализирует просроченные таймированные черновики системным актором. Проверка архива стоит только в learner-эндпоинтах, не в общем `finalize`. Нетаймированные черновики остаются черновиками |
+| `analytics:rollup` | `all_course_ids` / `teacher_course_ids` (`crates/db/src/analytics.rs`) без архивных: нет новых снимков и строк «в зоне риска», `managed_course_count` считает активные. Исторические строки остаются; по id курс достижим (дашборд и экспорт работают) |
 | `grading:bulk-action` | Повторная проверка архива при выполнении (джоб мог быть поставлен до архивации) |
-| `ai:execute_run` | Повторная проверка через `require_run_scope` подхватит гейт AI |
+| `ai:execute_run` | Повторная проверка через `require_run_scope` |
 | `progress:*` | Без изменений (идемпотентны, контент заморожен) |
-| `uploads:reap` | Без изменений: архив ничего не освобождает, `referenced_count` остаётся > 0 |
+| `uploads:reap` | Без изменений: `referenced_count` остаётся > 0 |
 
-## 9. Веб (`apps/web`)
+## 9. Веб
 
-Перед началом: `bun run generate:api-types` после обновления
-`openapi.v2.json`; новые ключи i18n добавлять во все три каталога
-(`ru-RU` первым). По `apps/web/AGENTS.md`: только семантические токены,
-примитивы shadcn, без декоративных иконок.
+Оба фронтенда показывают одно и то же; действия - по `Course.allowed_actions`, отказ сервера - по коду
+`course-archived`.
 
-### 9.1 Таблица курсов (`src/app/_shared/dash/courses/client.tsx`)
+### 9.1 Список курсов преподавателя
 
-- `parsePreset` в `src/services/courses/editable.ts` получает `archived`.
-  Новый чип «Архив (N)» из `summary.archived` показывается, только если
-  N > 0 или выбран сам пресет.
-- `getCourseManagementContext().statusBadges` (`src/lib/course-management.ts`):
-  для архивного курса - **только** бейдж `archived`, без public/private,
-  ready и attention.
-- `CourseStatusBadge` (`courseWorkflowUi.tsx`): `archived` маппится в
-  **нейтральный** тон (как `PRIVATE`), а не в `UNAVAILABLE` (destructive).
-  Архив - не ошибка. Заодно это исправит бейдж архивных активностей
-  (`ActivityElement.tsx`), он тоже станет нейтральным.
-- `CourseRowActions`: для активного курса пункт «В архив», для архивного -
-  «Восстановить» и «Удалить»; publish/private на архивном скрыты. Пункты
-  видны только при праве из 6.2. Добавить флаг `canArchiveCourse` в
-  `deriveCourseWorkspaceCapabilities`; он же используется в таблице.
-- Меню карточки (`CourseThumbnail.tsx`, `ResourceActionsMenu`) - те же пункты.
+Пресет / вкладка «Архив» (`preset=archived`, счётчик из `summary.archived`). У архивного курса только метка
+«В архиве» нейтрального тона (не ошибка), без public/private, готовности и «Внимания». Действия: у активного -
+«В архив», у архивного - «Восстановить» и «Удалить»; publish / private скрыты. Видны только при праве 6.2.
 
 ### 9.2 Диалог архивации
 
-Новый `CourseArchiveDialog` рядом с `CourseDeleteDialog` (тот же паттерн
-AlertDialog, но **без** `bg-red-*`, тон нейтральный). При открытии грузит
-`archive-preview` и показывает только ненулевые строки:
-
-- «17 учащихся проходят курс. Они сохранят доступ к материалам, результатам и
-  сертификатам, но не смогут сдавать задания.»
-- «5 работ не проверены. После архивации оценивать их будет нельзя.»
-- «3 незавершённые попытки. Таймированные будут сданы автоматически по
-  истечении времени, остальные останутся несданными.»
-- «1 запланированное задание вернётся в черновик.»
-- Итог: «Курс пропадёт из каталога и поиска. Восстановить его можно в любой
-  момент.»
-
-Кнопки: «Отмена» / «Архивировать». Ошибки - `toastApiError`; при 409
-`conflict` - `router.refresh()` и тост «Курс уже был изменён, данные
-обновлены».
-
-Восстановление - короткий AlertDialog: «Курс вернётся в прежнее состояние
-(публичный или приватный). Задания, снятые с расписания при архивации,
-останутся черновиками.»
+Нейтральный (не destructive) диалог грузит `archive-preview` и называет только ненулевые последствия: учащиеся
+сохранят доступ к материалам, результатам и сертификатам, но не смогут сдавать; непроверенные работы оценить будет
+нельзя; таймированные попытки сдадутся по истечении времени, остальные останутся несданными; запланированные
+задания вернутся в черновик; курс пропадёт из каталога и поиска. Восстановление: «курс вернётся в прежнее состояние (публичный или приватный); задания, снятые с расписания,
+останутся черновиками».
 
 ### 9.3 Рабочее пространство курса
 
-- `CourseWorkspacePageShell.tsx`: под шапкой Alert (паттерн
-  `NativeItemAuthor.tsx`, иконка `Lock`): «Курс в архиве с {date}: только
-  просмотр. Чтобы вносить изменения, восстановите курс.» и кнопка
-  «Восстановить» (если есть право).
-- `deriveCourseWorkspaceCapabilities` (`src/lib/course-management-server.ts`):
-  при `archived_at_unix != null` все `canEdit*` / `canManage*` = false.
-  Вкладки остаются доступны на просмотр. Журнал оценок - только просмотр и
-  экспорт.
-- Вкладка «Публикация» (`CourseReviewPublish.tsx`): карточка статуса
-  «В архиве» (структура как у `PublishDashboardTab`, но без захардкоженных
-  цветов) и действия «В архив» / «Восстановить».
-- Маршрут редактора активности `editor/course/[courseid]/activity/.../edit`:
-  для архивного курса - режим просмотра (или редирект в студию с плашкой).
+Плашка «Курс в архиве с {date}: только просмотр» с «Восстановить» (если есть право). Все вкладки открыты на
+просмотр, правки скрыты; журнал оценок - просмотр и экспорт. Вкладка публикации показывает статус «В архиве» вместо
+готовности. Правки активностей сервер отклоняет (409); студия `apps/web-2` вместо редактора показывает «Курс в
+архиве» и ведёт к восстановлению.
 
 ### 9.4 Учащийся
 
-- Лендинг курса: плашка «Курс в архиве. Запись закрыта.»; `useCourseActions`
-  не показывает «Записаться». Записанным - «Открыть» вместо «Продолжить».
-- Плеер активности: `BottomActionBar` в состоянии `unavailable` с причиной
-  «Курс в архиве»; кнопки сдачи, загрузки и запуска кода скрыты по
-  `DisabledReason::CourseArchived`; свои прошлые попытки и отзывы видны.
-- Обсуждения: композер и реакции скрыты, вместо них строка «Курс в архиве,
-  обсуждение закрыто».
-- AI-чат курса: поле ввода отключено с той же причиной; история видна.
-- «Моё обучение» (`trail.tsx`, `CourseThumbnail.tsx`): архивные курсы - после
-  активных, с бейджем «В архиве»; кнопка сертификата без изменений; кнопки
-  «Покинуть курс» нет.
+- Лендинг: «Курс в архиве», записи нет; записанным - «Открыть».
+- Плеер: действие недоступно с причиной «Курс в архиве»; сдача, загрузка и запуск кода скрыты по
+  `DisabledReason::CourseArchived`; свои попытки и отзывы видны.
+- Обсуждения и AI-чат курса: только чтение, ввод отключён с той же причиной.
+- «Моё обучение»: архивные курсы после активных, с меткой «В архиве»; сертификат доступен; «Покинуть курс» нет.
 
 ### 9.5 Тексты
 
-`Errors.codes.course-archived` (ru): «Курс в архиве: изменения недоступны.
-Восстановите курс, чтобы продолжить.» Учащимся этот текст не показываем:
-у них UI отключается заранее по `DisabledReason` с текстом «Курс в архиве».
+`course-archived`: «Курс в архиве: изменения недоступны. Восстановите курс, чтобы продолжить.» Учащимся этот текст
+не показывается: у них UI отключается заранее по `DisabledReason`.
 
-## 11. Тестирование и критерии приёмки
+## 11. Критерии регрессии
 
 ### Сервер (`apps/server/crates/api/tests/course_archive_flow.rs`)
 
-1. **Жизненный цикл:** archive → 200, `archived_at_unix` заполнен; повторный
-   archive → 409 `conflict`; restore → 200, `public` прежний; publish на
-   архивном → 409 `course-archived`.
-2. **Права:** creator, maintainer и админ могут; contributor, reporter,
-   учащийся, аноним - 403 или 404 (невидимый курс - 404, не 403).
-3. **Видимость:** приватный курс + учащийся с `trail_run` → после архивации
-   `GET /courses/{id}` = 200, `/trail` содержит курс. Не записанный - 404.
-   Публичный архивный курс отсутствует в `GET /courses`, `/search`,
-   `/users/{u}/courses`, составе коллекции и `GET /work`; есть в
-   `preset=archived&mine=true`; `summary.archived = 1`, прочие счётчики его
-   не учитывают.
-4. **Матрица записи:** table-driven тест по таблице из раздела 7 - каждый
-   запрещённый вызов → 409 `course-archived` **и в БД ничего не изменилось**
-   (паттерн BUG-186 `refused_activity_patch_writes_nothing`); каждый
-   разрешённый вызов чтения или экспорта → 200.
-5. **Scheduled → draft:** задание в `scheduled` после архивации в `draft`,
-   есть audit-событие; тик `assessments:publish-due` ничего не публикует.
-6. **Auto-submit:** просроченный таймированный черновик в архивном курсе
-   финализируется джобом.
+1. **Жизненный цикл:** archive → 200 с `archived_at_unix`; повторный archive → 409 `conflict`; publish / unpublish на
+   архивном → 409 `course-archived`; restore → 200, `public` прежний.
+2. **Права:** creator, maintainer и `course:manage:platform` могут; contributor, reporter, учащийся - 403;
+   посторонний на приватном курсе - 404.
+3. **Видимость:** приватный курс + учащийся с `trail_run` → после архивации `GET /courses/{id}` = 200 и курс в
+   `/trail`; не записанный - 404. Публичный архивный курс отсутствует в `GET /courses`, `/search`,
+   `/users/{u}/courses`, составе коллекции и `GET /work`; есть в `preset=archived&mine=true`;
+   `summary.archived = 1`, прочие счётчики его не учитывают.
+4. **Матрица записи** (раздел 7): каждый запрещённый вызов → 409 `course-archived` и **БД не изменилась**
+   (снимок до и после); каждое разрешённое чтение или экспорт → 200.
+5. **Scheduled → draft:** после архивации задание в `draft`, есть audit-событие; тик `assessments:publish-due`
+   ничего не публикует.
+6. **Auto-submit:** просроченный таймированный черновик в архивном курсе финализируется джобом.
 7. **Ничего не освобождается:** `referenced_count` загрузок курса не изменился.
-8. **Удаление архивного курса** работает тем же гейтом.
-9. **OpenAPI:** snapshot обновлён (`cargo insta review`), `openapi.v2.json`
-   перегенерирован.
+8. **Удаление архивного курса** - тем же гейтом удаления.
 
 ### Веб
 
-- vitest: `statusBadges` для архивного курса возвращает только `archived`;
-  `deriveCourseWorkspaceCapabilities` гасит все права редактирования;
-  `parsePreset('archived')`; диалог показывает только ненулевые строки.
-- Playwright (`e2e/specs/`): преподаватель архивирует курс → курс пропал из
-  каталога → учащийся видит его в «Моём обучении», открывает свою оценку,
-  кнопка сдачи недоступна → преподаватель восстанавливает → курс снова в
-  каталоге.
+- `apps/web`: vitest `src/tests/courses/course-archiving.test.tsx` (только метка `archived`, права редактирования
+  погашены, `parsePreset('archived')`, диалог показывает только ненулевые строки); Playwright
+  `e2e/journey/10-course-archiving.ts` (преподаватель архивирует → курс пропал из каталога → учащийся видит его в
+  «Моём обучении», открывает свою оценку, сдать нельзя → восстановление → курс снова в каталоге).
+- `apps/web-2`: поведения `B-CST-12`, `B-CST-22` (course-studio), `B-LRN-06`, `B-HOME-10`, `B-CRS-16` и их тесты.
 
-### Гейты
-
-Из корня: `just check`, `just server test -E 'test(course_archive)'`,
-`just ci-web`, `just ci-web2`. При изменении SQL: `just server prepare`
-(закоммитить `.sqlx/`); при изменении API: `just contract`.
-Форматирование затронутых файлов: `just fmt <files>`.
-
-## 13. Решения по умолчанию (подтвердить или изменить)
-
-- **[Р1] Кто архивирует:** roster managers (создатель, maintainer, админ).
-  Альтернатива: гейт удаления (создатель и админ; maintainer не может).
-- **[Р2] Оценивание замораживается вместе с курсом.** Плюсы: единое правило,
-  поздняя оценка не выпустит сертификат в архивном курсе. Минус: незакрытые
-  проверки нужно закончить до архивации (диалог предупредит) или временно
-  восстановить курс. Альтернатива: разрешить `save_grade` и `publish_all`, но
-  не продления и overrides.
-- **[Р3] Состав авторов и привязки групп заморожены.** Альтернатива: разрешить
-  удаление авторов и отвязку групп (сужение доступа).
-- **[Р4] Публичный архивный курс открыт по прямой ссылке всем** (лендинг с
-  плашкой). Альтернатива: после архивации видят только staff и записанные.
-  Тогда новая ветка в `course_visible` должна гасить `c.public` для
-  архивных.
-- **[Р5] Восстановление без проверки готовности**, в прежнее значение
-  `public`. Альтернатива: восстанавливать всегда в приватный курс.
+Прогон: `just server test -E 'binary(course_archive_flow)'`, затем `just check`.

@@ -13,7 +13,12 @@ services:
   db:
     ports: ['127.0.0.1:${DEV_PG_PORT:-5433}:5432']
     # Extra server flags; CI's server-test turns durability off (throwaway test databases).
-    command: postgres ${DEV_PG_ARGS:-}
+    command: >-
+      postgres
+      -c log_min_duration_statement=${PG_LOG_MIN_DURATION_STATEMENT:-300}
+      -c log_parameter_max_length=0
+      -c "log_line_prefix=%m [%p] user=%u db=%d app=%a "
+      ${DEV_PG_ARGS:-}
     # Parallel e2e workers and test runs: production's CPU caps queue them past client timeouts.
     deploy: &dev-cpus
       resources:

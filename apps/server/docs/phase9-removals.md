@@ -8,7 +8,9 @@ what the new web uses instead (`-` = nothing, just delete). Deprecated
 operations are also marked in `openapi.v2.json` (`deprecated: true` +
 `x-replaced-by`, from `ab_api::RENAMED`), which G-07 skips.
 
-Started by L-6 (2026-10-04); every later lane appends here.
+A change that schedules a removal appends a row; an operation the new web consumes again leaves the list
+(`apps/web-2/gates/server-removals.json` mirrors the unconsumed operations; its api-coverage gate fails on
+an entry that has a consumer).
 
 | kind | target | replacement | source |
 | --- | --- | --- | --- |
@@ -46,12 +48,8 @@ Started by L-6 (2026-10-04); every later lane appends here.
 | operation | `get_ai_run` | `-` (run state comes over the run stream) | G-07 |
 | operation | `run_events` | `admin_run_detail` (carries the journal) | G-07 |
 | operation | `remediation_session` | `-` | G-07 |
-| operation | `list_group_courses` (`GET /groups/{id}/courses`) | `groups_for_course` (links are managed from the course) | W-2 (G-07) |
-| operation | `list_blocks` (`GET /activities/{id}/blocks`) | `-` (the document carries its blocks) | W-2 (G-07) |
 | operation | `get_block` (`GET /blocks/{id}`) | `-` (the document carries the block's file) | W-2 (G-07) |
-| operation | `delete_block` (`DELETE /blocks/{id}`) | `-` (a page save releases removed blocks) | W-2 (G-07) |
 | operation | `download_upload` (`GET /uploads/{id}/download`) | `SignedDownload.path` (same-origin, L-6) | W-2 (G-07) |
-| operation | `get_assessment` (`GET /assessments/{id}`) | `get_activity_assessment` | W-2 (G-07) |
 | operation | `current_draft` (`GET /assessments/{id}/submissions/draft`) | `attempt_state` + `my_submissions` | W-2 (G-07) |
 | operation | `list_course_assessments` (`GET /courses/{id}/assessments`) | `get_curriculum` + readiness, the gradebook | W-2 (G-07) |
 | operation | `get_file_submission` (`GET /file-submissions/{id}`) | `get_activity_file_submission` | W-2 (G-07) |
@@ -65,7 +63,7 @@ Started by L-6 (2026-10-04); every later lane appends here.
 | field | `Discussion.can_update`, `.can_delete`, `.can_moderate` | `allowed_actions` | L-3 |
 | field | `Usergroup.can_write` | `allowed_actions` | L-3 |
 | field | `CoursePermissions.can_discover`, `.can_access`, `.can_enroll` | `allowed_actions` on the course / learner state | L-3 |
-| field | `Profile.locale` (legacy `ru-RU` form) | `Profile.language` | L-5 (D-03) |
+| field | `UserProfile.locale`, `SessionUser.locale` (legacy `ru-RU` form) | `.language` | L-5 (D-03) |
 | field | `RemediationCompletionRequest.score` (deprecated, ignored: the server scores `answers`) | `RemediationCompletionRequest.answers` | S-GAPS-2 (REM-SCORE) |
 | behaviour | 204 on role assign/unassign, user status, members, role writes without `Prefer` | always `return=representation` | L-3 |
 | behaviour | 409 for a stale submission draft without `If-Match` | 412 with `If-Match` required | L-3 |

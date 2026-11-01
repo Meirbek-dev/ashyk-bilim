@@ -21,28 +21,24 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 
 - [ ] Run root `just setup` for dependencies/tools/hooks; use frozen lockfiles.
 - [ ] Run focused tests while editing and root `just ci-web` after a coherent batch.
-- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
+- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `just web <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
 
-# apps/web - frontend conventions (v2 contract, P9)
+# apps/web - frontend conventions
 
-The app talks to the Rust backend (`apps/server`, `/api/v2`), the only backend.
-The legacy Python API was removed after the 2026-09-30 cutover (git tag
-`legacy-final`).
+Production frontend until the stage 2 cutover (`docs/STAGE-2-CUTOVER.md`); its only backend is `apps/server`
+(`/api/v2`). Commits, hooks and checks: root `AGENTS.md`.
 
 ## Toolchain
 
-- `bun install`, `bun run dev`, `bun run build`.
-- From the repo root use `just web <script>` (= `bun run --cwd apps/web <script>`).
-- Local gates (`just ci-web`): `bun run lint` (oxlint via
-  `vp lint --type-aware --type-check`, read-only), `bun run typecheck` (tsc),
-  `bun run test` (vitest, `src/tests/**`),
-  `bun run check:contracts` (generated client matches `openapi.v2.json`),
-  `bun run check:error-codes`, `bun run check:messages`. CI runs them (web-gates job), builds the
-  image and stack-smokes this app. The pre-commit hook checks format + type-aware lint of the staged
-  files only; `just check` runs the gates for what changed. Production fixes are allowed.
+- From the repo root use `just web <script>` (= `bun run --cwd apps/web <script>`); the dev server runs in a
+  `just stack up` slot.
+- Local gates (`just ci-web`): `lint` (oxlint via `vp lint --type-aware --type-check`, read-only), `typecheck`
+  (tsc), `test` (vitest, `src/tests/**`), `check:contracts` (generated client matches `openapi.v2.json`),
+  `check:error-codes`, `check:messages`. CI runs them (`web-gates` job), builds the image, stack-smokes it and
+  runs `web-release-e2e` on it. Production fixes are allowed.
 - `bun run lint:fix` applies fixes including `--fix-dangerously`; it rewrites
   unrelated files, so run it deliberately and review the diff.
 - Format with `just fmt <files>` (`bun run format` rewrites the whole app). The format config is the
@@ -70,8 +66,7 @@ The legacy Python API was removed after the 2026-09-30 cutover (git tag
 - **Types come from the zod module:** `import type { Course, CoursePage } from
   '@/lib/api/generated/zod'`; the same names are zod schemas (`Course.parse`).
   Generated fetchers/hooks: `import { listCourses, useListCourses } from
-  '@/lib/api/generated/courses/courses'`. Duplicate operation ids are prefixed
-  with their tag (`codeGetRun`, `fileSubmissionsSaveDraft`, …).
+  '@/lib/api/generated/courses/courses'`.
 - Hand-written calls go through `apiJson(path, init, parse)` /
   `apiResult(...)` (`@/lib/api-client`) with a **path relative to `/api/v2`**
   (`'courses/{id}/curriculum'`), and a zod parser from the generated module.
@@ -144,11 +139,10 @@ reduced motion. Preserve keyboard access, focus states and responsive layouts.
   `src/app/[locale]/**` - routes, `src/app/_shared/**` - page implementations,
   `src/components/**` - shared UI. Query keys are centralised in
   `src/lib/react-query/queryKeys.ts` (edit, never rewrite the file).
-- i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (inlang message format,
-  configured in `project.inlang/settings.json` for the Paraglide migration).
-  Keep nested keys; complex messages are arrays with declarations and match variants.
-  Add keys to all three; Russian first, kk/en translations. Verify with
-  `just web check:messages`. The existing Next.js consumers still need migration.
+- i18n catalogs: `src/messages/{ru-RU,kk-KZ,en-US}.json` (read by next-intl; inlang message format,
+  `project.inlang/settings.json`). Keep nested keys; complex messages are arrays with declarations and
+  match variants. Add keys to all three; Russian first, kk/en translations. Verify with
+  `just web check:messages`.
 - Tests: `src/tests/**/*.test.ts(x)` (vitest + testing-library), Playwright in
   `e2e/` (page objects in `e2e/page-objects`, specs in `e2e/specs`).
   `journey.spec.ts` registers the author/learner/grader/archive scenario from `e2e/journey/` in one serial worker;
@@ -157,9 +151,6 @@ reduced motion. Preserve keyboard access, focus states and responsive layouts.
 
 ## Not in v2 (do not re-add without a contract change)
 
-Refresh tokens (self-registration `/signup`, email verification and
-password change came back 2026-09-12 - DECISIONS.md; password reset at
-`/auth/reset-password` on the S-08 endpoints 2026-10-09), numeric ids,
-`*_uuid` strings, multipart uploads through the API, offset pagination,
-`/members`, `/roles/{id}` numeric role ids,
-batch grading, bulk zip download of file submissions, `/trail/start`.
+Refresh tokens, numeric ids, `*_uuid` strings, multipart uploads through the API, offset pagination,
+the legacy org `/members` and numeric `/roles/{id}` endpoints, batch grading, bulk zip download of file
+submissions, `/trail/start`. (Self-registration, email verification, password change and reset exist.)

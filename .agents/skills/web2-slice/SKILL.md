@@ -9,7 +9,7 @@ The "one way to do each thing" table in `apps/web-2/AGENTS.md` is binding (lint 
 and `docs/web/ROUTES.md` before touching `src/routes/`, `shared/auth/` or the shell.
 
 1. New feature: `just new feature <name>` (SPEC.md, index.ts, a page on a template, three catalogs, inlang entry).
-   A change: open `src/features/<name>/SPEC.md`; a new behavior gets `bun gates/gates.ts next-id <name>`.
+   A change: open `src/features/<name>/SPEC.md`; a new behavior gets its id from `bun gates/gates.ts next-id <name>`.
 2. Data: generated `xOptions()` / `xMutation()` from `#/shared/api/gen` (search `sdk.gen.ts`, never read it whole);
    route `loader` + `useSuspenseQuery`; writes invalidate through `meta.invalidates`.
 3. Text: `m.<feature>_<key>()` in ru, kk and en; dates and numbers through `#/shared/i18n/format`.

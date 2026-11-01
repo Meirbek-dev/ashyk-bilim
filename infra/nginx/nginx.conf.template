@@ -93,8 +93,8 @@ upstream web_backend {
 }
 
 # Dual web (docs/INFRA.md "Dual web"): with `dual-web` in COMPOSE_PROFILES the new web (`web2`) runs beside the
-# old one on this origin. A page goes to the new web when only it has that path, or when the `ab_ui=v2` cookie
-# (set by /ui/new) says so; the old web keeps its own paths and stays the default. Off: everything is `web`.
+# old one on this origin. A page goes to the old web when only it has that path, or when the `ab_ui=classic`
+# cookie (set by /ui/classic) says so; everything else goes to the new web, the default. Off: everything is `web`.
 upstream web2_backend {
   zone web2_backend 64k;
   server web2:3000 resolve;
@@ -122,7 +122,8 @@ map $uri $web_pin {
 map "$dual_web:$web_pin:$cookie_ab_ui" $web_upstream {
   ~^1:legacy: web_backend;
   ~^1:v2: web2_backend;
-  ~^1::v2$ web2_backend;
+  ~^1::classic$ web_backend;
+  ~^1: web2_backend;
   default web_backend;
 }
 

@@ -10,14 +10,16 @@ on:
     # ci/**: image build + stack smoke for a branch, never published.
     # release/**: every gate runs regardless of paths, then publishes (a release
     # cut from a commit other than main's head, e.g. while main is red).
-    branches: [main, 'ci/**', 'release/**']
+    # renovate/**: dependency updates (renovate.json5); Renovate fast-forwards main once this is green.
+    branches: [main, 'ci/**', 'release/**', 'renovate/**']
   pull_request:
 
-# PRs: a newer push cancels the running one. main: never cancelled while
-# running (a queued main run may be superseded by a newer commit).
+# A newer push to the same ref cancels the running one, main included: only the newest commit is
+# deployed, and a cancelled run has tagged nothing but ci-<sha> unless it was inside publish
+# (a few seconds; the newer run retags <sha>/latest anyway).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -89,9 +91,9 @@ jobs:
       - id: sha
         run: echo "sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
 
-  # Two parallel server jobs (CI-OPT): lints without services, tests on the dev stack.
-  # `cov` IS the test gate: llvm-cov runs the whole nextest suite (fails on any failed
-  # test) and then the line floor, so the suite is built and run once, not twice.
+  # Parallel server jobs (CI-OPT): lints without services, tests on the dev stack in two
+  # nextest partitions. The coverage floor is not on the deploy path: coverage.yaml runs
+  # `just cov` nightly (instrumented, the suite took 6.7 min here against ~4 plain).
   server-lint:
     needs: changes
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
@@ -140,6 +142,10 @@ jobs:
     if: needs.changes.outputs.server == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2]
     defaults:
       run:
         working-directory: apps/server
@@ -152,7 +158,6 @@ jobs:
       # `just dev-up`'s Postgres (compose.dev.yaml): no fsync for the per-test sqlx databases.
       DEV_PG_ARGS: -c fsync=off -c synchronous_commit=off -c full_page_writes=off
       CARGO_TERM_QUIET: 'true'
-      # Coverage needs no debuginfo (-C instrument-coverage); faster builds, smaller cache.
       CARGO_PROFILE_DEV_DEBUG: '0'
       # Quiet on success: only failures, each with its output at the end.
       NEXTEST_STATUS_LEVEL: fail
@@ -166,10 +171,13 @@ jobs:
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
 
+      # Own key: the cache under the job's default key held -C instrument-coverage artifacts
+      # (the old `just cov`), so every plain build recompiled the dependencies.
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/server
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          key: plain
+          save-if: ${{ github.ref == 'refs/heads/main' && matrix.partition == 1 }}
 
       - uses: taiki-e/install-action@v2
         with:
@@ -182,16 +190,18 @@ jobs:
       - name: Migrate test database
         run: just migrate
 
+      # Once: both partitions build the same schema and queries.
       - name: SQLx offline cache check
+        if: matrix.partition == 1
         run: just sqlx-check
 
-      - name: Tests (nextest) with coverage floor
-        run: just cov
+      - name: Tests (nextest partition ${{ matrix.partition }}/2)
+        run: just test --partition hash:${{ matrix.partition }}/2
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: server-junit-${{ needs.changes.outputs.sha }}
+          name: server-junit-${{ needs.changes.outputs.sha }}-${{ matrix.partition }}
           path: apps/server/target/nextest/ci/junit.xml
           retention-days: 7
           if-no-files-found: ignore
@@ -258,7 +268,7 @@ jobs:
       - name: just ci-web
         run: just ci-web
 
-  # Stage 2 (docs/MODERNIZATION-STAGE-2.md, section 9): `vp run verify` = check + tests + gates.ts, then the
+  # Stage 2 (docs/STAGE-2-CUTOVER.md, Acceptance): `vp run verify` = check + tests + gates.ts, then the
   # production build. Regeneration must not repair uncommitted artifacts silently.
   web2-gates:
     needs: changes
@@ -448,7 +458,7 @@ jobs:
 
   # G-06 (spec section 9): Playwright against ashyq-web-2:ci-<sha> on the seeded stand
   # (`just web2-*`, docs/INFRA.md "Stage 2 e2e stand"). Secret E2E_PASSWORD is optional:
-  # without it the stand seeds a random password per run. Three shards, each on its own stand.
+  # without it the stand seeds a random password per run. Five shards, each on its own stand.
   web2-e2e:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
@@ -457,7 +467,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
         include:
           - shard: judge0
     permissions:
@@ -524,21 +534,22 @@ jobs:
       # Standard shards exclude Judge0; its dedicated stand runs the real privileged service.
       # AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
-      # Shards split by test count and the cheap access.spec matrix comes first: weights 9:6:5
-      # even out the time (equal counts ran 3.5/4.5/7.2 min, run 37188033446; 4:3:2 4.6/6.4/4.8).
+      # Shards split by test count and the cheap access.spec matrix comes first: weights even out
+      # the time (3 shards at 9:6:5 ran 5.3/6.0/6.1 min; 30:24:17:15:14 cuts that seconds-per-test
+      # curve into five ~3.5 min pieces).
       - name: e2e
         timeout-minutes: 15
         env:
           WEB2_E2E_IN_NETWORK: '1'
           PLAYWRIGHT_HTML_OPEN: never
-          PWTEST_SHARD_WEIGHTS: '9:6:5'
+          PWTEST_SHARD_WEIGHTS: '30:24:17:15:14'
         run: |
           SECONDS=0
           trap 'echo "Browser tests (shard ${{ matrix.shard }}): ${SECONDS}s (exit $?)" >> "$GITHUB_STEP_SUMMARY"' EXIT
           if [[ '${{ matrix.shard }}' == judge0 ]]; then
             just web2-e2e --grep @judge0 --project chromium --reporter=dot,github,html
           else
-            just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/3 --reporter=dot,github,html
+            just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/5 --reporter=dot,github,html
           fi
 
       - name: Compose logs

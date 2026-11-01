@@ -7,16 +7,15 @@ import { ArchivedCourse } from './archived-course'
 import { NotOnTeam } from './not-on-team'
 
 /**
- * The course workspace refused (403): the caller can see the course but is not on its team - say so and offer the
- * course page and their own courses, not «ask the platform administrator». An archived course says so instead (a
- * co-author is on the team). Anything else is the app's error view.
+ * The course workspace refused: `forbidden` is a caller who can see the course but is not on its team - say so and
+ * offer the course page and their own courses, not «ask the platform administrator». `course-archived` (409) says the
+ * course is archived instead (a co-author is on the team). Anything else is the app's error view.
  */
 export function WorkspaceError(props: ErrorComponentProps) {
   const { courseId } = useParams({ strict: false })
-  if (!(props.error instanceof ApiError && props.error.status === 403) || !courseId) return <ErrorView {...props} />
-  return props.error.code === 'course-archived' ? (
-    <ArchivedCourse courseId={courseId} />
-  ) : (
-    <NotOnTeam courseId={courseId} />
-  )
+  const code = props.error instanceof ApiError ? props.error.code : null
+  if (!courseId) return <ErrorView {...props} />
+  if (code === 'course-archived') return <ArchivedCourse courseId={courseId} />
+  if (code === 'forbidden') return <NotOnTeam courseId={courseId} />
+  return <ErrorView {...props} />
 }

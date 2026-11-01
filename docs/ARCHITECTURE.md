@@ -1,14 +1,13 @@
 # Ashyq Bilim — Rust Backend Architecture
 
-**Status:** authoritative. Decisions here were ratified by the owner on 2026-08-16
-(30-question review); the Rust backend replaced the legacy Python API in production on
-2026-09-30. Deviations update the relevant section here in place, with the rationale in the commit message
-(`docs/DECISIONS.md` is frozen history since 2026-10-31).
+**Status:** authoritative for the server in `apps/server`. A change of design updates the relevant section here in
+place, with the rationale in the commit message (`docs/DECISIONS.md` is frozen history since 2026-10-31).
 
 Companion documents:
-- [`docs/DECISIONS.md`](DECISIONS.md) — design deltas since ratification
+- [`docs/DECISIONS.md`](DECISIONS.md) — frozen history of design deltas
 - [`docs/INFRA.md`](INFRA.md) - compose stacks, networks, secrets, CI/release, web contract
 - [`docs/RUNBOOK.md`](RUNBOOK.md) - production operations
+- [`docs/REWRITE.md`](REWRITE.md) - the v3 rewrite in progress (sections cited as "REWRITE n.n")
 - [`apps/server/AGENTS.md`](../apps/server/AGENTS.md) — day-to-day agent playbook
 - [`docs/FINDINGS.md`](FINDINGS.md) — open production/infra issues
 
@@ -17,22 +16,16 @@ Companion documents:
 ## 1. Goals and non-goals
 
 **Goals**
-- Full replacement of `apps/api` (Python/FastAPI, ~68k LOC, 282 endpoints) with an
-  idiomatic Rust service: **Tokio + Axum + SQLx + utoipa + tracing/OpenTelemetry**.
-- **Agent-first development**: the codebase is written and maintained by coding agents
-  (Fable 5 orchestrating Opus 5 subagents) with near-zero human review. Every invariant
-  that can be enforced by the compiler, a lint, a test, or CI **must** be. Human taste
-  is replaced by machine gates.
-- Errors surface at the earliest possible moment: compile time > startup time >
-  request time > background. Nothing fails silently.
-- Auth is delegated to **Zitadel** (self-hosted). We keep our own RBAC.
-- All production data is preserved (10k users). Big-bang cutover, ≤ 2 days window.
-- A base that stays fresh for years: boring, consensus core; volatile pieces
-  (LLM, queue) isolated behind our own seams so they can be swapped in one file.
+- One idiomatic Rust service (**Tokio + Axum + SQLx + utoipa + tracing**) behind `/api/v2`.
+- **Agent-first development**: the codebase is written and maintained by coding agents with near-zero human
+  review. Every invariant that can be enforced by the compiler, a lint, a test, or CI **must** be.
+- Errors surface at the earliest possible moment: compile time > startup time > request time > background.
+  Nothing fails silently.
+- Authentication is delegated to an internal **Zitadel**; RBAC is ours.
+- A boring core; volatile pieces (LLM providers, the queue) behind our own seams so they can be swapped in one
+  module.
 
 **Non-goals**
-- Wire compatibility with the v1 API. The frontend is in scope for agent changes;
-  the API is redesigned where the old design was weak.
 - MCP tool surface (deferred; the thin-handler discipline keeps it cheap later).
 - Kubernetes, service mesh, microservices. One binary, one box, docker compose.
 
@@ -40,151 +33,139 @@ Companion documents:
 
 ```
                     ┌────────────────────────── VPS (docker compose) ─────────────────────────┐
- Browser ── https ─►│ nginx ──► web (Next.js 16, BFF for pages)                               │
+ Browser ── https ─►│ nginx ──► web (Next.js 16, apps/web) │ web2 (apps/web-2, profile dual-web)│
                     │   │                                                                     │
-                    │   ├─ /api/v2/*      ──► server  (ashyq serve, Axum)                     │
-                    │   ├─ /content/*     ──► rustfs  (public bucket, immutable cache)        │
-                    │   └─ /*             ──► web                                             │
+                    │   ├─ /api/v2/*            ──► server  (ashyq serve, Axum)               │
+                    │   ├─ /content/*           ──► rustfs  (ab-public, cached)               │
+                    │   ├─ /ab-public|ab-private ─► rustfs  (presigned S3 URLs)               │
+                    │   └─ /*                   ──► web or web2                               │
                     │                                                                         │
-                    │ server ◄─ data-net ─► postgres 18 (app db ─ pgvector, FTS, job queue)   │
+                    │ server ◄─ data-net ─► postgres 18 (app db: FTS, job queue; pgvector ext)│
                     │ server ◄───────────► redis 8      (sessions, SSE streams, rate limits)  │
                     │ server ◄───────────► zitadel      (authN; own db in same PG cluster)    │
                     │ server ◄───────────► rustfs       (S3 API: uploads, media, artifacts)   │
-                    │ server ◄─ exec-net ► judge0       (code execution, unchanged)           │
-                    │ worker  (ashyq worker: job queue consumers + cron leader)               │
-                    │ server ── otlp ────► Logfire (SaaS)                                     │
+                    │ server ◄─ exec-net ► judge0       (code execution, profile judge0)      │
+                    │ worker  (ashyq worker: job queue consumers + schedule ticks)            │
+                    │ server ── otlp ────► optional (AB__TELEMETRY__OTLP_ENDPOINT)            │
                     └─────────────────────────────────────────────────────────────────────────┘
-                    External: OpenAI / OpenRouter (LLM), Resend (email), Google (via Zitadel)
+                    External: Anthropic / OpenAI / OpenRouter (LLM), Resend (email), Google OAuth
 ```
 
-One Docker image. `ashyq serve` and `ashyq worker` are the same binary with different
-subcommands. The Python API, Taskiq workers, and its local `content/` volume are deleted
-at cutover.
+One Docker image. `ashyq serve` and `ashyq worker` are the same binary with different subcommands. Services,
+networks and trust zones: `docs/INFRA.md`.
 
 ## 3. Stack
 
-Rule: **`Cargo.lock` is the pin.** Manifests carry semver-minor requirements; upgrades
-are deliberate (`just upgrade` + green CI), never drive-by. Stable Rust only,
-edition 2024. MSRV = whatever current stable is at scaffold time (≥ 1.94 for sqlx 0.9);
-`rust-toolchain.toml` tracks `stable`.
+Rule: **`Cargo.lock` is the pin.** Manifests carry semver requirements; upgrades are deliberate and land with a
+green CI, never drive-by. Stable Rust, edition 2024; `rust-toolchain.toml` pins the exact toolchain (the Dockerfile's
+base image matches it); `apps/server/tools.env` pins the cargo tools.
 
-### Core (the boring half — expected to survive to 2030)
+### Core
 
 | Concern | Crate | Notes |
 |---|---|---|
 | Runtime | `tokio` (full) | |
-| HTTP | `axum` 0.8, `axum-extra` (typed-header, cookie, query) | |
-| Middleware | `tower`, `tower-http` (trace, cors, compression, timeout, limit, request-id, normalize-path, catch-panic) | |
-| Rate limiting | `tower_governor` | edge nginx `limit_req` stays as the outer layer |
+| HTTP | `axum` 0.8, `axum-extra` (typed-header, cookie) | |
+| Middleware | `tower`, `tower-http` (trace, cors, compression, timeout, limit, request-id, catch-panic, sensitive-headers) | |
+| Rate limiting | ours, Redis fixed windows (`ab_domain::identity::rate_limit`) | edge nginx `limit_req` is the outer per-IP layer |
 | DB | `sqlx` 0.9 (runtime-tokio, tls-rustls-ring, postgres, uuid, json, migrate, macros) | see §8 gotchas |
-| Vectors | `pgvector` (sqlx feature) | |
-| Redis | `redis` 1.x (tokio-rustls-comp, connection-manager) | reached 1.0; chosen over `fred` for API stability |
+| Redis | `redis` 1.x (tokio-comp, connection-manager) | |
 | Serialization | `serde`, `serde_json` | |
 | Validation | `garde` (derive, email, url) | serde parses, garde enforces business rules |
-| Config | `figment` (env) + `secrecy` | env-only in prod, `AB__*` namespace |
+| Config | `figment` (env) + `secrecy` | `AB__*` namespace, §16 |
 | Errors | `thiserror` (libs) / `anyhow` (bin edges only) | one `Error` enum, §5 |
-| Time | `jiff` + `jiff-sqlx` | deliberate bet over chrono; better API, TZ-correct |
-| IDs | `uuid` v7 | Postgres 18 has native `uuidv7()` — used as column default |
-| OpenAPI | `utoipa` 5, `utoipa-axum`, `utoipa-scalar` | routes and schemas registered together — no drift |
-| Observability | `tracing`, `tracing-subscriber`, `tracing-opentelemetry`, `opentelemetry-otlp` | OTLP → Logfire |
-| HTTP client | `reqwest` (rustls, json, stream) + `reqwest-middleware` + `reqwest-retry` | |
+| Time | `jiff` | `ab_core::time`; columns are `timestamptz`, rows carry epoch seconds |
+| IDs | `uuid` v7 | Postgres 18 native `uuidv7()` as column default |
+| OpenAPI | `utoipa` 6, `utoipa-axum`, `utoipa-scalar` | routes and schemas registered together — no drift |
+| Observability | `tracing`, `tracing-subscriber`, `tracing-opentelemetry`, `opentelemetry-otlp` (traces, HTTP) | §13 |
+| HTTP client | `reqwest` (rustls, json, form, stream) | retries and circuit breakers per client |
 | Object storage | `object_store` (aws) | S3 API against RustFS; provider swap = config |
-| Cache | `moka` (future) | in-process L1; Redis is L2 where shared state matters |
-| Email | `resend-rs` | |
-| Passwords | *none* | Zitadel owns credentials; no argon2 in our binary |
-| Multipart | `axum` multipart (only for small direct uploads) | large files go straight to RustFS via presigned URLs |
+| Passwords | *none* | Zitadel owns credentials |
 | CLI | `clap` (derive, env) | |
 | Shutdown | `tokio-util` `CancellationToken` | drains in-flight requests, SSE, jobs |
 | Allocator | `mimalloc` | binary only |
 
-### Volatile layer (isolated behind our own modules — swappable by design)
+### Volatile layer (isolated behind our own modules)
 
-| Concern | Crate | Isolation seam |
+| Concern | Implementation | Isolation seam |
 |---|---|---|
-| LLM | `rig-core` | `rig` types appear **only** in `ab-clients::llm`; domain code sees our `LlmClient` facade over rig's `CompletionModel` |
-| Tokenizing | `tiktoken-rs` | inside `ab-clients::llm::budget` |
-| Job queue | **hand-rolled Postgres queue** (`ab-db::queue`, ~500 LOC) | decision record below |
-| SSE replay | Redis Streams | `ab-api::sse` + `ab-domain::events` only |
+| LLM | hand-rolled over `reqwest`: Anthropic Messages API + OpenAI-compatible chat completions | provider wire types appear **only** in `ab_clients::llm`; domain code sees `LlmClient`, `CompletionRequest`, `Completion`, `StreamChunk`, `LlmError` |
+| Tokenizing | `tiktoken-rs` | inside `ab_clients::llm` |
+| Job queue | **hand-rolled Postgres queue** (`ab_db::queue`, `ab-jobs`) | §9 |
+| SSE replay | Redis Streams | `ab_domain::events` + `crates/api/src/routes/sse.rs` |
 
-**Decision — job queue (Q18, delegated to architect):** apalis-postgres pins sqlx 0.8
-(splitting the binary into two incompatible `PgPool`s and killing transactional
-enqueue — the entire point of a Postgres queue); apalis 1.0 is still `rc`. A
-`FOR UPDATE SKIP LOCKED` + `LISTEN/NOTIFY` queue on our own sqlx 0.9 pool is a
-well-trodden ~500-line pattern that gives us: transactional enqueue (job inserts
-commit atomically with the domain write that caused them), zero dependency churn,
-exact semantics we can test. If the ecosystem consolidates by 2028, the `Queue`
-trait seam makes adoption a one-crate change. This kills the outbox problem for
-audit events, XP awards, and emails: they enqueue inside the same transaction
-that records the triggering fact.
+**Job queue rationale:** apalis-postgres pinned sqlx 0.8 (two incompatible `PgPool`s, no transactional enqueue).
+A `FOR UPDATE SKIP LOCKED` + `LISTEN/NOTIFY` queue on our own sqlx 0.9 pool gives transactional enqueue (job
+inserts commit atomically with the domain write that caused them), zero dependency churn and semantics we test.
+No outbox: follow-up work enqueues inside the transaction that records the triggering fact.
 
 ### Toolchain
 
 | Tool | Purpose |
 |---|---|
-| `cargo-nextest` | test runner (CI + local) |
+| `cargo-nextest` | test runner (CI + local; `.config/nextest.toml`) |
 | `sqlx-cli` | migrations + `cargo sqlx prepare` (offline query cache) |
 | `cargo-llvm-cov` | coverage (floor enforced in CI) |
 | `cargo-deny` | advisories, license allowlist, duplicate-version bans |
 | `cargo-machete` | unused dependency detection |
-| `cargo-chef` | Docker layer caching |
-| `bacon` | local watch loop |
+| `cargo-chef` | Docker layer caching (`apps/server/Dockerfile`) |
+| `bacon` | local watch loop (`just server dev`) |
 | `just` | task runner — **the only entry point agents use** (see AGENTS.md) |
-| `insta` | snapshot tests (OpenAPI doc, error envelopes) with redactions |
+| `insta` | snapshot tests (OpenAPI doc, error registry) with redactions |
 | `wiremock` | HTTP-level fakes for Zitadel/Judge0/Resend/LLM |
-| `fake` + `rstest` | factories & parametrized tests |
+| `proptest` | property tests |
 
 ## 4. Workspace layout
 
 ```
 apps/server/
 ├── Cargo.toml                # [workspace], workspace.dependencies, workspace.lints
-├── rust-toolchain.toml
+├── rust-toolchain.toml, tools.env, deny.toml, .config/nextest.toml
 ├── justfile
-├── deny.toml
+├── Dockerfile
 ├── .sqlx/                    # committed offline query cache (CI-verified)
-├── migrations/               # sqlx migrate — hand-written SQL, numbered
+├── migrations/               # sqlx migrate — hand-written SQL, timestamped
+├── openapi.v2.json           # the contract artifact (§6)
 ├── AGENTS.md                 # agent playbook (authoritative for process)
-├── crates/
-│   ├── core/      (ab-core)      errors, config, ids, time, permission model, telemetry
-│   ├── db/        (ab-db)        pool, migrations embed, tx helpers, queue, pagination
-│   ├── clients/   (ab-clients)   zitadel, judge0, resend, llm(rig), storage(object_store), redis
-│   ├── domain/    (ab-domain)    all business logic, module per bounded context
-│   ├── api/       (ab-api)       axum app: state, extractors, middleware, routers, SSE, OpenAPI
-│   ├── jobs/      (ab-jobs)      job types, handlers, worker runtime, cron
-│   ├── testkit/   (ab-testkit)   app harness, factories, wiremock stubs (dev-dep only)
-│   └── server/    (ashyq bin)    clap subcommands: serve | worker | migrate | openapi | admin
-└── Dockerfile
+├── docs/                     # DEVELOPMENT.md, phase9-removals.md
+└── crates/
+    ├── core/          (ab-core)          errors, config, ids, time, permission model, links, telemetry
+    ├── db/            (ab-db)            pool, embedded migrations, queries/rows, queue, schedules
+    ├── clients/       (ab-clients)       zitadel, google, judge0, resend, llm, storage, link_preview
+    ├── domain/        (ab-domain)        all business logic, module per bounded context
+    ├── api/           (ab-api)           axum app: state, extractors, middleware, routes, DTOs, OpenAPI
+    ├── jobs/          (ab-jobs)          worker runtime + job handlers
+    ├── server/        (ashyq-server)     the `ashyq` binary: serve | worker | migrate | openapi | admin
+    ├── testkit/       (ab-testkit)       app harness, wiremock stubs (dev-dep only)
+    ├── testdb/        (ab-testdb)        per-test database cloned from a migrated template (dev-dep only)
+    └── testdb-macros/ (ab-testdb-macros) `#[ab_testdb::test]`
 ```
 
 Dependency edges (enforced by `Cargo.toml`; cycles are impossible):
 
 ```
-core ◄─ db ◄─┬─ domain ◄─┬─ api ◄─┐
-core ◄─ clients ─┘        ├─ jobs ◄┤─ server(bin)
-                          └────────┘
-testkit ─► {api, domain, db, clients}   (dev-dependency of all test suites)
+core ◄─ db ◄────┬─ domain ◄─┬─ api ◄──┬─ server (bin)
+core ◄─ clients ┘           └─ jobs ◄─┘
+testkit ─► {api, domain, clients, core}    testdb ─► {db, testdb-macros}   (dev-dependencies)
 ```
 
-Bounded contexts inside `ab-domain` (module per context, mirroring the legacy domains):
+Bounded contexts inside `ab-domain` (`crates/domain/src`):
 
-`identity` (users, sessions, rbac) · `org` (platform, usergroups) · `catalog`
-(courses, chapters, activities, blocks, collections) · `progress` (trail,
-activity/course progress) · `assessment` (authoring, items, policies, access) ·
-`grading` (submissions, pipeline, gradebook, bulk actions, feedback) · `files`
-(uploads, file-submissions) · `code` (judge0 runs) · `community` (discussions) ·
-`certs` · `gamification` · `analytics` · `ai` (runs, agents, budget) · `search` ·
-`work` (unified work queue) · `events` (domain event fan-out to jobs/SSE)
+`identity` (users, sessions, auth, rbac admin, usergroups, capabilities) · `catalog` (courses, `CourseCtx`
+access, curriculum, contributors, collections, readiness, search, platform) · `progress` (trail, projector,
+learner state, agenda, work queue) · `assessments` (authoring, items, access) · `grading` (submissions,
+grader, teacher, bulk actions, penalties) · `files` (uploads, file submissions) · `code` (Judge0 runs) ·
+`community` (discussions) · `certifications` · `gamification` · `analytics` · `ai` (runs, agents, budget) ·
+`notifications` · `events` (SSE fan-out) · `maintenance`, `rich_text`, `wire`, `link_preview`
 
-**Why layer crates, not context crates:** agents work in parallel on different
-contexts; module-level separation inside `ab-domain` gives them disjoint files
-(minimal merge conflicts) while keeping one `cargo check` unit for cross-context
-type errors — which is where agents need the compiler most. Compile-time cost is
-acceptable at this codebase size; revisit if clean-build minutes become the
-bottleneck.
+**Why layer crates, not context crates:** agents work in parallel on different contexts; module-level separation
+inside `ab-domain` gives them disjoint files while keeping one `cargo check` unit for cross-context type errors.
+Revisit if clean-build minutes become the bottleneck.
 
 ## 5. Error model — the single most important convention
 
-One error enum in `ab-core`, used by **every** fallible function in db/clients/domain:
+One error enum in `ab-core` (`crates/core/src/error/mod.rs`), used by **every** fallible function in
+db/clients/domain:
 
 ```rust
 #[derive(Debug, thiserror::Error)]
@@ -193,368 +174,310 @@ pub enum Error {
     App { code: ErrorCode, message: String, details: Option<serde_json::Value> },
     #[error("validation failed")]
     Validation { field_errors: Vec<FieldError> },
+    #[error("configuration error: {message}")]
+    Config { message: String },
     #[error(transparent)]
-    Db(#[from] sqlx::Error),          // mapped to 500 unless a constraint we recognize
-    #[error(transparent)]
-    Redis(#[from] redis::RedisError),
-    // … one transparent variant per infrastructure family
+    Db(sqlx::Error),                  // 500 unless a constraint we recognize
+    #[error("{context}")]
+    Internal { context: String, #[source] source: anyhow::Error },
 }
 ```
 
-- `ErrorCode` is a **closed enum** (`#[non_exhaustive]` is forbidden here) with a
-  stable kebab-case wire code and a canonical HTTP status:
-  `not-found`, `forbidden`, `conflict`, `rate-limited`, `assessment-closed`,
-  `attempt-limit-reached`, `upload-expired`, `ai-budget-exhausted`, …
-  New codes are added in one file (`ab-core/src/error/code.rs`); a unit test
-  snapshots the full registry so additions are visible in diffs, and the OpenAPI
-  document publishes the registry as an enum schema.
-- Wire format: **RFC 9457 `application/problem+json`**, extended:
+- `ErrorCode` is a **closed enum** (`#[non_exhaustive]` is forbidden here) with a stable kebab-case wire code,
+  a canonical HTTP status and an English title: `not-found`, `forbidden`, `conflict`, `precondition-failed`,
+  `rate-limited`, `course-archived`, `attempt-past-due`, `ai-budget-exhausted`, … New codes are one row in
+  `crates/core/src/error/code.rs`; a unit test snapshots the full registry, and the OpenAPI document publishes it
+  as an enum schema.
+- Wire format: **RFC 9457 `application/problem+json`**, extended (`ab_api::error::Problem`):
 
 ```json
 {
-  "type": "https://docs.ashyq.example/errors/attempt-limit-reached",
-  "status": 409,
-  "code": "attempt-limit-reached",
-  "title": "Attempt limit reached",
+  "type": "https://docs.ashyq-bilim.dev/errors/attempt-past-due",
+  "status": 403,
+  "code": "attempt-past-due",
+  "title": "The due date or late cutoff has passed",
   "detail": "…english, developer-facing…",
   "field_errors": [{ "field": "items[3].answer", "code": "required", "message": "…" }],
-  "request_id": "0198c0ae-…",
-  "trace_id": "4bf92f35…"
+  "details": { "…": "machine-readable context for some codes" },
+  "request_id": "0198c0ae-…"
 }
 ```
 
-- **All messages are English.** The frontend translates from `code` /
-  `field_errors[].code` (this retires the hardcoded-Russian problem). The error-code
-  registry doubles as the i18n key list; a repo script syncs it into the web app's
-  message catalogs, and a web-side test fails if a code lacks translations.
-- `IntoResponse` is implemented **once**, in `ab-api::error`. Handlers return
-  `Result<T, ab_core::Error>` — they never construct responses from errors.
-- Internal variants (`Db`, `Redis`, …) render as an opaque 500 with `request_id`;
-  full detail goes to tracing. Constraint violations we recognize (unique, FK)
-  map to `conflict` with the offending field where derivable.
-- Panics are a bug by definition: `unwrap`/`expect`/`panic!`/`todo!` are
-  **denied by workspace lints** outside `#[cfg(test)]`. `tower-http` `CatchPanicLayer`
-  is the airbag, not the seatbelt.
+- **All messages are English.** The frontends translate from `code` / `field_errors[].code`: `apps/web` checks
+  its catalogs with `bun run check:error-codes` (`apps/web/scripts/sync-error-codes.mjs`); `apps/web-2` maps
+  every `ErrorCode` exhaustively in `src/shared/i18n/errors.ts`, so a new code fails its type check.
+- `IntoResponse` is implemented **once**, in `ab_api::error`. Handlers return `Result<T, ab_core::Error>` — they
+  never construct responses from errors.
+- Internal variants render as an opaque 500 with `request_id`; full detail goes to tracing. Constraint violations
+  we recognize (unique, FK) map to `conflict` / `not-found` with the offending field where derivable.
+- Panics are a bug by definition: `unwrap`/`expect`/`panic!`/`todo!`/`unimplemented!`/`dbg!`/`print*!` are
+  **denied by workspace lints** (tests opt out explicitly). `CatchPanicLayer` is the airbag, not the seatbelt.
 
 ## 6. API design (`/api/v2`)
 
-- Base path `/api/v2`, OpenAPI 3.1 generated by `utoipa` from the same registrations
-  that mount routes (`utoipa-axum` `OpenApiRouter` + `routes!`). **A route cannot
-  exist without a documented operation and typed response** — this is the Rust
-  equivalent of the legacy `StrictAPIRoute` guarantee, but compile-time.
-- `ashyq openapi > openapi.v2.json` is the contract artifact. The web app's Orval
-  pipeline points at it (client regen is a build step, §15). CI snapshots the doc
-  with `insta` — every contract change is visible in the diff — and runs `oasdiff`
-  to label breaking changes. The document passes through one export-time pass
-  (`ab-api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract"
-  and its part 2) before it is served or exported. Request DTOs declare their
-  garde limits as schema constraints; stored JSON is typed in
-  `ab-domain/src/wire.rs`; SSE responses reference an event union.
-- Resources: plural kebab-case paths, UUIDv7 ids, flat where possible
-  (`/courses/{course_id}`, `/assessments/{assessment_id}/items`,
-  `/submissions/{submission_id}`): a path parameter is named after its resource.
-- **Inputs**: `#[serde(deny_unknown_fields)]` DTOs + `garde` rules, enforced by a
-  `Valid<Json<T>>` extractor that emits `Validation` errors with per-field codes.
-- **Outputs**: dedicated response DTOs (`ToSchema`), never DB rows directly.
-  Serialization of DB row types in `ab-api` is prevented by convention + review
-  gate: response DTOs live in `ab-api::dto` and derive `ToSchema`; `ab-db` row
-  structs do not derive `Serialize`.
-- **Pagination** (S-05): two envelopes. Keyset `{ "items": [...], "next_cursor": "…" }`
-  with an opaque string cursor (older lists use the last row's id, which stays a
-  valid cursor; composite keys are encoded, e.g. the leaderboard's
-  `"<xp>.<profile id>"`), `limit` capped server-side; numbered pages
-  (`page`/`page_size`/`total`) for analytics tables only. Lists that answered a
-  bare array keep it and gain a `/page` sibling (`ab_core::page_after`, paged
-  in memory); the leaderboard keeps `limit`/`offset` beside `cursor` until phase 9.
-- **Idempotency**: every creating/submitting POST the web calls accepts
-  `Idempotency-Key` (`extract::idempotent`); keys + response digests are stored
-  in Postgres with 24h TTL sweep; a 204 replays without a body.
-- **Optimistic concurrency** (S-04): every resource the web edits answers
-  `version` and, on its single read, `ETag: "<version>"`; mutations take an
-  optional `If-Match` and answer 412 `precondition-failed` (`details {expected,
-  actual}`) when it is stale (`extract::require_if_match`, after the permission
-  gate). Courses, chapters, announcements, certifications, roster rows,
-  usergroups, roles, the platform and assessments bump `version` through the
-  `bump_version` trigger; collections, activities, drafts and grades keep their
+- Base path `/api/v2`, OpenAPI 3.1 generated by `utoipa` from the same registrations that mount routes
+  (`utoipa-axum` `OpenApiRouter` + `routes!`). **A route cannot exist without a documented operation and typed
+  response.**
+- `just server openapi` writes `apps/server/openapi.v2.json`, the contract artifact; `just contract` regenerates
+  both web clients from it (§15). CI checks the committed file (`openapi-check`) and an `insta` snapshot
+  (`crates/api/tests/openapi.rs`) makes every contract change visible in the diff. The document passes through
+  one export-time pass (`crates/api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract" and its
+  part 2) before it is served or exported. Request DTOs declare their garde limits as schema constraints; stored
+  JSON is typed in `crates/domain/src/wire.rs`; SSE responses reference an event union.
+- Resources: plural kebab-case paths, UUIDv7 ids, flat where possible (`/courses/{course_id}`,
+  `/assessments/{assessment_id}/items`, `/submissions/{submission_id}`): a path parameter is named after its
+  resource.
+- **Inputs**: `#[serde(deny_unknown_fields)]` DTOs + `garde` rules, enforced by the `ValidJson<T>` extractor that
+  emits `Validation` errors with per-field codes.
+- **Outputs**: dedicated response DTOs (`ToSchema`) in `ab_api::dto`, never DB rows directly; `ab-db` row structs
+  do not derive `Serialize`.
+- **Pagination**: two envelopes. Keyset `{ "items": [...], "next_cursor": "…" }` with an opaque string cursor
+  (older lists use the last row's id, which stays a valid cursor; composite keys are encoded, e.g. the
+  leaderboard's `"<xp>.<profile id>"`), `limit` capped server-side; numbered pages (`page`/`page_size`/`total`)
+  for analytics tables only. Lists that answered a bare array keep it and gain a `/page` sibling
+  (`ab_core::page_after`, paged in memory); the leaderboard keeps `limit`/`offset` beside `cursor` until phase 9.
+- **Idempotency**: every creating/submitting POST the web calls accepts `Idempotency-Key` (`extract::idempotent`);
+  keys + response digests are stored in Postgres with a 24h TTL sweep (`submissions:sweep-idempotency`); a 204
+  replays without a body.
+- **Optimistic concurrency**: every resource the web edits answers `version` and, on its single read,
+  `ETag: "<version>"`; mutations take an optional `If-Match` and answer 412 `precondition-failed`
+  (`details {expected, actual}`) when it is stale (`extract::require_if_match`, after the permission gate).
+  Courses, chapters, announcements, certifications, roster rows, usergroups, roles, the platform and assessments
+  bump `version` through the `bump_version` trigger; collections, activities, drafts and grades keep their
   explicit counters.
-- **`Prefer: return=representation`**: writes that answer 204 (admin role /
-  status / membership writes) or a different resource (trail writes → the
-  course's `learner_state`) return the updated resource on request; the
+- **`Prefer: return=representation`**: writes that answer 204 (admin role / status / membership writes) or a
+  different resource (trail writes → the course's `learner_state`) return the updated resource on request; the
   default stays as it was.
-- **Renames (S-10, expand)**: a renamed path is a twin handler with its own
-  `operationId`; the export marks the old operation `deprecated: true` +
-  `x-replaced-by` (`openapi::RENAMED`) until phase 9 removes it.
-- **Web links (S-11)**: every URL into the web app is built by
-  `ab_core::links::WebLink` in the scheme `AB__SERVER__WEB_LINKS` selects
-  (`legacy` | `v2`), anchored at `AB__SERVER__WEB_URL` where a full URL is
-  needed (emails, redirects, the certificate QR).
-- **SSE**: `axum::response::Sse` + `async-stream`. Event log per stream in
-  **Redis Streams** (`XADD` with `MAXLEN ~ 1024`), `Last-Event-ID` resumes via
-  `XRANGE` — replay is native, no custom event-log code like the legacy version.
-  25s keepalive comments; per-user concurrent-connection cap (Redis counter,
-  limit 5) as today. Streams: grading feedback per submission, AI run events per run,
-  and (stage 2, S-06) one per user - `GET /me/events` carries every event
-  addressed to the user (`grading.updated`, `submission.updated`,
-  `notification.created`, `notification.read`, `xp.awarded`; a closed enum with a
-  typed payload each). Fan-out and authorization happen at publish time
-  (`ab_domain::events::user`): the producer names the recipients, the reader
-  only ever reads its own stream. The per-submission and per-course streams
-  stay until phase 9.
-- **Uploads**: direct-to-RustFS via presigned multipart URLs (§11). The API never
-  proxies file bytes except avatars/thumbnails (< 1 MB direct multipart).
-- Middleware stack (order matters): request-id → trace → timeout(30s) →
-  compression → body-limit → CORS → governor (auth-sensitive routes) → CSRF guard
-  (reject cross-site `Sec-Fetch-Site` on mutations, mirror of legacy behavior) →
-  session extractor.
+- **Renames (expand)**: a renamed path is a twin handler with its own `operationId`; the export marks the old
+  operation `deprecated: true` + `x-replaced-by` (`openapi::RENAMED`) until phase 9 removes it.
+- **Web links**: every URL into the web app is built by `ab_core::links::WebLink` in the scheme
+  `AB__SERVER__WEB_LINKS` selects (`legacy` | `v2`), anchored at `AB__SERVER__WEB_URL` where a full URL is needed
+  (emails, redirects, the certificate QR).
+- **SSE**: `axum::response::Sse`. Event log per stream in **Redis Streams** (`XADD` with `MAXLEN ~`),
+  `Last-Event-ID` resumes via `XRANGE`. 25s keepalive comments; per-user cap of 10 open streams (Redis lease set).
+  Streams: grading feedback per submission and per course, AI run events per run, and one per user -
+  `GET /me/events` carries every event addressed to the user (`grading.updated`, `submission.updated`,
+  `notification.created`, `notification.read`, `xp.awarded`; a closed enum with a typed payload each). Fan-out and
+  authorization happen at publish time (`ab_domain::events::user`): the producer names the recipients, the reader
+  only ever reads its own stream. The per-submission and per-course streams stay until phase 9.
+- **Uploads**: direct-to-RustFS via presigned URLs (§11). The API never proxies upload bytes.
+- Middleware stack, outermost first (`crates/api/src/app.rs`): request-id (sanitize, set, propagate) → trace →
+  timeout (30s, 408) → compression → catch-panic → CORS (strict allowlist with credentials) → request-id scope →
+  problem+json 413 → `?lang=` → CSRF guard (reject cross-site `Sec-Fetch-Site` on mutations) → routes. The
+  session is an extractor, not a layer.
+
+"Phase 9" is the post-cutover cleanup of `docs/STAGE-2-CUTOVER.md` section 4; the server items are listed in
+`apps/server/docs/phase9-removals.md`.
 
 ## 7. Authentication & authorization
 
-### Zitadel (self-hosted, compose service — **internal-only**, see DECISIONS.md 2026-08-16)
+### Zitadel (compose service — **internal-only**, see DECISIONS.md 2026-08-16)
 
-- Zitadel, own database `zitadel` in the shared Postgres cluster (own role, no
-  grants on the app DB). Masterkey and service PAT live in `.env`. **No public
-  route** — the Rust BFF is its only client; passkeys are dropped (origin-bound,
-  owner declined a dedicated domain) and Google OAuth is first-party.
-- **Zitadel owns**: credentials, password policy & hashing, TOTP, email
-  verification codes (returned to the BFF, sent via Resend), lockout/brute-force
-  counters. **We own**: sessions (BFF), RBAC, user profile, the Google OAuth
-  dance, and the Google `sub` linkage table.
-- Provisioning is code, not clicks: `ashyq admin zitadel-setup` (idempotent) creates
-  the org, project, machine user for the API, Google IdP config, custom texts
-  (ru/kk/en), and writes the resulting ids into the app DB `platform` row. Runs in
-  dev, CI, and prod identically. **No manual Zitadel console steps are ever required
-  or documented** — if it isn't in `zitadel-setup`, it doesn't exist.
+- Zitadel, own database `zitadel` in the shared Postgres cluster (own role, no grants on the app DB). **No public
+  route** — the Rust BFF is its only client; passkeys are dropped (origin-bound) and Google OAuth is first-party
+  (`ab_clients::google`).
+- **Zitadel owns**: credentials, password policy & hashing, TOTP, email verification codes (returned to the BFF,
+  sent via Resend), lockout counters. **We own**: sessions (BFF), RBAC, user profile, the Google OAuth dance, and
+  the Google `sub` linkage.
+- Provisioning is declarative: the `ZITADEL_FIRSTINSTANCE_*` compose env creates the org and the
+  `ashyq-provisioner` machine user with its PAT; bootstrap hands the PAT to the server env (`docs/INFRA.md`,
+  "Bootstrap"). `ashyq admin zitadel-check` verifies reachability and PAT validity. No manual console steps.
 
 ### Login flow — custom UI, headless Zitadel (Session API v2)
 
-The Next.js login page stays ours (restyled as needed). The browser only ever talks
-to our API; our API drives Zitadel:
+The browser only ever talks to our API; our API drives Zitadel (`crates/api/src/routes/auth.rs`):
 
 ```
-POST /api/v2/auth/login {login, password}
+POST /api/v2/auth/login {login, password, totp_code?}
   └► zitadel: create session + password check
-      ├─ ok, no MFA        ─► issue ab_session cookie
-      ├─ MFA required      ─► 401 code=mfa-required {challenge…}
-      │    POST /api/v2/auth/mfa {totp|webauthn assertion} ─► verify via session API ─► cookie
-      └─ bad credentials   ─► 401 code=invalid-credentials (uniform timing)
-GET  /api/v2/auth/google  ─► 302 to Google (first-party authorization-code flow,
-     state-signed; port of legacy google_oauth.py)
+      ├─ ok (and TOTP verified when enabled) ─► ab_session cookie + session body
+      ├─ TOTP enabled, no code              ─► 401 code=mfa-required (client resends with totp_code)
+      └─ bad credentials                    ─► 401 code=invalid-credentials
+GET  /api/v2/auth/google  ─► 302 to Google (authorization code + PKCE, state in Redis)
      …Google… ─► GET /api/v2/auth/google/callback?code=…&state=…
-  └► exchange code, verify id_token ─► find-or-create user (Zitadel user with
-     no password + google_accounts row) ─► cookie ─► redirect to app
+  └► exchange code, read id_token ─► find-or-create user ─► cookie ─► redirect to app
 POST /api/v2/auth/logout  ─► kill our session + zitadel session
 ```
 
-No OIDC token dance in the first-party hot path — the Session API is the documented
-pattern for "build your own login UI", and we don't need tokens no third party will
-ever see. OIDC stays available on the same Zitadel for future federation.
+Registration, email verification, password reset/change, email change, TOTP enrolment and session
+list/revoke live under `/auth/*` too. `POST /api/v2/auth/dev-login` (`just login-as`) signs in as an existing
+account without a password: routed only in a debug build outside production, loopback peers only, not in the
+contract (`ab_api::app::dev_login_enabled`).
 
-### Sessions — BFF cookie (unchanged posture, simplified mechanics)
+### Sessions — BFF cookie
 
-- Single httponly cookie `ab_session` (`Secure`, `SameSite=Lax`, host-only), opaque
-  128-bit random id. Server-side record in Redis: user id, zitadel user/session ids,
-  rbac version, created/last-seen, ip/ua summary.
-- Sliding idle timeout **14 days**, absolute cap **90 days**, `MAX_SESSIONS_PER_USER=10`
-  (oldest evicted), instant revocation (delete key), session list + revoke endpoints.
-  The legacy access/refresh two-cookie rotation machinery is retired — it existed
-  because JWTs were stateless; a server-side session needs none of it.
-- Session fixation: id rotates on login and privilege change. CSRF: SameSite=Lax +
-  `Sec-Fetch-Site`/`Origin` checks on mutations (as today).
-- Frontend impact: the `/api/auth/refresh` Next route-handler bridge and 401
-  single-flight refresh logic are **deleted**, not ported.
-- The session answer (`GET /auth/session`, also the body of `POST /auth/login`):
-  `user_id`, `roles`, raw `permissions` (legacy contract), `mfa_enabled`, plus
-  `user` (id, username, email, display name, avatar key, locale, theme - what the
-  app shell draws, no second request) and `capabilities`: a closed enum of
-  UI-level rights (`teach`, `course.create`, `admin`, `admin.users`, ...)
-  computed by the server's own gates (`ab_domain::identity::capabilities`,
-  DECISIONS 2026-10-03). Clients never parse permission strings; per-object
-  rights travel as `allowed_actions` on the resources. A session whose account
-  row is gone answers 401.
+- Single httponly cookie `ab_session` (`SameSite=Lax`, `Secure` in production, host-only), opaque random id.
+  Server-side record in Redis (`ab_domain::identity::sessions`): user and Zitadel ids, roles, permissions,
+  `rbac_version`, created/last-seen, ip/ua.
+- Sliding idle timeout **14 days**, absolute cap **90 days**, `MAX_SESSIONS_PER_USER = 10` (oldest evicted),
+  instant revocation (delete key), session list + revoke endpoints.
+- Every login issues a fresh id; a disable, password change, TOTP activation or grant change ends the user's
+  sessions (epoch, §10). CSRF: `SameSite=Lax` + `Sec-Fetch-Site` check on mutations.
+- The session answer (`GET /auth/session`, also the body of `POST /auth/login`): `user_id`, `roles`, raw
+  `permissions` (legacy contract), `mfa_enabled`, plus `user` (id, username, email, display name, avatar key,
+  locale, theme - what the app shell draws, no second request) and `capabilities`: a closed enum of UI-level
+  rights (`teach`, `course.create`, `admin`, `admin.users`, ...) computed by the server's own gates
+  (`ab_domain::identity::capabilities`, DECISIONS 2026-10-03). Clients never parse permission strings;
+  per-object rights travel as `allowed_actions` on the resources. A session whose account row is gone answers
+  401.
 
 ### RBAC — ours, in Postgres
 
-- The `resource:action:scope` permission model ports as-is (it's good): typed
-  `Permission { resource: Resource, action: Action, scope: Scope }` in `ab-core`,
-  parsed/validated at boot from the DB, wildcard `*` supported.
-- Role → permission assignments and the six roles (admin, maintainer, instructor,
-  moderator, user, guest) are seeded by migration. Display names become i18n keys
-  (fixes hardcoded Russian).
-- Enforcement lives in **`ab-domain`**, not handlers: every domain service method
-  takes an `Actor` (id + permission set + rbac version) and calls
-  `actor.require(perm)?` / ownership checks before touching data. Handlers cannot
-  "forget" a check that the service demands. A testkit helper asserts every
-  mutating endpoint returns 403 for a permissionless actor (table-driven test over
-  the OpenAPI route list — new endpoints fail this test until covered).
-- Permission set cached in the session record; `rbac_version` on the user row
-  invalidates sessions on role change.
+- The `resource:action:scope` permission model: typed `Permission { resource, action, scope }` in
+  `ab_core::permission`, parsed and validated from the DB, wildcard `*` supported.
+- Role → permission assignments and the six roles (admin, maintainer, instructor, moderator, user, guest) are
+  seeded by migration.
+- Enforcement lives in **`ab-domain`**, not handlers: every domain service method takes an `Actor`
+  (`ab_domain::identity::Actor`: user id, permission set, `rbac_version`, …) and calls `actor.require(perm)?` /
+  ownership checks before touching data. Course-scoped catalog writes go through one `CourseCtx`
+  (`crates/domain/src/catalog/access.rs`): the caller's `Caps` in the course, with the archive rule applied in
+  that one place (`docs/COURSE_ARCHIVING.md` section 7); the other modules move to it per REWRITE 6.3.
+- `crates/api/tests/rbac_sweep.rs` classifies every mutating operation of the OpenAPI document and asserts that
+  permission-gated ones reject a session with zero grants — a new endpoint fails it until classified.
+- `rbac_version` on the user row and the per-user epoch in Redis (§10) end sessions on role change.
 
 ## 8. Data layer
 
-### Schema — redesigned (Q13: "clean up"), UUIDv7 everywhere (Q14)
+### Schema
 
-Fresh migration set for a new database `ashyq`. The legacy schema is the *reference*,
-not the template. Redesign rules:
+One migration set for the database `ashyq`. Rules:
 
 1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
-   `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by a
-   single shared trigger. The legacy int-PK + parallel ULID/UUID columns collapse
-   into one key; ETL maintains the mapping (MIGRATION.md).
+   `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by the shared `set_updated_at`
+   trigger.
 2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations.
-3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum with
-   `#[derive(sqlx::Type)]`); native PG enums are avoided (painful migrations).
-4. **JSONB policy**: JSONB is allowed only for genuinely polymorphic payloads —
-   assessment item bodies, submission answers/snapshots, activity block content,
-   AI event payloads. Each JSONB column maps to a versioned, internally-tagged
-   serde enum (`#[serde(tag = "type")]`) with a `schema_version` field, and gets a
-   round-trip test (legacy sample fixtures → parse → serialize). Everything the
-   legacy schema stuffed into JSON for convenience (settings scalars, flags) is
-   normalized into columns. The 52 legacy JSON columns are triaged per-table in
-   the ETL spec.
-5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE`
-   only for owned children like items/blocks). No soft-delete convention; archival
-   is a domain status where the domain needs it (courses, assessments).
-6. Full-text search: `tsvector` **generated stored columns** + GIN (legacy built
-   vectors in queries); `document_chunks` keeps pgvector `vector` + HNSW.
-7. Optimistic concurrency: one integer `version` per edited resource (see
-   section 6, S-04; 412 on a stale `If-Match`), plus the per-column-family
-   counters where genuinely concurrent (grading vs. draft; the draft save keeps
-   its 409 until phase 9).
+3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
+4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
+   answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
+   (`crates/domain/src/wire.rs`) with round-trip tests. Settings scalars and flags are columns.
+5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE` only for owned children like
+   items/blocks). No soft-delete convention; archival is a domain status where the domain needs it (courses,
+   assessments).
+6. Search: `search_matches` / `search_fold` (`migrations/20260926000001_search_matches.sql`), one word-match rule
+   for `/search`, `courses?q=` and collections; the `vector` extension is installed, no column uses it yet.
+7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the
+   per-column-family counters where genuinely concurrent (grading vs. draft; the draft save keeps its 409 until
+   phase 9).
 
 ### SQLx usage
 
-- `query!` / `query_as!` (compile-time checked) for all static SQL. Offline cache
-  `.sqlx/` is committed; CI runs `cargo sqlx prepare --check` — a query that
-  doesn't match the schema **fails the build**, which is exactly the
-  error-as-early-as-possible property we want for agents.
-- Dynamic SQL (filter builders for analytics/search) uses `QueryBuilder`; raw
-  runtime strings require `AssertSqlSafe` (sqlx 0.9) which is grep-gated in review —
-  each use carries a `// SAFETY:` comment.
-- sqlx 0.9 gotchas (from the suggestions doc, verified): `Transaction` no longer
-  implements `Executor` — pass `&mut *tx`; `impl SqlSafeStr` on query fns.
-- Transactions: domain services own transaction boundaries via a `Tx` helper
-  (`ab-db::tx(pool, |tx| async { … })`); handlers never see transactions.
-- Migrations: `sqlx migrate` embedded via `migrate!()`; `ashyq migrate` runs them
-  explicitly (compose one-shot `server-migrate`, run by bootstrap and deploy; never auto-run on boot).
-  Migration files are append-only after they land on `rewrite`.
+- `query!` / `query_as!` (compile-time checked) for all static SQL. The offline cache `apps/server/.sqlx/` is
+  committed; CI runs `just sqlx-check` (`cargo sqlx prepare --check`) — a query that doesn't match the schema
+  **fails the build**.
+- Dynamic SQL (filter builders for analytics/search) uses `QueryBuilder`; raw runtime strings require
+  `AssertSqlSafe`, each use with a `// SAFETY:` comment.
+- sqlx 0.9 gotchas: `Transaction` no longer implements `Executor` — pass `&mut *tx`; `impl SqlSafeStr` on query
+  fns.
+- Transactions: domain services own transaction boundaries (`self.pool.begin()` … `tx.commit()`); handlers never
+  see transactions.
+- Migrations: `sqlx migrate` embedded via `migrate!()`; `ashyq migrate` runs them explicitly (compose one-shot
+  `server-migrate`, run by bootstrap and deploy; never on boot). A migration on `origin/main` is never edited
+  (pre-commit hook); add a new one (`just new migration <name>`).
 
-## 9. Background jobs (`ab-db::queue` + `ab-jobs`)
+## 9. Background jobs (`ab_db::queue` + `ab-jobs`)
 
 ```sql
-CREATE TABLE jobs (
+CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   id           uuid PRIMARY KEY DEFAULT uuidv7(),
   kind         text NOT NULL,
-  payload      jsonb NOT NULL,
-  status       text NOT NULL DEFAULT 'queued',    -- queued|running|succeeded|failed|dead
+  payload      jsonb NOT NULL DEFAULT '{}',
+  status       text NOT NULL DEFAULT 'queued', -- queued|running|succeeded|failed|dead
   priority     smallint NOT NULL DEFAULT 0,
   run_at       timestamptz NOT NULL DEFAULT now(),
-  attempts     int NOT NULL DEFAULT 0,
-  max_attempts int NOT NULL DEFAULT 5,
-  dedupe_key   text UNIQUE,
+  attempts     integer NOT NULL DEFAULT 0,
+  max_attempts integer NOT NULL DEFAULT 5,
+  dedupe_key   text,                           -- unique among queued/running jobs
   locked_by    text, locked_at timestamptz, heartbeat_at timestamptz,
   last_error   text,
-  created_at   timestamptz NOT NULL DEFAULT now()
+  created_at, updated_at timestamptz
 );
 ```
 
-- **Enqueue is an INSERT in the caller's transaction** — a grade publish and its
-  audit/XP/email jobs commit or roll back together (no outbox needed).
-- **Progress follow-ups** (`ProgressProjector::owe_*` → `Followup`, REWRITE 4.3): every
-  writer that changes what progress counts (curriculum deletes/moves/publish, roster and
-  group membership, overrides and late rules, hand-ins and grades) records the
-  re-projection as a job delayed by one minute in its own transaction, then hands the
-  `Followup` to `settle` after the commit: the work runs inline (at most 5 s on the
-  request), the job is deleted when it succeeded and made due at once when it did not.
-  A process that dies between commit and settle leaves the job, which the worker runs
-  after the grace. Role grant changes still owe theirs in a second transaction
-  (the role tables go with REWRITE 6.3).
-- Claim: `FOR UPDATE SKIP LOCKED` batch; wakeup via `LISTEN/NOTIFY` with 1s poll
-  fallback; heartbeat every 15s; a reaper requeues `running` jobs with stale
-  heartbeats; exponential backoff with jitter; after `max_attempts` → `dead` with
-  `last_error`, surfaced via admin endpoints + a queue-depth gauge (alerting).
-- Handlers are registered in `ab-jobs` with a typed payload
-  (`impl Job for XpAwardJob { const KIND: &str = "xp:award"; type Payload = …; }`);
-  an integration test asserts every `Job::KIND` has a registered handler and
-  every enqueue site uses a declared kind (no stringly-typed drift).
-- Cron: `job_schedules` table (kind, cron expr, next_run_at); the worker holding a
-  Postgres advisory lock is the leader and enqueues due jobs. Replaces
-  taskiq-scheduler; ports the four legacy schedules (assessment auto-publish */2,
-  assessment timer sweep, orphan-upload reaper, plagiarism sweep → stubbed
-  disabled per Q4).
-- Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight,
-  heartbeat until done (compose `stop_grace_period` sized accordingly).
-- Notifications (stage 2, S-07): `notifications:deadline-reminders` (every
-  15 min) sends one `deadline_approaching` per (learner, activity, due date)
-  for unsubmitted work due within 24 h (`dedup_key`, so ticks and restarts never
-  repeat it; an extension reminds again); `notifications:prune` (daily)
-  deletes notifications older than **90 days**.
-- Analytics retention (DECISIONS "Analytics retention (b)"): `analytics:rollup`
-  (every 6 h) ends by pruning `analytics_events` older than **400 days** and
-  the five `daily_*` rollup tables plus `learner_risk_snapshots` older than
-  **2 years**, in 5 000-row batches through the primary key
-  (`ab_db::analytics::prune_retention`), summarised in one tracing line.
-  Dashboards only ever read the last 180 days.
+- **Enqueue is an INSERT in the caller's transaction** — a grade publish and the jobs it causes commit or roll
+  back together.
+- **Progress follow-ups** (`ProgressProjector::owe_*` → `Followup`, REWRITE 4.3): every writer that changes what
+  progress counts (curriculum deletes/moves/publish, roster and group membership, overrides and late rules,
+  hand-ins and grades) records the re-projection as a job delayed by one minute in its own transaction, then hands
+  the `Followup` to `settle` after the commit: the work runs inline (at most 5 s on the request), the job is
+  deleted when it succeeded and made due at once when it did not. A process that dies between commit and settle
+  leaves the job, which the worker runs after the grace. Role grant changes still owe theirs in a second
+  transaction (the role tables go with REWRITE 6.3).
+- Claim: `FOR UPDATE SKIP LOCKED` batch; wakeup via `LISTEN jobs_new` with a 1s poll fallback; heartbeat every
+  15s; a reaper requeues `running` jobs with stale heartbeats; exponential backoff (5s · 2^n, capped at 15 min);
+  after `max_attempts` → `dead` with `last_error`. A kind without a handler is dead-lettered. Failed and dead jobs
+  show in `just prod-report`.
+- Handlers implement `ab_jobs::JobHandler` (`kind()` + `handle(payload)`), one module per domain in
+  `crates/jobs/src/handlers`, registered in the worker in `crates/server/src/main.rs`.
+- Schedules: `job_schedules` with `interval_seconds` (not cron, DECISIONS 2026-08-16), seeded idempotently at
+  worker boot. No elected leader: every worker ticks; a transaction-scoped advisory lock makes ticks exclusive
+  and per-occurrence dedupe keys make enqueueing idempotent (`ab_db::schedule`). Current schedules:
+  `assessments:publish-due` and `submissions:auto-submit` (1 min), `notifications:deadline-reminders` (15 min),
+  `submissions:sweep-idempotency` (1 h), `uploads:reap` and `analytics:rollup` (6 h), `notifications:prune`
+  (24 h). On-demand kinds: `ai:execute_run`, `grading:bulk-action`, `progress:*` follow-ups.
+- Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight, heartbeat until done (compose
+  `stop_grace_period: 60s`).
+- Notifications: `notifications:deadline-reminders` sends one `deadline_approaching` per (learner, activity, due
+  date) for unsubmitted work due within 24 h (dedupe key, so ticks and restarts never repeat it; an extension
+  reminds again); `notifications:prune` deletes notifications older than **90 days**.
+- Analytics retention: `analytics:rollup` ends by pruning `analytics_events` older than **400 days** and the
+  `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches through the
+  primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
+  last 180 days.
 
 ## 10. Redis usage map
 
 | Use | Structure | Notes |
 |---|---|---|
-| Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset + `user_epoch:{uid}` counter | as legacy, simplified record; the touch only `EXPIRE`s the record and writes the stamp (BUG-191); every session-ending mutation `INCR`s the epoch first and `create` is a Lua CAS on it, so a login in flight cannot outlive a disable / password change / TOTP activation / grant change (BUG-203) |
+| Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset + `user_epoch:{uid}` counter | the touch only `EXPIRE`s the record and writes the stamp (BUG-191); every session-ending mutation `INCR`s the epoch first and `create` is a Lua CAS on it, so a login in flight cannot outlive a disable / password change / TOTP activation / grant change (BUG-203) |
 | SSE event logs | Redis Streams `sse:grading:{submission}` / `sse:grading:course:{course}` / `sse:ai:{run}` | `MAXLEN ~1024`, replay via `XRANGE` |
 | Per-user event stream | Redis Stream `sse:user:{user}` | `MAXLEN ~500`, 7-day TTL refreshed on publish; written by a process-wide publisher (`events::user::install` at boot) |
-| SSE connection caps | `INCR`/`DECR` counters with TTL | limit 5/user |
-| Rate limits | sliding-window counters | tower_governor covers IP; Redis covers per-user/per-feature (AI hourly caps) |
-| Hot caches (L2) | plain keys, short TTL | only where multi-process coherence matters; else moka |
+| SSE connection caps | `sse_leases:{user}` zset of expiring leases | 10 per user, lease TTL 1 h, Lua acquire |
+| Rate limits | fixed-window counters (`rl:*` auth, `ai_hourly:*`, `code_run_rl:*`, `submit_rl:*`, `draft_throttle:*`) | nginx `limit_req` is the per-IP outer layer |
+| Short-lived state | `oauth:google:{state}`, `totp_pending:*`, `lock:*` (serializes Zitadel-side account changes), link-preview cache (24 h) | TTL on every key |
 
-Redis stays single-instance, no auth change needed inside `data-net` (but see
-FINDINGS #2 for the host-port exposure). Locks use Postgres advisory locks, not
-Redis — one source of truth for coordination.
+Redis is single-instance with a password (`--requirepass`), reachable only on `data-net`. Coordination of
+Postgres work uses Postgres advisory locks and row locks.
 
-## 11. Object storage — RustFS (Q15)
+## 11. Object storage — RustFS
 
-- `rustfs` compose service (S3-compatible, Apache-2.0, Rust) with volume
-  `rustfs_data`; accessed exclusively through the `object_store` crate → moving to
-  R2/S3/MinIO later is config, not code.
-- Buckets: `public` (course thumbnails, avatars, block media — served read-only via
-  nginx `/content/*` proxy with immutable cache headers, replacing the FastAPI
-  StaticFiles mount) and `private` (file submissions, exports, AI artifacts —
-  presigned GET only, short TTL).
-- Upload flow (replaces both legacy chunked-upload systems):
-  1. `POST /api/v2/uploads` (intent: size, mime, sha256, purpose) → server validates
-     policy (size caps, mime allowlist per purpose — port of `file_validation.py`)
-     → creates `uploads` row (`pending`) → returns presigned multipart part URLs.
-  2. Client PUTs parts directly to RustFS (nginx-routed, body never touches Axum).
-  3. `POST /api/v2/uploads/{id}/finalize` → server completes multipart, verifies
-     size + sha256 via object HEAD, marks `finalized`.
-  4. Reference counting as legacy (`referenced_count`), orphan reaper cron deletes
-     unreferenced finalized uploads after 24h, abandoned pending after 1h.
-- ETL copies `content/` (~181 MB) into buckets with a key map (MIGRATION.md).
+- `rustfs` compose service (S3-compatible) with volume `rustfs_data`; accessed exclusively through
+  `object_store` (`ab_clients::storage`) → moving to R2/S3/MinIO is config, not code.
+- Buckets: `ab-public` (course thumbnails, avatars, block media — served read-only via nginx `/content/*` with
+  cache headers) and `ab-private` (file submissions, exports, AI artifacts — presigned GET only, 5 min TTL).
+  Presigned URLs are signed for the public origin and pass nginx verbatim (`docs/INFRA.md`, "Edge").
+- Upload flow (`ab_domain::files::uploads`):
+  1. `POST /api/v2/uploads` (purpose, mime, size, `multipart`) → server validates policy (size caps, mime
+     allowlist per purpose; multipart only for videos) → creates an `uploads` row (`pending`) → returns a
+     presigned PUT URL (15 min) or presigned 32 MB part URLs.
+  2. Client PUTs directly to RustFS through nginx; the body never touches Axum. A multipart upload is assembled
+     by `POST /api/v2/uploads/{id}/multipart` (aborted by `DELETE`).
+  3. `POST /api/v2/uploads/{id}/finalize` → server HEADs the object, refuses (and deletes) one whose content type
+     or size differs from the intent, marks it `finalized`.
+  4. Reference counting (`referenced_count`); `uploads:reap` deletes unreferenced finalized uploads after 24 h
+     and pending ones after the 12 h claim window.
 
-## 12. AI subsystem (Q21: full port, rig-core)
+## 12. AI subsystem
 
-- `ab-clients::llm`: rig-core providers (OpenAI primary `gpt-6-luna`, OpenRouter
-  fallback) behind our `LlmClient` facade; provider/model/fallback chain is pure
-  config. rig types do not leak past this module (the one-file-diff firewall from
-  the suggestions doc, made a compile-visible rule: `ab-domain` has no `rig` dep).
-- `ab-domain::ai`: ports the durable run model as-is conceptually — tables
-  `ai_threads`, `ai_runs`, `ai_events`, `ai_artifacts`, `ai_evidence`,
-  `ai_approvals`, `ai_eval_results` (+ analysis/QA/memory tables). Run lifecycle is
-  an explicit state machine (`queued → running → {succeeded, failed, aborted}`)
-  with every transition a guarded UPDATE (`WHERE status = $expected`) — no
-  ambient state.
-- Execution: `ai:execute_run` job in the worker; events are appended to Postgres
-  (durable) and mirrored to the run's Redis Stream (live SSE tail). Cancellation:
-  status flip + `CancellationToken` checked between steps; LLM calls have hard
-  timeouts and are recorded as run events (journaled steps — the durability rule
-  from the suggestions doc).
-- The six agents port 1:1 (course_analyst, course_qa, lecture_author,
-  remediation_generator, study_companion, submission_analyst): system prompts and
-  tool schemas are extracted from the Python source verbatim first, then idiomized.
-  Streaming QA/companion use rig streaming → SSE chunks.
-- Budget: tiktoken-rs counting, monthly ledger table, per-user hourly rate limits
-  in Redis (ports `AIConfig` semantics); `ai-budget-exhausted` error code.
-- Evals: `ai_eval_results` retained; `ashyq admin ai-eval` runs the fixture suite
-  against live providers (manual/cron, not CI).
+- `ab_clients::llm`: `LlmClient` over the Anthropic Messages API (primary when its key is set) and
+  OpenAI-compatible chat completions (OpenAI, OpenRouter) as the fallback chain; provider, model and chain are
+  pure config (`AB__AI__*`, `ab_core::config::AiConfig`). Structured output requests a JSON schema and retries
+  once with the parse error fed back; every call has a hard per-provider timeout; a provider that fails before
+  producing output hands over to the next. `ab-domain` has no provider dependency.
+- `ab_domain::ai`: durable run model — tables `ai_threads`, `ai_runs`, `ai_events`, `ai_artifacts`,
+  `ai_evidence`, `ai_approvals`, `ai_eval_results` (+ analysis/QA/memory tables). Run lifecycle is an explicit
+  state machine (`queued → running → {succeeded, failed, aborted}`) with every transition a guarded UPDATE
+  (`WHERE status = $expected`).
+- Execution: `ai:execute_run` job in the worker; events are appended to Postgres (durable) and mirrored to the
+  run's Redis Stream (live SSE tail). Cancellation: status flip checked between steps; LLM calls are recorded as
+  run events.
+- Agents (`crates/domain/src/ai/agents`): course_analyst, course_qa, lecture_author,
+  remediation_generator, study_companion, submission_analyst, concept_mapper, grade_assistant. Streaming QA/companion stream chunks over SSE.
+  Without a reachable provider, agents answer with deterministic drafts (`ai_draft_mode_enabled`).
+- Budget (`ab_domain::ai::budget`): tiktoken-rs estimates, request-size cap, platform monthly token budget from
+  `ai_token_ledger` plus in-flight reservations, per-user hourly limits in Redis; `ai-budget-exhausted` /
+  `ai-rate-limited` error codes.
+- Evals: `ashyq admin ai-eval` records outcomes in `ai_eval_results` (manual, never CI); today it records a
+  provider smoke check only.
 - AI-first foundation (docs/AI-FIRST.md, the source of truth for its rules):
   - `ab-domain::retrieval`: course material cut into `content_chunks` (heading-path anchors,
     `vector(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
@@ -575,21 +498,15 @@ Redis — one source of truth for coordination.
 
 ## 13. Observability
 
-- `tracing` everywhere; JSON logs in prod, pretty in dev. `tracing-opentelemetry` +
-  OTLP exporter → **Logfire** (Q30). Resource attrs: service.name=`ashyq-server`,
-  deployment env, git sha (baked at build via `vergen`).
-- Spans: HTTP (tower-http TraceLayer with request-id + traceparent propagation —
-  same header contract the web app already sends), every domain service method
-  (`#[tracing::instrument]`), every job execution (linked to enqueueing trace),
-  every LLM call (model, token counts as attrs — GenAI semconv via rig's OTel
-  support), slow SQL (> 300ms warn, porting the legacy listener via sqlx's
-  statement logging).
-- Metrics (OTLP): request histograms, job queue depth/lag, SSE connections, LLM
-  token spend, upload bytes. Logfire dashboards + alerts are provisioned as part
-  of the cutover checklist (FINDINGS #9: verify delivery, currently empty project).
-- `/api/v2/health` (liveness: process up) and `/api/v2/health/ready` (readiness:
-  PG + Redis + RustFS + Zitadel ping). The image healthcheck uses liveness;
-  readiness is checked through nginx by `infra/scripts/smoke.sh`.
+- `tracing` everywhere; JSON logs (required in production) or pretty in dev. With `AB__TELEMETRY__OTLP_ENDPOINT`
+  set (the full traces URL; headers from `OTEL_EXPORTER_OTLP_HEADERS`), spans are exported over OTLP/HTTP with
+  `service.name=ashyq-server` (`crates/core/src/telemetry.rs`); an exporter that fails to build is logged loudly
+  and export stays off. No metrics are exported. Production has no external monitoring or alerting
+  (`docs/FINDINGS.md` #9).
+- HTTP spans come from `TraceLayer` and carry `request_id`, the same id as the `x-request-id` response header and
+  the problem+json `request_id`, so `grep <id>` finds the request.
+- `/api/v2/health` (liveness: process up) and `/api/v2/health/ready` (readiness: Postgres ping). The image
+  healthcheck uses liveness; readiness is checked through nginx by `infra/scripts/smoke.sh`.
 
 ## 14. Testing & quality gates
 
@@ -597,74 +514,63 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 
 | Layer | Tool | What it proves |
 |---|---|---|
-| Type/lint | `cargo clippy --all-targets -- -D warnings` (pedantic+nursery warn-promoted; unwrap/expect/panic/todo/dbg/print denied) | agent slop cannot land |
-| Format | `cargo fmt --check` | |
-| Query validity | `cargo sqlx prepare --check` | SQL matches schema at build time |
-| Unit | nextest | pure domain logic |
-| DB | `#[ab_testdb::test]` (per-test clone of one migrated template) | queries, constraints, queue semantics |
-| HTTP | testkit harness: real Axum app + test DB + wiremock for Zitadel/Judge0/Resend/LLM | handlers, auth, RBAC, error envelopes — asserted via `insta` snapshots with id/time redactions |
-| Contract | `insta` snapshot of full OpenAPI doc + `oasdiff` label | every contract change visible in diff |
-| RBAC sweep | table-driven test over route list | no unprotected mutating endpoint |
-| Supply chain | `cargo-deny`, `cargo-machete` | advisories, licenses, dead deps |
-| Coverage | `cargo-llvm-cov` | floor: 80% lines in `ab-domain`, 70% workspace (ratchet up, never down) |
-| E2E | existing Playwright suite in `apps/web` (adapted in P9) | real browser against full compose stack |
+| Type/lint | `just clippy` (`-D warnings`; pedantic+nursery warn-promoted; unwrap/expect/panic/todo/dbg/print denied) | agent slop cannot land |
+| Format | `just fmt-check` | |
+| Query validity | `just sqlx-check` | SQL matches schema at build time |
+| Unit | nextest (`just test-unit` needs no services) | pure domain logic |
+| DB | `#[ab_testdb::test]` (per-test clone of one migrated template, `crates/testdb`) | queries, constraints, queue semantics |
+| HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for Judge0/LLM) | handlers, auth, RBAC, error envelopes |
+| Contract | `just openapi-check` + `insta` snapshot of the OpenAPI doc | every contract change visible in diff |
+| RBAC sweep | `crates/api/tests/rbac_sweep.rs` over the route list | no unclassified mutating endpoint |
+| Supply chain | `just deny`, `just machete` | advisories, licenses, dead deps |
+| Coverage | `just cov` (`cargo llvm-cov nextest`; CI: nightly `coverage.yaml`) | floor: 80% lines, workspace (`main.rs` excluded); ratchet up, never down |
+| E2E | Playwright suites of both webs (`just e2e`, CI `web2-e2e`, `web-release-e2e`) | real browser against a full stack |
 
-**Testkit is a first-class deliverable** (`ab-testkit`): `TestApp::spawn()` boots the
-full router against a fresh migrated DB with all external HTTP faked, returns a
-typed client + hooks to mint sessions for any role, plus `fake`-based entity
-factories (`factory::course()`, `factory::submission()`, …). Agents writing a
-slice get a one-liner harness; expensive setup is amortized once.
-
-Wiremock stubs live in testkit as **recorded-shape fixtures**: Zitadel Session API,
-Judge0, Resend, OpenAI-compatible chat completions (incl. SSE streaming) — each
-stub asserts request shape, not just returns canned data.
+`TestApp::spawn(pool)` boots the full router (whole middleware stack) against the test database and returns
+request helpers plus `mint_session` / `create_user` for any role. Wiremock stubs pin the wire shapes of Zitadel,
+Judge0, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/src`).
 
 ### CI (`.github/workflows/ci.yaml`, jobs `server-lint` and `server-test`)
 
-Runs on pushes to `main` and on pull requests when `apps/server/**` or infra
-files change. The services come from the dev stack (`just dev-up`: Postgres 18
-+ pgvector, Redis, Zitadel, RustFS). Steps, all `just` recipes, in two parallel jobs: `fmt-check -> clippy -> deny
--> machete -> openapi-check` (offline `.sqlx`) and `migrate -> sqlx-check -> cov`
-(`cov` runs the nextest suite, unit+db+http, once and enforces the floor); `just ci-server`
-runs the same list locally. The server image is built by the `images` job in
-parallel with the gates and published as `<sha>` only after every gate and the
-full-stack smoke passed (`docs/INFRA.md`). Agents
-commit directly to `main` and treat a red pipeline as a stop-the-line event:
-**the branch must be green at the end of every working session.**
+Run on pushes to `main`, `ci/**` and `release/**` and on pull requests, when `apps/server/**` or infra files
+change (release branches run every gate). `server-lint`: `fmt-check -> clippy -> deny -> machete ->
+openapi-check` (offline `.sqlx`, no services). `server-test`: `just dev-up` (Postgres 18 + pgvector, Redis,
+Zitadel, RustFS), then `migrate -> sqlx-check -> test`, the suite split into two jobs (`--partition hash:N/2`, no
+instrumentation). The coverage floor runs nightly (`.github/workflows/coverage.yaml`, `just cov`), off the deploy path.
+`just ci-server` runs all of it locally, `cov` included. The server image is built by the `images` job in parallel and
+published as `<sha>` only after every gate and the full-stack smoke passed (`docs/INFRA.md`). A red pipeline on
+`main` is a stop-the-line event.
 
 ## 15. Frontend integration
 
-Both frontends consume `/api/v2` from `apps/server/openapi.v2.json`;
-`just contract` regenerates both clients. Read their app-specific `AGENTS.md`
-for client conventions and `docs/INFRA.md` for the web/edge contract.
-The Next.js frontend remains live until `docs/STAGE-2-CUTOVER.md` is completed.
+Both frontends consume `/api/v2` from `apps/server/openapi.v2.json`; `just contract` regenerates both clients.
+Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` for the web/edge contract.
+`apps/web` (Next.js) is in production; `apps/web-2` replaces it per `docs/STAGE-2-CUTOVER.md`.
 
 ## 16. Configuration & secrets
 
-- figment: embedded defaults → optional `config/dev.toml` (local only) → env
-  `AB__SECTION__KEY` (nested `__`). Prod is env-only: secrets in the host's
-  `server.env` (`env_file` of server/worker), topology keys set by
-  `compose.prod.yaml` from `.env` (`docs/INFRA.md`, "Secrets and config").
+- figment: embedded defaults → env `AB__SECTION__KEY` (nested `__`; lists in TOML array syntax), no config files
+  (`crates/core/src/config.rs`). Locally `dotenvy` also reads a `.env` from the working directory (template
+  `apps/server/.env.example`). Prod: secrets in the host's `server.env` (`env_file` of server/worker), topology
+  keys set by `compose.prod.yaml` from `.env` (`docs/INFRA.md`, "Secrets and config").
 - All secrets are `secrecy::SecretString` — they cannot Debug/Display into a log.
-- **Startup is fail-fast and loud**: config parses into typed structs with garde
-  validation + posture checks (secure cookies required outside dev, CORS origin
-  allowlist non-wildcard, Zitadel/RustFS reachable, migrations current). A
-  misconfigured server refuses to start with a precise error, never limps.
+- **Startup is fail-fast and loud**: config parses into typed structs, then `Config::validate` checks posture
+  (`AB__DATABASE__URL` set; in production a non-empty, non-wildcard CORS allowlist, JSON logs, auth limits not
+  relaxed past their defaults). `serve` refuses to start without Redis, Zitadel or storage settings.
 - `ashyq admin config-check` prints the effective config with secrets redacted.
-- Data migrations that rewrite stored shapes (stage 2 D-01..D-03) are
-  idempotent `ashyq admin migrate-*` commands with `--dry-run`, not SQL
-  migrations: they run against live data on the operator's schedule.
+- Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
+  `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
+  the operator's schedule (`docs/STAGE-2-CUTOVER.md`).
 
 ## 17. Known gotchas & risk register
 
 | Risk | Mitigation |
 |---|---|
-| sqlx 0.9 API breaks (`&mut *tx`, `SqlSafeStr`) | documented in AGENTS.md; clippy + compile errors catch misuse |
-| `query!` needs DB or `.sqlx` cache | `.sqlx` committed; `just prepare` after any SQL change; CI `--check` |
-| jiff-sqlx maturity | jiff types only at the db/api edges via a `ab_core::time` module; if jiff-sqlx stalls, swap the edge impls |
-| rig-core moves fast (0.x) | confined to `ab-clients::llm`; upgrade = one-file diff by construction |
-| RustFS is young (2025-era project) | accessed only via `object_store` S3 API; fallback to MinIO/R2 is a compose+env change; backups cover the volume |
-| Zitadel session API coupling | confined to `ab-clients::zitadel`; wiremock fixtures pin the wire contract; Zitadel pinned to a specific minor, upgraded deliberately |
-| Hand-rolled queue correctness | property-style tests (concurrent claim, crash-requeue, backoff), soak test in P0 exit gate |
-| Windows dev machine w/o local Docker in some sessions | all DB-dependent tests skippable locally (`just test-unit`), full suite in CI; `.sqlx` cache keeps builds green without a DB |
+| sqlx 0.9 API breaks (`&mut *tx`, `SqlSafeStr`) | documented in `apps/server/AGENTS.md`; compile errors catch misuse |
+| `query!` needs DB or `.sqlx` cache | `.sqlx` committed; `just server prepare` after any SQL change; CI `sqlx-check` |
+| LLM provider APIs change fast | wire types confined to `ab_clients::llm`; wiremock fixtures in `crates/clients/tests/llm.rs` |
+| RustFS is young | accessed only via `object_store` S3 API; MinIO/R2 is a compose+env change; backups cover the volume |
+| Zitadel session API coupling | confined to `ab_clients::zitadel`; wiremock fixtures (`crates/clients/tests/zitadel.rs`) pin the wire contract; image pinned by digest, upgraded deliberately |
+| Hand-rolled queue correctness | `crates/db/tests/queue.rs` (transactional enqueue, dedupe, backoff, dead-letter, reaper, stale claims) and `crates/jobs/tests/worker.rs` |
+| Windows dev machine without local Docker | `just test-unit` runs without services; full suite in CI; `.sqlx` keeps builds green without a DB |
 | Agent drift across sessions | AGENTS.md and the docs of current behavior are the durable memory; every session ends with them current |

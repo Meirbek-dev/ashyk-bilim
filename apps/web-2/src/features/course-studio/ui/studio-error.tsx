@@ -13,14 +13,14 @@ import { NotOnTeam } from './not-on-team'
 /**
  * The activity studio (and its review screen) refused or failed: it draws the focus layout itself, so the error
  * keeps that frame - a way back to the course and the page's gutter - instead of a bare screen at the window's edge.
- * A 403 is someone outside the course team (B-CST-12): the course page and their own courses, as in the workspace;
- * on an archived course it is its team: the way to restore it, or who can.
+ * `forbidden` is someone outside the course team (B-CST-12): the course page and their own courses, as in the
+ * workspace; `course-archived` (409) is its team on an archived course: the way to restore it, or who can.
  */
 export function StudioError(props: ErrorComponentProps) {
   const { courseId } = useParams({ strict: false })
-  const forbidden = props.error instanceof ApiError && props.error.status === 403
-  const archived = forbidden && props.error instanceof ApiError && props.error.code === 'course-archived'
-  const outsider = forbidden && !archived
+  const code = props.error instanceof ApiError ? props.error.code : null
+  const archived = code === 'course-archived'
+  const outsider = code === 'forbidden'
   const back = courseId ? (
     <RouterLink
       to={outsider ? '/courses/$courseId' : '/teach/courses/$courseId/content'}

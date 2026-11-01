@@ -33,90 +33,15 @@ Next.js frontend remains in production. Frontend replacement: `docs/STAGE-2-CUTO
   ```
 
 Keep the legacy `cs_mooc` database, `app_content` volume and `backups/legacy-final-*`
-(owner decision). They are outside the new backups. Never run `docker volume prune`.
+(owner decision). They are outside the backups. Never run `docker volume prune`.
 
 Production content is bind-mounted from `/data/cs-mooc/content`
-(`RUSTFS_DATA_DIR` in `.env`). Archives use `/data/cs-mooc/backups`
+(`RUSTFS_DATA_DIR` in `.env`). The restic repository is under `/data/cs-mooc/backups`
 (`BACKUP_DIR`); `~/cs-mooc/backups` is a compatibility symlink there.
 Pre-deploy dumps use `/data/cs-mooc/dumps` through the `dumps` symlink.
 The pre-move rollback copy of the former `openu-prod_rustfs_data` volume is a
 tar under `/data/server-maintenance-20261019/cleanup-20261019T173732Z/`; it
 receives no new writes. Restore drills use their own content volume.
-
-## 2. Database hardening
-
-Each item is its own maintenance window.
-`restore-drill.sh` always tears its stack down, so these are rehearsed in a
-scratch database inside the prod cluster (real objects, real PostgreSQL),
-which is what is prod-specific here: dev, CI and the smoke stack already run
-the app as the non-superuser `ashyq`.
-
-### 2.1 Database ownership to `ashyq`
-
-Done 2026-10-04 09:49 UTC (rehearsal clean, 306 objects transferred, API down 15 s;
-rollback files `server.env.pre-ownership`, `dumps/pre-ownership-ashyq.dump`). Kept as
-the procedure for a restored or new host.
-
-Rehearsal (no downtime; needs free disk for one more copy of the database):
-
-```bash
-dc exec -T db sh -c 'createdb -U "$POSTGRES_USER" -T template0 ashyq_rehearsal && pg_dump -U "$POSTGRES_USER" -Fc ashyq | pg_restore -U "$POSTGRES_USER" -d ashyq_rehearsal --exit-on-error'
-dc exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq_rehearsal' < infra/postgres/transfer-ownership.sql   # "(0 rows)", COMMIT
-dc exec -T db psql -U ashyq -d ashyq_rehearsal -c 'SELECT count(*) FROM users' -c 'CREATE TABLE rehearsal_probe (x int)' -c 'DROP TABLE rehearsal_probe'
-dc exec -T db sh -c 'dropdb -U "$POSTGRES_USER" ashyq_rehearsal'
-```
-
-Window (2-5 min, server and worker stopped):
-
-```bash
-(umask 077 && dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc ashyq' > dumps/pre-ownership-ashyq.dump) && test -s dumps/pre-ownership-ashyq.dump
-cp -p server.env server.env.pre-ownership
-dc stop server worker
-dc exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' < infra/postgres/transfer-ownership.sql   # "(0 rows)", COMMIT
-new=$(sed -n 's/^ASHYQ_DB_PASSWORD=//p' .env)     # the role may predate db-init: set its password explicitly
-printf "ALTER ROLE ashyq PASSWORD '%s';\n" "$new" | dc exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres'
-sed -i "s|^AB__DATABASE__URL=.*|AB__DATABASE__URL=postgres://ashyq:$new@db:5432/ashyq|" server.env; unset new
-dc up -d --wait server worker
-SMOKE_RESOLVE_IP=127.0.0.1 bash infra/scripts/smoke.sh https://cs-mooc.tou.edu.kz
-```
-
-Verify:
-
-```bash
-dc exec -T db psql -U ashyq -d ashyq -tAc 'SELECT rolsuper FROM pg_roles WHERE rolname = current_user'   # f
-dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d ashyq -tAc "SELECT DISTINCT a.usename, r.rolsuper FROM pg_stat_activity a JOIN pg_roles r ON r.rolname = a.usename WHERE a.datname = current_database() AND a.pid <> pg_backend_pid()"'   # ashyq|f
-```
-
-Rollback: `cp -p server.env.pre-ownership server.env && dc up -d --wait server worker`
-(the superuser works whatever the owners are). Only if the database itself is
-damaged: `dc stop server worker`, then `DROP DATABASE ashyq WITH (FORCE)` and
-`pg_restore --create` of `dumps/pre-ownership-ashyq.dump` as in 1.4 (writes
-since the dump are lost). The first later deploy with a migration is the first
-migration run as `ashyq`; deploy.sh dumps before it.
-
-### 2.2 Rotate the Postgres superuser password
-
-Only if the inventory said `POSTGRES_PASSWORD equals 'openu': yes` (the value
-committed in the legacy `judge0.conf`). One `ALTER ROLE`, so no separate
-rehearsal. Window: seconds (the db container is recreated).
-
-```bash
-cp -p .env .env.pre-pgpass && cp -p server.env server.env.pre-pgpass
-new=$(openssl rand -hex 32)
-printf "ALTER ROLE %s PASSWORD '%s';\n" "$(sed -n 's/^POSTGRES_USER=//p' .env)" "$new" | dc exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres'
-sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$new/" .env
-# Only while the server still connects as the superuser (2.1 not done):
-sed -i "s|^\(AB__DATABASE__URL=postgres://cs_mooc:\)[^@]*@|\1$new@|" server.env
-unset new
-dc up -d --wait
-SMOKE_RESOLVE_IP=127.0.0.1 bash infra/scripts/smoke.sh https://cs-mooc.tou.edu.kz
-just backup
-```
-
-`db-init` and `zitadel-init` read `POSTGRES_PASSWORD` from `.env` on every
-`up`; the db container's own variable only matters at initdb. Rollback:
-`ALTER ROLE` back to the value in `.env.pre-pgpass`, restore both
-`.pre-pgpass` files, `dc up -d --wait`.
 
 ## 3. Routine
 
@@ -188,7 +113,7 @@ sudo chown -R "$(id -u):$(id -g)" backup
 cp -p backup/secrets/.env .env && cp -p backup/secrets/server.env server.env && chmod 600 .env server.env && rm -r backup
 git checkout "$(sed -n 's/^IMAGE_TAG=//p' .env)"
 mkdir -p certs        # place cert.pem and key.pem in TLS_DIR (3.7)
-just restore          # latest snapshot; `just restore <snapshot-id>` for an older one
+just restore latest   # or `just restore <snapshot-id>`
 just bootstrap        # judge0-tune (restore.sh skips it); PAT and migrations are no-ops
 just deploy           # records .deploy-history so rollback works
 ```
@@ -197,7 +122,8 @@ just deploy           # records .deploy-history so rollback works
 On the existing prod host that means `dc down -v` first, which deletes every
 data volume of the project: do it only with a snapshot that passed
 `just restore-drill`. Legacy offen archives (`backup-*.tar.zst`, before
-2026-10-26) still restore: `just restore <archive>`.
+2026-10-26) still restore: `just restore <archive>`; one from before 2026-10-04
+needs `infra/postgres/transfer-ownership.sql` afterwards (INFRA "Postgres roles and databases").
 
 ### 3.5 Restore drill
 
@@ -207,22 +133,18 @@ DRILL_HTTP_PORT=28080 DRILL_HTTPS_PORT=28443 just restore-drill <snapshot-id>
 ```
 
 Project `ashyq-drill`, ports 18080/18443 by default (`DRILL_HTTP_PORT`,
-`DRILL_HTTPS_PORT`; on the prod host other stacks hold them), no Judge0. Prints `users`, `courses` and `drill passed in
-N s` (the RTO), then tears down. Compare the counts with prod:
+`DRILL_HTTPS_PORT`; on the prod host other stacks hold them), no Judge0. Prints
+`users`, `courses` and `drill passed in N s` (the RTO), fails when either is
+zero, then tears down. Compare the counts with prod:
 
 ```bash
 dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d ashyq -tAc "SELECT (SELECT count(*) FROM users), (SELECT count(*) FROM courses)"'
 ```
 
 On the prod host it runs a second stack (up to ~6 GB of memory limits): run it
-when the host has the headroom, or on another machine with the archive
-copied over. Monthly, and after infra changes.
-
-The drill fails if the restored database has no users or courses. CI also runs `just restore-test` on the isolated
-production browser stand: synthetic learner work, a grade, a certificate and an image are backed up with the real
-backup hooks, restored, and compared by stable table counts/hashes and object SHA-256. The restored learner must
-also sign in through the restored identity provider. Archives and secrets stay
-outside uploaded diagnostics; only logs and hash manifests are retained. This check never opens production archives.
+when the host has the headroom, or on another machine with the repository
+copied over. Monthly, and after infra changes. CI checks the backup and restore
+scripts themselves with synthetic data (`just restore-test`, INFRA "Backup and restore").
 
 ### 3.6 Bootstrap a fresh host from zero
 
@@ -230,7 +152,7 @@ outside uploaded diagnostics; only logs and hash manifests are retained. This ch
 git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
 cp infra/env/prod.env.example .env && cp infra/env/server.env.example server.env && chmod 600 .env server.env
 for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ZITADEL_DB_PASSWORD RUSTFS_ACCESS_KEY RUSTFS_SECRET_KEY \
-  REDIS_PASSWORD JUDGE0_AUTHN_TOKEN JUDGE0_DB_PASSWORD JUDGE0_REDIS_PASSWORD; do
+  REDIS_PASSWORD JUDGE0_AUTHN_TOKEN JUDGE0_DB_PASSWORD JUDGE0_REDIS_PASSWORD BACKUP_PASSWORD; do
   sed -i "s/^$k=CHANGE_ME$/$k=$(openssl rand -hex 32)/" .env
 done
 sed -i "s/^ZITADEL_MASTERKEY=CHANGE_ME$/ZITADEL_MASTERKEY=$(openssl rand -hex 16)/" .env
@@ -239,8 +161,8 @@ pw=$(sed -n 's/^ASHYQ_DB_PASSWORD=//p' .env); sed -i "s|CHANGE_ME|$pw|" server.e
 ```
 
 Edit `NGINX_SERVER_NAME`, `TRUSTED_PROXY_CIDR`, and `COMPOSE_PROJECT_NAME`
-(choose once, never change), uncomment the optional `server.env` groups you
-use, place the TLS files (3.7), then:
+(choose once, never change), optionally `RUSTFS_DATA_DIR`/`BACKUP_DIR`,
+uncomment the optional `server.env` groups you use, place the TLS files (3.7), then:
 
 ```bash
 IMAGE_TAG=$(git rev-parse --short=8 HEAD) just bootstrap
@@ -248,7 +170,8 @@ just deploy
 just backup
 ```
 
-Keep a copy of `.env` (above all `ZITADEL_MASTERKEY`) somewhere you control.
+Keep a copy of `.env` (above all `ZITADEL_MASTERKEY` and `BACKUP_PASSWORD`)
+somewhere you control. Install the backup timer (3.3).
 
 ### 3.7 Certificates
 
@@ -272,18 +195,33 @@ days ahead (it reads `TLS_DIR`); by hand `openssl x509 -enddate -noout -in certs
 
 ### 3.8 Rotating secrets
 
-After every rotation: smoke, then `just backup` (older archives carry the old
+After every rotation: smoke, then `just backup` (older snapshots carry the old
 values together with the matching database roles, so restoring one stays
 consistent). `ALTER ROLE` uses the helper from section 0.
 
-- **`POSTGRES_PASSWORD`**: 2.2.
+- **`POSTGRES_PASSWORD`** (seconds; the db container is recreated):
+
+  ```bash
+  cp -p .env .env.pre-pgpass
+  new=$(openssl rand -hex 32)
+  printf "ALTER ROLE %s PASSWORD '%s';\n" "$(sed -n 's/^POSTGRES_USER=//p' .env)" "$new" | dc exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres'
+  sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$new/" .env; unset new
+  dc up -d --wait
+  ```
+
+  db-init and zitadel-init read `POSTGRES_PASSWORD` from `.env` on every `up`;
+  the db container's own variable only matters at initdb. Rollback: `ALTER ROLE`
+  back to the value in `.env.pre-pgpass`, restore that file, `dc up -d --wait`.
 - **`ASHYQ_DB_PASSWORD`**: `new=$(openssl rand -hex 32)`, `ALTER ROLE ashyq`,
-  set it in `.env` and, after 2.1, in `AB__DATABASE__URL`; `dc up -d --wait
+  set it in `.env` and in `AB__DATABASE__URL` of `server.env`; `dc up -d --wait
   server worker`. db-init never changes an existing role's password.
 - **`ZITADEL_DB_PASSWORD`**: `ALTER ROLE zitadel`, set it in `.env`, `dc up -d
   --wait zitadel` (logins fail for the few seconds Zitadel restarts).
 - **`ZITADEL_MASTERKEY`**: never. It encrypts Zitadel's keys; a new value loses
   every account. The backups hold it.
+- **`BACKUP_PASSWORD`**: never edit it in `.env` alone: it is the restic
+  repository key, so a new value needs restic `key add` (then `key remove` of the
+  old key) on the repository first. Not exercised yet.
 - **`AB__ZITADEL__PAT`**: 3.9.
 - **`REDIS_PASSWORD`**: `sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(openssl rand -hex 32)/" .env`,
   `dc up -d --wait` (redis, server, worker recreated; sessions survive on
@@ -296,7 +234,7 @@ consistent). `ALTER ROLE` uses the helper from section 0.
 - **`RUSTFS_ACCESS_KEY`/`RUSTFS_SECRET_KEY`**: same `sed` for both, `dc up -d
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
-  the old values from that archive's `.env`.
+  the old values from that snapshot's `.env`.
 - **`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`**:
   `sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=.*|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env`,
   `dc up -d --wait web` (open pages must reload once).
@@ -326,9 +264,11 @@ there is no scripted way in. Not exercised yet.
 ```bash
 dc ps
 dc logs -f --tail 100 server worker
+dc logs --since 1h db                         # slow queries (default >= 300 ms)
 dc logs --since 1h nginx | grep '"status":5'
 dc logs nginx server | grep <request id>       # nginx request_id = X-Request-ID upstream
-dc logs backup                                 # nightly job
+journalctl -u cs-mooc-backup.service -n 50     # nightly backup
+just prod-report --since 24h                   # warnings/errors by message, 5xx by route, dead jobs
 ```
 
 Container logs rotate at 10 MB x 5 per container. Server traces go to OTLP
@@ -339,21 +279,22 @@ when `AB__TELEMETRY__OTLP_ENDPOINT` is set.
 preflight warns at 85% on the Docker root.
 
 ```bash
-df -h / "$(docker info -f '{{.DockerRootDir}}')"
-du -sh backups/* | sort -h | tail
+df -h / /data "$(docker info -f '{{.DockerRootDir}}')"
+du -sh dumps/* backups/* | sort -h | tail
+just restic stats latest
 docker system df
 ```
 
-Free space with: old `dumps/pre-deploy-*.dump`, `pre-cutover`/`pre-ownership`
-dumps once obsolete (nothing prunes them); `docker image prune` (deploy.sh
-keeps 5 releases); `docker builder prune`. Not: `docker volume prune` (legacy
-`app_content` and stopped projects' data), `backups/legacy-final-*`. Archives
-grow with `rustfs_data` (a full copy each night); beyond ~20 GB switch the
-backup to an incremental `rclone sync` (compose.prod.yaml comment).
+Free space with: old `dumps/pre-*.dump` (nothing prunes them); `docker image
+prune` (deploy.sh keeps 5 releases); `docker builder prune`. Not: `docker volume
+prune` (legacy `app_content` and stopped projects' data), `backups/legacy-final-*`.
+The restic repository grows only by new objects and changed dumps; Sunday runs
+forget and prune old snapshots (INFRA "Backup and restore").
 
 ### 3.12 Dual web (both frontends on one origin)
 
-INFRA "Dual web". The new web is opt-in per user (`/ui/new`); the old one stays the default. On:
+INFRA "Dual web". The new web is the default; the old one stays one click away per
+user (`/ui/classic`, back with `/ui/new`). On:
 
 ```bash
 env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
@@ -361,14 +302,14 @@ env_set COMPOSE_PROFILES judge0,dual-web        # keep the profiles already ther
 docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:$(sed -n 's/^IMAGE_TAG=//p' .env) >/dev/null
 dc up -d --no-build --wait                      # starts web2, recreates nginx (its env changed)
 curl -sI https://cs-mooc.tou.edu.kz/ | grep -i 'set-cookie: ab_dual'
-curl -s -o /dev/null -w '%{http_code}
-' -b ab_ui=v2 https://cs-mooc.tou.edu.kz/home   # 200 from web2
+curl -s -o /dev/null -w '%{http_code}\n' https://cs-mooc.tou.edu.kz/home   # 200 from web2
 ```
 
-Watch `docker stats --no-stream | grep web` (both webs) and the 3.10 logs of `web2`. Off: remove `dual-web` from
-`COMPOSE_PROFILES`, `dc rm -sf web2 && dc up -d --no-build --wait`. Users who chose the new web land on the old
-one; their `ab_ui` cookie does nothing until it is on again. Later deploys need `ashyq-web-2:<sha>` too
-(deploy.sh checks it while `web2` is in the stack).
+Watch `docker stats --no-stream | grep web` (both webs) and the 3.10 logs of
+`web2`. Off: remove `dual-web` from `COMPOSE_PROFILES`, `dc rm -sf web2 && dc up
+-d --no-build --wait`. Everyone lands on the old web; the `ab_ui` cookie does
+nothing until it is on again. While it is on, deploys need
+`ashyq-web-2:<sha>` too (deploy.sh checks it).
 
 ## 4. Troubleshooting
 
@@ -376,7 +317,7 @@ one; their `ab_ui` cookie does nothing until it is on again. Later deploys need 
 
 | Message | Meaning, action |
 | --- | --- |
-| `... ashyq-<img>:<sha> is not in the registry (CI red or not finished)` | CI has not finished `publish` for that commit, or it failed. Check the run; deploy a green commit |
+| `... ashyq-<img>:<sha> is not in the registry (CI red or not finished)` | CI has not finished `publish` (`publish-web2` for `ashyq-web-2`) for that commit, or it failed. Check the run; deploy a green commit |
 | `unknown commit: <x> (git fetch first)` | `git fetch` / `git pull` |
 | `another deploy or rollback is running` | `flock` on `.deploy.lock` is held; find it with `pgrep -af deploy.sh` |
 | `no previous release to roll back to` | `.deploy-history` has no other release; give a sha |
@@ -389,7 +330,7 @@ one; their `ab_ui` cookie does nothing until it is on again. Later deploys need 
 
 | FAIL | Action |
 | --- | --- |
-| `.env is missing` / `server.env is missing` | 1.2 steps 4-6, or 3.6 |
+| `.env is missing` / `server.env is missing` | 3.4 (from a backup) or 3.6 (new host) |
 | `compose config is invalid` | `IMAGE_TAG=<sha> dc config -q` names the missing variable (`must be set` = blank or absent in `.env`) |
 | `CHANGE_ME placeholder in: ...` | fill the listed keys |
 | `legacy PLATFORM_* keys present` | `bash infra/scripts/split-env.sh` |
@@ -412,47 +353,27 @@ skipped).
 | --- | --- |
 | every check `no response` | nginx down (`dc ps`, `dc logs nginx`), or the cert is not valid for the domain (smoke verifies TLS on 127.0.0.1): retry with `SMOKE_INSECURE=1` to tell them apart |
 | `/api/v2/health/ready` | readiness pings Postgres, Redis, RustFS, Zitadel: `dc exec -T server curl -sS http://127.0.0.1:8000/api/v2/health/ready`, `dc logs --tail 100 server` |
-| `/` | web: `dc logs web`; a 301 loop = the proxy sends no `X-Forwarded-Proto: https` to port 80 (fix the proxy, or `FORCE_HTTPS=0`) |
+| `/` | web: `dc logs web`; a 301 loop = the proxy sends no `X-Forwarded-Proto: https` to port 80, or `TRUSTED_PROXY_CIDR` does not cover it (fix either, or `FORCE_HTTPS=0`) |
+| `response headers of /...: N bytes (limit 3500 ...)` | the web added response headers; the university proxy answers 502 above 4k (FINDINGS 31). Fix the web, never raise the limit |
 | `/content/_probe/smoke.txt` | `dc run --rm -T storage-init` (bucket, policy, probe) |
 | `judge0 without token: expected 401, got 200` | the token is not enforced: `infra/judge0/judge0.conf` must not set `AUTHN_TOKEN`; check `JUDGE0_AUTHN_TOKEN` in `.env` |
 | `judge0 ... got no response` | `dc logs judge0-server` |
 
 ### Other
 
-- **Large video upload says no network / HTTP 413 at the public origin**:
-  current frontends use multipart requests of at most 32 MiB for videos
-  larger than 32 MiB (2026-10-13). Reload an old cached page first. A 308 MiB
-  multipart storage probe through the public origin succeeded; the single
-  PUT limit below still affects old clients and other large single requests.
-  The university TLS proxy must allow the same 2 GiB as our `/ab-public/`
-  and `/ab-private/` routes. A deployment of this stack cannot change that
-  outer proxy. In its existing location forwarding these bucket paths to
-  this stack, university IT must apply:
-
-  ```nginx
-  client_max_body_size 2G;
-  proxy_request_buffering off;
-  client_body_timeout 300s;
-  proxy_send_timeout 300s;
-  proxy_read_timeout 300s;
-  ```
-
-  Keep the existing upstream and forwarded Host/path unchanged (they are
-  signed). Validate and reload the outer proxy using its operator's normal
-  procedure. Then upload a 308 MB video through the public hostname and
-  confirm PUT + finalize + activity creation succeed. A direct-host smoke
-  bypasses this proxy and cannot verify its upload limit. On 2026-10-11,
-  public requests declaring 100 MiB received `100 Continue`, while 308 MiB
-  and 2 GiB received 413 before any bytes were sent; a signed 308 MiB PUT
-  through our nginx on localhost completed with 200 in 2.7 seconds. Temporary
-  diagnostic objects were deleted. Storage HTTP rejections in the web app
-  now preserve their status; 413 uses the localized `payload-too-large` copy.
+- **Upload fails with HTTP 413 (or "no network") at the public origin**: the
+  university TLS proxy rejects single request bodies over about 100 MiB
+  (FINDINGS 32); our `/ab-*` routes allow 2 GiB. Both webs send videos over
+  32 MiB as 32 MiB multipart parts, so a 413 means an old cached page (reload)
+  or another large single PUT. Owner decision 2026-10-31: multipart is the
+  permanent answer; no proxy change is requested from university IT. Smoke on
+  the host bypasses the proxy and cannot show this limit.
 - **Judge0 never gets healthy** (privileged, cgroups): `dc logs judge0-server
   judge0-workers`. To bring the site up without code execution, remove
-  `COMPOSE_PROFILES=judge0` from `.env` and rerun the step; code runs fail
+  `judge0` from `COMPOSE_PROFILES` in `.env` and rerun the step; code runs fail
   until it is back.
 - **429s for everyone / proxy address in the logs**: `TRUSTED_PROXY_CIDR`
-  does not cover the proxy (1.2 step 3), then `dc up -d nginx`.
+  does not cover the proxy (INFRA "Edge", Real IP); fix it, then `dc up -d nginx`.
 - **`migration ... was previously applied but has been modified`**: a
   committed file under `apps/server/migrations/` was edited. Migrations are
   append-only; restore the file and add a new migration.
@@ -471,13 +392,16 @@ skipped).
   nginx forwards it to v2. After the console is switched to
   `/api/v2/auth/google/callback`, delete that location in
   `infra/nginx/routes.conf`.
-- **Backup missing in the morning**: `dc logs backup`, `df -h`; run `just
-  backup` to see the error live.
+- **Backup missing in the morning**: `journalctl -u cs-mooc-backup.service -n 50`,
+  `df -h /data`; run `just backup` to see the error live.
 - **Restore refuses: `already has a postgres_data volume`**: by design; 3.4.
 
 ## 5. Development machine
 
-Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just setup` once per clone.
+Linux and Windows (Git Bash, not WSL Bash; PowerShell calls `just`) run the same
+`just` recipes; containers through Docker, else Podman (`infra/scripts/lib.sh`).
+`just setup` once per clone, `just doctor` to check it. Setup, commit/push and
+agent workflow: root `AGENTS.md`; server-only details: `apps/server/docs/DEVELOPMENT.md`.
 
 ### 5.1 Hooks, formatting, line endings
 
@@ -485,9 +409,9 @@ Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just set
   checkout under `tmp/hooks/snap` (incremental, node_modules linked): format + type-aware lint of the
   staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
   Unstaged work never affects it; a failure prints the fix (`just fmt <files>`) and the log path.
-- pre-push runs `just check --base <remote tip>` in `tmp/hooks/push` (a detached worktree of the pushed commit, with
-  its own cargo target: the first push compiles the server there from scratch).
-  Only CI skips hooks; never `--no-verify`.
+- pre-push runs `just check --base <remote tip> --isolated-db` in `tmp/hooks/push` (a detached worktree of the
+  pushed commit, with its own cargo target: the first push compiles the server there from scratch).
+  Only CI skips hooks; never `--no-verify`. Under jj use `just commit` / `just push` (jj runs no git hooks).
 - `just fmt <files>`: the root `vite.config.ts` is the one web format config (apps/web-2's block comes
   from `apps/web-2/fmt.config.ts`), so the result is the same from any cwd.
 - `just eol`: CRLF working copies (Windows tools) are rewritten as LF. A CRLF migration changes its sqlx
@@ -495,32 +419,44 @@ Windows (Git Bash + PowerShell) and Linux run the same `just` recipes. `just set
 
 ### 5.2 Worktrees
 
-`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root and
-apps/web-2, ~45 s from bun's cache; a linked node_modules breaks turbopack's `next build`), apps/web's
+`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root,
+apps/web, apps/web-2, ~40 s from bun's cache; a linked node_modules breaks turbopack's `next build`), apps/web's
 `.env`/`.env.local` copied, its own cargo target `<base>-<name>` (cargo names artifacts the same in every
 checkout, so a shared dir runs another tree's code; `just server`, `just check`, `just stack` and `.cargo/config.toml`
-apply it, plain `cargo` with CARGO_TARGET_DIR set does not), Paraglide generated. Commit there; `just wt
+apply it, plain `cargo` with `CARGO_TARGET_DIR` set does not), Paraglide generated. Commit there; `just wt
 land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
 the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. Run the
-worktree's apps in their own slot (`just stack up 1`). Legacy `next build` on this machine needs
-`SWC_NATIVE_BINDING_CACHE` (in `infra/env/dev.local.env`; `just stack`/`just e2e` pass it).
+worktree's apps in their own slot (`just stack up 1`).
 
 ### 5.3 Dev stack
 
-`just stack up [slot] [--db NAME] [--judge0] [--seed] [--without web]` starts what a slot needs: the dev
-containers (`just dev-up` unless all answer; Judge0 only with `--judge0` / `just dev-judge0`), a debug
-build of the server, the database (created when missing, from `ashyq_seed` if it exists, then migrated;
-a new one is seeded), then API + worker + web-2 `vp dev` + legacy `next dev` under a supervisor that
-restarts a crashed process with backoff. Ports: slot N = API 8000+10N, web-2 3100+10N, legacy web
-3200+10N; Redis db 4+N; one Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets
-follows the running slots.
+Containers (`just dev-up`; `dev-down` stops, keeps data; `dev-reset` drops the volumes;
+`dev-judge0` adds Judge0, ~10 GB image, privileged), 127.0.0.1 only, values in
+`infra/env/dev.env` (override `DEV_*_PORT` in the shell for a second copy):
 
-- `just stack status` (all slots + containers), `logs <api|worker|web2|web|supervisor> [slot]`, `restart
-  <api|worker|server|web2|web> [slot]` (api/worker/server rebuild first), `seed [slot]`, `down [slot]`.
+| Service | Port | Credentials |
+| --- | --- | --- |
+| Postgres 18 + pgvector | 5433 | role `ashyq` / `ashyq` (CREATEDB, not superuser); databases `ashyq_dev`, `ashyq_test` |
+| Redis | 6380 | password `ashyq-dev` |
+| Zitadel | 8081 | PAT written to `tmp/dev/zitadel-pat.txt` |
+| RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |
+| Judge0 (optional) | 2358 | token `ashyq-dev` |
+
+`just stack up [slot] [--db NAME] [--judge0] [--seed] [--no-build] [--without web,web2]` starts what a slot
+needs: the dev containers (`just dev-up` unless all answer), a debug build of the server, the database
+(created when missing, from `ashyq_seed` if it exists, then migrated; a new one is seeded), then API +
+worker + web-2 `vp dev` + legacy `next dev` under a supervisor that restarts a crashed process with
+backoff. Ports: slot N = API 8000+10N, web-2 3100+10N, legacy web 3200+10N; Redis db 4+N; one
+Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follows the running slots.
+
+- `just stack status` (all slots + containers), `logs <api|worker|web2|web|supervisor|build|migrate|seed> [slot]`,
+  `restart <api|worker|server|web2|web> [slot]` (api/worker/server rebuild first), `seed [slot]`, `down [slot]`.
 - Files: `tmp/stack/<slot>.json` (ports, pids, db), `tmp/stack/<slot>/*.log` (no ANSI).
 - Env: `infra/env/dev.env` (committed) + `infra/env/dev.local.env` (gitignored, created by `stack up`):
   `AB__ZITADEL__PAT` (copied from `just dev-up`'s `tmp/dev/zitadel-pat.txt`) and `E2E_PASSWORD`, the
   password of the seed-e2e accounts (`e2e-admin`, `e2e-teacher`, `e2e-student1/2`, `e2e-learner-NNN`).
+  Other keys there (machine quirks such as `SWC_NATIVE_BINDING_CACHE` where Next's SWC cache root is not
+  writable) reach every process `just stack`, `just e2e` and `just check` start.
 - `just login-as <username|email> [slot]` prints `ab_session=...` for any active account (debug build +
   `AB__ENVIRONMENT=development` + loopback only; DECISIONS 2026-10-13). For a real-data copy:
   `just stack up 1 --db ashyq_prod`, then `just login-as <their username> 1`.
@@ -528,67 +464,55 @@ follows the running slots.
 
 ### 5.4 e2e
 
-- Debug loop: `just e2e web2 --serve` builds and starts a production stand once (leave it running), then
-  `just e2e web2 --reuse --project chromium --grep B-COL-09` runs only that scenario. Reuse keeps the same API,
-  worker and database; fixtures remove their own test data. Logs/results go into a separate directory per run.
-  Test edits need no restart. Application/server/toolchain changes are detected and refuse reuse: run
-  `just e2e web2 --stop`, then `--serve` to rebuild and reset the stand. Stop retains the disposable database;
-  the next start resets it. `--slot N` selects an independent stand. Run the full suite after focused fixes pass.
-
-- `just e2e [web2|web] [--slot N] [--keep] [--no-build] [playwright args]`: Playwright against a production build
-  (web-2: `vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand; legacy: `next build` +
-  `next start`, beside slot 0's `next dev`) with its own API + worker on a fresh database `e2e_<app>_<slot>` cloned from
-  `ashyq_seed` (`just db template` first when missing). Rebuilds only when the app's sources changed. Ports: slot N =
-  API 8005+10N, web-2 stand 3105+10N, legacy 3205+10N, so runs in different slots do not collide. Prints the
-  summary; everything else is in `tmp/e2e/<app>-<slot>/` (playwright.log, api.log, build.log). The database is
-  dropped afterwards unless `--keep`.
+- `just e2e [web2|web] [--slot N] [--keep] [--no-build] [--changed] [playwright args]`: Playwright against a
+  production build (web-2: `vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand; legacy:
+  `next build` + `next start`) with its own API + worker on a fresh database `e2e_<app>_<slot>` cloned from
+  `ashyq_seed` (built first when missing). Rebuilds only when the app's sources changed; `--changed` runs only
+  the web-2 specs the diff reaches. Ports: slot N = API 8005+10N, web-2 stand 3105+10N, legacy 3205+10N, so runs
+  in different slots do not collide. Prints the summary; everything else is in `tmp/e2e/<app>-<slot>/`
+  (playwright.log, api.log, build.log). The database is dropped afterwards unless `--keep` (servers stop either way).
+- Debug loop: `just e2e web2 --serve` builds and starts the stand once and leaves it running; then
+  `just e2e web2 --reuse --project chromium --grep B-COL-09` runs only that scenario against the same API, worker
+  and database (fixtures remove their own data; logs per run). Test edits need no restart; application,
+  server or toolchain changes refuse reuse: `just e2e web2 --stop`, then `--serve`. Stop keeps the database; the
+  next start resets it. Run the full suite after focused fixes pass.
 - `just e2e-dev [web2|web] [--slot N] [args]`: the same suites against a running slot's dev servers (web-2 warms
   every route first).
 - Both take the seed password from `infra/env/dev.local.env` and hand the suites their accounts, API log and learner
   pool; nothing to export by hand.
+- Image stands (what CI runs): INFRA "Stage 2 e2e stand" (`just web2-*`) and "Production web image stand"
+  (`just web-release-e2e up|seed|test <specs>|down`, `just restore-test`; set `E2E_WEB_HOST` to the image's baked
+  domain and `IMAGE_TAG`).
 
 ### 5.5 Checks and the contract
 
-- Production image gate: set `E2E_WEB_HOST` to the image's baked public domain and `IMAGE_TAG` to its image tag;
-  `just web-release-e2e up`, `just web-release-e2e seed`, `just web-release-e2e test release.spec.ts --project=chromium`
-  and `just web-release-e2e down` use an isolated Compose project and network alias for that domain. Browser/API
-  traffic stays inside that stand. CI also selects auth/public smoke and video upload and requires it before publish.
-- Web-2 CI has three regular E2E shards and a separate real-Judge0 shard (`--grep @judge0` with the executor profile).
-  Accepted, wrong-answer, compilation-error and time-limit verdicts are exercised against the real sandbox.
-  All 63 themes in both modes run through `g15` in CI and `just ci-web2`.
-
-- `just ci-watch <run-id>` watches one GitHub run, prints job/step changes and one warning for a step over five
-  minutes, then exits with the result. Raw status and failed logs stay in `tmp/ci/<run-id>/`. It never retries or
-  cancels automatically. `just ci-retry <run-id>` retries failed/cancelled jobs and their dependents, preserving successes.
-- `just diagnose <log>` prints bounded failure context (or a tail); `just diagnose --trace <extracted.trace>`
-  prints action/error timestamps, excluding snapshots and resources. Full originals stay on disk. Limits:
-  40 lines, 500 characters per line, 12,000 characters total.
-- CI browser setup has a five-minute step limit. E2E uses the official Playwright image matching the package pin
-  (browsers/system dependencies included); setup and test durations appear separately in the run summary.
-
-- `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--staged`,
-  `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and their dependents (all
-  tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest `related`; web-2
-  `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` + `test-dev`.
-  One line per gate, live logs in `tmp/check/<gate>.log`; an area's first failure stops its later gates.
-  Server tests use 127.0.0.1 (Windows: `localhost` hangs). Pre-push adds `--isolated-db`: a disposable Postgres
-  container with the pinned pgvector image and memory-backed data, removed after the checks. Run the same mode
-  locally with `just check --isolated-db`. Shared development data and its durability settings are unchanged.
-  For one integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated
-  executables. Hook checkouts share installed frontend dependencies but keep their own Vite caches in
-  `tmp/node_modules/.vite/` so application compiler plugins still exclude generated dependency code.
-  Browser checks use two workers alongside the other areas. Child commands reuse the active Bun runtime and
-  hide Windows consoles; logs record the exit status for diagnosing native process-start failures.
+- `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--wip`: only the
+  uncommitted batch, `--staged`, `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and
+  their dependents (all tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest
+  `related`; web-2 `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` +
+  `test-dev`. One line per gate, live logs in `tmp/check/<gate>.log`; an area's first failure stops its later
+  gates. Server tests use 127.0.0.1 (Windows: `localhost` hangs). `--isolated-db` (pre-push) runs the server
+  tests on a disposable memory-backed Postgres container with the pinned image instead of the dev one. For one
+  integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated executables.
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
   its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and
   the error codes still missing a message. Generated files are `linguist-generated` (.gitattributes):
   on a merge conflict regenerate instead of merging.
+- `just ci-watch <run-id>` watches one GitHub run, prints job/step changes and one warning for a step over five
+  minutes, then exits with the result. Raw status and failed logs stay in `tmp/ci/<run-id>/`. It never retries or
+  cancels. `just ci-retry <run-id>` reruns failed/cancelled jobs and their dependents, keeping successes.
+- `just diagnose <log>` prints bounded failure context (or a tail); `just diagnose --trace <extracted.trace>`
+  prints action/error timestamps, excluding snapshots and resources. Full originals stay on disk. Limits:
+  40 lines, 500 characters per line, 12,000 characters total.
 
 ### 5.6 Databases
 
 - `just db template` builds `ashyq_seed` once (migrated + `ashyq admin seed-e2e`, ~1-2 min; the e2e accounts'
   rows are copied from `ashyq_dev` first because Zitadel is shared). `just db fresh <name>` clones it in about
   a second (`CREATE DATABASE … TEMPLATE`); `just db drop <name>`, `just db ls`.
-- `just db test-reset` recreates `ashyq_test` migrated and drops leftover `_sqlx_test_*` databases; it refuses
-  while tests hold them (`--force`). Integration tests need no setup: `#[sqlx::test]` creates a migrated
-  database per test from `ashyq_test`'s server.
+- `just db sql [--slot N | --db NAME] "<sql>"` (or `-f <file>`) runs SQL on a slot's database; table map and
+  ready queries: `docs/agents/DATA.md`.
+- `just db test-reset` recreates `ashyq_test` migrated and drops leftover test databases and templates
+  (`_ab_test_*`, `_ab_template_*`, `_sqlx_test_*`); it refuses while tests hold them (`--force`). Integration
+  tests need no setup: `#[ab_testdb::test]` clones a per-migration-set template on the cluster `DATABASE_URL`
+  names; a failing test's database stays for inspection until its next run.

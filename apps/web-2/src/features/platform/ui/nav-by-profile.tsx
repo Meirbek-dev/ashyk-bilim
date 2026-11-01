@@ -1,11 +1,12 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 import { dashboardOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
-import { gamificationOn, visibleSections } from '#/shared/auth/access'
+import { gamificationOn } from '#/shared/auth/access'
 
-import type { NavProps } from './nav-sections'
-
-export function NavByProfile({ session, workspace, render }: NavProps) {
+/** Reports the profile's gamification switch to the nav (B-ACH-13); renders nothing. */
+export function NavByProfile({ onGamification }: { onGamification: (on: boolean) => void }) {
   const { data: gamification } = useSuspenseQuery({ ...dashboardOptions(), select: gamificationOn })
-  return render(visibleSections(session, workspace, gamification))
+  useEffect(() => onGamification(gamification), [gamification, onGamification])
+  return null
 }

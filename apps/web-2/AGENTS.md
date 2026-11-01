@@ -2,7 +2,7 @@
 
 The new web (stage 2): React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on
 Node from `.node-version`. Standalone bun project (own `bun.lock`, not in the root workspace).
-Production runs `apps/web` after rollback; its freeze is lifted. Spec: `docs/MODERNIZATION-STAGE-2.md`.
+Production still runs `apps/web`; both take normal fixes. Rollout: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
 
 ## Map
 
@@ -17,7 +17,7 @@ Production runs `apps/web` after rollback; its freeze is lifted. Spec: `docs/MOD
 | `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts`   |
 | `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.23.0 add <name>`; never hand-edit     |
 | `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest    |
-| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`; `cn` (shadcn's `cn` package)                                      |
+| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`, `useSwapFocus`; `cn` (shadcn's `cn` package)                      |
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP           |
 | `serve.ts`                          | production entry: srvx static files + the Start handler                        |
 | `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                   |
@@ -44,28 +44,28 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## One way to do each thing (lint and gates reject the alternatives)
 
-| Task            | The way                                                                                                                                                                                                                           |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`                                                                                                                                                         |
-| Read            | route `loader: query({ ...xOptions(), staleTime: 'static' })` (`infiniteQuery` for pages) + `useSuspenseQuery(xOptions())`                                                                                                        |
-| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`                                                                                                                                                           |
-| Query keys      | generated `xQueryKey()`; never literal arrays                                                                                                                                                                                     |
-| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table)                                                                                                                                                     |
-| Action access   | `allowed_actions` from the API response; never roles or permission strings                                                                                                                                                        |
-| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                                                                                                                                                                      |
-| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit, leaveGuard })` + `field.TextField`: drops a second submit while one runs; `leaveGuard` asks before typed values are lost. A hand-rolled `<form onSubmit>` must do both itself |
-| File upload     | `FileInput` (`purpose` sets types and cap) / `FileField`; pasted image: `useUpload` + `clipboardImage`. Caps and types: `gen/upload-policy.gen.ts` (the server's, `just contract`), never a literal                               |
-| Pick from list  | `MultiCombobox` (server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`                                                                                                                                  |
-| Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`                                                                                                                                   |
-| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                                                                                                                                                     |
-| Dates, numbers  | `#/shared/i18n/format`                                                                                                                                                                                                            |
-| Screens         | a template from `#/shared/components/templates`; lists through `ListState`                                                                                                                                                        |
-| UI elements     | stock `#/shared/ui/<name>` (`variant`, `size`, `render`) or a composite; layout classes only, tokens                                                                                                                              |
-| Button looks    | route: router `Link` + `className={buttonVariants({ variant })}` from `#/shared/components/button-variants` (merged); pending: `disabled` + `<Spinner />`                                                                         |
-| Toast           | `toast.add({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                                                                                                                                                 |
-| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                                                                                                                                                       |
-| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                                                                                                                                                      |
-| Memoization     | none: React Compiler                                                                                                                                                                                                              |
+| Task            | The way                                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP to the API | generated SDK (`#/shared/api/gen/sdk.gen`) through `shared/api/client.ts`                                                                                                                                                             |
+| Read            | route `loader: query({ ...xOptions(), staleTime: 'static' })` (`infiniteQuery` for pages) + `useSuspenseQuery(xOptions())`                                                                                                            |
+| Write           | `useMutation({ ...xMutation(), meta: { invalidates: [xQueryKey()] } })`                                                                                                                                                               |
+| Query keys      | generated `xQueryKey()`; never literal arrays                                                                                                                                                                                         |
+| Route access    | `beforeLoad`: `requireSession` / `requireGuest` / `requireCapability` (table)                                                                                                                                                         |
+| Action access   | `allowed_actions` from the API response; never roles or permission strings                                                                                                                                                            |
+| URL state       | `validateSearch` (Valibot) + `Link` / `navigate({ search })`                                                                                                                                                                          |
+| Forms           | `useAppForm(vXxxRequest, { defaultValues, onSubmit, leaveGuard })` + `field.TextField`: drops a second submit while one runs; `leaveGuard` asks before typed values are lost. A hand-rolled `<form onSubmit>` must do both itself     |
+| File upload     | `FileInput` (`purpose` sets types and cap) / `FileField` (inside `form.AppField`, as `MultiSelectField`: not bound fields); pasted image: `useUpload` + `clipboardImage`. Caps and types: `gen/upload-policy.gen.ts`, never a literal |
+| Pick from list  | `MultiCombobox` (server search, "Show more") / `MultiSelectField`; at a caret: `AnchoredListbox`                                                                                                                                      |
+| Rendered text   | class `ab-prose` + `<link href={proseCss} precedence="ab-prose">` from `#/styles/prose.css?url`                                                                                                                                       |
+| Text            | `m.<feature>_<key>()`; enums via `Record<Enum, () => string>`                                                                                                                                                                         |
+| Dates, numbers  | `#/shared/i18n/format`                                                                                                                                                                                                                |
+| Screens         | a template from `#/shared/components/templates`; lists through `ListState`                                                                                                                                                            |
+| UI elements     | stock `#/shared/ui/<name>` (`variant`, `size`, `render`) or a composite; layout classes only, tokens                                                                                                                                  |
+| Button looks    | route: router `Link` + `className={buttonVariants({ variant })}` from `#/shared/components/button-variants` (merged); pending: `disabled` + `<Spinner />`                                                                             |
+| Toast           | `toast.add({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                                                                                                                                                     |
+| API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                                                                                                                                                           |
+| Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                                                                                                                                                          |
+| Memoization     | none: React Compiler                                                                                                                                                                                                                  |
 
 No suppressions: `oxlint-disable`, `@ts-expect-error`, `as any`, `test.skip`, TODO are errors unless
 listed in `gates/allowlist.json` with a reason (G-12).

@@ -92,8 +92,7 @@ openapi-check:
     cargo run --locked -q -p ashyq-server -- openapi > "$tmp"
     diff -u openapi.v2.json "$tmp"
 
-# Coverage with floor (ratchet up as phases land - never down).
-# Scaffold floor 30 -> 80 after P3 (measured 88% lines, 2026-09-05).
+# Coverage with floor (ratchet up, never down).
 # main.rs is the process entrypoint and is not held to the floor.
 cov *args:
     cargo llvm-cov nextest --locked --workspace --fail-under-lines 80 --ignore-filename-regex 'crates[\\/]server[\\/]src[\\/]main\.rs' "$@"

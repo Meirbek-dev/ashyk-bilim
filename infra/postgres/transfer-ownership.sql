@@ -1,5 +1,5 @@
--- Hand every object of the current database to role `ashyq` (spec 5.3, step 4.6).
--- Run as superuser, only after a drill rehearsal, with a fresh pg_dump at hand:
+-- Hand every object of the current database to role `ashyq`: needed only after restoring an archive from
+-- before 2026-10-04 (docs/INFRA.md, Postgres roles and databases). Run as superuser with a fresh pg_dump at hand:
 --   psql -v ON_ERROR_STOP=1 -U cs_mooc -d ashyq -f transfer-ownership.sql
 -- REASSIGN OWNED BY <bootstrap superuser> is refused by PostgreSQL, hence per-object ALTERs.
 -- Idempotent: only objects not yet owned by ashyq are touched. One transaction.

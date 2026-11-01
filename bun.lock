@@ -19,11 +19,11 @@
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
-        "@formatjs/intl-datetimeformat": "^7.9.0",
-        "@formatjs/intl-numberformat": "^9.5.0",
-        "@formatjs/intl-pluralrules": "^6.4.0",
-        "@formatjs/intl-relativetimeformat": "^12.4.0",
-        "@hookform/resolvers": "^6.0.2",
+        "@formatjs/intl-datetimeformat": "^8.0.0",
+        "@formatjs/intl-numberformat": "^10.0.0",
+        "@formatjs/intl-pluralrules": "^7.0.0",
+        "@formatjs/intl-relativetimeformat": "^13.0.0",
+        "@hookform/resolvers": "^7.0.0",
         "@icons-pack/react-simple-icons": "^13.15.1",
         "@monaco-editor/react": "^4.7.0",
         "@next/third-parties": "16.4.3",
@@ -342,7 +342,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
-    "@formatjs/bigdecimal": ["@formatjs/bigdecimal@0.2.7", "", {}, "sha512-B4+XY/e4u5v261r3a37Kq2ax91gPZSKGyVpx8X5dygAggLlUz+6MeBpmAhaBFGB8WQ4JB1qD+QtKHk9aJkEb9Q=="],
+    "@formatjs/bigdecimal": ["@formatjs/bigdecimal@0.2.8", "", {}, "sha512-e/U8n09DJByWetRTG8pjNtNKOeW0T4efkFcceo72y0QAjyiP5egv97N6fSa2wKiTJHVydO8crTkTueF5bKuYjg=="],
 
     "@formatjs/fast-memoize": ["@formatjs/fast-memoize@3.1.7", "", {}, "sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA=="],
 
@@ -350,17 +350,17 @@
 
     "@formatjs/icu-skeleton-parser": ["@formatjs/icu-skeleton-parser@2.1.12", "", {}, "sha512-ca7tZMLpfHX3sUD7hP6gE/qr6Iq89EDd3ZLeRhbsB7r0UD55DGJq+tmFLzrGrnx5StahUevQmQQVtbDRHsfDHA=="],
 
-    "@formatjs/intl-datetimeformat": ["@formatjs/intl-datetimeformat@7.9.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.7", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-C17ilxM6zJO1wAYDwoW4E0Oy8K6krEC7MjcZAArW/wEthBb3Lab0LBTh0G7liLOGEj74iCTWm2TYHtLv+SbtYg=="],
+    "@formatjs/intl-datetimeformat": ["@formatjs/intl-datetimeformat@8.0.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.8", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-SpxBEnBiELCrROIIU0GebAlpJylXqikQgazQgILPnvqguKVFyXrTPPLiIVhcCHbUx+G82p6z/tweLjLjDS2+uA=="],
 
     "@formatjs/intl-localematcher": ["@formatjs/intl-localematcher@0.10.0", "", { "dependencies": { "@formatjs/fast-memoize": "3.1.7" } }, "sha512-OvfBelurObm02D1+4BsuHSt3Xkn49RZPo7uJXt/1Z0dNET3EN39kY1rKMV3kG0tn0p4gyGWrcFx9HyeF07cq5g=="],
 
-    "@formatjs/intl-numberformat": ["@formatjs/intl-numberformat@9.5.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.7", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-l2kTmIyUEw/peqc01A1Fz3WxJHsb9ntAUIgAe0016svJJa6TBxriGARfTzOOI5WvsDO1dWXHHQ7gkOv4gtHm2w=="],
+    "@formatjs/intl-numberformat": ["@formatjs/intl-numberformat@10.0.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.8", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-QU08eaTCHUOAtkiMr+3UomS3wIGwTkbrgJHgJyiItjZlj/NTF0UEzA9i0P2s0ckiqtJce9RKjQrhJNQeMh47Rw=="],
 
-    "@formatjs/intl-pluralrules": ["@formatjs/intl-pluralrules@6.4.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.7", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-dPsgM2WeLIRPzH8wqv9mnq2sdnAeyz7n7gqv/JSK6jFVvJEEZIyZX0XalFZsuuNQ8U2CQQ5RxCy0h9U/nirJIQ=="],
+    "@formatjs/intl-pluralrules": ["@formatjs/intl-pluralrules@7.0.0", "", { "dependencies": { "@formatjs/bigdecimal": "0.2.8", "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-T6LxklnTxJti7S3Bqpl6lrwE4zfP7KIsH7sm0YWC101YjyQMdwbbgtueqK+OIaJ3pSRS7k+AfN+hJ24CtkNupQ=="],
 
-    "@formatjs/intl-relativetimeformat": ["@formatjs/intl-relativetimeformat@12.4.0", "", { "dependencies": { "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-sXYW00Zh2rodj2HguxY/IoXSsrru3YAIbvH+JeXPvpQs5ukS2eWwv3zvcPTWZyFzqSiwFiKAuPtdr/6kQn3u6g=="],
+    "@formatjs/intl-relativetimeformat": ["@formatjs/intl-relativetimeformat@13.0.0", "", { "dependencies": { "@formatjs/intl-localematcher": "0.10.0" } }, "sha512-bKcT8KdlVo1DiL3VezxwKSaNG3yT+8JzTgH/m7a3PkPxYDuCuvaqn8jy/ENeEXqEIxYO8YqfO/DK9XTcm7Q7Cw=="],
 
-    "@hookform/resolvers": ["@hookform/resolvers@6.0.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@sinclair/typebox": ">=0.25.24", "@standard-schema/spec": "^1.0.0", "@vinejs/vine": "^2.0.0 || ^3.0.0 || ^4.0.0", "ajv": "^8.12.0", "ajv-errors": "^3.0.0", "ajv-formats": "^2.1.1", "arktype": "^2.0.0", "ata-validator": "^1.23.0", "class-transformer": ">=0.4.0", "class-validator": ">=0.12.0", "computed-types": "^1.0.0", "effect": "^4.0.0", "fluentvalidation-ts": "^3.0.0", "fp-ts": "^2.7.0", "io-ts": "^2.0.0", "joi": "^17.0.0 || ^18.0.0", "nope-validator": ">=0.12.0", "react-hook-form": "^7.55.0", "superstruct": ">=0.12.0", "typanion": "^3.3.2", "valibot": ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc", "vest": ">=6.0.0", "yup": "^1.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["@sinclair/typebox", "@standard-schema/spec", "@vinejs/vine", "ajv", "ajv-errors", "ajv-formats", "arktype", "ata-validator", "class-transformer", "class-validator", "computed-types", "effect", "fluentvalidation-ts", "fp-ts", "io-ts", "joi", "nope-validator", "superstruct", "typanion", "valibot", "vest", "yup", "zod"] }, "sha512-e2dqUOlaGuirKVOd/iZWk/Yg5zeaGw7t0hSc3LzxL3o7eZGwZkTyEbBL8H52m0wRKEsNLWoMGOiXGHbPHTXlEQ=="],
+    "@hookform/resolvers": ["@hookform/resolvers@7.0.0", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@standard-schema/spec": "^1.0.0", "@vinejs/vine": "^2.0.0 || ^3.0.0 || ^4.0.0", "ajv": "^8.12.0", "ajv-errors": "^3.0.0", "ajv-formats": "^2.1.1", "arktype": "^2.0.0", "ata-validator": "^1.23.0", "class-transformer": ">=0.4.0", "class-validator": ">=0.12.0", "computed-types": "^1.0.0", "effect": "^4.0.0", "fluentvalidation-ts": "^3.0.0", "fp-ts": "^2.7.0", "io-ts": "^2.0.0", "joi": "^17.0.0 || ^18.0.0", "nope-validator": ">=0.12.0", "react-hook-form": "^7.55.0", "superstruct": ">=0.12.0", "typanion": "^3.3.2", "typebox": "^1.0.0", "valibot": ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc", "vest": ">=6.0.0", "yup": "^1.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["@standard-schema/spec", "@vinejs/vine", "ajv", "ajv-errors", "ajv-formats", "arktype", "ata-validator", "class-transformer", "class-validator", "computed-types", "effect", "fluentvalidation-ts", "fp-ts", "io-ts", "joi", "nope-validator", "superstruct", "typanion", "typebox", "valibot", "vest", "yup", "zod"] }, "sha512-aJugiXf4mijjZYaJKbap8jxJsIrZ94Er1oi8UxoN9fMGdSMRXPMPKc+EtsFK2iqnk/3E0hJQHH/RqZj2cIiGfw=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "https://registry.npmmirror.com/@humanfs/core/-/core-0.19.2.tgz", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 

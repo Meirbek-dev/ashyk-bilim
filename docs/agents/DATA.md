@@ -1,8 +1,9 @@
 # Finding real data (dev stack)
 
 Run SQL with `just db sql [--slot N | --db NAME] "<sql>"` (or `-f file.sql`): the slot's database, Unicode-safe,
-`|`-separated with a header. Sign in as anyone with `just login-as <username|email> <slot>`; screenshot pages with
-`just shoot`. On a restored backup (`ashyq_restore`) change rows freely; never on prod.
+`|`-separated with a header. Sign in as anyone with `just login-as <username|email> [slot]`; screenshot pages with
+`just shoot`. Real data: a slot on a local restored copy (`just stack up 1 --db <name>`, RUNBOOK 5.3); change its rows
+freely, never production's.
 
 ## Where things live
 
@@ -14,9 +15,9 @@ Run SQL with `just db sql [--slot N | --db NAME] "<sql>"` (or `-f file.sql`): th
 | course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `kind`, `lifecycle`) + `assessment_items` (`body` json)   |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
-| attempt (quiz, exam, code)        | `submissions` (`status` draft / pending / graded / published)                       |
+| attempt (quiz, exam, code)        | `submissions` (`status` draft / pending / graded / published / returned)            |
 | code "Run"                        | `code_runs` (+ `code_run_cases`)                                                     |
-| file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts`        |
+| file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts` (`status`) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
@@ -31,16 +32,16 @@ A user's id and roles:
 
 ```sql
 select u.id, u.username, string_agg(r.slug, ',') from users u left join user_roles ur on ur.user_id = u.id
-left join roles r on r.id = ur.role_id where u.username = 'ast.dinara1987.4301' or u.email = 'ast.dinara1987.4301'
+left join roles r on r.id = ur.role_id where u.username = '<login>' or u.email = '<login>'
 group by 1, 2
 ```
 
-Published activities of a type in courses a user is enrolled in (types: dynamic, video, document, exam,
+Published activities of a type in courses a user is enrolled in (types: dynamic, video, document, quiz, exam,
 code_challenge, file_submission):
 
 ```sql
 select a.course_id, a.id, a.name from activities a join trail_runs t on t.course_id = a.course_id
-join users u on u.id = t.user_id where u.username = 'ast.dinara1987.4301'
+join users u on u.id = t.user_id where u.username = '<login>'
 and a.activity_type = 'code_challenge' and a.published limit 5
 ```
 
@@ -55,7 +56,7 @@ Courses a teacher can edit:
 
 ```sql
 select c.id, c.name from courses c join resource_authors ra on ra.course_id = c.id
-join users u on u.id = ra.user_id where u.email = 'aizhan0212@mail.ru' and c.archived_at is null
+join users u on u.id = ra.user_id where u.email = '<email>' and c.archived_at is null
 ```
 
 Make a file task reviewable (published, with instructions and a deadline in 3 days):

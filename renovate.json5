@@ -1,0 +1,110 @@
+// Dependency updates by the Mend Renovate GitHub App (https://docs.renovatebot.com).
+// No PRs in this repo (AGENTS.md): an update is pushed to a renovate/* branch, CI runs there, and Renovate
+// fast-forwards main once it is green (automergeType branch). A red branch, a major or a stateful service
+// (data on disk, migrations) opens a PR instead. The Dependency Dashboard issue lists everything pending.
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended', ':semanticCommits', ':semanticCommitTypeAll(chore)'],
+  timezone: 'Asia/Almaty',
+  schedule: ['before 6am on monday'],
+  automergeType: 'branch',
+  // Supply chain: a release must be three days old before it is proposed (hijacked versions rarely last).
+  minimumReleaseAge: '3 days',
+  internalChecksFilter: 'strict',
+  branchConcurrentLimit: 6,
+  lockFileMaintenance: { enabled: true, automerge: true },
+  // Security fixes (GitHub advisories and OSV) at once, without the release age wait.
+  osvVulnerabilityAlerts: true,
+  vulnerabilityAlerts: {
+    schedule: ['at any time'],
+    minimumReleaseAge: null,
+    labels: ['security'],
+  },
+  customManagers: [
+    {
+      // cargo-installed tools shared by local setup and CI.
+      customType: 'regex',
+      managerFilePatterns: ['/^apps/server/tools\\.env$/'],
+      matchStrings: ['(?<depName>[a-z0-9_-]+)@(?<currentValue>\\d+\\.\\d+\\.\\d+)'],
+      datasourceTemplate: 'crate',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['/^\\.github/workflows/.+\\.ya?ml$/'],
+      matchStrings: ['(?<depName>rhysd/actionlint):(?<currentValue>\\d+\\.\\d+\\.\\d+)'],
+      datasourceTemplate: 'docker',
+    },
+  ],
+  packageRules: [
+    {
+      matchUpdateTypes: ['minor', 'patch', 'pin', 'digest'],
+      automerge: true,
+    },
+    {
+      matchManagers: ['cargo'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'rust crates',
+    },
+    {
+      matchManagers: ['bun'],
+      matchFileNames: ['apps/web-2/package.json'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'web-2 dependencies',
+    },
+    {
+      // The old web retires after the stage 2 rollback window: monthly, security fixes still at once. Its
+      // `catalog:` versions (root package.json) are not extracted by the bun manager: bump those by hand.
+      matchManagers: ['bun'],
+      matchFileNames: ['package.json', 'apps/web/package.json'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'web dependencies',
+      schedule: ['before 6am on the first day of the month'],
+    },
+    {
+      // gates/ and codegen run the TypeScript 6 compiler API through this alias (TypeScript 7 has none).
+      matchDepNames: ['typescript-6'],
+      allowedVersions: '<7',
+    },
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'github actions',
+    },
+    {
+      // Toolchains move together everywhere they are pinned (AGENTS: "Upgrade together"); the release age
+      // keeps rust-toolchain.toml from running ahead of the rust image tag.
+      matchDepNames: ['rust', '/(^|\\/)library\\/rust$/'],
+      groupName: 'rust toolchain',
+    },
+    {
+      matchDepNames: ['node', '/(^|\\/)library\\/node$/'],
+      groupName: 'node',
+    },
+    {
+      matchDepNames: ['bun', 'oven/bun'],
+      groupName: 'bun',
+    },
+    {
+      matchDepNames: ['cargo-deny', 'cargo-machete', 'cargo-nextest', 'cargo-llvm-cov', 'sqlx-cli', 'bacon', 'just'],
+      matchFileNames: ['apps/server/tools.env'],
+      groupName: 'rust tools',
+    },
+    {
+      // Services holding data or running migrations on start: a PR, deployed by hand.
+      matchDatasources: ['docker'],
+      matchDepNames: [
+        '/pgvector\\/pgvector$/',
+        '/library\\/redis$/',
+        '/zitadel\\/zitadel$/',
+        '/rustfs\\/rustfs$/',
+        '/judge0\\/judge0$/',
+        '/restic\\/restic$/',
+      ],
+      automerge: false,
+      labels: ['stateful'],
+    },
+    {
+      matchUpdateTypes: ['major'],
+      automerge: false,
+    },
+  ],
+}

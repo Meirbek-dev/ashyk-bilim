@@ -1,8 +1,13 @@
 # Stage 2 cutover: old web -> `ashyq-web-2` (pending)
 
-Scope: `docs/MODERNIZATION-STAGE-2.md`; acceptance: `docs/web/ACCEPTANCE.md`. Host facts, `dc` helper, smoke
-command: `docs/RUNBOOK.md` section 0. Run on the host in `~/cs-mooc`, bash. `<sha>` = 8-char
-release commit. The switch is configuration only (`.env`), no compose edits:
+Production runs `apps/web` (Next.js, since the 2026-10-04 rollback); `apps/web-2` is the implemented
+TanStack replacement. Both take normal fixes (the G-13 freeze is lifted). This file is the whole rollout:
+constraints, acceptance, procedure, rollback and the cleanup after the rollback window. Feature behavior lives
+in `apps/web-2/src/features/*/SPEC.md`, conventions in `apps/web-2/AGENTS.md`. `docs/REWRITE.md` phase 1 plans
+this cutover as a static SPA build (its section 7); until that lands, the procedure below switches the Node image.
+
+Host facts, `dc` helper, smoke command: `docs/RUNBOOK.md` section 0. Run on the host in `~/cs-mooc`, bash.
+`<sha>` = 8-char release commit. The switch is configuration only (`.env`), no compose edits:
 
 | `.env` key | Before (unset = default) | After switch |
 | --- | --- | --- |
@@ -12,7 +17,7 @@ release commit. The switch is configuration only (`.env`), no compose edits:
 
 `compose.prod.yaml` already gives `web` both `PUBLIC_ORIGIN` (`PUBLIC_SCHEME://NGINX_SERVER_NAME`)
 and `INTERNAL_API_URL=http://server:8000/api/v2/` (the new web uses only its origin). `NEXT_*`
-and `APP_URL` stay until Ф9; the new web ignores them. Port 3000 and the image `HEALTHCHECK`
+and `APP_URL` stay until phase 9 (section 4); the new web ignores them. Port 3000 and the image `HEALTHCHECK`
 are the same contract for both images.
 
 ```bash
@@ -20,6 +25,28 @@ env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2"
 Q() { dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d ashyq -At' <<<"$1"; }   # read-only SQL
 A() { dc exec -T server ashyq admin "$@"; }
 ```
+
+## Constraints
+
+- Expand before cutover; remove compatibility only after the owner closes the rollback window. The production
+  Next.js client keeps working until then; what is kept only for it: `apps/server/docs/phase9-removals.md`.
+- The server owns authorization, progress, grading and validation; the web consumes session `capabilities` and
+  resource `allowed_actions`, uses the HttpOnly `ab_session` cookie as is and calls the API and buckets on its own
+  origin. The image takes runtime `PUBLIC_ORIGIN` and `INTERNAL_API_URL`, no domain-specific build arguments.
+- Printed certificate verification URLs keep working, locale aliases included. Legacy page URLs with an
+  equivalent redirect to web-2; unmatched ones stay 404.
+
+## Acceptance (on the release being considered; old green runs are not evidence)
+
+- `just ci-web2` and the production-build E2E pass with no unexplained skips, warnings or suppressions;
+  allowlist entries have reasons. G-07 classifies every operation, G-10 covers every `B-...` behavior,
+  G-15 passes every theme and mode.
+- E2E covers role access in ru with kk/en smoke, CSP/console errors, axe serious/critical findings and
+  horizontal overflow at 390 px (student and grading flows work on phones). Chromium runs the full suite,
+  Firefox and WebKit a smoke; tagged Judge0/AI scenarios run locally in full when CI omits them.
+- The image CI tested is the one deployed; it builds without domain-specific arguments.
+- The web container stays well under 512 MiB; an SSR read of a hung API fails within seconds; response
+  headers stay under the university proxy limit (FINDINGS 31).
 
 ## 1. Preconditions (all, in order)
 
@@ -111,7 +138,7 @@ migrations land first under the old web; the only old-web-breaking step comes la
 
 ## 3. Rollback (until 2.8)
 
-Web only; the server stays on `<sha>` (it serves both webs until Ф9):
+Web only; the server stays on `<sha>` (it serves both webs until phase 9):
 ```bash
 env_set WEB_IMAGE_NAME ashyq-web; env_set WEB_LINKS legacy; env_set WEB_MEMORY 2g
 dc up -d --no-build --wait
@@ -167,13 +194,12 @@ Item 3 ends the old web's compatibility for good. Before deploying item 4, remov
    `AGENTS.md`, agent memory. The image becomes `ashyq-web` built from `apps/web`.
 5. **Docs:** remove Next.js-only guidance and the renamed app's `BACKLOG.md`;
    update `docs/INFRA.md`, `docs/web/DESIGN.md` and root/app agent guides.
-   Delete this procedure, `docs/MODERNIZATION-STAGE-2.md` and the completed
-   acceptance checklist once durable behavior is covered by the active guides.
-6. **Acceptance** (`docs/web/ACCEPTANCE.md`), all empty / green:
+   Delete this procedure once durable behavior is covered by the active guides.
+6. **Acceptance**, all empty / green:
    ```bash
    git grep -n "from 'next\|NEXT_\|'use server'\|course_uuid\|web-2\|usergroups\|/trail\|can_update" \
      -- apps/web apps/server/openapi.v2.json compose*.yaml infra/ .github/ justfile
-   git grep -n 'stage-2' -- . ':!docs/archive' ':!apps/server/migrations'
+   git grep -n 'stage-2' -- . ':!apps/server/migrations'
    dc exec -T web env      # only PUBLIC_ORIGIN, INTERNAL_API_URL + system variables
    ```
    `main` CI green as a whole, `publish` included.

@@ -21,11 +21,11 @@
 - `docs/AI-FIRST.md` - concept graph, mastery model, material search and AI pre-grading (rules, API, UI).
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
 - `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data.
-- `docs/REWRITE.md` - proposed v3 rewrite (ops fixes first, then delete-in-place to one binary,
+- `docs/REWRITE.md` - v3 rewrite plan (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
-  Not started; current docs still describe production.
-- `docs/MODERNIZATION-STAGE-2.md`, `docs/STAGE-2-CUTOVER.md`, `docs/web/ACCEPTANCE.md` -
-  remaining frontend rollout scope, procedure and acceptance; `apps/web-2/BACKLOG.md` lists open work.
+  In progress (its section 15); the other docs describe production as it runs now.
+- `docs/STAGE-2-CUTOVER.md` - frontend rollout: constraints, acceptance, cutover, rollback, cleanup;
+  `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
   use `rg -n '^##' <doc>` as the index; read only the matching section.
 - Keep docs about current behavior, constraints, operations and unfinished work.
@@ -36,6 +36,9 @@
 - Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
 - Never edit an applied migration; add a new one.
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
+- Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
+  is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, Judge0, restic) wait as PRs. Its
+  Dependency Dashboard issue lists what is pending.
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
   `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.
@@ -82,9 +85,8 @@
   minified matches, complete CI logs or cleanup logs. For minified bundles print filenames/counts or bounded excerpts.
   For pulls use `git pull --quiet --ff-only` and report the old/new revision. Test tools print summaries and retain logs.
 
-- QA/fix sweeps: hand each agent `docs/agents/QA.md` plus its lane; it covers roles, accounts, testing,
-  fixing, report format and orchestration (max 3 agents per checkout, one lane owns contract changes,
-  commit per finished item, never leave files staged, progress in a report file).
+- QA/fix sweeps are on hold until REWRITE phase 6 unless the owner asks for one; then hand each agent
+  `docs/agents/QA.md` plus its lane (roles, accounts, testing, fixing, report format, orchestration).
 - Parallel work without blocking: `just wt new <name>` (worktree in `../ashyq-wt/<name>`, own
   `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
