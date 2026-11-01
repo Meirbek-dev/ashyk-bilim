@@ -22,6 +22,9 @@
 //! - review 2, items 11-12: both grade journals guard the whole row: only a
 //!   grade's published_at changes, a file grade never changes, and a file
 //!   grade goes only with its attempt.
+//! - a grader can be erased by hand: both journals keep the grade with
+//!   `graded_by` cleared, and still refuse naming another grader.
+//! - a deleted account cannot be active again.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -595,4 +598,95 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(left, 0);
+}
+
+#[ab_testdb::test]
+async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
+    let w = world(&pool).await;
+    let grader = user(&pool, "grader").await;
+    let submission = submission(&pool, &w, 1, false).await.unwrap();
+    let entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
+         VALUES ($1, $2, 80, 80) RETURNING id",
+    )
+    .bind(submission)
+    .bind(grader)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let task: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(w.activity)
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let attempt: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id)
+         VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(task)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let file_entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_grading_entries (attempt_id, graded_by, status, raw_score, final_score)
+         VALUES ($1, $2, 'graded', 70, 70) RETURNING id",
+    )
+    .bind(attempt)
+    .bind(grader)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    for reassign in [
+        "UPDATE grading_entries SET graded_by = $1",
+        "UPDATE file_grading_entries SET graded_by = $1",
+    ] {
+        let refused = sqlx::query(reassign).bind(w.user).execute(&pool).await;
+        assert!(refused.is_err(), "{reassign}");
+    }
+
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(grader)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let graded_by: Option<Uuid> =
+        sqlx::query_scalar("SELECT graded_by FROM grading_entries WHERE id = $1")
+            .bind(entry)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(graded_by, None);
+    let graded_by: Option<Uuid> =
+        sqlx::query_scalar("SELECT graded_by FROM file_grading_entries WHERE id = $1")
+            .bind(file_entry)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(graded_by, None);
+}
+
+#[ab_testdb::test]
+async fn a_deleted_account_stays_disabled(pool: PgPool) {
+    let id = user(&pool, "gone").await;
+    let active = sqlx::query("UPDATE users SET deleted_at = now() WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await;
+    assert!(active.is_err(), "deleted_at needs status = 'disabled'");
+    sqlx::query("UPDATE users SET status = 'disabled', deleted_at = now() WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let reenabled = sqlx::query("UPDATE users SET status = 'active' WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await;
+    assert!(reenabled.is_err(), "a deleted account is not re-enabled");
 }
