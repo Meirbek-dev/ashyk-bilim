@@ -354,7 +354,8 @@ pub async fn list_activity_progress(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?"
-           FROM activity_progress WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM activity_progress WHERE course_id = ANY($1)
+           ORDER BY created_at, activity_id, user_id"#,
         &ids
     )
     .fetch_all(pool)
@@ -383,7 +384,7 @@ pub async fn list_course_progress(
         r#"SELECT course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   completed_required_count, total_required_count, progress_pct, certificate_eligible,
                   (extract(epoch FROM last_activity_at))::bigint AS "last_activity_at?"
-           FROM course_progress WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM course_progress WHERE course_id = ANY($1) ORDER BY created_at, course_id, user_id"#,
         &ids
     )
     .fetch_all(pool)
