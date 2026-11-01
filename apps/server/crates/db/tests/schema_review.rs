@@ -32,6 +32,8 @@
 //!   snapshot once written never changes.
 //! - review 2, item 8: a submission's current grade is its latest journal
 //!   entry's; a grade written to only one side fails at commit.
+//! - review 2, item 5: an assessment's title and kind are its activity's;
+//!   a rename shows at once, and the activity cannot change its type.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -83,9 +85,9 @@ async fn world(pool: &PgPool) -> World {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)
@@ -883,4 +885,39 @@ async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
         let refused = sqlx::query(drift).bind(sub).execute(&pool).await;
         assert!(refused.is_err(), "{drift}");
     }
+}
+
+#[ab_testdb::test]
+async fn an_assessment_is_named_and_typed_by_its_activity(pool: PgPool) {
+    let w = world(&pool).await;
+    let id = ab_core::id::AssessmentId(w.assessment);
+    let row = ab_db::assessments::get_assessment(&pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.title, "q");
+    assert_eq!(row.kind, ab_core::assessments::AssessmentKind::Quiz);
+
+    sqlx::query("UPDATE activities SET name = 'renamed' WHERE id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let row = ab_db::assessments::get_assessment(&pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.title, "renamed");
+
+    let retyped = sqlx::query(
+        "UPDATE activities SET activity_type = 'exam', activity_sub_type = 'exam_standard'
+         WHERE id = $1",
+    )
+    .bind(w.activity)
+    .execute(&pool)
+    .await;
+    assert!(
+        retyped.is_err(),
+        "an activity with an assessment keeps its type"
+    );
 }

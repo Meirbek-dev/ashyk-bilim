@@ -1781,7 +1781,10 @@ pub async fn assessments_context(
 ) -> Result<Vec<AssessmentContextRow>> {
     let rows = sqlx::query_as!(
         AssessmentContextRow,
-        r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId", title, kind,
+        r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!",
                   grading_mode, passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?"
            FROM assessments WHERE course_id = $1 ORDER BY id"#,

@@ -142,11 +142,10 @@ impl AssessmentRow {
     }
 }
 
+/// Title and kind are the activity's (created first, same transaction).
 pub struct NewAssessment<'a> {
     pub activity_id: ActivityId,
     pub course_id: CourseId,
-    pub kind: AssessmentKind,
-    pub title: &'a str,
     pub description: &'a str,
     pub weight: f64,
     pub grading_type: GradingType,
@@ -161,7 +160,7 @@ pub async fn insert_assessment<'e>(
     let p = new.policy;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessments (
-               activity_id, course_id, kind, title, description, weight, grading_type,
+               activity_id, course_id, description, weight, grading_type,
                creator_id,
                grading_mode, grade_release_mode, completion_rule, passing_score,
                max_attempts, time_limit_seconds, due_at, allow_late,
@@ -172,16 +171,14 @@ pub async fn insert_assessment<'e>(
                copy_paste_protection, tab_switch_detection, devtools_detection,
                right_click_disabled, fullscreen_required, violation_threshold,
                attempt_penalty_percent)
-           VALUES ($1, $2, $3, $4, $5, $6::float8, $7, $8,
-                   $9, $10, $11, $12::float8, $13, $14, to_timestamp($15), $16,
-                   $17, $18::float8, $19, to_timestamp($20),
-                   $21, $22, $23, $24, $25, $26::float8, $27,
-                   $28, $29, $30, $31, $32, $33, $34::float8)
+           VALUES ($1, $2, $3, $4::float8, $5, $6,
+                   $7, $8, $9, $10::float8, $11, $12, to_timestamp($13), $14,
+                   $15, $16::float8, $17, to_timestamp($18),
+                   $19, $20, $21, $22, $23, $24::float8, $25,
+                   $26, $27, $28, $29, $30, $31, $32::float8)
            RETURNING id"#,
         new.activity_id.0,
         new.course_id.0,
-        new.kind.as_str(),
-        new.title,
         new.description,
         new.weight,
         new.grading_type.as_str(),
@@ -225,8 +222,12 @@ pub async fn get_assessment<'e>(
     let row = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
@@ -292,8 +293,12 @@ pub async fn get_assessment_by_activity<'e>(
     let row = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
@@ -332,8 +337,12 @@ pub async fn list_assessments_for_course(
     let rows = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
@@ -390,7 +399,7 @@ pub async fn gradebook_columns(
     let rows = sqlx::query_as!(
         GradebookAssessmentRow,
         r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
-                  s.title, s.kind AS "kind: AssessmentKind",
+                  a.name AS title, a.activity_type AS "kind: AssessmentKind",
                   (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score::float8 AS "passing_score!", s.weight::float8 AS "weight!"
            FROM assessments s
            JOIN activities a ON a.id = s.activity_id
@@ -407,24 +416,22 @@ pub async fn gradebook_columns(
     Ok(rows)
 }
 
-/// Title/description/weight/grading type (the non-policy scalars).
+/// Description/weight/grading type (the non-policy scalars; the title is
+/// the activity's name).
 pub async fn update_assessment_details<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
-    title: Option<&str>,
     description: Option<&str>,
     weight: Option<f64>,
     grading_type: Option<GradingType>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
-               title = COALESCE($2, title),
-               description = COALESCE($3, description),
-               weight = COALESCE($4::float8, weight),
-               grading_type = COALESCE($5, grading_type)
+               description = COALESCE($2, description),
+               weight = COALESCE($3::float8, weight),
+               grading_type = COALESCE($4, grading_type)
            WHERE id = $1"#,
         id.0,
-        title,
         description,
         weight,
         grading_type.map(GradingType::as_str)

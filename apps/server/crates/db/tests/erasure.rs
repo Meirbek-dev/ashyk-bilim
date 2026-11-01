@@ -180,9 +180,9 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)

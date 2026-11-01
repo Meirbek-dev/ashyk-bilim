@@ -208,7 +208,9 @@ pub async fn list_assessments(
     let rows = sqlx::query_as!(
         AssessmentInfoRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind", title,
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id) AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
                   lifecycle AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
                   passing_score::float8 AS "passing_score!", (extract(epoch FROM due_at))::bigint AS "due_at?"
            FROM assessments WHERE course_id = ANY($1) ORDER BY id"#,

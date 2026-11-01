@@ -433,6 +433,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `submissions.final_score` / `grading` its one current value. At COMMIT a submission with entries has its
   latest entry's (highest id) `final_score` and `effective_breakdown`; checked when an entry is appended or the
   submission's score or breakdown changes. A write that changes one without the other fails the transaction.
+- **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
+  title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
+  join them and nothing writes a copy. An activity with an assessment cannot change its type
+  (`activities_keep_assessment_type`). Until the contract drops `assessments.title` / `kind`, triggers keep the
+  copies equal to the activity for the previous release.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the
