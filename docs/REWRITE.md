@@ -641,9 +641,9 @@ in the order it can be done, each step a forward migration on the current schema
 2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
    $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
    the status set.
-3. **Unchecked references** (item 8). `course_updates.linked_activity_ids` → `course_update_activities
-   (update_id → course_updates ON DELETE CASCADE, activity_id → activities ON DELETE CASCADE, PK both)`, backfilled
-   with `unnest` filtered by `EXISTS`, the array dropped after the writers move. `assessment_items.outcome_ids`
+3. **Unchecked references** (item 8). Done (review 2 item 19): `course_update_activities (update_id, activity_id,
+   position)` holds the links as keys (`20261102040000`, backfilled with `unnest` filtered by `EXISTS`); no code read
+   the array, which `20261103040000` (contract) drops. `assessment_items.outcome_ids`
    names no table: becomes a link table only when outcomes become rows. Kept as text by design (documented):
    `bulk_actions.target_user_ids` (audit snapshot of a past action; users are never deleted),
    `xp_transactions.source_id` / `gamification_completions.source_id` (journal entries must outlive a deleted

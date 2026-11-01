@@ -240,6 +240,7 @@ const NOT_USER_DATA: &[&str] = &[
     "certifications",
     "chapters",
     "collection_courses",
+    "course_update_activities",
     "course_updates",
     "file_submission_overrides",
     "file_submissions",

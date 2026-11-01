@@ -415,6 +415,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
+  an unchecked uuid array.
 
 ### SQLx usage
 

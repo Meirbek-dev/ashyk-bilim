@@ -25,6 +25,8 @@
 //! - a grader can be erased by hand: both journals keep the grade with
 //!   `graded_by` cleared, and still refuse naming another grader.
 //! - a deleted account cannot be active again.
+//! - review item 19: a course update links activities through keys; a
+//!   deleted activity leaves the update, an unknown one is refused.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -689,4 +691,53 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(reenabled.is_err(), "a deleted account is not re-enabled");
+}
+
+#[ab_testdb::test]
+async fn a_course_update_links_activities_by_key(pool: PgPool) {
+    let w = world(&pool).await;
+    let update: Uuid = sqlx::query_scalar(
+        "INSERT INTO course_updates (course_id, title, content) VALUES ($1, 't', 'c') RETURNING id",
+    )
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let link = "INSERT INTO course_update_activities (update_id, activity_id, position)
+                VALUES ($1, $2, 1)";
+    let unknown = sqlx::query(link)
+        .bind(update)
+        .bind(Uuid::now_v7())
+        .execute(&pool)
+        .await;
+    assert!(unknown.is_err(), "an unknown activity is refused");
+    sqlx::query(link)
+        .bind(update)
+        .bind(w.activity)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM assessments WHERE id = $1")
+        .bind(w.assessment)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let links: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM course_update_activities WHERE update_id = $1")
+            .bind(update)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(links, 0, "the deleted activity left the update");
+    let kept: i64 = sqlx::query_scalar("SELECT count(*) FROM course_updates WHERE id = $1")
+        .bind(update)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(kept, 1, "the update itself stays");
 }
