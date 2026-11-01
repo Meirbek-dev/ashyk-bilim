@@ -600,6 +600,7 @@ async fn fingerprint(pool: &PgPool) -> Vec<String> {
         "course_discussions",
         "discussion_reactions",
         "certifications",
+        "course_staff",
         "resource_authors",
         "usergroup_courses",
         "collection_courses",

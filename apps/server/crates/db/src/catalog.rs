@@ -31,7 +31,7 @@ pub struct CourseRow {
     pub archived_by: Option<UserId>,
     /// Optimistic lock (`If-Match`), bumped by a trigger on every change.
     pub version: i32,
-    /// Active `resource_authors` rows that write (maintainer / contributor);
+    /// Active `course_staff` rows that write (maintainer / contributor);
     /// reporters are read-only and not listed.
     pub contributor_ids: Vec<UserId>,
     /// The active maintainers among them (roster managers with the creator).
@@ -93,7 +93,7 @@ pub async fn insert_course(
 pub async fn authors_any_course(pool: &PgPool, user_id: UserId) -> Result<bool> {
     let authors = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1)
-               OR EXISTS (SELECT 1 FROM resource_authors
+               OR EXISTS (SELECT 1 FROM course_staff
                           WHERE user_id = $1 AND status = 'active' AND authorship <> 'reporter')
                AS "authors!""#,
         user_id.0
@@ -112,11 +112,11 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship = 'maintainer')
                       AS "maintainer_ids!: Vec<UserId>",
@@ -209,11 +209,11 @@ pub async fn list_courses(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship = 'maintainer')
                       AS "maintainer_ids!: Vec<UserId>",
@@ -223,7 +223,7 @@ pub async fn list_courses(
            LEFT JOIN pct ON pct.course_id = courses.id
            WHERE course_visible(courses, $2, $1)
              AND (NOT $5 OR $1 OR creator_id = $2
-                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                  OR EXISTS (SELECT 1 FROM course_staff ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $6, $9, $10)
@@ -298,7 +298,7 @@ pub async fn summarize_courses(
                   count(*) FILTER (WHERE archived_at IS NOT NULL) AS "archived!"
            FROM courses
            WHERE $1 OR creator_id = $2
-              OR EXISTS (SELECT 1 FROM resource_authors ra
+              OR EXISTS (SELECT 1 FROM course_staff ra
                          WHERE ra.course_id = courses.id AND ra.user_id = $2
                            AND ra.status = 'active' AND ra.authorship <> 'reporter')"#,
         see_all,
@@ -329,11 +329,11 @@ pub async fn list_user_courses(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship = 'maintainer')
                       AS "maintainer_ids!: Vec<UserId>",
@@ -341,7 +341,7 @@ pub async fn list_user_courses(
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
            WHERE (creator_id = $1
-                  OR EXISTS (SELECT 1 FROM resource_authors ra
+                  OR EXISTS (SELECT 1 FROM course_staff ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $1
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))
              AND course_visible(courses, $2, $5)
@@ -392,11 +392,11 @@ pub async fn update_course<'e>(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
                           AND ra.authorship = 'maintainer')
                       AS "maintainer_ids!: Vec<UserId>",
@@ -1406,7 +1406,7 @@ pub async fn delete_course_update(pool: &PgPool, id: CourseUpdateId) -> Result<b
     Ok(deleted.rows_affected() == 1)
 }
 
-// ── Contributors (`resource_authors`, course target) ────────────────────────
+// ── Contributors (`course_staff`) ─────────────────────────────────
 
 /// One roster row joined with the user. The creator is not stored - the
 /// service synthesizes it from `courses.creator_id`.
@@ -1428,7 +1428,7 @@ pub async fn list_contributors(pool: &PgPool, course_id: CourseId) -> Result<Vec
         r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
                   ra.authorship AS role, ra.status, ra.version,
                   (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
-           FROM resource_authors ra JOIN users u ON u.id = ra.user_id
+           FROM course_staff ra JOIN users u ON u.id = ra.user_id
            WHERE ra.course_id = $1 AND ra.authorship <> 'creator'
            ORDER BY ra.created_at, ra.user_id"#,
         course_id.0
@@ -1465,7 +1465,7 @@ pub async fn get_contributor(
         r#"SELECT ra.user_id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
                   ra.authorship AS role, ra.status, ra.version,
                   (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
-           FROM resource_authors ra JOIN users u ON u.id = ra.user_id
+           FROM course_staff ra JOIN users u ON u.id = ra.user_id
            WHERE ra.course_id = $1 AND ra.user_id = $2"#,
         course_id.0,
         user_id.0
@@ -1484,9 +1484,9 @@ pub async fn insert_contributor(
     status: &str,
 ) -> Result<bool> {
     let inserted = sqlx::query!(
-        r#"INSERT INTO resource_authors (course_id, user_id, authorship, status)
+        r#"INSERT INTO course_staff (course_id, user_id, authorship, status)
            VALUES ($1, $2, $3, $4)
-           ON CONFLICT (course_id, collection_id, user_id) DO NOTHING"#,
+           ON CONFLICT (course_id, user_id) DO NOTHING"#,
         course_id.0,
         user_id.0,
         role,
@@ -1505,7 +1505,7 @@ pub async fn update_contributor(
     status: Option<&str>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE resource_authors SET
+        r#"UPDATE course_staff SET
                authorship = COALESCE($3, authorship),
                status = COALESCE($4, status)
            WHERE course_id = $1 AND user_id = $2"#,
@@ -1525,7 +1525,7 @@ pub async fn delete_contributor(
     user_id: UserId,
 ) -> Result<bool> {
     let deleted = sqlx::query!(
-        "DELETE FROM resource_authors WHERE course_id = $1 AND user_id = $2",
+        "DELETE FROM course_staff WHERE course_id = $1 AND user_id = $2",
         course_id.0,
         user_id.0
     )

@@ -917,7 +917,7 @@ Where each v2 table goes and in which phase:
 | Zitadel eventstore | `users.password_hash` (9.2) | 4 |
 | `user_roles` | `users.role` (admin > instructor/legacy-grants → teacher > learner) | 4 |
 | `uploads` + RustFS objects | `media` (status `ready` only) + `/data/ashyq/media` (9.3) | 4 |
-| `resource_authors` | `course_staff` (creator → owner, contributor → editor, active only) | 5 |
+| `resource_authors` | `course_staff` + `collection_staff` (review 2 item 21: same columns, PK (target, user); mirrored both ways until `20261103040100` drops the old table). Left: creator → owner, contributor → editor, active only | 5 |
 | `activities` + `blocks` | `activities` with typed `body`; block media → `media` + `activity_media` | 5 |
 | `assessments` | `activities.body.policy` for quiz/exam/code | 5 |
 | `file_submissions` | `activities.body` for `assignment` | 5 |

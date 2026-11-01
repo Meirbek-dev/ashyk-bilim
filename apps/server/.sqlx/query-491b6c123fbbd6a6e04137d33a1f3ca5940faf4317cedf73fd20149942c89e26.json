@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT creator_id AS \"id!\" FROM courses WHERE id = $1 AND creator_id IS NOT NULL\n           UNION\n           SELECT user_id FROM course_staff\n           WHERE course_id = $1 AND status = 'active' AND authorship = 'maintainer'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "491b6c123fbbd6a6e04137d33a1f3ca5940faf4317cedf73fd20149942c89e26"
+}

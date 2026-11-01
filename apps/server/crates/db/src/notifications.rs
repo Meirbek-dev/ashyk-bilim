@@ -109,7 +109,7 @@ pub async fn course_teachers(pool: &PgPool, course_id: CourseId) -> Result<Vec<U
     let ids = sqlx::query_scalar!(
         r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
            UNION
-           SELECT user_id FROM resource_authors
+           SELECT user_id FROM course_staff
            WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'"#,
         course_id.0
     )
@@ -235,7 +235,7 @@ pub async fn course_graders(pool: &PgPool, course_id: CourseId) -> Result<Vec<Us
     let ids = sqlx::query_scalar!(
         r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
            UNION
-           SELECT user_id FROM resource_authors
+           SELECT user_id FROM course_staff
            WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'
            UNION
            SELECT ur.user_id FROM user_roles ur
@@ -272,7 +272,7 @@ pub async fn course_owners(pool: &PgPool, course_id: CourseId) -> Result<Vec<Use
     let ids = sqlx::query_scalar!(
         r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
            UNION
-           SELECT user_id FROM resource_authors
+           SELECT user_id FROM course_staff
            WHERE course_id = $1 AND status = 'active' AND authorship = 'maintainer'"#,
         course_id.0
     )

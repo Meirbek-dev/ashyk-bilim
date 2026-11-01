@@ -53,7 +53,7 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
         }
         Versioned::Contributor(course_id, user_id) => {
             sqlx::query_scalar!(
-                "SELECT version FROM resource_authors WHERE course_id = $1 AND user_id = $2",
+                "SELECT version FROM course_staff WHERE course_id = $1 AND user_id = $2",
                 course_id.0,
                 user_id.0
             )

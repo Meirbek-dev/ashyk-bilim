@@ -12,7 +12,7 @@ freely, never production's.
 | course, its picture               | `courses` (`public`, `archived_at`; `thumbnail_image_key` under `/content/<key>`)    |
 | chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
 | enrolled learner                  | `trail_runs` (`user_id`, `course_id`); per activity: `trail_steps`, `activity_progress` |
-| course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
+| course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`)                      |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `kind`, `lifecycle`) + `assessment_items` (`body` json)   |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / pending / graded / published / returned)            |
@@ -55,7 +55,7 @@ group by 1, 2 order by 3 desc limit 5
 Courses a teacher can edit:
 
 ```sql
-select c.id, c.name from courses c join resource_authors ra on ra.course_id = c.id
+select c.id, c.name from courses c join course_staff ra on ra.course_id = c.id
 join users u on u.id = ra.user_id where u.email = '<email>' and c.archived_at is null
 ```
 

@@ -190,10 +190,10 @@ fn courses_query(
                 public, open_to_contributors, assessments_require_enrollment,
                 thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
                 (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
-                ARRAY(SELECT ra.user_id FROM resource_authors ra
+                ARRAY(SELECT ra.user_id FROM course_staff ra
                       WHERE ra.course_id = courses.id AND ra.status = 'active'
                         AND ra.authorship <> 'reporter') AS contributor_ids,
-                ARRAY(SELECT ra.user_id FROM resource_authors ra
+                ARRAY(SELECT ra.user_id FROM course_staff ra
                       WHERE ra.course_id = courses.id AND ra.status = 'active'
                         AND ra.authorship = 'maintainer') AS maintainer_ids,
                 (extract(epoch FROM created_at))::bigint AS created_at,

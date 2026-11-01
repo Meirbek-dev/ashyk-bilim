@@ -34,6 +34,9 @@
 //!   `::vector` statements still run.
 //! - review item 35 (REWRITE 5.6 n11): `/search` over 10 000 courses walks
 //!   the trigram index on the folded text.
+//! - review item 21: course staff live in `course_staff` (collection staff
+//!   in `collection_staff`); until the contract, a write on either side of
+//!   `resource_authors` reaches the other, so both releases see one roster.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -860,4 +863,90 @@ async fn course_search_walks_the_trigram_index(pool: PgPool) {
         plan.contains("Bitmap Index Scan on courses_search_trgm_idx"),
         "{plan}"
     );
+}
+
+#[ab_testdb::test]
+async fn staff_writes_reach_both_rosters_until_the_contract(pool: PgPool) {
+    let w = world(&pool).await;
+    let helper = user(&pool, "helper").await;
+    let staff = |table: &'static str| {
+        let pool = pool.clone();
+        async move {
+            let sql = format!(
+                "SELECT authorship || '/' || status || '/' || version FROM {table}
+                  WHERE course_id = $1 AND user_id = $2"
+            );
+            // SAFETY: `table` is one of the two literal table names below.
+            sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql))
+                .bind(w.course)
+                .bind(helper)
+                .fetch_optional(&pool)
+                .await
+                .unwrap()
+        }
+    };
+    // The previous release adds and edits through resource_authors.
+    sqlx::query(
+        "INSERT INTO resource_authors (course_id, user_id, authorship, status)
+         VALUES ($1, $2, 'contributor', 'pending')",
+    )
+    .bind(w.course)
+    .bind(helper)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        staff("course_staff").await.as_deref(),
+        Some("contributor/pending/1")
+    );
+    sqlx::query("UPDATE resource_authors SET status = 'active' WHERE user_id = $1")
+        .bind(helper)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        staff("course_staff").await.as_deref(),
+        Some("contributor/active/2")
+    );
+    // This release writes course_staff; the old table follows, versions equal.
+    sqlx::query("UPDATE course_staff SET authorship = 'maintainer' WHERE user_id = $1")
+        .bind(helper)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        staff("course_staff").await.as_deref(),
+        Some("maintainer/active/3")
+    );
+    assert_eq!(
+        staff("resource_authors").await.as_deref(),
+        Some("maintainer/active/3")
+    );
+    sqlx::query("DELETE FROM course_staff WHERE user_id = $1")
+        .bind(helper)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(staff("resource_authors").await, None);
+    // A course's staff go with it.
+    sqlx::query(
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'reporter')",
+    )
+    .bind(w.course)
+    .bind(helper)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        staff("resource_authors").await.as_deref(),
+        Some("reporter/active/1")
+    );
+    let twice = sqlx::query(
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'reporter')",
+    )
+    .bind(w.course)
+    .bind(helper)
+    .execute(&pool)
+    .await;
+    assert!(twice.is_err(), "one row per (course, user)");
 }

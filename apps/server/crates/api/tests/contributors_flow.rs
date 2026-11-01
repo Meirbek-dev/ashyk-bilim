@@ -1,4 +1,4 @@
-//! Course collaboration (`resource_authors`): apply → pending → approve →
+//! Course collaboration (`course_staff`): apply → pending → approve →
 //! author like the creator → inactive → the draft is invisible again.
 //! Roster management by the creator, an active maintainer, or
 //! `course:manage:platform`; the creator row is synthesized and immutable.

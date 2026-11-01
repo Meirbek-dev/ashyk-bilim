@@ -3,7 +3,7 @@
 //! Access semantics: read = public OR author OR active reporter OR cohort
 //! member OR platform manager; write = author OR `course:update:platform`.
 //! "Author" is `Course::is_author` - the creator or an active maintainer /
-//! contributor (`resource_authors`, see `contributors.rs`) - the one
+//! contributor (`course_staff`, see `contributors.rs`) - the one
 //! predicate every authoring gate in the workspace (curriculum, assessments,
 //! files, grading, AI, certificates) goes through. Authorship IS the `:own`
 //! scope: no role grant is needed on top (DECISIONS 2026-09-12, "active

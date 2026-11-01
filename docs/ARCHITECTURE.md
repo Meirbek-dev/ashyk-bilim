@@ -423,6 +423,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
+- **Staff per target**: `course_staff (course_id, user_id)` and `collection_staff (collection_id, user_id)`
+  replace `resource_authors` (one table, course XOR collection); until its contract migration drops it, triggers
+  mirror writes both ways so the previous release sees the same roster.
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
 

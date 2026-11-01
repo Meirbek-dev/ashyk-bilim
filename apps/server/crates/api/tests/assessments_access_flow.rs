@@ -1155,7 +1155,7 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
             .unwrap()
     };
     let overrides = "SELECT count(*) FROM assessment_overrides WHERE user_id = $1";
-    let rostered = "SELECT count(*) FROM resource_authors WHERE user_id = $1";
+    let rostered = "SELECT count(*) FROM course_staff WHERE user_id = $1";
     let path = format!("/api/v2/courses/{course_id}/contributors");
 
     // Hang up between the roster insert and the sweep (member lock held).

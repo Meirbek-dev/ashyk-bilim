@@ -33,7 +33,7 @@ fn uuids<T: Copy + Into<uuid::Uuid>>(ids: &[T]) -> Vec<uuid::Uuid> {
 
 // ── Scope ───────────────────────────────────────────────────────────────────
 
-/// Courses the user created or actively co-authors (`resource_authors`).
+/// Courses the user created or actively co-authors (`course_staff`).
 ///
 /// `include_archived = false` drops archived courses (the rollup and the
 /// default dashboard scope); a direct course dashboard still reads them.
@@ -46,7 +46,7 @@ pub async fn teacher_course_ids(
         r#"SELECT c.id AS "id: CourseId"
            FROM courses c
            WHERE (c.creator_id = $1 OR EXISTS (
-                 SELECT 1 FROM resource_authors ra
+                 SELECT 1 FROM course_staff ra
                  WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
                    AND ra.authorship <> 'reporter'))
              AND ($2 OR c.archived_at IS NULL)
@@ -89,7 +89,7 @@ pub async fn list_course_authors(
            FROM courses c WHERE c.id = ANY($1) AND c.creator_id IS NOT NULL
            UNION
            SELECT ra.course_id AS "course_id!: CourseId", ra.user_id AS "user_id!: UserId"
-           FROM resource_authors ra
+           FROM course_staff ra
            WHERE ra.course_id = ANY($1) AND ra.status = 'active'
              AND ra.authorship <> 'reporter'"#,
         &ids

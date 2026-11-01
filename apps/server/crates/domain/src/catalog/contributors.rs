@@ -1,4 +1,4 @@
-//! Course collaboration roster (`resource_authors`, course target; legacy
+//! Course collaboration roster (`course_staff`; legacy
 //! `ResourceAuthor`).
 //!
 //! Roles `maintainer | contributor | reporter`, statuses `pending | active |

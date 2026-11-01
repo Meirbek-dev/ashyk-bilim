@@ -2333,7 +2333,7 @@ async fn admin_workload_counts_co_authored_courses(pool: PgPool) {
         (&dave, "contributor"),
     ] {
         sqlx::query(
-            "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1, $2, $3)",
+            "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, $3)",
         )
         .bind(uuid::Uuid::parse_str(&shared).unwrap())
         .bind(who.user_id.0)
@@ -2554,7 +2554,7 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
     )
     .bind(&course_id)
     .bind(bob.user_id.0)
@@ -2634,7 +2634,7 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
         .await;
     assert_eq!(left.status, StatusCode::OK, "{}", left.text());
     sqlx::query(
-        "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1::uuid, $2, 'maintainer')",
     )
     .bind(&course_id)
     .bind(bob.user_id.0)

@@ -276,11 +276,11 @@ pub async fn list_collection_courses(
                   (extract(epoch FROM c.archived_at))::bigint AS "archived_at?",
                   c.archived_by AS "archived_by: UserId",
                   c.version,
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = c.id AND ra.status = 'active'
                           AND ra.authorship <> 'reporter')
                       AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM resource_authors ra
+                  ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = c.id AND ra.status = 'active'
                           AND ra.authorship = 'maintainer')
                       AS "maintainer_ids!: Vec<UserId>",

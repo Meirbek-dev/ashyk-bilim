@@ -96,7 +96,7 @@ pub struct TeacherWorkRow {
 /// the flag is read from the attempts: the latest submission `pending`, or a
 /// `submitted` file attempt. Their pending work stays gradable (pass 23).
 ///
-/// Grading courses: creator, or an active non-reporter `resource_authors`
+/// Grading courses: creator, or an active non-reporter `course_staff`
 /// entry (the authorship rule of `Course::is_author`), never archived ones
 /// (grading is frozen with the course). The review target is
 /// the latest submission, else the newest `submitted` file attempt.
@@ -141,7 +141,7 @@ pub async fn list_teacher_grading_work(
              END
              AND c.archived_at IS NULL
              AND (c.creator_id = $1 OR EXISTS (
-                     SELECT 1 FROM resource_authors ra
+                     SELECT 1 FROM course_staff ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
                        AND ra.authorship <> 'reporter'))"#,
         teacher_id.0
@@ -192,7 +192,7 @@ pub async fn list_teacher_release_work(
                        AND NOT is_course_staff(r.course_id, r.user_id)))
              AND c.archived_at IS NULL
              AND (c.creator_id = $1 OR EXISTS (
-                     SELECT 1 FROM resource_authors ra
+                     SELECT 1 FROM course_staff ra
                      WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
                        AND ra.authorship <> 'reporter'))"#,
         teacher_id.0
