@@ -162,6 +162,20 @@ Zero rows is the expected state. For each row: find the offenders (`SELECT id FR
 (<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
 migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
 
+### 2.5 Least-privilege app roles (prepared, not switched on)
+
+`infra/postgres/roles.sql` creates `ashyq_app` (server + worker: rows only, no DDL/TRUNCATE, statement 120 s,
+idle-in-transaction 60 s, lock 30 s) and `ashyq_ro` (read-only transactions, statement 30 s) with default
+privileges on what `ashyq` creates later. Nothing runs it yet: the switch waits for QUESTIONS Q-2026-11-01-2.
+The procedure once approved (one window, rollback = restore the old `AB__DATABASE__URL`):
+
+1. `dc exec -T db psql -U "$POSTGRES_USER" -d ashyq -v ON_ERROR_STOP=1 -v app_password=<new> -v ro_password=<new> -v owner=ashyq -f - < infra/postgres/roles.sql`
+   (re-run after restoring onto a new host; it is idempotent).
+2. Keep migrations on the owner: give `server-migrate` its own URL (`AB__DATABASE__URL` with `ashyq` in an
+   `environment:` override, or a second env file); point `server.env` at `ashyq_app`.
+3. Deploy (3.1), then watch `just prod-report --since 1h` for `permission denied` or `statement timeout`.
+   A job that legitimately needs longer statements gets `SET LOCAL statement_timeout` in its own transaction.
+
 ## 3. Routine
 
 ### 3.1 Deploy
