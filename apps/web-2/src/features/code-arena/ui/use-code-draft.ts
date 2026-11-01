@@ -77,6 +77,8 @@ export function useCodeDraft({ assessmentId, itemId, draftId }: DraftIds) {
       if (status !== 'conflict' && status !== 'archived' && status !== 'gone') setStatus('dirty')
       later.maybeExecute()
     },
+    /** Ctrl/⌘+S (B-COD-32): what waits goes now, not after the pause. */
+    flush: () => later.flush(),
     /** The hand-in carries the code itself: nothing may be saved after it (the attempt is closed then). */
     drop: () => {
       unsaved.current = null

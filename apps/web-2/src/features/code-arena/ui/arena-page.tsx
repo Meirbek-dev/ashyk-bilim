@@ -38,7 +38,7 @@ export function ArenaPage() {
   )
   return (
     <FocusPage back={back} title={courseTitle} wide>
-      <article className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-gutter">
+      <article className="mx-auto flex w-full max-w-(--breakpoint-2xl) min-w-0 flex-col gap-gutter">
         <ActivityHeader type="code_challenge" title={title} />
         {preview ? <PreviewNote /> : null}
         {locked ? (

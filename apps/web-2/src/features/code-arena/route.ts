@@ -4,8 +4,12 @@ import * as v from 'valibot'
 
 import { searchText } from '#/shared/lib/search-text'
 
-/** `?run=` - the run whose verdicts are shown; `?submission=` - the past attempt whose code is open (B-COD-08, 11). */
+/**
+ * `?run=` - the run whose verdicts are shown; `?submission=` - the past attempt whose code is open (B-COD-08, 11);
+ * `?console=` - the console's mode, a panel mode (no child route) like the AI panel's (B-COD-29).
+ */
 export const arenaSearchSchema = v.object({
   run: v.fallback(v.optional(searchText), undefined),
   submission: v.fallback(v.optional(searchText), undefined),
+  console: v.fallback(v.optional(v.picklist(['cases', 'input', 'result'])), undefined),
 })

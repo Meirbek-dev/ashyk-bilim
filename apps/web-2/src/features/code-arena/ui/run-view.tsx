@@ -5,13 +5,12 @@ import type { CodeRun } from '#/shared/api/gen/types.gen'
 import { ProgressRing } from '#/shared/components/progress-ring'
 import { formatNumber } from '#/shared/i18n/format'
 
+import { firstDifference } from '../model/ide'
 import { caseVerdict } from '../model/verdict'
 import { Io } from './io'
 import { caseStatus, runStatus } from './labels'
+import { Usage } from './usage'
 import { Verdict } from './verdict'
-
-const ms = (seconds: number | null) => formatNumber(Math.round((seconds ?? 0) * 1000))
-const mb = (kb: number | null) => formatNumber(Math.round((kb ?? 0) / 102.4) / 10)
 
 type RunViewProps = { run: CodeRun; title: string; level?: 2 | 3 }
 
@@ -57,18 +56,20 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
                 <span className="text-sm">
                   <Verdict status={verdict} />
                 </span>
-                {/* A killed run's numbers are the sandbox's last sample («4 мс» on a time limit): not shown. */}
-                {kind === 'time_limit' || (result.time_seconds === null && result.memory_kb === null) ? null : (
-                  <span className="text-sm text-muted-foreground tabular-nums">
-                    {m.code_case_usage({ ms: ms(result.time_seconds), mb: mb(result.memory_kb) })}
-                  </span>
-                )}
+                <Usage result={result} />
               </div>
               {result.is_visible ? (
                 <div className="grid min-w-0 gap-2 @3xl:grid-cols-3">
                   {result.stdin === null ? null : <Io label={m.code_io_input()} text={result.stdin} />}
                   {result.expected === null ? null : <Io label={m.code_io_expected()} text={result.expected} />}
-                  {result.actual === null ? null : <Io label={m.code_io_actual()} text={result.actual} />}
+                  {result.actual === null ? null : (
+                    <Io
+                      label={m.code_io_actual()}
+                      text={result.actual}
+                      // Where a wrong answer goes wrong, so the learner does not compare two columns by eye.
+                      mark={kind === 'wrong_answer' ? firstDifference(result.expected ?? '', result.actual) : null}
+                    />
+                  )}
                 </div>
               ) : null}
               {/* Why a visible test crashed (the traceback, «SyntaxError»): the learner cannot fix it blind. */}

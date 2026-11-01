@@ -1,42 +1,20 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { Play } from 'lucide-react'
-import { Suspense, useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types.gen'
-import { ErrorAlert } from '#/shared/components/error-alert'
-import { presentError } from '#/shared/i18n/errors'
-import { Button } from '#/shared/ui/button'
-import { Skeleton } from '#/shared/ui/skeleton'
-import { Spinner } from '#/shared/ui/spinner'
 
-import {
-  answerOf,
-  initialAnswer,
-  isRunnerDown,
-  languageOf,
-  languagesIn,
-  type CodeAnswer,
-  type CodeItem,
-} from '../model/arena'
-import { runnerStateOptions } from '../queries'
-import { LanguageBar } from './language-bar'
+import type { CodeItem } from '../model/arena'
 import { DraftClock } from './draft-clock'
-import { CodeEditor } from './lazy-editor'
-import { RunnerDown } from './runner-down'
-import { SubmitDialog } from './submit-dialog'
-import { useAttemptActions } from './use-attempt-actions'
-import { useCodeDraft, type DraftStatus } from './use-code-draft'
+import { ConsolePanel } from './ide/console-panel'
+import { EditorPane } from './ide/editor-pane'
+import { IdeToolbar } from './ide/ide-toolbar'
+import { RunBar } from './ide/run-bar'
+import { RunNotices } from './ide/run-notices'
+import { SplitPane } from './ide/split-pane'
+import { usePrefs } from './ide/use-prefs'
+import { useWorkspace } from './ide/use-workspace'
 
-const statusText: Record<DraftStatus, () => string> = {
-  saved: m.code_saved,
-  dirty: m.code_unsaved,
-  saving: m.code_saving,
-  failed: m.code_save_failed,
-  conflict: m.code_save_conflict,
-  archived: m.code_save_archived,
-  gone: m.code_save_gone,
-}
+type Height = CSSProperties & Record<'--ide-height', string>
 
 type WorkspaceProps = {
   courseId: string
@@ -48,83 +26,83 @@ type WorkspaceProps = {
 }
 
 /**
- * The open attempt (B-COD-05..10): language, the editor, "Run" on the visible tests and "Submit". The code lives here
- * while typing and goes to the server draft after a pause (B-COD-06). A runner that is down (its read or a run or
- * hand-in answered so) leaves the editor and the draft working; "Run" and "Submit" wait for "Retry" (B-COD-23).
+ * The open attempt as a desktop IDE (B-COD-05..10, B-COD-29..33): toolbar, the editor over the console with a
+ * divider, «Запустить» and «Сдать». The code lives here while typing and goes to the server draft after a pause
+ * (B-COD-06). A runner that is down leaves the editor and the draft working; running waits for «Повторить» (B-COD-23).
  */
 export function Workspace({ courseId, challenge, code, draft, receivedAt }: WorkspaceProps) {
-  const { data: runner, refetch, isFetching } = useSuspenseQuery(runnerStateOptions())
-  const languages = languagesIn(runner)
-  const [answer, setAnswer] = useState(() => initialAnswer(code.body, answerOf(draft, code.item.id)))
-  const ids = { courseId, assessmentId: challenge.id, itemId: code.item.id, draftId: draft.id }
-  const saver = useCodeDraft(ids)
-  const actions = useAttemptActions(ids)
-  const change = (next: CodeAnswer) => {
-    setAnswer(next)
-    saver.change(next)
-  }
-  // Nothing to run or hand in until there is code (an empty hand-in only spends an attempt).
-  const empty = answer.source.trim() === ''
-  const handIn = () => {
-    saver.drop()
-    actions.handIn(answer)
-  }
+  const work = useWorkspace({ courseId, assessmentId: challenge.id }, code, draft)
+  const { runner, languages, answer, saver, actions } = work
+  const [expanded, setExpanded] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const { prefs, update } = usePrefs()
   return (
-    <section aria-labelledby="code-workspace" className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="code-workspace" className="text-xl font-semibold">
-          {m.code_solution()}
-        </h2>
-        <div className="flex items-center gap-3">
-          <DraftClock draft={draft} receivedAt={receivedAt} onExpire={handIn} />
-          <output className="text-sm text-muted-foreground">{statusText[saver.status]()}</output>
-        </div>
-      </div>
-      <LanguageBar body={code.body} answer={answer} languages={languages} onChange={change} />
-      <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-        <CodeEditor
-          value={answer.source}
-          mode={languageOf(languages, answer.language)?.monaco_language ?? 'plaintext'}
-          label={m.code_editor_label()}
-          onChange={source => change({ language: answer.language, source })}
-        />
-      </Suspense>
-      {runner.state === 'off' ? <p className="text-sm text-muted-foreground">{m.code_runner_unavailable()}</p> : null}
-      {runner.state === 'down' || isRunnerDown(actions.error) ? (
-        <RunnerDown
-          pending={isFetching}
-          onRetry={() => {
-            actions.reset()
-            void refetch()
-          }}
-        />
-      ) : actions.error ? (
-        <ErrorAlert>{presentError(actions.error)}</ErrorAlert>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          disabled={empty || runner.state !== 'ready' || actions.running}
-          // Run after run from the keyboard: focus stays on «Запустить» while it runs.
-          focusableWhenDisabled
-          onClick={() => actions.runCode(answer)}
-        >
-          {actions.running ? <Spinner data-icon="inline-start" /> : <Play aria-hidden data-icon="inline-start" />}
-          {m.code_run()}
-        </Button>
-        <SubmitDialog
-          number={draft.attempt_number}
-          max={challenge.policy.max_attempts}
-          disabled={empty || runner.state === 'down' || actions.submitting}
-          onConfirm={handIn}
-          trigger={
-            <>
-              {actions.submitting ? <Spinner data-icon="inline-start" /> : null}
-              {m.code_submit()}
-            </>
-          }
-        />
-      </div>
+    <section
+      aria-labelledby="code-workspace"
+      data-expanded={expanded || undefined}
+      // Viewport-tall under the page bar, so the editor, the console and «Сдать» are all in sight; never cramped.
+      style={{ '--ide-height': 'max(30rem, min(calc(100svh - 6rem), 60rem))' } as Height}
+      className="flex h-(--ide-height) min-w-0 flex-col overflow-hidden rounded-xl border bg-background data-expanded:fixed data-expanded:inset-0 data-expanded:z-50 data-expanded:h-auto data-expanded:rounded-none data-expanded:border-0 @5xl:sticky @5xl:top-18"
+    >
+      <h2 id="code-workspace" className="sr-only">
+        {m.code_solution()}
+      </h2>
+      <IdeToolbar
+        body={code.body}
+        answer={answer}
+        languages={languages}
+        onAnswer={work.change}
+        prefs={prefs}
+        onPrefs={update}
+        expanded={expanded}
+        onExpand={setExpanded}
+        clock={<DraftClock draft={draft} receivedAt={receivedAt} onExpire={work.handIn} />}
+        saved={saver.status}
+      />
+      <SplitPane
+        share={prefs.split}
+        onShare={split => update({ split })}
+        label={m.code_split()}
+        top={
+          <EditorPane
+            answer={answer}
+            languages={languages}
+            prefs={prefs}
+            keys={{ run: work.runCode, submit: () => setConfirming(work.canSubmit), save: saver.flush }}
+            onChange={work.change}
+          />
+        }
+        bottom={
+          <ConsolePanel
+            mode={work.mode}
+            onMode={work.setMode}
+            samples={work.samples}
+            input={work.input}
+            onInput={work.setInput}
+            runId={work.run}
+            running={actions.running}
+          />
+        }
+      />
+      <RunNotices
+        runner={runner.data.state}
+        down={work.down}
+        error={actions.error}
+        retrying={runner.isFetching}
+        onRetry={work.retry}
+      />
+      <RunBar
+        target={work.target}
+        canRun={work.canRun}
+        running={actions.running}
+        onRun={work.runCode}
+        canSubmit={work.canSubmit}
+        submitting={actions.submitting}
+        confirming={confirming}
+        onConfirming={setConfirming}
+        onSubmit={work.handIn}
+        attempt={{ number: draft.attempt_number, max: challenge.policy.max_attempts }}
+      />
     </section>
   )
 }

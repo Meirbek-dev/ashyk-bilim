@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import {
@@ -22,17 +22,19 @@ type SubmitDialogProps = {
   trigger: ReactNode
   disabled: boolean
   onConfirm: () => void
+  /** Open from outside too: Ctrl/⌘+Shift+Enter in the editor asks the same question (B-COD-32). */
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /**
  * "Submit the solution?" (B-COD-10): a hand-in spends the attempt and freezes the code, so it is asked every time.
  * Not the destructive ConfirmDialog: submitting is the page's primary step, not a loss.
  */
-export function SubmitDialog({ number, max, trigger, disabled, onConfirm }: SubmitDialogProps) {
-  const [open, setOpen] = useState(false)
+export function SubmitDialog({ number, max, trigger, disabled, onConfirm, open, onOpenChange }: SubmitDialogProps) {
   const cancel = useRef<HTMLButtonElement>(null)
   return (
-    <AlertDialog open={open} onOpenChange={next => setOpen(next)}>
+    <AlertDialog open={open} onOpenChange={next => onOpenChange(next)}>
       <AlertDialogTrigger render={<Button disabled={disabled} />}>{trigger}</AlertDialogTrigger>
       <AlertDialogContent initialFocus={cancel}>
         <AlertDialogHeader>
@@ -47,7 +49,7 @@ export function SubmitDialog({ number, max, trigger, disabled, onConfirm }: Subm
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
-              setOpen(false)
+              onOpenChange(false)
               onConfirm()
             }}
           >

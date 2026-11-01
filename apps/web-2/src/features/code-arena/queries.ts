@@ -172,7 +172,9 @@ export const runCodeOptions = (queryClient: QueryClient) => ({
   ...runItemMutation(),
   onSuccess: (run: CodeRun) => {
     queryClient.setQueryData(runOptions(run.id).queryKey, run)
-    queryClient.setQueryData(myRunsOptions(run.item_id).queryKey, list => list && upsert(list, run))
+    // «Мои запуски» lists runs on the visible tests; a run on an own input is only shown in the console (B-COD-29).
+    if (run.purpose === 'visible')
+      queryClient.setQueryData(myRunsOptions(run.item_id).queryKey, list => list && upsert(list, run))
   },
 })
 

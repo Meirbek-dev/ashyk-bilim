@@ -13,7 +13,8 @@ type ActionIds = { courseId: string; assessmentId: string; itemId: string; draft
 
 /**
  * "Run" (B-COD-07) and "Submit" (B-COD-10) of the open attempt, each under its own `Idempotency-Key` that survives a
- * lost answer. A run lands in `?run=`; a hand-in carries the code itself and opens its result (`?submission=`).
+ * lost answer. A run lands in `?run=` and the console shows it; a hand-in carries the code itself and opens its
+ * result (`?submission=`).
  */
 export function useAttemptActions({ courseId, assessmentId, itemId, draftId }: ActionIds) {
   const queryClient = useQueryClient()
@@ -23,17 +24,18 @@ export function useAttemptActions({ courseId, assessmentId, itemId, draftId }: A
   const runKey = useIdempotencyKey()
   const submitKey = useIdempotencyKey()
 
-  const runCode = ({ language, source }: CodeAnswer) =>
+  /** On the visible tests, or on `input` when given (one unscored case, B-COD-29). */
+  const runCode = ({ language, source }: CodeAnswer, input?: string) =>
     run.mutate(
       {
         path: { item_id: itemId },
-        body: { language_id: language, source },
+        body: { language_id: language, source, ...(input === undefined ? {} : { custom_input: input }) },
         headers: { 'Idempotency-Key': runKey.key },
       },
       {
         onSuccess: result => {
           runKey.settle()
-          void navigate({ search: previous => ({ ...previous, run: result.id }), replace: true })
+          void navigate({ search: previous => ({ ...previous, run: result.id, console: 'result' }), replace: true })
         },
         onError: error => runKey.settle(error),
       },

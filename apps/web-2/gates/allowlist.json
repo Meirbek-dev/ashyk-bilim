@@ -73,6 +73,10 @@
     {
       "key": "analytics_col_program",
       "reason": "Established kk term (Автор), spelled like ru."
+    },
+    {
+      "key": "code_console",
+      "reason": "Established kk IT term «Консоль», spelled like ru."
     }
   ]
 }
