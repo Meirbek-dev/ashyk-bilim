@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT coalesce(sum(amount), 0)::int AS \"earned!\" FROM xp_transactions\n           WHERE user_id = $1 AND created_at >= platform_day_start(platform_date(now()))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "earned!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e08412db6eb99207b8b81e416414aeb56ce53bf03e2bdb4708c24dff616c7d20"
+}

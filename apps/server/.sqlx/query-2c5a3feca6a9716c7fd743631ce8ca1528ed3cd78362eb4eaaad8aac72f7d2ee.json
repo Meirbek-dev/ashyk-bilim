@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM daily_user_course_progress WHERE id IN (\n            SELECT id FROM daily_user_course_progress\n            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "2c5a3feca6a9716c7fd743631ce8ca1528ed3cd78362eb4eaaad8aac72f7d2ee"
+}

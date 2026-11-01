@@ -12,6 +12,8 @@ pub struct ProfileRow {
     pub user_id: UserId,
     pub total_xp: i32,
     pub level: i32,
+    /// XP awarded since the platform day began (Asia/Almaty midnight),
+    /// summed from `xp_transactions` at read time; admin awards count.
     pub daily_xp_earned: i32,
     pub login_streak: i32,
     pub learning_streak: i32,
@@ -31,7 +33,11 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
     let row = sqlx::query_as!(
         ProfileRow,
         r#"SELECT id AS "id: GamificationProfileId", user_id AS "user_id: UserId", total_xp, level,
-                  daily_xp_earned, login_streak, learning_streak, longest_login_streak,
+                  (SELECT coalesce(sum(x.amount), 0) FROM xp_transactions x
+                   WHERE x.user_id = p.user_id
+                     AND x.created_at >= platform_day_start(platform_date(now())))::int
+                      AS "daily_xp_earned!",
+                  login_streak, learning_streak, longest_login_streak,
                   longest_learning_streak, total_activities_completed, total_courses_completed,
                   (extract(epoch FROM last_xp_award_at))::bigint AS "last_xp_award_at?",
                   (extract(epoch FROM last_login_at))::bigint AS "last_login_at?",
@@ -39,7 +45,7 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
                   preferences,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM gamification_profiles WHERE user_id = $1"#,
+           FROM gamification_profiles p WHERE user_id = $1"#,
         user_id.0
     )
     .fetch_optional(pool)
@@ -125,26 +131,31 @@ pub enum Recorded {
 
 /// Record the award and move the profile in one transaction.
 ///
-/// The daily cap (`daily_limit`, `None` = uncapped) is checked and the UTC-day reset
-/// decided under the profile row lock, so parallel awards serialize on it
-/// (BUG-252). Returns the new row with `triggered_level_up` resolved.
+/// The daily cap (`daily_limit`, `None` = uncapped) is checked under the
+/// profile row lock, so parallel awards serialize on it (BUG-252). Today's
+/// total is summed from the ledger in the statement after the lock: READ
+/// COMMITTED takes a fresh snapshot per statement, so it sees every award
+/// that held the lock before this one. Returns the new row with
+/// `triggered_level_up` resolved.
 pub async fn record_award(
     pool: &PgPool,
     new: NewTransaction<'_>,
     daily_limit: Option<i32>,
 ) -> Result<Recorded> {
     let mut tx = pool.begin().await?;
-    let locked = sqlx::query!(
-        r#"SELECT level AS "level!", daily_xp_earned AS "daily_xp_earned!",
-                  (last_xp_award_at IS NOT NULL
-                   AND (last_xp_award_at AT TIME ZONE 'UTC')::date
-                       = (now() AT TIME ZONE 'UTC')::date) AS "same_day!"
-           FROM gamification_profiles WHERE user_id = $1 FOR UPDATE"#,
+    let previous_level = sqlx::query_scalar!(
+        "SELECT level FROM gamification_profiles WHERE user_id = $1 FOR UPDATE",
         new.user_id.0
     )
     .fetch_one(&mut *tx)
     .await?;
-    let previous_level = locked.level;
+    let earned_today = sqlx::query_scalar!(
+        r#"SELECT coalesce(sum(amount), 0)::int AS "earned!" FROM xp_transactions
+           WHERE user_id = $1 AND created_at >= platform_day_start(platform_date(now()))"#,
+        new.user_id.0
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     let inserted = sqlx::query_scalar!(
         r#"INSERT INTO xp_transactions
                (user_id, amount, source, source_id, reason, previous_level, idempotency_key)
@@ -165,16 +176,13 @@ pub async fn record_award(
         tx.rollback().await?;
         return Ok(Recorded::Replay);
     };
-    let earned_today = if locked.same_day {
-        locked.daily_xp_earned
-    } else {
-        0
-    };
     if daily_limit.is_some_and(|limit| earned_today + new.amount > limit) {
         tx.rollback().await?;
         return Ok(Recorded::OverDailyLimit { earned_today });
     }
     // Level curve: XP(level) = 50(level-1)^2 + 50(level-1), capped at 100.
+    // `daily_xp_earned` is still written for the previous release, which
+    // reads it (dropped by the lane C contract migration).
     let new_level: i32 = sqlx::query_scalar!(
         r#"UPDATE gamification_profiles SET
                total_xp = total_xp + $2,
@@ -206,39 +214,65 @@ pub async fn record_award(
     Ok(Recorded::New(row))
 }
 
-pub async fn set_streak(
+/// Move one streak by the platform day (Asia/Almaty).
+///
+/// The same day keeps it (at least 1), the next day extends it, a gap or no
+/// previous touch resets it to 1. Decided in the UPDATE itself, so parallel
+/// touches cannot both extend. Returns `(current, longest)`; `None` without
+/// a profile row.
+pub async fn touch_streak(
     pool: &PgPool,
     user_id: UserId,
     kind: StreakKind,
-    streak: i32,
-) -> Result<()> {
-    match kind {
-        StreakKind::Login => {
-            sqlx::query!(
-                r#"UPDATE gamification_profiles SET login_streak = $2,
-                       longest_login_streak = GREATEST(longest_login_streak, $2),
+) -> Result<Option<(i32, i32)>> {
+    let row = match kind {
+        StreakKind::Login => sqlx::query!(
+            r#"WITH next AS (
+                       SELECT CASE platform_date(now()) - platform_date(last_login_at)
+                                  WHEN 0 THEN GREATEST(login_streak, 1)
+                                  WHEN 1 THEN login_streak + 1
+                                  ELSE 1 END AS streak
+                       FROM gamification_profiles WHERE user_id = $1 FOR UPDATE)
+                   UPDATE gamification_profiles g SET login_streak = n.streak,
+                       longest_login_streak = GREATEST(g.longest_login_streak, n.streak),
                        last_login_at = now()
-                   WHERE user_id = $1"#,
-                user_id.0,
-                streak
-            )
-            .execute(pool)
-            .await?;
-        }
-        StreakKind::Learning => {
-            sqlx::query!(
-                r#"UPDATE gamification_profiles SET learning_streak = $2,
-                       longest_learning_streak = GREATEST(longest_learning_streak, $2),
+                   FROM next n
+                   WHERE g.user_id = $1
+                   RETURNING g.login_streak AS "current!", g.longest_login_streak AS "longest!""#,
+            user_id.0
+        )
+        .fetch_optional(pool)
+        .await?
+        .map(|r| (r.current, r.longest)),
+        StreakKind::Learning => sqlx::query!(
+            r#"WITH next AS (
+                       SELECT CASE platform_date(now()) - platform_date(last_learning_at)
+                                  WHEN 0 THEN GREATEST(learning_streak, 1)
+                                  WHEN 1 THEN learning_streak + 1
+                                  ELSE 1 END AS streak
+                       FROM gamification_profiles WHERE user_id = $1 FOR UPDATE)
+                   UPDATE gamification_profiles g SET learning_streak = n.streak,
+                       longest_learning_streak = GREATEST(g.longest_learning_streak, n.streak),
                        last_learning_at = now()
-                   WHERE user_id = $1"#,
-                user_id.0,
-                streak
-            )
-            .execute(pool)
-            .await?;
-        }
-    }
-    Ok(())
+                   FROM next n
+                   WHERE g.user_id = $1
+                   RETURNING g.learning_streak AS "current!",
+                             g.longest_learning_streak AS "longest!""#,
+            user_id.0
+        )
+        .fetch_optional(pool)
+        .await?
+        .map(|r| (r.current, r.longest)),
+    };
+    Ok(row)
+}
+
+/// Days from 1970-01-01 to today's platform date: the login bonus key.
+pub async fn platform_day_number(pool: &PgPool) -> Result<i32> {
+    let day = sqlx::query_scalar!(r#"SELECT platform_date(now()) - DATE '1970-01-01' AS "day!""#)
+        .fetch_one(pool)
+        .await?;
+    Ok(day)
 }
 
 /// Count a first completion (`kind` = `activity` | `course`) whatever the
@@ -466,7 +500,7 @@ pub async fn set_config(
 /// the read sees every award committed before it (READ COMMITTED takes a
 /// fresh snapshot per statement) and none is overwritten. A completion
 /// counted concurrently adds onto the fixed row after this commits.
-/// `daily_xp_earned` stays: it is the daily cap's own counter.
+/// `daily_xp_earned` is no counter any more: reads sum it from the ledger.
 pub async fn reconcile_profiles(pool: &PgPool) -> Result<Vec<UserId>> {
     let candidates = sqlx::query_scalar!(
         r#"SELECT g.user_id AS "user_id: UserId"

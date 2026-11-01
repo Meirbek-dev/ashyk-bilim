@@ -2592,8 +2592,8 @@ export type CurriculumChapter = Chapter & {
 
 export type DailyXp = {
     /**
-     * XP earned since 00:00 UTC; 0 after a day without awards (unlike
-     * `Profile.daily_xp_earned`, which resets only on the next award).
+     * XP earned since 00:00 Asia/Almaty (the same sum as
+     * `Profile.daily_xp_earned`); 0 after a day without awards.
      */
     earned_today: number;
     /**
@@ -2604,7 +2604,8 @@ export type DailyXp = {
 
 export type Dashboard = {
     /**
-     * Today's XP against the daily cap (UTC day, as awards judge it).
+     * Today's XP against the daily cap (the platform day, Asia/Almaty, as
+     * awards judge it).
      */
     daily_xp: DailyXp;
     leaderboard: Leaderboard;

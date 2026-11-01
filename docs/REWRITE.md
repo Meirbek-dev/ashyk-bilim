@@ -732,8 +732,11 @@ Decided, not done:
 
 1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
    production host (FINDINGS 3, reconfirmed).
-2. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
-   dates; date parameters bind as `date`; past daily rows are rebuilt once.
+2. **Day boundaries**: done (ARCHITECTURE §8 "One platform day"): `platform_date()` in SQL for the XP daily
+   cap, streaks, login bonus and rollup dates; date parameters bind as `date`. The zone is one SQL function,
+   not runtime config (changing it is a migration). Past daily rows are not rebuilt: a rollup is today's state
+   labelled with a date, so re-running an old date would overwrite history with today's numbers; rows written
+   between 19:00 and 24:00 UTC carry the UTC date, one day behind the platform date.
 3. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
    certificate row; verification shows them; a name change re-issues.
 4. **Learner search and AI context check visibility at query time** (activity published, course not archived,

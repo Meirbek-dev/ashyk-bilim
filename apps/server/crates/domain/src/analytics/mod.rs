@@ -32,6 +32,7 @@ pub mod workload;
 use ab_core::assessments::AssessmentKind;
 use ab_core::id::{AssessmentId, CourseId, InterventionId, SavedViewId, UserId};
 use ab_core::permission::Action;
+use ab_core::time::Date;
 use ab_core::{Error, FieldError, Result};
 use sqlx::PgPool;
 
@@ -122,7 +123,7 @@ pub struct InterventionUpdate {
     pub notes: Option<Option<String>>,
 }
 /// "Latest" cut-off for rollup lookups.
-const FAR_FUTURE: &str = "9999-12-31";
+const FAR_FUTURE: Date = Date(jiff::civil::date(9999, 12, 31));
 
 /// A new intervention as the API receives it.
 #[derive(Debug, Clone)]
@@ -215,12 +216,9 @@ impl AnalyticsService {
         scope: &TeacherScope,
         current_start: i64,
     ) -> Result<courses::CourseRowInputs> {
-        let rows = ab_db::analytics::course_metrics_before(
-            &self.pool,
-            &scope.course_ids,
-            &context::utc_date(current_start),
-        )
-        .await?;
+        let before = ab_db::analytics::platform_date_at(&self.pool, Some(current_start)).await?;
+        let rows =
+            ab_db::analytics::course_metrics_before(&self.pool, &scope.course_ids, before).await?;
         Ok(courses::CourseRowInputs {
             previous_completion: rows
                 .into_iter()
@@ -241,7 +239,8 @@ impl AnalyticsService {
         let now = ctx.generated_at;
         let (current_start, _) = filters.window_bounds(now);
         let (_, previous_end) = filters.previous_window_bounds(now);
-        let previous_date = context::utc_date(previous_end);
+        let previous_date =
+            ab_db::analytics::platform_date_at(&self.pool, Some(previous_end)).await?;
         let rollup_teacher = Self::rollup_teacher(&scope, filters);
         let supports = filters.supports_teacher_rollup_reads();
 
@@ -264,17 +263,17 @@ impl AnalyticsService {
             ab_db::analytics::latest_teacher_metrics_before(
                 &self.pool,
                 rollup_teacher,
-                &previous_date,
+                previous_date,
             )
             .await?
         } else {
             None
         };
         let previous_course_metrics =
-            ab_db::analytics::course_metrics_before(&self.pool, &scope.course_ids, &previous_date)
+            ab_db::analytics::course_metrics_before(&self.pool, &scope.course_ids, previous_date)
                 .await?;
         let previous_at_risk =
-            ab_db::analytics::previous_at_risk_count(&self.pool, &scope.course_ids, &previous_date)
+            ab_db::analytics::previous_at_risk_count(&self.pool, &scope.course_ids, previous_date)
                 .await?;
         let course_inputs = self.course_inputs(&scope, current_start).await?;
         let excluded_attempts = ab_db::analytics::count_excluded_attempts(
@@ -834,17 +833,13 @@ impl AnalyticsService {
 
     // ── Rollups ─────────────────────────────────────────────────────────
 
-    /// Rebuild the rollups for one `YYYY-MM-DD` (default: today, UTC).
+    /// Rebuild the rollups for one `YYYY-MM-DD` (default: today's platform
+    /// date, Asia/Almaty).
     pub async fn run_rollup(&self, date: Option<&str>) -> Result<ab_db::analytics::RollupCounts> {
-        let today = context::utc_date(context::now_unix());
-        let date = date.unwrap_or(&today);
-        if context::utc_date_start(date).is_none() {
-            return Err(Error::validation(vec![FieldError {
-                field: "date".into(),
-                code: "invalid".into(),
-                message: format!("expected YYYY-MM-DD, got {date}"),
-            }]));
-        }
+        let date = match date {
+            Some(text) => parse_date("date", text)?,
+            None => ab_db::analytics::platform_date_at(&self.pool, None).await?,
+        };
         rollups::run_rollup(&self.pool, date).await
     }
 
@@ -854,14 +849,7 @@ impl AnalyticsService {
         from: &str,
         to: &str,
     ) -> Result<Vec<(String, ab_db::analytics::RollupCounts)>> {
-        let (Some(start), Some(end)) = (context::utc_date_start(from), context::utc_date_start(to))
-        else {
-            return Err(Error::validation(vec![FieldError {
-                field: "from".into(),
-                code: "invalid".into(),
-                message: "expected YYYY-MM-DD dates".into(),
-            }]));
-        };
+        let (start, end) = (parse_date("from", from)?, parse_date("to", to)?);
         if end < start {
             return Err(Error::validation(vec![FieldError {
                 field: "to".into(),
@@ -872,11 +860,23 @@ impl AnalyticsService {
         let mut out = Vec::new();
         let mut cursor = start;
         while cursor <= end {
-            let date = context::utc_date(cursor);
-            let counts = rollups::run_rollup(&self.pool, &date).await?;
-            out.push((date, counts));
-            cursor += filters::DAY_SECS;
+            let counts = rollups::run_rollup(&self.pool, cursor).await?;
+            out.push((cursor.to_string(), counts));
+            if cursor.tomorrow() == cursor {
+                break;
+            }
+            cursor = cursor.tomorrow();
         }
         Ok(out)
     }
+}
+
+fn parse_date(field: &str, text: &str) -> Result<Date> {
+    Date::parse(text).ok_or_else(|| {
+        Error::validation(vec![FieldError {
+            field: field.into(),
+            code: "invalid".into(),
+            message: format!("expected YYYY-MM-DD, got {text}"),
+        }])
+    })
 }

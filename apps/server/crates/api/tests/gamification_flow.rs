@@ -457,8 +457,8 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     let granted = results.iter().filter(|r| r.is_ok()).count();
     assert_eq!(granted, 2, "200 XP each under a 500 cap");
 
-    let (total, daily, ledger): (i32, i32, i64) = sqlx::query_as(
-        "SELECT p.total_xp, p.daily_xp_earned,
+    let (total, ledger): (i32, i64) = sqlx::query_as(
+        "SELECT p.total_xp,
                 (SELECT COALESCE(sum(amount), 0) FROM xp_transactions t WHERE t.user_id = p.user_id)
          FROM gamification_profiles p WHERE p.user_id = $1",
     )
@@ -466,7 +466,92 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!((total, daily, ledger), (400, 400, 400));
+    let profile = ab_db::gamification::get_profile(&pool, user)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!((total, profile.daily_xp_earned, ledger), (400, 400, 400));
+}
+
+/// REWRITE 5.7 n2: the daily cap, the streaks and the login bonus count
+/// platform days (midnight Asia/Almaty, `platform_date`), not UTC days.
+#[ab_testdb::test]
+async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
+    use ab_core::assessments::{StreakKind, XpSource};
+    use ab_domain::gamification::{AwardRequest, GamificationService};
+
+    let app = TestApp::spawn(pool.clone()).await;
+    let user = app.create_user("owl", "owl@example.com", &["user"]).await;
+    let service = GamificationService::new(pool.clone());
+    let award = |id: &'static str| AwardRequest {
+        user_id: user,
+        source: XpSource::CourseCompletion,
+        amount: None,
+        source_id: Some(id),
+        reason: None,
+        idempotency_key: None,
+    };
+    service.award(award("a")).await.unwrap();
+    service.award(award("b")).await.unwrap();
+    // 400 of 500 today: a third 200 is over the cap.
+    assert!(service.award(award("c")).await.is_err());
+    // Move one award to a minute before Almaty midnight: yesterday's, so today
+    // holds 200 and the third award fits.
+    sqlx::query(
+        "UPDATE xp_transactions SET created_at = platform_day_start(platform_date(now()))
+                                                 - interval '1 minute'
+         WHERE user_id = $1 AND source_id = 'a'",
+    )
+    .bind(user.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let profile = ab_db::gamification::get_profile(&pool, user)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(profile.daily_xp_earned, 200);
+    service.award(award("c")).await.unwrap();
+
+    // The last login `before` the start of today's platform day.
+    let streak_after = |before: &'static str| {
+        let pool = pool.clone();
+        let service = service.clone();
+        async move {
+            sqlx::query(
+                "UPDATE gamification_profiles SET login_streak = 4,
+                     last_login_at = platform_day_start(platform_date(now())) - $2::interval
+                 WHERE user_id = $1",
+            )
+            .bind(user.0)
+            .bind(before)
+            .execute(&pool)
+            .await
+            .unwrap();
+            service
+                .record_streak(user, StreakKind::Login)
+                .await
+                .unwrap()
+                .current
+        }
+    };
+    // Yesterday in Almaty (a second before its midnight) extends, today
+    // keeps, two platform days back resets.
+    assert_eq!(streak_after("1 second").await, 5);
+    assert_eq!(streak_after("0 seconds").await, 4);
+    assert_eq!(streak_after("1 day 1 second").await, 1);
+
+    // The login bonus is keyed by the platform day's number.
+    let day: i32 = sqlx::query_scalar("SELECT platform_date(now()) - DATE '1970-01-01'")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        ab_db::gamification::platform_day_number(&pool)
+            .await
+            .unwrap(),
+        day
+    );
 }
 
 /// UX-172: one rank rule - competition rank (ties share, the next skips) on

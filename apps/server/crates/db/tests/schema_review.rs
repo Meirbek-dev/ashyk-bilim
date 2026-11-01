@@ -25,6 +25,9 @@
 //! - a grader can be erased by hand: both journals keep the grade with
 //!   `graded_by` cleared, and still refuse naming another grader.
 //! - a deleted account cannot be active again.
+//! - lane C, item 17: one platform day (Asia/Almaty): `platform_date` and
+//!   `platform_day_start` cut days at local midnight, and a date binds as
+//!   `date` both ways.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -689,4 +692,30 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(reenabled.is_err(), "a deleted account is not re-enabled");
+}
+
+#[ab_testdb::test]
+async fn the_platform_day_is_almatys(pool: PgPool) {
+    use ab_core::time::Date;
+    let (before, after, start): (String, String, String) = sqlx::query_as(
+        "SELECT platform_date('2026-11-01 18:59:59Z')::text,
+                platform_date('2026-11-01 19:00:00Z')::text,
+                to_char(platform_day_start('2026-11-02') AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (before.as_str(), after.as_str()),
+        ("2026-11-01", "2026-11-02")
+    );
+    assert_eq!(start, "2026-11-01 19:00");
+    // A date binds and decodes as Postgres `date` (binary on the wire).
+    let day = Date::parse("2024-02-29").unwrap();
+    let (text, back): (String, Date) = sqlx::query_as("SELECT $1::text, $1")
+        .bind(day)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!((text.as_str(), back), ("2024-02-29", day));
 }

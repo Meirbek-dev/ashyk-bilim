@@ -154,14 +154,15 @@ pub struct Dashboard {
     /// `null` when the viewer opted out of the leaderboard.
     pub user_rank: Option<i64>,
     pub leaderboard: Leaderboard,
-    /// Today's XP against the daily cap (UTC day, as awards judge it).
+    /// Today's XP against the daily cap (the platform day, Asia/Almaty, as
+    /// awards judge it).
     pub daily_xp: DailyXp,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct DailyXp {
-    /// XP earned since 00:00 UTC; 0 after a day without awards (unlike
-    /// `Profile.daily_xp_earned`, which resets only on the next award).
+    /// XP earned since 00:00 Asia/Almaty (the same sum as
+    /// `Profile.daily_xp_earned`); 0 after a day without awards.
     pub earned_today: i32,
     /// The effective daily cap (admin awards are not capped); `null` = unlimited.
     pub limit: Option<i32>,

@@ -7328,7 +7328,7 @@
       "DailyXp": {
         "properties": {
           "earned_today": {
-            "description": "XP earned since 00:00 UTC; 0 after a day without awards (unlike\n`Profile.daily_xp_earned`, which resets only on the next award).",
+            "description": "XP earned since 00:00 Asia/Almaty (the same sum as\n`Profile.daily_xp_earned`); 0 after a day without awards.",
             "format": "int32",
             "type": "integer"
           },
@@ -7351,7 +7351,7 @@
         "properties": {
           "daily_xp": {
             "$ref": "#/components/schemas/DailyXp",
-            "description": "Today's XP against the daily cap (UTC day, as awards judge it)."
+            "description": "Today's XP against the daily cap (the platform day, Asia/Almaty, as\nawards judge it)."
           },
           "leaderboard": {
             "$ref": "#/components/schemas/Leaderboard"

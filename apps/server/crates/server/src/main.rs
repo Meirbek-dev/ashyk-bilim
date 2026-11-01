@@ -704,17 +704,19 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     }
 }
 
-/// `admin analytics-rollup`: rebuild every UTC day in `[from, to]`
-/// (both default to today) and print one line per day.
+/// `admin analytics-rollup`: rebuild every platform day (Asia/Almaty) in
+/// `[from, to]` (both default to today) and print one line per day.
 async fn analytics_rollup(
     config: Config,
     from: Option<String>,
     to: Option<String>,
 ) -> anyhow::Result<()> {
-    let today = ab_domain::analytics::context::utc_date(ab_domain::analytics::context::now_unix());
+    let pool = ab_db::connect(&config.database).await?;
+    let today = ab_db::analytics::platform_date_at(&pool, None)
+        .await?
+        .to_string();
     let from = from.unwrap_or_else(|| today.clone());
     let to = to.unwrap_or(today);
-    let pool = ab_db::connect(&config.database).await?;
     let report = ab_domain::analytics::AnalyticsService::new(pool)
         .run_rollup_range(&from, &to)
         .await?;

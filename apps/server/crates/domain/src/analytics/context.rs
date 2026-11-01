@@ -44,24 +44,6 @@ pub fn round_to(x: f64, digits: u32) -> f64 {
     format!("{x:.precision$}").parse().unwrap_or(x)
 }
 
-/// `YYYY-MM-DD` of the UTC day containing `ts`.
-#[must_use]
-pub fn utc_date(ts: i64) -> String {
-    jiff::Timestamp::from_second(ts).map_or_else(
-        |_| "1970-01-01".to_owned(),
-        |t| t.to_zoned(jiff::tz::TimeZone::UTC).date().to_string(),
-    )
-}
-
-/// Epoch seconds of UTC midnight for a `YYYY-MM-DD` date, if valid.
-#[must_use]
-pub fn utc_date_start(date: &str) -> Option<i64> {
-    date.parse::<jiff::civil::Date>()
-        .ok()
-        .and_then(|d| d.to_zoned(jiff::tz::TimeZone::UTC).ok())
-        .map(|z| z.timestamp().as_second())
-}
-
 #[must_use]
 pub fn round1(x: f64) -> f64 {
     round_to(x, 1)

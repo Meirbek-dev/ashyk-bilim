@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM learner_risk_snapshots WHERE snapshot_date = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8f0231db43698ace1a3555578809e29d83c54be97c845abd65afecc572af94a2"
+}
