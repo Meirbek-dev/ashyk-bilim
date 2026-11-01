@@ -12,6 +12,8 @@
 //! - D-02 `migrate-themes`: a theme outside the registry becomes `NULL`.
 //! - D-03 `migrate-locales`: `ru-RU|kk-KZ|en-US` become `ru|kk|en` (needs
 //!   migration `20261003000020`; responses keep answering the legacy form).
+//! - `resolve-email-verified` (schema review 28): accounts whose email state
+//!   is not known yet get Zitadel's answer, so `users.email_verified` can go.
 
 use ab_core::{Error, Result};
 use regex::Regex;
@@ -327,6 +329,52 @@ pub async fn migrate_locales(pool: &PgPool, dry_run: bool) -> Result<Report> {
         i64::try_from(ab_db::maintenance::shorten_locales(pool).await?).unwrap_or(i64::MAX)
     };
     report.add("locales_shortened", n);
+    Ok(report)
+}
+
+// ── Schema review 28: email state not known yet ─────────────────────────────
+
+/// Schema review 28: settle every account whose email state is not known yet.
+///
+/// Asks Zitadel, account by account, whether the address of every account with
+/// `email_verified IS NULL` is confirmed, and stores the answer
+/// (`set_email_verified`, as the first profile read would). `dry_run` asks
+/// but writes nothing. An account Zitadel cannot answer for (gone, an error)
+/// stays unknown and is counted as `failed`: QUESTIONS.md Q-2026-11-02-1
+/// holds the rule for those. Idempotent: a resolved account is not asked again.
+pub async fn resolve_email_verified(
+    pool: &PgPool,
+    zitadel: &ab_clients::zitadel::ZitadelClient,
+    dry_run: bool,
+) -> Result<Report> {
+    const BATCH: i64 = 200;
+    let mut report = Report {
+        dry_run,
+        ..Report::default()
+    };
+    let mut after = None;
+    loop {
+        let batch = ab_db::identity::unknown_email_states(pool, after, BATCH).await?;
+        let Some(last) = batch.last() else {
+            break;
+        };
+        after = Some(last.id);
+        for account in &batch {
+            report.add("unknown", 1);
+            match zitadel.email_verified(&account.zitadel_user_id).await {
+                Ok(verified) => {
+                    report.add(if verified { "verified" } else { "not_verified" }, 1);
+                    if !dry_run {
+                        ab_db::identity::set_email_verified(pool, account.id, verified).await?;
+                    }
+                }
+                Err(err) => {
+                    tracing::warn!(user = %account.id, %err, "email state still unknown");
+                    report.add("failed", 1);
+                }
+            }
+        }
+    }
     Ok(report)
 }
 

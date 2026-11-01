@@ -121,6 +121,14 @@ enum AdminCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Schema review 28: ask Zitadel for the email state of every account
+    /// whose `email_verified` is not known yet and store it. Idempotent;
+    /// prints counts (`failed`: Zitadel could not answer, left unknown).
+    ResolveEmailVerified {
+        /// Ask Zitadel and report; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -240,6 +248,22 @@ async fn main() -> anyhow::Result<()> {
             let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::maintenance::migrate_locales(&pool, dry_run).await?;
             print_report("migrate-locales", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::ResolveEmailVerified { dry_run },
+        } => {
+            let zitadel_config = config
+                .zitadel
+                .ok_or_else(|| anyhow::anyhow!("AB__ZITADEL__* must be set"))?;
+            let client =
+                ab_clients::zitadel::ZitadelClient::new(ab_clients::zitadel::ZitadelConfig {
+                    base_url: zitadel_config.base_url,
+                    pat: zitadel_config.pat,
+                })?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let report =
+                ab_domain::maintenance::resolve_email_verified(&pool, &client, dry_run).await?;
+            print_report("resolve-email-verified", &report)
         }
         Command::Admin {
             command: AdminCommand::ZitadelCheck,

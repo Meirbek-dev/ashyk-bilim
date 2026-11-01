@@ -719,11 +719,12 @@ in the order it can be done, each step a forward migration on the current schema
 10. **Users state** (item 20, rest). Done (review 3, items 28-29): `disabled_at` and `email_verified_at`
     (backfill: disabled → `coalesce(deleted_at, updated_at)`, `email_verified IS TRUE` → `created_at`), read and
     written by the server, mirrored into `status` / `email_verified` by `users_sync_state`; `status` is dropped by
-    the contract migration. Left: `email_verified IS NULL` ("not known yet", accounts older than the column,
-    asked from Zitadel on first read) has no form in the new column. Before dropping `email_verified`: resolve
-    those rows (an `ashyq admin` sweep over Zitadel, or an owner rule such as "unknown = verified at
-    `created_at`", the answer the server already gives with Zitadel down), then switch `get_profile` /
-    `update_profile` / `set_email_verified` / the insert to `email_verified_at` alone. A CHECK that a deleted
+    the contract migration. `email_verified IS NULL` ("not known yet", accounts older than the column,
+    asked from Zitadel on first read) has no form in the new column: `ashyq admin resolve-email-verified
+    [--dry-run]` (review 3, item 28) asks Zitadel for each such account and stores the answer. Left: run it in
+    production; the rule for accounts Zitadel cannot answer for (`failed`: gone, anonymised) is
+    QUESTIONS.md Q-2026-11-02-1; then switch `get_profile` / `update_profile` / `set_email_verified` / the
+    insert to `email_verified_at` alone and drop `email_verified` (contract). A CHECK that a deleted
     user is anonymised. `roles.display_name_key`/`description_key` vs
     `display_name`/`description`: keep only the keys for built-in roles, plain text for custom ones
     (CHECK exactly one set). `profile_version` starts at 0 while every other version starts at 1: leave it

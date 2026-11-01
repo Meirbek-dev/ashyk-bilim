@@ -226,6 +226,36 @@ pub async fn set_email_verified(pool: &PgPool, user_id: UserId, verified: bool) 
     Ok(())
 }
 
+/// An account whose email state is not known yet (`email_verified IS NULL`:
+/// older than the column, never asked of Zitadel).
+pub struct UnknownEmailState {
+    pub id: UserId,
+    pub zitadel_user_id: String,
+}
+
+/// Up to `limit` accounts of [`UnknownEmailState`] after `after`, by id
+/// (`ashyq admin resolve-email-verified` walks them).
+pub async fn unknown_email_states(
+    pool: &PgPool,
+    after: Option<UserId>,
+    limit: i64,
+) -> Result<Vec<UnknownEmailState>> {
+    let rows = sqlx::query_as!(
+        UnknownEmailState,
+        r#"SELECT id AS "id: UserId", zitadel_user_id
+           FROM users
+           WHERE email_verified IS NULL AND email_verified_at IS NULL
+             AND ($1::uuid IS NULL OR id > $1)
+           ORDER BY id
+           LIMIT $2"#,
+        after.map(|a| a.0),
+        limit
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 pub struct RoleRow {
     pub id: uuid::Uuid,
     pub slug: String,
