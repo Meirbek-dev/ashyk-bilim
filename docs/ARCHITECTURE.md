@@ -421,6 +421,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No index repeats another** (`crates/db/tests/index_audit.rs`): an index whose keys prefix another index's on
   the same table (same predicate, operator classes, order) is dropped; a unique one stays unless a unique twin
   has exactly its columns. Exceptions are listed with their reason.
+- **A submission / file-attempt arc names exactly one** (`ai_grade_drafts`, `ai_remediation_sessions`,
+  `ai_submission_analyses`: a validated CHECK over both keys, `schema_review.rs` finds every such table) until the
+  file-task pipeline merges into submissions. `ai_work_embeddings.subject_id` names either without a key (found
+  through the person's submissions and attempts; it gets a real key with the merge).
 
 ### SQLx usage
 

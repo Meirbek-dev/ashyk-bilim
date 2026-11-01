@@ -27,6 +27,8 @@
 //! - a deleted account cannot be active again.
 //! - review 3, item 24: a check old rows violate stays NOT VALID and bites
 //!   on new rows; it validates after the repair.
+//! - review 3, item 20: every submission / file-attempt arc table names
+//!   exactly one of the two.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -755,4 +757,49 @@ async fn a_violated_check_stays_not_valid_until_repaired(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(recorded, 0);
+}
+
+/// Review 3, item 20: until the file-task pipeline merges into submissions,
+/// every table keyed onto both a submission and a file attempt names exactly
+/// one of them (a validated CHECK over both columns). A new arc table fails
+/// here until it gets one.
+#[ab_testdb::test]
+async fn every_submission_or_file_attempt_arc_names_exactly_one(pool: PgPool) {
+    let arcs: Vec<(String, String, String, bool)> = sqlx::query_as(
+        "SELECT s.conrelid::regclass::text, sa.attname::text, fa.attname::text,
+                EXISTS (SELECT 1 FROM pg_constraint c
+                         WHERE c.conrelid = s.conrelid AND c.contype = 'c' AND c.convalidated
+                           AND c.conkey @> ARRAY[s.conkey[1], f.conkey[1]]
+                           AND cardinality(c.conkey) = 2
+                           AND pg_get_constraintdef(c.oid) ~ '(num_nonnulls\\(.*\\) = 1|IS NULL\\) <> \\()')
+           FROM pg_constraint s
+           JOIN pg_constraint f ON f.conrelid = s.conrelid AND f.contype = 'f'
+                               AND f.confrelid = 'file_submission_attempts'::regclass
+           JOIN pg_attribute sa ON sa.attrelid = s.conrelid AND sa.attnum = s.conkey[1]
+           JOIN pg_attribute fa ON fa.attrelid = f.conrelid AND fa.attnum = f.conkey[1]
+          WHERE s.contype = 'f' AND s.confrelid = 'submissions'::regclass
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let tables: Vec<&str> = arcs.iter().map(|(t, ..)| t.as_str()).collect();
+    assert_eq!(
+        tables,
+        [
+            "ai_grade_drafts",
+            "ai_remediation_sessions",
+            "ai_submission_analyses"
+        ],
+        "the arc tables changed: update this list (and the check)"
+    );
+    let unchecked: Vec<String> = arcs
+        .iter()
+        .filter(|(.., checked)| !checked)
+        .map(|(t, s, f, _)| format!("{t}({s}, {f})"))
+        .collect();
+    assert!(
+        unchecked.is_empty(),
+        "arc without a CHECK num_nonnulls(..) = 1: {unchecked:?}"
+    );
 }
