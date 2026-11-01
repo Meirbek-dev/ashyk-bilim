@@ -675,7 +675,7 @@ pub async fn list_for_review(
                   a.is_late, a.final_score, a.version,
                   (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
                       AS "file_count!",
-                  EXISTS (SELECT 1 FROM trail_runs r
+                  EXISTS (SELECT 1 FROM enrolments r
                           WHERE r.course_id = a.course_id AND r.user_id = a.user_id
                             AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
                   is_course_staff(a.course_id, a.user_id) AS "staff!"

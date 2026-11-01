@@ -30,7 +30,7 @@ pub struct LearnerWorkRow {
 /// Legacy `_LEARNER_OPEN_STATES`: everything but `not_started`, `graded`
 /// (teacher-only until release) and `completed`.
 ///
-/// Member courses only (run ∧
+/// Member courses only (enrolment ∧
 /// ¬staff, as `has_trail_run`): a leaver's or a staffer's kept rows are not
 /// their work (BUG-299). Archived courses are frozen - nothing is due there.
 pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<LearnerWorkRow>> {

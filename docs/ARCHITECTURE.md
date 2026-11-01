@@ -420,6 +420,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   bind as `date` (`ab_core::time::Date`, `day as _` in `query!`). Today's XP (`daily_xp_earned` in the API)
   is summed from `xp_transactions` at read time, never stored (the column is written for the previous release
   until the lane C contract drops it).
+- **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
+  written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
+  leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
+  analytics, notifications, `course_visible` for archived courses) reads it, never the staff. A trigger mirrors the
+  previous release's trail-run inserts/deletes into it until the lane C contract drops it.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 
 ### SQLx usage

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 FROM enrolments\n         WHERE course_id = $1 AND user_id = $2 AND NOT is_course_staff(course_id, user_id)\n         FOR SHARE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "?column?",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1645402c00e3c58cfcd4e19079e44db5de35ec05727281ff62d9b09bf09bf1c0"
+}

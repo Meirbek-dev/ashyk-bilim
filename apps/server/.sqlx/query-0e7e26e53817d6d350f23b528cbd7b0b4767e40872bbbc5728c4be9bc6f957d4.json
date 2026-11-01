@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT course_id AS \"course_id!: CourseId\" FROM enrolments WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "enrolments",
+            "name": "course_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0e7e26e53817d6d350f23b528cbd7b0b4767e40872bbbc5728c4be9bc6f957d4"
+}

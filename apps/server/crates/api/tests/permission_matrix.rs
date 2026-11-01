@@ -1384,7 +1384,38 @@ fn names(mask: u8) -> String {
 
 #[ab_testdb::test]
 async fn every_route_answers_only_the_callers_it_should(pool: PgPool) {
-    let app = TestApp::spawn(pool).await;
+    run_matrix(pool, false).await;
+}
+
+/// REWRITE 5.6 n5: membership is the enrolment, not the trail. With every
+/// trail (runs, steps) deleted after seeding - the previous release's sync
+/// trigger off, so the enrolments stay - the same callers get the same answers.
+#[ab_testdb::test]
+async fn the_matrix_holds_with_trails_emptied(pool: PgPool) {
+    run_matrix(pool, true).await;
+}
+
+/// Every trail, run and step goes; the enrolments stay (the previous
+/// release's sync trigger is off for the delete).
+async fn delete_every_trail(pool: &PgPool) {
+    let mut tx = pool.begin().await.unwrap();
+    for sql in [
+        "ALTER TABLE trail_runs DISABLE TRIGGER trail_runs_sync_enrolment",
+        "DELETE FROM trails",
+        "ALTER TABLE trail_runs ENABLE TRIGGER trail_runs_sync_enrolment",
+    ] {
+        sqlx::query(sql).execute(&mut *tx).await.unwrap();
+    }
+    tx.commit().await.unwrap();
+    let enrolled: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments")
+        .fetch_one(pool)
+        .await
+        .unwrap();
+    assert!(enrolled > 0, "the seeded members stay enrolled");
+}
+
+async fn run_matrix(pool: PgPool, empty_trails: bool) {
+    let app = TestApp::spawn(pool.clone()).await;
     let doc = ab_api::openapi_doc();
 
     // 1. Every operation is classified, and no row is stale.
@@ -1416,6 +1447,9 @@ async fn every_route_answers_only_the_callers_it_should(pool: PgPool) {
     );
 
     let world = world(&app).await;
+    if empty_trails {
+        delete_every_trail(&pool).await;
+    }
     let mut failures = Vec::new();
 
     // 2. Reads: the callers answering 2xx are exactly the listed ones.

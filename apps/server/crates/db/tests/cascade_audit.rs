@@ -196,6 +196,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "an assessment goes only with its activity or course (ACTIVITY_DELETE)",
     ),
     ("submissions", "course_id", "courses", COURSE_DELETE),
+    ("enrolments", "course_id", "courses", COURSE_DELETE),
     ("trail_runs", "course_id", "courses", COURSE_DELETE),
     (
         "trail_runs",

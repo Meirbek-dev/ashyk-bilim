@@ -657,10 +657,11 @@ in the order it can be done, each step a forward migration on the current schema
    those columns and `block_uploads` instead of `referenced_count`; drop the counter (and BUG-209/263's
    repair code) once a release ran with both. Done when: the reaper test that drifts the counter by hand still
    keeps the file.
-5. **Enrolments** (item 11). `enrolments (course_id, user_id, enrolled_at, PK both)` as in 5.4, backfilled from
-   `trail_runs JOIN trails`; `has_trail_run` / `course_members` / `takes_assessments` read it; trail writers
-   insert/delete it in the same transaction; then `trail_runs`/`trails` lose their membership role (steps stay
-   until 7). Done when: `progress_flow` and `permission_matrix` pass with `trails` emptied in a test.
+5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
+   `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
+   Left: the roster (`list_course_learners`, keyset cursor = trail run id in the API), `GET /trail` and
+   `/enrollments` still list trail runs (their DTOs carry the run id/status); moving them to `enrolments` needs an
+   additive cursor/DTO change. The sync trigger goes in the contract.
 6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
    `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
    overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;

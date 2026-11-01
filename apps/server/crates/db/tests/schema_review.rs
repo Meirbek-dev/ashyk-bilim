@@ -28,6 +28,8 @@
 //! - lane C, item 17: one platform day (Asia/Almaty): `platform_date` and
 //!   `platform_day_start` cut days at local midnight, and a date binds as
 //!   `date` both ways.
+//! - lane C, item 11: membership is an `enrolments` row; the previous
+//!   release's trail-run writes are mirrored into it until the contract.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -718,4 +720,38 @@ async fn the_platform_day_is_almatys(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!((text.as_str(), back), ("2024-02-29", day));
+}
+
+#[ab_testdb::test]
+async fn trail_runs_of_the_previous_release_mirror_into_enrolments(pool: PgPool) {
+    let w = world(&pool).await;
+    let trail: Uuid = sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)")
+        .bind(trail)
+        .bind(w.course)
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let enrolled = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM enrolments WHERE course_id = $1 AND user_id = $2",
+        )
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(enrolled().await, 1);
+    sqlx::query("DELETE FROM trail_runs WHERE trail_id = $1")
+        .bind(trail)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(enrolled().await, 0);
 }

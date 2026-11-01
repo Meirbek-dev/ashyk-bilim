@@ -393,7 +393,8 @@ pub async fn list_course_progress(
 
 #[derive(Debug, Clone)]
 pub struct TrailRunInfoRow {
-    pub id: TrailRunId,
+    /// `None`: enrolled without a trail run.
+    pub id: Option<TrailRunId>,
     pub course_id: CourseId,
     pub user_id: UserId,
 }
@@ -439,7 +440,8 @@ pub async fn count_excluded_attempts(
     Ok(row)
 }
 
-/// The analytics member set: trail runs, never the course's staff (BUG-287).
+/// The analytics member set: enrolments, never the course's staff
+/// (BUG-287), with the member's trail run when there is one.
 pub async fn list_trail_runs(
     pool: &PgPool,
     course_ids: &[CourseId],
@@ -447,11 +449,12 @@ pub async fn list_trail_runs(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         TrailRunInfoRow,
-        r#"SELECT id AS "id: TrailRunId", course_id AS "course_id: CourseId",
-                  user_id AS "user_id: UserId"
-           FROM trail_runs
-           WHERE course_id = ANY($1) AND NOT is_course_staff(course_id, user_id)
-           ORDER BY id"#,
+        r#"SELECT r.id AS "id?: TrailRunId", e.course_id AS "course_id: CourseId",
+                  e.user_id AS "user_id: UserId"
+           FROM enrolments e
+           LEFT JOIN trail_runs r ON r.course_id = e.course_id AND r.user_id = e.user_id
+           WHERE e.course_id = ANY($1) AND NOT is_course_staff(e.course_id, e.user_id)
+           ORDER BY e.enrolled_at, e.course_id, e.user_id"#,
         &ids
     )
     .fetch_all(pool)

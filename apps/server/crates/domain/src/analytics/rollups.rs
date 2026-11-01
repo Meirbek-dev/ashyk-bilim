@@ -513,7 +513,7 @@ mod tests {
         ctx.trail_runs = [u1, u2, u3]
             .into_iter()
             .map(|user_id| TrailRunInfoRow {
-                id: TrailRunId::new(),
+                id: Some(TrailRunId::new()),
                 course_id: course,
                 user_id,
             })

@@ -77,6 +77,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("daily_user_course_progress", "user_id", ERASED),
     ("discussion_reactions", "user_id", SETTING),
     ("file_grading_entries", "graded_by", ACTOR),
+    ("enrolments", "user_id", RECORD),
     ("file_submission_attempts", "graded_by", ACTOR),
     ("file_submission_attempts", "user_id", RECORD),
     ("file_submission_overrides", "granted_by", ACTOR),

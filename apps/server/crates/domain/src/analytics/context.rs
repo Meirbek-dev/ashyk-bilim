@@ -427,7 +427,7 @@ impl AnalyticsContext {
     }
 
     /// The one learner set every learner figure counts (UX-150, BUG-250,
-    /// BUG-266/267): a current member of the course - a trail run, what
+    /// BUG-266/267): a current member of the course - an enrolment, what
     /// `learner-state.enrolled` reads - inside the cohort filter. Progress
     /// rows, submissions and certificates survive a leave; read them through
     /// the `member_*` views so numerators and denominators share this set.
@@ -713,7 +713,7 @@ pub fn progress_snapshots(
             course_rows.insert((c.course_id, c.user_id), c);
         }
     }
-    let mut trail_runs: HashMap<SnapshotKey, TrailRunId> = HashMap::new();
+    let mut trail_runs: HashMap<SnapshotKey, Option<TrailRunId>> = HashMap::new();
     for r in &ctx.trail_runs {
         if allowed(r.user_id, allowed_users) {
             trail_runs.insert((r.course_id, r.user_id), r.id);
@@ -787,7 +787,7 @@ pub fn progress_snapshots(
                 is_completed,
                 has_certificate,
                 last_activity_at: progress_last.or_else(|| last_activity.get(&key).copied()),
-                trail_run_id: trail_runs.get(&key).copied(),
+                trail_run_id: trail_runs.get(&key).copied().flatten(),
             },
         );
     }
@@ -854,7 +854,7 @@ mod tests {
                 last_activity_at: None,
             }],
             trail_runs: vec![TrailRunInfoRow {
-                id: TrailRunId::new(),
+                id: Some(TrailRunId::new()),
                 course_id: course,
                 user_id: user,
             }],
