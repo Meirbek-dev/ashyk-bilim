@@ -7,7 +7,8 @@ pub struct PlatformRow {
     pub name: String,
     pub description: String,
     pub about: String,
-    /// Kazakh / English versions of `description` and `about`; blank = not translated.
+    /// Kazakh / English versions of `description` and `about` (`translations`);
+    /// blank = not translated.
     pub description_kk: String,
     pub description_en: String,
     pub about_kk: String,
@@ -22,9 +23,20 @@ pub struct PlatformRow {
 pub async fn get_platform(pool: &PgPool) -> Result<Option<PlatformRow>> {
     let row = sqlx::query_as!(
         PlatformRow,
-        "SELECT name, description, about, description_kk, description_en, about_kk, about_en,
-                email, label, logo_key, thumbnail_key, version
-         FROM platforms WHERE singleton"
+        r#"SELECT p.name, p.description, p.about,
+                  COALESCE(dk.text, '') AS "description_kk!", COALESCE(de.text, '') AS "description_en!",
+                  COALESCE(ak.text, '') AS "about_kk!", COALESCE(ae.text, '') AS "about_en!",
+                  p.email, p.label, p.logo_key, p.thumbnail_key, p.version
+           FROM platforms p
+           LEFT JOIN translations dk ON (dk.entity, dk.entity_id, dk.field, dk.lang)
+                                        = ('platform', p.id, 'description', 'kk')
+           LEFT JOIN translations de ON (de.entity, de.entity_id, de.field, de.lang)
+                                        = ('platform', p.id, 'description', 'en')
+           LEFT JOIN translations ak ON (ak.entity, ak.entity_id, ak.field, ak.lang)
+                                        = ('platform', p.id, 'about', 'kk')
+           LEFT JOIN translations ae ON (ae.entity, ae.entity_id, ae.field, ae.lang)
+                                        = ('platform', p.id, 'about', 'en')
+           WHERE p.singleton"#
     )
     .fetch_optional(pool)
     .await?;
@@ -58,10 +70,40 @@ pub struct ReplacedBranding {
 }
 
 /// `None` when the singleton row is missing.
-pub async fn update_platform<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+///
+/// The language versions go to `translations` (blank removes the row); a
+/// trigger mirrors them into the platform's old language columns for the
+/// previous release until the contract migration.
+pub async fn update_platform(
+    conn: &mut sqlx::PgConnection,
     changes: PlatformChanges<'_>,
 ) -> Result<Option<ReplacedBranding>> {
+    // The platform row first, so two saves queue there, not on a translation.
+    sqlx::query!("SELECT 1 AS one FROM platforms WHERE singleton FOR UPDATE")
+        .fetch_optional(&mut *conn)
+        .await?;
+    sqlx::query!(
+        r#"WITH input (field, lang, text) AS (
+               SELECT * FROM (VALUES ('description', 'kk', $1::text), ('description', 'en', $2::text),
+                                     ('about', 'kk', $3::text), ('about', 'en', $4::text)) v
+               WHERE v.column3 IS NOT NULL),
+           platform AS (SELECT id FROM platforms WHERE singleton),
+           gone AS (
+               DELETE FROM translations t USING input i, platform p
+               WHERE t.entity = 'platform' AND t.entity_id = p.id AND t.field = i.field
+                 AND t.lang = i.lang AND i.text = ''
+               RETURNING 1)
+           INSERT INTO translations AS t (entity, entity_id, field, lang, text)
+           SELECT 'platform', p.id, i.field, i.lang, i.text FROM input i, platform p WHERE i.text <> ''
+           ON CONFLICT (entity, entity_id, field, lang) DO UPDATE SET text = EXCLUDED.text
+           WHERE t.text IS DISTINCT FROM EXCLUDED.text"#,
+        changes.description_kk,
+        changes.description_en,
+        changes.about_kk,
+        changes.about_en,
+    )
+    .execute(&mut *conn)
+    .await?;
     let row = sqlx::query_as!(
         ReplacedBranding,
         r#"UPDATE platforms p SET
@@ -70,14 +112,10 @@ pub async fn update_platform<'e>(
                about = COALESCE($3, p.about),
                email = COALESCE($4, p.email),
                label = CASE WHEN $8 THEN $5 ELSE p.label END,
-               logo_key = CASE WHEN $6::text IS NULL AND $13 THEN NULL
+               logo_key = CASE WHEN $6::text IS NULL AND $9 THEN NULL
                                ELSE COALESCE($6, p.logo_key) END,
-               thumbnail_key = CASE WHEN $7::text IS NULL AND $14 THEN NULL
-                                    ELSE COALESCE($7, p.thumbnail_key) END,
-               description_kk = COALESCE($9, p.description_kk),
-               description_en = COALESCE($10, p.description_en),
-               about_kk = COALESCE($11, p.about_kk),
-               about_en = COALESCE($12, p.about_en)
+               thumbnail_key = CASE WHEN $7::text IS NULL AND $10 THEN NULL
+                                    ELSE COALESCE($7, p.thumbnail_key) END
            FROM (SELECT singleton, logo_key, thumbnail_key FROM platforms
                  WHERE singleton FOR UPDATE) old
            WHERE p.singleton = old.singleton
@@ -90,14 +128,10 @@ pub async fn update_platform<'e>(
         changes.logo_key,
         changes.thumbnail_key,
         changes.label.is_some(),
-        changes.description_kk,
-        changes.description_en,
-        changes.about_kk,
-        changes.about_en,
         changes.clear_logo,
         changes.clear_thumbnail
     )
-    .fetch_optional(db)
+    .fetch_optional(&mut *conn)
     .await?;
     Ok(row)
 }

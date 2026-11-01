@@ -138,7 +138,7 @@ impl PlatformService {
             None => None,
         };
         let replaced = ab_db::platform::update_platform(
-            &mut *tx,
+            &mut tx,
             ab_db::platform::PlatformChanges {
                 name: name.as_deref(),
                 description: description.as_deref(),

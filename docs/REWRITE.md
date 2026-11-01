@@ -681,7 +681,9 @@ in the order it can be done, each step a forward migration on the current schema
    `gamification_config` (versioned row), `ai_feature_switches` / `feature_activations`. Target: one typed
    `platform.settings` (5.5) read through a serde struct with defaults, and `translations (entity, entity_id,
    field, lang, text, PK all but text)` for user-visible platform text; activity settings move into the typed
-   body (5.3).
+   body (5.3). Done (review 3, item 32): `translations` + the `translatable_fields` lookup hold the platform's
+   kk/en `description` / `about` (`20261102011200`; the contract migration drops the `_kk` / `_en` columns).
+   Left: the typed `platform.settings`, activity settings.
 10. **Users state** (item 20, rest). Done (review 3, items 28-29): `disabled_at` and `email_verified_at`
     (backfill: disabled → `coalesce(deleted_at, updated_at)`, `email_verified IS TRUE` → `created_at`), read and
     written by the server, mirrored into `status` / `email_verified` by `users_sync_state`; `status` is dropped by

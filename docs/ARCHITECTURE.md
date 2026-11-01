@@ -434,6 +434,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `ai_submission_analyses`: a validated CHECK over both keys, `schema_review.rs` finds every such table) until the
   file-task pipeline merges into submissions. `ai_work_embeddings.subject_id` names either without a key (found
   through the person's submissions and attempts; it gets a real key with the merge).
+- **Translations are rows** (`translations (entity, entity_id, field, lang, text)`, fields listed in
+  `translatable_fields`): the platform's Kazakh / English `description` / `about`; the base column holds the
+  default-language text, no row = not translated. Until the contract migration triggers mirror them into the old
+  `platforms.*_kk` / `*_en` columns; a translation change moves the platform's version.
 
 ### SQLx usage
 
