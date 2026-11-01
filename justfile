@@ -261,8 +261,8 @@ web-release-e2e action *args:
 redis-test:
     {{ bash_bin }} infra/tests/redis-persistence.sh
 
-# Infra gates: compose config, shell syntax, database roles, nginx, dual-web routing and Redis persistence with
-# backup mounted.
+# Infra gates: compose config, shell syntax, database roles, PITR, nginx, dual-web routing and Redis persistence
+# with backup mounted.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -273,11 +273,12 @@ ci-infra:
     (use_web2; IMAGE_TAG=ci compose config -q)
     (export E2E_WEB_HOST=ashyq.test; use_web_e2e; IMAGE_TAG=ci compose config -q)
     log "compose config ok: dev, prod, smoke, web2, web-e2e"
-    for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh; do {{ bash_bin }} -n "$f"; done
+    for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh infra/postgres/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
-    # Least-privilege roles on a throwaway Postgres (no network): needs no address pool.
+    # Least-privilege roles and point-in-time recovery on throwaway Postgres containers (no network): no address pool.
     {{ bash_bin }} infra/tests/db-roles.sh
+    {{ bash_bin }} infra/tests/pitr.sh
     # A shared daemon can run out of bridge subnets (31 default pools, ai-server 2026-10-31): the stack checks below
     # need networks of their own, so they are skipped here and run in hosted CI.
     if ! probe=$("$CTR" network create "ashyq-ci-probe-$$" 2>&1); then
@@ -322,6 +323,15 @@ restic *args:
 
 restore archive:
     {{ bash_bin }} infra/scripts/restore.sh "$@"
+
+# Point-in-time recovery of the production cluster in place from the WAL archive (RUNBOOK 3.14):
+# `just pitr-restore '2026-11-02 10:15:00+05' [base]` or `just pitr-restore latest`.
+pitr-restore target *base:
+    {{ bash_bin }} infra/scripts/pitr-restore.sh "$@"
+
+# Rehearse WAL archiving, a base backup and point-in-time recovery on throwaway containers (no network).
+pitr-test:
+    {{ bash_bin }} infra/tests/pitr.sh
 
 restore-drill *archive:
     {{ bash_bin }} infra/scripts/restore-drill.sh "$@"

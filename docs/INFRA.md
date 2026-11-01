@@ -423,11 +423,22 @@ Snapshot layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
 are), the runner (stateless), nginx caches, the legacy `cs_mooc` database and `app_content`
 volume. `dumps/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
+Point-in-time recovery (owner decision 2026-11-01): the prod db command archives WAL (`archive_mode=on`,
+`archive_command` = `infra/postgres/wal-archive.sh`, gzip into `${BACKUP_DIR}/pitr/wal`, `archive_timeout`
+`PG_ARCHIVE_TIMEOUT` = 300 s, `PG_ARCHIVE_MODE=off` disables); the one-shot `pitr-init` makes the directory the db's.
+`backup.sh` adds a nightly `pg_basebackup` (`infra/postgres/pitr-base.sh`, tar + gzip with its WAL) to
+`${BACKUP_DIR}/pitr/base`, keeps `PITR_BASE_KEEP` (3) and prunes WAL older than the oldest base
+(`pg_archivecleanup`); the archive records the cluster's system identifier and refuses another cluster's WAL.
+`pitr-restore.sh` (`just pitr-restore <time|latest> [base]`) recovers in place with `infra/postgres/pitr-prepare.sh`,
+keeping the replaced data directory in the volume. The PITR archive is not in the restic snapshots (same disk).
+`infra/tests/pitr.sh` (`just pitr-test`, in `ci-infra`) rehearses archive, base, retention and both recoveries.
+
 `restore.sh [snapshot]` (`just restore <snapshot-id|latest>`; a legacy offen
 `backup-*.tar.zst` archive also works): refuses if the project already has a
 `postgres_data` volume. Restores the dumps (restic in its own container; legacy
 archives: zstd and GNU tar inside the db image), starts `db`, loads `globals.sql`,
-`pg_restore --create` of `ashyq` and `zitadel`, unpacks rustfs, redis and
+`pg_restore --create` of `ashyq` and `zitadel` (first moving an existing PITR archive aside to
+`pitr/before-restore-<stamp>`: the restored cluster is a new one), unpacks rustfs, redis and
 zitadel_machinekey into their volumes as root (owners and modes kept), starts the
 stack, runs smoke. On a new host the snapshot's `backup/secrets` files go next to
 the compose files first.
@@ -587,7 +598,7 @@ to `web` and the cookies below mean nothing.
   `runner` stand starts it.
 - **No external monitoring** (owner decision 2026-10-02: no external
   services). preflight checks PAT/cert expiry and disk at deploy time only.
-- **Backups are local only** (owner decision 2026-10-02). A disk failure or host
+- **Backups are local only** (owner decision 2026-10-02), the PITR archive too. A disk failure or host
   compromise loses the site and its backups (FINDINGS 3).
 - **Presigned PUT/GET not in smoke** (needs a verified login; the session
   cookie is `Secure`). CI covers them in web-release-e2e (video upload) and

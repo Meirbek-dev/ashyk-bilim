@@ -383,6 +383,8 @@ just restic stats latest
 docker system df
 ```
 
+The PITR archive (`backups/pitr`, 3.14) holds three base backups plus their WAL; `PITR_BASE_KEEP=2` in `.env`
+shrinks it. A growing `pg_wal` inside the db volume means archiving fails (3.14).
 Free space with: old `dumps/pre-*.dump` (nothing prunes them); `docker image
 prune` (deploy.sh keeps 5 releases); `docker builder prune`. Not: `docker volume
 prune` (legacy `app_content` and stopped projects' data), `backups/legacy-final-*`.
@@ -430,6 +432,44 @@ docker volume rm "$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env)_judge0_box" 2>/de
 ```
 
 Stored runs and answers keep their language ids and verdicts; the old runs keep their Judge0 token.
+
+### 3.14 Point-in-time recovery
+
+Owner decision 2026-11-01: a mistake (a wrong `DELETE`, a bad migration, a broken import) can be undone to the
+minute, not only to last night's dump. Postgres archives every WAL segment into `${BACKUP_DIR}/pitr/wal`
+(`infra/postgres/wal-archive.sh`, gzip, at the latest every `PG_ARCHIVE_TIMEOUT` = 300 s: the recovery point), and
+`just backup` (the nightly timer) adds a base backup to `${BACKUP_DIR}/pitr/base/<UTC stamp>` and keeps the newest
+`PITR_BASE_KEEP` (3), deleting WAL older than the oldest kept base. The window is the last three nights; older
+points come from the restic dumps (3.4). Both sit on the backup disk of this host, like the restic repository
+(FINDINGS 3: not a disk-failure protection). `just pitr-test` rehearses it on throwaway containers; `just ci-infra`
+runs it.
+
+Check it works (expect recent `last archived`, no `FAILING`):
+
+```bash
+just prod-report --since 1h        # section "WAL archive"
+ls -l /data/cs-mooc/backups/pitr/base /data/cs-mooc/backups/pitr/wal | tail
+```
+
+Recover (the whole cluster goes back, ashyq and Zitadel's database while they share it; everything written after
+the target is gone, so take `just backup` first if the current state may still be wanted):
+
+```bash
+just pitr-restore '2026-11-02 10:15:00+05'      # just before the mistake; asks, then stops server/worker/db
+just pitr-restore latest                        # everything archived (a lost data directory, same disk)
+```
+
+It picks the newest base finished before the target, keeps the current data directory in the volume as
+`/var/lib/postgresql/18/docker.before-pitr-<stamp>`, replays and promotes (a new timeline; archiving continues),
+starts the stack and runs smoke. Undo it the same way: stop db, swap the directories back in a one-off container
+(`dc run --rm --no-deps --entrypoint sh db -c 'mv $PGDATA $PGDATA.pitr-failed && mv $PGDATA.before-pitr-<stamp> $PGDATA'`),
+start db. Remove the kept directory once the result is confirmed (it holds a full copy of the cluster).
+
+When `WAL archive` says FAILING: `dc logs db | grep wal-archive`. Postgres keeps every segment it could not
+archive in `pg_wal` (disk pressure, 3.11) and retries. "belongs to cluster" means a new cluster (after `just restore`
+or a new volume) met the old archive: `restore.sh` moves it aside to `pitr/before-restore-<stamp>` itself; by hand,
+move `pitr/wal` and `pitr/base` aside and recreate db. A logical restore always starts a new archive: run `just backup`
+right after it so the new cluster has a base.
 
 ## 4. Troubleshooting
 

@@ -8,6 +8,7 @@
 //   nginx       5xx per method and route (ids and query strings folded), share of all requests
 //   jobs        failed/dead jobs per kind with the last error
 //   checks      CHECK constraints a migration skipped because old rows violate them (RUNBOOK 2.4)
+//   archive     WAL archiving for point-in-time recovery: last archived segment, failures (RUNBOOK 3.14)
 //   statements  the app database's statements by total execution time since the last stats reset
 //               (pg_stat_statements; their text has parameters as $n, never values)
 //
@@ -173,6 +174,29 @@ function checks(names: string[]): string[] {
     : ['  none']
 }
 
+// A failing archive_command keeps every WAL segment in pg_wal until the disk is full: say so loudly.
+function archive(names: string[]): string[] {
+  const out = psql(
+    names,
+    `SELECT current_setting('archive_mode'), archived_count, last_archived_wal, last_archived_time::text,
+            failed_count, last_failed_wal, last_failed_time::text,
+            (SELECT count(*) FROM pg_ls_waldir()), (SELECT pg_size_pretty(sum(size)) FROM pg_ls_waldir())
+       FROM pg_stat_archiver`,
+    'postgres',
+  )
+  if ('error' in out) return [out.error]
+  const [mode, archived, lastWal, lastAt, failed, failedWal, failedAt, segments, size] = (out.rows[0] ?? '').split('|')
+  if (mode !== 'on') return [`  archive_mode is ${mode ?? '?'}: no point-in-time recovery`]
+  const lines = [
+    `  ${archived} archived, last ${lastWal || '-'} at ${lastAt?.slice(0, 19) || '-'}; pg_wal ${segments} files, ${size}`,
+  ]
+  if (failedAt && (!lastAt || failedAt > lastAt))
+    lines.push(
+      `  FAILING since ${failedAt.slice(0, 19)} (${failed} failures, ${failedWal}): compose logs db | grep wal-archive`,
+    )
+  return lines
+}
+
 // Where the database time goes: a query that grew a sequential scan climbs this list before anyone notices a page.
 function statements(names: string[]): string[] {
   const out = psql(
@@ -212,6 +236,7 @@ if (import.meta.main) {
     [`nginx 5xx, last ${since}`, nginx(names)],
     [`failed/dead jobs, last ${since}`, jobs(names)],
     ['skipped schema checks', checks(names)],
+    ['WAL archive', archive(names)],
     ['top statements by total time (pg_stat_statements)', statements(names)],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)

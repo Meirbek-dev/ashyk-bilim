@@ -735,8 +735,10 @@ Done:
 
 Decided, not done:
 
-1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
-   production host (FINDINGS 3, reconfirmed).
+1. **Recovery point** (changed 2026-11-01, done in the repo): point-in-time recovery through WAL archiving and
+   nightly base backups into the backup directory of the production host (RUNBOOK 3.14), built-in tools only
+   (`archive_command`, `pg_basebackup`, `pg_archivecleanup`: no extra image to build and pin). Backups stay on
+   the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
 2. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
    dates; date parameters bind as `date`; past daily rows are rebuilt once.
 3. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the

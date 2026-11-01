@@ -46,6 +46,14 @@ dumps=$dir/backup/db_dumps
 
 log "databases"
 prepare_redis_volume
+# A logical restore starts a new cluster: the WAL archive of the old one moves aside (wal-archive.sh would refuse
+# to mix them and pg_wal would grow). Only stacks with the archive (compose.prod.yaml) have pitr-init.
+if grep -qx pitr-init <<<"$(compose config --services)"; then
+  compose run --rm --no-deps -T --entrypoint sh pitr-init -c 'set -e; mkdir -p /pitr/wal /pitr/base
+    if [ -n "$(find /pitr/wal /pitr/base -mindepth 1 | head -n 1)" ]; then
+      aside=/pitr/before-restore-$(date -u +%Y%m%dT%H%M%SZ); mkdir "$aside"; mv /pitr/wal /pitr/base "$aside"/
+      echo "the previous WAL archive is kept at ${aside#/pitr/}"; fi'
+fi
 compose up -d --wait db
 # Globals first (roles + passwords); "role already exists" for the superuser is expected.
 compose exec -T db sh -c 'psql -q -U "$POSTGRES_USER" -d postgres' <"$dumps/globals.sql" || true
