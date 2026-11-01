@@ -194,8 +194,10 @@ where
     Ok(done.rows_affected() == 1)
 }
 
-/// A succeeded job is deleted (schema review 2 item 37): nothing reads it
-/// (dedupe looks only at live jobs, `prod-report` at failed/dead ones), and
+/// Resolve a job that succeeded: delete it.
+///
+/// Nothing reads a succeeded job (schema review 2 item 37: dedupe looks only
+/// at live jobs, `prod-report` at failed/dead ones), and
 /// keeping it filled the hot queue table with dead tuples for 14 days.
 /// `succeeded` stays a valid status for rows a previous release left; the
 /// retention sweep removes those.
