@@ -418,6 +418,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 - **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
   NULL (`inet_or_null`), never rejecting the row; the text `ip` goes in a contract migration.
+- **No index repeats another** (`crates/db/tests/index_audit.rs`): an index whose keys prefix another index's on
+  the same table (same predicate, operator classes, order) is dropped; a unique one stays unless a unique twin
+  has exactly its columns. Exceptions are listed with their reason.
 
 ### SQLx usage
 
