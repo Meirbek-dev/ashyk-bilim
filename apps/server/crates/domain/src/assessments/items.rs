@@ -318,6 +318,16 @@ impl ItemBody {
                 let mut right: Vec<MatchingOption> =
                     body.pairs.iter().map(|p| option(&p.right)).collect();
                 shuffle(&mut right, seed);
+                // The pairing order would hand over the answer (half the seeds of a two-pair
+                // item land on it): shift it by one, still the same order for the same seed.
+                if right.len() > 1
+                    && right
+                        .iter()
+                        .zip(&body.pairs)
+                        .all(|(o, p)| o.text == p.right)
+                {
+                    right.rotate_left(1);
+                }
                 *self = Self::MatchingLearner(MatchingLearnerBody {
                     prompt: std::mem::take(&mut body.prompt),
                     left: body.pairs.iter().map(|p| option(&p.left)).collect(),
@@ -1077,6 +1087,32 @@ mod tests {
         slow.time_limit_seconds = Some(15);
         slow.memory_limit_mb = Some(99_999);
         assert!(ItemBody::Code(slow).validate().is_err());
+    }
+
+    #[test]
+    fn learner_matching_body_never_shows_the_pairing_order() {
+        let pairs = || {
+            ["a", "b"]
+                .iter()
+                .map(|n| MatchingPair {
+                    left: (*n).to_owned(),
+                    right: format!("r{n}"),
+                })
+                .collect::<Vec<_>>()
+        };
+        for seed in 0..64 {
+            let mut body = ItemBody::Matching(MatchingBody {
+                prompt: String::new(),
+                pairs: pairs(),
+                explanation: None,
+            });
+            body.redact_for_learner(seed, false);
+            let ItemBody::MatchingLearner(learner) = body else {
+                panic!("learner shape")
+            };
+            let rights: Vec<&str> = learner.right.iter().map(|o| o.id.as_str()).collect();
+            assert_eq!(rights, ["rb", "ra"], "seed {seed}");
+        }
     }
 
     #[test]
