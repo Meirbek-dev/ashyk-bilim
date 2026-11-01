@@ -527,9 +527,14 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   a statement later); once written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
   Rows handed in before 2026-11-02 are not re-checked (legacy imports may lack snapshots).
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
-  `submissions.final_score` / `grading` its one current value. At COMMIT a submission with entries has its
-  latest entry's (highest id) `final_score` and `effective_breakdown`; checked when an entry is appended or the
-  submission's score or breakdown changes. A write that changes one without the other fails the transaction.
+  `submissions.final_score` its one current value. At COMMIT a submission with entries has its
+  latest entry's (highest id) `final_score`; checked when an entry is appended or the
+  submission's score changes. A write that changes one without the other fails the transaction. The breakdown
+  has no copy (`20261102070200`): readers call `submission_breakdown(id, auto_breakdown)`, the latest entry's
+  `effective_breakdown`, else `submissions.auto_breakdown` (the auto-grader's breakdown written at hand-in, the
+  teacher's starting point while no entry exists), else `{}`. Until contract `20261103070100` drops
+  `submissions.grading`, triggers keep it equal to that for the previous release (hand-in both ways, every
+  entry mirrored) and the check still compares it.
 - **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
   title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
   join them and nothing writes a copy. An activity with an assessment cannot change its type
@@ -542,6 +547,20 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
   it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. The
   snapshots stay the record until readers move (REWRITE 5.6 n15).
+- **A grade entry keeps its points** (`20261102070100_grading_points`): `grading_entries.max_points` (the
+  attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are set by a BEFORE
+  INSERT trigger from the percentages, whoever writes the entry (both releases), and frozen with the row. The rule
+  is `points_of_percent(pct, max) = round(pct × max / 100, 2)` and back `percent_of_points(points, max) =
+  round(points × 100 / max, 2)` (numeric, half away from zero; NULL for max 0): a percentage that passes through
+  points returns within 0.5 / max_points percentage points. A hand-in without a version has no points. The
+  percentage is still what the code writes and reads.
+- **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`): submissions and file
+  attempts are `draft → submitted → graded → released → returned` in storage. The API keeps `pending` /
+  `published` (`attempt_status_enum!` in ab-core: serde and `as_str` are the API spelling, the sqlx encoding
+  writes `stored()` and decodes either spelling); SQL literals name both spellings (`status IN ('submitted',
+  'pending')`, `IN ('released', 'published')`) and filters bind `stored_spellings()`. Until contract
+  `20261103070000` rewrites the rows and narrows the checks, a BEFORE trigger stores the previous spelling so
+  the previous release reads every row.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the

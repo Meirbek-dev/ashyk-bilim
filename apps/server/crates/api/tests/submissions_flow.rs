@@ -579,16 +579,17 @@ async fn batch_release_hides_scores_and_open_text_waits_for_review(pool: PgPool)
     assert_eq!(submitted.json()["status"], "pending");
     assert_eq!(submitted.json()["release_state"], "hidden");
     assert_eq!(submitted.json()["answers"][&items[1]]["text"], "Because.");
-    let (status, graded_at_set, entries): (String, bool, i64) = sqlx::query_as(
-        "SELECT s.status, s.graded_at IS NOT NULL,
+    let (status, graded_at_set, entries): (ab_core::assessments::SubmissionStatus, bool, i64) =
+        sqlx::query_as(
+            "SELECT s.status, s.graded_at IS NOT NULL,
                 (SELECT count(*) FROM grading_entries g WHERE g.submission_id = s.id)
          FROM submissions s WHERE s.id = $1",
-    )
-    .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
-    assert_eq!(status, "pending");
+        )
+        .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(status.as_str(), "pending");
     assert!(!graded_at_set);
     assert_eq!(entries, 0);
 }
@@ -1355,7 +1356,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         second.text()
     );
     let published: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM submissions WHERE id = $1 AND status = 'published'",
+        "SELECT count(*) FROM submissions WHERE id = $1 AND status IN ('released', 'published')",
     )
     .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
     .fetch_one(&app.pool)
@@ -1943,7 +1944,7 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
                 start.text()
             );
         }
-        let rows: Vec<(i32, String)> = sqlx::query_as(
+        let rows: Vec<(i32, ab_core::assessments::SubmissionStatus)> = sqlx::query_as(
             "SELECT attempt_number, status FROM submissions
              WHERE assessment_id = $1
                AND user_id = (SELECT user_id FROM submissions WHERE id = $2)",
@@ -1953,7 +1954,11 @@ async fn starts_racing_a_submit_never_pass_the_attempt_cap(pool: PgPool) {
         .fetch_all(&app.pool)
         .await
         .unwrap();
-        assert_eq!(rows, vec![(1, "published".to_owned())], "round {round}");
+        assert_eq!(
+            rows,
+            vec![(1, ab_core::assessments::SubmissionStatus::Published)],
+            "round {round}"
+        );
     }
 }
 
@@ -2024,12 +2029,13 @@ async fn a_draft_opened_under_an_override_survives_its_deletion(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(swept, 1);
-    let status: String = sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1")
-        .bind(swept_id)
-        .fetch_one(&app.pool)
-        .await
-        .unwrap();
-    assert_eq!(status, "published");
+    let status: ab_core::assessments::SubmissionStatus =
+        sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1")
+            .bind(swept_id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(status.as_str(), "published");
 }
 
 /// BUG-257: only what the learner answers or is scored on stales a draft -
@@ -2191,14 +2197,22 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(swept, 1);
-    let (status, final_score, reason): (String, Option<f64>, Option<String>) = sqlx::query_as(
+    let (status, final_score, reason): (
+        ab_core::assessments::SubmissionStatus,
+        Option<f64>,
+        Option<String>,
+    ) = sqlx::query_as(
         "SELECT status, final_score::float8, auto_submit_reason FROM submissions WHERE id = $1",
     )
     .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
     .fetch_one(&app.pool)
     .await
     .unwrap();
-    assert_eq!(status, "pending", "a teacher scores it, never the 50 %");
+    assert_eq!(
+        status.as_str(),
+        "pending",
+        "a teacher scores it, never the 50 %"
+    );
     assert_eq!(final_score, None);
     assert_eq!(reason.as_deref(), Some("time_expired"));
 }
@@ -2375,7 +2389,7 @@ async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
             .unwrap();
     }
     let (status, reason, answers, attempts, at_clock_out): (
-        String,
+        ab_core::assessments::SubmissionStatus,
         Option<String>,
         serde_json::Value,
         i32,

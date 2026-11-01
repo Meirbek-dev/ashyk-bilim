@@ -1038,7 +1038,7 @@ pub async fn teaching_stats(
                    WHERE e.course_id = c.id AND NOT is_course_staff(e.course_id, e.user_id)) AS "learners!",
                   (SELECT count(*) FROM activities a WHERE a.course_id = c.id) AS "activities!",
                   (SELECT count(*) FROM submissions s
-                   WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'pending')
+                   WHERE s.course_id = c.id AND NOT s.preview AND s.status IN ('submitted', 'pending'))
                   + (SELECT count(*) FROM file_submission_attempts fa
                      WHERE fa.course_id = c.id AND NOT fa.preview AND fa.status = 'submitted') AS "ungraded!"
            FROM courses c WHERE c.id = ANY($1)"#,

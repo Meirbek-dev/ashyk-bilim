@@ -871,7 +871,7 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
         (&erin_sub, "published", Some(0.0)),
         (&frank_sub, "pending", None),
     ] {
-        let (got, final_score): (String, Option<f64>) =
+        let (got, final_score): (ab_core::assessments::SubmissionStatus, Option<f64>) =
             sqlx::query_as("SELECT status, final_score::float8 FROM submissions WHERE id = $1")
                 .bind(uuid::Uuid::parse_str(sub).unwrap())
                 .fetch_one(&app.pool)

@@ -1873,14 +1873,14 @@ async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
             &serde_json::json!({ "action": "publish", "final_score": 90 }),
         )),
         async || {
-            sqlx::query_scalar::<_, String>(
-                "SELECT status::text FROM file_submission_attempts WHERE id = $1",
+            sqlx::query_scalar::<_, ab_core::assessments::FileAttemptStatus>(
+                "SELECT status FROM file_submission_attempts WHERE id = $1",
             )
             .bind(attempt)
             .fetch_one(&app.pool)
             .await
             .unwrap()
-                == "published"
+                == ab_core::assessments::FileAttemptStatus::Published
         },
         |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
     )

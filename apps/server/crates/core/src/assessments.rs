@@ -44,6 +44,102 @@ macro_rules! text_enum {
     };
 }
 
+/// An attempt status: the API spelling (`as_str`, serde (the variant name in
+/// snake case), the contract) and the
+/// stored one (`stored`, REWRITE 5.6 n16 "one status vocabulary": `draft →
+/// submitted → graded → released → returned` for every attempt). Decoding
+/// accepts the previous stored spellings too (`pending`, `published`): until
+/// the contract migration rewrites the rows, a trigger stores those for the
+/// previous release. Bind `stored()`; filter with `stored_spellings()`.
+macro_rules! attempt_status_enum {
+    ($(#[$doc:meta])* $name:ident {
+        $($variant:ident => $s:literal stored $stored:literal $(or $old:literal)?),+ $(,)?
+    }) => {
+        $(#[$doc])*
+        #[derive(
+            Debug, Clone, Copy, PartialEq, Eq, Hash,
+            Serialize, Deserialize, utoipa::ToSchema,
+        )]
+        #[serde(rename_all = "snake_case")]
+        pub enum $name {
+            $($variant),+
+        }
+
+        impl $name {
+            pub const ALL: &'static [Self] = &[$(Self::$variant),+];
+
+            /// The API spelling.
+            #[must_use]
+            pub const fn as_str(self) -> &'static str {
+                match self { $(Self::$variant => $s),+ }
+            }
+
+            #[must_use]
+            pub fn parse(s: &str) -> Option<Self> {
+                match s {
+                    $($s => Some(Self::$variant),)+
+                    _ => None,
+                }
+            }
+
+            /// The spelling written to the database.
+            #[must_use]
+            pub const fn stored(self) -> &'static str {
+                match self { $(Self::$variant => $stored),+ }
+            }
+
+            /// Every spelling a stored row may carry (new first), for
+            /// `status = ANY($n)` filters.
+            #[must_use]
+            pub const fn stored_spellings(self) -> &'static [&'static str] {
+                match self { $(Self::$variant => &[$stored $(, $old)?]),+ }
+            }
+
+            /// A stored value in either spelling.
+            #[must_use]
+            pub fn from_stored(s: &str) -> Option<Self> {
+                $(if s == $stored $(|| s == $old)? { return Some(Self::$variant); })+
+                None
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+
+        impl sqlx::Type<sqlx::Postgres> for $name {
+            fn type_info() -> sqlx::postgres::PgTypeInfo {
+                <&str as sqlx::Type<sqlx::Postgres>>::type_info()
+            }
+
+            fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> bool {
+                <&str as sqlx::Type<sqlx::Postgres>>::compatible(ty)
+            }
+        }
+
+        impl sqlx::Encode<'_, sqlx::Postgres> for $name {
+            fn encode_by_ref(
+                &self,
+                buf: &mut sqlx::postgres::PgArgumentBuffer,
+            ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+                <&str as sqlx::Encode<sqlx::Postgres>>::encode_by_ref(&self.stored(), buf)
+            }
+        }
+
+        impl<'r> sqlx::Decode<'r, sqlx::Postgres> for $name {
+            fn decode(
+                value: sqlx::postgres::PgValueRef<'r>,
+            ) -> Result<Self, sqlx::error::BoxDynError> {
+                let s = <&str as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+                Self::from_stored(s)
+                    .ok_or_else(|| format!("unknown {} {s:?}", stringify!($name)).into())
+            }
+        }
+    };
+}
+
 text_enum!(
     /// What the assessment is; decides the backing activity type and which
     /// item kinds are allowed.
@@ -182,13 +278,15 @@ text_enum!(
 
 // ── Submissions & grading (migration 0011) ──────────────────────────────────
 
-text_enum!(
+// Quiz / exam / code attempt status. `Pending` is stored as `submitted`,
+// `Published` as `released` (the API keeps `pending` / `published`).
+attempt_status_enum!(
     SubmissionStatus {
-        Draft => "draft",
-        Pending => "pending",
-        Graded => "graded",
-        Published => "published",
-        Returned => "returned",
+        Draft => "draft" stored "draft",
+        Pending => "pending" stored "submitted" or "pending",
+        Graded => "graded" stored "graded",
+        Published => "published" stored "released" or "published",
+        Returned => "returned" stored "returned",
     }
 );
 
@@ -308,14 +406,15 @@ text_enum!(
     }
 );
 
-text_enum!(
+// `Published` is stored as `released` (the API keeps `published`).
+attempt_status_enum!(
     /// File-submission attempt status (legacy `FileSubmissionAttemptStatus`).
     FileAttemptStatus {
-        Draft => "draft",
-        Submitted => "submitted",
-        Graded => "graded",
-        Published => "published",
-        Returned => "returned",
+        Draft => "draft" stored "draft",
+        Submitted => "submitted" stored "submitted",
+        Graded => "graded" stored "graded",
+        Published => "published" stored "released" or "published",
+        Returned => "returned" stored "returned",
     }
 );
 
@@ -476,6 +575,29 @@ mod tests {
                 serde_json::to_string(&kind).unwrap(),
                 format!("\"{}\"", kind.as_str())
             );
+        }
+    }
+
+    #[test]
+    fn attempt_statuses_keep_the_api_spelling_and_store_one_vocabulary() {
+        for status in SubmissionStatus::ALL {
+            let json = serde_json::to_string(status).unwrap();
+            assert_eq!(json, format!("\"{}\"", status.as_str()));
+            for stored in status.stored_spellings() {
+                assert_eq!(SubmissionStatus::from_stored(stored), Some(*status));
+            }
+        }
+        assert_eq!(SubmissionStatus::Pending.stored(), "submitted");
+        assert_eq!(SubmissionStatus::Published.stored(), "released");
+        assert_eq!(FileAttemptStatus::Submitted.stored(), "submitted");
+        assert_eq!(FileAttemptStatus::Published.stored(), "released");
+        assert_eq!(
+            FileAttemptStatus::from_stored("published"),
+            Some(FileAttemptStatus::Published)
+        );
+        assert_eq!(FileAttemptStatus::from_stored("pending"), None);
+        for status in FileAttemptStatus::ALL {
+            assert_eq!(FileAttemptStatus::parse(status.as_str()), Some(*status));
         }
     }
 

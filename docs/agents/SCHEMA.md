@@ -95,7 +95,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
 - [`roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
 - [`schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
-- [`submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> pending -> graded -> published / returned
+- [`submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
 - [`teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
 - [`trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
 - [`trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
@@ -1767,20 +1767,23 @@ A Google identity linked to an account (google_sub), for Google sign-in.
 
 Grade journal of submissions: one row per grading; append-only except published_at (trigger-guarded).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| submission_id | uuid |  |  |
-| graded_by | uuid | null |  |
-| raw_score | double precision |  |  |
-| penalty_pct | double precision |  | `0` |
-| final_score | double precision | null |  |
-| raw_breakdown | jsonb |  | `'{}'::jsonb` |
-| effective_breakdown | jsonb |  | `'{}'::jsonb` |
-| overall_feedback | text |  | `''::text` |
-| grading_version | integer |  | `1` |
-| published_at | timestamp with time zone | null |  |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| submission_id | uuid |  |  |  |
+| graded_by | uuid | null |  |  |
+| raw_score | double precision |  |  |  |
+| penalty_pct | double precision |  | `0` |  |
+| final_score | double precision | null |  |  |
+| raw_breakdown | jsonb |  | `'{}'::jsonb` |  |
+| effective_breakdown | jsonb |  | `'{}'::jsonb` |  |
+| overall_feedback | text |  | `''::text` |  |
+| grading_version | integer |  | `1` |  |
+| published_at | timestamp with time zone | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| max_points | score_points | null |  | The attempt's assessment_versions.max_points when graded; NULL without a version. |
+| raw_points | score_points | null |  | points_of_percent(raw_score, max_points), set by the database. |
+| final_points | score_points | null |  | points_of_percent(final_score, max_points), set by the database. |
 
 - Primary key `grading_entries_pkey`: `PRIMARY KEY (id)`
 - Foreign key `grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
@@ -2100,44 +2103,45 @@ CHECK constraints a migration could not add because existing rows violate them (
 
 ## submissions
 
-An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> pending -> graded -> published / returned. preview rows are staff test runs.
+An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2). preview rows are staff test runs.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| assessment_id | uuid |  |  |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| status | text |  | `'draft'::text` |
-| attempt_number | integer |  |  |
-| answers | jsonb |  | `'{}'::jsonb` |
-| grading | jsonb |  | `'{}'::jsonb` |
-| auto_score | double precision | null |  |
-| final_score | double precision | null |  |
-| is_late | boolean |  | `false` |
-| late_penalty_pct | double precision |  | `0` |
-| violation_count | integer |  | `0` |
-| violations | jsonb |  | `'[]'::jsonb` |
-| auto_submit_reason | text | null |  |
-| auto_submitted_at | timestamp with time zone | null |  |
-| auto_submit_attempts | integer |  | `0` |
-| auto_submit_retry_at | timestamp with time zone | null |  |
-| duration_seconds | integer | null |  |
-| started_at | timestamp with time zone | null |  |
-| submitted_at | timestamp with time zone | null |  |
-| graded_at | timestamp with time zone | null |  |
-| version | bigint |  | `1` |
-| draft_version | bigint |  | `1` |
-| grading_version | integer |  | `1` |
-| content_version | integer |  | `1` |
-| policy_version | integer |  | `1` |
-| items_snapshot | jsonb | null |  |
-| policy_snapshot | jsonb | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| preview | boolean |  | `false` |
-| rules_accepted_at | timestamp with time zone | null |  |
-| assessment_version_id | uuid | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| assessment_id | uuid |  |  |  |
+| course_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| status | text |  | `'draft'::text` |  |
+| attempt_number | integer |  |  |  |
+| answers | jsonb |  | `'{}'::jsonb` |  |
+| grading | jsonb |  | `'{}'::jsonb` |  |
+| auto_score | double precision | null |  |  |
+| final_score | double precision | null |  |  |
+| is_late | boolean |  | `false` |  |
+| late_penalty_pct | double precision |  | `0` |  |
+| violation_count | integer |  | `0` |  |
+| violations | jsonb |  | `'[]'::jsonb` |  |
+| auto_submit_reason | text | null |  |  |
+| auto_submitted_at | timestamp with time zone | null |  |  |
+| auto_submit_attempts | integer |  | `0` |  |
+| auto_submit_retry_at | timestamp with time zone | null |  |  |
+| duration_seconds | integer | null |  |  |
+| started_at | timestamp with time zone | null |  |  |
+| submitted_at | timestamp with time zone | null |  |  |
+| graded_at | timestamp with time zone | null |  |  |
+| version | bigint |  | `1` |  |
+| draft_version | bigint |  | `1` |  |
+| grading_version | integer |  | `1` |  |
+| content_version | integer |  | `1` |  |
+| policy_version | integer |  | `1` |  |
+| items_snapshot | jsonb | null |  |  |
+| policy_snapshot | jsonb | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| preview | boolean |  | `false` |  |
+| rules_accepted_at | timestamp with time zone | null |  |  |
+| assessment_version_id | uuid | null |  |  |
+| auto_breakdown | jsonb | null |  | The auto-grader's breakdown written at hand-in (NULL for a draft); the current breakdown is the latest grading entry's, this one only while there is none. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`

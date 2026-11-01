@@ -544,7 +544,7 @@ pub async fn course_archive_preview(
                 AND coalesce(cp.progress_pct, 0) < 100)
                  AS "learners_in_progress!",
              (SELECT count(*) FROM submissions s
-              WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('pending', 'graded'))
+              WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('submitted', 'pending', 'graded'))
              + (SELECT count(*) FROM file_submission_attempts fa
                 WHERE fa.course_id = $1 AND NOT fa.preview AND fa.status IN ('submitted', 'graded'))
                  AS "ungraded_submissions!",

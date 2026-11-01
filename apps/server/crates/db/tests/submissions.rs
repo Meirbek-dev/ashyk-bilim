@@ -95,7 +95,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     let outcome = SubmitOutcome {
         status: SubmissionStatus::Published,
         answers: &answers,
-        grading: &grading,
+        auto_breakdown: &grading,
         auto_score: Some(80.0),
         final_score: Some(80.0),
         is_late: false,
@@ -119,7 +119,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     let again = SubmitOutcome {
         status: SubmissionStatus::Published,
         answers: &answers,
-        grading: &grading,
+        auto_breakdown: &grading,
         auto_score: Some(1.0),
         final_score: Some(1.0),
         is_late: false,
@@ -191,9 +191,8 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     )
     .await
     .unwrap();
-    sqlx::query("UPDATE submissions SET final_score = 63, grading = $2 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_score = 63 WHERE id = $1")
         .bind(submission.0)
-        .bind(&breakdown)
         .execute(&mut *tx)
         .await
         .unwrap();

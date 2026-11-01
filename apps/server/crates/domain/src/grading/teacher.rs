@@ -1584,7 +1584,6 @@ impl GradingService {
             id,
             expected_version,
             target,
-            &effective,
             score_of_record,
         )
         .await?;
