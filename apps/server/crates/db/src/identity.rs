@@ -421,8 +421,10 @@ pub async fn insert_auth_audit(
     metadata: serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO auth_audit_log (user_id, event, ip, user_agent, metadata)
-           VALUES ($1, $2, $3, $4, $5)"#,
+        // A forwarded value Postgres cannot read as inet is stored as NULL
+        // (`inet_or_null`, the rule of the 20261102010100 backfill).
+        r#"INSERT INTO auth_audit_log (user_id, event, ip_address, user_agent, metadata)
+           VALUES ($1, $2, inet_or_null($3), $4, $5)"#,
         user_id.map(|u| u.0),
         event,
         ip,

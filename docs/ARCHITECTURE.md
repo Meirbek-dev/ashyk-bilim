@@ -416,6 +416,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
+  NULL (`inet_or_null`), never rejecting the row; the text `ip` goes in a contract migration.
 
 ### SQLx usage
 

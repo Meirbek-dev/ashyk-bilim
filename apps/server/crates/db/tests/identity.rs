@@ -127,3 +127,39 @@ async fn user_constraints_and_role_cascade(pool: PgPool) {
         .unwrap();
     assert_eq!(roles, 6);
 }
+
+/// Review 3, item 27: audit IPs are `inet`; a forwarded value that is not an
+/// address is kept as NULL instead of rejecting the audit row, both from the
+/// server and from a previous binary that still writes the text column.
+#[ab_testdb::test]
+async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
+    for (ip, want) in [
+        (Some("203.0.113.7"), Some("203.0.113.7")),
+        (Some("2001:db8::1"), Some("2001:db8::1")),
+        (Some("unknown, 10.0.0.1"), None),
+        (None, None),
+    ] {
+        ab_db::identity::insert_auth_audit(
+            &pool,
+            None,
+            "probe-new",
+            ip,
+            None,
+            serde_json::json!({}),
+        )
+        .await
+        .unwrap();
+        sqlx::query("INSERT INTO auth_audit_log (event, ip) VALUES ('probe-old', $1)")
+            .bind(ip)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let stored: Vec<Option<String>> = sqlx::query_scalar(
+            "DELETE FROM auth_audit_log WHERE event LIKE 'probe-%' RETURNING host(ip_address)",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+        assert_eq!(stored, vec![want.map(str::to_owned); 2], "{ip:?}");
+    }
+}
