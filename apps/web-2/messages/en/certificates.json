@@ -12,6 +12,7 @@
   "certificates_og_title": "Certificate: {holder}, {course}",
   "certificates_summary": "Authentic certificate issued on {date}.",
   "certificates_course": "Course",
+  "certificates_score": "Final grade",
   "certificates_name": "Certificate",
   "certificates_type_completion": "Course completion",
   "certificates_type_achievement": "Certificate of achievement",

@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams, Link as RouterLink } from '@tanstack/react-router'
 
-import { CertificatePdfLink, CertificateShare, certificateTitle } from '#/features/certificates'
+import { CertificatePdfLink, CertificateShare } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { CourseCover } from '#/shared/components/course-cover'
 import { FocusPage } from '#/shared/components/templates/focus-page'
@@ -73,7 +73,7 @@ export function CompletionPage() {
               <div className="flex flex-wrap justify-center gap-2">
                 <CertificateShare
                   code={issued.certificate.verify_code}
-                  name={certificateTitle(issued.certification.config, issued.course.name)}
+                  name={issued.certificate.certificate_name}
                   issuedAtUnix={issued.certificate.issued_at_unix}
                   linkedIn
                   variant="ghost"

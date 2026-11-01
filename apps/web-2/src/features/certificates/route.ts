@@ -6,8 +6,8 @@ import { formatDate } from '#/shared/i18n/format'
 import { documentTitle } from '#/shared/lib/document-title'
 
 /** The verify page's document head: what a messenger shows for the link printed on the PDF. */
-export function certificateHead({ holder, course, certificate }: VerifiedCertificate) {
-  const title = m.certificates_og_title({ holder: holder.display_name, course: course.name })
+export function certificateHead({ holder, certificate }: VerifiedCertificate) {
+  const title = m.certificates_og_title({ holder: holder.display_name, course: certificate.course_name })
   const description = m.certificates_summary({
     date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }),
   })

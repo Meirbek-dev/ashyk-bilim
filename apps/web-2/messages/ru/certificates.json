@@ -12,6 +12,7 @@
   "certificates_og_title": "Сертификат: {holder}, {course}",
   "certificates_summary": "Подлинный сертификат, выдан {date}",
   "certificates_course": "Курс",
+  "certificates_score": "Итоговая оценка",
   "certificates_name": "Сертификат",
   "certificates_type_completion": "За завершение курса",
   "certificates_type_achievement": "За достижение",

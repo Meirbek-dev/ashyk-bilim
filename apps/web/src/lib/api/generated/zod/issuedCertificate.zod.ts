@@ -10,9 +10,15 @@ import * as zod from 'zod'
 export const IssuedCertificate = zod
   .object({
     certificate: zod.object({
+      certificate_name: zod.string().describe("The template's `certification_name` as issued, else the course name."),
       certification_id: zod.uuid(),
+      course_name: zod.string().describe('The course name as issued (renaming the course leaves it).'),
       id: zod.uuid(),
       issued_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+      reissued_at_unix: zod
+        .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
+        .describe("When a change of the holder's name last re-issued it."),
+      score: zod.number().nullable().describe('The course grade at issue (0-100), if anything was scored.'),
       user_id: zod.uuid(),
       verify_code: zod.string().describe('Public verification code; the client links `/certificates/{code}/verify`.'),
     }),
@@ -158,7 +164,7 @@ export const IssuedCertificate = zod
       .string()
       .nullable()
       .describe(
-        "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
+        "The name signed on the certificate as issued (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
       ),
   })
   .describe('A certificate with its template and course.')

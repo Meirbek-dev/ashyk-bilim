@@ -296,21 +296,13 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
         );
     }
     // ETL-migrated legacy codes keep their own dash layout and still verify,
-    // typed as printed or compacted.
-    sqlx::query("UPDATE certificate_users SET verify_code = 'F2-20260110-D4HG-027532' WHERE verify_code = $1")
-        .bind(&code)
-        .execute(&app.pool)
-        .await
-        .unwrap();
+    // typed as printed or compacted. An issued row is immutable: swap it.
+    recode(&app.pool, &code, "F2-20260110-D4HG-027532").await;
     for typed in ["F2-20260110-D4HG-027532", "f220260110d4hg027532"] {
         let legacy = app.get(&format!("/api/v2/certificates/{typed}")).await;
         assert_eq!(legacy.status, StatusCode::OK, "{typed}: {}", legacy.text());
     }
-    sqlx::query("UPDATE certificate_users SET verify_code = $1 WHERE verify_code = 'F2-20260110-D4HG-027532'")
-        .bind(&code)
-        .execute(&app.pool)
-        .await
-        .unwrap();
+    recode(&app.pool, "F2-20260110-D4HG-027532", &code).await;
     assert_eq!(
         app.get("/api/v2/certificates/NOPE-NOPE-NOPE-NOPE")
             .await
@@ -377,12 +369,13 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
         .await;
     assert_eq!(updated.status, StatusCode::OK, "{}", updated.text());
     assert_eq!(updated.json()["config"]["template"], "modern");
-    // The config's instructor wins, trimmed.
+    // An issued certificate keeps the instructor it was issued with (REWRITE 5.7):
+    // the edit reaches only certificates issued from now on.
     assert_eq!(
         app.get(&format!("/api/v2/certificates/{code}"))
             .await
             .json()["instructor_name"],
-        "Dr. Who"
+        "teacher"
     );
     assert_eq!(
         app.delete_as(
@@ -600,4 +593,29 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
         )
         .await;
     assert_eq!(mine.json().as_array().unwrap().len(), 1);
+}
+
+/// Re-insert the certificate under another verify code (issued rows refuse UPDATE).
+async fn recode(pool: &PgPool, from: &str, to: &str) {
+    let mut tx = pool.begin().await.unwrap();
+    let (certification, user, issued): (uuid::Uuid, uuid::Uuid, i64) = sqlx::query_as(
+        "DELETE FROM certificate_users WHERE verify_code = $1
+         RETURNING certification_id, user_id, extract(epoch FROM created_at)::bigint",
+    )
+    .bind(from)
+    .fetch_one(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO certificate_users (certification_id, user_id, verify_code, created_at)
+         VALUES ($1, $2, $3, to_timestamp($4))",
+    )
+    .bind(certification)
+    .bind(user)
+    .bind(to)
+    .bind(issued)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
 }

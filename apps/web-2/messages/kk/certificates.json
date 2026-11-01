@@ -12,6 +12,7 @@
   "certificates_og_title": "{holder} сертификаты: {course}",
   "certificates_summary": "Түпнұсқа сертификат, {date} берілген.",
   "certificates_course": "Курс атауы",
+  "certificates_score": "Қорытынды баға",
   "certificates_name": "Сертификат атауы",
   "certificates_type_completion": "Курсты аяқтағаны үшін",
   "certificates_type_achievement": "Жетістік үшін",

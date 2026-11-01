@@ -174,6 +174,19 @@ pub struct CertificateRow {
     pub user_id: UserId,
     /// Public verification code (`/certificates/{code}`).
     pub verify_code: String,
+    /// What the certificate states, stored when it was issued (the
+    /// `certificate_users_issue` trigger): renaming the course or editing
+    /// the template leaves it. Only `holder_name` follows the person (a
+    /// display-name change re-issues: `reissued_at`).
+    pub holder_name: String,
+    pub course_name: String,
+    /// The template's `certification_name`, else the course name.
+    pub certificate_name: String,
+    /// The template's `certificate_instructor`, else the course creator.
+    pub instructor_name: Option<String>,
+    /// The course grade at issue (weighted average, else plain), if scored.
+    pub score: Option<f64>,
+    pub reissued_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -211,7 +224,9 @@ pub async fn list_user_certificates_for_course(
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
                   c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
-                  cu.verify_code,
+                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
+                  cu.instructor_name, cu.score,
+                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
@@ -231,7 +246,9 @@ pub async fn list_user_certificates(pool: &PgPool, user_id: UserId) -> Result<Ve
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
                   c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
-                  cu.verify_code,
+                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
+                  cu.instructor_name, cu.score,
+                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
@@ -253,7 +270,9 @@ pub async fn get_certificate_by_code(
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
                   c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
-                  cu.verify_code,
+                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
+                  cu.instructor_name, cu.score,
+                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id

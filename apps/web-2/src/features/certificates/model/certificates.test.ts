@@ -2,7 +2,7 @@ import { expect, test } from 'vite-plus/test'
 
 import { fromPath, printedLocale } from '#/shared/i18n/printed-locale'
 
-import { certificateKind, certificatePdfHref, certificateTitle, linkedInAddHref, verifyUrl } from './certificates'
+import { certificateKind, certificatePdfHref, linkedInAddHref, verifyUrl } from './certificates'
 
 test('B-CRT-06 the printed prefixes map to interface locales (kz is kk); anything else is no URL', () => {
   expect(printedLocale('ru')).toBe('ru')
@@ -39,8 +39,6 @@ test('B-CRT-04 the PDF link is a relative API path in the interface language', (
 test('B-CRT-09 a holder shares the verify URL and adds the certificate to LinkedIn prefilled', () => {
   const url = verifyUrl('https://ashyq.example', 'Y5KU-K37T')
   expect(url).toBe('https://ashyq.example/certificates/Y5KU-K37T/verify')
-  expect(certificateTitle({ certification_name: '  ' }, 'Java')).toBe('Java')
-  expect(certificateTitle({ certification_name: 'Java Pro' }, 'Java')).toBe('Java Pro')
   // 2026-09-23 UTC: September.
   const href = new URL(
     linkedInAddHref({ name: 'Java Pro', issuer: 'Ashyq Bilim', issuedAtUnix: 1790188436, code: 'Y5KU-K37T', url }),

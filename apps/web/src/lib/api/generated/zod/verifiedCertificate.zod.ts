@@ -11,9 +11,15 @@ export const VerifiedCertificate = zod
   .object({
     certificate: zod
       .object({
+        certificate_name: zod.string().describe("The template's `certification_name` as issued, else the course name."),
         certification_id: zod.uuid(),
+        course_name: zod.string().describe('The course name as issued (renaming the course leaves it).'),
         id: zod.uuid(),
         issued_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
+        reissued_at_unix: zod
+          .union([zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'), zod.null()])
+          .describe("When a change of the holder's name last re-issued it."),
+        score: zod.number().nullable().describe('The course grade at issue (0-100), if anything was scored.'),
         verify_code: zod.string(),
       })
       .describe('A certificate as the public sees it (no holder id).'),
@@ -159,7 +165,9 @@ export const VerifiedCertificate = zod
       .object({
         display_name: zod.string(),
       })
-      .describe('What a verifier learns about the holder: the name on the certificate.'),
+      .describe(
+        "What a verifier learns about the holder: the name on the certificate (the\nholder's current one: a name change re-issues).",
+      ),
     instructor_name: zod.string().nullable().describe('The name signed on the certificate - what the PDF prints.'),
   })
   .describe('The public verification view.')

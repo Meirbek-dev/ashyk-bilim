@@ -732,27 +732,28 @@ Done:
   rows are not rebuilt: a rollup is a snapshot of the state at run time, so rebuilding a past date would write
   today's numbers onto it. Rows dated before the switch keep their UTC day (a snapshot up to 05:00 of the next
   Almaty day) and age out with the 2-year retention.
+- Certificates freeze what was issued (`20261102000200_certificates_freeze_issued`, `certificates.rs`): holder,
+  course and certificate names, instructor and grade; verification, the PDF and both webs show them; a display-name
+  change re-issues. Certificates issued before the migration took what their course stated on that day.
 
 Decided, not done:
 
 1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
    production host (FINDINGS 3, reconfirmed).
-2. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
-   certificate row; verification shows them; a name change re-issues.
-3. **Learner search and AI context check visibility at query time** (activity published, course not archived,
+2. **Learner search and AI context check visibility at query time** (activity published, course not archived,
    the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
-4. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
+3. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
    `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
    `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
-5. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
+4. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
    retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
    (QUESTIONS Q-2026-11-01-2).
-6. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
+5. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
    carry a `schema_version` in the payload.
-7. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
+6. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
    AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
-8. **Rollback without restore**: once every migration since the previous release is expand-only (no
+7. **Rollback without restore**: once every migration since the previous release is expand-only (no
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
 
 ## 6. Auth

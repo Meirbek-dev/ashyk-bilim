@@ -1264,9 +1264,25 @@ export type CaseResult = {
 };
 
 export type Certificate = {
+    /**
+     * The template's `certification_name` as issued, else the course name.
+     */
+    certificate_name: string;
     certification_id: CertificationId;
+    /**
+     * The course name as issued (renaming the course leaves it).
+     */
+    course_name: string;
     id: CertificateId;
     issued_at_unix: UnixTime;
+    /**
+     * When a change of the holder's name last re-issued it.
+     */
+    reissued_at_unix: UnixTime | null;
+    /**
+     * The course grade at issue (0-100), if anything was scored.
+     */
+    score: number | null;
     user_id: UserId;
     /**
      * Public verification code; the client links `/certificates/{code}/verify`.
@@ -1275,7 +1291,8 @@ export type Certificate = {
 };
 
 /**
- * What a verifier learns about the holder: the name on the certificate.
+ * What a verifier learns about the holder: the name on the certificate (the
+ * holder's current one: a name change re-issues).
  */
 export type CertificateHolder = {
     display_name: string;
@@ -4019,7 +4036,7 @@ export type IssuedCertificate = {
     certification: Certification;
     course: Course;
     /**
-     * The name signed on the certificate (`config.certificate_instructor`,
+     * The name signed on the certificate as issued (`config.certificate_instructor`,
      * else the course creator's display name) - what the PDF prints.
      */
     instructor_name: string | null;
@@ -5189,9 +5206,25 @@ export type ProposalPart = {
  * A certificate as the public sees it (no holder id).
  */
 export type PublicCertificate = {
+    /**
+     * The template's `certification_name` as issued, else the course name.
+     */
+    certificate_name: string;
     certification_id: CertificationId;
+    /**
+     * The course name as issued (renaming the course leaves it).
+     */
+    course_name: string;
     id: CertificateId;
     issued_at_unix: UnixTime;
+    /**
+     * When a change of the holder's name last re-issued it.
+     */
+    reissued_at_unix: UnixTime | null;
+    /**
+     * The course grade at issue (0-100), if anything was scored.
+     */
+    score: number | null;
     verify_code: string;
 };
 

@@ -78,7 +78,8 @@ export function toAppCertification(issued: IssuedCertificate | VerifiedCertifica
     ...issued,
     instructor_name: issued.instructor_name ?? null,
     certification_uuid: certification.id,
-    course: toAppCourse(course),
+    // The course name as issued: renaming the course does not rewrite a certificate.
+    course: toAppCourse({ ...course, name: certificate.course_name }),
     // `user_certification_uuid` is the public verify code: the client links `/certificates/{code}/verify`.
     certificate_user: {
       ...certificate,

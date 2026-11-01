@@ -3885,14 +3885,41 @@
       },
       "Certificate": {
         "properties": {
+          "certificate_name": {
+            "description": "The template's `certification_name` as issued, else the course name.",
+            "type": "string"
+          },
           "certification_id": {
             "$ref": "#/components/schemas/CertificationId"
+          },
+          "course_name": {
+            "description": "The course name as issued (renaming the course leaves it).",
+            "type": "string"
           },
           "id": {
             "$ref": "#/components/schemas/CertificateId"
           },
           "issued_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "reissued_at_unix": {
+            "description": "When a change of the holder's name last re-issued it.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "description": "The course grade at issue (0-100), if anything was scored.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
@@ -3907,12 +3934,16 @@
           "certification_id",
           "user_id",
           "verify_code",
-          "issued_at_unix"
+          "issued_at_unix",
+          "course_name",
+          "certificate_name",
+          "reissued_at_unix",
+          "score"
         ],
         "type": "object"
       },
       "CertificateHolder": {
-        "description": "What a verifier learns about the holder: the name on the certificate.",
+        "description": "What a verifier learns about the holder: the name on the certificate (the\nholder's current one: a name change re-issues).",
         "properties": {
           "display_name": {
             "type": "string"
@@ -11398,7 +11429,7 @@
             "$ref": "#/components/schemas/Course"
           },
           "instructor_name": {
-            "description": "The name signed on the certificate (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
+            "description": "The name signed on the certificate as issued (`config.certificate_instructor`,\nelse the course creator's display name) - what the PDF prints.",
             "type": [
               "string",
               "null"
@@ -14927,14 +14958,41 @@
       "PublicCertificate": {
         "description": "A certificate as the public sees it (no holder id).",
         "properties": {
+          "certificate_name": {
+            "description": "The template's `certification_name` as issued, else the course name.",
+            "type": "string"
+          },
           "certification_id": {
             "$ref": "#/components/schemas/CertificationId"
+          },
+          "course_name": {
+            "description": "The course name as issued (renaming the course leaves it).",
+            "type": "string"
           },
           "id": {
             "$ref": "#/components/schemas/CertificateId"
           },
           "issued_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "reissued_at_unix": {
+            "description": "When a change of the holder's name last re-issued it.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "description": "The course grade at issue (0-100), if anything was scored.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "verify_code": {
             "type": "string"
@@ -14944,7 +15002,11 @@
           "id",
           "certification_id",
           "verify_code",
-          "issued_at_unix"
+          "issued_at_unix",
+          "course_name",
+          "certificate_name",
+          "reissued_at_unix",
+          "score"
         ],
         "type": "object"
       },
