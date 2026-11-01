@@ -664,18 +664,6 @@ in the order it can be done, each step a forward migration on the current schema
    (`catalog.rs` / `file_submissions.rs` bulk recounts, `course_copy.rs` increments). Discussion images have
    no column (a claimed one is never released, so the reaper never sees it): a `post_uploads` link table
    before the counter goes.
-5. **Enrolments** (item 11). `enrolments (course_id, user_id, enrolled_at, PK both)` as in 5.4, backfilled from
-   `trail_runs JOIN trails`; `has_trail_run` / `course_members` / `takes_assessments` read it; trail writers
-   insert/delete it in the same transaction; then `trail_runs`/`trails` lose their membership role (steps stay
-   until 7). Done when: `progress_flow` and `permission_matrix` pass with `trails` emptied in a test.
-4. **Upload references** (item 10). Add `upload_id uuid REFERENCES uploads ON DELETE SET NULL` next to each key
-   column (`users.avatar_key`, `courses.thumbnail_image_key`/`thumbnail_video_key`, `chapters.thumbnail_key`,
-   `collections.cover_key`, `platforms.logo_key`/`thumbnail_key`, `item_feedback.annotation_key`) and a
-   `block_uploads (block_id → blocks ON DELETE CASCADE, upload_id → uploads)` table for `blocks.content->>'file_key'`;
-   backfill by `uploads.key`. Writers set the id with the key; the reaper's "referenced" test becomes `EXISTS` over
-   those columns and `block_uploads` instead of `referenced_count`; drop the counter (and BUG-209/263's
-   repair code) once a release ran with both. Done when: the reaper test that drifts the counter by hand still
-   keeps the file.
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
    Left: the roster (`list_course_learners`, keyset cursor = trail run id in the API), `GET /trail` and
@@ -748,18 +736,6 @@ in the order it can be done, each step a forward migration on the current schema
     Left: the catalog listings' `q` filter (`list_courses`, `list_collections`) still calls `search_matches`
     inside their static keyset queries; moving them to the same predicates needs those queries as
     `QueryBuilder` too. The tsvector columns stay while ranking uses `ts_rank_cd`.
-12. **Natural keys** (item 26). `activity_progress`, `course_progress`, `gamification_profiles`, the `daily_*`
-    rollups and `learner_risk_snapshots` have a uuid PK plus the unique natural key, and code reads the uuid
-    (projector rows, prune batches `WHERE id IN (...)`, the leaderboard keyset cursor carries the profile id).
-    Switch each reader to the natural key first (prune by `ctid` batches or by date), then promote the unique
-    constraint to the PK and drop `id`. `daily_teacher_metrics` keeps a surrogate key (nullable teacher, `NULLS
-    NOT DISTINCT`).
-11. **Search index** (item 23). `search_matches(hay, words, letters, negated)` applies its regexes inside a
-    function over arrays, so no index applies. Rewrite the search queries with `QueryBuilder`: one `search_fold(title || ' ' || ...) ~ $n` predicate
-    per term in the WHERE clause, then `CREATE INDEX ... USING gin (search_fold(...) gin_trgm_ops)` per
-    searched table (`pg_trgm`, trusted, can be created by `ashyq`). Terms under 3 characters fall back to a scan
-    (trigram limit). Then drop the tsvector columns if ranking moves to `similarity()`. Done when: the
-    existing `search.rs` tests pass and `EXPLAIN` shows a bitmap index scan on a 10 000-course fixture.
 12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
     `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
     batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids
@@ -829,10 +805,6 @@ Decided, not done:
    nightly base backups into the backup directory of the production host (RUNBOOK 3.14), built-in tools only
    (`archive_command`, `pg_basebackup`, `pg_archivecleanup`: no extra image to build and pin). Backups stay on
    the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
-2. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
-   dates; date parameters bind as `date`; past daily rows are rebuilt once.
-1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
-   production host (FINDINGS 3, reconfirmed).
 2. **Day boundaries**: done (ARCHITECTURE §8 "One platform day"): `platform_date()` in SQL for the XP daily
    cap, streaks, login bonus and rollup dates; date parameters bind as `date`. The zone is one SQL function,
    not runtime config (changing it is a migration). Past daily rows are not rebuilt: a rollup is today's state
@@ -847,13 +819,6 @@ Decided, not done:
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; Zitadel's role gets a
    connection limit. Done: the pool sets `statement_timeout`, `idle_in_transaction_session_timeout`,
    `lock_timeout` and `application_name` on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`).
-6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
-   retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
-   (QUESTIONS Q-2026-11-01-2).
-   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report` (done:
-   preloaded by the db command, created in `postgres` by db-init, section `top statements`),
-   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
-   `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
 6. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
    grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
    through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
