@@ -21,7 +21,8 @@ pub async fn find_user_for_login(pool: &PgPool, login: &str) -> Result<Option<Au
     let row = sqlx::query_as!(
         AuthUserRow,
         r#"SELECT id AS "id: UserId", zitadel_user_id, username, email,
-                  display_name, locale, status, rbac_version
+                  display_name, locale,
+                  CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS "status!", rbac_version
            FROM users
            WHERE lower(username) = lower($1) OR lower(email) = lower($1)"#,
         login
@@ -37,7 +38,8 @@ pub async fn find_auth_user(pool: &PgPool, user_id: UserId) -> Result<Option<Aut
     let row = sqlx::query_as!(
         AuthUserRow,
         r#"SELECT id AS "id: UserId", zitadel_user_id, username, email,
-                  display_name, locale, status, rbac_version
+                  display_name, locale,
+                  CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS "status!", rbac_version
            FROM users
            WHERE id = $1"#,
         user_id.0
@@ -118,7 +120,7 @@ pub async fn find_public_profile(
         PublicProfileRow,
         r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key, profile
            FROM users
-           WHERE status = 'active' AND lower(username) = lower($1)"#,
+           WHERE disabled_at IS NULL AND lower(username) = lower($1)"#,
         username
     )
     .fetch_optional(pool)
@@ -135,7 +137,7 @@ pub async fn find_public_profile_by_id(
         PublicProfileRow,
         r#"SELECT id AS "id: UserId", username, display_name, bio, avatar_key, profile
            FROM users
-           WHERE status = 'active' AND id = $1"#,
+           WHERE disabled_at IS NULL AND id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -147,7 +149,9 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
     let row = sqlx::query_as!(
         ProfileRow,
         r#"SELECT id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
-                  profile, theme, profile_version, email_verified
+                  profile, theme, profile_version,
+                  CASE WHEN email_verified_at IS NOT NULL THEN true ELSE email_verified END
+                      AS "email_verified?"
            FROM users WHERE id = $1"#,
         user_id.0
     )
@@ -186,7 +190,9 @@ pub async fn update_profile(
                organization = COALESCE($9, organization)
            WHERE id = $1 AND ($8::int4 IS NULL OR profile_version = $8)
            RETURNING id AS "id: UserId", username, email, display_name, bio, avatar_key, locale, organization,
-                     profile, theme, profile_version, email_verified"#,
+                     profile, theme, profile_version,
+                     CASE WHEN email_verified_at IS NOT NULL THEN true ELSE email_verified END
+                         AS "email_verified?""#,
         user_id.0,
         display_name,
         bio,
@@ -203,9 +209,15 @@ pub async fn update_profile(
 }
 
 /// Store whether the account's email is confirmed (Zitadel is the source).
+///
+/// `email_verified` is written too: an answer of "not confirmed" leaves
+/// `email_verified_at` NULL, and only the old column tells it from "not
+/// known yet" (REWRITE 5.6 n10).
 pub async fn set_email_verified(pool: &PgPool, user_id: UserId, verified: bool) -> Result<()> {
     sqlx::query!(
-        "UPDATE users SET email_verified = $2 WHERE id = $1",
+        "UPDATE users SET email_verified = $2,
+             email_verified_at = CASE WHEN $2 THEN coalesce(email_verified_at, now()) END
+         WHERE id = $1",
         user_id.0,
         verified
     )
@@ -382,9 +394,10 @@ pub async fn create_user_with_default_role(
 ) -> Result<Option<UserId>> {
     let mut tx = pool.begin().await?;
     let inserted = sqlx::query_scalar!(
+        // `email_verified` too: false must not read as "not known yet".
         r#"INSERT INTO users (zitadel_user_id, username, email, display_name, locale, organization,
-                              email_verified)
-           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru'), $6, $7)
+                              email_verified, email_verified_at)
+           VALUES ($1, $2, $3, $4, COALESCE($5, 'ru'), $6, $7, CASE WHEN $7 THEN now() END)
            ON CONFLICT DO NOTHING
            RETURNING id"#,
         zitadel_user_id,
@@ -421,8 +434,10 @@ pub async fn insert_auth_audit(
     metadata: serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO auth_audit_log (user_id, event, ip, user_agent, metadata)
-           VALUES ($1, $2, $3, $4, $5)"#,
+        // A forwarded value Postgres cannot read as inet is stored as NULL
+        // (`inet_or_null`, the rule of the 20261102010100 backfill).
+        r#"INSERT INTO auth_audit_log (user_id, event, ip_address, user_agent, metadata)
+           VALUES ($1, $2, inet_or_null($3), $4, $5)"#,
         user_id.map(|u| u.0),
         event,
         ip,
@@ -637,7 +652,8 @@ pub async fn list_users(
     let by_name = filter.sort == "name";
     let rows = sqlx::query_as!(
         AdminUserRow,
-        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization,
+                  CASE WHEN u.disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS "status!",
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
                   (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key,
@@ -648,7 +664,7 @@ pub async fn list_users(
            WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE '\'
                   OR u.display_name ILIKE $1 ESCAPE '\' OR u.email ILIKE $1 ESCAPE '\'
                   OR u.organization ILIKE $1 ESCAPE '\')
-             AND ($4::text IS NULL OR u.status = $4)
+             AND ($4::text IS NULL OR (u.disabled_at IS NULL) = ($4 = 'active'))
              AND ($5::text IS NULL OR EXISTS (
                    SELECT 1 FROM user_roles fr JOIN roles f ON f.id = fr.role_id
                    WHERE fr.user_id = u.id AND f.slug = $5))
@@ -685,7 +701,7 @@ pub async fn count_users(pool: &PgPool, filter: UserFilter<'_>) -> Result<i64> {
            WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE ''
                   OR u.display_name ILIKE $1 ESCAPE '' OR u.email ILIKE $1 ESCAPE ''
                   OR u.organization ILIKE $1 ESCAPE '')
-             AND ($2::text IS NULL OR u.status = $2)
+             AND ($2::text IS NULL OR (u.disabled_at IS NULL) = ($2 = 'active'))
              AND ($3::text IS NULL OR EXISTS (
                    SELECT 1 FROM user_roles fr JOIN roles f ON f.id = fr.role_id
                    WHERE fr.user_id = u.id AND f.slug = $3))"#,
@@ -702,7 +718,8 @@ pub async fn count_users(pool: &PgPool, filter: UserFilter<'_>) -> Result<i64> {
 pub async fn get_admin_user(pool: &PgPool, user_id: UserId) -> Result<Option<AdminUserRow>> {
     let row = sqlx::query_as!(
         AdminUserRow,
-        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization, u.status,
+        r#"SELECT u.id AS "id: UserId", u.username, u.email, u.display_name, u.organization,
+                  CASE WHEN u.disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS "status!",
                   COALESCE(array_agg(r.slug ORDER BY r.priority DESC)
                            FILTER (WHERE r.slug IS NOT NULL), '{}') AS "roles!",
                   (extract(epoch FROM u.created_at))::bigint AS "created_at!", u.avatar_key,
@@ -727,7 +744,10 @@ pub async fn set_user_status(
     status: &str,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        "UPDATE users SET status = $2, rbac_version = rbac_version + 1 WHERE id = $1",
+        "UPDATE users
+         SET disabled_at = CASE WHEN $2 = 'disabled' THEN coalesce(disabled_at, now()) END,
+             rbac_version = rbac_version + 1
+         WHERE id = $1",
         user_id.0,
         status
     )
@@ -740,9 +760,13 @@ pub async fn user_status<'e>(
     db: impl sqlx::PgExecutor<'e>,
     user_id: UserId,
 ) -> Result<Option<String>> {
-    let status = sqlx::query_scalar!("SELECT status FROM users WHERE id = $1", user_id.0)
-        .fetch_optional(db)
-        .await?;
+    let status = sqlx::query_scalar!(
+        r#"SELECT CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS "status!"
+           FROM users WHERE id = $1"#,
+        user_id.0
+    )
+    .fetch_optional(db)
+    .await?;
     Ok(status)
 }
 
@@ -765,7 +789,7 @@ pub async fn count_other_active_role_holders(
         r#"SELECT count(*) AS "count!" FROM user_roles ur
            JOIN roles r ON r.id = ur.role_id
            JOIN users u ON u.id = ur.user_id
-           WHERE r.slug = $1 AND u.status = 'active' AND u.id <> $2"#,
+           WHERE r.slug = $1 AND u.disabled_at IS NULL AND u.id <> $2"#,
         slug,
         except.0
     )
@@ -813,7 +837,7 @@ pub async fn find_user_id_by_username(pool: &PgPool, username: &str) -> Result<O
 /// when another account took the address meanwhile (unique index).
 pub async fn set_user_email(pool: &PgPool, user_id: UserId, email: &str) -> Result<bool> {
     let updated = sqlx::query!(
-        "UPDATE users SET email = $2, email_verified = true WHERE id = $1",
+        "UPDATE users SET email = $2, email_verified_at = now() WHERE id = $1",
         user_id.0,
         email
     )
@@ -847,7 +871,8 @@ pub async fn anonymise_user(
                username = $2, email = $2 || '@deleted.invalid', display_name = '',
                bio = '', avatar_key = NULL, organization = '', theme = NULL,
                profile = '{"sections": []}'::jsonb, profile_version = profile_version + 1,
-               email_verified = true, status = 'disabled', deleted_at = now(),
+               email_verified_at = coalesce(email_verified_at, now()),
+               disabled_at = coalesce(disabled_at, now()), deleted_at = now(),
                rbac_version = rbac_version + 1
            WHERE id = $1 AND deleted_at IS NULL"#,
         user_id.0,

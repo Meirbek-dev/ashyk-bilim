@@ -345,7 +345,18 @@ One migration set for the database `ashyq`. Rules:
 1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
    `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by the shared `set_updated_at`
    trigger.
-2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations.
+2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Columns added from 2026-11-02 on
+   (`crates/db/tests/naming_rules.rs` checks the migrations):
+   - a key onto `users` is `user_id` for the person the row belongs to or is about (owner, learner, member,
+     recipient), `<verb>_by` for who did something to it (`created_by`, `updated_by`, `graded_by`, `decided_by`,
+     `requested_by`), or a role when the row is about two people and no verb fits (`teacher_id`). Not
+     `creator_id`, `author_id`, `actor_id`, `learner_id`, `student_id`, `*_user_id`;
+   - an entity's label is `name`; `title` only heads authored text (an update, a thread, an item);
+   - a row's variant is `kind` (`<thing>_kind` when a table has two), not `type` / `*_type` (`content_type`
+     is a MIME type); an event log's variant is `event`;
+   - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
+     `<status>_at` timestamps.
+   Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract).
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
@@ -383,7 +394,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
   `UNIQUE (id, course_id)`; their children reference `(parent_id, course_id)` (activities → chapters,
   assessments/file tasks/progress/trail steps → activities, submissions → assessments, file attempts → file
-  tasks, replies → posts) with `ON UPDATE CASCADE`, keeping the old constraint names.
+  tasks, replies → posts), keeping the old constraint names. They are `ON UPDATE RESTRICT`
+  (`20261102010800`): no feature moves a parent to another course (activities move only between chapters of
+  their course), so such a change is refused while children exist instead of rewriting learner work.
 - **Sibling positions are unique** per course (chapters), chapter (activities), assessment (items) and
   collection (courses), `DEFERRABLE INITIALLY DEFERRED` so a reorder inside one transaction may pass through
   duplicates; `>= 1`. Two concurrent appends that both took `MAX(position) + 1` get 409 `conflict` (retry).
@@ -392,14 +405,20 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
   20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
   50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
-  body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
-  `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
+  body is tagged with its `kind`. A check whose existing rows violate it stays NOT VALID (new and updated rows are
+  checked) with a WARNING and a `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4;
+  `20261102010000_schema_try_check_not_valid` also re-added the checks skipped before as NOT VALID).
 - **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only
   its `published_at`, a `file_grading_entries` row never changes; neither is deleted except by the cascade
   from its submission / attempt. The guards compare the whole row, so a new column is frozen too. The one
   extra change is `graded_by` becoming NULL (its `ON DELETE SET NULL`), so a grader can be erased by hand
   (`20261102000100_ledger_grader_erasure.sql`); naming another grader is refused.
-- **A deleted account stays disabled**: `deleted_at IS NULL OR status = 'disabled'` (same migration).
+- **A deleted account stays disabled**: `deleted_at IS NULL OR disabled_at IS NOT NULL`.
+- **Account state is timestamps** (`20261102011100`): `users.disabled_at` (NULL = active) and
+  `users.email_verified_at` (NULL = not confirmed). The old `status` / `email_verified` columns are mirrored both
+  ways by `users_sync_state` for the previous release; `status` goes in a contract migration, `email_verified`
+  stays while it still marks accounts whose state is not known yet (`NULL`, resolved from Zitadel on first read).
+  The API still says `status: active|disabled` and `email_verified: bool`.
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
@@ -407,8 +426,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
-  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration); `notification_preferences.disabled`
-  is checked against `notification_kinds` by a trigger. Short fixed lists stay CHECKs.
+  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration). A user's switched-off kinds are
+  `notification_opt_outs (user_id, kind)` rows with a key onto `notification_kinds`; until the contract migration
+  triggers mirror them into the old `notification_preferences.disabled` array the previous release reads and
+  writes. Short fixed lists stay CHECKs.
 - **Permission parts are columns**: `role_permissions.resource/action/scope` are generated from the grant
   string (shape-checked like `Grant::parse`); `is_course_staff` reads them through a partial index, so its
   role branch is two index probes per call.
@@ -431,6 +452,19 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   mirror writes both ways so the previous release sees the same roster.
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
+- **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
+  NULL (`inet_or_null`), never rejecting the row; the text `ip` goes in a contract migration.
+- **No index repeats another** (`crates/db/tests/index_audit.rs`): an index whose keys prefix another index's on
+  the same table (same predicate, operator classes, order) is dropped; a unique one stays unless a unique twin
+  has exactly its columns. Exceptions are listed with their reason.
+- **A submission / file-attempt arc names exactly one** (`ai_grade_drafts`, `ai_remediation_sessions`,
+  `ai_submission_analyses`: a validated CHECK over both keys, `schema_review.rs` finds every such table) until the
+  file-task pipeline merges into submissions. `ai_work_embeddings.subject_id` names either without a key (found
+  through the person's submissions and attempts; it gets a real key with the merge).
+- **Translations are rows** (`translations (entity, entity_id, field, lang, text)`, fields listed in
+  `translatable_fields`): the platform's Kazakh / English `description` / `about`; the base column holds the
+  default-language text, no row = not translated. Until the contract migration triggers mirror them into the old
+  `platforms.*_kk` / `*_en` columns; a translation change moves the platform's version.
 
 ### SQLx usage
 
@@ -643,6 +677,12 @@ Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` f
   (`AB__DATABASE__URL` set; in production a non-empty, non-wildcard CORS allowlist, JSON logs, auth limits not
   relaxed past their defaults). `serve` refuses to start without Redis, Zitadel or storage settings.
 - `ashyq admin config-check` prints the effective config with secrets redacted.
+- Database sessions are bounded on connect (`ab_db::connect`, startup options, so they hold for any role and
+  win over `ALTER ROLE ... SET`): `statement_timeout` 120 s, `idle_in_transaction_session_timeout` 60 s,
+  `lock_timeout` 30 s (`AB__DATABASE__LIMITS__STATEMENT_TIMEOUT_SECS`, `..._IDLE_IN_TRANSACTION_TIMEOUT_SECS`,
+  `..._LOCK_TIMEOUT_SECS`; 0 = off) and `application_name` `ashyq-serve|worker|admin|migrate`. `ashyq migrate`
+  runs without statement and lock limits, `ashyq admin` without a statement limit; a job that needs longer
+  statements sets `SET LOCAL statement_timeout` in its own transaction.
 - Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
   `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
   the operator's schedule (`docs/STAGE-2-CUTOVER.md`).

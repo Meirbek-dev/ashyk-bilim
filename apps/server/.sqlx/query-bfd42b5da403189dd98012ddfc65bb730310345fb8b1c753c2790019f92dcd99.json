@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO auth_audit_log (user_id, event, ip_address, user_agent, metadata)\n           VALUES ($1, $2, inet_or_null($3), $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bfd42b5da403189dd98012ddfc65bb730310345fb8b1c753c2790019f92dcd99"
+}

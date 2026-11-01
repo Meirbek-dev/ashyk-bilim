@@ -580,6 +580,41 @@ pub struct DatabaseConfig {
     pub url: SecretString,
     pub max_connections: u32,
     pub min_connections: u32,
+    /// Session limits the pool sets on connect (`AB__DATABASE__LIMITS__*`).
+    #[serde(default)]
+    pub limits: DatabaseLimits,
+}
+
+/// Per-session limits the pool sends in each connection's startup options.
+///
+/// They hold whichever role the URL names (the owner today, `ashyq_app`
+/// after the role switch) and override that role's `ALTER ROLE ... SET`.
+/// 0 turns a limit off. `ashyq migrate` and `ashyq admin` drop the statement limit (long
+/// backfills, index builds); a job that needs longer statements sets
+/// `SET LOCAL statement_timeout` in its own transaction.
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct DatabaseLimits {
+    /// A runaway query is cancelled. Requests give up at 30 s; jobs (rollups,
+    /// retention, reconciliation) run longer statements.
+    pub statement_timeout_secs: u64,
+    /// A transaction idle this long holds locks and blocks vacuum: the
+    /// session is ended (far past any code path's think time).
+    pub idle_in_transaction_timeout_secs: u64,
+    /// Waiting this long for a lock fails the statement instead of queueing
+    /// behind a migration or a stuck transaction.
+    pub lock_timeout_secs: u64,
+}
+
+impl Default for DatabaseLimits {
+    /// The values `infra/postgres/roles.sql` gives `ashyq_app`.
+    fn default() -> Self {
+        Self {
+            statement_timeout_secs: 120,
+            idle_in_transaction_timeout_secs: 60,
+            lock_timeout_secs: 30,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -732,6 +767,12 @@ impl Config {
                 "url": "[redacted]",
                 "max_connections": self.database.max_connections,
                 "min_connections": self.database.min_connections,
+                "limits": {
+                    "statement_timeout_secs": self.database.limits.statement_timeout_secs,
+                    "idle_in_transaction_timeout_secs":
+                        self.database.limits.idle_in_transaction_timeout_secs,
+                    "lock_timeout_secs": self.database.limits.lock_timeout_secs,
+                },
             },
             "redis": { "url": self.redis.url.as_ref().map(|_| "[redacted]") },
             "runner": self.runner.as_ref().map(|r| serde_json::json!({
@@ -776,6 +817,7 @@ mod tests {
                 url: SecretString::from("postgres://x"),
                 max_connections: 10,
                 min_connections: 0,
+                limits: DatabaseLimits::default(),
             },
             redis: RedisConfig { url: None },
             zitadel: None,

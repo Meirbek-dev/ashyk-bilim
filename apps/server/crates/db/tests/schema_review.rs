@@ -8,8 +8,9 @@
 //!   either removes the notifications that link into it.
 //! - item 24: the retention sweep deletes old operational logs and keeps
 //!   learner work (graded code-run output, live jobs).
-//! - item 1: a row repeating its parent's course_id cannot disagree with it,
-//!   and follows a parent that changes course.
+//! - item 1: a row repeating its parent's course_id cannot disagree with it;
+//!   review 3, item 23: a parent's course change is refused while it has
+//!   children (ON UPDATE RESTRICT).
 //! - item 5: sibling positions are unique at commit; a reorder inside one
 //!   transaction passes through duplicates.
 //! - items 6, 7, 28: the coherence / bounds / shape checks exist (none was
@@ -18,7 +19,7 @@
 //!   journals: a drifted profile is fixed, a sound one is left alone.
 //! - item 18: notification kinds and upload purposes are lookup tables; every
 //!   kind the code sends is a row, and an unknown kind or purpose is refused
-//!   (also inside a preference's `disabled` list).
+//!   (also as a notification opt-out).
 //! - review 2, items 11-12: both grade journals guard the whole row: only a
 //!   grade's published_at changes, a file grade never changes, and a file
 //!   grade goes only with its attempt.
@@ -40,6 +41,10 @@
 //! - review item 18 (REWRITE 5.6 n4): every media key carries its upload id;
 //!   the reaper keeps a referenced file whose counter drifted to 0 and still
 //!   collects a real orphan.
+//! - review 3, item 24: a check old rows violate stays NOT VALID and bites
+//!   on new rows; it validates after the repair.
+//! - review 3, item 20: every submission / file-attempt arc table names
+//!   exactly one of the two.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -464,9 +469,9 @@ async fn kinds_and_purposes_are_lookup_rows(pool: PgPool) {
             "bogus",
         ),
         (
-            "INSERT INTO notification_preferences (user_id, disabled) VALUES ($1, $2::text[])              ON CONFLICT (user_id) DO UPDATE SET disabled = EXCLUDED.disabled",
-            "{course_update}",
-            "{course_update,bogus}",
+            "INSERT INTO notification_opt_outs (user_id, kind) VALUES ($1, $2)",
+            "course_update",
+            "bogus",
         ),
         (
             "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes)              VALUES ($1, $2, 'public', uuidv7()::text, 'image/png', 1)",
@@ -693,13 +698,13 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .bind(id)
         .execute(&pool)
         .await;
-    assert!(active.is_err(), "deleted_at needs status = 'disabled'");
-    sqlx::query("UPDATE users SET status = 'disabled', deleted_at = now() WHERE id = $1")
+    assert!(active.is_err(), "deleted_at needs disabled_at");
+    sqlx::query("UPDATE users SET disabled_at = now(), deleted_at = now() WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await
         .unwrap();
-    let reenabled = sqlx::query("UPDATE users SET status = 'active' WHERE id = $1")
+    let reenabled = sqlx::query("UPDATE users SET disabled_at = NULL WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await;
@@ -1037,4 +1042,247 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
     let mut expected = vec![orphan, media];
     expected.sort();
     assert_eq!(reaped, expected);
+}
+
+/// Review 3, item 24: a check that old rows violate stays NOT VALID (new and
+/// updated rows are checked), is recorded, and validates once the rows are
+/// repaired and the check is tried again.
+#[ab_testdb::test]
+async fn a_violated_check_stays_not_valid_until_repaired(pool: PgPool) {
+    sqlx::query("CREATE TABLE try_check_probe (n int NOT NULL)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO try_check_probe VALUES (1), (-1)")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let try_check =
+        "SELECT schema_try_check('try_check_probe', 'try_check_probe_n_check', 'n >= 0')";
+    let added: bool = sqlx::query_scalar(try_check)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!added);
+    let validated: Option<bool> = sqlx::query_scalar(
+        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
+    )
+    .fetch_optional(&pool)
+    .await
+    .unwrap();
+    assert_eq!(validated, Some(false), "the check stays, NOT VALID");
+    let recorded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(recorded, 1);
+    let refused = sqlx::query("INSERT INTO try_check_probe VALUES (-2)")
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "a new violating row is refused");
+
+    sqlx::query("UPDATE try_check_probe SET n = 0 WHERE n < 0")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let added: bool = sqlx::query_scalar(try_check)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(added, "the repaired table validates the existing check");
+    let validated: bool = sqlx::query_scalar(
+        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(validated);
+    let recorded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(recorded, 0);
+}
+
+/// Review 3, item 20: until the file-task pipeline merges into submissions,
+/// every table keyed onto both a submission and a file attempt names exactly
+/// one of them (a validated CHECK over both columns). A new arc table fails
+/// here until it gets one.
+#[ab_testdb::test]
+async fn every_submission_or_file_attempt_arc_names_exactly_one(pool: PgPool) {
+    let arcs: Vec<(String, String, String, bool)> = sqlx::query_as(
+        "SELECT s.conrelid::regclass::text, sa.attname::text, fa.attname::text,
+                EXISTS (SELECT 1 FROM pg_constraint c
+                         WHERE c.conrelid = s.conrelid AND c.contype = 'c' AND c.convalidated
+                           AND c.conkey @> ARRAY[s.conkey[1], f.conkey[1]]
+                           AND cardinality(c.conkey) = 2
+                           AND pg_get_constraintdef(c.oid) ~ '(num_nonnulls\\(.*\\) = 1|IS NULL\\) <> \\()')
+           FROM pg_constraint s
+           JOIN pg_constraint f ON f.conrelid = s.conrelid AND f.contype = 'f'
+                               AND f.confrelid = 'file_submission_attempts'::regclass
+           JOIN pg_attribute sa ON sa.attrelid = s.conrelid AND sa.attnum = s.conkey[1]
+           JOIN pg_attribute fa ON fa.attrelid = f.conrelid AND fa.attnum = f.conkey[1]
+          WHERE s.contype = 'f' AND s.confrelid = 'submissions'::regclass
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let tables: Vec<&str> = arcs.iter().map(|(t, ..)| t.as_str()).collect();
+    assert_eq!(
+        tables,
+        [
+            "ai_grade_drafts",
+            "ai_remediation_sessions",
+            "ai_submission_analyses"
+        ],
+        "the arc tables changed: update this list (and the check)"
+    );
+    let unchecked: Vec<String> = arcs
+        .iter()
+        .filter(|(.., checked)| !checked)
+        .map(|(t, s, f, _)| format!("{t}({s}, {f})"))
+        .collect();
+    assert!(
+        unchecked.is_empty(),
+        "arc without a CHECK num_nonnulls(..) = 1: {unchecked:?}"
+    );
+}
+
+/// Review 3, item 23: a parent's course never changes under its children:
+/// every composite `(parent_id, course_id)` key is ON UPDATE RESTRICT (or NO
+/// ACTION, which refuses too), so moving a chapter (or activity, assessment,
+/// post) to another course is refused instead of silently carrying learner
+/// work along.
+#[ab_testdb::test]
+async fn a_parent_cannot_change_course_under_its_children(pool: PgPool) {
+    let cascading: Vec<String> = sqlx::query_scalar(
+        "SELECT conname::text FROM pg_constraint c
+          WHERE c.contype = 'f' AND cardinality(c.conkey) > 1 AND c.confupdtype NOT IN ('r', 'a')
+            AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.conrelid
+                         AND a.attnum = ANY (c.conkey) AND a.attname = 'course_id')
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(
+        cascading.is_empty(),
+        "course-scoped keys that follow an update: {cascading:?}"
+    );
+
+    let w = world(&pool).await;
+    let other: Uuid =
+        sqlx::query_scalar("INSERT INTO courses (name) VALUES ('other') RETURNING id")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    for parent in [
+        "UPDATE chapters SET course_id = $1 WHERE id = (SELECT chapter_id FROM activities WHERE id = $2)",
+        "UPDATE activities SET course_id = $1 WHERE id = $2",
+    ] {
+        let moved = sqlx::query(parent)
+            .bind(other)
+            .bind(w.activity)
+            .execute(&pool)
+            .await;
+        assert!(moved.is_err(), "{parent}");
+    }
+    let course: Uuid = sqlx::query_scalar("SELECT course_id FROM assessments WHERE id = $1")
+        .bind(w.assessment)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(course, w.course);
+}
+
+/// Review 3, item 26: switched-off kinds are rows; until the contract
+/// migration a write to either the rows (this release) or the old
+/// `notification_preferences.disabled` array (the previous one) shows up on
+/// the other side.
+#[ab_testdb::test]
+async fn notification_opt_outs_mirror_the_old_array(pool: PgPool) {
+    use ab_core::id::UserId;
+    let w = world(&pool).await;
+    let user = UserId(w.user);
+    ab_db::notifications::set_disabled_types(
+        &pool,
+        user,
+        &[
+            NotificationType::CourseUpdate,
+            NotificationType::DiscussionReply,
+        ],
+    )
+    .await
+    .unwrap();
+    let kinds = ab_db::notifications::disabled_types(&pool, user)
+        .await
+        .unwrap();
+    assert_eq!(kinds.len(), 2);
+    ab_db::notifications::set_disabled_types(&pool, user, &[NotificationType::DiscussionReply])
+        .await
+        .unwrap();
+    assert_eq!(
+        ab_db::notifications::disabled_types(&pool, user)
+            .await
+            .unwrap(),
+        vec![NotificationType::DiscussionReply]
+    );
+
+    let old_table: Option<String> =
+        sqlx::query_scalar("SELECT to_regclass('notification_preferences')::text")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    if old_table.is_none() {
+        return; // contracted: nothing left to mirror
+    }
+    let array: Vec<String> =
+        sqlx::query_scalar("SELECT disabled FROM notification_preferences WHERE user_id = $1")
+            .bind(w.user)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        array,
+        ["discussion_reply"],
+        "the previous release reads the array"
+    );
+    // The previous release writes the array: the rows follow.
+    sqlx::query(
+        "UPDATE notification_preferences SET disabled = '{course_update}' WHERE user_id = $1",
+    )
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        ab_db::notifications::disabled_types(&pool, user)
+            .await
+            .unwrap(),
+        vec![NotificationType::CourseUpdate]
+    );
+    // A user without learning records still goes, opt-outs and all.
+    let gone = user_with_opt_out(&pool).await;
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(gone)
+        .execute(&pool)
+        .await
+        .unwrap();
+}
+
+async fn user_with_opt_out(pool: &PgPool) -> uuid::Uuid {
+    let id = user(pool, "quiet").await;
+    ab_db::notifications::set_disabled_types(
+        pool,
+        ab_core::id::UserId(id),
+        &[NotificationType::CourseUpdate],
+    )
+    .await
+    .unwrap();
+    id
 }

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users\n         SET disabled_at = CASE WHEN $2 = 'disabled' THEN coalesce(disabled_at, now()) END,\n             rbac_version = rbac_version + 1\n         WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a59f18a75b953b09982d45141bcf9b6ec6229ebc08bc6e18fc5d76b940826088"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM notification_opt_outs WHERE user_id = $1 AND kind <> ALL ($2::text[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1854ddcf5ec00032e3aeb14f3bff499e93083c870fb8658ad351c77d2355078b"
+}

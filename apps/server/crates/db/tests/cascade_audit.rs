@@ -253,6 +253,7 @@ const NOT_USER_DATA: &[&str] = &[
     // Accounts, roles and preferences (not work).
     "google_accounts",
     "idempotency_keys",
+    "notification_opt_outs",
     "notification_preferences",
     "role_permissions",
     "user_roles",

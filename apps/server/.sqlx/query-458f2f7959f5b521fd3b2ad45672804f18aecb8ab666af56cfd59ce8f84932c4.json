@@ -1,0 +1,138 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.name, p.description, p.about,\n                  COALESCE(dk.text, '') AS \"description_kk!\", COALESCE(de.text, '') AS \"description_en!\",\n                  COALESCE(ak.text, '') AS \"about_kk!\", COALESCE(ae.text, '') AS \"about_en!\",\n                  p.email, p.label, p.logo_key, p.thumbnail_key, p.version\n           FROM platforms p\n           LEFT JOIN translations dk ON (dk.entity, dk.entity_id, dk.field, dk.lang)\n                                        = ('platform', p.id, 'description', 'kk')\n           LEFT JOIN translations de ON (de.entity, de.entity_id, de.field, de.lang)\n                                        = ('platform', p.id, 'description', 'en')\n           LEFT JOIN translations ak ON (ak.entity, ak.entity_id, ak.field, ak.lang)\n                                        = ('platform', p.id, 'about', 'kk')\n           LEFT JOIN translations ae ON (ae.entity, ae.entity_id, ae.field, ae.lang)\n                                        = ('platform', p.id, 'about', 'en')\n           WHERE p.singleton",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "about",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "about"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description_kk!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "description_en!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "about_kk!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "about_en!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "logo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "logo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "thumbnail_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "thumbnail_key"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "platforms",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "458f2f7959f5b521fd3b2ad45672804f18aecb8ab666af56cfd59ce8f84932c4"
+}

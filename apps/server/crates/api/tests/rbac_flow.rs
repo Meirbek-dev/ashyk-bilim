@@ -315,7 +315,7 @@ async fn concurrent_last_admin_removals_leave_one_admin(pool: PgPool) {
     );
     let admins: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-         JOIN users u ON u.id = ur.user_id WHERE r.slug = 'admin' AND u.status = 'active'",
+         JOIN users u ON u.id = ur.user_id WHERE r.slug = 'admin' AND u.disabled_at IS NULL",
     )
     .fetch_one(&pool)
     .await

@@ -272,7 +272,7 @@ async fn disabled_account_is_sent_back_with_account_disabled(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("banned", "banned@example.com", &["user"])
         .await;
-    sqlx::query("UPDATE users SET status = 'disabled'")
+    sqlx::query("UPDATE users SET disabled_at = now()")
         .execute(&app.pool)
         .await
         .unwrap();
@@ -430,7 +430,7 @@ async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool)
     mock_google_token(&app, "g-sub-linked", "other@gmail.com").await;
 
     // Active linked account, disabled other: the login goes through as `linked`.
-    sqlx::query("UPDATE users SET status = 'disabled' WHERE id = $1")
+    sqlx::query("UPDATE users SET disabled_at = now() WHERE id = $1")
         .bind(other.0)
         .execute(&app.pool)
         .await
@@ -440,7 +440,7 @@ async fn sub_linked_login_ignores_the_account_owning_the_new_email(pool: PgPool)
     assert_eq!(session_user_id(&app, &cookie).await, linked.to_string());
 
     // Disabled linked account, active other: refused.
-    sqlx::query("UPDATE users SET status = CASE WHEN id = $1 THEN 'disabled' ELSE 'active' END")
+    sqlx::query("UPDATE users SET disabled_at = CASE WHEN id = $1 THEN now() END")
         .bind(linked.0)
         .execute(&app.pool)
         .await

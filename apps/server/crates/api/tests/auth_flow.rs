@@ -168,7 +168,7 @@ async fn unknown_user_gets_the_same_error(pool: PgPool) {
 async fn disabled_account_is_blocked_after_password_check(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     app.create_user("blocked", "b@example.com", &["user"]).await;
-    sqlx::query("UPDATE users SET status = 'disabled'")
+    sqlx::query("UPDATE users SET disabled_at = now()")
         .execute(&app.pool)
         .await
         .unwrap();
@@ -2063,7 +2063,7 @@ async fn fenced_twice_then_disabled_is_account_disabled(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let pool = app.pool.clone();
     let login = fenced_twice(&app, "fence403", false, async {
-        sqlx::query("UPDATE users SET status = 'disabled' WHERE username = 'fence403'")
+        sqlx::query("UPDATE users SET disabled_at = now() WHERE username = 'fence403'")
             .execute(&pool)
             .await
             .unwrap();
@@ -2307,7 +2307,7 @@ async fn disable_dropped_mid_flight_still_revokes_every_session(pool: PgPool) {
             &serde_json::json!({ "disabled": true }),
         ),
         async || {
-            sqlx::query_scalar::<_, String>("SELECT status FROM users WHERE username = 'ghost'")
+            sqlx::query_scalar::<_, String>("SELECT CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END FROM users WHERE username = 'ghost'")
                 .fetch_one(&app.pool)
                 .await
                 .unwrap()
@@ -2899,7 +2899,7 @@ async fn dev_login_signs_in_as_an_existing_account(pool: PgPool) {
     assert_eq!(lan.status, StatusCode::FORBIDDEN);
     assert!(lan.session_cookie().is_none());
 
-    sqlx::query("UPDATE users SET status = 'disabled' WHERE username = 'qa-teacher'")
+    sqlx::query("UPDATE users SET disabled_at = now() WHERE username = 'qa-teacher'")
         .execute(&app.pool)
         .await
         .unwrap();
@@ -3156,7 +3156,9 @@ async fn a_learner_deletes_their_account_and_the_work_stays(pool: PgPool) {
         );
     }
     let row: (String, String, String, String, bool) = sqlx::query_as(
-        "SELECT username, email, display_name, status, deleted_at IS NOT NULL FROM users WHERE id = $1",
+        "SELECT username, email, display_name,
+                CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END,
+                deleted_at IS NOT NULL FROM users WHERE id = $1",
     )
     .bind(user.0)
     .fetch_one(&app.pool)

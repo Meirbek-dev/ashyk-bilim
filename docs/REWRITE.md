@@ -688,10 +688,18 @@ in the order it can be done, each step a forward migration on the current schema
    `gamification_config` (versioned row), `ai_feature_switches` / `feature_activations`. Target: one typed
    `platform.settings` (5.5) read through a serde struct with defaults, and `translations (entity, entity_id,
    field, lang, text, PK all but text)` for user-visible platform text; activity settings move into the typed
-   body (5.3).
-10. **Users state** (item 20, rest). `status` + `deleted_at` + nullable `email_verified` → `disabled_at`,
-    `deleted_at`, `email_verified_at` (NULL = not verified; backfill `email_verified IS TRUE` → `created_at`);
-    a CHECK that a deleted user is anonymised. `roles.display_name_key`/`description_key` vs
+   body (5.3). Done (review 3, item 32): `translations` + the `translatable_fields` lookup hold the platform's
+   kk/en `description` / `about` (`20261102011200`; the contract migration drops the `_kk` / `_en` columns).
+   Left: the typed `platform.settings`, activity settings.
+10. **Users state** (item 20, rest). Done (review 3, items 28-29): `disabled_at` and `email_verified_at`
+    (backfill: disabled → `coalesce(deleted_at, updated_at)`, `email_verified IS TRUE` → `created_at`), read and
+    written by the server, mirrored into `status` / `email_verified` by `users_sync_state`; `status` is dropped by
+    the contract migration. Left: `email_verified IS NULL` ("not known yet", accounts older than the column,
+    asked from Zitadel on first read) has no form in the new column. Before dropping `email_verified`: resolve
+    those rows (an `ashyq admin` sweep over Zitadel, or an owner rule such as "unknown = verified at
+    `created_at`", the answer the server already gives with Zitadel down), then switch `get_profile` /
+    `update_profile` / `set_email_verified` / the insert to `email_verified_at` alone. A CHECK that a deleted
+    user is anonymised. `roles.display_name_key`/`description_key` vs
     `display_name`/`description`: keep only the keys for built-in roles, plain text for custom ones
     (CHECK exactly one set). `profile_version` starts at 0 while every other version starts at 1: leave it
     (the web's If-Match sends what it read).
@@ -718,6 +726,29 @@ in the order it can be done, each step a forward migration on the current schema
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.
 
+15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 (`naming_rules.rs` holds new
+    migrations to it). Existing columns that break it, renamed one table at a time as expand/contract (add the
+    new column, backfill, a trigger mirrors old ↔ new while the previous release runs, switch the queries, drop
+    the old one in a `-- contract:` file); API field names stay unless a contract version changes them:
+    - `creator_id` → `created_by`: activities, assessments, chapters, collections, courses, file_submissions,
+      usergroups; `course_updates.author_id` → `created_by`;
+    - `actor_id` → `performed_by` (like `bulk_actions`): analytics_events, assessment_audit_events;
+    - `teacher_user_id` → `teacher_id`: daily_course_metrics, daily_teacher_metrics, learner_risk_snapshots;
+      → `user_id` where the teacher owns the row (analytics_saved_views); → `created_by` where the teacher
+      made it (teacher_interventions);
+    - `student_user_id` → `user_id`: ai_remediation_sessions, ai_student_memory; `ai_grade_drafts.learner_id`
+      → `user_id`; `ai_grade_corrections.teacher_id` → `corrected_by`;
+    - `*_type` → `kind`: activities.activity_type (+ `activity_sub_type` → `sub_kind`), blocks.block_type,
+      teacher_interventions.intervention_type, analytics_saved_views.view_type, item_feedback.annotation_type,
+      ai_approvals / bulk_actions.action_type; → `<thing>_kind`: assessments.grading_type, courses.thumbnail_type,
+      `source_type` (ai_evidence, ai_student_memory, content_chunks, content_index_state, mastery_evidence);
+      `event_type` → `event` (analytics_events, ai_events; like auth_audit_log / assessment_audit_events);
+    - `lifecycle` → `status`: assessments, file_submissions; `activity_progress.state` → `status`;
+    - `assessments.title` goes with item 5 of review 3 (it repeats `activities.name`); `title` stays on
+      assessment_items, course_updates, ai_threads (authored text).
+    Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
+    these tables change shape there: submissions/file tasks, resource_authors, progress).
+
 ### 5.7 Schema review 2 (2026-11-01): owner decisions
 
 A second pass over the schema after 5.6 landed. The owner settled these; each step is a forward migration or a
@@ -728,6 +759,7 @@ Done:
 - Grade journals guard the whole row (`file_grading_entries` had no guard; `grading_entries` compared a column
   list): `20261102000000_ledger_guards`, `schema_review.rs`.
 - Skipped checks are reported, not fatal: `just prod-report` lists `schema_skipped_checks`, `just brief` names them.
+  Since `20261102010000` such a check stays NOT VALID (guards new and updated rows) instead of being dropped.
 - Migrations deploy during classes: `migration_rules.rs` enforces `lock_timeout`, CONCURRENTLY indexes in
   `-- no-transaction` files, and expand/contract (`-- contract:` marker) from 2026-11-02 on. The 2026-11-01
   migrations predate it: their first deploy builds ~45 indexes in one transaction, so it goes in a quiet window.
@@ -749,8 +781,9 @@ Decided, not done:
    the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
 5. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
    `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
-   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
-   `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
+   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; Zitadel's role gets a
+   connection limit. Done: the pool sets `statement_timeout`, `idle_in_transaction_session_timeout`,
+   `lock_timeout` and `application_name` on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`).
 6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
    retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
    (QUESTIONS Q-2026-11-01-2).

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH input (field, lang, text) AS (\n               SELECT * FROM (VALUES ('description', 'kk', $1::text), ('description', 'en', $2::text),\n                                     ('about', 'kk', $3::text), ('about', 'en', $4::text)) v\n               WHERE v.column3 IS NOT NULL),\n           platform AS (SELECT id FROM platforms WHERE singleton),\n           gone AS (\n               DELETE FROM translations t USING input i, platform p\n               WHERE t.entity = 'platform' AND t.entity_id = p.id AND t.field = i.field\n                 AND t.lang = i.lang AND i.text = ''\n               RETURNING 1)\n           INSERT INTO translations AS t (entity, entity_id, field, lang, text)\n           SELECT 'platform', p.id, i.field, i.lang, i.text FROM input i, platform p WHERE i.text <> ''\n           ON CONFLICT (entity, entity_id, field, lang) DO UPDATE SET text = EXCLUDED.text\n           WHERE t.text IS DISTINCT FROM EXCLUDED.text",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "833342e20eabd88516d7110c690bcf5cc6bdc9c611af3702fd6d789c2154c547"
+}

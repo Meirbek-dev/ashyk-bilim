@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS \"status!\"\n           FROM users WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "16ae419d3792f319180f6cb96a12dd3786005fd17fe7adb6b1154aaedc607f74"
+}
