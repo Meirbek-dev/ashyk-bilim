@@ -411,8 +411,9 @@ async fn block(app: &TestApp, session: &MintedSession, activity: &str, upload: &
 }
 
 /// BUG-242: a block that commits while a chapter/course DELETE waits on its
-/// activity is released by that DELETE - the cascade used to drop it after
-/// the release had read its snapshot, pinning the upload forever.
+/// activity is released by that DELETE (a course's by its retention purge) -
+/// the cascade used to drop it after the release had read its snapshot,
+/// pinning the upload forever.
 #[ab_testdb::test]
 async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -457,6 +458,21 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
         };
         let (deleted, ()) = tokio::join!(delete, commit);
         assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{target}");
+        if target == "courses" {
+            // A course delete is soft (item 22): the block stays until the
+            // retention purge, which runs the cascade and releases it.
+            assert_eq!(refs_and_blocks(&app, &upload).await, (1, 1), "{target}");
+            sqlx::query(
+                "UPDATE courses SET deleted_at = now() - interval '31 days'
+                  WHERE deleted_at IS NOT NULL",
+            )
+            .execute(&app.pool)
+            .await
+            .unwrap();
+            ab_db::catalog::purge_deleted_courses(&app.pool, 30, 60.0)
+                .await
+                .unwrap();
+        }
         assert_eq!(refs_and_blocks(&app, &upload).await, (0, 0), "{target}");
     }
 }
