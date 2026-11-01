@@ -35,6 +35,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
 - [`assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
 - [`auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
+- [`block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
 - [`blocks`](#blocks): A content block of a page activity (files, embeds), linked from the editor document by legacy_uuid
 - [`bulk_actions`](#bulk_actions): A bulk operation a teacher ran on the learners of an assessment, its targets and outcome
 - [`certificate_users`](#certificate_users): A certificate issued to a learner, verifiable by verify_code
@@ -43,7 +44,9 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`code_run_cases`](#code_run_cases): The result of one test case of a code run
 - [`code_runs`](#code_runs): A run of learner code in the go-judge runner: a practice run or the graded run of a submission
 - [`collection_courses`](#collection_courses): Courses of a collection, ordered by position
+- [`collection_staff`](#collection_staff): Staff of a collection: creator, maintainer, contributor or reporter, with a status
 - [`collections`](#collections): A curated, ordered set of courses shown in the catalog
+- [`completions`](#completions): Activities a learner completed: the progress fact
 - [`concept_mastery`](#concept_mastery): Estimated probability that a learner knows a concept (p_known), from mastery_evidence
 - [`concept_prerequisites`](#concept_prerequisites): A prerequisite edge between two concepts of a course
 - [`concept_tags`](#concept_tags): Links an activity or assessment item to a concept it practises, with a weight
@@ -52,6 +55,8 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
 - [`course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
 - [`course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
+- [`course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
+- [`course_update_activities`](#course_update_activities): Activities a course update links to, in order; a deleted activity leaves the update
 - [`course_updates`](#course_updates): An announcement a teacher posts in a course
 - [`courses`](#courses): A course: catalog card, visibility (public), lifecycle (archived_at) and settings
 - [`daily_assessment_metrics`](#daily_assessment_metrics): Daily rollup per assessment: submission, pass and score figures
@@ -60,6 +65,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
 - [`daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
 - [`discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
+- [`enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
 - [`feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
 - [`file_grading_entries`](#file_grading_entries): Grade journal of file-task hand-ins: append-only (trigger-guarded)
 - [`file_submission_attempts`](#file_submission_attempts): A learner's hand-in for a file task and its grading state
@@ -78,18 +84,21 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`learner_risk_snapshots`](#learner_risk_snapshots): Daily risk score of a learner in a course, with reasons and a recommended action
 - [`mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
 - [`notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
+- [`notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
 - [`notification_preferences`](#notification_preferences): Notification kinds an account turned off
 - [`notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
 - [`platforms`](#platforms): The platform's own settings and texts (one row, singleton)
-- [`resource_authors`](#resource_authors): Staff of a course or a collection (exactly one of the two): creator, maintainer, contributor or reporter, with a status
+- [`resource_authors`](#resource_authors): Previous release's staff table, mirrored both ways with course_staff / collection_staff until its contract migration drops it
 - [`role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
 - [`roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
 - [`schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
 - [`submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> pending -> graded -> published / returned
 - [`teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
-- [`trail_runs`](#trail_runs): Enrolment of a learner in a course (the membership fact today)
-- [`trail_steps`](#trail_steps): Completion of an activity by a learner inside an enrolment (legacy progress fact)
+- [`trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
+- [`trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
 - [`trails`](#trails): A learner's learning record (one per account); its trail_runs are the course enrolments
+- [`translatable_fields`](#translatable_fields): Lookup: the (entity, field) pairs that may have translation rows
+- [`translations`](#translations): Text of a translatable field in another language (translatable_fields); no row = not translated
 - [`upload_purposes`](#upload_purposes): Lookup: what an upload may be for (avatar, course media, hand-in, ...)
 - [`uploads`](#uploads): A stored object (S3 key) uploaded by an account, its purpose and lifecycle; unreferenced ones are reaped
 - [`user_roles`](#user_roles): Platform roles held by an account
@@ -124,7 +133,7 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 - Primary key `activities_pkey`: `PRIMARY KEY (id)`
 - Unique `activities_id_course_key`: `UNIQUE (id, course_id)`
 - Unique `activities_position_key`: `UNIQUE (chapter_id, "position") DEFERRABLE INITIALLY DEFERRED`
-- Foreign key `activities_chapter_id_fkey`: `FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `activities_chapter_id_fkey`: `FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `activities_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `activities_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -157,9 +166,8 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `activity_progress_pkey`: `PRIMARY KEY (id)`
-- Unique `activity_progress_activity_id_user_id_key`: `UNIQUE (activity_id, user_id)`
-- Foreign key `activity_progress_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Primary key `activity_progress_pkey`: `PRIMARY KEY (activity_id, user_id)`
+- Foreign key `activity_progress_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `activity_progress_best_submission_id_fkey`: `FOREIGN KEY (best_submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
 - Foreign key `activity_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
@@ -596,7 +604,7 @@ Embedding of a part of learner work (similarity, grading context).
 | activity_id | uuid |  |  |
 | text_hash | text |  |  |
 | embedding_model | text |  |  |
-| embedding | vector(1024) |  |  |
+| embedding | halfvec(1024) |  |  |
 | created_at | timestamp with time zone |  | `now()` |
 
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
@@ -797,7 +805,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
 - Unique `assessments_activity_id_key`: `UNIQUE (activity_id)`
 - Unique `assessments_id_course_key`: `UNIQUE (id, course_id)`
-- Foreign key `assessments_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `assessments_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `assessments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `assessments_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -805,18 +813,32 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 
 Security events of accounts (logins, failures, erasure). Retention 365 days.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| user_id | uuid | null |  |
-| event | text |  |  |
-| ip | text | null |  |
-| user_agent | text | null |  |
-| metadata | jsonb |  | `'{}'::jsonb` |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| user_id | uuid | null |  |  |
+| event | text |  |  |  |
+| ip | text | null |  |  |
+| user_agent | text | null |  |  |
+| metadata | jsonb |  | `'{}'::jsonb` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| ip_address | inet | null |  | Client IP as seen (X-Forwarded-For); NULL when absent or not a valid inet. |
 
 - Primary key `auth_audit_log_pkey`: `PRIMARY KEY (id)`
 - Foreign key `auth_audit_log_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+
+## block_uploads
+
+Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| block_id | uuid |  |  |
+| upload_id | uuid |  |  |
+
+- Primary key `block_uploads_pkey`: `PRIMARY KEY (block_id, upload_id)`
+- Foreign key `block_uploads_block_id_fkey`: `FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE CASCADE`
+- Foreign key `block_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
 
 ## blocks
 
@@ -911,12 +933,14 @@ A chapter of a course; position orders chapters within the course.
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
+| thumbnail_upload_id | uuid | null |  |
 
 - Primary key `chapters_pkey`: `PRIMARY KEY (id)`
 - Unique `chapters_id_course_key`: `UNIQUE (id, course_id)`
 - Unique `chapters_position_key`: `UNIQUE (course_id, "position") DEFERRABLE INITIALLY DEFERRED`
 - Foreign key `chapters_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `chapters_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `chapters_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 
 ## code_run_cases
 
@@ -996,6 +1020,24 @@ Courses of a collection, ordered by position.
 - Foreign key `collection_courses_collection_id_fkey`: `FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE`
 - Foreign key `collection_courses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 
+## collection_staff
+
+Staff of a collection: creator, maintainer, contributor or reporter, with a status.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| collection_id | uuid |  |  |
+| user_id | uuid |  |  |
+| authorship | text |  |  |
+| status | text |  | `'active'::text` |
+| version | integer |  | `1` |
+| created_at | timestamp with time zone |  | `now()` |
+| updated_at | timestamp with time zone |  | `now()` |
+
+- Primary key `collection_staff_pkey`: `PRIMARY KEY (collection_id, user_id)`
+- Foreign key `collection_staff_collection_id_fkey`: `FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE`
+- Foreign key `collection_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+
 ## collections
 
 A curated, ordered set of courses shown in the catalog.
@@ -1012,9 +1054,25 @@ A curated, ordered set of courses shown in the catalog.
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
 | cover_key | text | null |  |
+| cover_upload_id | uuid | null |  |
 
 - Primary key `collections_pkey`: `PRIMARY KEY (id)`
+- Foreign key `collections_cover_upload_id_fkey`: `FOREIGN KEY (cover_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `collections_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+
+## completions
+
+Activities a learner completed: the progress fact. activity_progress and course_progress are derived from it (and from submissions for graded kinds).
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| activity_id | uuid |  |  |
+| user_id | uuid |  |  |
+| completed_at | timestamp with time zone |  | `now()` |
+
+- Primary key `completions_pkey`: `PRIMARY KEY (activity_id, user_id)`
+- Foreign key `completions_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 ## concept_mastery
 
@@ -1099,7 +1157,7 @@ A searchable chunk of course material with its embedding (course material search
 | body | text |  |  |
 | anchor | jsonb |  | `'{}'::jsonb` |
 | token_estimate | integer |  |  |
-| embedding | vector(1024) | null |  |
+| embedding | halfvec(1024) | null |  |
 | embedding_model | text | null |  |
 | lexeme | tsvector | null | generated: `to_tsvector('simple'::regconfig, search_fold(((label \|\| ' '::text) \|\| body)))` |
 | created_at | timestamp with time zone |  | `now()` |
@@ -1179,7 +1237,7 @@ A discussion post or reply in a course (replies point to their post by parent_id
 - Primary key `course_discussions_pkey`: `PRIMARY KEY (id)`
 - Unique `course_discussions_id_course_key`: `UNIQUE (id, course_id)`
 - Foreign key `course_discussions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `course_discussions_parent_id_fkey`: `FOREIGN KEY (parent_id, course_id) REFERENCES course_discussions(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `course_discussions_parent_id_fkey`: `FOREIGN KEY (parent_id, course_id) REFERENCES course_discussions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `course_discussions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 ## course_progress
@@ -1204,10 +1262,41 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `course_progress_pkey`: `PRIMARY KEY (id)`
-- Unique `course_progress_course_id_user_id_key`: `UNIQUE (course_id, user_id)`
+- Primary key `course_progress_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+
+## course_staff
+
+Staff of a course: creator, maintainer, contributor or reporter, with a status.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| course_id | uuid |  |  |
+| user_id | uuid |  |  |
+| authorship | text |  |  |
+| status | text |  | `'active'::text` |
+| version | integer |  | `1` |
+| created_at | timestamp with time zone |  | `now()` |
+| updated_at | timestamp with time zone |  | `now()` |
+
+- Primary key `course_staff_pkey`: `PRIMARY KEY (course_id, user_id)`
+- Foreign key `course_staff_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `course_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+
+## course_update_activities
+
+Activities a course update links to, in order; a deleted activity leaves the update.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| update_id | uuid |  |  |
+| activity_id | uuid |  |  |
+| position | integer |  |  |
+
+- Primary key `course_update_activities_pkey`: `PRIMARY KEY (update_id, activity_id)`
+- Foreign key `course_update_activities_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `course_update_activities_update_id_fkey`: `FOREIGN KEY (update_id) REFERENCES course_updates(id) ON DELETE CASCADE`
 
 ## course_updates
 
@@ -1254,10 +1343,17 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | archived_by | uuid | null |  |
 | version | integer |  | `1` |
 | assessments_require_enrollment | boolean |  | `true` |
+| thumbnail_image_upload_id | uuid | null |  |
+| thumbnail_video_upload_id | uuid | null |  |
+| deleted_at | timestamp with time zone | null |  |
+| deleted_by | uuid | null |  |
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `courses_archived_by_fkey`: `FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `courses_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `courses_deleted_by_fkey`: `FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `courses_thumbnail_image_upload_id_fkey`: `FOREIGN KEY (thumbnail_image_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Foreign key `courses_thumbnail_video_upload_id_fkey`: `FOREIGN KEY (thumbnail_video_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 
 ## daily_assessment_metrics
 
@@ -1284,8 +1380,7 @@ Daily rollup per assessment: submission, pass and score figures.
 | difficulty_score | double precision | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `daily_assessment_metrics_pkey`: `PRIMARY KEY (id)`
-- Unique `daily_assessment_metrics_metric_date_assessment_id_key`: `UNIQUE (metric_date, assessment_id)`
+- Primary key `daily_assessment_metrics_pkey`: `PRIMARY KEY (metric_date, assessment_id)`
 - Foreign key `daily_assessment_metrics_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
 - Foreign key `daily_assessment_metrics_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `daily_assessment_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
@@ -1307,8 +1402,7 @@ Daily rollup per course step: learners who started/completed it, drop-off.
 | dropoff_from_previous_pct | double precision | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `daily_course_engagement_pkey`: `PRIMARY KEY (id)`
-- Unique `daily_course_engagement_metric_date_activity_id_key`: `UNIQUE (metric_date, activity_id)`
+- Primary key `daily_course_engagement_pkey`: `PRIMARY KEY (metric_date, activity_id)`
 - Foreign key `daily_course_engagement_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `daily_course_engagement_chapter_id_fkey`: `FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL`
 - Foreign key `daily_course_engagement_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
@@ -1336,8 +1430,7 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 | last_content_update_at | timestamp with time zone | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `daily_course_metrics_pkey`: `PRIMARY KEY (id)`
-- Unique `daily_course_metrics_metric_date_course_id_key`: `UNIQUE (metric_date, course_id)`
+- Primary key `daily_course_metrics_pkey`: `PRIMARY KEY (metric_date, course_id)`
 - Foreign key `daily_course_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_course_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -1386,8 +1479,7 @@ Daily snapshot of each learner's progress in each course.
 | has_certificate | boolean |  | `false` |
 | generated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `daily_user_course_progress_pkey`: `PRIMARY KEY (id)`
-- Unique `daily_user_course_progress_metric_date_user_id_course_id_key`: `UNIQUE (metric_date, user_id, course_id)`
+- Primary key `daily_user_course_progress_pkey`: `PRIMARY KEY (metric_date, user_id, course_id)`
 - Foreign key `daily_user_course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_user_course_progress_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE SET NULL`
 - Foreign key `daily_user_course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
@@ -1406,6 +1498,20 @@ A like or dislike of a discussion post by an account.
 - Primary key `discussion_reactions_pkey`: `PRIMARY KEY (discussion_id, user_id)`
 - Foreign key `discussion_reactions_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
 - Foreign key `discussion_reactions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+
+## enrolments
+
+Course membership (a learner joined or was enrolled). The course's staff are never members, even with a row: readers add NOT is_course_staff(course_id, user_id).
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| course_id | uuid |  |  |
+| user_id | uuid |  |  |
+| enrolled_at | timestamp with time zone |  | `now()` |
+
+- Primary key `enrolments_pkey`: `PRIMARY KEY (course_id, user_id)`
+- Foreign key `enrolments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `enrolments_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 ## feature_activations
 
@@ -1467,7 +1573,7 @@ A learner's hand-in for a file task and its grading state.
 
 - Primary key `file_submission_attempts_pkey`: `PRIMARY KEY (id)`
 - Foreign key `file_submission_attempts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `file_submission_attempts_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `file_submission_attempts_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submission_attempts_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `file_submission_attempts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
@@ -1546,7 +1652,7 @@ The file task of a file_submission activity: instructions, file limits, deadline
 - Primary key `file_submissions_pkey`: `PRIMARY KEY (id)`
 - Unique `file_submissions_activity_id_key`: `UNIQUE (activity_id)`
 - Unique `file_submissions_id_course_key`: `UNIQUE (id, course_id)`
-- Foreign key `file_submissions_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `file_submissions_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `file_submissions_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -1602,8 +1708,7 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `gamification_profiles_pkey`: `PRIMARY KEY (id)`
-- Unique `gamification_profiles_user_id_key`: `UNIQUE (user_id)`
+- Primary key `gamification_profiles_pkey`: `PRIMARY KEY (user_id)`
 - Foreign key `gamification_profiles_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 ## google_accounts
@@ -1678,8 +1783,10 @@ A grader's comment, score or annotation on one item of a graded submission.
 | graded_by | uuid | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
+| annotation_upload_id | uuid | null |  |
 
 - Primary key `item_feedback_pkey`: `PRIMARY KEY (id)`
+- Foreign key `item_feedback_annotation_upload_id_fkey`: `FOREIGN KEY (annotation_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_grading_entry_id_fkey`: `FOREIGN KEY (grading_entry_id) REFERENCES grading_entries(id) ON DELETE CASCADE`
 - Foreign key `item_feedback_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE SET NULL`
@@ -1748,8 +1855,7 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 | recommended_action | text | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
 
-- Primary key `learner_risk_snapshots_pkey`: `PRIMARY KEY (id)`
-- Unique `learner_risk_snapshots_snapshot_date_user_id_course_id_key`: `UNIQUE (snapshot_date, user_id, course_id)`
+- Primary key `learner_risk_snapshots_pkey`: `PRIMARY KEY (snapshot_date, user_id, course_id)`
 - Foreign key `learner_risk_snapshots_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `learner_risk_snapshots_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `learner_risk_snapshots_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
@@ -1788,6 +1894,20 @@ Lookup: the notification kinds the server sends.
 | kind | text |  |  |
 
 - Primary key `notification_kinds_pkey`: `PRIMARY KEY (kind)`
+
+## notification_opt_outs
+
+Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| user_id | uuid |  |  |
+| kind | text |  |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `notification_opt_outs_pkey`: `PRIMARY KEY (user_id, kind)`
+- Foreign key `notification_opt_outs_kind_fkey`: `FOREIGN KEY (kind) REFERENCES notification_kinds(kind) ON UPDATE CASCADE`
+- Foreign key `notification_opt_outs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 ## notification_preferences
 
@@ -1848,13 +1968,17 @@ The platform's own settings and texts (one row, singleton).
 | description_en | text |  | `''::text` |
 | about_kk | text |  | `''::text` |
 | about_en | text |  | `''::text` |
+| logo_upload_id | uuid | null |  |
+| thumbnail_upload_id | uuid | null |  |
 
 - Primary key `platforms_pkey`: `PRIMARY KEY (id)`
 - Unique `platforms_singleton_key`: `UNIQUE (singleton)`
+- Foreign key `platforms_logo_upload_id_fkey`: `FOREIGN KEY (logo_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Foreign key `platforms_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 
 ## resource_authors
 
-Staff of a course or a collection (exactly one of the two): creator, maintainer, contributor or reporter, with a status.
+Previous release's staff table, mirrored both ways with course_staff / collection_staff until its contract migration drops it.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
@@ -1964,7 +2088,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | rules_accepted_at | timestamp with time zone | null |  |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
-- Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
@@ -1998,7 +2122,7 @@ An action a teacher logged for an at-risk learner and its outcome.
 
 ## trail_runs
 
-Enrolment of a learner in a course (the membership fact today).
+A learner's legacy course run (status, data); membership is enrolments since schema review 3.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
@@ -2019,7 +2143,7 @@ Enrolment of a learner in a course (the membership fact today).
 
 ## trail_steps
 
-Completion of an activity by a learner inside an enrolment (legacy progress fact).
+Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
@@ -2038,7 +2162,7 @@ Completion of an activity by a learner inside an enrolment (legacy progress fact
 
 - Primary key `trail_steps_pkey`: `PRIMARY KEY (id)`
 - Unique `trail_steps_trail_run_id_activity_id_key`: `UNIQUE (trail_run_id, activity_id)`
-- Foreign key `trail_steps_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE CASCADE ON DELETE CASCADE`
+- Foreign key `trail_steps_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `trail_steps_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `trail_steps_trail_id_fkey`: `FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE`
 - Foreign key `trail_steps_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE CASCADE`
@@ -2058,6 +2182,34 @@ A learner's learning record (one per account); its trail_runs are the course enr
 - Primary key `trails_pkey`: `PRIMARY KEY (id)`
 - Unique `trails_user_id_key`: `UNIQUE (user_id)`
 - Foreign key `trails_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+
+## translatable_fields
+
+Lookup: the (entity, field) pairs that may have translation rows.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| entity | text |  |  |
+| field | text |  |  |
+
+- Primary key `translatable_fields_pkey`: `PRIMARY KEY (entity, field)`
+
+## translations
+
+Text of a translatable field in another language (translatable_fields); no row = not translated.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| entity | text |  |  |
+| entity_id | uuid |  |  |
+| field | text |  |  |
+| lang | text |  |  |
+| text | text |  |  |
+| created_at | timestamp with time zone |  | `now()` |
+| updated_at | timestamp with time zone |  | `now()` |
+
+- Primary key `translations_pkey`: `PRIMARY KEY (entity, entity_id, field, lang)`
+- Foreign key `translations_entity_field_fkey`: `FOREIGN KEY (entity, field) REFERENCES translatable_fields(entity, field)`
 
 ## upload_purposes
 
@@ -2157,29 +2309,33 @@ A named group of learners a teacher assigns courses or assessments to.
 
 An account. Never deleted by the app: disabled (status) or anonymised (deleted_at, RUNBOOK 2.3). Login and password live in Zitadel (zitadel_user_id).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| zitadel_user_id | text |  |  |
-| username | text |  |  |
-| email | text |  |  |
-| display_name | text |  | `''::text` |
-| bio | text |  | `''::text` |
-| avatar_key | text | null |  |
-| locale | text |  | `'ru'::text` |
-| status | text |  | `'active'::text` |
-| rbac_version | bigint |  | `1` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| profile | jsonb |  | `'{"sections": []}'::jsonb` |
-| theme | text | null |  |
-| profile_version | integer |  | `0` |
-| organization | text |  | `''::text` |
-| email_verified | boolean | null |  |
-| deleted_at | timestamp with time zone | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| zitadel_user_id | text |  |  |  |
+| username | text |  |  |  |
+| email | text |  |  |  |
+| display_name | text |  | `''::text` |  |
+| bio | text |  | `''::text` |  |
+| avatar_key | text | null |  |  |
+| locale | text |  | `'ru'::text` |  |
+| status | text |  | `'active'::text` |  |
+| rbac_version | bigint |  | `1` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| profile | jsonb |  | `'{"sections": []}'::jsonb` |  |
+| theme | text | null |  |  |
+| profile_version | integer |  | `0` |  |
+| organization | text |  | `''::text` |  |
+| email_verified | boolean | null |  |  |
+| deleted_at | timestamp with time zone | null |  |  |
+| disabled_at | timestamp with time zone | null |  | When the account was disabled; NULL = active. |
+| email_verified_at | timestamp with time zone | null |  | When the address was confirmed; NULL = not confirmed (or, while email_verified IS NULL, not known yet). |
+| avatar_upload_id | uuid | null |  |  |
 
 - Primary key `users_pkey`: `PRIMARY KEY (id)`
 - Unique `users_zitadel_user_id_key`: `UNIQUE (zitadel_user_id)`
+- Foreign key `users_avatar_upload_id_fkey`: `FOREIGN KEY (avatar_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 
 ## xp_transactions
 

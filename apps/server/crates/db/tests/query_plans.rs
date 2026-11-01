@@ -37,7 +37,7 @@ const CASES: &[Case] = &[
             "LIMIT $1 OFFSET $2",
         ],
         no_seq_scan: &["gamification_profiles", "users"],
-        indexes: &["gamification_profiles_xp_idx"],
+        indexes: &["gamification_profiles_board_idx"],
     },
     Case {
         name: "notifications list",
@@ -69,17 +69,8 @@ const CASES: &[Case] = &[
         no_seq_scan: &["activity_progress"],
         indexes: &["activity_progress_course_user_idx"],
     },
-    Case {
-        name: "course search",
-        fragments: &[
-            "search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $5, $6, $7)",
-            "ORDER BY ts_rank_cd(search, to_tsquery('simple', $1)) DESC, id DESC",
-        ],
-        // `courses` is scanned by design until search moves to pg_trgm (REWRITE §5.6 n11);
-        // that change adds its trigram index here.
-        no_seq_scan: &[],
-        indexes: &[],
-    },
+    // The `/search` course query is built at run time (pg_trgm terms, REWRITE §5.6 n11), so it is not in
+    // the cache: `schema_review::course_search_walks_the_trigram_index` checks its plan on 10 000 courses.
 ];
 
 const FIXTURE: &str = r"
