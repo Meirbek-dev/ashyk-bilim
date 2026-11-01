@@ -2,14 +2,15 @@
 -- 20261102030401). Once it connects as ashyq_app (RUNBOOK 2.5) it has no DDL: both functions run
 -- as their owner, the migration role, so the partitions are the owner's and default privileges
 -- give the app their rows. Only the app may call them (apply_role_grants grants EXECUTE on every
--- SECURITY DEFINER function).
+-- SECURITY DEFINER function). New partitions land in public, first on the path (pg_catalog is
+-- searched implicitly first for names; PUBLIC has no CREATE on public since apply_role_grants).
 
 SET LOCAL lock_timeout = '5s';
 
 ALTER FUNCTION analytics_events_ensure_partitions(integer)
-    SECURITY DEFINER SET search_path = pg_catalog, public;
+    SECURITY DEFINER SET search_path = public, pg_temp;
 ALTER FUNCTION analytics_events_drop_partitions(timestamptz)
-    SECURITY DEFINER SET search_path = pg_catalog, public;
+    SECURITY DEFINER SET search_path = public, pg_temp;
 REVOKE EXECUTE ON FUNCTION analytics_events_ensure_partitions(integer) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION analytics_events_drop_partitions(timestamptz) FROM PUBLIC;
 
