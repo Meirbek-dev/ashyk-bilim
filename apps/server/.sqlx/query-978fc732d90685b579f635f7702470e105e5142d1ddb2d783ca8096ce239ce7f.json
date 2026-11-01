@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessments SET\n               description = COALESCE($2, description),\n               weight = COALESCE($3::float8, weight),\n               grading_type = COALESCE($4, grading_type)\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Float8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "978fc732d90685b579f635f7702470e105e5142d1ddb2d783ca8096ce239ce7f"
+}

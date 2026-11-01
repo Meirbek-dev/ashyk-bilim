@@ -142,11 +142,10 @@ impl AssessmentRow {
     }
 }
 
+/// Title and kind are the activity's (created first, same transaction).
 pub struct NewAssessment<'a> {
     pub activity_id: ActivityId,
     pub course_id: CourseId,
-    pub kind: AssessmentKind,
-    pub title: &'a str,
     pub description: &'a str,
     pub weight: f64,
     pub grading_type: GradingType,
@@ -161,7 +160,7 @@ pub async fn insert_assessment<'e>(
     let p = new.policy;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessments (
-               activity_id, course_id, kind, title, description, weight, grading_type,
+               activity_id, course_id, description, weight, grading_type,
                creator_id,
                grading_mode, grade_release_mode, completion_rule, passing_score,
                max_attempts, time_limit_seconds, due_at, allow_late,
@@ -172,16 +171,14 @@ pub async fn insert_assessment<'e>(
                copy_paste_protection, tab_switch_detection, devtools_detection,
                right_click_disabled, fullscreen_required, violation_threshold,
                attempt_penalty_percent)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-                   $9, $10, $11, $12, $13, $14, to_timestamp($15), $16,
-                   $17, $18, $19, to_timestamp($20),
-                   $21, $22, $23, $24, $25, $26, $27,
-                   $28, $29, $30, $31, $32, $33, $34)
+           VALUES ($1, $2, $3, $4::float8, $5, $6,
+                   $7, $8, $9, $10::float8, $11, $12, to_timestamp($13), $14,
+                   $15, $16::float8, $17, to_timestamp($18),
+                   $19, $20, $21, $22, $23, $24::float8, $25,
+                   $26, $27, $28, $29, $30, $31, $32::float8)
            RETURNING id"#,
         new.activity_id.0,
         new.course_id.0,
-        new.kind.as_str(),
-        new.title,
         new.description,
         new.weight,
         new.grading_type.as_str(),
@@ -225,27 +222,31 @@ pub async fn get_assessment<'e>(
     let row = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight, grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
                   completion_rule AS "completion_rule: CompletionRule",
-                  passing_score, max_attempts, time_limit_seconds,
+                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?",
                   allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day, late_penalty_max_days,
+                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent, grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent,
+                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -292,27 +293,31 @@ pub async fn get_assessment_by_activity<'e>(
     let row = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight, grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
                   completion_rule AS "completion_rule: CompletionRule",
-                  passing_score, max_attempts, time_limit_seconds,
+                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?",
                   allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day, late_penalty_max_days,
+                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent, grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent,
+                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -332,27 +337,31 @@ pub async fn list_assessments_for_course(
     let rows = sqlx::query_as!(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", kind AS "kind: AssessmentKind",
-                  title, description, lifecycle AS "lifecycle: Lifecycle",
+                  course_id AS "course_id: CourseId",
+                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "kind!: AssessmentKind",
+                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
+                      AS "title!",
+                  description, lifecycle AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight, grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
                   completion_rule AS "completion_rule: CompletionRule",
-                  passing_score, max_attempts, time_limit_seconds,
+                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?",
                   allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day, late_penalty_max_days,
+                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent, grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent,
+                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -390,8 +399,8 @@ pub async fn gradebook_columns(
     let rows = sqlx::query_as!(
         GradebookAssessmentRow,
         r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
-                  s.title, s.kind AS "kind: AssessmentKind",
-                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score, s.weight
+                  a.name AS title, a.activity_type AS "kind: AssessmentKind",
+                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score::float8 AS "passing_score!", s.weight::float8 AS "weight!"
            FROM assessments s
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id
@@ -407,24 +416,22 @@ pub async fn gradebook_columns(
     Ok(rows)
 }
 
-/// Title/description/weight/grading type (the non-policy scalars).
+/// Description/weight/grading type (the non-policy scalars; the title is
+/// the activity's name).
 pub async fn update_assessment_details<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: AssessmentId,
-    title: Option<&str>,
     description: Option<&str>,
     weight: Option<f64>,
     grading_type: Option<GradingType>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
-               title = COALESCE($2, title),
-               description = COALESCE($3, description),
-               weight = COALESCE($4, weight),
-               grading_type = COALESCE($5, grading_type)
+               description = COALESCE($2, description),
+               weight = COALESCE($3::float8, weight),
+               grading_type = COALESCE($4, grading_type)
            WHERE id = $1"#,
         id.0,
-        title,
         description,
         weight,
         grading_type.map(GradingType::as_str)
@@ -443,17 +450,17 @@ pub async fn update_policy<'e>(
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
                grading_mode = $2, grade_release_mode = $3, completion_rule = $4,
-               passing_score = $5, max_attempts = $6, time_limit_seconds = $7,
+               passing_score = $5::float8, max_attempts = $6, time_limit_seconds = $7,
                due_at = to_timestamp($8), allow_late = $9,
-               late_policy_kind = $10, late_penalty_percent_per_day = $11,
+               late_policy_kind = $10, late_penalty_percent_per_day = $11::float8,
                late_penalty_max_days = $12, late_cutoff_at = to_timestamp($13),
                required = $14, review_visibility = $15, randomize_questions = $16,
                randomize_options = $17, partial_credit = $18,
-               negative_marking_percent = $19, grace_period_minutes = $20,
+               negative_marking_percent = $19::float8, grace_period_minutes = $20,
                copy_paste_protection = $21, tab_switch_detection = $22,
                devtools_detection = $23, right_click_disabled = $24,
                fullscreen_required = $25, violation_threshold = $26,
-               attempt_penalty_percent = $27,
+               attempt_penalty_percent = $27::float8,
                policy_version = policy_version + 1
            WHERE id = $1"#,
         id.0,
@@ -661,7 +668,7 @@ pub async fn insert_item<'e>(
            VALUES ($1,
                    (SELECT COALESCE(MAX(position), 0) + 1
                     FROM assessment_items WHERE assessment_id = $1),
-                   $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                   $2, $3, $4, $5::float8, $6, $7, $8, $9, $10)
            RETURNING id"#,
         assessment_id.0,
         kind.as_str(),
@@ -684,7 +691,7 @@ pub async fn get_item(pool: &PgPool, id: AssessmentItemId) -> Result<Option<Item
         ItemRow,
         r#"SELECT id AS "id: AssessmentItemId",
                   assessment_id AS "assessment_id: AssessmentId",
-                  position, kind AS "kind: ItemKind", title, body, max_score,
+                  position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
                   tags, outcome_ids, estimated_minutes
            FROM assessment_items WHERE id = $1"#,
@@ -703,7 +710,7 @@ pub async fn list_items<'e>(
         ItemRow,
         r#"SELECT id AS "id: AssessmentItemId",
                   assessment_id AS "assessment_id: AssessmentId",
-                  position, kind AS "kind: ItemKind", title, body, max_score,
+                  position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
                   tags, outcome_ids, estimated_minutes
            FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id"#,
@@ -747,7 +754,7 @@ pub async fn update_item<'e>(
                title = COALESCE($2, title),
                kind = COALESCE($3, kind),
                body = COALESCE($4, body),
-               max_score = COALESCE($5, max_score),
+               max_score = COALESCE($5::float8, max_score),
                section_label = CASE WHEN $6 THEN $7 ELSE section_label END,
                difficulty = CASE WHEN $6 THEN $8 ELSE difficulty END,
                tags = CASE WHEN $6 THEN $9 ELSE tags END,

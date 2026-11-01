@@ -493,6 +493,41 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `translatable_fields`): the platform's Kazakh / English `description` / `about`; the base column holds the
   default-language text, no row = not translated. Until the contract migration triggers mirror them into the old
   `platforms.*_kk` / `*_en` columns; a translation change moves the platform's version.
+- **Scores are exact numerics behind domains** (`20261102020100_score_domains`, contract
+  `20261103020000_scores_numeric`): percentages and penalties are `percent` (numeric(5,2), 0..100), points
+  `score_points` and weights `score_weight` (numeric(8,2), >= 0, no `'NaN'`), on submissions, grading entries,
+  file attempts/grades, assessment policy, items, item feedback, code runs and AI grade drafts/corrections.
+  The domain keeps `f64` (grading math and its proptests are unchanged): SQL reads a score as
+  `col::float8 AS "col!"`/`"col?"` and binds one as `$n::float8`, and storing rounds it to two decimals.
+  Chosen over `rust_decimal` because it changes no Rust type, no DTO and no contract, and the same SQL runs on
+  the old double columns (the expand release) and the numeric ones (after the contract). A new query on these
+  columns needs the casts: the SQLx macros refuse `NUMERIC` (no decimal feature).
+- **A handed-in attempt keeps what it answered** (`20261102020200_submission_snapshots`): a submission that is
+  inserted as, or moves from `draft` to, any other status has `items_snapshot` and `policy_snapshot`, checked at
+  COMMIT (`submissions_handed_in_snapshots_*`, deferred: the hand-in statement writes them, the previous release
+  a statement later); once written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
+  Rows handed in before 2026-11-02 are not re-checked (legacy imports may lack snapshots).
+- **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
+  `submissions.final_score` / `grading` its one current value. At COMMIT a submission with entries has its
+  latest entry's (highest id) `final_score` and `effective_breakdown`; checked when an entry is appended or the
+  submission's score or breakdown changes. A write that changes one without the other fails the transaction.
+- **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
+  title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
+  join them and nothing writes a copy. An activity with an assessment cannot change its type
+  (`activities_keep_assessment_type`). Until the contract drops `assessments.title` / `kind`, triggers keep the
+  copies equal to the activity for the previous release.
+- **Assessment versions** (`20261102020600_assessment_versions`, first step of REWRITE 5.6 n7): each distinct
+  (items, policy) pair a learner handed in against is one `assessment_versions` row, numbered per assessment,
+  content-addressed (`content_hash` = `assessment_content_hash(items, policy)`, computed by Postgres) and frozen;
+  `max_points` is the items' total `max_score`. The hand-in creates or reuses it in its own short transaction
+  before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
+  it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. The
+  snapshots stay the record until readers move (REWRITE 5.6 n15).
+- **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
+  time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
+  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the
+  contract migration drops `status_id` / `judge0_token`, the trigger `code_run_cases_sync` keeps the previous
+  release's code and the verdict in step.
 
 ### SQLx usage
 

@@ -1,0 +1,203 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT position, test_id, stdin, expected_output, description, weight::float8 AS \"weight!\",\n                  is_visible, verdict AS \"verdict: TestVerdict\", status_description, passed,\n                  stdout, stderr,\n                  compile_output, message, time_seconds, memory_kb\n           FROM code_run_cases WHERE run_id = $1 ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "position",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "position"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "test_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "test_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "stdin",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "stdin"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "expected_output",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "expected_output"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "weight!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_visible",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "is_visible"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "verdict: TestVerdict",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "verdict"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status_description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "status_description"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "passed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "passed"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "stdout",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "stdout"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "stderr",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "stderr"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "compile_output",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "compile_output"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "message",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "message"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "time_seconds",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "time_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "memory_kb",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "memory_kb"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5bf4e73e07174bcbdd762ee7c7b0c66db483d9f4b1f526b202e0d5549d6dbe1f"
+}

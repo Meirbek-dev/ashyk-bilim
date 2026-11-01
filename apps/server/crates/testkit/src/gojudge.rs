@@ -9,14 +9,14 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use ab_core::assessments::TestVerdict;
 use wiremock::matchers::{method, path, path_regex};
 use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
-/// What the fake sandbox says about one test (Judge0 status ids, as the
-/// platform stores them).
+/// What the fake sandbox says about one test.
 #[derive(Debug, Clone)]
 pub struct CaseVerdict {
-    pub status_id: i32,
+    pub verdict: TestVerdict,
     pub stdout: Option<String>,
     pub stderr: Option<String>,
     pub compile_output: Option<String>,
@@ -26,7 +26,7 @@ impl CaseVerdict {
     #[must_use]
     pub fn accepted(stdout: impl Into<String>) -> Self {
         Self {
-            status_id: 3,
+            verdict: TestVerdict::Accepted,
             stdout: Some(stdout.into()),
             stderr: None,
             compile_output: None,
@@ -37,7 +37,7 @@ impl CaseVerdict {
     #[must_use]
     pub fn compile_error(output: impl Into<String>) -> Self {
         Self {
-            status_id: 6,
+            verdict: TestVerdict::CompileError,
             stdout: None,
             stderr: None,
             compile_output: Some(output.into()),
@@ -47,7 +47,7 @@ impl CaseVerdict {
     #[must_use]
     pub fn runtime_error(stderr: impl Into<String>) -> Self {
         Self {
-            status_id: 11,
+            verdict: TestVerdict::RuntimeError,
             stdout: None,
             stderr: Some(stderr.into()),
             compile_output: None,
@@ -57,7 +57,7 @@ impl CaseVerdict {
     #[must_use]
     pub const fn time_limit() -> Self {
         Self {
-            status_id: 5,
+            verdict: TestVerdict::TimeLimit,
             stdout: None,
             stderr: None,
             compile_output: None,
@@ -180,7 +180,7 @@ impl Respond for RunResponder {
         let answer = if body["requestId"] == "compile" {
             state.compiles += 1;
             let verdict = (self.0.eval)(&source, "");
-            if verdict.status_id == 6 {
+            if verdict.verdict == TestVerdict::CompileError {
                 result(
                     "Nonzero Exit Status",
                     1,
@@ -203,11 +203,13 @@ impl Respond for RunResponder {
             state.runs += 1;
             let stdin = cmd["files"][0]["content"].as_str().unwrap_or_default();
             let verdict = (self.0.eval)(&source, stdin);
-            let (status, exit) = match verdict.status_id {
-                3 => ("Accepted", 0),
-                5 => ("Time Limit Exceeded", 9),
-                6..=12 => ("Nonzero Exit Status", 1),
-                _ => ("Internal Error", 0),
+            let (status, exit) = match verdict.verdict {
+                TestVerdict::Accepted => ("Accepted", 0),
+                TestVerdict::TimeLimit => ("Time Limit Exceeded", 9),
+                TestVerdict::MemoryLimit => ("Memory Limit Exceeded", 9),
+                TestVerdict::OutputLimit => ("Output Limit Exceeded", 0),
+                TestVerdict::CompileError | TestVerdict::RuntimeError => ("Nonzero Exit Status", 1),
+                TestVerdict::WrongAnswer | TestVerdict::InternalError => ("Internal Error", 0),
             };
             result(
                 status,

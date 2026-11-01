@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT final_score::float8 AS \"final_score?\", late_penalty_pct::float8 AS \"late_penalty_pct!\", is_late FROM submissions WHERE id = $1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "final_score?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "late_penalty_pct!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_late",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "is_late"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "dadbcf28440b75597003019382cb483d7fd3b7a02413e8dad8305d4a94382898"
+}

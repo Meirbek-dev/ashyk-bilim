@@ -236,6 +236,7 @@ const NOT_USER_DATA: &[&str] = &[
     "assessment_audit_events",
     "assessment_items",
     "assessment_overrides",
+    "assessment_versions",
     "assessments",
     "block_uploads",
     "blocks",

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT activity_id AS \"activity_id: ActivityId\", weight::float8 AS \"weight!\"\n           FROM assessments WHERE course_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "weight!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "5e9d0d3d8311537feaaf684091050b9dfc00550e1d7728a4ee4ba107c55ac95c"
+}

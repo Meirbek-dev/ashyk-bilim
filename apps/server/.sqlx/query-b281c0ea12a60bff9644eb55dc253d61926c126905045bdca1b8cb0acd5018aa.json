@@ -1,6 +1,10 @@
 {
   "db_name": "PostgreSQL",
+<<<<<<<< HEAD:apps/server/.sqlx/query-b281c0ea12a60bff9644eb55dc253d61926c126905045bdca1b8cb0acd5018aa.json
   "query": "SELECT a.id AS \"id: FileAttemptId\", a.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, u.email,\n                  a.status AS \"status: FileAttemptStatus\", a.attempt_number,\n                  (extract(epoch FROM a.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM a.graded_at))::bigint AS \"graded_at?\",\n                  a.is_late, a.final_score, a.version,\n                  (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)\n                      AS \"file_count!\",\n                  EXISTS (SELECT 1 FROM enrolments r\n                          WHERE r.course_id = a.course_id AND r.user_id = a.user_id\n                            AND NOT is_course_staff(r.course_id, r.user_id)) AS \"enrolled!\",\n                  is_course_staff(a.course_id, a.user_id) AS \"staff!\"\n           FROM file_submission_attempts a JOIN users u ON u.id = a.user_id\n           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(a.final_score, -1)\n                  WHEN 'attempt_number' THEN a.attempt_number::float8\n                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM a.submitted_at)::float8, 0)\n                  ELSE 0 END AS key) k\n           LEFT JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(c.final_score, -1)\n                  WHEN 'attempt_number' THEN c.attempt_number::float8\n                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM c.submitted_at)::float8, 0)\n                  ELSE 0 END AS key\n                  FROM file_submission_attempts c WHERE c.id = $4) ck ON true\n           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview\n             AND ($2::text IS NULL OR a.status = $2)\n             AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\\' OR u.display_name ILIKE $3 ESCAPE '\\'\n                  OR u.email ILIKE $3 ESCAPE '\\')\n             AND ($4::uuid IS NULL OR (k.key, a.id) < (ck.key, $4))\n             AND (NOT $6 OR a.is_late)\n             AND ($9::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $9 AND m.user_id = a.user_id))\n           ORDER BY k.key DESC, a.id DESC\n           LIMIT $5",
+========
+  "query": "SELECT a.id AS \"id: FileAttemptId\", a.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, u.email,\n                  a.status AS \"status: FileAttemptStatus\", a.attempt_number,\n                  (extract(epoch FROM a.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM a.graded_at))::bigint AS \"graded_at?\",\n                  a.is_late, a.final_score::float8 AS \"final_score?\", a.version,\n                  (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)\n                      AS \"file_count!\",\n                  EXISTS (SELECT 1 FROM trail_runs r\n                          WHERE r.course_id = a.course_id AND r.user_id = a.user_id\n                            AND NOT is_course_staff(r.course_id, r.user_id)) AS \"enrolled!\",\n                  is_course_staff(a.course_id, a.user_id) AS \"staff!\"\n           FROM file_submission_attempts a JOIN users u ON u.id = a.user_id\n           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(a.final_score, -1)\n                  WHEN 'attempt_number' THEN a.attempt_number::float8\n                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM a.submitted_at)::float8, 0)\n                  ELSE 0 END AS key) k\n           LEFT JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(c.final_score, -1)\n                  WHEN 'attempt_number' THEN c.attempt_number::float8\n                  WHEN 'submitted_at' THEN coalesce(extract(epoch FROM c.submitted_at)::float8, 0)\n                  ELSE 0 END AS key\n                  FROM file_submission_attempts c WHERE c.id = $4) ck ON true\n           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview\n             AND ($2::text IS NULL OR a.status = $2)\n             AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\\' OR u.display_name ILIKE $3 ESCAPE '\\'\n                  OR u.email ILIKE $3 ESCAPE '\\')\n             AND ($4::uuid IS NULL OR (k.key, a.id) < (ck.key, $4))\n             AND (NOT $6 OR a.is_late)\n             AND ($9::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $9 AND m.user_id = a.user_id))\n           ORDER BY k.key DESC, a.id DESC\n           LIMIT $5",
+>>>>>>>> wt/db-b~1:apps/server/.sqlx/query-f2da8a8ba2650d63614bcefe3a57d8a1e39dee0fa8bb85188847bacce59c8d82.json
   "describe": {
     "columns": [
       {
@@ -105,14 +109,9 @@
       },
       {
         "ordinal": 10,
-        "name": "final_score",
+        "name": "final_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "file_submission_attempts",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
@@ -168,12 +167,16 @@
       null,
       null,
       false,
-      true,
+      null,
       false,
       null,
       null,
       null
     ]
   },
+<<<<<<<< HEAD:apps/server/.sqlx/query-b281c0ea12a60bff9644eb55dc253d61926c126905045bdca1b8cb0acd5018aa.json
   "hash": "b281c0ea12a60bff9644eb55dc253d61926c126905045bdca1b8cb0acd5018aa"
+========
+  "hash": "f2da8a8ba2650d63614bcefe3a57d8a1e39dee0fa8bb85188847bacce59c8d82"
+>>>>>>>> wt/db-b~1:apps/server/.sqlx/query-f2da8a8ba2650d63614bcefe3a57d8a1e39dee0fa8bb85188847bacce59c8d82.json
 }

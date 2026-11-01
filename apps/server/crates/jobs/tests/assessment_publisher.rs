@@ -44,14 +44,13 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .await
     .unwrap();
     let assessment: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, scheduled_at,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, scheduled_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', $3, 'scheduled', now() + $4::interval,
+         VALUES ($1, $2, 'scheduled', now() + $3::interval,
                  'auto', 'immediate', 'passed') RETURNING id",
     )
     .bind(activity)
     .bind(course)
-    .bind(title)
     .bind(offset)
     .fetch_one(pool)
     .await

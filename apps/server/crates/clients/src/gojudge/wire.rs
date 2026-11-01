@@ -11,6 +11,7 @@ use super::{
     COMPILE_CPU, COMPILE_MEMORY_BYTES, COMPILE_OUTPUT_BYTES, JVM_MIN_MEMORY_BYTES, Limits, MIB,
     Outcome, STACK_BYTES,
 };
+use ab_core::assessments::TestVerdict;
 
 /// Every program's environment; a language adds its own.
 const BASE_ENV: &[&str] = &[
@@ -229,7 +230,7 @@ pub fn compile_failure(result: &WireResult) -> Option<Outcome> {
         _ => None,
     };
     Some(Outcome {
-        status_id: 6,
+        verdict: TestVerdict::CompileError,
         status_description: "Compilation Error".into(),
         stdout: None,
         stderr: None,
@@ -241,33 +242,45 @@ pub fn compile_failure(result: &WireResult) -> Option<Outcome> {
 }
 
 pub fn run_outcome(result: &WireResult) -> Outcome {
-    let (status_id, description, message) = match result.status.as_str() {
-        "Accepted" => (3, "Accepted".to_owned(), None),
-        "Time Limit Exceeded" => (5, "Time Limit Exceeded".to_owned(), None),
-        "Memory Limit Exceeded" => (12, "Memory Limit Exceeded".to_owned(), None),
-        "Output Limit Exceeded" => (8, "Output Limit Exceeded".to_owned(), None),
+    let (verdict, description, message) = match result.status.as_str() {
+        "Accepted" => (TestVerdict::Accepted, "Accepted".to_owned(), None),
+        "Time Limit Exceeded" => (
+            TestVerdict::TimeLimit,
+            "Time Limit Exceeded".to_owned(),
+            None,
+        ),
+        "Memory Limit Exceeded" => (
+            TestVerdict::MemoryLimit,
+            "Memory Limit Exceeded".to_owned(),
+            None,
+        ),
+        "Output Limit Exceeded" => (
+            TestVerdict::OutputLimit,
+            "Output Limit Exceeded".to_owned(),
+            None,
+        ),
         "Nonzero Exit Status" => (
-            11,
+            TestVerdict::RuntimeError,
             "Runtime Error (NZEC)".to_owned(),
             Some(format!("Exited with error status {}", result.exit_status)),
         ),
         "Signalled" => {
-            let (id, name) = signal(result.exit_status);
+            let name = signal(result.exit_status);
             (
-                id,
+                TestVerdict::RuntimeError,
                 format!("Runtime Error ({name})"),
                 Some(format!("Killed by signal {}", result.exit_status)),
             )
         }
         "Dangerous Syscall" => (
-            12,
+            TestVerdict::RuntimeError,
             "Runtime Error (Other)".to_owned(),
             Some("a forbidden system call".to_owned()),
         ),
         _ => return internal(result),
     };
     Outcome {
-        status_id,
+        verdict,
         status_description: description,
         stdout: result.files.get("stdout").map(|s| storable(s)),
         stderr: result.files.get("stderr").map(|s| storable(s)),
@@ -278,14 +291,14 @@ pub fn run_outcome(result: &WireResult) -> Outcome {
     }
 }
 
-/// Judge0's runtime-error ids by signal.
-const fn signal(number: i32) -> (i32, &'static str) {
+/// A runtime error's label by signal.
+const fn signal(number: i32) -> &'static str {
     match number {
-        11 => (7, "SIGSEGV"),
-        25 => (8, "SIGXFSZ"),
-        8 => (9, "SIGFPE"),
-        6 => (10, "SIGABRT"),
-        _ => (12, "Other"),
+        11 => "SIGSEGV",
+        25 => "SIGXFSZ",
+        8 => "SIGFPE",
+        6 => "SIGABRT",
+        _ => "Other",
     }
 }
 
@@ -296,7 +309,7 @@ fn internal(result: &WireResult) -> Outcome {
         .filter(|e| !e.is_empty())
         .unwrap_or(&result.status);
     Outcome {
-        status_id: 13,
+        verdict: TestVerdict::InternalError,
         status_description: "Internal Error".into(),
         stdout: None,
         stderr: None,
@@ -344,23 +357,51 @@ mod tests {
     }
 
     #[test]
-    fn statuses_keep_judge0_ids() {
+    fn statuses_become_verdicts() {
+        use TestVerdict as V;
         let cases = [
-            ("Accepted", 0, 3),
-            ("Time Limit Exceeded", 9, 5),
-            ("Memory Limit Exceeded", 9, 12),
-            ("Output Limit Exceeded", 0, 8),
-            ("Nonzero Exit Status", 1, 11),
-            ("Signalled", 11, 7),
-            ("Signalled", 8, 9),
-            ("Signalled", 6, 10),
-            ("Signalled", 31, 12),
-            ("Dangerous Syscall", 31, 12),
-            ("Internal Error", 0, 13),
-            ("File Error", 0, 13),
+            ("Accepted", 0, V::Accepted, "Accepted"),
+            (
+                "Time Limit Exceeded",
+                9,
+                V::TimeLimit,
+                "Time Limit Exceeded",
+            ),
+            (
+                "Memory Limit Exceeded",
+                9,
+                V::MemoryLimit,
+                "Memory Limit Exceeded",
+            ),
+            (
+                "Output Limit Exceeded",
+                0,
+                V::OutputLimit,
+                "Output Limit Exceeded",
+            ),
+            (
+                "Nonzero Exit Status",
+                1,
+                V::RuntimeError,
+                "Runtime Error (NZEC)",
+            ),
+            ("Signalled", 11, V::RuntimeError, "Runtime Error (SIGSEGV)"),
+            ("Signalled", 8, V::RuntimeError, "Runtime Error (SIGFPE)"),
+            ("Signalled", 6, V::RuntimeError, "Runtime Error (SIGABRT)"),
+            ("Signalled", 31, V::RuntimeError, "Runtime Error (Other)"),
+            (
+                "Dangerous Syscall",
+                31,
+                V::RuntimeError,
+                "Runtime Error (Other)",
+            ),
+            ("Internal Error", 0, V::InternalError, "Internal Error"),
+            ("File Error", 0, V::InternalError, "Internal Error"),
         ];
-        for (status, exit, id) in cases {
-            assert_eq!(run_outcome(&result(status, exit)).status_id, id, "{status}");
+        for (status, exit, verdict, label) in cases {
+            let outcome = run_outcome(&result(status, exit));
+            assert_eq!(outcome.verdict, verdict, "{status}");
+            assert_eq!(outcome.status_description, label, "{status}");
         }
         let nzec = run_outcome(&result("Nonzero Exit Status", 3));
         assert_eq!(nzec.message.as_deref(), Some("Exited with error status 3"));
@@ -379,10 +420,10 @@ mod tests {
             .files
             .insert("stderr".into(), "main.c:1: error\n".into());
         let failed = compile_failure(&broken).unwrap();
-        assert_eq!(failed.status_id, 6);
+        assert_eq!(failed.verdict, TestVerdict::CompileError);
         assert_eq!(failed.compile_output.as_deref(), Some("main.c:1: error"));
         let slow = compile_failure(&result("Time Limit Exceeded", 9)).unwrap();
-        assert_eq!(slow.status_id, 6);
+        assert_eq!(slow.verdict, TestVerdict::CompileError);
         assert_eq!(
             slow.message.as_deref(),
             Some("compilation time limit exceeded")
@@ -390,7 +431,7 @@ mod tests {
         let mut sandbox = result("Internal Error", 0);
         sandbox.error = Some("execve: no such file".into());
         let internal = compile_failure(&sandbox).unwrap();
-        assert_eq!(internal.status_id, 13);
+        assert_eq!(internal.verdict, TestVerdict::InternalError);
         assert_eq!(internal.message.as_deref(), Some("execve: no such file"));
     }
 

@@ -728,7 +728,7 @@ pub async fn file_attempt_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<F
         FileAttemptFact,
         r#"SELECT t.user_id AS "user_id: UserId", f.course_id AS "course_id: CourseId",
                   f.activity_id AS "activity_id: ActivityId", t.preview,
-                  (t.status = 'published') AS "published!", t.final_score,
+                  (t.status = 'published') AS "published!", t.final_score::float8 AS "final_score?",
                   extract(epoch FROM COALESCE(t.graded_at, t.submitted_at, t.started_at))::bigint
                       AS "observed_at!"
            FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id

@@ -57,6 +57,17 @@
 //!   keeps the rest, whether or not analytics_events is partitioned.
 //! - lane C, item 12: a completion the previous release projects (or
 //!   clears) in activity_progress is mirrored into completions.
+//! - review 2, item 25: a code-run case stores the platform's own verdict;
+//!   the previous release's Judge0 code and the verdict fill each other.
+//! - review 2, item 9: a handed-in attempt has both snapshots (checked at
+//!   commit, so they may follow the hand-in within its transaction), and a
+//!   snapshot once written never changes.
+//! - review 2, item 8: a submission's current grade is its latest journal
+//!   entry's; a grade written to only one side fails at commit.
+//! - review 2, item 5: an assessment's title and kind are its activity's;
+//!   a rename shows at once, and the activity cannot change its type.
+//! - review 2, item 4: each distinct (items, policy) pair handed in is one
+//!   numbered, frozen assessment version; a hand-in names it once.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -108,9 +119,9 @@ async fn world(pool: &PgPool) -> World {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)
@@ -129,8 +140,8 @@ async fn world(pool: &PgPool) -> World {
 async fn submission(pool: &PgPool, w: &World, number: i32, preview: bool) -> sqlx::Result<Uuid> {
     sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                  preview, submitted_at)
-         VALUES ($1, $2, $3, 'pending', $4, $5, now()) RETURNING id",
+                                  preview, submitted_at, items_snapshot, policy_snapshot)
+         VALUES ($1, $2, $3, 'pending', $4, $5, now(), '{}', '{}') RETURNING id",
     )
     .bind(w.assessment)
     .bind(w.course)
@@ -567,8 +578,11 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     let w = world(&pool).await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score)
-         VALUES ($1, 80, 80) RETURNING id",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
+                    VALUES ($1, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+                          FROM e WHERE s.id = e.submission_id)
+         SELECT id FROM e",
     )
     .bind(submission)
     .fetch_one(&pool)
@@ -638,8 +652,11 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     let grader = user(&pool, "grader").await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
-         VALUES ($1, $2, 80, 80) RETURNING id",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
+                    VALUES ($1, $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+                          FROM e WHERE s.id = e.submission_id)
+         SELECT id FROM e",
     )
     .bind(submission)
     .bind(grader)
@@ -1516,4 +1533,268 @@ async fn completions_mirror_the_previous_releases_projection(pool: PgPool) {
     )
     .await;
     assert_eq!(completions().await, 0);
+}
+
+#[ab_testdb::test]
+async fn a_code_run_case_keeps_its_verdict_and_the_legacy_code_in_step(pool: PgPool) {
+    let w = world(&pool).await;
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let run: Uuid = sqlx::query_scalar(
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
+                                source_sha256)
+         VALUES ($1, $2, $3, 'visible', 'runtime_error', 71, 'x') RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(item)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // The previous release writes Judge0's code, this one the verdict.
+    sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, status_id, status_description)
+         VALUES ($1, 1, 'old', 7, 'Runtime Error (SIGSEGV)'),
+                ($1, 2, 'old-mle', 12, 'Memory Limit Exceeded'),
+                ($1, 3, 'old-none', NULL, '')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, verdict, status_description)
+         VALUES ($1, 4, 'new', 'output_limit', 'Output Limit Exceeded')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let rows: Vec<(String, String, Option<i32>)> = sqlx::query_as(
+        "SELECT test_id, verdict, status_id FROM code_run_cases WHERE run_id = $1 ORDER BY position",
+    )
+    .bind(run)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let rows: Vec<(&str, &str, Option<i32>)> = rows
+        .iter()
+        .map(|(t, v, s)| (t.as_str(), v.as_str(), *s))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            ("old", "runtime_error", Some(7)),
+            ("old-mle", "memory_limit", Some(12)),
+            ("old-none", "wrong_answer", Some(4)),
+            ("new", "output_limit", Some(8)),
+        ]
+    );
+    let unknown = sqlx::query(
+        "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 5, 'x', 'ok')",
+    )
+    .bind(run)
+    .execute(&pool)
+    .await;
+    assert!(unknown.is_err(), "verdicts are a closed list");
+}
+
+#[ab_testdb::test]
+async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
+    let w = world(&pool).await;
+    let draft: Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number)
+         VALUES ($1, $2, $3, 1) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let hand_in = "UPDATE submissions SET status = 'pending', submitted_at = now() WHERE id = $1";
+
+    // Without snapshots the hand-in fails at commit.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(hand_in)
+        .bind(draft)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    assert!(tx.commit().await.is_err(), "handed in without snapshots");
+
+    // The previous release's order: hand in, then write the snapshots.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(hand_in)
+        .bind(draft)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE submissions SET items_snapshot = '{\"items\": []}', policy_snapshot = '{}'
+         WHERE id = $1",
+    )
+    .bind(draft)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    for rewrite in [
+        "UPDATE submissions SET items_snapshot = '{}' WHERE id = $1",
+        "UPDATE submissions SET policy_snapshot = '{\"passing_score\": 0}' WHERE id = $1",
+        "UPDATE submissions SET policy_snapshot = NULL WHERE id = $1",
+    ] {
+        let refused = sqlx::query(rewrite).bind(draft).execute(&pool).await;
+        assert!(refused.is_err(), "{rewrite}");
+    }
+    // Grading the attempt still works.
+    sqlx::query("UPDATE submissions SET status = 'graded', final_score = 50 WHERE id = $1")
+        .bind(draft)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let not_object = sqlx::query(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, items_snapshot)
+         VALUES ($1, $2, $3, 2, '[]')",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .execute(&pool)
+    .await;
+    assert!(not_object.is_err(), "a snapshot is an object");
+}
+
+#[ab_testdb::test]
+async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
+    let w = world(&pool).await;
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    // No entry yet: the current value is free (a hand-in awaiting review).
+    sqlx::query("UPDATE submissions SET final_score = 40 WHERE id = $1")
+        .bind(sub)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let entry =
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown)
+                 VALUES ($1, 80, $2, '{\"feedback\": \"ok\"}')";
+    let refused = sqlx::query(entry).bind(sub).bind(80.0).execute(&pool).await;
+    assert!(
+        refused.is_err(),
+        "a journal entry the submission does not show"
+    );
+
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(entry)
+        .bind(sub)
+        .bind(80.0)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE submissions SET final_score = 80, grading = '{\"feedback\": \"ok\"}' WHERE id = $1",
+    )
+    .bind(sub)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    for drift in [
+        "UPDATE submissions SET final_score = 90 WHERE id = $1",
+        "UPDATE submissions SET grading = '{}' WHERE id = $1",
+    ] {
+        let refused = sqlx::query(drift).bind(sub).execute(&pool).await;
+        assert!(refused.is_err(), "{drift}");
+    }
+}
+
+#[ab_testdb::test]
+async fn an_assessment_is_named_and_typed_by_its_activity(pool: PgPool) {
+    let w = world(&pool).await;
+    let id = ab_core::id::AssessmentId(w.assessment);
+    let row = ab_db::assessments::get_assessment(&pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.title, "q");
+    assert_eq!(row.kind, ab_core::assessments::AssessmentKind::Quiz);
+
+    sqlx::query("UPDATE activities SET name = 'renamed' WHERE id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let row = ab_db::assessments::get_assessment(&pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.title, "renamed");
+
+    let retyped = sqlx::query(
+        "UPDATE activities SET activity_type = 'exam', activity_sub_type = 'exam_standard'
+         WHERE id = $1",
+    )
+    .bind(w.activity)
+    .execute(&pool)
+    .await;
+    assert!(
+        retyped.is_err(),
+        "an activity with an assessment keeps its type"
+    );
+}
+
+#[ab_testdb::test]
+async fn a_hand_in_names_one_frozen_assessment_version(pool: PgPool) {
+    let w = world(&pool).await;
+    let id = ab_core::id::AssessmentId(w.assessment);
+    let items = serde_json::json!({ "items": [{ "max_score": 2.5 }, { "max_score": 1 }] });
+    let policy = serde_json::json!({ "max_attempts": 1 });
+    let first = ab_db::assessment_versions::ensure(&pool, id, &items, &policy)
+        .await
+        .unwrap();
+    let same = ab_db::assessment_versions::ensure(&pool, id, &items, &policy)
+        .await
+        .unwrap();
+    assert_eq!(first, same, "the same content is one version");
+    let other = serde_json::json!({ "max_attempts": 2 });
+    let second = ab_db::assessment_versions::ensure(&pool, id, &items, &other)
+        .await
+        .unwrap();
+    let rows: Vec<(i32, f64)> = sqlx::query_as(
+        "SELECT number, max_points::float8 FROM assessment_versions
+         WHERE assessment_id = $1 ORDER BY number",
+    )
+    .bind(w.assessment)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(rows, vec![(1, 3.5), (2, 3.5)]);
+
+    let frozen = sqlx::query("UPDATE assessment_versions SET policy = '{}' WHERE id = $1")
+        .bind(first.0)
+        .execute(&pool)
+        .await;
+    assert!(frozen.is_err(), "a version never changes");
+
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    sqlx::query("UPDATE submissions SET assessment_version_id = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(first.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let moved = sqlx::query("UPDATE submissions SET assessment_version_id = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(second.0)
+        .execute(&pool)
+        .await;
+    assert!(moved.is_err(), "a hand-in names its version once");
 }

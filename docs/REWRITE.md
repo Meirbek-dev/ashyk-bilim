@@ -778,6 +778,37 @@ in the order it can be done, each step a forward migration on the current schema
       assessment_items, course_updates, ai_threads (authored text).
     Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
     these tables change shape there: submissions/file tasks, resource_authors, progress).
+16. **Grading records** (schema review 2, items 1-10; ARCHITECTURE §8 has what landed: own code-run
+    verdicts, score domains and numeric scores, snapshot and current-grade guarantees, assessment
+    versions). Left, in order:
+    - *Points as the record* (item 6). Scores of record are percentages; the denominator is now stored
+      (`assessment_versions.max_points`), so points are `pct × max_points / 100`. Making points the stored
+      value and the percentage generated needs the grading domain to compute in points (attempt cap and late
+      penalty are percentages of 100, a teacher's override is a percentage): decide how an override given in
+      percent rounds to points (scale 2 drifts up to `0.5 / max_points` %), then add `raw_points` /
+      `final_points` to `grading_entries`/`submissions`, write both for a release, generate the percentage.
+    - *One status vocabulary* (item 2): `draft → submitted → graded → released → returned`. Storage first,
+      API names unchanged: an expand release reads both spellings (`pending`/`submitted`,
+      `published`/`released`) and writes the old; the contract release writes the new, rewrites the rows
+      and narrows the CHECKs. Every SQL literal on `status` (also in progress/analytics/work-queue queries)
+      moves in the expand release: a missed literal fails silently, not at compile time. Best done with the
+      pipeline merge below, which rewrites those queries anyway.
+    - *One overrides table* (item 3) falls out of the merge: `file_submission_overrides` rows become
+      `assessment_overrides` rows of the assignment's assessment (`due_at_override`, `note` = `reason`).
+      Before the merge the only arc-free shape is per activity, which the merge would undo.
+    - *Pipeline merge* (item 1) as in step 6 above; `file_submission_attempts` had 0 rows when 9.1 was
+      written, so the data step is small and the work is the code (`files/submissions.rs`, the projector's
+      file branch, the AI grading reader, work queue, analytics). The AI tables then lose their
+      `submission_id`/`file_attempt_id` arc.
+    - *Versions as the record* (item 4, rest of step 7): readers move from `items_snapshot`/`policy_snapshot`
+      to `assessment_version_id`; a contract release drops the snapshots and `content_version` (BUG-237's
+      staleness test becomes "the draft's version is not the assessment's current one"); the policy columns
+      of `assessments` move into the version's typed `policy`.
+    - *Counters* (item 10): `version` (If-Match) and `draft_version` (autosave 409) stay;
+      `content_version` goes with the snapshots above.
+    - *Current grade* (item 8, rest): `submissions.grading` duplicates the latest entry's
+      `effective_breakdown` (enforced equal now); reading the entry instead lets it go. `activity_progress.score`
+      stays a projection (best attempt), reconciled weekly.
 
 ### 5.7 Schema review 2 (2026-11-01): owner decisions
 

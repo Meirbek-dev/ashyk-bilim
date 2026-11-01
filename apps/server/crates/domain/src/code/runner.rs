@@ -10,7 +10,7 @@
 use std::sync::Arc;
 
 use ab_clients::gojudge::{Batch, GoJudgeClient, Outcome, RunnerError};
-use ab_core::assessments::{CodeRunPurpose, CodeRunStatus};
+use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, TestVerdict};
 use ab_core::config::RunnerLimits;
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId, UserId};
 use ab_core::{Error, ErrorCode, Result};
@@ -485,20 +485,6 @@ struct Graded {
     compile_output: Option<String>,
 }
 
-/// Verdict code (Judge0's status ids) → run status (legacy `normalize_status`).
-const fn status_from_verdict(id: i32) -> CodeRunStatus {
-    match id {
-        1 => CodeRunStatus::Queued,
-        2 => CodeRunStatus::Running,
-        3 => CodeRunStatus::Accepted,
-        4 => CodeRunStatus::WrongAnswer,
-        5 => CodeRunStatus::TimeLimit,
-        6 => CodeRunStatus::CompileError,
-        7..=12 => CodeRunStatus::RuntimeError,
-        _ => CodeRunStatus::InternalError,
-    }
-}
-
 /// Per-case verdicts + the run-level rollup (legacy `_execute_sync`).
 fn grade_cases(
     tests: &[CodeTestCase],
@@ -511,28 +497,27 @@ fn grade_cases(
     let mut overall = CodeRunStatus::Accepted;
     let mut compile_output = None;
     for (position, (test, result)) in tests.iter().zip(results).enumerate() {
-        let mut case_status = status_from_verdict(result.status_id);
-        let mut status_id = Some(result.status_id);
+        let mut verdict = result.verdict;
         let mut status_description = result.status_description.clone();
         let case_passed = if scored {
-            if case_status == CodeRunStatus::Accepted
+            if verdict == TestVerdict::Accepted
                 && !compare::outputs_match(
                     result.stdout.as_deref(),
                     Some(&test.expected_output),
                     test.match_mode,
                 )
             {
-                case_status = CodeRunStatus::WrongAnswer;
-                status_id = Some(4);
+                verdict = TestVerdict::WrongAnswer;
                 status_description = "Wrong Answer".into();
             }
-            case_status == CodeRunStatus::Accepted
+            verdict == TestVerdict::Accepted
         } else {
             true
         };
         if scored && case_passed {
             passed += 1;
         }
+        let case_status = verdict.run_status();
         if case_status != CodeRunStatus::Accepted && overall == CodeRunStatus::Accepted {
             overall = case_status;
         }
@@ -543,14 +528,12 @@ fn grade_cases(
         rows.push(CodeRunCaseRow {
             position: i32::try_from(position).unwrap_or(i32::MAX),
             test_id: test.id.clone(),
-            // A Judge0 submission token on runs from before go-judge.
-            judge0_token: None,
             stdin: Some(test.input.clone()),
             expected_output: Some(test.expected_output.clone()),
             description: test.description.clone().unwrap_or_default(),
             weight: f64::from(test.weight.max(1)),
             is_visible: test.is_visible,
-            status_id,
+            verdict,
             status_description,
             passed: case_passed,
             stdout: truncate(result.stdout.as_deref(), max_output_bytes),
@@ -616,7 +599,7 @@ fn build(row: CodeRunRow, cases: Vec<CodeRunCaseRow>, replayed: bool) -> CodeRun
                 test_id: c.test_id,
                 passed: c.passed,
                 is_visible: c.is_visible,
-                status_id: c.status_id,
+                status_id: Some(c.verdict.legacy_status_id()),
                 status_description: c.status_description,
                 description: c.description,
                 weight: c.weight,
@@ -650,9 +633,9 @@ pub fn sha256_hex(value: &str) -> String {
 mod tests {
     use super::*;
 
-    fn result(status_id: i32, stdout: Option<&str>) -> Outcome {
+    fn result(verdict: TestVerdict, stdout: Option<&str>) -> Outcome {
         Outcome {
-            status_id,
+            verdict,
             status_description: "x".into(),
             stdout: stdout.map(str::to_owned),
             stderr: None,
@@ -678,12 +661,15 @@ mod tests {
     #[test]
     fn accepted_by_the_sandbox_but_mismatching_output_is_wrong_answer() {
         let tests = [test("a", "4", 2, true), test("b", "9", 3, false)];
-        let results = [result(3, Some("4\n")), result(3, Some("8\n"))];
+        let results = [
+            result(TestVerdict::Accepted, Some("4\n")),
+            result(TestVerdict::Accepted, Some("8\n")),
+        ];
         let graded = grade_cases(&tests, &results, true, 100);
         assert_eq!(graded.passed, 1);
         assert_eq!(graded.status, CodeRunStatus::WrongAnswer);
         assert_eq!(graded.score, Some(40.0));
-        assert_eq!(graded.rows[1].status_id, Some(4));
+        assert_eq!(graded.rows[1].verdict, TestVerdict::WrongAnswer);
         assert_eq!(graded.rows[1].status_description, "Wrong Answer");
         assert!(
             graded.rows[1].stdin.is_some(),
@@ -694,12 +680,20 @@ mod tests {
     #[test]
     fn first_failing_status_wins_and_custom_runs_are_unscored() {
         let tests = [test("a", "1", 1, true), test("b", "2", 1, true)];
-        let results = [result(6, None), result(5, None)];
+        let results = [
+            result(TestVerdict::CompileError, None),
+            result(TestVerdict::TimeLimit, None),
+        ];
         let graded = grade_cases(&tests, &results, true, 100);
         assert_eq!(graded.status, CodeRunStatus::CompileError);
         assert_eq!(graded.score, Some(0.0));
 
-        let custom = grade_cases(&tests[..1], &[result(3, Some("anything"))], false, 100);
+        let custom = grade_cases(
+            &tests[..1],
+            &[result(TestVerdict::Accepted, Some("anything"))],
+            false,
+            100,
+        );
         assert_eq!(custom.status, CodeRunStatus::Accepted);
         assert_eq!(custom.passed, 0);
         assert_eq!(custom.score, None);
@@ -709,7 +703,10 @@ mod tests {
     #[test]
     fn a_zero_weight_test_counts_as_one() {
         let tests = [test("a", "1", 0, true), test("b", "2", 3, true)];
-        let results = [result(3, Some("1")), result(3, Some("x"))];
+        let results = [
+            result(TestVerdict::Accepted, Some("1")),
+            result(TestVerdict::Accepted, Some("x")),
+        ];
         let graded = grade_cases(&tests, &results, true, 100);
         assert_eq!(graded.rows[0].weight, 1.0);
         assert_eq!(graded.score, Some(25.0));

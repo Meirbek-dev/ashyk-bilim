@@ -244,6 +244,54 @@ text_enum!(
 );
 
 text_enum!(
+    /// One test's outcome in a code run (`code_run_cases.verdict`).
+    TestVerdict {
+        Accepted => "accepted",
+        WrongAnswer => "wrong_answer",
+        TimeLimit => "time_limit",
+        MemoryLimit => "memory_limit",
+        OutputLimit => "output_limit",
+        CompileError => "compile_error",
+        RuntimeError => "runtime_error",
+        InternalError => "internal_error",
+    }
+);
+
+impl TestVerdict {
+    /// The numeric code the API's `status_id` still carries (Judge0's ids,
+    /// which both web clients map to their verdicts). Mirrored by the SQL
+    /// `code_case_status_id`.
+    #[must_use]
+    pub const fn legacy_status_id(self) -> i32 {
+        match self {
+            Self::Accepted => 3,
+            Self::WrongAnswer => 4,
+            Self::TimeLimit => 5,
+            Self::CompileError => 6,
+            Self::OutputLimit => 8,
+            Self::RuntimeError => 11,
+            Self::MemoryLimit => 12,
+            Self::InternalError => 13,
+        }
+    }
+
+    /// The run-level status this outcome rolls up to.
+    #[must_use]
+    pub const fn run_status(self) -> CodeRunStatus {
+        match self {
+            Self::Accepted => CodeRunStatus::Accepted,
+            Self::WrongAnswer => CodeRunStatus::WrongAnswer,
+            Self::TimeLimit => CodeRunStatus::TimeLimit,
+            Self::CompileError => CodeRunStatus::CompileError,
+            Self::RuntimeError | Self::MemoryLimit | Self::OutputLimit => {
+                CodeRunStatus::RuntimeError
+            }
+            Self::InternalError => CodeRunStatus::InternalError,
+        }
+    }
+}
+
+text_enum!(
     AnnotationType {
         Text => "text",
         Highlight => "highlight",

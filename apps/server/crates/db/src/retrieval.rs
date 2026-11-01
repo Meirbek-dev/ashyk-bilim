@@ -116,7 +116,7 @@ pub async fn item_sources(pool: &PgPool, assessment_id: uuid::Uuid) -> Result<Ve
     let rows = sqlx::query_as!(
         ItemSourceRow,
         r#"SELECT i.id AS item_id, a.id AS "activity_id: ActivityId", a.name AS activity_name,
-                  a.published, i.title, i.kind, i.body, i.max_score
+                  a.published, i.title, i.kind, i.body, i.max_score::float8 AS "max_score!"
            FROM assessment_items i
            JOIN assessments s ON s.id = i.assessment_id
            JOIN activities a ON a.id = s.activity_id

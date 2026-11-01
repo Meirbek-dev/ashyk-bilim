@@ -19,7 +19,7 @@ fn fake_python(source: &str, stdin: &str) -> CaseVerdict {
     }
     if source.contains("BOOM") {
         return CaseVerdict {
-            status_id: 13,
+            verdict: ab_core::assessments::TestVerdict::InternalError,
             stdout: None,
             stderr: None,
             compile_output: None,
@@ -872,7 +872,7 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
         (&frank_sub, "pending", None),
     ] {
         let (got, final_score): (String, Option<f64>) =
-            sqlx::query_as("SELECT status, final_score FROM submissions WHERE id = $1")
+            sqlx::query_as("SELECT status, final_score::float8 FROM submissions WHERE id = $1")
                 .bind(uuid::Uuid::parse_str(sub).unwrap())
                 .fetch_one(&app.pool)
                 .await

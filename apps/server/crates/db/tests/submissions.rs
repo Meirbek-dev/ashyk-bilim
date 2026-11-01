@@ -40,9 +40,9 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     .await
     .unwrap();
     let assessment: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, kind, title, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'quiz', 'Q', 'published', now(), 'auto', 'immediate', 'passed')
+         VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
     )
     .bind(activity)
@@ -57,11 +57,11 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
 async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
 
-    let first = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let first = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap()
         .expect("first draft opens");
-    let second = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let second = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap();
     assert!(second.is_none(), "a second open draft must be refused");
@@ -88,6 +88,10 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
 
     // Submit happens once; the second attempt sees no draft.
     let grading = serde_json::json!({ "items": [], "needs_manual_review": false });
+    let snapshot = serde_json::json!({});
+    let version = ab_db::assessment_versions::ensure(&pool, assessment, &snapshot, &snapshot)
+        .await
+        .unwrap();
     let outcome = SubmitOutcome {
         status: SubmissionStatus::Published,
         answers: &answers,
@@ -103,6 +107,9 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         submitted_at: None,
         read_draft_version: 2,
         read_violation_count: 0,
+        items_snapshot: &snapshot,
+        policy_snapshot: &snapshot,
+        assessment_version_id: version,
     };
     assert!(
         submissions::persist_submit(&pool, first, outcome)
@@ -124,6 +131,9 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         submitted_at: None,
         read_draft_version: 2,
         read_violation_count: 0,
+        items_snapshot: &snapshot,
+        policy_snapshot: &snapshot,
+        assessment_version_id: version,
     };
     assert!(
         !submissions::persist_submit(&pool, first, again)
@@ -148,7 +158,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     assert_eq!(prior.len(), 1);
     assert_ne!(prior[0].status, SubmissionStatus::Draft);
     assert!(
-        submissions::insert_draft(&pool, assessment, course, user, 2, 1, 1, false)
+        submissions::insert_draft(&pool, assessment, course, user, 2, 1, false)
             .await
             .unwrap()
             .is_some()
@@ -158,13 +168,15 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
 #[ab_testdb::test]
 async fn grading_ledger_is_append_only(pool: PgPool) {
     let (user, course, assessment) = seed(&pool).await;
-    let submission = submissions::insert_draft(&pool, assessment, course, user, 1, 1, 1, false)
+    let submission = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
         .await
         .unwrap()
         .unwrap();
     let breakdown = serde_json::json!({ "items": [] });
+    // The submission shows its latest entry (checked at commit).
+    let mut tx = pool.begin().await.unwrap();
     let entry = submissions::insert_grading_entry(
-        &pool,
+        &mut *tx,
         NewGradingEntry {
             submission_id: submission,
             graded_by: None,
@@ -179,6 +191,13 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     )
     .await
     .unwrap();
+    sqlx::query("UPDATE submissions SET final_score = 63, grading = $2 WHERE id = $1")
+        .bind(submission.0)
+        .bind(&breakdown)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
 
     // Scores are frozen; only publication may change.
     let frozen = sqlx::query("UPDATE grading_entries SET raw_score = 99 WHERE id = $1")

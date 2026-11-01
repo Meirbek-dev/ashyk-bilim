@@ -281,7 +281,7 @@ pub async fn list_assessment_weights<'e>(
 ) -> Result<Vec<ActivityWeightRow>> {
     let rows = sqlx::query_as!(
         ActivityWeightRow,
-        r#"SELECT activity_id AS "activity_id: ActivityId", weight
+        r#"SELECT activity_id AS "activity_id: ActivityId", weight::float8 AS "weight!"
            FROM assessments WHERE course_id = $1"#,
         course_id.0
     )

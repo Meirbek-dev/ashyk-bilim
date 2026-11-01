@@ -828,8 +828,6 @@ impl AssessmentsService {
             NewAssessment {
                 activity_id,
                 course_id: chapter.course_id,
-                kind,
-                title,
                 description: input.description,
                 weight: input.weight,
                 grading_type: input.grading_type,
@@ -1009,7 +1007,6 @@ impl AssessmentsService {
         ab_db::assessments::update_assessment_details(
             &mut *tx,
             id,
-            title,
             changes.description,
             changes.weight,
             changes.grading_type,
@@ -1444,8 +1441,6 @@ impl AssessmentsService {
             NewAssessment {
                 activity_id,
                 course_id,
-                kind: source.kind,
-                title,
                 description: &source.description,
                 weight: source.weight,
                 grading_type: source.grading_type,

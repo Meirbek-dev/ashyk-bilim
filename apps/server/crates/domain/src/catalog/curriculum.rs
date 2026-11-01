@@ -604,9 +604,9 @@ impl CurriculumService {
                 "the activity has an assessment attached; delete it before changing the type",
             ));
         }
-        // UX-112/UX-120: one name - the assessment title follows the activity
-        // name under the assessment lock (scheduled / archived → 409; a
-        // published one renames even with submissions). BUG-186: every refusal above runs
+        // UX-112/UX-120: one name - the assessment's title is the activity's
+        // name; a rename is gated under the assessment lock (scheduled /
+        // archived → 409; a published one renames even with submissions). BUG-186: every refusal above runs
         // before the first write, and the writes share one transaction.
         // BUG-262: the lifecycle is read under the assessment row lock
         // (assessment → activity, the order the assessments title PATCH
@@ -621,17 +621,6 @@ impl CurriculumService {
             crate::assessments::service::ensure_renamable(&mut *tx, assessment).await?;
         }
 
-        if let (Some(assessment), Some(name)) = (&assessment, name) {
-            ab_db::assessments::update_assessment_details(
-                &mut *tx,
-                assessment.id,
-                Some(name),
-                None,
-                None,
-                None,
-            )
-            .await?;
-        }
         let published = changes.published.filter(|p| *p != activity.published);
         // BUG-358: one guarded write for every column - a rename under a
         // stale `If-Match` is refused exactly like a content save.

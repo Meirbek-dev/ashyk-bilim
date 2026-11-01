@@ -536,12 +536,13 @@ async fn batch_release_hides_scores_and_open_text_waits_for_review(pool: PgPool)
     assert!(submitted.json()["final_score"].is_null());
     assert!(submitted.json()["grading"].is_null());
     assert!(submitted.json()["graded_at_unix"].is_null());
-    let stored: (Option<f64>, Option<f64>) =
-        sqlx::query_as("SELECT auto_score, final_score FROM submissions WHERE id = $1")
-            .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
+    let stored: (Option<f64>, Option<f64>) = sqlx::query_as(
+        "SELECT auto_score::float8, final_score::float8 FROM submissions WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
     assert_eq!(stored, (Some(100.0), Some(100.0)), "graded, just not shown");
 
     // Open text → manual review: pending, nothing graded, no ledger entry.
@@ -2191,7 +2192,7 @@ async fn timer_sweep_hands_a_stale_draft_to_review(pool: PgPool) {
             .unwrap();
     assert_eq!(swept, 1);
     let (status, final_score, reason): (String, Option<f64>, Option<String>) = sqlx::query_as(
-        "SELECT status, final_score, auto_submit_reason FROM submissions WHERE id = $1",
+        "SELECT status, final_score::float8, auto_submit_reason FROM submissions WHERE id = $1",
     )
     .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
     .fetch_one(&app.pool)
@@ -2245,12 +2246,13 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(swept, 1);
-    let (preview, status, penalty): (bool, String, f64) =
-        sqlx::query_as("SELECT preview, status, late_penalty_pct FROM submissions WHERE id = $1")
-            .bind(sub)
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
+    let (preview, status, penalty): (bool, String, f64) = sqlx::query_as(
+        "SELECT preview, status, late_penalty_pct::float8 FROM submissions WHERE id = $1",
+    )
+    .bind(sub)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
     assert!(preview);
     assert_ne!(status, "draft");
     assert!(
@@ -2305,7 +2307,7 @@ async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
             .unwrap();
     assert_eq!(swept, 1);
     let (late, penalty, at_clock_out): (bool, f64, bool) = sqlx::query_as(
-        "SELECT is_late, late_penalty_pct,
+        "SELECT is_late, late_penalty_pct::float8,
                 submitted_at < now() - interval '90 seconds' AND duration_seconds = 60
          FROM submissions WHERE id = $1",
     )

@@ -497,7 +497,8 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
         let verdict = match client.run_batch("runner-check", &batch).await {
             Ok(outcomes) => match outcomes.first() {
                 Some(o)
-                    if o.status_id == 3 && o.stdout.as_deref().map(str::trim) == Some("144") =>
+                    if o.verdict == ab_core::assessments::TestVerdict::Accepted
+                        && o.stdout.as_deref().map(str::trim) == Some("144") =>
                 {
                     "ok".to_owned()
                 }

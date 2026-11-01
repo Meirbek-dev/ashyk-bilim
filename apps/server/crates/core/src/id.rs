@@ -67,6 +67,7 @@ typed_id!(CollectionId);
 typed_id!(CourseUpdateId);
 typed_id!(UsergroupId);
 typed_id!(AssessmentId);
+typed_id!(AssessmentVersionId);
 typed_id!(AssessmentItemId);
 typed_id!(SubmissionId);
 typed_id!(GradingEntryId);
