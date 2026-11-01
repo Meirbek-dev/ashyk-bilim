@@ -11,7 +11,8 @@ The nightly restic snapshots live in `${BACKUP_DIR}/restic` **on the same disk**
 they back up. A disk failure, host compromise, or `rm` mistake loses the
 application *and* every backup of it.
 
-**Owner decision 2026-10-02: no offsite backups.** Kept here as an accepted
+**Owner decision 2026-10-02: no offsite backups** (reconfirmed 2026-11-01, together with
+a recovery point of one day: no WAL archiving). Kept here as an accepted
 risk. Stage 1 reduced what it can: snapshots are logical dumps plus volumes and
 secrets, restorable by one script and checked by `just restore-drill`
 (RUNBOOK 3.5). Copying the repository off the host by hand before risky work is

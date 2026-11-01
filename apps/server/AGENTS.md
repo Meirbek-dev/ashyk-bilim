@@ -43,6 +43,10 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
   `schema_skipped_checks` row when old rows violate it). A growing value list (`kind IN (...)`) is a lookup
   table with a foreign key (`notification_kinds`, `upload_purposes`), not a CHECK rewritten per value.
   New foreign keys get an index led by their first column (`fk_index_audit.rs`).
+- Migrations deploy during classes and the previous release must run on the new schema (`migration_rules.rs`):
+  start with `SET LOCAL lock_timeout = '5s';`, build an index on an existing table CONCURRENTLY in its own
+  `-- no-transaction` file, and DROP COLUMN / DROP TABLE / RENAME only a release after the code stopped using it,
+  in a file marked `-- contract: <why>`.
 - Preserve migrated legacy data: UUIDs, video thumbnails, `custom` activities, certificate layouts,
   and trail steps without projection rows. Imported users authenticate through Zitadel passwap.
 - No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, `dbg!`, or stdout/stderr prints outside

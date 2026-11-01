@@ -1,11 +1,13 @@
 #!/usr/bin/env bun
 // `just prod-report [--since 24h] [--project cs-mooc]`: what production on this host got wrong lately, so work starts
-// from real failures instead of a QA sweep. Read-only: `docker inspect`, `docker logs` and one SELECT on the jobs table.
+// from real failures instead of a QA sweep. Read-only: `docker inspect`, `docker logs` and SELECTs on jobs and
+// schema_skipped_checks.
 //
 //   containers  state, health, restarts of the compose project
 //   server      WARN/ERROR per message (server and worker JSON logs), most frequent first
 //   nginx       5xx per method and route (ids and query strings folded), share of all requests
 //   jobs        failed/dead jobs per kind with the last error
+//   checks      CHECK constraints a migration skipped because old rows violate them (RUNBOOK 2.4)
 //
 // User ids, emails, IPs and tokens are redacted; each section prints at most 15 rows.
 import { spawnSync } from 'node:child_process'
@@ -120,9 +122,15 @@ function nginx(names: string[]): string[] {
   return [`  ${failed} of ${total} requests answered 5xx (${share} %)`, ...table([...rows.values()])]
 }
 
-function jobs(names: string[]): string[] {
+function psql(names: string[], sql: string): { rows: string[] } | { error: string } {
   const db = names.find(n => /-db-\d+$/.test(n))
-  if (!db) return ['  no db container']
+  if (!db) return { error: '  no db container' }
+  const out = docker('exec', db, 'sh', '-c', `psql -U "$POSTGRES_USER" -d ashyq -AtF'|' -v ON_ERROR_STOP=1 -c "${sql}"`)
+  if (out.code !== 0) return { error: `  query failed: ${out.out.trim().slice(0, 300)}` }
+  return { rows: out.out.split('\n').filter(Boolean) }
+}
+
+function jobs(names: string[]): string[] {
   const interval = since
     .replace(/^(\d+)h$/, '$1 hours')
     .replace(/^(\d+)m$/, '$1 minutes')
@@ -131,13 +139,28 @@ function jobs(names: string[]): string[] {
   const sql = `SELECT status, kind, count(*), max(updated_at)::text, left(max(last_error), 300)
                  FROM jobs WHERE status IN ('failed', 'dead') AND updated_at > now() - interval '${interval}'
                 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT ${ROWS}`
-  const out = docker('exec', db, 'sh', '-c', `psql -U "$POSTGRES_USER" -d ashyq -AtF'|' -v ON_ERROR_STOP=1 -c "${sql}"`)
-  if (out.code !== 0) return [`  query failed: ${out.out.trim().slice(0, 300)}`]
-  const rows = out.out.split('\n').filter(Boolean)
+  const out = psql(names, sql)
+  if ('error' in out) return [out.error]
+  const rows = out.rows
   return rows.length
     ? rows.map(r => {
         const [status, kind, count, last, error] = r.split('|')
         return `  ${count?.padStart(6)}  ${status} ${kind}  (last ${last?.slice(0, 16)})${error ? ` - ${redact(error).slice(0, 160)}` : ''}`
+      })
+    : ['  none']
+}
+
+// A skipped check means the schema guarantees less than its migrations say: repair the rows, re-add it.
+function checks(names: string[]): string[] {
+  const out = psql(
+    names,
+    `SELECT name, table_name, skipped_at::date FROM schema_skipped_checks ORDER BY name LIMIT ${ROWS}`,
+  )
+  if ('error' in out) return [out.error]
+  return out.rows.length
+    ? out.rows.map(r => {
+        const [name, table, at] = r.split('|')
+        return `  ${name} on ${table} (skipped ${at})`
       })
     : ['  none']
 }
@@ -153,6 +176,7 @@ if (import.meta.main) {
     [`server and worker warnings/errors, last ${since}`, serverLog(names)],
     [`nginx 5xx, last ${since}`, nginx(names)],
     [`failed/dead jobs, last ${since}`, jobs(names)],
+    ['skipped schema checks', checks(names)],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)
 }

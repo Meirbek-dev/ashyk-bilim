@@ -655,6 +655,48 @@ in the order it can be done, each step a forward migration on the current schema
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.
 
+### 5.7 Schema review 2 (2026-11-01): owner decisions
+
+A second pass over the schema after 5.6 landed. The owner settled these; each step is a forward migration or a
+config change on the current stack.
+
+Done:
+
+- Grade journals guard the whole row (`file_grading_entries` had no guard; `grading_entries` compared a column
+  list): `20261102000000_ledger_guards`, `schema_review.rs`.
+- Skipped checks are reported, not fatal: `just prod-report` lists `schema_skipped_checks`, `just brief` names them.
+- Migrations deploy during classes: `migration_rules.rs` enforces `lock_timeout`, CONCURRENTLY indexes in
+  `-- no-transaction` files, and expand/contract (`-- contract:` marker) from 2026-11-02 on. The 2026-11-01
+  migrations predate it: their first deploy builds ~45 indexes in one transaction, so it goes in a quiet window.
+
+Decided, not done:
+
+1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
+   production host (FINDINGS 3, reconfirmed).
+2. **Erasing a person** = one anonymising command: name, email, username replaced; AI data of the person
+   (`ai_work_embeddings` needs a `user_id` first, `ai_qa_messages`, mastery, grade drafts' rationale) deleted;
+   grades and certificates stay, anonymised. A test lists every table with a key onto `users` and fails on one
+   the command does not handle. Replaces RUNBOOK 2.3; the new AI tables move from CASCADE to RESTRICT with it.
+3. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
+   dates; date parameters bind as `date`; past daily rows are rebuilt once.
+4. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
+   certificate row; verification shows them; a name change re-issues.
+5. **Learner search and AI context check visibility at query time** (activity published, course not archived,
+   the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
+6. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
+   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
+   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
+   `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
+7. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
+   retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
+   (QUESTIONS Q-2026-11-01-2).
+8. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
+   carry a `schema_version` in the payload.
+9. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
+   AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
+10. **Rollback without restore**: once every migration since the previous release is expand-only (no
+    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
+
 ## 6. Auth
 
 Lands in phase 4, inside the current server, replacing Zitadel and Redis sessions.

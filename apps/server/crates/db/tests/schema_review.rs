@@ -19,6 +19,9 @@
 //! - item 18: notification kinds and upload purposes are lookup tables; every
 //!   kind the code sends is a row, and an unknown kind or purpose is refused
 //!   (also inside a preference's `disabled` list).
+//! - review 2, items 11-12: both grade journals guard the whole row: only a
+//!   grade's published_at changes, a file grade never changes, and a file
+//!   grade goes only with its attempt.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -522,4 +525,74 @@ async fn gamification_totals_are_reconciled_from_the_journals(pool: PgPool) {
             .unwrap()
             .is_empty()
     );
+}
+
+#[ab_testdb::test]
+async fn grade_journals_guard_the_whole_row(pool: PgPool) {
+    let w = world(&pool).await;
+    let submission = submission(&pool, &w, 1, false).await.unwrap();
+    let entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score)
+         VALUES ($1, 80, 80) RETURNING id",
+    )
+    .bind(submission)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE grading_entries SET published_at = now() WHERE id = $1")
+        .bind(entry)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let rewritten = sqlx::query("UPDATE grading_entries SET overall_feedback = 'x' WHERE id = $1")
+        .bind(entry)
+        .execute(&pool)
+        .await;
+    assert!(rewritten.is_err(), "only published_at changes");
+
+    let task: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(w.activity)
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let attempt: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id)
+         VALUES ($1, $2, $3) RETURNING id",
+    )
+    .bind(task)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let file_entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_grading_entries (attempt_id, status, raw_score, final_score)
+         VALUES ($1, 'graded', 70, 70) RETURNING id",
+    )
+    .bind(attempt)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    for bad in [
+        "UPDATE file_grading_entries SET final_score = 100 WHERE id = $1",
+        "DELETE FROM file_grading_entries WHERE id = $1",
+    ] {
+        let refused = sqlx::query(bad).bind(file_entry).execute(&pool).await;
+        assert!(refused.is_err(), "{bad}");
+    }
+    // The cascade from the attempt still removes its history.
+    sqlx::query("DELETE FROM file_submission_attempts WHERE id = $1")
+        .bind(attempt)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM file_grading_entries WHERE id = $1")
+        .bind(file_entry)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 0);
 }

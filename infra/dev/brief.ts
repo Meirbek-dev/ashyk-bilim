@@ -109,8 +109,12 @@ if (prod.status === 0 && prod.stdout.trim()) {
   }
   const fiveXX = /(\d+) of \d+ requests answered 5xx/.exec(report)?.[1] ?? '?'
   const down = (report.match(/^ {2}!! .*/gm) ?? []).map(l => l.trim().split(/\s+/)[1])
+  const skipped = (/(?:^|\n)skipped schema checks\n([\s\S]*?)(?:\n\n|$)/.exec(report)?.[1] ?? '')
+    .split('\n')
+    .filter(l => / on /.test(l))
+    .map(l => l.trim().split(' ')[0])
   out.push(
-    `prod (just prod-report): ${count('server and worker')} warning kind(s), ${fiveXX} 5xx, ${count('failed/dead jobs')} failed job kind(s) in 24 h; containers flagged: ${down.length ? down.join(' ') : 'none'}`,
+    `prod (just prod-report): ${count('server and worker')} warning kind(s), ${fiveXX} 5xx, ${count('failed/dead jobs')} failed job kind(s) in 24 h; containers flagged: ${down.length ? down.join(' ') : 'none'}; skipped schema checks: ${skipped.length ? skipped.join(' ') : 'none'}`,
   )
 }
 

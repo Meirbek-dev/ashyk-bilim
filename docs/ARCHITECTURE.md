@@ -388,6 +388,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
   body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
   `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
+- **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only
+  its `published_at`, a `file_grading_entries` row never changes; neither is deleted except by the cascade
+  from its submission / attempt. The guards compare the whole row, so a new column is frozen too.
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead
