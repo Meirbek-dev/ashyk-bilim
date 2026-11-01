@@ -98,6 +98,10 @@ JOIN users u ON u.id = t.user_id
 JOIN LATERAL (SELECT id FROM courses ORDER BY id
               OFFSET substr(u.username, 6)::int % 59 LIMIT 2) c ON true;
 
+-- Membership is the enrolment row (the trail-run mirror trigger goes with the enrolments contract).
+INSERT INTO enrolments (course_id, user_id)
+SELECT course_id, user_id FROM trail_runs ON CONFLICT DO NOTHING;
+
 INSERT INTO activity_progress (course_id, activity_id, user_id, state, teacher_action_required)
 SELECT r.course_id, a.id, r.user_id,
        CASE WHEN a.position % 3 = 0 THEN 'completed' ELSE 'not_started' END,
