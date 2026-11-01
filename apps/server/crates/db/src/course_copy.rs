@@ -170,24 +170,25 @@ pub async fn set_activity_position(
     Ok(())
 }
 
-/// Shared media: one more reference per use in the copy on every upload
-/// row whose references are counted (the course thumbnail, claimed
-/// blocks), so the object lives while either course shows it.
+/// Take the uploads a copied course shares off the reaper clock.
+///
+/// The copy names the source's uploads (thumbnails, claimed blocks) through
+/// its own upload keys, which hold them while either course shows them
+/// (`upload_referenced`); a shared upload whose clock was running stops it.
 pub async fn reference_shared_media(conn: &mut sqlx::PgConnection, course: CourseId) -> Result<()> {
     sqlx::query!(
-        r#"WITH keys AS (
-               SELECT thumbnail_image_key AS key FROM courses WHERE id = $1
-               UNION ALL
-               SELECT b.content->>'file_key' FROM blocks b
-               JOIN activities a ON a.id = b.activity_id
-               WHERE a.course_id = $1 AND b.claimed
-           ), counted AS (
-               SELECT key, count(*)::int AS n FROM keys WHERE key IS NOT NULL GROUP BY key
-           )
-           UPDATE uploads u
-           SET referenced_count = u.referenced_count + c.n, expires_at = NULL
-           FROM counted c
-           WHERE u.key = c.key AND u.status = 'finalized'"#,
+        r#"UPDATE uploads u SET expires_at = NULL
+           WHERE u.status = 'finalized' AND u.expires_at IS NOT NULL
+             AND u.id IN (SELECT thumbnail_image_upload_id FROM courses WHERE id = $1
+                          UNION ALL
+                          SELECT thumbnail_video_upload_id FROM courses WHERE id = $1
+                          UNION ALL
+                          SELECT thumbnail_upload_id FROM chapters WHERE course_id = $1
+                          UNION ALL
+                          SELECT bu.upload_id FROM block_uploads bu
+                          JOIN blocks b ON b.id = bu.block_id
+                          JOIN activities a ON a.id = b.activity_id
+                          WHERE a.course_id = $1)"#,
         course.0
     )
     .execute(&mut *conn)

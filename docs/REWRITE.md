@@ -659,11 +659,15 @@ in the order it can be done, each step a forward migration on the current schema
    previous release's writes keep them too; writers did not change). The reaper asks `upload_referenced(id)`
    (EXISTS over those and `file_submission_files.upload_id`) instead of `referenced_count`;
    `the_reaper_keeps_referenced_files_whatever_the_counter_says` drifts every counter to 0 and the files stay.
-   Left, a release after that one ran: the claim/release paths set `expires_at` from `upload_referenced`
-   instead of the counter, then `referenced_count` goes (contract) with BUG-209/263's repair code
-   (`catalog.rs` / `file_submissions.rs` bulk recounts, `course_copy.rs` increments). Discussion images have
-   no column (a claimed one is never released, so the reaper never sees it): a `post_uploads` link table
-   before the counter goes.
+   Done (review 3, item 18 rest, `20261102072000`): the claim/release paths set `expires_at` from
+   `upload_referenced` (BUG-209/263's recounts and the copy's increments are gone); `post_uploads (discussion_id,
+   upload_id)` holds the images a post's content shows (trigger from the content, backfilled; edits and deletes
+   release what the post stopped showing); `block_uploads` holds only claimed blocks. The previous release still
+   moves the counter: `uploads_rollback_guard` keeps its writes from starting the clock of a referenced upload;
+   `20261103072000` (contract) drops the guard and `referenced_count`.
+   Left: uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them) are
+   never reaped; a one-off `ashyq admin` sweep (`expires_at = now() + grace` where finalized, NULL and not
+   `upload_referenced`) collects them, also the discussion images of posts deleted before `post_uploads`.
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
    Left: the roster (`list_course_learners`, keyset cursor = trail run id in the API), `GET /trail` and

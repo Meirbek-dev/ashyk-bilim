@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT bu.upload_id FROM block_uploads bu\n           JOIN blocks b ON b.id = bu.block_id\n           WHERE b.activity_id = ANY($1) AND ($2::uuid IS NULL OR b.id = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "upload_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "block_uploads",
+            "name": "upload_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9fcf3ec2d9a3eaa2caea05b70be75640d2c0b25e3a34d661bf4d0d303fe46e84"
+}

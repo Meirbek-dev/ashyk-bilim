@@ -750,8 +750,9 @@ async fn user_listing_bounds_limit_and_walks_the_cursor(pool: PgPool) {
 /// A finalized upload row owned by `user` (the claim reads only the ledger).
 async fn finalized_row(app: &TestApp, user: ab_core::id::UserId, purpose: &str) -> String {
     let id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
-         VALUES ($1, $2, 'public', $2 || '/' || gen_random_uuid(), 'image/png', 4, 'finalized')
+        "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status, expires_at)
+         VALUES ($1, $2, 'public', $2 || '/' || gen_random_uuid(), 'image/png', 4, 'finalized',
+                 now() + interval '1 day')
          RETURNING id",
     )
     .bind(user.0)
@@ -793,7 +794,7 @@ async fn concurrent_avatar_patches_pin_no_upload(pool: PgPool) {
     }
     let pinned: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM uploads
-         WHERE referenced_count > 0
+         WHERE expires_at IS NULL AND status = 'finalized'
            AND key IS DISTINCT FROM (SELECT avatar_key FROM users WHERE id = $1)",
     )
     .bind(user.0)
@@ -823,19 +824,20 @@ async fn dropped_avatar_patch_leaks_no_reference(pool: PgPool) {
                 &serde_json::json!({ "avatar_upload_id": id }),
             ),
             async || {
-                sqlx::query_scalar::<_, i32>("SELECT referenced_count FROM uploads WHERE id = $1")
-                    .bind(upload)
-                    .fetch_one(&app.pool)
-                    .await
-                    .unwrap()
-                    > 0
+                sqlx::query_scalar::<_, bool>(
+                    "SELECT expires_at IS NULL AND status = 'finalized' FROM uploads WHERE id = $1",
+                )
+                .bind(upload)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
             },
             |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
         )
         .await;
         let pinned: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM uploads
-             WHERE referenced_count > 0
+             WHERE expires_at IS NULL AND status = 'finalized'
                AND key IS DISTINCT FROM (SELECT avatar_key FROM users WHERE id = $1)",
         )
         .bind(user.0)

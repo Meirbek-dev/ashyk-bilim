@@ -14,6 +14,7 @@ use ab_db::discussions::DiscussionRow;
 use sqlx::PgPool;
 
 use crate::catalog::courses::{Course, CoursesService};
+use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
 
 pub const MAX_PAGE: i64 = 100;
@@ -520,6 +521,9 @@ impl DiscussionsService {
             content,
         )
         .await?;
+        // A claimed image the content does not show is not held (post_uploads).
+        ab_db::uploads::release_references(&mut tx, upload_ids, UNREFERENCED_GRACE.as_secs_f64())
+            .await?;
         tx.commit().await?;
         crate::analytics::events::hooks::discussion_posted(
             &self.pool,
@@ -656,8 +660,17 @@ impl DiscussionsService {
             validate_content(content)?;
         }
         let mut tx = self.pool.begin().await?;
+        let shown = ab_db::discussions::post_images(&mut tx, id).await?;
         claim_images(&mut tx, actor, upload_ids).await?;
         ab_db::discussions::update_discussion(&mut *tx, id, content, status).await?;
+        // The content decides what the post holds (post_uploads): an image it
+        // no longer shows, or a claimed one it never showed, goes to the reaper.
+        let released: Vec<uuid::Uuid> = shown
+            .into_iter()
+            .chain(upload_ids.iter().copied())
+            .collect();
+        ab_db::uploads::release_references(&mut tx, &released, UNREFERENCED_GRACE.as_secs_f64())
+            .await?;
         tx.commit().await?;
         let fresh = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
@@ -689,7 +702,9 @@ impl DiscussionsService {
         // LIVE: told after the delete (a removed post takes its thread with
         // it, so only a reply's thread or the course graders hear of it; a
         // tombstone is an update).
-        let outcome = ab_db::discussions::delete_discussion(&self.pool, id).await?;
+        let outcome =
+            ab_db::discussions::delete_discussion(&self.pool, id, UNREFERENCED_GRACE.as_secs_f64())
+                .await?;
         if outcome == ab_db::discussions::Deleted::Missing {
             return Err(Error::not_found("discussion"));
         }
@@ -729,8 +744,8 @@ impl DiscussionsService {
     }
 }
 
-/// Claim the post's `discussion-image` uploads with the write (one reference
-/// each; the object stays while the upload row does).
+/// Claim the post's `discussion-image` uploads with the write: off the reaper
+/// clock while the post's content shows them (`post_uploads`).
 async fn claim_images(
     tx: &mut sqlx::PgConnection,
     actor: &Actor,

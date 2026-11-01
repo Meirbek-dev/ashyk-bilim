@@ -345,19 +345,20 @@ async fn dropped_branding_patch_leaks_no_reference(pool: PgPool) {
                 &serde_json::json!({ "logo_upload_id": id }),
             ),
             async || {
-                sqlx::query_scalar::<_, i32>("SELECT referenced_count FROM uploads WHERE id = $1")
-                    .bind(upload)
-                    .fetch_one(&app.pool)
-                    .await
-                    .unwrap()
-                    > 0
+                sqlx::query_scalar::<_, bool>(
+                    "SELECT expires_at IS NULL AND status = 'finalized' FROM uploads WHERE id = $1",
+                )
+                .bind(upload)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
             },
             |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
         )
         .await;
         let pinned: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM uploads
-             WHERE purpose = 'platform-logo' AND referenced_count > 0
+             WHERE purpose = 'platform-logo' AND expires_at IS NULL AND status = 'finalized'
                AND key IS DISTINCT FROM (SELECT logo_key FROM platforms WHERE singleton)",
         )
         .fetch_one(&app.pool)

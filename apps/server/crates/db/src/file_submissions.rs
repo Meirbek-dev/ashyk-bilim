@@ -997,8 +997,8 @@ pub async fn discard_preview_attempts(
     Ok(())
 }
 
-/// Delete the file rows of locked attempts, releasing one upload reference
-/// per row (uploads locked in key order first).
+/// Delete the file rows of locked attempts, releasing their uploads
+/// (uploads locked in key order first; `uploads::release_references`).
 async fn delete_attempt_files_releasing(
     conn: &mut sqlx::PgConnection,
     attempts: &[uuid::Uuid],
@@ -1011,27 +1011,14 @@ async fn delete_attempt_files_releasing(
     .fetch_all(&mut *conn)
     .await?;
     crate::uploads::lock_in_key_order(&mut *conn, &uploads).await?;
-    let deleted = sqlx::query_scalar!(
-        r#"WITH gone AS (
-               DELETE FROM file_submission_files WHERE attempt_id = ANY($1)
-               RETURNING upload_id
-           ), refs AS (
-               SELECT upload_id, count(*)::int AS n FROM gone GROUP BY upload_id
-           ), released AS (
-               UPDATE uploads u
-               SET referenced_count = greatest(u.referenced_count - refs.n, 0),
-                   expires_at = CASE WHEN u.referenced_count <= refs.n
-                                     THEN now() + make_interval(secs => $2)
-                                     ELSE u.expires_at END
-               FROM refs WHERE u.id = refs.upload_id AND u.referenced_count > 0
-           )
-           SELECT count(*) AS "n!" FROM gone"#,
-        attempts,
-        grace_secs
+    let deleted = sqlx::query!(
+        "DELETE FROM file_submission_files WHERE attempt_id = ANY($1)",
+        attempts
     )
-    .fetch_one(conn)
+    .execute(&mut *conn)
     .await?;
-    Ok(u64::try_from(deleted).unwrap_or(0))
+    crate::uploads::release_references(conn, &uploads, grace_secs).await?;
+    Ok(deleted.rows_affected())
 }
 
 // ── Per-learner due dates (L-6) ─────────────────────────────────────────────

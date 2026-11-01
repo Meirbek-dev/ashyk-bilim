@@ -225,6 +225,21 @@ pub async fn update_discussion<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
+/// The discussion images a post's content shows (`post_uploads`, kept from
+/// the content by trigger).
+pub async fn post_images(
+    conn: &mut sqlx::PgConnection,
+    id: DiscussionId,
+) -> Result<Vec<uuid::Uuid>> {
+    let ids = sqlx::query_scalar!(
+        "SELECT upload_id FROM post_uploads WHERE discussion_id = $1",
+        id.0
+    )
+    .fetch_all(conn)
+    .await?;
+    Ok(ids)
+}
+
 /// What [`delete_discussion`] did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Deleted {
@@ -242,8 +257,14 @@ pub enum Deleted {
 /// A post somebody else replied to becomes a tombstone: status `deleted`, its text and author
 /// wiped, its reactions dropped, the replies kept. Otherwise the row goes
 /// (its replies and reactions cascade); a reply that was the last one under
-/// a tombstone takes the tombstone with it.
-pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<Deleted> {
+/// a tombstone takes the tombstone with it. The images of every row that
+/// went or lost its text start their grace clock unless another post shows
+/// them.
+pub async fn delete_discussion(
+    pool: &PgPool,
+    id: DiscussionId,
+    grace_secs: f64,
+) -> Result<Deleted> {
     let mut tx = pool.begin().await?;
     let Some(row) = sqlx::query!(
         r#"SELECT user_id AS "user_id?", parent_id AS "parent_id?"
@@ -255,6 +276,15 @@ pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<Delete
     else {
         return Ok(Deleted::Missing);
     };
+    let images = sqlx::query_scalar!(
+        r#"SELECT DISTINCT p.upload_id FROM post_uploads p
+           JOIN course_discussions d ON d.id = p.discussion_id
+           WHERE d.id = $1 OR d.parent_id = $1 OR d.id = $2"#,
+        id.0,
+        row.parent_id
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     let replied_by_others = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM course_discussions
                           WHERE parent_id = $1 AND status <> 'deleted'
@@ -278,6 +308,7 @@ pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<Delete
         )
         .execute(&mut *tx)
         .await?;
+        crate::uploads::release_references(&mut tx, &images, grace_secs).await?;
         tx.commit().await?;
         return Ok(Deleted::Tombstone);
     }
@@ -294,6 +325,7 @@ pub async fn delete_discussion(pool: &PgPool, id: DiscussionId) -> Result<Delete
         .execute(&mut *tx)
         .await?;
     }
+    crate::uploads::release_references(&mut tx, &images, grace_secs).await?;
     tx.commit().await?;
     Ok(Deleted::Removed)
 }

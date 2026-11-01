@@ -1013,6 +1013,11 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
     upload("collection-cover", "k/cover").await;
     upload("platform-logo", "k/logo").await;
     let media = upload("block-image", "k/block").await;
+    let image = upload(
+        "discussion-image",
+        "discussion-image/0123456789abcdef0123456789abcdef",
+    )
+    .await;
     let orphan = upload("block-image", "k/orphan").await;
     for sql in [
         "UPDATE users SET avatar_key = 'k/avatar' WHERE id = $1",
@@ -1022,6 +1027,9 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         "UPDATE platforms SET logo_key = 'k/logo'",
         "INSERT INTO blocks (activity_id, block_type, content)
          VALUES ($3, 'image', '{\"file_key\": \"k/block\"}')",
+        "INSERT INTO course_discussions (course_id, user_id, content)
+         VALUES ($2, $1, '{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":
+                 {\"src\":\"/content/discussion-image/0123456789abcdef0123456789abcdef\"}}]}')",
     ] {
         sqlx::query(sql)
             .bind(w.user)
@@ -1031,17 +1039,18 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
             .await
             .unwrap();
     }
-    let ids: (Option<Uuid>, Option<Uuid>, Option<Uuid>) = sqlx::query_as(
+    let ids: (Option<Uuid>, Option<Uuid>, Option<Uuid>, Option<Uuid>) = sqlx::query_as(
         "SELECT (SELECT avatar_upload_id FROM users WHERE id = $1),
                 (SELECT thumbnail_image_upload_id FROM courses WHERE id = $2),
-                (SELECT upload_id FROM block_uploads)",
+                (SELECT upload_id FROM block_uploads),
+                (SELECT upload_id FROM post_uploads)",
     )
     .bind(w.user)
     .bind(w.course)
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(ids, (Some(avatar), Some(thumb), Some(media)));
+    assert_eq!(ids, (Some(avatar), Some(thumb), Some(media), Some(image)));
 
     // Every counter drifted to 0 with the reaper clock run out.
     sqlx::query("UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'")
@@ -1056,8 +1065,13 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         .collect();
     assert_eq!(reaped, vec![orphan]);
 
-    // A replaced key releases the old upload to the reaper.
+    // A replaced key releases the old upload to the reaper, and so does a
+    // block that left its page (unclaimed) or a post that stopped showing it.
     sqlx::query("UPDATE blocks SET content = '{}'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE course_discussions SET content = 'no image'")
         .execute(&pool)
         .await
         .unwrap();
@@ -1068,9 +1082,94 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         .map(|u| u.id)
         .collect();
     reaped.sort();
-    let mut expected = vec![orphan, media];
+    let mut expected = vec![orphan, media, image];
     expected.sort();
     assert_eq!(reaped, expected);
+
+    let block = upload("block-image", "k/unclaimed").await;
+    sqlx::query(
+        "INSERT INTO blocks (activity_id, block_type, content, claimed)
+         VALUES ($1, 'image', '{\"file_key\": \"k/unclaimed\"}', false)",
+    )
+    .bind(w.activity)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE uploads SET expires_at = now() - interval '1 hour' WHERE id = $1")
+        .bind(block)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let held = |id: Uuid| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_scalar::<_, bool>("SELECT upload_referenced($1)")
+                .bind(id)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+        }
+    };
+    assert!(!held(block).await, "an unclaimed block holds nothing");
+    sqlx::query("UPDATE blocks SET claimed = true WHERE content->>'file_key' = 'k/unclaimed'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert!(
+        held(block).await,
+        "a re-claimed block holds its upload again"
+    );
+}
+
+/// Item 18, rollback: the previous release moves `referenced_count` by hand
+/// and starts the clock when it reaches 0. Its counts miss this release's
+/// claims, so it may reach 0 while a row still names the file: the guard
+/// keeps that file off the clock, and an unreferenced one still goes.
+#[ab_testdb::test]
+async fn the_previous_release_cannot_start_the_clock_of_a_referenced_upload(pool: PgPool) {
+    let w = world(&pool).await;
+    let mut ids = Vec::new();
+    for key in ["k/held", "k/free"] {
+        ids.push(
+            sqlx::query_scalar::<_, Uuid>(
+                "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status,
+                                      referenced_count, expires_at)
+                 VALUES ($1, 'course-thumbnail', 'public', $2, 'image/png', 1, 'finalized', 1, NULL)
+                 RETURNING id",
+            )
+            .bind(w.user)
+            .bind(key)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        );
+    }
+    sqlx::query("UPDATE courses SET thumbnail_image_key = 'k/held' WHERE id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+    // The previous release's release_reference, verbatim.
+    sqlx::query(
+        "UPDATE uploads
+         SET referenced_count = referenced_count - 1,
+             expires_at = CASE WHEN referenced_count - 1 = 0
+                               THEN now() + make_interval(secs => 60)
+                               ELSE expires_at END
+         WHERE id = ANY($1) AND referenced_count > 0",
+    )
+    .bind(&ids)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let clocks: Vec<bool> = sqlx::query_scalar(
+        "SELECT expires_at IS NOT NULL FROM uploads WHERE id = ANY($1) ORDER BY key",
+    )
+    .bind(&ids)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(clocks, vec![true, false], "k/free released, k/held kept");
 }
 
 /// Review 3, item 24: a check that old rows violate stays NOT VALID (new and

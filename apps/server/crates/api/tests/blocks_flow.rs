@@ -127,11 +127,12 @@ async fn video_block_claim_replays_without_duplicate_references(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/activities/{activity}/blocks"))
         .await;
     assert_eq!(listed.json().as_array().unwrap().len(), 1);
-    let references: i32 = sqlx::query_scalar("SELECT referenced_count FROM uploads WHERE id = $1")
-        .bind(uuid::Uuid::parse_str(&upload).unwrap())
-        .fetch_one(&app.pool)
-        .await
-        .unwrap();
+    let references: i32 =
+        sqlx::query_scalar("SELECT count(*)::int FROM block_uploads WHERE upload_id = $1")
+            .bind(uuid::Uuid::parse_str(&upload).unwrap())
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
     assert_eq!(references, 1);
     let mut changed = body;
     changed["file_name"] = serde_json::json!("other.mp4");
@@ -339,7 +340,7 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
 /// BUG-234: the upload claim commits with the block that references it.
 /// An activity DELETE that wins the race turns the insert into a 404 and
 /// the claim rolls back - the upload re-enters the reaper's queue instead
-/// of sitting at `referenced_count 1, expires_at null` forever.
+/// of sitting claimed (`expires_at` null) forever.
 #[ab_testdb::test]
 async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
@@ -364,7 +365,7 @@ async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
     assert_eq!(created.status, StatusCode::NOT_FOUND, "{}", created.text());
 
     let (referenced, expiring): (i32, bool) = sqlx::query_as(
-        "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1",
+        "SELECT upload_referenced(id)::int, expires_at IS NOT NULL FROM uploads WHERE id = $1",
     )
     .bind(uuid::Uuid::parse_str(&upload).unwrap())
     .fetch_one(&app.pool)
@@ -373,10 +374,10 @@ async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
     assert_eq!((referenced, expiring), (0, true), "claim must roll back");
 }
 
-/// `(referenced_count, live blocks holding it)` for one upload.
+/// `(blocks holding it, live blocks naming it)` for one upload.
 async fn refs_and_blocks(app: &TestApp, upload: &str) -> (i32, i64) {
     sqlx::query_as(
-        "SELECT u.referenced_count,
+        "SELECT (SELECT count(*)::int FROM block_uploads bu WHERE bu.upload_id = u.id),
                 (SELECT count(*) FROM blocks b WHERE b.content->>'file_key' = u.key)
          FROM uploads u WHERE u.id = $1",
     )
@@ -441,7 +442,7 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
         .execute(&mut *tx)
         .await
         .unwrap();
-        sqlx::query("UPDATE uploads SET referenced_count = 1, expires_at = NULL WHERE id = $1")
+        sqlx::query("UPDATE uploads SET expires_at = NULL WHERE id = $1")
             .bind(uuid::Uuid::parse_str(&upload).unwrap())
             .execute(&mut *tx)
             .await
@@ -556,7 +557,9 @@ async fn block_uploads_follow_the_saved_content(pool: PgPool) {
     let elsewhere = block(&app, &teacher, &other, &upload).await;
     let state = || async {
         sqlx::query_as::<_, (i32, bool)>(
-            "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1::uuid",
+            "SELECT (SELECT count(*)::int FROM block_uploads bu WHERE bu.upload_id = u.id),
+                    u.expires_at IS NOT NULL
+             FROM uploads u WHERE u.id = $1::uuid",
         )
         .bind(&upload)
         .fetch_one(&app.pool)
@@ -647,7 +650,9 @@ async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
         let pool = app.pool.clone();
         async move {
             sqlx::query_as::<_, (i32, bool)>(
-                "SELECT referenced_count, expires_at IS NOT NULL FROM uploads WHERE id = $1::uuid",
+                "SELECT (SELECT count(*)::int FROM block_uploads bu WHERE bu.upload_id = u.id),
+                    u.expires_at IS NOT NULL
+             FROM uploads u WHERE u.id = $1::uuid",
             )
             .bind(upload)
             .fetch_one(&pool)

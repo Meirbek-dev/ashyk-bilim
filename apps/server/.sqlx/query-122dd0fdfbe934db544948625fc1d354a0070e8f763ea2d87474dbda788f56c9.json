@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH present AS (\n               SELECT DISTINCT v #>> '{}' AS id\n               FROM activities a, jsonb_path_query(a.content, 'lax $.**.block_uuid') v\n               WHERE a.id = $1\n               UNION\n               SELECT b.id::text FROM blocks b JOIN activities a ON a.id = b.activity_id\n               WHERE a.id = $1 AND a.activity_type <> 'dynamic'\n                 AND b.content->>'file_key' = a.content->>'filename'\n           )\n           UPDATE blocks b SET claimed = NOT b.claimed\n           WHERE b.activity_id = $1\n             AND b.claimed <> EXISTS (SELECT 1 FROM present p\n                                      WHERE p.id = b.id::text OR p.id = b.legacy_uuid)\n           RETURNING b.claimed, b.content->>'file_key' AS key",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "claimed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "blocks",
+            "name": "claimed"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "key",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "122dd0fdfbe934db544948625fc1d354a0070e8f763ea2d87474dbda788f56c9"
+}
