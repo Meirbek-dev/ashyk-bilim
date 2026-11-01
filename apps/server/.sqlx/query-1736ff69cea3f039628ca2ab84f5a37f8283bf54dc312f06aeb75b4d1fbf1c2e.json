@@ -73,7 +73,12 @@
         "ordinal": 6,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
       },
       {
         "ordinal": 7,
@@ -163,7 +168,7 @@
       false,
       false,
       false,
-      null,
+      true,
       false,
       false,
       true,

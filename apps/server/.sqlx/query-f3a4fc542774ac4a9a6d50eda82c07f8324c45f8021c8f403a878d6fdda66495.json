@@ -18,13 +18,23 @@
         "ordinal": 1,
         "name": "late_penalty_pct!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "late_penalty_pct"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "raw_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "file_submission_attempts",
+            "name": "raw_score"
+          }
+        }
       }
     ],
     "parameters": {
@@ -34,8 +44,8 @@
     },
     "nullable": [
       false,
-      null,
-      null
+      false,
+      true
     ]
   },
   "hash": "f3a4fc542774ac4a9a6d50eda82c07f8324c45f8021c8f403a878d6fdda66495"

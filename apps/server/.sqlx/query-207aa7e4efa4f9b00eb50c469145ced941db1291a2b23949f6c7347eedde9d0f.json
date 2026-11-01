@@ -40,19 +40,34 @@
         "ordinal": 3,
         "name": "raw_score!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "raw_score"
+          }
+        }
       },
       {
         "ordinal": 4,
         "name": "penalty_pct!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "penalty_pct"
+          }
+        }
       },
       {
         "ordinal": 5,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "final_score"
+          }
+        }
       },
       {
         "ordinal": 6,
@@ -109,9 +124,9 @@
       false,
       false,
       true,
-      null,
-      null,
-      null,
+      false,
+      false,
+      true,
       false,
       false,
       false,

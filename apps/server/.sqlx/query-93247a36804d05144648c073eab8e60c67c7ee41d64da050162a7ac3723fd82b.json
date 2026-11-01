@@ -51,7 +51,12 @@
         "ordinal": 4,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "final_score"
+          }
+        }
       },
       {
         "ordinal": 5,
@@ -76,7 +81,7 @@
       false,
       false,
       true,
-      null,
+      true,
       null,
       null
     ]

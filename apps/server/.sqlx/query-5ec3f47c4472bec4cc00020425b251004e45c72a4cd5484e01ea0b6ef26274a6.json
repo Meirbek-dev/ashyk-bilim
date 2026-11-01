@@ -84,7 +84,12 @@
         "ordinal": 7,
         "name": "max_score!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "assessment_items",
+            "name": "max_score"
+          }
+        }
       }
     ],
     "parameters": {
@@ -100,7 +105,7 @@
       false,
       false,
       false,
-      null
+      false
     ]
   },
   "hash": "5ec3f47c4472bec4cc00020425b251004e45c72a4cd5484e01ea0b6ef26274a6"

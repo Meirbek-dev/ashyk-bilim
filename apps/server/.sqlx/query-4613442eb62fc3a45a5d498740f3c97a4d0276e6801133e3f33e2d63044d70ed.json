@@ -150,7 +150,12 @@
         "ordinal": 13,
         "name": "score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "code_runs",
+            "name": "score"
+          }
+        }
       },
       {
         "ordinal": 14,
@@ -213,7 +218,7 @@
       true,
       false,
       false,
-      null,
+      true,
       true,
       true,
       null,

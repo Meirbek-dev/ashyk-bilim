@@ -62,7 +62,12 @@
         "ordinal": 5,
         "name": "weight!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "code_run_cases",
+            "name": "weight"
+          }
+        }
       },
       {
         "ordinal": 6,
@@ -186,7 +191,7 @@
       true,
       true,
       false,
-      null,
+      false,
       false,
       false,
       false,

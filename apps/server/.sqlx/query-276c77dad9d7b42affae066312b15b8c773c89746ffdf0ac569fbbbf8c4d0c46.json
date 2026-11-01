@@ -95,13 +95,23 @@
         "ordinal": 8,
         "name": "auto_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "auto_score"
+          }
+        }
       },
       {
         "ordinal": 9,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "final_score"
+          }
+        }
       },
       {
         "ordinal": 10,
@@ -118,7 +128,12 @@
         "ordinal": 11,
         "name": "late_penalty_pct!",
         "type_info": "Float8",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "late_penalty_pct"
+          }
+        }
       },
       {
         "ordinal": 12,
@@ -305,10 +320,10 @@
       false,
       false,
       false,
-      null,
-      null,
+      true,
+      true,
       false,
-      null,
+      false,
       false,
       false,
       true,
