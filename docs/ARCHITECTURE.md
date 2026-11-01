@@ -476,7 +476,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   step 4) from enrolments (members only), published required activities (graded always; others unless
   `settings.required` is false; never an assessment restricted away from the member) and completions. Nothing
   reads it yet: `maintenance:reconcile` logs `view_drift` (`course_progress_view_drift`: members whose counts,
-  percent, flag or `completed_at` to the second differ from the stored row), and the progress tests assert it is 0
+  percent, flag or `completed_at` (within a second) differ from the stored row), and the progress tests assert it is 0
   on every scenario and on the e2e seed.
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a

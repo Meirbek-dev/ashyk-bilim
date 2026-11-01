@@ -2534,10 +2534,11 @@ async fn assert_view_matches_projection(pool: &PgPool) {
                            progress_pct, certificate_eligible, completed_at
                     FROM course_progress) p USING (course_id, user_id)
          WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,
-                p.certificate_eligible, extract(epoch FROM p.completed_at)::bigint)
+                p.certificate_eligible, p.completed_at IS NULL)
                IS DISTINCT FROM
                (v.total_required_count, v.completed_required_count, v.progress_pct,
-                v.certificate_eligible, extract(epoch FROM v.completed_at)::bigint)",
+                v.certificate_eligible, v.completed_at IS NULL)
+            OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1",
     )
     .fetch_all(pool)
     .await
