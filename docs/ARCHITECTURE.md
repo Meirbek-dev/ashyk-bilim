@@ -471,6 +471,12 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the
   counts are `0 <= completed <= total` and `completed_at` only on a completed course. The lane C contract turns
   both into virtual generated columns.
+- **`course_progress_v` computes the completion half of `course_progress`** (`20261102071000`, REWRITE 5.6 n8
+  step 4) from enrolments (members only), published required activities (graded always; others unless
+  `settings.required` is false; never an assessment restricted away from the member) and completions. Nothing
+  reads it yet: `maintenance:reconcile` logs `view_drift` (`course_progress_view_drift`: members whose counts,
+  percent, flag or `completed_at` to the second differ from the stored row), and the progress tests assert it is 0
+  on every scenario and on the e2e seed.
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a
   surrogate key.

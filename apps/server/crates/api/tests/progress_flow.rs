@@ -339,6 +339,7 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
+    assert_view_matches_projection(&app.pool).await;
 }
 
 #[ab_testdb::test]
@@ -441,6 +442,7 @@ async fn assessment_submissions_project_into_progress(pool: PgPool) {
     assert_eq!(state, "passed");
     assert_eq!(attempts, 1);
     assert_eq!(latest, Some(uuid::Uuid::parse_str(&sub_id).unwrap()));
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// Drafts never enter the denominator: marking one is a 404, and
@@ -532,6 +534,7 @@ async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
             .await;
         assert_eq!(gone.status, StatusCode::NOT_FOUND, "{}", gone.text());
     }
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// Studio lifecycle transitions flip the activity like the curriculum
@@ -594,6 +597,7 @@ async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
         assert_eq!(after["completed_required_count"], 3, "{after}");
         assert_eq!(after["progress_pct"], pct, "{after}");
     }
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-161: deleting a chapter cascades its activities, so the learner
@@ -641,6 +645,7 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
     assert_eq!(after["progress_pct"], 50.0, "{after}");
     // The pass was owed in the delete's transaction and done inline: its job is gone, not waiting for a worker.
     assert_eq!(progress_jobs(&app.pool).await, 0);
+    assert_view_matches_projection(&app.pool).await;
 }
 
 async fn progress_jobs(pool: &PgPool) -> i64 {
@@ -1181,6 +1186,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
         .await;
     assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
     assert_eq!(rewarded().await, (0, 0, 0), "after delete");
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-269: the concurrent BUG-268. Twelve members who passed 1 of 2
@@ -1583,6 +1589,7 @@ async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
             .await
             .unwrap();
     assert_eq!(certs, 1, "the rejoined member was not certified");
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-276 / UX-187: a learner who passed and left reads as not enrolled,
@@ -1679,6 +1686,7 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         "{}",
         back.text()
     );
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-289: a learner who rejoins by submitting another quiz (no
@@ -1742,6 +1750,7 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
         "{}",
         mine.text()
     );
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-291: a learner who joins the staff and leaves it again - removed,
@@ -1844,6 +1853,7 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
             mine.text()
         );
     }
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// BUG-292: a member who joins the course's staff keeps the run but is no
@@ -2080,6 +2090,7 @@ async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
     let gone = app.get_as(&bob, &state_path).await.json();
     assert_eq!(gone["progress"]["total_required_count"], 1, "{gone}");
     assert_eq!(gone["progress"]["progress_pct"], 100.0);
+    assert_view_matches_projection(&app.pool).await;
 }
 
 /// UX-213: dropped from a quiz's allowlist, a learner can no longer take it
@@ -2261,6 +2272,7 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(certs, 1, "the certificate itself is kept");
+    assert_view_matches_projection(&pool).await;
 }
 
 /// UX-250 edges: a run with no `course_progress` row (a migrated run before
@@ -2511,6 +2523,34 @@ async fn learner_state_reads_each_learners_extended_due_date(pool: PgPool) {
     assert_eq!(activity(&alices, &task_activity)["due_at_unix"], task_due);
 }
 
+/// REWRITE 5.6 n8 step 4: `course_progress_v` (computed from enrolments and
+/// completions) says what the stored projection says for every member -
+/// `course_progress_view_drift` is 0. Called at the end of the scenarios.
+async fn assert_view_matches_projection(pool: &PgPool) {
+    let differing: Vec<(String, String)> = sqlx::query_as(
+        "SELECT row_to_json(v)::text, coalesce(row_to_json(p)::text, 'none')
+         FROM course_progress_v v
+         LEFT JOIN (SELECT course_id, user_id, total_required_count, completed_required_count,
+                           progress_pct, certificate_eligible, completed_at
+                    FROM course_progress) p USING (course_id, user_id)
+         WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,
+                p.certificate_eligible, extract(epoch FROM p.completed_at)::bigint)
+               IS DISTINCT FROM
+               (v.total_required_count, v.completed_required_count, v.progress_pct,
+                v.certificate_eligible, extract(epoch FROM v.completed_at)::bigint)",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap();
+    assert!(differing.is_empty(), "view vs projection: {differing:#?}");
+    assert_eq!(
+        ab_db::progress::course_progress_view_drift(pool)
+            .await
+            .unwrap(),
+        0
+    );
+}
+
 /// Delete every trail (runs, steps) as if trails were gone, keeping the
 /// enrolments: the previous release's sync trigger is off for the delete.
 async fn empty_trails(pool: &PgPool) {
@@ -2597,6 +2637,7 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(rows, 0);
+    assert_view_matches_projection(&pool).await;
 }
 
 /// REWRITE 5.6 n5 (rest): the roster, `GET /trail` and `/enrollments` read
@@ -2733,6 +2774,7 @@ async fn roster_and_trail_read_enrolments(pool: PgPool) {
     assert!(runs[1]["steps"].as_array().unwrap().is_empty());
     let (all, _) = roster(String::new()).await;
     assert_eq!(all, ["carol", "bob", "alice"]);
+    assert_view_matches_projection(&pool).await;
 }
 
 /// REWRITE 5.6 n8, review item 12: a lesson completion is its `completions`
@@ -2822,6 +2864,7 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     .unwrap();
     let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
     assert_eq!(drift, 1);
+    assert_view_matches_projection(&pool).await;
 }
 
 /// REWRITE 5.6 n8 step 1: a graded activity's projection writer owns its
@@ -2881,4 +2924,5 @@ async fn graded_writers_own_their_completions(pool: PgPool) {
         .unwrap();
     assert_eq!(completions().await, [(essay_activity, true)]);
     assert_eq!(ab_db::progress::completion_drift(&pool).await.unwrap(), 0);
+    assert_view_matches_projection(&pool).await;
 }

@@ -702,10 +702,14 @@ in the order it can be done, each step a forward migration on the current schema
       (`activity_progress.required`, always true for graded kinds and for a new lesson row). Add
       `activities.required boolean NOT NULL DEFAULT true`, backfill from the projection, and have the
       projector read it.
-   4. When `changed` and `completion_drift` are zero for a month (four weekly runs), add the 5.4 view as
-      `course_progress_v` (enrolments ⨝ published activities ⨝ completions; `progress_pct` and
-      `certificate_eligible` computed in it, `completed_at` = the last completion when all are done) and move
-      every reader to it in one release (`course_progress_pcts`, learner-state, analytics context and
+   4. The view exists (review 3 wave 2, `20261102071000`): `course_progress_v` (enrolments ⨝ published
+      required activities ⨝ completions; `progress_pct`, `certificate_eligible`, `completed_at` = the last
+      completion when all are done), equal to the projection on every progress scenario and the e2e seed;
+      `maintenance:reconcile` logs its `view_drift`. Its `required` rule is the seed rule (graded always,
+      lessons by `settings.required`, minus restricted assessments); the projection keeps a lesson's flag from
+      when its row was seeded, so step 3 (`activities.required`) removes the one known source of drift.
+      When `changed`, `completion_drift` and `view_drift` are zero for a month (four weekly runs), move
+      every reader to the view in one release (`course_progress_pcts`, learner-state, analytics context and
       rollups, certificate eligibility, the work queue) while the projector still writes the table; compare
       both in `maintenance:reconcile` for that release. The view reads no score column, so it never blocks
       an `ALTER COLUMN ... TYPE` on `activity_progress.score`.

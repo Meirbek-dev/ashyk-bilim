@@ -885,6 +885,29 @@ pub async fn completion_drift(pool: &PgPool) -> Result<i64> {
     Ok(drift)
 }
 
+/// How many members' `course_progress_v` row disagrees with their stored
+/// `course_progress` row (or has none).
+///
+/// Compares the counts, percent, certificate flag and `completed_at` (to the
+/// second, as the projector stores it). `maintenance:reconcile` logs it after
+/// the re-projection; a month of zeros lets readers move to the view
+/// (REWRITE 5.6 n8 step 4).
+pub async fn course_progress_view_drift(pool: &PgPool) -> Result<i64> {
+    let drift = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "drift!"
+           FROM course_progress_v v
+           LEFT JOIN course_progress p ON p.course_id = v.course_id AND p.user_id = v.user_id
+           WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,
+                  p.certificate_eligible, extract(epoch FROM p.completed_at)::bigint)
+                 IS DISTINCT FROM
+                 (v.total_required_count, v.completed_required_count, v.progress_pct,
+                  v.certificate_eligible, extract(epoch FROM v.completed_at)::bigint)"#
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(drift)
+}
+
 /// Insert a completed step; `false` when it already existed.
 pub async fn insert_trail_step<'e>(
     db: impl sqlx::PgExecutor<'e>,
