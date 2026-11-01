@@ -1954,7 +1954,7 @@ export const vAgUiTool = v.object({
 export const vFileSubmissionSettings = v.object({});
 
 /**
- * A Judge0 language the platform allows.
+ * A runner language the platform allows.
  */
 export const vLanguageInfo = v.object({
     id: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),

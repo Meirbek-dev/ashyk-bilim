@@ -11,7 +11,7 @@ const withWords = (language: Extension): Extension => [
   EditorState.languageData.of(() => [{ autocomplete: completeAnyWord }]),
 ]
 
-// Editor modes for the languages the platform's Judge0 allows (server `monaco_language`: c, cpp, go, java,
+// Editor modes for the languages the platform's code runner allows (server `monaco_language`: c, cpp, go, java,
 // javascript, typescript, php, python, ruby, rust, kotlin, swift, csharp). Each loads on first use; anything else
 // is plain text.
 const modes: Record<string, () => Promise<Extension>> = {

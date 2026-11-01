@@ -16,12 +16,12 @@ export const CodeRunnerInfo = zod
           monaco_language: zod.string().describe('Monaco editor language id.'),
           name: zod.string(),
         })
-        .describe('A Judge0 language the platform allows.'),
+        .describe('A runner language the platform allows.'),
     ),
     runner_configured: zod
       .boolean()
       .describe(
-        '`false`: no Judge0 endpoint is configured; `languages` is empty and\nruns cannot start (authoring still works).',
+        '`false`: no runner endpoint is configured; `languages` is empty and\nruns cannot start (authoring still works).',
       ),
   })
   .describe("`GET /code/runner`: the runner state and, when configured, the\nplatform's languages.")

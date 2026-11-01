@@ -6,13 +6,13 @@
 
 # The server presigns and calls storage at https://ashyq.test (nginx, self-signed cert):
 # rustls-native-certs trusts SSL_CERT_FILE instead of the system store.
-# No Judge0 on the stand (profile off): a blank base URL turns the runner off, so `GET /code/runner`
-# reads "not configured" instead of a 503 from an unreachable runner. The real-Judge0 CI shard enables the
-# judge0 profile and WEB2_JUDGE0_URL=http://judge0-server:2358; the three regular shards exclude @judge0.
+# No code runner on the stand (profile off): a blank base URL turns it off, so `GET /code/runner` reads
+# "not configured" and runs answer 503 instead of failing on an unreachable host. The CI `runner` shard
+# enables the runner profile and WEB2_RUNNER_URL=http://runner:5050; the regular shards exclude @runner.
 x-stand-cert: &stand-cert
   environment:
     SSL_CERT_FILE: /etc/ssl/stand/cert.pem
-    AB__JUDGE0__BASE_URL: ${WEB2_JUDGE0_URL:-}
+    AB__RUNNER__BASE_URL: ${WEB2_RUNNER_URL:-}
   volumes:
     - ${TLS_DIR:?}/cert.pem:/etc/ssl/stand/cert.pem:ro
 

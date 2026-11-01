@@ -3,7 +3,7 @@
 //! Contents:
 //! - `zitadel` — session/user APIs
 //! - `storage` — `object_store` against RustFS (slice 2.2)
-//! - `judge0`  — code execution with circuit breaker (slice 4.4)
+//! - `gojudge` — code execution in the go-judge sandbox, with circuit breaker
 //! - `resend`  — transactional email (registration verification codes)
 //! - `link_preview` — the SSRF-guarded OpenGraph fetch behind
 //!   `GET /utils/link-preview`
@@ -15,8 +15,8 @@
 //! shape, and takes its base URL from config so tests can point it anywhere.
 
 pub mod embed;
+pub mod gojudge;
 pub mod google;
-pub mod judge0;
 pub mod link_preview;
 pub mod llm;
 pub mod resend;

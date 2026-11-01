@@ -11,7 +11,7 @@ description: Reproduce and fix a failing or flaky Playwright e2e test of web-2 o
 2. Stand once, iterate fast: `just e2e web2 --serve`, then `just e2e web2 --reuse e2e/specs/<file>.spec.ts --grep "<id>"`.
    Test edits need no restart; app edits need `--stop` and `--serve` (the build is part of the stand).
 3. Many "identity provider unreachable" at once = parallel logins against Zitadel: rerun with `--workers=2`.
-   `@judge0` specs need Judge0 (`just dev-judge0`); without it they fail by design.
+   `@runner` specs need the code runner (`just dev-runner`); without it they fail by design.
 4. Classify before fixing: product bug (fix the app, keep the test), wrong test (fix the test), flake (fix its wait on a
    real signal - a response, a role, a URL - never `waitForTimeout`). A flake that cannot be fixed today is quarantined:
    skip it with a `suppressions` entry in `apps/web-2/gates/allowlist.json` and a line in `apps/web-2/BACKLOG.md`,

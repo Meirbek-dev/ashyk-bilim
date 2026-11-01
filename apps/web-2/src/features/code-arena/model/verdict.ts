@@ -11,8 +11,9 @@ export type CaseVerdict =
   | 'pending'
 
 /**
- * Judge0 status ids: 1-2 queued/processing, 3 accepted (the server then compares the output), 4 wrong answer,
- * 5 time limit, 6 compile error, 7-12 runtime errors, 13-14 internal. No id: the run never reached the judge.
+ * Verdict codes (Judge0's status ids, which the go-judge runner keeps): 1-2 queued/processing, 3 accepted (the server
+ * then compares the output), 4 wrong answer, 5 time limit, 6 compile error, 7-12 runtime errors (12 also the memory
+ * limit), 13-14 internal. No id: the run never reached the sandbox.
  */
 export function caseVerdict(result: Pick<CaseResult, 'passed' | 'status_id'>): CaseVerdict {
   if (result.passed) return 'accepted'

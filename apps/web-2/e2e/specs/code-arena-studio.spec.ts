@@ -42,7 +42,7 @@ test('B-COD-13 B-COD-14 B-COD-15 B-COD-16 B-COD-17 B-COD-18 the author fills a n
   await editor.getByRole('textbox', { name: m.code_field_prompt({}, ru) }).fill('Сложите два числа')
   await editor.getByLabel(m.code_field_input_spec({}, ru)).fill('a b')
   await editor.getByLabel(m.code_field_constraints({}, ru)).fill('a > 0\nb > 0')
-  await editor.getByText('Python (3.8.1)').click()
+  await editor.getByText('Python (3.13)').click()
   const starter = editor.getByRole('textbox', { name: m.code_field_starter({}, ru) })
   await starter.click()
   await page.keyboard.type('print()')
@@ -134,7 +134,7 @@ test('B-COD-19 B-COD-18 the reference check saves first; a refused save keeps th
   const results = page.getByRole('region', { name: m.code_check_title({}, ru) })
   await expect(results.getByText(m.code_check_ok({}, ru))).toBeVisible()
   await expect(results.getByText(m.code_check_missing({}, ru))).toBeVisible()
-  await expect(results.getByText('JavaScript (Node.js 12.14.0)')).toBeVisible()
+  await expect(results.getByText('JavaScript (Node.js 20)')).toBeVisible()
 
   await page.route(`**/api/v2/assessment-items/${made.itemId}`, route =>
     route.fulfill({

@@ -719,7 +719,7 @@ export const getLanguagesUrl = () => {
 
 /**
  * @deprecated
- * @summary Languages the platform allows for code items (from Judge0, cached).
+ * @summary Languages the platform allows for code items (from the runner image).
  */
 export const languages = async (options?: Parameters<typeof orvalMutator>[1]): Promise<LanguageInfo[]> => {
   return orvalMutator<LanguageInfo[]>(
@@ -795,7 +795,7 @@ export function useLanguages<TData = Awaited<ReturnType<typeof languages>>, TErr
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @deprecated
- * @summary Languages the platform allows for code items (from Judge0, cached).
+ * @summary Languages the platform allows for code items (from the runner image).
  */
 
 export function useLanguages<TData = Awaited<ReturnType<typeof languages>>, TError = ErrorType<Problem>>(
@@ -863,7 +863,7 @@ export function useLanguagesSuspense<TData = Awaited<ReturnType<typeof languages
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @deprecated
- * @summary Languages the platform allows for code items (from Judge0, cached).
+ * @summary Languages the platform allows for code items (from the runner image).
  */
 
 export function useLanguagesSuspense<TData = Awaited<ReturnType<typeof languages>>, TError = ErrorType<Problem>>(
@@ -888,7 +888,7 @@ export const getRunnerUrl = () => {
 
 /**
  * Answers `runner_configured: false` with no languages (never 503) when
- * no Judge0 endpoint is configured; replaces `GET /code/languages`.
+ * no runner endpoint is configured; replaces `GET /code/languages`.
  * @summary The code runner's state and the platform's languages.
  */
 export const runner = async (options?: Parameters<typeof orvalMutator>[1]): Promise<CodeRunnerInfo> => {

@@ -1542,7 +1542,7 @@ export const getCodeRun = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * Languages the platform allows for code items (from Judge0, cached).
+ * Languages the platform allows for code items (from the runner image).
  *
  * @deprecated
  */
@@ -1556,7 +1556,7 @@ export const languages = <ThrowOnError extends boolean = false>(options?: Option
  * The code runner's state and the platform's languages.
  *
  * Answers `runner_configured: false` with no languages (never 503) when
- * no Judge0 endpoint is configured; replaces `GET /code/languages`.
+ * no runner endpoint is configured; replaces `GET /code/languages`.
  */
 export const runner = <ThrowOnError extends boolean = false>(options?: Options<RunnerData, ThrowOnError>): RequestResult<RunnerResponses, RunnerErrors, ThrowOnError> => (options?.client ?? client).get<RunnerResponses, RunnerErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vRunnerResponse, data),

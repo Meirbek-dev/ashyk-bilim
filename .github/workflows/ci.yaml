@@ -329,9 +329,10 @@ jobs:
       packages: write
     strategy:
       matrix:
-        # web and web-2 when they changed or on release branches.
+        # web and web-2 when they changed or on release branches; the runner every time (deploy
+        # needs ashyq-runner:<sha>; its layers come from the cache when infra/runner is unchanged).
         image: >-
-          ${{ fromJSON(format('["server"{0}{1}]',
+          ${{ fromJSON(format('["server","runner"{0}{1}]',
           needs.changes.outputs.web == 'true' && ',"web"' || '',
           needs.changes.outputs.web2 == 'true' && ',"web-2"' || '')) }}
     steps:
@@ -374,8 +375,8 @@ jobs:
 
       - uses: docker/build-push-action@v7
         with:
-          context: .
-          file: apps/${{ matrix.image }}/Dockerfile
+          context: ${{ matrix.image == 'runner' && 'infra/runner' || '.' }}
+          file: ${{ matrix.image == 'runner' && 'infra/runner/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image) }}
           push: true
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -463,22 +464,22 @@ jobs:
     needs: [changes, images]
     if: ${{ !failure() && !cancelled() && needs.images.result == 'success' && needs.changes.outputs.web2 == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.shard == 'judge0' && 45 || 30 }}
+    timeout-minutes: ${{ matrix.shard == 'runner' && 45 || 30 }}
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5]
         include:
-          - shard: judge0
+          - shard: runner
     permissions:
       contents: read
       packages: read
     env:
       IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-      COMPOSE_PROFILES: ${{ matrix.shard == 'judge0' && 'judge0' || '' }}
-      WEB2_JUDGE0_URL: ${{ matrix.shard == 'judge0' && 'http://judge0-server:2358' || '' }}
-      E2E_LEARNERS: ${{ matrix.shard == 'judge0' && '8' || '250' }}
+      COMPOSE_PROFILES: ${{ matrix.shard == 'runner' && 'runner' || '' }}
+      WEB2_RUNNER_URL: ${{ matrix.shard == 'runner' && 'http://runner:5050' || '' }}
+      E2E_LEARNERS: ${{ matrix.shard == 'runner' && '8' || '250' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -531,7 +532,7 @@ jobs:
       - name: Seed
         run: just web2-seed
 
-      # Standard shards exclude Judge0; its dedicated stand runs the real privileged service.
+      # Standard shards exclude the code runner; its dedicated stand runs the real privileged go-judge.
       # AI specs answer from page.route fixtures.
       # dot: one character per test; github: each failure as an annotation (`gh run view`).
       # Shards split by test count and the cheap access.spec matrix comes first: weights even out
@@ -546,10 +547,10 @@ jobs:
         run: |
           SECONDS=0
           trap 'echo "Browser tests (shard ${{ matrix.shard }}): ${SECONDS}s (exit $?)" >> "$GITHUB_STEP_SUMMARY"' EXIT
-          if [[ '${{ matrix.shard }}' == judge0 ]]; then
-            just web2-e2e --grep @judge0 --project chromium --reporter=dot,github,html
+          if [[ '${{ matrix.shard }}' == runner ]]; then
+            just web2-e2e --grep @runner --project chromium --reporter=dot,github,html
           else
-            just web2-e2e --grep-invert @judge0 --shard=${{ matrix.shard }}/5 --reporter=dot,github,html
+            just web2-e2e --grep-invert @runner --shard=${{ matrix.shard }}/5 --reporter=dot,github,html
           fi
 
       - name: Compose logs
@@ -661,6 +662,7 @@ jobs:
             docker buildx imagetools create -t "$ref:$SHA" -t "$ref:latest" "$ref:ci-$SHA"
           }
           retag server
+          retag runner
           # stage-2: deploy.sh needs ashyq-web:<sha> and the web rollback runs it; frozen, so
           # unless a Legacy-Hotfix rebuilt it, <sha> is the newest published old web.
           if [[ $WEB_BUILT == true ]]; then

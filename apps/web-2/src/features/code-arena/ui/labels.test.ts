@@ -5,10 +5,10 @@ import { m } from '#/paraglide/messages'
 import { languageName } from './labels'
 
 describe('languageName', () => {
-  const python = { id: 71, name: 'Python (3.8.1)', monaco_language: 'python' }
+  const python = { id: 71, name: 'Python (3.13)', monaco_language: 'python' }
 
   test('B-COD-05 the platform names the language; one it no longer offers is unavailable', () => {
-    expect(languageName([python], 71)).toBe('Python (3.8.1)')
+    expect(languageName([python], 71)).toBe('Python (3.13)')
     expect(languageName([python], 62)).toBe(m.code_language_unknown({ id: 62 }))
   })
 

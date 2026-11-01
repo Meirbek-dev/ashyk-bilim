@@ -26,11 +26,9 @@ pub const ITEM_BODY_SCHEMA_VERSION: u32 = 1;
 /// pairs, code specs / starters / tests) is bounded by `MAX_TEXT_CHARS`.
 pub const MAX_TEXT_CHARS: usize = 20_000;
 pub const MAX_BODY_ENTRIES: usize = 200;
-/// A code item's limits within what the sandbox accepts.
-///
-/// Judge0 `MAX_CPU_TIME_LIMIT` is 15 s (our wall time is one more second)
-/// and infra/judge0/judge0.conf `MAX_MEMORY_LIMIT` is 2 GB: beyond them
-/// every run of the item is refused, so the learner can never be graded.
+/// A code item's limits within what a run can spend: every test of a run
+/// shares the runner's 25 s budget (`AB__RUNNER__MAX_WAIT_SECS`), and the
+/// runner host sizes its memory for 2 GB programs.
 pub const MAX_CODE_TIME_SECONDS: i32 = 15;
 pub const MAX_CODE_MEMORY_MB: i32 = 2048;
 
@@ -182,7 +180,7 @@ pub struct CodeBody {
     pub output_spec: String,
     #[serde(default)]
     pub constraints: Vec<String>,
-    /// Judge0 language ids.
+    /// Language ids (`GET /code/runner`).
     #[serde(default)]
     pub languages: Vec<i32>,
     /// Keyed by language id as a string (legacy shape).

@@ -25,7 +25,7 @@ pub struct RunListQuery {
 /// platform's languages.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CodeRunnerInfo {
-    /// `false`: no Judge0 endpoint is configured; `languages` is empty and
+    /// `false`: no runner endpoint is configured; `languages` is empty and
     /// runs cannot start (authoring still works).
     pub runner_configured: bool,
     pub languages: Vec<LanguageInfo>,
@@ -35,7 +35,7 @@ pub struct CodeRunnerInfo {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RunRequest {
-    /// Judge0 language id.
+    /// Language id (`GET /code/runner`).
     #[garde(range(min = 1))]
     #[schema(minimum = 1)]
     pub language_id: i32,

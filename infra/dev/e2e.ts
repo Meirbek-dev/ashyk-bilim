@@ -262,8 +262,8 @@ export function playwrightSummary(log: string, logPath: string, max = 15): strin
   )
 }
 
-const judge0Up = async (env: Record<string, string>) =>
-  Boolean(env['AB__JUDGE0__BASE_URL']) && httpUp(`${env['AB__JUDGE0__BASE_URL']}/languages`)
+const runnerUp = async (env: Record<string, string>) =>
+  Boolean(env['AB__RUNNER__BASE_URL']) && httpUp(`${env['AB__RUNNER__BASE_URL']}/version`)
 
 async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): Promise<number> {
   const sessionName = `e2e-${o.app}-${o.slot}`
@@ -308,9 +308,9 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     const server = {
       ...serverEnv({ api: ports.api, redisDb: 15, db, origins, webUrl: origin }),
       AB__SERVER__WEB_LINKS: o.app === 'web2' ? 'v2' : 'legacy',
-      // Like the CI stand (compose.web2.yaml): a Judge0 that does not answer is switched off, so the runner reads
-      // "not configured" instead of a 503 that fails every code-arena page's health check; @judge0 specs need it up.
-      AB__JUDGE0__BASE_URL: (await judge0Up(env)) ? (env['AB__JUDGE0__BASE_URL'] ?? '') : '',
+      // Like the CI stand (compose.web2.yaml): a runner that does not answer is switched off, so it reads
+      // "not configured" instead of a 503 that fails every code-arena page's health check; @runner specs need it up.
+      AB__RUNNER__BASE_URL: (await runnerUp(env)) ? (env['AB__RUNNER__BASE_URL'] ?? '') : '',
     }
     for (const role of ['api', 'worker']) {
       const copy = join(dir, `ashyq-${role}${exe}`)

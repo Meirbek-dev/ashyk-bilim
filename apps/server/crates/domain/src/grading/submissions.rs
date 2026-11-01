@@ -6,7 +6,7 @@
 //! attempt-limit check instead of three, a DB-enforced single draft, real
 //! backoff columns for the timer, late penalties that survive manual
 //! review, and code challenges that go to manual review until a final run
-//! exists (4.4 runs Judge0 at submit).
+//! exists (4.4 runs the tests at submit).
 
 use std::time::Duration;
 
@@ -354,7 +354,7 @@ struct FinalizeOptions {
     /// The hand-in moment lateness is judged at; `None` is now (BUG-315).
     submitted_at: Option<i64>,
     /// When the manual submit arrived (BUG-381): the gates and lateness are
-    /// judged at arrival, so a hand-in that re-grades or waits for Judge0
+    /// judged at arrival, so a hand-in that re-grades or waits for the runner
     /// past the due date is still on time. `None` is now.
     arrived_at: Option<i64>,
     /// The learner handed it in themselves (enrols them, BUG-251); `false` is the timer's auto-submit.
@@ -1075,7 +1075,7 @@ impl SubmissionsService {
         // (BUG-239) until the row is written, so it answers the settled
         // state - never the attempt being submitted as a draft. BUG-377:
         // the lock and the write share one connection, taken only now -
-        // gates and grading (Judge0 included) ran on the pool before it, so
+        // gates and grading (the code runner included) ran on the pool before it, so
         // a hand-in never holds a connection while waiting for a second one
         // (N concurrent hand-ins used to deadlock an N-connection pool). A
         // start landing during the grade itself precedes the hand-in, as if
@@ -1243,7 +1243,7 @@ impl SubmissionsService {
 
     /// Kind-dispatched auto grade. Code challenges grade from the newest
     /// final run; without one they wait for a human.
-    /// Kind-dispatched auto grade. Code challenges run their tests on Judge0
+    /// Kind-dispatched auto grade. Code challenges run their tests in the sandbox
     /// here (a `final` run, replayed if the submit is retried). `lenient` is
     /// the timer path: it cannot show the learner an error, so a compile
     /// error scores what it earned (nothing) and a run it cannot finish

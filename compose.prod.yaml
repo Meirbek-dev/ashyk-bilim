@@ -32,9 +32,8 @@ x-server-env: &server-env
   AB__STORAGE__PUBLIC_BUCKET: ab-public
   AB__STORAGE__PRIVATE_BUCKET: ab-private
   AB__TELEMETRY__JSON_LOGS: 'true'
-  AB__JUDGE0__BASE_URL: http://judge0-server:2358
-  AB__JUDGE0__API_KEY: ${JUDGE0_AUTHN_TOKEN:?}
-  AB__JUDGE0__DATABASE_URL: postgres://judge0:${JUDGE0_DB_PASSWORD:?}@judge0-db:5432/judge0
+  AB__RUNNER__BASE_URL: http://runner:5050
+  AB__RUNNER__AUTH_TOKEN: ${RUNNER_AUTH_TOKEN:?}
 
 x-app-depends: &app-depends
   db:
@@ -242,7 +241,7 @@ services:
   # dumps, then snapshots backup/{db_dumps,rustfs,redis,zitadel_machinekey,secrets}.
   # Incremental and deduplicated: unchanged RustFS objects are never written again.
   # Restore: infra/scripts/restore.sh. Not backed up: postgres_data (the dumps
-  # are), judge0 (ephemeral), nginx cache. Never started by `up` (profile).
+  # are), the code runner (stateless), nginx cache. Never started by `up` (profile).
   # ---------------------------------------------------------------------------
   backup:
     image: &restic-image docker.io/restic/restic:0.19.1

@@ -43,9 +43,10 @@ pub struct Config {
     pub resend: Option<ResendConfig>,
     /// Required by `serve`/`worker` (uploads, media); optional elsewhere.
     pub storage: Option<StorageSettings>,
-    /// Code execution. Unset = code runs answer 503 `code-runner-degraded`
-    /// and code challenges fall back to manual review.
-    pub judge0: Option<Judge0Config>,
+    /// Code execution (`AB__RUNNER__*`, go-judge). Unset = code runs answer
+    /// 503 `code-runner-degraded` and code challenges fall back to manual
+    /// review.
+    pub runner: Option<RunnerConfig>,
     /// AI subsystem (`AB__AI__*`). Always present; without an OpenAI key (or
     /// with `ai_enabled=false`) every AI route answers 503 `ai-disabled`.
     #[serde(default)]
@@ -459,68 +460,56 @@ impl Default for AiConfig {
     }
 }
 
-/// Judge0 connection + the platform's own execution limits. Defaults mirror
-/// the legacy `JUDGE0_*` settings; only `base_url` is required.
+/// go-judge connection + the platform's own execution limits; only
+/// `base_url` is required.
 #[derive(Debug, Clone, Deserialize)]
-pub struct Judge0Config {
-    /// Origin only, no trailing slash (`http://judge0-server:2358` in compose).
+pub struct RunnerConfig {
+    /// Origin only, no trailing slash (`http://runner:5050` in compose).
     pub base_url: String,
-    /// Sent as `X-Auth-Token` when set (Judge0 `AUTHN_TOKEN`).
-    pub api_key: Option<SecretString>,
-    /// Judge0's own Postgres database (the legacy `cs_mooc` DB in the shared
-    /// cluster) - only `ashyq admin judge0-tune` connects to it.
-    pub database_url: Option<SecretString>,
-    /// Per-HTTP-call timeout.
-    #[serde(default = "Judge0Config::default_request_timeout_secs")]
-    pub request_timeout_secs: f64,
-    #[serde(default = "Judge0Config::default_poll_interval_ms")]
-    pub poll_interval_ms: u64,
-    /// Total wait for a batch to finish. Must stay under the API request
-    /// timeout (30s) - runs execute inside the request.
-    #[serde(default = "Judge0Config::default_poll_max_wait_secs")]
-    pub poll_max_wait_secs: f64,
-    /// Batches sent to Judge0 at once per process; later ones queue inside
-    /// `poll_max_wait_secs` (BUG-372). Match judge0.conf `COUNT`.
-    #[serde(default = "Judge0Config::default_max_concurrency")]
+    /// Sent as `Authorization: Bearer` (go-judge `ES_AUTH_TOKEN`).
+    pub auth_token: Option<SecretString>,
+    /// Total time one batch may take: waiting for a slot, compiling, every
+    /// test. Must stay under the API request timeout (30s) - runs execute
+    /// inside the request.
+    #[serde(default = "RunnerConfig::default_max_wait_secs")]
+    pub max_wait_secs: f64,
+    /// Sandbox programs sent at once per process; later ones queue inside
+    /// `max_wait_secs` (BUG-372). Match go-judge's `ES_PARALLELISM`.
+    #[serde(default = "RunnerConfig::default_max_concurrency")]
     pub max_concurrency: usize,
     #[serde(default)]
-    pub limits: Judge0Limits,
+    pub limits: RunnerLimits,
 }
 
-impl Judge0Config {
-    const fn default_request_timeout_secs() -> f64 {
-        10.0
-    }
-    const fn default_poll_interval_ms() -> u64 {
-        500
-    }
-    const fn default_poll_max_wait_secs() -> f64 {
+impl RunnerConfig {
+    const fn default_max_wait_secs() -> f64 {
         25.0
     }
     const fn default_max_concurrency() -> usize {
-        2
+        4
     }
 }
 
-/// Size caps and the language allowlist (legacy defaults).
+/// Size caps and the language allowlist.
 #[derive(Debug, Clone, Deserialize)]
-pub struct Judge0Limits {
-    #[serde(default = "Judge0Limits::default_max_source_bytes")]
+pub struct RunnerLimits {
+    #[serde(default = "RunnerLimits::default_max_source_bytes")]
     pub max_source_bytes: usize,
-    #[serde(default = "Judge0Limits::default_max_stdin_bytes")]
+    #[serde(default = "RunnerLimits::default_max_stdin_bytes")]
     pub max_stdin_bytes: usize,
     /// stdout/stderr/compile output kept per case (truncated beyond).
-    #[serde(default = "Judge0Limits::default_max_output_bytes")]
+    #[serde(default = "RunnerLimits::default_max_output_bytes")]
     pub max_output_bytes: usize,
-    /// Judge0 `max_file_size` (KB) for the sandbox.
-    #[serde(default = "Judge0Limits::default_max_output_file_kb")]
-    pub max_output_file_kb: i32,
-    /// Empty = every non-archived Judge0 language.
-    #[serde(default = "Judge0Limits::default_allowed_language_ids")]
+    /// What a program may print per test in the sandbox; beyond it the test
+    /// is "Output Limit Exceeded". An item's `max_output_kb` lowers it.
+    #[serde(default = "RunnerLimits::default_max_program_output_kb")]
+    pub max_program_output_kb: i32,
+    /// Empty = every language of the runner image.
+    #[serde(default = "RunnerLimits::default_allowed_language_ids")]
     pub allowed_language_ids: Vec<i32>,
 }
 
-impl Judge0Limits {
+impl RunnerLimits {
     const fn default_max_source_bytes() -> usize {
         200_000
     }
@@ -530,23 +519,23 @@ impl Judge0Limits {
     const fn default_max_output_bytes() -> usize {
         100_000
     }
-    const fn default_max_output_file_kb() -> i32 {
-        128
+    const fn default_max_program_output_kb() -> i32 {
+        1024
     }
-    /// C, C++, Go, Java 13, Node 12, PHP, Python 3.8, Ruby, Rust, TypeScript,
-    /// Kotlin, Swift - the legacy allowlist.
+    /// C, C++, Go, Java, JavaScript, PHP, Python, Ruby, Rust, TypeScript,
+    /// Kotlin (Judge0 ids; Swift 83 of the legacy list is not in the image).
     fn default_allowed_language_ids() -> Vec<i32> {
-        vec![50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78, 83]
+        vec![50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78]
     }
 }
 
-impl Default for Judge0Limits {
+impl Default for RunnerLimits {
     fn default() -> Self {
         Self {
             max_source_bytes: Self::default_max_source_bytes(),
             max_stdin_bytes: Self::default_max_stdin_bytes(),
             max_output_bytes: Self::default_max_output_bytes(),
-            max_output_file_kb: Self::default_max_output_file_kb(),
+            max_program_output_kb: Self::default_max_program_output_kb(),
             allowed_language_ids: Self::default_allowed_language_ids(),
         }
     }
@@ -662,11 +651,11 @@ impl Config {
             .merge(Env::prefixed(ENV_PREFIX).split("__"))
             .extract()
             .map_err(|e| Error::config(format!("failed to load configuration: {e}")))?;
-        // A blank `AB__JUDGE0__BASE_URL` turns the runner off: a compose overlay can
-        // blank a key but not unset it (the e2e stand runs without Judge0).
+        // A blank `AB__RUNNER__BASE_URL` turns the runner off: a compose overlay can
+        // blank a key but not unset it (the e2e stand runs without a runner).
         config
-            .judge0
-            .take_if(|judge0| judge0.base_url.trim().is_empty());
+            .runner
+            .take_if(|runner| runner.base_url.trim().is_empty());
         config.validate()?;
         Ok(config)
     }
@@ -739,20 +728,17 @@ impl Config {
                 "min_connections": self.database.min_connections,
             },
             "redis": { "url": self.redis.url.as_ref().map(|_| "[redacted]") },
-            "judge0": self.judge0.as_ref().map(|j| serde_json::json!({
-                "base_url": j.base_url,
-                "api_key": j.api_key.as_ref().map(|_| "[redacted]"),
-                "database_url": j.database_url.as_ref().map(|_| "[redacted]"),
-                "request_timeout_secs": j.request_timeout_secs,
-                "poll_interval_ms": j.poll_interval_ms,
-                "poll_max_wait_secs": j.poll_max_wait_secs,
-                "max_concurrency": j.max_concurrency,
+            "runner": self.runner.as_ref().map(|r| serde_json::json!({
+                "base_url": r.base_url,
+                "auth_token": r.auth_token.as_ref().map(|_| "[redacted]"),
+                "max_wait_secs": r.max_wait_secs,
+                "max_concurrency": r.max_concurrency,
                 "limits": {
-                    "max_source_bytes": j.limits.max_source_bytes,
-                    "max_stdin_bytes": j.limits.max_stdin_bytes,
-                    "max_output_bytes": j.limits.max_output_bytes,
-                    "max_output_file_kb": j.limits.max_output_file_kb,
-                    "allowed_language_ids": j.limits.allowed_language_ids,
+                    "max_source_bytes": r.limits.max_source_bytes,
+                    "max_stdin_bytes": r.limits.max_stdin_bytes,
+                    "max_output_bytes": r.limits.max_output_bytes,
+                    "max_program_output_kb": r.limits.max_program_output_kb,
+                    "allowed_language_ids": r.limits.allowed_language_ids,
                 },
             })),
             "ai": self.ai.redacted(),
@@ -790,7 +776,7 @@ mod tests {
             google: None,
             resend: None,
             storage: None,
-            judge0: None,
+            runner: None,
             ai: AiConfig::default(),
             auth: AuthConfig::default(),
             retention: RetentionConfig::default(),

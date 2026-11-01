@@ -334,7 +334,7 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 /// that nevertheless goes stale (crash, panic) is taken over after
 /// [`ab_db::submissions::IDEMPOTENT_STALE_SECS`]; a live action heartbeats
 /// its reservation every [`IDEMPOTENT_HEARTBEAT`] so a long one (several
-/// code items polled at Judge0) is never re-run by its own retry.
+/// code items run in the sandbox) is never re-run by its own retry.
 pub async fn idempotent<T, Fut>(
     pool: sqlx::PgPool,
     user_id: UserId,

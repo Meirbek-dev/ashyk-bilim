@@ -44,7 +44,7 @@ Companion documents:
                     │ server ◄───────────► redis 8      (sessions, SSE streams, rate limits)  │
                     │ server ◄───────────► zitadel      (authN; own db in same PG cluster)    │
                     │ server ◄───────────► rustfs       (S3 API: uploads, media, artifacts)   │
-                    │ server ◄─ exec-net ► judge0       (code execution, profile judge0)      │
+                    │ server ◄─ exec-net ► runner       (code execution, profile runner)      │
                     │ worker  (ashyq worker: job queue consumers + schedule ticks)            │
                     │ server ── otlp ────► optional (AB__TELEMETRY__OTLP_ENDPOINT)            │
                     └─────────────────────────────────────────────────────────────────────────┘
@@ -112,7 +112,7 @@ No outbox: follow-up work enqueues inside the transaction that records the trigg
 | `bacon` | local watch loop (`just server dev`) |
 | `just` | task runner — **the only entry point agents use** (see AGENTS.md) |
 | `insta` | snapshot tests (OpenAPI doc, error registry) with redactions |
-| `wiremock` | HTTP-level fakes for Zitadel/Judge0/Resend/LLM |
+| `wiremock` | HTTP-level fakes for Zitadel/go-judge/Resend/LLM |
 | `proptest` | property tests |
 
 ## 4. Workspace layout
@@ -131,7 +131,7 @@ apps/server/
 └── crates/
     ├── core/          (ab-core)          errors, config, ids, time, permission model, links, telemetry
     ├── db/            (ab-db)            pool, embedded migrations, queries/rows, queue, schedules
-    ├── clients/       (ab-clients)       zitadel, google, judge0, resend, llm, storage, link_preview
+    ├── clients/       (ab-clients)       zitadel, google, gojudge, resend, llm, storage, link_preview
     ├── domain/        (ab-domain)        all business logic, module per bounded context
     ├── api/           (ab-api)           axum app: state, extractors, middleware, routes, DTOs, OpenAPI
     ├── jobs/          (ab-jobs)          worker runtime + job handlers
@@ -154,7 +154,7 @@ Bounded contexts inside `ab-domain` (`crates/domain/src`):
 `identity` (users, sessions, auth, rbac admin, usergroups, capabilities) · `catalog` (courses, `CourseCtx`
 access, curriculum, contributors, collections, readiness, search, platform) · `progress` (trail, projector,
 learner state, agenda, work queue) · `assessments` (authoring, items, access) · `grading` (submissions,
-grader, teacher, bulk actions, penalties) · `files` (uploads, file submissions) · `code` (Judge0 runs) ·
+grader, teacher, bulk actions, penalties) · `files` (uploads, file submissions) · `code` (sandboxed runs in go-judge) ·
 `community` (discussions) · `certifications` · `gamification` · `analytics` · `ai` (runs, agents, budget) ·
 `notifications` · `events` (SSE fan-out) · `maintenance`, `rich_text`, `wire`, `link_preview`
 
@@ -583,7 +583,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | Query validity | `just sqlx-check` | SQL matches schema at build time |
 | Unit | nextest (`just test-unit` needs no services) | pure domain logic |
 | DB | `#[ab_testdb::test]` (per-test clone of one migrated template, `crates/testdb`) | queries, constraints, queue semantics |
-| HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for Judge0/LLM) | handlers, auth, RBAC, error envelopes |
+| HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for go-judge/LLM) | handlers, auth, RBAC, error envelopes |
 | Contract | `just openapi-check` + `insta` snapshot of the OpenAPI doc | every contract change visible in diff |
 | RBAC sweep | `crates/api/tests/rbac_sweep.rs` over the route list | no unclassified mutating endpoint |
 | Supply chain | `just deny`, `just machete` | advisories, licenses, dead deps |
@@ -592,7 +592,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 
 `TestApp::spawn(pool)` boots the full router (whole middleware stack) against the test database and returns
 request helpers plus `mint_session` / `create_user` for any role. Wiremock stubs pin the wire shapes of Zitadel,
-Judge0, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/src`).
+go-judge, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/src`).
 
 ### CI (`.github/workflows/ci.yaml`, jobs `server-lint` and `server-test`)
 

@@ -193,7 +193,7 @@ cp -p backup/secrets/.env .env && cp -p backup/secrets/server.env server.env && 
 git checkout "$(sed -n 's/^IMAGE_TAG=//p' .env)"
 mkdir -p certs        # place cert.pem and key.pem in TLS_DIR (3.7)
 just restore latest   # or `just restore <snapshot-id>`
-just bootstrap        # judge0-tune (restore.sh skips it); PAT and migrations are no-ops
+just bootstrap        # runner-check (restore.sh skips it); PAT and migrations are no-ops
 just deploy           # records .deploy-history so rollback works
 ```
 
@@ -212,7 +212,7 @@ DRILL_HTTP_PORT=28080 DRILL_HTTPS_PORT=28443 just restore-drill <snapshot-id>
 ```
 
 Project `ashyq-drill`, ports 18080/18443 by default (`DRILL_HTTP_PORT`,
-`DRILL_HTTPS_PORT`; on the prod host other stacks hold them), no Judge0. Prints
+`DRILL_HTTPS_PORT`; on the prod host other stacks hold them), no code runner. Prints
 `users`, `courses` and `drill passed in N s` (the RTO), fails when either is
 zero, then tears down. Compare the counts with prod:
 
@@ -231,7 +231,7 @@ scripts themselves with synthetic data (`just restore-test`, INFRA "Backup and r
 git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
 cp infra/env/prod.env.example .env && cp infra/env/server.env.example server.env && chmod 600 .env server.env
 for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ZITADEL_DB_PASSWORD RUSTFS_ACCESS_KEY RUSTFS_SECRET_KEY \
-  REDIS_PASSWORD JUDGE0_AUTHN_TOKEN JUDGE0_DB_PASSWORD JUDGE0_REDIS_PASSWORD BACKUP_PASSWORD; do
+  REDIS_PASSWORD RUNNER_AUTH_TOKEN BACKUP_PASSWORD; do
   sed -i "s/^$k=CHANGE_ME$/$k=$(openssl rand -hex 32)/" .env
 done
 sed -i "s/^ZITADEL_MASTERKEY=CHANGE_ME$/ZITADEL_MASTERKEY=$(openssl rand -hex 16)/" .env
@@ -305,11 +305,9 @@ consistent). `ALTER ROLE` uses the helper from section 0.
 - **`REDIS_PASSWORD`**: `sed -i "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(openssl rand -hex 32)/" .env`,
   `dc up -d --wait` (redis, server, worker recreated; sessions survive on
   `redis_data`).
-- **`JUDGE0_AUTHN_TOKEN`**, **`JUDGE0_REDIS_PASSWORD`**: same `sed` pattern,
-  `dc up -d --wait`.
-- **`JUDGE0_DB_PASSWORD`**: same `sed`, then `dc rm -sfv judge0-db` (its
-  anonymous volume keeps the old password; Judge0 state is disposable) and
-  `just bootstrap` (recreates it and reruns `judge0-tune`).
+- **`RUNNER_AUTH_TOKEN`**: same `sed` pattern, `dc up -d --wait` (runner,
+  server, worker recreated; a run in flight fails and is retried). go-judge
+  prints the token in its startup log: rotate it when such a log leaves the host.
 - **`RUSTFS_ACCESS_KEY`/`RUSTFS_SECRET_KEY`**: same `sed` for both, `dc up -d
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
@@ -377,7 +375,7 @@ user (`/ui/classic`, back with `/ui/new`). On:
 
 ```bash
 env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
-env_set COMPOSE_PROFILES judge0,dual-web        # keep the profiles already there
+env_set COMPOSE_PROFILES runner,dual-web        # keep the profiles already there
 docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:$(sed -n 's/^IMAGE_TAG=//p' .env) >/dev/null
 dc up -d --no-build --wait                      # starts web2, recreates nginx (its env changed)
 curl -sI https://cs-mooc.tou.edu.kz/ | grep -i 'set-cookie: ab_dual'
@@ -389,6 +387,28 @@ Watch `docker stats --no-stream | grep web` (both webs) and the 3.10 logs of
 -d --no-build --wait`. Everyone lands on the old web; the `ab_ui` cookie does
 nothing until it is on again. While it is on, deploys need
 `ashyq-web-2:<sha>` too (deploy.sh checks it).
+
+### 3.13 Code runner (go-judge)
+
+Code activities run in `runner` (profile `runner`, image `ashyq-runner:<sha>` from `infra/runner`; INFRA
+"Services"). Languages and their compile/run commands live in `apps/server/crates/clients/src/gojudge/languages.rs`
+and the Dockerfile together; `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` narrows them. After a deploy:
+`dc run --rm -T --no-deps server admin runner-check`.
+
+One-time switch from Judge0 (the first deploy of a release with `runner`):
+
+```bash
+env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
+env_set RUNNER_AUTH_TOKEN "$(openssl rand -hex 32)"
+sed -i 's/\bjudge0\b/runner/' .env               # COMPOSE_PROFILES: judge0 -> runner
+sed -i '/^JUDGE0_/d' .env
+just deploy
+dc up -d --no-build --wait --remove-orphans      # drops the judge0-* containers
+dc run --rm -T --no-deps server admin runner-check
+docker volume rm "$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env)_judge0_box" 2>/dev/null || true
+```
+
+Stored runs and answers keep their language ids and verdicts; the old runs keep their Judge0 token.
 
 ## 4. Troubleshooting
 
@@ -435,8 +455,8 @@ skipped).
 | `/` | web: `dc logs web`; a 301 loop = the proxy sends no `X-Forwarded-Proto: https` to port 80, or `TRUSTED_PROXY_CIDR` does not cover it (fix either, or `FORCE_HTTPS=0`) |
 | `response headers of /...: N bytes (limit 3500 ...)` | the web added response headers; the university proxy answers 502 above 4k (FINDINGS 31). Fix the web, never raise the limit |
 | `/content/_probe/smoke.txt` | `dc run --rm -T storage-init` (bucket, policy, probe) |
-| `judge0 without token: expected 401, got 200` | the token is not enforced: `infra/judge0/judge0.conf` must not set `AUTHN_TOKEN`; check `JUDGE0_AUTHN_TOKEN` in `.env` |
-| `judge0 ... got no response` | `dc logs judge0-server` |
+| `runner without token: expected 401, got 200` | the token is not enforced: check `RUNNER_AUTH_TOKEN` in `.env` and `ES_AUTH_TOKEN` in `dc exec runner env` |
+| `runner ... got no response` | `dc logs runner` |
 
 ### Other
 
@@ -447,10 +467,10 @@ skipped).
   or another large single PUT. Owner decision 2026-10-31: multipart is the
   permanent answer; no proxy change is requested from university IT. Smoke on
   the host bypasses the proxy and cannot show this limit.
-- **Judge0 never gets healthy** (privileged, cgroups): `dc logs judge0-server
-  judge0-workers`. To bring the site up without code execution, remove
-  `judge0` from `COMPOSE_PROFILES` in `.env` and rerun the step; code runs fail
-  until it is back.
+- **The runner never gets healthy** (privileged, nested cgroup v2): `dc logs
+  runner`. To bring the site up without code execution, remove `runner` from
+  `COMPOSE_PROFILES` in `.env` and rerun the step; code runs answer 503 until
+  it is back.
 - **429s for everyone / proxy address in the logs**: `TRUSTED_PROXY_CIDR`
   does not cover the proxy (INFRA "Edge", Real IP); fix it, then `dc up -d nginx`.
 - **`migration ... was previously applied but has been modified`**: a
@@ -463,8 +483,9 @@ skipped).
   the config; `ZITADEL_TLS_ENABLED=false` must stay in `compose.yaml`.
 - **Imported users cannot log in**:
   `ZITADEL_SYSTEMDEFAULTS_PASSWORDHASHER_VERIFIERS=argon2,bcrypt` must stay.
-- **Code runs fail after a Judge0 image upgrade or a fresh judge0-db**:
-  `dc run --rm -T --no-deps server admin judge0-tune` (idempotent).
+- **Code runs fail after a runner image change**: `dc run --rm -T --no-deps
+  server admin runner-check` compiles and runs a sample in every allowed
+  language and prints which one fails and why.
   `dc run --rm -T --no-deps server admin config-check` prints the effective
   config with secrets redacted.
 - **Google login**: the console still has `/api/v1/auth/google/callback`;
@@ -510,7 +531,7 @@ worktree's apps in their own slot (`just stack up 1`).
 ### 5.3 Dev stack
 
 Containers (`just dev-up`; `dev-down` stops, keeps data; `dev-reset` drops the volumes;
-`dev-judge0` adds Judge0, ~10 GB image, privileged), 127.0.0.1 only, values in
+`dev-runner` adds the code runner: go-judge, ~2 GB image built from `infra/runner`, privileged), 127.0.0.1 only, values in
 `infra/env/dev.env` (override `DEV_*_PORT` in the shell for a second copy):
 
 | Service | Port | Credentials |
@@ -519,9 +540,9 @@ Containers (`just dev-up`; `dev-down` stops, keeps data; `dev-reset` drops the v
 | Redis | 6380 | password `ashyq-dev` |
 | Zitadel | 8081 | PAT written to `tmp/dev/zitadel-pat.txt` |
 | RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |
-| Judge0 (optional) | 2358 | token `ashyq-dev` |
+| Code runner (optional) | 5050 | token `ashyq-dev` |
 
-`just stack up [slot] [--db NAME] [--judge0] [--seed] [--no-build] [--without web,web2]` starts what a slot
+`just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web,web2]` starts what a slot
 needs: the dev containers (`just dev-up` unless all answer), a debug build of the server, the database
 (created when missing, from `ashyq_seed` if it exists, then migrated; a new one is seeded), then API +
 worker + web-2 `vp dev` + legacy `next dev` under a supervisor that restarts a crashed process with

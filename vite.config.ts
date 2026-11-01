@@ -27,7 +27,7 @@ export default {
       // infra/dev (bun scripts) is formatted; the rest of infra is not.
       'infra/*.yaml',
       'infra/env/',
-      'infra/judge0/',
+      'infra/runner/',
       'infra/nginx/',
       'infra/postgres/',
       'infra/scripts/',

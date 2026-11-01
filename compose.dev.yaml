@@ -40,6 +40,6 @@ services:
   rustfs:
     ports: ['127.0.0.1:${DEV_RUSTFS_PORT:-9002}:9000']
 
-  # Profile judge0 (`just dev-judge0`, `just stack up --judge0`): the API calls it on the host.
-  judge0-server:
-    ports: ['127.0.0.1:${DEV_JUDGE0_PORT:-2358}:2358']
+  # Profile runner (`just dev-runner`, `just stack up --runner`): the API calls it on the host.
+  runner:
+    ports: ['127.0.0.1:${DEV_RUNNER_PORT:-5050}:5050']

@@ -2986,7 +2986,7 @@ export const getCodeRunOptions = (options: Options<GetCodeRunData>) => queryOpti
 export const languagesQueryKey = (options?: Options<LanguagesData>) => createQueryKey('languages', options);
 
 /**
- * Languages the platform allows for code items (from Judge0, cached).
+ * Languages the platform allows for code items (from the runner image).
  *
  * @deprecated
  */
@@ -3009,7 +3009,7 @@ export const runnerQueryKey = (options?: Options<RunnerData>) => createQueryKey(
  * The code runner's state and the platform's languages.
  *
  * Answers `runner_configured: false` with no languages (never 503) when
- * no Judge0 endpoint is configured; replaces `GET /code/languages`.
+ * no runner endpoint is configured; replaces `GET /code/languages`.
  */
 export const runnerOptions = (options?: Options<RunnerData>) => queryOptions<RunnerResponse, RunnerError, RunnerResponse, ReturnType<typeof runnerQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

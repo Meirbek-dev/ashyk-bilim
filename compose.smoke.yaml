@@ -1,6 +1,6 @@
 # Smoke overrides (CI stack-smoke, `just stack-up`), on top of compose.yaml +
 # compose.prod.yaml. Values: infra/env/smoke.env + a copy of smoke.server.env.
-# Plain http on ashyq.test (PUBLIC_SCHEME=http, FORCE_HTTPS=0); Judge0 profile off.
+# Plain http on ashyq.test (PUBLIC_SCHEME=http, FORCE_HTTPS=0); runner profile off.
 # WEB_IMAGE=<stub> swaps the web app for infra/smoke/stub-web (edge is web-agnostic).
 
 services:

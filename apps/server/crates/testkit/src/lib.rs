@@ -14,16 +14,16 @@
     clippy::missing_panics_doc
 )]
 
-pub mod judge0;
+pub mod gojudge;
 pub mod llm;
 
 use std::sync::Arc;
 use std::time::Duration;
 
-use ab_clients::judge0::Judge0Client;
+use ab_clients::gojudge::GoJudgeClient;
 use ab_clients::zitadel::{ZitadelClient, ZitadelConfig};
 use ab_core::config::{
-    AiConfig, Config, DatabaseConfig, Environment, Judge0Limits, RedisConfig, ResendConfig,
+    AiConfig, Config, DatabaseConfig, Environment, RedisConfig, ResendConfig, RunnerLimits,
     ServerConfig, TelemetryConfig,
 };
 use ab_core::id::UserId;
@@ -67,7 +67,7 @@ pub fn test_config() -> Config {
         google: None,
         resend: None,
         storage: None,
-        judge0: None,
+        runner: None,
         telemetry: TelemetryConfig {
             json_logs: false,
             otlp_endpoint: None,
@@ -93,12 +93,12 @@ pub struct TestApp {
     /// Wiremock standing in for Resend (`POST /emails`). Unmounted = the
     /// send fails and the flow logs-and-continues, like an outage.
     pub resend: MockServer,
-    /// Wiremock standing in for Judge0 - see [`judge0::FakeJudge`].
-    pub judge0: MockServer,
+    /// Wiremock standing in for go-judge - see [`gojudge::FakeJudge`].
+    pub runner: MockServer,
     /// Wiremock standing in for the OpenAI-compatible chat completions
     /// endpoint - see [`llm`] for the reply helpers.
     pub llm: MockServer,
-    judge0_client: Arc<Judge0Client>,
+    runner_client: Arc<GoJudgeClient>,
 }
 
 /// The Google OAuth client id used by the test app (id_token `aud` must match).
@@ -117,7 +117,7 @@ impl TestApp {
     pub async fn spawn_with(pool: PgPool, adjust: impl FnOnce(&mut Config)) -> Self {
         let zitadel = MockServer::start().await;
         let google = MockServer::start().await;
-        let judge0 = MockServer::start().await;
+        let runner = MockServer::start().await;
         let llm = MockServer::start().await;
         let resend = MockServer::start().await;
         let mut config = test_config();
@@ -130,16 +130,14 @@ impl TestApp {
         adjust(&mut config);
         ab_core::links::init(config.server.web_links);
         ab_domain::rich_text::init(&config);
-        let judge0_client = Arc::new(
-            Judge0Client::new(ab_clients::judge0::Judge0Config {
-                base_url: judge0.uri(),
-                api_key: None,
-                request_timeout: Duration::from_secs(5),
-                poll_interval: Duration::from_millis(10),
-                poll_max_wait: Duration::from_secs(3),
+        let runner_client = Arc::new(
+            GoJudgeClient::new(ab_clients::gojudge::GoJudgeConfig {
+                base_url: runner.uri(),
+                auth_token: None,
+                max_wait: Duration::from_secs(3),
                 max_concurrency: 4,
             })
-            .expect("test judge0 client"),
+            .expect("test runner client"),
         );
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
@@ -192,7 +190,7 @@ impl TestApp {
             identity,
             Some(google_auth),
             storage,
-            Some(judge0_client.clone()),
+            Some(runner_client.clone()),
         );
         let state = state.expect("test state must build");
         let ai = state.ai.clone();
@@ -206,9 +204,9 @@ impl TestApp {
             zitadel,
             google,
             resend,
-            judge0,
+            runner,
             llm,
-            judge0_client,
+            runner_client,
         }
     }
 
@@ -242,8 +240,8 @@ impl TestApp {
     pub fn code_runner(&self) -> CodeRunner {
         CodeRunner::new(
             self.pool.clone(),
-            Some(self.judge0_client.clone()),
-            Judge0Limits::default(),
+            Some(self.runner_client.clone()),
+            RunnerLimits::default(),
         )
     }
 

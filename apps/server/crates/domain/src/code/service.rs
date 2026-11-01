@@ -2,8 +2,7 @@
 //! (and teachers previewing), run lookup, the author's reference check, the
 //! language list.
 
-use std::sync::{Arc, Mutex, PoisonError};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, ItemKind};
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId};
@@ -14,14 +13,12 @@ use utoipa::ToSchema;
 use crate::assessments::items::{CodeBody, ItemBody};
 use crate::assessments::service::{AssessmentsService, Item};
 use crate::code::runner::{CaseResult, CodeRun, CodeRunner, RunSpec};
-use crate::code::sandbox;
 use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
 
 /// Code runs per learner per minute.
 const RUN_LIMIT: u32 = 20;
 const RUN_WINDOW: Duration = Duration::from_secs(60);
-const LANGUAGES_TTL: Duration = Duration::from_secs(600);
 
 pub struct RunInput<'a> {
     pub language_id: i32,
@@ -41,7 +38,7 @@ pub struct RunListFilter {
 /// Runs per list call.
 pub const MAX_RUN_LIST: i64 = 50;
 
-/// A Judge0 language the platform allows.
+/// A runner language the platform allows.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct LanguageInfo {
     pub id: i32,
@@ -86,24 +83,24 @@ pub struct ReferenceCheck {
     pub cases: Vec<CaseResult>,
 }
 
-type LanguagesCache = Arc<Mutex<Option<(Instant, Vec<LanguageInfo>)>>>;
-
 #[derive(Clone)]
 pub struct CodeRunsService {
     runner: CodeRunner,
     assessments: AssessmentsService,
     limiter: RateLimiter,
-    languages: LanguagesCache,
 }
 
 impl CodeRunsService {
     #[must_use]
-    pub fn new(runner: CodeRunner, assessments: AssessmentsService, limiter: RateLimiter) -> Self {
+    pub const fn new(
+        runner: CodeRunner,
+        assessments: AssessmentsService,
+        limiter: RateLimiter,
+    ) -> Self {
         Self {
             runner,
             assessments,
             limiter,
-            languages: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -171,7 +168,7 @@ impl CodeRunsService {
             .assessments
             .require_submit_access(actor, &assessment, &course)
             .await?;
-        // Judge0 time is never spent on an archived course (previews too).
+        // Sandbox time is never spent on an archived course (previews too).
         course.ensure_not_archived()?;
         Ok((item_row, assessment, teacher))
     }
@@ -431,46 +428,36 @@ impl CodeRunsService {
         Ok(out)
     }
 
-    /// Whether a Judge0 endpoint is configured at all.
+    /// Whether a runner endpoint is configured at all.
     #[must_use]
     pub const fn runner_configured(&self) -> bool {
-        self.runner.judge0().is_some()
+        self.runner.client().is_some()
     }
 
-    /// Allowed, non-archived Judge0 languages (cached 10 minutes).
-    pub async fn languages(&self) -> Result<Vec<LanguageInfo>> {
-        if let Some((at, cached)) = &*self
-            .languages
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            && at.elapsed() < LANGUAGES_TTL
-        {
-            return Ok(cached.clone());
-        }
-        let Some(client) = self.runner.judge0() else {
+    /// The runner image's languages that the platform allows, most used
+    /// first. 503 while the runner's breaker is open (repeated failures), so
+    /// the editor says so before a run is tried.
+    pub fn languages(&self) -> Result<Vec<LanguageInfo>> {
+        let Some(client) = self.runner.client() else {
             return Err(Error::app(
                 ErrorCode::CodeRunnerDegraded,
                 "code runner is not configured",
             ));
         };
-        let languages = client.languages().await.map_err(|err| {
-            // UX-291: upstream URLs and transport errors stay in the log.
-            tracing::warn!(%err, "listing judge0 languages failed");
-            Error::app(ErrorCode::CodeRunnerDegraded, err.public_message())
-        })?;
-        let list: Vec<LanguageInfo> = languages
-            .into_iter()
-            .filter(|l| !l.is_archived && self.runner.language_allowed(l.id))
+        if client.is_degraded() {
+            return Err(Error::app(
+                ErrorCode::CodeRunnerDegraded,
+                "code runner unavailable",
+            ));
+        }
+        Ok(ab_clients::gojudge::languages::all()
+            .iter()
+            .filter(|l| self.runner.language_allowed(l.id))
             .map(|l| LanguageInfo {
                 id: l.id,
-                monaco_language: sandbox::monaco_language(&l.name),
-                name: l.name,
+                name: l.name.to_owned(),
+                monaco_language: l.editor,
             })
-            .collect();
-        *self
-            .languages
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some((Instant::now(), list.clone()));
-        Ok(list)
+            .collect())
     }
 }

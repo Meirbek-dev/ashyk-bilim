@@ -4412,7 +4412,7 @@ expression: json
             "type": "string"
           },
           "languages": {
-            "description": "Judge0 language ids.",
+            "description": "Language ids (`GET /code/runner`).",
             "items": {
               "format": "int32",
               "type": "integer"
@@ -4626,7 +4626,7 @@ expression: json
             "type": "array"
           },
           "runner_configured": {
-            "description": "`false`: no Judge0 endpoint is configured; `languages` is empty and\nruns cannot start (authoring still works).",
+            "description": "`false`: no runner endpoint is configured; `languages` is empty and\nruns cannot start (authoring still works).",
             "type": "boolean"
           }
         },
@@ -11564,7 +11564,7 @@ expression: json
                 "type": "string"
               },
               "language": {
-                "description": "Judge0 language id.",
+                "description": "Language id (`GET /code/runner`).",
                 "format": "int32",
                 "type": "integer"
               },
@@ -11891,7 +11891,7 @@ expression: json
         "type": "object"
       },
       "LanguageInfo": {
-        "description": "A Judge0 language the platform allows.",
+        "description": "A runner language the platform allows.",
         "properties": {
           "id": {
             "format": "int32",
@@ -17191,7 +17191,7 @@ expression: json
             "type": "string"
           },
           "language_id": {
-            "description": "Judge0 language id.",
+            "description": "Language id (`GET /code/runner`).",
             "format": "int32",
             "minimum": 1,
             "type": "integer"
@@ -31188,7 +31188,7 @@ expression: json
             "description": "Code runner unavailable"
           }
         },
-        "summary": "Languages the platform allows for code items (from Judge0, cached).",
+        "summary": "Languages the platform allows for code items (from the runner image).",
         "tags": [
           "code"
         ],
@@ -31197,7 +31197,7 @@ expression: json
     },
     "/api/v2/code/runner": {
       "get": {
-        "description": "Answers `runner_configured: false` with no languages (never 503) when\nno Judge0 endpoint is configured; replaces `GET /code/languages`.",
+        "description": "Answers `runner_configured: false` with no languages (never 503) when\nno runner endpoint is configured; replaces `GET /code/languages`.",
         "operationId": "runner",
         "responses": {
           "200": {
@@ -31218,7 +31218,7 @@ expression: json
                 }
               }
             },
-            "description": "Runner configured but unreachable"
+            "description": "Runner configured but failing (breaker open)"
           }
         },
         "summary": "The code runner's state and the platform's languages.",

@@ -9,7 +9,7 @@ Learning platform: Rust API, production Next.js app, and a replacement TanStack 
 | `apps/server/` | Rust API (axum + sqlx), `/api/v2`, plus the job worker |
 | `apps/web/` | Next.js frontend (Vite+ toolchain) |
 | `apps/web-2/` | Replacement TanStack Start frontend (standalone Bun project) |
-| `infra/` | nginx, Postgres init, Judge0, storage, env templates, ops scripts |
+| `infra/` | nginx, Postgres init, code runner (go-judge), storage, env templates, ops scripts |
 | `compose*.yaml` | Stack definitions: shared, dev, prod, smoke |
 | `justfile` | Single entry point for every task |
 | `docs/` | Architecture, decisions, operations, open issues and frontend rollout |

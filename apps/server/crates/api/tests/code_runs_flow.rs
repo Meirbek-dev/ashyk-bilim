@@ -1,11 +1,11 @@
-//! Code challenges end to end against a fake Judge0: visible/custom runs
+//! Code challenges end to end against a fake go-judge: visible/custom runs
 //! with idempotent replay and hidden-test masking, submit-time final runs
 //! (hidden tests, compile errors, blank source), the author's reference
 //! check, the degraded runner (learner 503, timer → manual review), and
 //! the language list.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_testkit::judge0::{CaseVerdict, FakeJudge};
+use ab_testkit::gojudge::{CaseVerdict, FakeJudge};
 use ab_testkit::{MintedSession, TestApp};
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
@@ -166,12 +166,12 @@ const SQUARE: &str = "print(int(input())**2)  # square";
 #[ab_testdb::test]
 async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (_id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
 
-    // Visible tests only: one submission reaches Judge0.
+    // Visible tests only: one test reaches the runner (after its syntax check).
     let first = app
         .send(run(
             &alice,
@@ -196,7 +196,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
     assert_eq!(judge.submissions(), 1);
     let run_id = body["id"].as_str().unwrap().to_owned();
 
-    // Same key + payload replays (200) without touching Judge0; a different
+    // Same key + payload replays (200) without touching the runner; a different
     // payload under the key is a conflict.
     let replay = app
         .send(run(
@@ -326,7 +326,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
 #[ab_testdb::test]
 async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, None).await;
 
@@ -431,7 +431,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
         "0/2 tests passed"
     );
 
-    // Blank source never reaches Judge0 and scores zero.
+    // Blank source never reaches the runner and scores zero.
     let before = judge.submissions();
     let carol = learner(&app, "carol").await;
     let draft = app
@@ -482,13 +482,13 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
 }
 
 /// BUG-381: a deadline rush on a saturated runner. The submit arrives
-/// before `due_at` (no late hand-ins), Judge0 answers «busy» only after the
+/// before `due_at` (no late hand-ins), the runner answers «busy» only after the
 /// due date has passed - the attempt is on time (judged at arrival) and
 /// lands for manual review: 200 `pending`, counted in the teacher's stats.
 #[ab_testdb::test]
 async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
@@ -535,7 +535,7 @@ async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool
 #[ab_testdb::test]
 async fn degraded_runner_and_languages(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, Some(60)).await;
     let alice = learner(&app, "alice").await;
@@ -637,8 +637,8 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     assert_eq!(mine.json()["status"], "pending");
     assert_eq!(mine.json()["release_state"], "hidden");
 
-    // Languages: the platform allowlist filters what Judge0 offers.
-    judge.set_down(false);
+    // Languages: the runner image's, filtered by the platform allowlist,
+    // most used first; they need no call to the runner.
     let languages = app.get_as(&alice, "/api/v2/code/languages").await;
     assert_eq!(languages.status, StatusCode::OK, "{}", languages.text());
     let ids: Vec<i64> = languages
@@ -648,7 +648,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
         .iter()
         .map(|l| l["id"].as_i64().unwrap())
         .collect();
-    assert_eq!(ids, [71, 62]);
+    assert_eq!(ids, [71, 54, 62, 50, 63, 74, 60, 73, 78, 68, 72]);
     assert_eq!(languages.json()[0]["monaco_language"], "python");
 }
 
@@ -657,7 +657,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
 #[ab_testdb::test]
 async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    FakeJudge::mount(&app.judge0, fake_python).await;
+    FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
@@ -706,7 +706,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
 #[ab_testdb::test]
 async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (_id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
@@ -788,7 +788,7 @@ async fn code_draft(
 #[ab_testdb::test]
 async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    FakeJudge::mount(&app.judge0, fake_python).await;
+    FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, Some(60)).await;
     let submit = |who: &MintedSession, sub: &str, language: i32, source: &str| {
@@ -888,7 +888,7 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
 #[ab_testdb::test]
 async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    let judge = FakeJudge::mount(&app.judge0, fake_python).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
@@ -979,5 +979,43 @@ async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
         .iter()
         .map(|l| l["id"].as_i64().unwrap())
         .collect();
-    assert_eq!(ids, [71, 62]);
+    assert_eq!(ids, [71, 54, 62, 50, 63, 74, 60, 73, 78, 68, 72]);
+}
+
+/// B-COD-23 on the server: after repeated failures the runner's breaker is
+/// open and `GET /code/runner` answers 503 before anyone tries a run.
+#[ab_testdb::test]
+async fn runner_state_is_degraded_while_the_breaker_is_open(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let judge = FakeJudge::mount(&app.runner, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_id, item_id) = code_challenge(&app, &teacher, None).await;
+    let alice = learner(&app, "alice").await;
+    let up = app.get_as(&alice, "/api/v2/code/runner").await;
+    assert_eq!(up.status, StatusCode::OK, "{}", up.text());
+    judge.set_down(true);
+    for _ in 0..5 {
+        let down = app
+            .send(run(
+                &alice,
+                &item_id,
+                None,
+                &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            ))
+            .await;
+        assert_eq!(
+            down.status,
+            StatusCode::SERVICE_UNAVAILABLE,
+            "{}",
+            down.text()
+        );
+    }
+    let state = app.get_as(&alice, "/api/v2/code/runner").await;
+    assert_eq!(
+        state.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        state.text()
+    );
+    assert_eq!(state.json()["code"], "code-runner-degraded");
 }

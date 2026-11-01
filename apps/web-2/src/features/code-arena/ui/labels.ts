@@ -38,7 +38,7 @@ export function referenceStatus(status: string): Status {
   return isRunStatus(status) ? runStatus[status] : runStatus.internal_error
 }
 
-/** One test's verdict (B-COD-08), from the Judge0 status id. */
+/** One test's verdict (B-COD-08), from the verdict code (Judge0's status ids). */
 export const caseStatus = {
   accepted: runStatus.accepted,
   wrong_answer: runStatus.wrong_answer,

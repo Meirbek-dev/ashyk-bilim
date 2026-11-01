@@ -1471,7 +1471,7 @@ export type CodeBody = {
     constraints?: Array<string>;
     input_spec?: string;
     /**
-     * Judge0 language ids.
+     * Language ids (`GET /code/runner`).
      */
     languages?: Array<number>;
     max_output_kb: number | null;
@@ -1534,7 +1534,7 @@ export type CodeRunStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' |
 export type CodeRunnerInfo = {
     languages: Array<LanguageInfo>;
     /**
-     * `false`: no Judge0 endpoint is configured; `languages` is empty and
+     * `false`: no runner endpoint is configured; `languages` is empty and
      * runs cannot start (authoring still works).
      */
     runner_configured: boolean;
@@ -4066,7 +4066,7 @@ export type ItemAnswer = {
 } | {
     kind: 'code';
     /**
-     * Judge0 language id.
+     * Language id (`GET /code/runner`).
      */
     language: number;
     source?: string;
@@ -4142,7 +4142,7 @@ export type KnowledgeGap = {
 };
 
 /**
- * A Judge0 language the platform allows.
+ * A runner language the platform allows.
  */
 export type LanguageInfo = {
     id: number;
@@ -5983,7 +5983,7 @@ export type RunRequest = {
      */
     custom_input?: string;
     /**
-     * Judge0 language id.
+     * Language id (`GET /code/runner`).
      */
     language_id: number;
     source: string;
@@ -12647,7 +12647,7 @@ export type RunnerData = {
 
 export type RunnerErrors = {
     /**
-     * Runner configured but unreachable
+     * Runner configured but failing (breaker open)
      */
     503: Problem;
 };

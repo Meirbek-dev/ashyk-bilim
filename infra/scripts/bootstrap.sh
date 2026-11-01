@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Idempotent initialization of the stack in STACK=dev|prod|smoke (default prod):
 # data services + init jobs (roles/DBs, Zitadel, buckets), Zitadel PAT into the
-# server env, migrations, Judge0 tuning. Safe to re-run; changes nothing when done.
+# server env, migrations, a code runner check. Safe to re-run; changes nothing when done.
 # The app tier is started by `just stack-up` / `just deploy`, not here.
 # shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -10,10 +10,10 @@ stack=${STACK:-prod}
 prepare_redis_volume
 
 services=(db redis zitadel rustfs)
-judge0=false
-if grep -qx judge0-server <<<"$(compose config --services)"; then
-  judge0=true
-  services+=(judge0-server judge0-workers)
+runner=false
+if grep -qx runner <<<"$(compose config --services)"; then
+  runner=true
+  services+=(runner)
 fi
 
 log "data services and init jobs: ${services[*]}"
@@ -47,8 +47,8 @@ fi
 log "migrations"
 compose run --rm -T server-migrate
 
-if $judge0; then
-  log "judge0-tune"
-  compose run --rm -T --no-deps server admin judge0-tune
+if $runner; then
+  log "runner-check: every allowed language compiles and runs"
+  compose run --rm -T --no-deps server admin runner-check
 fi
 log "bootstrap ($stack) done"

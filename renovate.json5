@@ -89,14 +89,14 @@
       groupName: 'rust tools',
     },
     {
-      // Services holding data or running migrations on start: a PR, deployed by hand.
+      // Services holding data or running migrations on start, and the code sandbox: a PR, deployed by hand.
       matchDatasources: ['docker'],
       matchDepNames: [
         '/pgvector\\/pgvector$/',
         '/library\\/redis$/',
         '/zitadel\\/zitadel$/',
         '/rustfs\\/rustfs$/',
-        '/judge0\\/judge0$/',
+        '/criyle\\/go-judge$/',
         '/restic\\/restic$/',
       ],
       automerge: false,

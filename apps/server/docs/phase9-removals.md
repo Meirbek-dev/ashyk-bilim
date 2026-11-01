@@ -32,7 +32,7 @@ an entry that has a consumer).
 | operation | `add_usergroup_courses` | `add_group_courses` | S-10 |
 | operation | `remove_usergroup_courses` | `remove_group_courses` | S-10 |
 | operation | `usergroups_for_course` | `groups_for_course` | S-10 |
-| operation | `languages` (`GET /code/languages`, 503 without Judge0) | `runner` (`GET /code/runner`) | L-6 (`RENAMED`) |
+| operation | `languages` (`GET /code/languages`, 503 without a code runner) | `runner` (`GET /code/runner`) | L-6 (`RENAMED`) |
 | operation | `reference_check` (`POST /assessments/{id}/reference-check`) | `reference_check_item` | L-6 (`RENAMED`) |
 | operation | `submission_events` (`GET /submissions/{id}/events`) | `GET /me/events` (`submission.updated`) | L-4 |
 | operation | `course_grading_events` (`GET /courses/{id}/grading/events`) | `GET /me/events` (`grading.updated`) | L-4 |
@@ -67,7 +67,7 @@ an entry that has a consumer).
 | field | `RemediationCompletionRequest.score` (deprecated, ignored: the server scores `answers`) | `RemediationCompletionRequest.answers` | S-GAPS-2 (REM-SCORE) |
 | behaviour | 204 on role assign/unassign, user status, members, role writes without `Prefer` | always `return=representation` | L-3 |
 | behaviour | 409 for a stale submission draft without `If-Match` | 412 with `If-Match` required | L-3 |
-| behaviour | `GET /code/languages` 503 when Judge0 is unset | `runner_configured: false` | L-6 |
+| behaviour | `GET /code/languages` 503 when the code runner is unset | `runner_configured: false` | L-6 |
 | behaviour | camelCase gamification preference keys accepted on write | snake_case only; then rewrite stored `user_profiles` gamification preferences to snake_case (the leaderboard SQL reads them) | L-5 |
 | behaviour | `quiz` / `exam` accepted as activity kinds | `assessment` | L-5 |
 | setting | `AB__SERVER__WEB_LINKS=legacy` (old URL map incl. `/ru`/`/kz`/`/en` prefixes, `kz` for Kazakh) | `v2` becomes the only map; drop the switch | L-5 (S-11) |

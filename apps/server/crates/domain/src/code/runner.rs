@@ -1,16 +1,17 @@
-//! Executing one item's tests on Judge0 and recording the run - shared by
-//! the learner-facing [`super::CodeRunsService`] and the submit pipeline.
+//! Executing one item's tests in the go-judge sandbox and recording the run -
+//! shared by the learner-facing [`super::CodeRunsService`] and the submit
+//! pipeline.
 //!
 //! Compared to the legacy: hidden-test data is stored in full and masked
 //! on the way out (the legacy nulled it in the DB too, so teachers could
-//! not see what a learner's code printed); a run that Judge0 rejected is
+//! not see what a learner's code printed); a run that the runner rejected is
 //! `internal_error` rather than `degraded`, because retrying it is useless.
 
 use std::sync::Arc;
 
-use ab_clients::judge0::{Judge0Client, Judge0Error, SubmissionResult, SubmissionSpec};
+use ab_clients::gojudge::{Batch, GoJudgeClient, Outcome, RunnerError};
 use ab_core::assessments::{CodeRunPurpose, CodeRunStatus};
-use ab_core::config::Judge0Limits;
+use ab_core::config::RunnerLimits;
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId, UserId};
 use ab_core::{Error, ErrorCode, Result};
 use ab_db::submissions::{CodeRunCaseRow, CodeRunRow, NewCodeRun};
@@ -24,7 +25,7 @@ use crate::grading::breakdown::round2;
 
 const OUTPUT_TRUNCATION_MARKER: &str = "\n[output truncated]";
 /// A `running` run older than this was abandoned (process crash): a run
-/// finishes within Judge0's poll budget (25 s by default) plus HTTP timeouts.
+/// finishes within the runner's budget (25 s by default).
 const ABANDONED_RUN_SECONDS: i64 = 120;
 
 /// One test's outcome. Hidden tests lose `stdin`/`expected`/`actual`/
@@ -102,7 +103,7 @@ impl CodeRun {
 #[derive(Debug)]
 pub enum FinalRun {
     Ran(CodeRun),
-    /// Judge0 unavailable (or not configured) - nothing was graded.
+    /// The runner is unavailable (or not configured) - nothing was graded.
     Degraded(String),
     /// The stored answer's language is not allowed for this item.
     LanguageNotAllowed {
@@ -138,16 +139,16 @@ pub struct RunSpec<'a> {
 #[derive(Clone)]
 pub struct CodeRunner {
     pool: PgPool,
-    judge0: Option<Arc<Judge0Client>>,
-    limits: Arc<Judge0Limits>,
+    client: Option<Arc<GoJudgeClient>>,
+    limits: Arc<RunnerLimits>,
 }
 
 impl CodeRunner {
     #[must_use]
-    pub fn new(pool: PgPool, judge0: Option<Arc<Judge0Client>>, limits: Judge0Limits) -> Self {
+    pub fn new(pool: PgPool, client: Option<Arc<GoJudgeClient>>, limits: RunnerLimits) -> Self {
         Self {
             pool,
-            judge0,
+            client,
             limits: Arc::new(limits),
         }
     }
@@ -158,13 +159,13 @@ impl CodeRunner {
     }
 
     #[must_use]
-    pub fn limits(&self) -> &Judge0Limits {
+    pub fn limits(&self) -> &RunnerLimits {
         &self.limits
     }
 
     #[must_use]
-    pub const fn judge0(&self) -> Option<&Arc<Judge0Client>> {
-        self.judge0.as_ref()
+    pub const fn client(&self) -> Option<&Arc<GoJudgeClient>> {
+        self.client.as_ref()
     }
 
     /// Whether a language passes the platform allowlist (empty = any).
@@ -175,7 +176,7 @@ impl CodeRunner {
     }
 
     /// Size and blank-source checks shared by every entry point. Blank
-    /// source is refused before any row exists - Judge0 would 422 it, and
+    /// source is refused before any row exists - it can never pass, and
     /// the auto-submit timer must not hammer the sandbox retrying that.
     pub fn validate_payload(&self, source: &str, custom_input: Option<&str>) -> Result<()> {
         if source.trim().is_empty() {
@@ -266,7 +267,7 @@ impl CodeRunner {
         Ok(FinalRun::Ran(run))
     }
 
-    /// Record a run row, execute on Judge0, persist cases, return the run.
+    /// Record a run row, execute in the sandbox, persist cases, return the run.
     /// An `Idempotency-Key` replays an accepted/wrong-answer run with the
     /// same source, stdin and language; a different payload under the same
     /// key is a conflict; any other prior status is retried.
@@ -317,7 +318,7 @@ impl CodeRunner {
             return Err(in_progress());
         };
 
-        match self.run_on_judge0(&spec, tests).await {
+        match self.run_in_sandbox(&spec, tests).await {
             Ok(results) => {
                 let scored = spec.custom_input.is_none();
                 let graded = grade_cases(tests, &results, scored, self.limits.max_output_bytes);
@@ -343,8 +344,8 @@ impl CodeRunner {
             }
             Err(err) => {
                 let status = match &err {
-                    Judge0Error::Unavailable(_) | Judge0Error::Busy(_) => CodeRunStatus::Degraded,
-                    Judge0Error::Rejected(_) => CodeRunStatus::InternalError,
+                    RunnerError::Unavailable(_) | RunnerError::Busy(_) => CodeRunStatus::Degraded,
+                    RunnerError::Rejected(_) => CodeRunStatus::InternalError,
                 };
                 // UX-291: the upstream detail goes to the log, not the user.
                 tracing::warn!(%run_id, %err, ?status, "code run did not execute");
@@ -443,26 +444,23 @@ impl CodeRunner {
         Ok(None)
     }
 
-    async fn run_on_judge0(
+    async fn run_in_sandbox(
         &self,
         spec: &RunSpec<'_>,
         tests: &[CodeTestCase],
-    ) -> std::result::Result<Vec<SubmissionResult>, Judge0Error> {
-        let Some(client) = &self.judge0 else {
-            return Err(Judge0Error::Unavailable(
+    ) -> std::result::Result<Vec<Outcome>, RunnerError> {
+        let Some(client) = &self.client else {
+            return Err(RunnerError::Unavailable(
                 "code runner is not configured".into(),
             ));
         };
-        let limits = sandbox::Limits {
-            time_limit_seconds: spec.body.time_limit_seconds,
-            memory_limit_mb: spec.body.memory_limit_mb,
-            max_output_file_kb: self.limits.max_output_file_kb,
+        let batch = Batch {
+            language_id: spec.language_id,
+            source: spec.source,
+            inputs: tests.iter().map(|t| t.input.as_str()).collect(),
+            limits: sandbox::limits(spec.body, &self.limits),
         };
-        let specs: Vec<SubmissionSpec> = tests
-            .iter()
-            .map(|t| sandbox::spec(spec.language_id, spec.source, &t.input, limits))
-            .collect();
-        client.run_batch(&spec.user_id.to_string(), &specs).await
+        client.run_batch(&spec.user_id.to_string(), &batch).await
     }
 }
 
@@ -487,8 +485,8 @@ struct Graded {
     compile_output: Option<String>,
 }
 
-/// Judge0 status id → run status (legacy `normalize_status`).
-const fn status_from_judge0(id: i32) -> CodeRunStatus {
+/// Verdict code (Judge0's status ids) → run status (legacy `normalize_status`).
+const fn status_from_verdict(id: i32) -> CodeRunStatus {
     match id {
         1 => CodeRunStatus::Queued,
         2 => CodeRunStatus::Running,
@@ -504,7 +502,7 @@ const fn status_from_judge0(id: i32) -> CodeRunStatus {
 /// Per-case verdicts + the run-level rollup (legacy `_execute_sync`).
 fn grade_cases(
     tests: &[CodeTestCase],
-    results: &[SubmissionResult],
+    results: &[Outcome],
     scored: bool,
     max_output_bytes: usize,
 ) -> Graded {
@@ -513,7 +511,7 @@ fn grade_cases(
     let mut overall = CodeRunStatus::Accepted;
     let mut compile_output = None;
     for (position, (test, result)) in tests.iter().zip(results).enumerate() {
-        let mut case_status = status_from_judge0(result.status_id);
+        let mut case_status = status_from_verdict(result.status_id);
         let mut status_id = Some(result.status_id);
         let mut status_description = result.status_description.clone();
         let case_passed = if scored {
@@ -545,7 +543,8 @@ fn grade_cases(
         rows.push(CodeRunCaseRow {
             position: i32::try_from(position).unwrap_or(i32::MAX),
             test_id: test.id.clone(),
-            judge0_token: Some(result.token.clone()),
+            // A Judge0 submission token on runs from before go-judge.
+            judge0_token: None,
             stdin: Some(test.input.clone()),
             expected_output: Some(test.expected_output.clone()),
             description: test.description.clone().unwrap_or_default(),
@@ -651,9 +650,8 @@ pub fn sha256_hex(value: &str) -> String {
 mod tests {
     use super::*;
 
-    fn result(status_id: i32, stdout: Option<&str>) -> SubmissionResult {
-        SubmissionResult {
-            token: "t".into(),
+    fn result(status_id: i32, stdout: Option<&str>) -> Outcome {
+        Outcome {
             status_id,
             status_description: "x".into(),
             stdout: stdout.map(str::to_owned),
@@ -678,7 +676,7 @@ mod tests {
     }
 
     #[test]
-    fn accepted_by_judge0_but_mismatching_output_is_wrong_answer() {
+    fn accepted_by_the_sandbox_but_mismatching_output_is_wrong_answer() {
         let tests = [test("a", "4", 2, true), test("b", "9", 3, false)];
         let results = [result(3, Some("4\n")), result(3, Some("8\n"))];
         let graded = grade_cases(&tests, &results, true, 100);

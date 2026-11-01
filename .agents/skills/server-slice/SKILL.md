@@ -12,7 +12,7 @@ Rules live in `apps/server/AGENTS.md` (invariants, slice loop); this is the shor
    place to touch with its current `file:line`. A fix: write the failing test first in the existing `*_flow.rs`.
 3. DB tests: `#[ab_testdb::test] async fn name(pool: PgPool)` (template clone, ~0.2 s). HTTP through `TestApp::spawn(pool)`
    and its `get_as/post_as/...` helpers; sessions via `mint_session_for`. External services are wiremock (`app.zitadel`,
-   `app.judge0`, `app.llm`, `app.resend`).
+   `app.runner`, `app.llm`, `app.resend`).
 4. Iterate with one test: `just server test -E 'test(<name>)'`. Schema change: `just new migration <name>`, then
    `just server prepare` and commit `.sqlx/`.
 5. Access: decide in the domain service (`actor.require`), not the handler; then the route's row in

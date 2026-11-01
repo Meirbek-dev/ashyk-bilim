@@ -5,7 +5,7 @@
 //!   (`deadline_passed`) are submitted with what was saved;
 //!   failures back off per row (120s · 2ⁿ, five tries) so one poisoned
 //!   draft never starves the rest. Code challenges run their final tests
-//!   through the worker's own Judge0 client; with the runner down they go
+//!   through the worker's own runner client; with the runner down they go
 //!   to manual review rather than waiting.
 //! - `submissions:sweep-idempotency` (hourly): `Idempotency-Key` replays
 //!   older than 24h are dropped.

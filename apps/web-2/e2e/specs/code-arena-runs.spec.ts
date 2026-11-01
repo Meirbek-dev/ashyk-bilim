@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 import { expect, gradedAttempt, openFromPlayer, routeLanguages, ru, runOf, test } from './code-arena-fixture'
 
 // The learner's own runs and the run a grade came from (L-6: `GET /assessment-items/{id}/runs`). The API is routed:
-// a judged run needs Judge0, which the local stand may not have.
+// a judged run needs the code runner, which the local stand may not have.
 test.describe.configure({ timeout: 60_000 })
 
 const region = (page: Page, name: string) => page.getByRole('region', { name })

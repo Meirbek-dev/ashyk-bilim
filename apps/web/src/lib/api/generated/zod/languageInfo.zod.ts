@@ -13,7 +13,7 @@ export const LanguageInfo = zod
     monaco_language: zod.string().describe('Monaco editor language id.'),
     name: zod.string(),
   })
-  .describe('A Judge0 language the platform allows.')
+  .describe('A runner language the platform allows.')
 
 export type LanguageInfo = zod.input<typeof LanguageInfo>
 export type LanguageInfoOutput = zod.output<typeof LanguageInfo>

@@ -121,7 +121,7 @@ test('B-COD-03 B-COD-04 B-COD-05 B-COD-06 B-COD-09 B-COD-12 the statement, a sta
   await start(page)
   await expect(editor(page)).toContainText('a, b = map(int, input().split())')
   const language = page.getByLabel(m.code_language({}, ru), { exact: true })
-  await expect(language.locator('option:checked')).toHaveText('Python (3.8.1)')
+  await expect(language.locator('option:checked')).toHaveText('Python (3.13)')
   await language.selectOption('63')
   await expect(editor(page)).toContainText('const [a, b] = [1, 2]')
   await typeCode(page, 'console.log(3)')
@@ -187,7 +187,7 @@ test('B-COD-07 B-COD-08 B-COD-09 a run shows its verdicts per test; a refused ru
   await expect(page.getByText(m.errors_rate_limited({}, ru))).toBeVisible()
 })
 
-test('B-COD-07 B-COD-08 B-COD-10 @judge0 a real run, a reload of its verdicts and a graded hand-in', async ({
+test('B-COD-07 B-COD-08 B-COD-10 @runner a real run, a reload of its verdicts and a graded hand-in', async ({
   page,
   learner,
   makeCourse,

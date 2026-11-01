@@ -43,7 +43,7 @@ A() { dc exec -T server ashyq admin "$@"; }
   G-15 passes every theme and mode.
 - E2E covers role access in ru with kk/en smoke, CSP/console errors, axe serious/critical findings and
   horizontal overflow at 390 px (student and grading flows work on phones). Chromium runs the full suite,
-  Firefox and WebKit a smoke; tagged Judge0/AI scenarios run locally in full when CI omits them.
+  Firefox and WebKit a smoke; tagged runner/AI scenarios run locally in full when CI omits them.
 - The image CI tested is the one deployed; it builds without domain-specific arguments.
 - The web container stays well under 512 MiB; an SSR read of a hung API fails within seconds; response
   headers stay under the university proxy limit (FINDINGS 31).
@@ -57,7 +57,7 @@ A() { dc exec -T server ashyq admin "$@"; }
    `for i in server web web-2; do docker manifest inspect ghcr.io/meirbek-dev/ashyq-$i:<sha> >/dev/null && echo ok $i; done`.
    `ashyq-web:<sha>` is the current Next.js build. Record the deployed tag/digest
    and confirm that the previous production image remains available for rollback.
-2. **Full e2e incl. `@judge0`** on the local stand (including tagged scenarios) green with this `<sha>`'s images.
+2. **Full e2e incl. `@runner`** on the local stand (including tagged scenarios) green with this `<sha>`'s images.
 3. **G-14 on a fresh restore** of the newest prod backup (local):
    `pg_restore` `backup/db_dumps/ashyq.dump` into a scratch DB, apply the release's migrations
    (`ashyq migrate`; on Windows from an LF checkout, use `just eol` for CRLF working copies), run the three

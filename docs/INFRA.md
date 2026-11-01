@@ -8,7 +8,7 @@ Operations: `docs/RUNBOOK.md`; design rationale: `docs/DECISIONS.md`.
 ## Layout
 
 ```
-compose.yaml          shared tier: db, redis, zitadel, rustfs, judge0-* (profile judge0), init jobs
+compose.yaml          shared tier: db, redis, zitadel, rustfs, runner (profile runner), init jobs
 compose.prod.yaml     nginx, web, web2 (profile dual-web), server, worker, server-migrate, backup; prod overrides
 compose.dev.yaml      dev overrides: ports on 127.0.0.1, data-net and exec-net not internal
 compose.smoke.yaml    smoke overrides: nginx ports on 127.0.0.1 only
@@ -19,7 +19,7 @@ infra/
   env/                prod.env.example, server.env.example, dev.env, smoke.env, smoke.server.env
   nginx/              nginx.conf, nginx.conf.template, routes.conf, security-headers.conf
   postgres/           init.sql (db-init job), transfer-ownership.sql (legacy restores only)
-  judge0/             judge0.conf (non-default, non-secret settings only)
+  runner/             Dockerfile (go-judge + the language toolchains), mount.yaml (sandbox mounts)
   storage/            init.sh (storage-init job), cors.json.template, public-policy.json
   host/               backup.service, backup.timer (nightly systemd timer)
   smoke/stub-web/     stand-in web image for the edge-independence smoke (R-09)
@@ -32,7 +32,7 @@ infra/
 ```
 
 Ops recipes: `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restic`, `restore`,
-`restore-drill`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-judge0`, `stack-up`, `stack-down`,
+`restore-drill`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
 `smoke`, `web2-stand-up`/`-seed`/`-e2e`/`-stand-down`, `web-release-e2e`, `restore-test`, `ci-infra`.
 App recipes: `server *args` (`apps/server/justfile`, with `TEST_REDIS_URL` from `dev.env`), `web *args`,
 `web2 *args`.
@@ -48,7 +48,7 @@ repo root, sets `set -euo pipefail`, `MSYS_NO_PATHCONV=1` (Git Bash) and
 
 | Stack | `COMPOSE_FILE` | Interpolation env | Server env | Project | Recipes |
 | --- | --- | --- | --- | --- | --- |
-| dev | `compose.yaml:compose.dev.yaml` | `infra/env/dev.env` (`COMPOSE_ENV_FILES`); the shell's `POSTGRES_USER`/`POSTGRES_PASSWORD` are ignored | none: the apps run on the host (RUNBOOK 5.3) | `ashyq-dev` | `dev-up`, `dev-down`, `dev-reset`, `dev-judge0` |
+| dev | `compose.yaml:compose.dev.yaml` | `infra/env/dev.env` (`COMPOSE_ENV_FILES`); the shell's `POSTGRES_USER`/`POSTGRES_PASSWORD` are ignored | none: the apps run on the host (RUNBOOK 5.3) | `ashyq-dev` | `dev-up`, `dev-down`, `dev-reset`, `dev-runner` |
 | smoke | `compose.yaml:compose.prod.yaml:compose.smoke.yaml` | `infra/env/smoke.env` | `tmp/smoke/server.env` (copied from `infra/env/smoke.server.env`) | `ashyq-smoke` | `stack-up`, `smoke`, `stack-down` |
 | web2 | smoke files + `compose.web2.yaml` | `infra/env/smoke.env` | `tmp/web2/server.env` | `ashyq-web2` | `web2-stand-up`, `web2-seed`, `web2-e2e`, `web2-stand-down` |
 | web-e2e | web2 files + `compose.web-e2e.yaml` | `infra/env/smoke.env` | `tmp/web-e2e/server.env` | `ashyq-web-e2e` | `web-release-e2e up\|seed\|test\|down`, `restore-test` |
@@ -58,7 +58,7 @@ repo root, sets `set -euo pipefail`, `MSYS_NO_PATHCONV=1` (Git Bash) and
 A `COMPOSE_PROJECT_NAME` in the shell overrides the non-prod defaults
 (`ci-infra` uses `ashyq-ci-<pid>`, its dual-web check `ashyq-dual-<pid>`).
 Smoke serves plain http on `ashyq.test` (`PUBLIC_SCHEME=http`, `FORCE_HTTPS=0`),
-self-signed cert in `tmp/smoke/certs`, Judge0 off.
+self-signed cert in `tmp/smoke/certs`, code runner off.
 
 A plain `docker compose` in the checkout reads `compose.yaml` alone (the
 shared tier without the prod overlay). Always go through `just` or `lib.sh`.
@@ -84,16 +84,16 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | zitadel | shared | data-net | `start-from-setup`, TLS off, no public route; healthcheck `zitadel ready` |
 | rustfs | shared | edge-net, data-net | S3; buckets `ab-public`, `ab-private`; data in `${RUSTFS_DATA_DIR:-rustfs_data}` |
 | storage-init | shared | data-net | one-shot `infra/storage/init.sh` |
-| judge0-server, judge0-workers | shared, profile `judge0` | exec-net | `judge0/judge0:1.13.1`, privileged, `AUTHN_TOKEN` |
-| judge0-db, judge0-redis | shared, profile `judge0` | exec-net | Judge0's own Postgres and Redis (passwords set); not backed up |
+| runner | shared, profile `runner` | exec-net | `ashyq-runner` (go-judge `criyle/go-judge` + toolchains, `infra/runner`), privileged, `shm_size` 256m, `ES_AUTH_TOKEN`; stateless, nothing to back up |
 | backup | prod, profile `backup` | none | `restic/restic`: run by `infra/scripts/backup.sh` and `just restic`, never by `up`; no Docker socket |
 
 Trust zones:
 
-- Internet: only nginx. Zitadel, Postgres, Redis and Judge0 have no public route.
+- Internet: only nginx. Zitadel, Postgres, Redis and the runner have no public route.
 - web: edge-net only. Reaches server, rustfs and nginx; not db, redis, zitadel.
-- Judge0: exec-net only. Reaches its own db/redis and is reached by server and
-  worker; no path to the app database or Redis, no internet.
+- runner: exec-net only, reached by server and worker; no path to the app
+  database or Redis, no internet. Learner programs run in its sandbox (`/w`
+  tmpfs, read-only toolchains, no network, cgroup limits per program).
 - Data stores (data-net): no egress.
 - server and worker: all three networks; internet egress (AI providers,
   Resend, OTLP, Google) through edge-net.
@@ -108,7 +108,7 @@ Nginx uses two workers with its one-CPU quota (`infra/nginx/nginx.conf`),
 
 Volumes (`<project>_<name>`; the names are load-bearing, a rename means empty
 volumes): `postgres_data`, `redis_data`, `rustfs_data` (unless `RUSTFS_DATA_DIR`),
-`zitadel_machinekey`, `judge0_box` (shared); `nginx_cache`, `nginx_content_cache`,
+`zitadel_machinekey` (shared); `nginx_cache`, `nginx_content_cache`,
 `db_dumps`, `restic_cache` (prod). Prod also keeps the legacy `app_content` volume
 and the legacy `cs_mooc` database (owner decision 2026-10-02: do not drop); nothing
 in the stack uses or backs them up.
@@ -128,14 +128,12 @@ existing volumes too; changing them requires recreating the `db` container.
 | `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server, worker, server-migrate |
 | `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing | zitadel |
 | `ashyq_app`, `ashyq_ro` | no | `infra/postgres/roles.sql`, by hand; not created anywhere yet | nothing yet: least-privilege server/worker and read-only roles (RUNBOOK 2.5, QUESTIONS Q-2026-11-01-2) |
-| `judge0` | yes, in `judge0-db` only | judge0-db image | Judge0 |
 
 | Database | Owner | Notes |
 | --- | --- | --- |
 | `ashyq` (`ASHYQ_DATABASES`; dev: `ashyq_dev,ashyq_test`) | `ashyq` | |
 | `zitadel` | `zitadel` | |
 | `cs_mooc` (`openu` until 2026-10-25) | `cs_mooc` | prod only, legacy; kept, unused, not backed up |
-| `judge0` (in judge0-db) | `judge0` | |
 
 `infra/postgres/init.sql` is idempotent and additive: it never alters an existing role or
 database (password changes are manual, RUNBOOK 3.8). It installs `vector` into
@@ -168,7 +166,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | Group | Variable | Consumers |
 | --- | --- | --- |
 | Project | `COMPOSE_PROJECT_NAME=cs-mooc` | compose (volume prefix); preflight checks it is set and its `postgres_data` volume exists |
-| | `COMPOSE_PROFILES=judge0` | compose; bootstrap detects Judge0 from it; nginx turns dual web on for `dual-web` |
+| | `COMPOSE_PROFILES=runner` | compose; bootstrap detects the runner from it; nginx turns dual web on for `dual-web` |
 | Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `PUBLIC_ORIGIN`, `APP_URL` and build args; storage-init CORS origin; deploy smoke target |
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
 | | `FORCE_HTTPS` (default `1`) | nginx :80 redirect |
@@ -189,9 +187,7 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | Backup | `BACKUP_DIR` (default `./backups`; prod `/data/cs-mooc/backups`) | restic repository `${BACKUP_DIR}/restic` |
 | | `BACKUP_PASSWORD` | restic repository encryption |
 | Redis | `REDIS_PASSWORD` | redis, server/worker (`AB__REDIS__URL`) |
-| Judge0 | `JUDGE0_AUTHN_TOKEN` | Judge0 `AUTHN_TOKEN`; server `AB__JUDGE0__API_KEY` |
-| | `JUDGE0_DB_PASSWORD` | judge0-db, Judge0, server `AB__JUDGE0__DATABASE_URL` (judge0-tune) |
-| | `JUDGE0_REDIS_PASSWORD` | judge0-redis, Judge0 |
+| Runner | `RUNNER_AUTH_TOKEN` | runner `ES_AUTH_TOKEN` (go-judge prints it in its startup log); server/worker `AB__RUNNER__AUTH_TOKEN` |
 
 Not in the template (overrides; path values must start with `./` or `/`):
 `SERVER_ENV_FILE` (default `./server.env`), `STACK_ENV_FILE` (the `.env` the
@@ -200,7 +196,8 @@ backup copies), `WEB_IMAGE` (smoke stub), `WEB_IMAGE_NAME` (default `ashyq-web`;
 `WEB2_IMAGE` (web2 / stand image), `WEB_LINKS` (server `AB__SERVER__WEB_LINKS`,
 default `legacy`), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev; prod derives
 it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`, `DEV_RUSTFS_PORT`,
-`DEV_JUDGE0_PORT`, `DEV_PG_ARGS` (extra Postgres flags, CI: fsync off).
+`DEV_RUNNER_PORT`, `RUNNER_IMAGE`, `RUNNER_CPUS` (default 4), `RUNNER_MEMORY`
+(default `6g`), `RUNNER_PARALLELISM` (programs at once, default 4), `DEV_PG_ARGS` (extra Postgres flags, CI: fsync off).
 
 ### `server.env`
 
@@ -220,8 +217,9 @@ wins over `server.env`): `AB__ENVIRONMENT`, `AB__SERVER__HOST`,
 `AB__REDIS__URL`, `AB__ZITADEL__BASE_URL`, `AB__STORAGE__ENDPOINT`,
 `AB__STORAGE__ACCESS_KEY`, `AB__STORAGE__SECRET_KEY`,
 `AB__STORAGE__PUBLIC_BUCKET`, `AB__STORAGE__PRIVATE_BUCKET`,
-`AB__TELEMETRY__JSON_LOGS`, `AB__JUDGE0__BASE_URL`, `AB__JUDGE0__API_KEY`,
-`AB__JUDGE0__DATABASE_URL`.
+`AB__TELEMETRY__JSON_LOGS`, `AB__RUNNER__BASE_URL`, `AB__RUNNER__AUTH_TOKEN`
+(`AB__RUNNER__MAX_CONCURRENCY`, `AB__RUNNER__MAX_WAIT_SECS` and
+`AB__RUNNER__LIMITS__*` override the defaults).
 
 ### preflight (`just preflight`, also run by deploy and rollback)
 
@@ -312,16 +310,16 @@ One-shot jobs, chained with `depends_on: service_completed_successfully`:
 `infra/scripts/bootstrap.sh` (`just bootstrap`, `STACK` default prod), safe to
 re-run:
 
-1. `up -d --wait db redis zitadel rustfs` (+ `judge0-server judge0-workers` when
-   the `judge0` profile is active); this runs volume-init, db-init and
+1. `up -d --wait db redis zitadel rustfs` (+ `runner` when the `runner`
+   profile is active); this runs volume-init, db-init and
    zitadel-init.
 2. `run --rm storage-init`.
 3. Reads `pat.txt` from `zitadel_machinekey`.
 4. dev: writes it to `tmp/dev/zitadel-pat.txt` and stops (migrations:
    `just server migrate`, or `just stack up`).
 5. Other stacks: appends `AB__ZITADEL__PAT` to the server env file unless set;
-   `run --rm server-migrate`; with Judge0, `run --rm --no-deps server admin
-   judge0-tune` (sandbox-safe compile/run commands in Judge0's DB).
+   `run --rm server-migrate`; with the runner, `run --rm --no-deps server admin
+   runner-check` (every allowed language compiles and runs its sample).
 
 It does not start the app tier: `just stack-up` / `just deploy` do. Dev from
 zero takes about 30 s; a second run changes nothing.
@@ -346,7 +344,7 @@ line floor (`just cov`) nightly.
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/web-e2e, `bash -n`, `nginx -t`, dual-web routing, Redis persistence), `just test-dev`, shellcheck, actionlint, gitleaks |
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` when `web` changed, `ashyq-web-2` when `web2` changed (all three on `main` and `release/**`); web build args from the repo variable `PROD_DOMAIN` |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` and `just smoke` again |
-| web2-e2e | after images, web2 changed | six stands ("Stage 2 e2e stand"): shards 1-5 `just web2-e2e --grep-invert @judge0 --shard=N/5` (`PWTEST_SHARD_WEIGHTS`), shard `judge0` with the `judge0` profile `--grep @judge0`; Playwright retries a failed test once on CI (reported as flaky) |
+| web2-e2e | after images, web2 changed | six stands ("Stage 2 e2e stand"): shards 1-5 `just web2-e2e --grep-invert @runner --shard=N/5` (`PWTEST_SHARD_WEIGHTS`), shard `runner` with the `runner` profile `--grep @runner`; Playwright retries a failed test once on CI (reported as flaky) |
 | web-release-e2e | after images, web changed | the `ashyq-web:ci-<sha>` image at `PROD_DOMAIN` ("Production web image stand"): smoke, auth, release and video-upload specs, then `just restore-test` |
 | publish | `main` or `release/**`, every gate, stack-smoke and web-release-e2e green (not web2-e2e) | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` |
 | publish-web2 | after publish, web2-e2e green | `ashyq-web-2` `ci-<sha>` -> `<sha>`/`latest` |
@@ -385,8 +383,8 @@ the compose files stay those of the checkout.
 `smoke.sh <origin>` (deploy, rollback, CI, restore, drills): `GET
 /api/v2/health/ready` 200, `GET /` 200 (follows redirects), `GET
 /content/_probe/smoke.txt` 200, response headers of the final `/` page under
-3500 bytes (the proxy's 4k buffer), and, when `judge0-server` runs, Judge0
-`/languages` without a token from the server container = 401. Retries each
+3500 bytes (the proxy's 4k buffer), and, when `runner` runs, its
+`POST /run` without a token from the server container = 401. Retries each
 check for about 30 s. `SMOKE_RESOLVE_IP` pins DNS, `SMOKE_INSECURE=1` accepts a
 self-signed cert. Not covered: presigned PUT/GET.
 
@@ -416,7 +414,7 @@ Snapshot layout: `backup/db_dumps/{ashyq.dump,zitadel.dump,globals.sql}`,
 `backup/rustfs` (the whole content directory),
 `backup/redis`, `backup/zitadel_machinekey` (includes `pat.txt`),
 `backup/secrets/{.env,server.env}`. Not backed up: `postgres_data` (the dumps
-are), Judge0, nginx caches, the legacy `cs_mooc` database and `app_content`
+are), the runner (stateless), nginx caches, the legacy `cs_mooc` database and `app_content`
 volume. `dumps/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
 `restore.sh [snapshot]` (`just restore <snapshot-id|latest>`; a legacy offen
@@ -431,7 +429,7 @@ the compose files first.
 `restore-drill.sh [snapshot]` (`just restore-drill`, default the latest
 snapshot): restore.sh into project `ashyq-drill` with the snapshot's own secrets,
 plain http on port 18080 (`DRILL_HTTP_PORT`/`DRILL_HTTPS_PORT`; the prod host
-needs 28080/28443, its 18080/18443 are taken), self-signed cert, no Judge0;
+needs 28080/28443, its 18080/18443 are taken), self-signed cert, no runner;
 prints `users`/`courses` counts and elapsed time, fails on zero rows, then tears
 everything down. `RESTORE_DIR` sets the scratch dir (default
 `${TMPDIR:-/tmp}/ashyq-restore`).
@@ -489,8 +487,8 @@ Playwright against the `ashyq-web-2` image on the smoke stack. `STACK=web2`
   `AB__STORAGE__ENDPOINT` (already the public origin), so uploads stay
   same-origin; it reaches storage through nginx and trusts the self-signed cert
   via `SSL_CERT_FILE` (server and worker).
-- Judge0 off (blank `AB__JUDGE0__BASE_URL`) unless `COMPOSE_PROFILES=judge0` and
-  `WEB2_JUDGE0_URL=http://judge0-server:2358` (the CI `judge0` shard).
+- Runner off (blank `AB__RUNNER__BASE_URL`) unless `COMPOSE_PROFILES=runner` and
+  `WEB2_RUNNER_URL=http://runner:5050` (the CI `runner` shard).
 - Zitadel hashes with bcrypt cost 10 (its floor) instead of 14: seeding and
   sign-ins would otherwise queue on its one CPU.
 - The server runs with `AB__ENVIRONMENT=production` (Secure session cookie).
@@ -516,7 +514,7 @@ account in `tmp/web2/learners`, so reruns on the same stand never reuse one).
 Only the email-verification specs still register for real.
 
 Run it locally: `just web2-stand-up && just web2-seed && just web2-e2e
---grep-invert @judge0`, then `just web2-stand-down`.
+--grep-invert @runner`, then `just web2-stand-down`.
 
 The host must resolve `ashyq.test` to 127.0.0.1 (CI appends it to
 `/etc/hosts`). Without that, or where published ports misbehave (Podman on
@@ -527,7 +525,7 @@ where `ashyq.test` is the nginx alias (CI does this). Local images: `docker buil
 Podman needs `--format docker`: OCI drops `HEALTHCHECK` and `up --wait` fails),
 then `IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
 
-CI job `web2-e2e`: the four recipes per stand (30 min, the `judge0` stand 45);
+CI job `web2-e2e`: the four recipes per stand (30 min, the `runner` stand 45);
 on failure the HTML report, traces and server and compose logs as an artifact.
 Gates only the `ashyq-web-2` retag (`publish-web2`).
 
@@ -579,8 +577,8 @@ to `web` and the cookies below mean nothing.
   owner decision 2026-10-31: multipart is the permanent answer, the proxy stays as is.
 - **Releases come from `main` or `release/**`** (all gates run before
   publishing). Stage 2 cutover: `docs/STAGE-2-CUTOVER.md`.
-- **stack-smoke runs without Judge0** (privileged); only the web2-e2e `judge0`
-  stand starts it.
+- **stack-smoke runs without the runner** (privileged); only the web2-e2e
+  `runner` stand starts it.
 - **No external monitoring** (owner decision 2026-10-02: no external
   services). preflight checks PAT/cert expiry and disk at deploy time only.
 - **Backups are local only** (owner decision 2026-10-02). A disk failure or host
@@ -588,9 +586,6 @@ to `web` and the cookies below mean nothing.
 - **Presigned PUT/GET not in smoke** (needs a verified login; the session
   cookie is `Secure`). CI covers them in web-release-e2e (video upload) and
   web2-e2e; on prod check by hand after a deploy.
-- `restore.sh` does not run `judge0-tune`; run `just bootstrap` after a
-  restore on a host with Judge0.
+- `restore.sh` does not run `runner-check`; run `just bootstrap` after a
+  restore on a host with the runner.
 - `restore-drill.sh` always tears down; there is no persistent drill stack.
-- judge0-db and judge0-redis have no named volumes, but their images declare
-  anonymous ones, which survive container recreation (relevant for password
-  rotation, RUNBOOK 3.8).

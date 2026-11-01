@@ -91,7 +91,7 @@ describe('code arena model', () => {
     expect(switchLanguage(body, { language: 71, source: 'print(1)' }, 63)).toEqual({ language: 63, source: 'print(1)' })
   })
 
-  test('B-COD-08 a test verdict comes from the Judge0 status id, not from its text', () => {
+  test('B-COD-08 a test verdict comes from its verdict code, not from its text', () => {
     expect(caseVerdict({ passed: true, status_id: 3 })).toBe('accepted')
     expect(caseVerdict({ passed: false, status_id: 3 })).toBe('wrong_answer')
     expect(caseVerdict({ passed: false, status_id: 4 })).toBe('wrong_answer')

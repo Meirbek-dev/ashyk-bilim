@@ -16,15 +16,15 @@ import { expect as baseExpect, type MadeCourse, test as base } from '../fixtures
 import { expectFailure, expectReread } from '../fixtures/test'
 
 // Data of the code-arena specs through the generated SDK: a code challenge in a made course (the teacher's), its code
-// item filled and published. Judge0 is not part of the local stack: the language list, runs and reference checks
-// are answered with `page.route` fixtures; specs tagged @judge0 need the real judge.
+// item filled and published. The code runner (go-judge) is not part of the local stack: the language list, runs and
+// reference checks are answered with `page.route` fixtures; specs tagged @runner need the real one.
 
 export const ru = { locale: 'ru' } as const
 type Headers = { cookie: string }
 
 const LANGUAGES: LanguageInfo[] = [
-  { id: 71, name: 'Python (3.8.1)', monaco_language: 'python' },
-  { id: 63, name: 'JavaScript (Node.js 12.14.0)', monaco_language: 'javascript' },
+  { id: 71, name: 'Python (3.13)', monaco_language: 'python' },
+  { id: 63, name: 'JavaScript (Node.js 20)', monaco_language: 'javascript' },
 ]
 
 export const SUM: CodeBody = {

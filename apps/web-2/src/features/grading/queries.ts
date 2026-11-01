@@ -216,7 +216,7 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
 }
 
 /** The review page's loader: the work under review and the queue it walks (B-GRD-10). */
-/** The platform's code languages: a code answer names its language, not the Judge0 id (read once per tab). */
+/** The platform's code languages: a code answer names its language, not its id (read once per tab). */
 export const codeLanguagesOptions = () => ({ ...languagesOptions(), staleTime: Number.POSITIVE_INFINITY })
 
 const hasCodeItem = (queryClient: QueryClient, activityId: ActivityId) =>

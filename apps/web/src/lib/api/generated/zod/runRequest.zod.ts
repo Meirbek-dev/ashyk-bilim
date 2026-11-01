@@ -10,7 +10,7 @@ import * as zod from 'zod'
 export const RunRequest = zod
   .object({
     custom_input: zod.string().optional().describe('When present the run is unscored: one case named `custom`.'),
-    language_id: zod.int().min(1).describe('Judge0 language id.'),
+    language_id: zod.int().min(1).describe('Language id (`GET /code/runner`).'),
     source: zod.string(),
   })
   .describe("Run source against an item's visible tests, or against one custom input.")

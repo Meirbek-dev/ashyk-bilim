@@ -77,7 +77,7 @@ test('B-COD-10 B-COD-11 a released attempt shows its score and the test cases it
   await expect(page).toHaveURL(new RegExp(`[?&]submission=${graded.id}`))
   await expect(history.getByText(m.code_result_score({ score: formatPercent(50, 'ru') }, ru))).toBeVisible()
   await expect(history.getByText(m.code_result_cases({ passed: 1, total: 2 }, ru))).toBeVisible()
-  await expect(history.getByText('Python (3.8.1)')).toBeVisible()
+  await expect(history.getByText('Python (3.13)')).toBeVisible()
   await expect(history.getByRole('textbox', { name: m.code_attempt_code({ number: 1 }, ru) })).toContainText(
     'print(1 + 2)',
   )

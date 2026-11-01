@@ -6,7 +6,7 @@
 - `apps/server/` - Rust API (axum + sqlx), `/api/v2`. Read `apps/server/AGENTS.md` first.
 - `apps/web/` - production Next.js frontend (rollback 2026-10-04); normal fixes allowed. Read its `AGENTS.md`.
 - `apps/web-2/` - replacement TanStack frontend; read its `AGENTS.md` before changes.
-- `infra/` and `compose*.yaml` - stack definition (nginx, Postgres, Judge0, storage, env templates,
+- `infra/` and `compose*.yaml` - stack definition (nginx, Postgres, go-judge runner, storage, env templates,
   ops scripts).
 - `QUESTIONS.md` - decisions only the owner can make.
 
@@ -37,7 +37,7 @@
 - Never edit an applied migration; add a new one.
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
 - Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
-  is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, Judge0, restic) wait as PRs. Its
+  is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, go-judge, restic) wait as PRs. Its
   Dependency Dashboard issue lists what is pending.
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
   `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the

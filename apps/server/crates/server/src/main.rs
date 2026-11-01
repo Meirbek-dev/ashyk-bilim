@@ -41,9 +41,9 @@ enum AdminCommand {
     ConfigCheck,
     /// Verify Zitadel reachability + PAT validity (deploy runbook step).
     ZitadelCheck,
-    /// Patch Judge0's `languages` table with the sandbox-safe compiler and
-    /// run commands (Go, Java, Kotlin). Idempotent; run once per Judge0 DB.
-    Judge0Tune,
+    /// Run every allowed language's sample program in the configured
+    /// runner (deploy step): exits non-zero when one fails.
+    RunnerCheck,
     /// Rebuild activity/course progress projections from current submission
     /// state — every course, or one `--course <uuid>`. Idempotent.
     ProgressBackfill {
@@ -186,23 +186,8 @@ async fn main() -> anyhow::Result<()> {
             command: AdminCommand::AiEval { dataset },
         } => ai_eval(config, &dataset).await,
         Command::Admin {
-            command: AdminCommand::Judge0Tune,
-        } => {
-            let url = config
-                .judge0
-                .as_ref()
-                .and_then(|j| j.database_url.clone())
-                .ok_or_else(|| anyhow::anyhow!("AB__JUDGE0__DATABASE_URL must be set"))?;
-            let report =
-                ab_domain::code::tune::apply(secrecy::ExposeSecret::expose_secret(&url)).await?;
-            writeln!(
-                std::io::stdout(),
-                "judge0 languages patched: {} row(s) updated across {} statement(s)",
-                report.rows_updated,
-                report.statements
-            )?;
-            Ok(())
-        }
+            command: AdminCommand::RunnerCheck,
+        } => runner_check(&config).await,
         Command::Admin {
             command: AdminCommand::SeedE2e { learners },
         } => seed_e2e(config, learners).await,
@@ -345,7 +330,7 @@ async fn serve(config: Config) -> anyhow::Result<()> {
 }
 
 /// The API's wiring (serve, seed-e2e): DB, sessions, Zitadel, mail,
-/// Google, storage, Judge0.
+/// Google, storage, the code runner.
 async fn build_state(config: Config) -> anyhow::Result<AppState> {
     let pool = ab_db::connect(&config.database).await?;
     let pending = ab_db::MIGRATOR.iter().len();
@@ -413,10 +398,10 @@ async fn build_state(config: Config) -> anyhow::Result<AppState> {
     };
 
     let storage = build_storage(&config)?;
-    let judge0 = build_judge0(&config)?;
+    let runner = build_runner(&config)?;
 
     Ok(AppState::new(
-        pool, config, identity, google, storage, judge0,
+        pool, config, identity, google, storage, runner,
     )?)
 }
 
@@ -439,25 +424,94 @@ fn build_storage(
     ))
 }
 
-/// Judge0 is optional: without `AB__JUDGE0__BASE_URL` code runs answer 503
-/// and code challenges are graded by hand.
-fn build_judge0(
+/// The runner is optional: without `AB__RUNNER__BASE_URL` code runs answer
+/// 503 and code challenges are graded by hand.
+fn build_runner(
     config: &Config,
-) -> anyhow::Result<Option<std::sync::Arc<ab_clients::judge0::Judge0Client>>> {
-    let Some(settings) = config.judge0.clone() else {
-        tracing::info!("code execution not configured (AB__JUDGE0__* unset)");
+) -> anyhow::Result<Option<std::sync::Arc<ab_clients::gojudge::GoJudgeClient>>> {
+    let Some(settings) = config.runner.clone() else {
+        tracing::info!("code execution not configured (AB__RUNNER__* unset)");
         return Ok(None);
     };
     Ok(Some(std::sync::Arc::new(
-        ab_clients::judge0::Judge0Client::new(ab_clients::judge0::Judge0Config {
+        ab_clients::gojudge::GoJudgeClient::new(ab_clients::gojudge::GoJudgeConfig {
             base_url: settings.base_url,
-            api_key: settings.api_key,
-            request_timeout: std::time::Duration::from_secs_f64(settings.request_timeout_secs),
-            poll_interval: std::time::Duration::from_millis(settings.poll_interval_ms),
-            poll_max_wait: std::time::Duration::from_secs_f64(settings.poll_max_wait_secs),
+            auth_token: settings.auth_token,
+            max_wait: std::time::Duration::from_secs_f64(settings.max_wait_secs),
             max_concurrency: settings.max_concurrency,
         })?,
     )))
+}
+
+/// `admin runner-check`: each allowed language's sample reads 12 and must
+/// print 144 in the configured runner.
+async fn runner_check(config: &Config) -> anyhow::Result<()> {
+    use ab_clients::gojudge::{Batch, Limits, languages};
+    let client =
+        build_runner(config)?.ok_or_else(|| anyhow::anyhow!("AB__RUNNER__BASE_URL must be set"))?;
+    let limits = config
+        .runner
+        .as_ref()
+        .map(|r| r.limits.clone())
+        .unwrap_or_default();
+    let mut out = std::io::stdout();
+    let mut failed = 0;
+    for language in languages::all() {
+        if !limits.allowed_language_ids.is_empty()
+            && !limits.allowed_language_ids.contains(&language.id)
+        {
+            continue;
+        }
+        let batch = Batch {
+            language_id: language.id,
+            source: language.sample,
+            inputs: vec!["12\n"],
+            limits: Limits {
+                cpu_time: std::time::Duration::from_secs(5),
+                memory_bytes: 512 * 1024 * 1024,
+                output_bytes: 64 * 1024,
+            },
+        };
+        let started = std::time::Instant::now();
+        let verdict = match client.run_batch("runner-check", &batch).await {
+            Ok(outcomes) => match outcomes.first() {
+                Some(o)
+                    if o.status_id == 3 && o.stdout.as_deref().map(str::trim) == Some("144") =>
+                {
+                    "ok".to_owned()
+                }
+                Some(o) => {
+                    failed += 1;
+                    format!(
+                        "FAIL {}: {}",
+                        o.status_description,
+                        [&o.compile_output, &o.stderr, &o.message]
+                            .into_iter()
+                            .flatten()
+                            .next()
+                            .map_or("", |s| s.as_str())
+                    )
+                }
+                None => {
+                    failed += 1;
+                    "FAIL no outcome".to_owned()
+                }
+            },
+            Err(err) => {
+                failed += 1;
+                format!("FAIL {err}")
+            }
+        };
+        writeln!(
+            out,
+            "{:>3} {:<32} {:>6.2}s {verdict}",
+            language.id,
+            language.name,
+            started.elapsed().as_secs_f64()
+        )?;
+    }
+    anyhow::ensure!(failed == 0, "{failed} language(s) failed");
+    Ok(())
 }
 
 // A flat list of handler registrations + schedules; splitting it would only hide the inventory.
@@ -500,11 +554,11 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     .with_storage(std::sync::Arc::clone(&storage));
     let runner = ab_domain::code::CodeRunner::new(
         pool.clone(),
-        build_judge0(&config)?,
+        build_runner(&config)?,
         config
-            .judge0
+            .runner
             .as_ref()
-            .map(|j| j.limits.clone())
+            .map(|r| r.limits.clone())
             .unwrap_or_default(),
     );
 

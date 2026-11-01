@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Restore drill: restore.sh into the throwaway project ashyq-drill (prod files, the
-# archive's own secrets, plain http on alternate ports, no Judge0), print row counts
+# archive's own secrets, plain http on alternate ports, no code runner), print row counts
 # and elapsed time, tear everything down.
 #   restore-drill.sh [snapshot]     restic snapshot in ${BACKUP_DIR}/restic, default latest
 #   restore-drill.sh <backup-*.tar.zst>   legacy offen archive

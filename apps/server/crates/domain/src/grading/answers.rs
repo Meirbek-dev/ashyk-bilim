@@ -43,7 +43,7 @@ pub enum ItemAnswer {
         values: BTreeMap<String, String>,
     },
     Code {
-        /// Judge0 language id.
+        /// Language id (`GET /code/runner`).
         language: i32,
         #[serde(default)]
         source: String,

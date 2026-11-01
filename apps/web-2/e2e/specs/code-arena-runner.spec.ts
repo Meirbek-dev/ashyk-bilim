@@ -15,7 +15,7 @@ import {
   typeCode,
 } from './code-arena-fixture'
 
-// A configured runner that is down (Judge0 outage): `/code/runner` and a run answer 503 `code-runner-degraded`.
+// A configured runner that is down (go-judge outage): `/code/runner` and a run answer 503 `code-runner-degraded`.
 test.describe.configure({ timeout: 60_000 })
 
 test('B-COD-23 a runner that is down leaves the statement, the saved code and the history; Run and Submit wait for Retry', async ({

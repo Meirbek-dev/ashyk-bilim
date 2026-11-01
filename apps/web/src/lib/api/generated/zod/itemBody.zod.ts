@@ -108,7 +108,7 @@ export const ItemBody = zod
       .object({
         constraints: zod.array(zod.string()).optional(),
         input_spec: zod.string().max(itemBodyFourOneInputSpecMax).optional(),
-        languages: zod.array(zod.int()).optional().describe('Judge0 language ids.'),
+        languages: zod.array(zod.int()).optional().describe('Language ids (`GET /code/runner`).'),
         max_output_kb: zod.int().nullable(),
         memory_limit_mb: zod.int().nullable(),
         output_spec: zod.string().max(itemBodyFourOneOutputSpecMax).optional(),

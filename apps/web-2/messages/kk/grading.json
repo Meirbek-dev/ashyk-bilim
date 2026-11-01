@@ -81,7 +81,7 @@
   "grading_correct_answer": "Дұрыс жауап",
   "grading_chosen": "Білім алушы таңдаған",
   "grading_right": "Дұрыс нұсқа",
-  "grading_code_language": "Тіл (Judge0): {id}",
+  "grading_code_language": "Тіл: {id}",
   "grading_verdict_correct": "Дұрыс",
   "grading_verdict_incorrect": "Қате",
   "grading_verdict_no_answer": "Жауап берілмеген",

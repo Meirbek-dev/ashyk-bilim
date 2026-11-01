@@ -31,7 +31,7 @@ const realVerdicts: { name: string; source: string; language?: number; status: C
   ]
 
 for (const verdict of realVerdicts) {
-  test(`@judge0 a real ${verdict.name} is persisted and survives a reload`, async ({
+  test(`@runner a real ${verdict.name} is persisted and survives a reload`, async ({
     page,
     learner,
     makeCourse,

@@ -3,7 +3,7 @@
 #   smoke.sh <origin>        e.g. smoke.sh https://cs-mooc.tou.edu.kz | http://ashyq.test
 # SMOKE_RESOLVE_IP  connect to this IP instead of DNS (curl --resolve), e.g. 127.0.0.1
 # SMOKE_INSECURE=1  accept a self-signed certificate
-# The Judge0 token check runs only when judge0-server is up in the STACK (default prod).
+# The code runner token check runs only when the runner is up in the STACK (default prod).
 # Not covered: presigned PUT/GET (needs a verified, logged-in account; the session
 # cookie is Secure, so it would not survive the plain-http smoke stack either).
 # shellcheck source=infra/scripts/lib.sh
@@ -57,10 +57,10 @@ else
 fi
 
 use_stack
-if grep -qx judge0-server <<<"$(compose ps --status running --services 2>/dev/null)"; then
-  got=$(compose exec -T server curl -sS -o /dev/null -w '%{http_code}' http://judge0-server:2358/languages || true)
-  if [[ $got == 401 ]]; then log "ok   401 judge0 without token"; else
-    log "FAIL judge0 without token: expected 401, got ${got:-no response}"
+if grep -qx runner <<<"$(compose ps --status running --services 2>/dev/null)"; then
+  got=$(compose exec -T server curl -sS -o /dev/null -w '%{http_code}' -X POST -d '{}' http://runner:5050/run || true)
+  if [[ $got == 401 ]]; then log "ok   401 runner without token"; else
+    log "FAIL runner without token: expected 401, got ${got:-no response}"
     failed=1
   fi
 fi

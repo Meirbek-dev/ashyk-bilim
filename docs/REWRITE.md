@@ -27,8 +27,8 @@ Measured on prod 2026-10-20:
 | AI runs, ever | 13 (41 Q&A messages) |
 | File-submission attempts | 0 |
 
-What serves that today: 17 containers (two frontends, server, worker, Zitadel, Redis,
-RustFS, Judge0 ×4, Postgres ×2, nginx, backup, init jobs), 86k lines of production Rust
+What serves that today: 14 containers (two frontends, server, worker, Zitadel, Redis,
+RustFS, the go-judge code runner, Postgres ×2, nginx, backup, init jobs), 86k lines of production Rust
 in 8 crates, 83 tables, 286 API operations, ~170k lines of hand-written TypeScript across
 two frontends, 1,565 commits in 30 days.
 
@@ -75,7 +75,7 @@ Goals:
 
 - Production keeps working after every phase; no single cutover day carries the rewrite.
 - Backups leave the host, are encrypted, and a restore is rehearsed monthly.
-- One Rust binary, one Postgres, one static frontend, nginx, Judge0 (if kept). Nothing
+- One Rust binary, one Postgres, one static frontend, nginx, the code runner (go-judge). Nothing
   else, in its own VM.
 - Every course-scoped handler gets its access decision from one place, by construction.
 - Every write that must happen together happens in one transaction, jobs included.
@@ -115,7 +115,7 @@ browser ─► university proxy (TLS, 4 KiB response headers, ~100 MiB bodies)
                      └─ Anthropic API  (course Q&A only)
                    restic (cron)  pg_dump + media ─► encrypted repo on a second machine
              VM "judge" on cs01
-                   Judge0 1.13.1 (server, workers, its Postgres and Redis; privileged
+                   go-judge (`ashyq-runner`, one stateless container; privileged
                    inside the VM only), reachable from VM "ashyq" with a token
 second machine (tailnet): restic repository, monthly restore drill, dead-man check
 ```
@@ -126,7 +126,7 @@ image's `docker-entrypoint-initdb.d`).
 
 LXD 5.21 is installed on `cs01` with no instances and `user` is in `lxd`, so both VMs cost
 no hardware. A VM, not a separate compose project, is what isolates Ashyq from the other
-tenants and contains the privileged Judge0 containers.
+tenants and contains the privileged code runner.
 
 nginx stays while the host itself terminates TLS on 443 (`infra/nginx/nginx.conf.template:180`).
 If direct 443 access is dropped (section 16), nginx can go too: the binary serves assets
@@ -157,7 +157,7 @@ apps/ashyq/
     media/           uploads, chunking, X-Accel-Redirect
     assessments/     items, attempts, auto-grading
     grading/         grades, release, gradebook
-    code/            Judge0 client, code runs
+    code/            go-judge client, code runs
     progress/        enrolments, completions, progress views
     certificates/    awards, PDF rendering, public verify
     announcements/
@@ -190,8 +190,8 @@ the Zitadel client. Add nothing that one module could replace in under 200 lines
 
 - Every db function takes `&mut PgConnection` (or `&mut Tx`). A handler opens one
   transaction, calls functions, commits. Reads may use the pool.
-- `jobs::enqueue(&mut tx, Job)` is the only way to start background work. Email, Judge0
-  polling, certificate rendering and Q&A indexing are jobs. No `tokio::spawn` for work
+- `jobs::enqueue(&mut tx, Job)` is the only way to start background work. Email, code
+  grading, certificate rendering and Q&A indexing are jobs. No `tokio::spawn` for work
   that must survive a crash.
 - The queue is the current `SKIP LOCKED` + `LISTEN/NOTIFY` design (`db/src/queue.rs`),
   run as a task inside the same process. Succeeded rows are deleted after 7 days, failed
@@ -228,7 +228,7 @@ own POST response.
 ### 4.6 Observability
 
 - JSON logs; one `tracing` span per request with `request_id`, user id, route and status;
-  spans on job runs and external calls (Judge0, Resend, Anthropic).
+  spans on job runs and external calls (go-judge, Resend, Anthropic).
 - `GET /api/v2/health` (process) and `GET /api/v2/health/ready` (database, last worker
   heartbeat, and the count of jobs that failed permanently in the last 24 h by kind), the
   paths `smoke.sh` already checks.
@@ -991,7 +991,7 @@ not port the v2 code.
 | TOTP | see Zitadel | removed |
 | ETL tables, `legacy_uuid`, legacy setting keys | import artefacts | dropped |
 | OTLP export | no collector | JSON logs only |
-| Code activities + Judge0 | 1 run ever outside one account's 41,166 | owner decision (section 16): keep in VM `judge`, or back on request |
+| Code activities | 1 run ever outside one account's 41,166 | kept (owner decision 3, section 16), on go-judge in VM `judge` |
 
 Reports that stay, computed live with SQL (175 active learners make this instant):
 gradebook with CSV export, course progress per learner, "needs grading" inbox, per-item
@@ -1004,8 +1004,8 @@ score distribution, completion funnel by activity.
 - VM `ashyq` (LXD on `cs01`): Docker + one `compose.yaml`, `/data/ashyq/{postgres,media}`
   on a volume backed by `/data`. Nothing else runs in it: no editors, no agents, no
   checkout, no other tenants. SSH by key only.
-- VM `judge` (if kept): Judge0 server, 2 workers, its Postgres and Redis, with CPU and
-  memory limits; its port is reachable from VM `ashyq` only, with `AUTHN_TOKEN` set.
+- VM `judge`: the go-judge runner (`ashyq-runner`, nothing stateful), with CPU and
+  memory limits; its port is reachable from VM `ashyq` only, with `ES_AUTH_TOKEN` set.
 - Until phase 2 lands, on `cs01` directly: no agent or editor sessions in
   `~/cs-mooc`, no commits there, no ad-hoc `docker compose` runs from it.
 
@@ -1050,11 +1050,14 @@ public URL; it alerts the owner when the check fails twice in a row or when the 
 reports permanently failed jobs (failed email jobs included). No external monitoring
 service. The alert channel is an owner decision (section 16).
 
-### 11.6 Judge0
+### 11.6 Code runner
 
-Kept only if code activities stay (section 16). It runs in VM `judge` with resource
-limits, not on the app host. The server treats it as optional: when it is down, code
-items return `code-runner-unavailable` and nothing else breaks.
+Code activities stay (section 16, decision 3) on go-judge, which replaced Judge0 on
+2026-11-01 (Judge0 is unmaintained, needs cgroup v1 and a 10 GB image with its own
+Postgres and Redis; go-judge is one stateless 2 GB container that compiles once per run).
+It runs in VM `judge` with resource limits, not on the app host. The server treats it as
+optional: when it is down or its breaker is open, code runs answer `code-runner-degraded`
+and nothing else breaks.
 
 ## 12. CI
 
@@ -1176,8 +1179,7 @@ per section 14.
 
 1. Date for phase 1 (web-2 cutover) and the low-traffic window for the phase-4 auth switch.
 2. Cut list: confirm, especially discussions, user groups and assessment extensions.
-3. Code activities: keep Judge0 in VM `judge`, or cut it (back on request). Prod shows 1
-   run outside one account's 41,166 (all Python).
+3. Code activities: decided 2026-11-01, kept, on go-judge in VM `judge` (11.6).
 4. Backups: the second machine for the restic repository and the dead-man check (the dev
    box over the tailnet, or another). This reverses "no offsite backup" (FINDINGS #3)
    for a machine the owner controls.

@@ -27,7 +27,7 @@ export const SaveSubmissionDraftBody = zod
           }),
           zod.object({
             kind: zod.enum(['code']),
-            language: zod.int().describe('Judge0 language id.'),
+            language: zod.int().describe('Language id (`GET /code/runner`).'),
             source: zod.string().optional(),
           }),
           zod.object({

@@ -965,8 +965,8 @@ fn ok(res: &ab_testkit::TestResponse, what: &str) -> Value {
 #[allow(clippy::too_many_lines)] // one linear fixture script: splitting it only scatters the ids
 async fn world(app: &TestApp) -> World {
     mount_zitadel(app).await;
-    ab_testkit::judge0::FakeJudge::mount(&app.judge0, |_, _| {
-        ab_testkit::judge0::CaseVerdict::accepted("4")
+    ab_testkit::gojudge::FakeJudge::mount(&app.runner, |_, _| {
+        ab_testkit::gojudge::CaseVerdict::accepted("4")
     })
     .await;
     let password = secrecy::SecretString::from("seed-pass-123");

@@ -83,7 +83,7 @@
   "grading_correct_answer": "Правильный ответ",
   "grading_chosen": "Выбрано учащимся",
   "grading_right": "Верный вариант",
-  "grading_code_language": "Язык (Judge0): {id}",
+  "grading_code_language": "Язык: {id}",
   "grading_verdict_correct": "Верно",
   "grading_verdict_incorrect": "Неверно",
   "grading_verdict_no_answer": "Ответ не дан",

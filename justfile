@@ -129,9 +129,10 @@ dev-down:
 dev-reset:
     {{ lib }} && use_dev && compose down -v --remove-orphans
 
-# Judge0 for the dev stack (profile judge0: ~10 GB image, privileged), on DEV_JUDGE0_PORT.
-dev-judge0:
-    {{ lib }} && use_dev && COMPOSE_PROFILES=judge0 compose up -d --wait judge0-server judge0-workers
+# The code runner for the dev stack (profile runner: go-judge, privileged; the ~2 GB image is built
+# from infra/runner on first use), on DEV_RUNNER_PORT.
+dev-runner:
+    {{ lib }} && use_dev && COMPOSE_PROFILES=runner compose up -d --build --wait runner
 
 # Apps of one slot (API, worker, web-2 dev, legacy dev; ports 8000/3100/3200 + 10*slot) under a
 # supervisor, containers via dev-up: `just stack up|down|status|logs|restart [..] [slot]` (no args: usage).

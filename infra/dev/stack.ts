@@ -71,8 +71,8 @@ async function containerHealth(env: Record<string, string>) {
   }
 }
 
-/** Starts the dev containers (`just dev-up`) unless every one already answers; Judge0 on request. */
-async function containers(env: Record<string, string>, judge0: boolean): Promise<void> {
+/** Starts the dev containers (`just dev-up`) unless every one already answers; the code runner on request. */
+async function containers(env: Record<string, string>, runner: boolean): Promise<void> {
   const health = await containerHealth(env)
   const down = Object.entries(health)
     .filter(([, up]) => !up)
@@ -82,10 +82,10 @@ async function containers(env: Record<string, string>, judge0: boolean): Promise
     run([just, 'dev-up'], { log: join(root, 'tmp/stack/containers.log') })
     await waitFor('containers', async () => Object.values(await containerHealth(env)).every(Boolean), 180)
   }
-  const judge0Url = `${env['AB__JUDGE0__BASE_URL']}/languages`
-  if (judge0 && !(await httpUp(judge0Url))) {
-    say('judge0: just dev-judge0 (first start takes a few minutes)')
-    run([just, 'dev-judge0'], { log: join(root, 'tmp/stack/judge0.log') })
+  const runnerUrl = `${env['AB__RUNNER__BASE_URL']}/version`
+  if (runner && !(await httpUp(runnerUrl))) {
+    say('runner: just dev-runner (the first start builds its image, a few minutes)')
+    run([just, 'dev-runner'], { log: join(root, 'tmp/stack/runner.log') })
   }
 }
 
@@ -220,7 +220,7 @@ export async function applyBucketCors(extra: string[] = []): Promise<string[]> {
 interface UpOptions {
   slot: string
   db: string
-  judge0: boolean
+  runner: boolean
   without: string[]
   build: boolean
   seed: boolean
@@ -324,7 +324,7 @@ async function up(o: UpOptions): Promise<void> {
     if (port && (await tcpOpen(port))) throw new Error(`port ${port} (${spec.name}) is taken by another process`)
   }
   const env = ensureLocalEnv()
-  await containers(env, o.judge0)
+  await containers(env, o.runner)
   if (o.build || !existsSync(builtServer)) buildServer(join(dir, 'build.log'))
   const created = await ensureDatabase(env, o.db)
   const cli = serverEnv({ ...ports, db: o.db, origins: [], webUrl: `http://localhost:${ports.web}` })
@@ -382,9 +382,9 @@ async function down(slot: string): Promise<void> {
 async function status(slots: string[]): Promise<void> {
   const env = devEnv()
   const health = await containerHealth(env)
-  const judge0 = await httpUp(`${env['AB__JUDGE0__BASE_URL']}/languages`)
+  const runner = await httpUp(`${env['AB__RUNNER__BASE_URL']}/version`)
   say(
-    `containers: ${Object.entries({ ...health, judge0 })
+    `containers: ${Object.entries({ ...health, runner })
       .map(([k, ok]) => `${k} ${ok ? 'up' : 'DOWN'}`)
       .join(', ')}`,
   )
@@ -456,7 +456,7 @@ function parse(argv: string[]) {
   return { flags, positional }
 }
 
-const USAGE = `usage: just stack up [slot] [--db NAME] [--judge0] [--seed] [--no-build] [--without web,web2]
+const USAGE = `usage: just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web,web2]
        just stack down|status|seed [slot]
        just stack logs <api|worker|web2|web|supervisor|build|migrate|seed> [slot] [--lines N]
        just stack restart <api|worker|server|web2|web> [slot]
@@ -476,7 +476,7 @@ async function main(): Promise<void> {
       return up({
         slot: slotArg(positional[0]),
         db: flags.get('--db') ?? devEnv()['DEV_DB'] ?? 'ashyq_dev',
-        judge0: flags.has('--judge0'),
+        runner: flags.has('--runner'),
         without: (flags.get('--without') ?? '').split(',').filter(Boolean),
         build: !flags.has('--no-build'),
         seed: flags.has('--seed'),

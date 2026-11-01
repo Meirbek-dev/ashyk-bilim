@@ -81,7 +81,7 @@
   "grading_correct_answer": "Correct answer",
   "grading_chosen": "Chosen by the learner",
   "grading_right": "Correct option",
-  "grading_code_language": "Language (Judge0): {id}",
+  "grading_code_language": "Language: {id}",
   "grading_verdict_correct": "Correct",
   "grading_verdict_incorrect": "Incorrect",
   "grading_verdict_no_answer": "No answer provided",

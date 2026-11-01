@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use ab_clients::judge0::Judge0Client;
+use ab_clients::gojudge::GoJudgeClient;
 use ab_clients::llm::LlmClient;
 use ab_clients::storage::StorageClient;
 use ab_core::config::Config;
@@ -69,7 +69,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// `judge0` is `None` when code execution is not configured: runs
+    /// `runner` is `None` when code execution is not configured: runs
     /// answer 503 and code challenges fall back to manual review. The LLM
     /// client is built from `config.ai`; without a provider key the AI
     /// routes answer 503 `ai-disabled` (or draft artifacts).
@@ -79,7 +79,7 @@ impl AppState {
         identity: IdentityService,
         google: Option<GoogleAuthService>,
         storage: Arc<StorageClient>,
-        judge0: Option<Arc<Judge0Client>>,
+        runner: Option<Arc<GoJudgeClient>>,
     ) -> ab_core::Result<Self> {
         let sessions = identity.sessions().clone();
         ab_domain::events::user::install(sessions.client());
@@ -96,11 +96,11 @@ impl AppState {
         let courses = CoursesService::new(pool.clone());
         let assessments = AssessmentsService::new(pool.clone(), courses.clone());
         let limits = config
-            .judge0
+            .runner
             .as_ref()
-            .map(|j| j.limits.clone())
+            .map(|r| r.limits.clone())
             .unwrap_or_default();
-        let runner = CodeRunner::new(pool.clone(), judge0, limits);
+        let runner = CodeRunner::new(pool.clone(), runner, limits);
         let events = GradingEvents::new(sessions.client(), sessions.redis());
         Ok(Self {
             ai,

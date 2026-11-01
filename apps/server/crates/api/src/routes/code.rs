@@ -139,7 +139,7 @@ pub async fn reference_check(
     .await
 }
 
-/// Languages the platform allows for code items (from Judge0, cached).
+/// Languages the platform allows for code items (from the runner image).
 #[utoipa::path(
     get, path = "/code/languages", tag = "code",
     responses(
@@ -152,7 +152,7 @@ pub async fn languages(
     State(state): State<AppState>,
     CurrentActor(_actor): CurrentActor,
 ) -> ApiResult<Json<Vec<LanguageInfo>>> {
-    Ok(Json(state.code_runs.languages().await?))
+    Ok(Json(state.code_runs.languages()?))
 }
 
 /// The caller's own runs of an item, newest first.
@@ -229,12 +229,12 @@ pub async fn reference_check_item(
 /// The code runner's state and the platform's languages.
 ///
 /// Answers `runner_configured: false` with no languages (never 503) when
-/// no Judge0 endpoint is configured; replaces `GET /code/languages`.
+/// no runner endpoint is configured; replaces `GET /code/languages`.
 #[utoipa::path(
     get, path = "/code/runner", tag = "code",
     responses(
         (status = 200, description = "Runner state", body = CodeRunnerInfo),
-        (status = 503, description = "Runner configured but unreachable", body = Problem,
+        (status = 503, description = "Runner configured but failing (breaker open)", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
@@ -250,6 +250,6 @@ pub async fn runner(
     }
     Ok(Json(CodeRunnerInfo {
         runner_configured: true,
-        languages: state.code_runs.languages().await?,
+        languages: state.code_runs.languages()?,
     }))
 }
