@@ -14,9 +14,14 @@
 //!   transaction passes through duplicates.
 //! - items 6, 7, 28: the coherence / bounds / shape checks exist (none was
 //!   skipped on the clean test database) and bite.
+//! - item 16: the reconciliation re-derives gamification totals from the
+//!   journals: a drifted profile is fixed, a sound one is left alone.
+//! - item 18: notification kinds and upload purposes are lookup tables; every
+//!   kind the code sends is a row, and an unknown kind or purpose is refused
+//!   (also inside a preference's `disabled` list).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_core::config::RetentionConfig;
+use ab_core::{assessments::NotificationType, config::RetentionConfig};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -406,5 +411,115 @@ async fn integrity_checks_exist_and_bite(pool: PgPool) {
     assert!(
         unpublished.is_err(),
         "a published assessment keeps published_at"
+    );
+    let regional = sqlx::query("UPDATE users SET locale = 'ru-RU' WHERE id = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await;
+    assert!(
+        regional.is_err(),
+        "users store the short locale tag (item 20)"
+    );
+}
+
+#[ab_testdb::test]
+async fn kinds_and_purposes_are_lookup_rows(pool: PgPool) {
+    let kinds: Vec<String> = sqlx::query_scalar("SELECT kind FROM notification_kinds")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    for kind in NotificationType::ALL {
+        assert!(
+            kinds.iter().any(|k| k == kind.as_str()),
+            "{kind:?} has no row"
+        );
+    }
+    let w = world(&pool).await;
+    // The same row with a known value (accepted) and an unknown one (refused).
+    let cases = [
+        (
+            "INSERT INTO notifications (user_id, kind, payload) VALUES ($1, $2, '{}')",
+            "course_update",
+            "bogus",
+        ),
+        (
+            "INSERT INTO notification_preferences (user_id, disabled) VALUES ($1, $2::text[])              ON CONFLICT (user_id) DO UPDATE SET disabled = EXCLUDED.disabled",
+            "{course_update}",
+            "{course_update,bogus}",
+        ),
+        (
+            "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes)              VALUES ($1, $2, 'public', uuidv7()::text, 'image/png', 1)",
+            "avatar",
+            "bogus",
+        ),
+    ];
+    for (sql, good, bad) in cases {
+        sqlx::query(sql)
+            .bind(w.user)
+            .bind(good)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let refused = sqlx::query(sql).bind(w.user).bind(bad).execute(&pool).await;
+        assert!(refused.is_err(), "{sql} with {bad}");
+    }
+}
+
+#[ab_testdb::test]
+async fn gamification_totals_are_reconciled_from_the_journals(pool: PgPool) {
+    let drifted = user(&pool, "drifted").await;
+    let sound = user(&pool, "sound").await;
+    for id in [drifted, sound] {
+        sqlx::query(
+            "INSERT INTO gamification_profiles (user_id, total_xp, level, total_activities_completed)              VALUES ($1, 150, 2, 1)",
+        )
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', 'a')",
+        )
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    for (id, amount) in [(drifted, 100), (drifted, 50), (sound, 150)] {
+        sqlx::query(
+            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)              VALUES ($1, $2, 'admin_award', uuidv7()::text, 1)",
+        )
+        .bind(id)
+        .bind(amount)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    // A lost counter update: the journals say 150 XP and one completion.
+    sqlx::query(
+        "UPDATE gamification_profiles SET total_xp = 40, level = 1, total_activities_completed = 0          WHERE user_id = $1",
+    )
+    .bind(drifted)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let fixed = ab_db::gamification::reconcile_profiles(&pool)
+        .await
+        .unwrap();
+    assert_eq!(fixed.iter().map(|u| u.0).collect::<Vec<_>>(), vec![drifted]);
+    let row: (i32, i32, i32) = sqlx::query_as(
+        "SELECT total_xp, level, total_activities_completed FROM gamification_profiles WHERE user_id = $1",
+    )
+    .bind(drifted)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(row, (150, 2, 1));
+    assert!(
+        ab_db::gamification::reconcile_profiles(&pool)
+            .await
+            .unwrap()
+            .is_empty()
     );
 }

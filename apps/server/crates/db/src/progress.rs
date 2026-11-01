@@ -984,3 +984,31 @@ pub async fn resolve_enrol_targets(
     .await?;
     Ok(rows)
 }
+
+/// A digest of one member's stored projection.
+///
+/// Every `activity_progress` row of the course and the `course_progress` row,
+/// bookkeeping columns left out: the reconciliation compares it before and
+/// after a re-projection to count the members whose projection had drifted
+/// (schema review item 15).
+pub async fn projection_fingerprint(
+    conn: &mut PgConnection,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<String> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT md5(
+               coalesce((SELECT string_agg((to_jsonb(ap) - 'id' - 'created_at' - 'updated_at')::text,
+                                           ',' ORDER BY ap.activity_id)
+                         FROM activity_progress ap
+                         WHERE ap.course_id = $1 AND ap.user_id = $2), '')
+               || '|' ||
+               coalesce((SELECT (to_jsonb(cp) - 'id' - 'created_at' - 'updated_at')::text
+                         FROM course_progress cp
+                         WHERE cp.course_id = $1 AND cp.user_id = $2), '')) AS "fingerprint!""#,
+        course_id.0,
+        user_id.0
+    )
+    .fetch_one(&mut *conn)
+    .await?)
+}

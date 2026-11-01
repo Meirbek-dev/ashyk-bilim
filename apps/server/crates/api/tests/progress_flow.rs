@@ -2224,6 +2224,14 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(report.activity_rows, 2);
+    assert_eq!(report.changed, 1, "the wiped projection was rebuilt");
+    // The reconciliation job runs this pass weekly: a sound projection is
+    // rewritten as it was and counted as unchanged.
+    let again = ab_domain::progress::ProgressProjector::new(pool.clone())
+        .backfill(None)
+        .await
+        .unwrap();
+    assert_eq!((again.learners, again.changed), (1, 0));
     let state = app
         .get_as(
             &alice,

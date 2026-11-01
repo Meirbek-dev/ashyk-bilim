@@ -19,6 +19,8 @@ const ACTOR: &str = "actor column onto users: the app never deletes users";
 /// The AI tables' structure belongs to the AI work (ai_student_memory is
 /// being reshaped there); its keys are indexed when that lands.
 const AI_OWNED: &str = "AI-owned table, reshaped by the AI work";
+/// A lookup table's rows are added, never deleted or renamed by the app.
+const LOOKUP: &str = "lookup value: the app never deletes or renames one";
 
 /// `(child table, child columns, parent table)` → reason.
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
@@ -49,6 +51,8 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("grading_entries", "graded_by", "users", ACTOR),
     ("item_feedback", "graded_by", "users", ACTOR),
     ("learner_risk_snapshots", "teacher_user_id", "users", ACTOR),
+    ("notifications", "kind", "notification_kinds", LOOKUP),
+    ("uploads", "purpose", "upload_purposes", LOOKUP),
     ("usergroups", "creator_id", "users", ACTOR),
 ];
 

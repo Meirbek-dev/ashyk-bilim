@@ -272,8 +272,6 @@ const NOT_USER_DATA: &[&str] = &[
     "ai_runs",
     "ai_token_ledger",
     "ai_token_reservations",
-    // Legacy ETL bookkeeping.
-    "etl_drop_log",
 ];
 
 #[ab_testdb::test]

@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.user_id AS \"user_id: UserId\"\n           FROM gamification_profiles g\n           WHERE g.total_xp <> coalesce((SELECT sum(x.amount) FROM xp_transactions x\n                                         WHERE x.user_id = g.user_id), 0)\n              OR g.total_activities_completed\n                 <> (SELECT count(*) FROM gamification_completions c\n                     WHERE c.user_id = g.user_id AND c.kind = 'activity')\n              OR g.total_courses_completed\n                 <> (SELECT count(*) FROM gamification_completions c\n                     WHERE c.user_id = g.user_id AND c.kind = 'course')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f92cc4b15d6bd27082df16b330532ea7f17331bd0c22424ffc3f3e5d257f374f"
+}

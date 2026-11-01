@@ -455,6 +455,21 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
   `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
+- **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
+  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration); `notification_preferences.disabled`
+  is checked against `notification_kinds` by a trigger. Short fixed lists stay CHECKs.
+- **Permission parts are columns**: `role_permissions.resource/action/scope` are generated from the grant
+  string (shape-checked like `Grant::parse`); `is_course_staff` reads them through a partial index, so its
+  role branch is two index probes per call.
+- **HOT room**: `jobs` (fillfactor 70), submissions, activity/course progress, gamification profiles (85) and
+  posts (90) leave space for in-place updates; no index covers `jobs.heartbeat_at` (the reaper finds running
+  jobs through `jobs_status_kind_idx`), so a heartbeat is a HOT update.
+- **Derived aggregates are reconciled** weekly (`maintenance:reconcile`): every member's progress projection
+  is re-projected (the `progress-backfill` pass; changed members are logged) and gamification totals/level
+  are re-derived from `xp_transactions` / `gamification_completions` (`daily_xp_earned` excepted).
+- **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
+  content still links blocks by it) were dropped at T+32d.
+- **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 
 ### SQLx usage
 
@@ -532,6 +547,9 @@ CREATE TABLE jobs (
 - Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes
   finished jobs, old sign-in audit rows and AI event logs and clears old
   practice code-run output; windows in §8 "Schema guarantees".
+- Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals
+  from their journals and re-projects every member's progress, logging what it
+  changed (§8 "Schema guarantees"); a steady non-zero count is a projector bug.
 
 ## 10. Redis usage map
 

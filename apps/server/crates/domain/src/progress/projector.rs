@@ -89,6 +89,9 @@ pub struct BackfillReport {
     pub courses: usize,
     pub learners: usize,
     pub activity_rows: usize,
+    /// Members whose stored projection differed from the re-projection:
+    /// drift, or a change due to time alone (a deadline that passed).
+    pub changed: usize,
 }
 
 /// Hooks of a projection written on a caller's transaction.
@@ -494,14 +497,19 @@ impl ProgressProjector {
             courses: courses.len(),
             learners: 0,
             activity_rows: 0,
+            changed: 0,
         };
         let mut outcome = Ok(());
         for course in courses {
             for user_id in ab_db::progress::course_members(&self.pool, course).await? {
                 match self.repair_member(course, user_id).await {
-                    Ok(Some(rows)) => {
+                    Ok(Some((rows, changed))) => {
                         report.learners += 1;
                         report.activity_rows += rows;
+                        if changed {
+                            report.changed += 1;
+                            tracing::info!(%course, %user_id, "progress backfill changed a projection");
+                        }
                     }
                     Ok(None) => {}
                     Err(err) => {
@@ -737,16 +745,23 @@ impl ProgressProjector {
     /// projection (and certificates, inside it) but fires no XP/analytics
     /// hooks - the completions it finds happened long ago, often before the
     /// cutover that zeroed gamification (DECISIONS Q-2026-09-06-1 c).
-    async fn repair_member(&self, course_id: CourseId, user_id: UserId) -> Result<Option<usize>> {
+    /// Also says whether the stored projection changed.
+    async fn repair_member(
+        &self,
+        course_id: CourseId,
+        user_id: UserId,
+    ) -> Result<Option<(usize, bool)>> {
         let Some(mut tx) = super::trail::lock_member(&self.pool, user_id, course_id, false).await?
         else {
             return Ok(None);
         };
+        let before = ab_db::progress::projection_fingerprint(&mut tx, course_id, user_id).await?;
         let (rows, _hooks) = self
             .reproject_member_on(&mut tx, course_id, user_id)
             .await?;
+        let after = ab_db::progress::projection_fingerprint(&mut tx, course_id, user_id).await?;
         tx.commit().await?;
-        Ok(Some(rows))
+        Ok(Some((rows, before != after)))
     }
 
     /// [`Self::reproject_member`] on the caller's lock transaction (a trail
