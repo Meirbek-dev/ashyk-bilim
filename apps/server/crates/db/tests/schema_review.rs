@@ -902,6 +902,61 @@ async fn course_search_walks_the_trigram_index(pool: PgPool) {
     );
 }
 
+/// Item 35 (rest): the `q` filter of the course and collection listings uses `/search`'s terms,
+/// so the trigram index answers it too (first page, newest first, anonymous viewer).
+#[ab_testdb::test]
+async fn listing_filters_walk_the_trigram_indexes(pool: PgPool) {
+    let creator = user(&pool, "author").await;
+    sqlx::query(
+        "INSERT INTO courses (name, description, creator_id, public)
+         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), $1, true
+           FROM generate_series(1, 10000) g",
+    )
+    .bind(creator)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO collections (name, description, creator_id, public)
+         SELECT 'Collection ' || md5(g::text), 'about ' || md5((g * 7)::text), $1, true
+           FROM generate_series(1, 10000) g",
+    )
+    .bind(creator)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("ANALYZE courses").execute(&pool).await.unwrap();
+    sqlx::query("ANALYZE collections")
+        .execute(&pool)
+        .await
+        .unwrap();
+    for sort in ["", "name"] {
+        let filter = ab_db::catalog::CourseFilter {
+            q: Some("a1b2c3"),
+            sort,
+            ..ab_db::catalog::CourseFilter::default()
+        };
+        let plan = ab_db::catalog::explain_list_courses(&pool, &filter)
+            .await
+            .unwrap();
+        assert!(
+            plan.contains("Bitmap Index Scan on courses_search_trgm_idx"),
+            "{sort}: {plan}"
+        );
+        let filter = ab_db::collections::CollectionFilter {
+            q: Some("a1b2c3"),
+            sort,
+        };
+        let plan = ab_db::collections::explain_list_collections(&pool, &filter)
+            .await
+            .unwrap();
+        assert!(
+            plan.contains("Bitmap Index Scan on collections_search_trgm_idx"),
+            "{sort}: {plan}"
+        );
+    }
+}
+
 #[ab_testdb::test]
 async fn staff_writes_reach_both_rosters_until_the_contract(pool: PgPool) {
     let w = world(&pool).await;

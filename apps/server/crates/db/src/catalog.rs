@@ -4,7 +4,7 @@
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
-use sqlx::{PgConnection, PgPool};
+use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder};
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CourseRow {
@@ -162,7 +162,7 @@ pub struct CourseFilter<'a> {
     pub see_all: bool,
     /// Only courses the viewer may edit (creator / active contributor / `see_all`).
     pub mine: bool,
-    /// Case-insensitive substring over name + description.
+    /// Words over name + description + about, matched like `/search`.
     pub q: Option<&'a str>,
     /// `name` (ascending), `progress` (the viewer's in-progress courses
     /// first, UX-274) or anything else = `updated_at` descending.
@@ -187,88 +187,113 @@ pub async fn list_courses(
     cursor: Option<CourseId>,
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
+    let mut qb = courses_list_query("", filter, cursor, limit);
+    Ok(qb.build_query_as::<CourseRow>().fetch_all(pool).await?)
+}
+
+/// The plan of [`list_courses`]'s first page, one line per row (index regression tests).
+pub async fn explain_list_courses(pool: &PgPool, filter: &CourseFilter<'_>) -> Result<String> {
+    let mut qb = courses_list_query("EXPLAIN ", filter, None, 20);
+    let lines: Vec<String> = qb.build_query_scalar().fetch_all(pool).await?;
+    Ok(lines.join("\n"))
+}
+
+/// The SQL of [`list_courses`]: the filters the caller chose are spelled out
+/// in the text, the values bound.
+fn courses_list_query(
+    prefix: &'static str,
+    filter: &CourseFilter<'_>,
+    cursor: Option<CourseId>,
+    limit: i64,
+) -> QueryBuilder<Postgres> {
+    let viewer = filter.viewer.map(|v| v.0);
     let by_name = filter.sort == "name";
     // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on an
     // enrolment) first, then by `course_progress.progress_pct`, then newest
     // update - one keyset over the whole catalog, not a per-page re-sort.
-    let by_progress = filter.sort == "progress";
-    // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
-    let patterns = crate::search::word_patterns(filter.q.unwrap_or(""));
-    let rows = sqlx::query_as!(
-        CourseRow,
-        r#"WITH pct AS (
-               SELECT cp.course_id, cp.progress_pct,
-                      cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
-               FROM course_progress cp
-               JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
-               WHERE $11 AND cp.user_id = $2
-           )
-           SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
-                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  archived_by AS "archived_by: UserId",
-                  version,
-                  ARRAY(SELECT ra.user_id FROM course_staff ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
-                      AS "contributor_ids!: Vec<UserId>",
-                  ARRAY(SELECT ra.user_id FROM course_staff ra
-                        WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship = 'maintainer')
-                      AS "maintainer_ids!: Vec<UserId>",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM courses
-           LEFT JOIN pct ON pct.course_id = courses.id
-           WHERE course_visible(courses, $2, $1)
-             AND (NOT $5 OR $1 OR creator_id = $2
-                  OR EXISTS (SELECT 1 FROM course_staff ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = $2
-                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))
-             AND search_matches(name || ' ' || description || ' ' || coalesce(about, ''), $6, $9, $10)
-             AND (archived_at IS NULL) = ($7::text <> 'archived')
-             AND CASE $7::text
-                   WHEN 'drafts' THEN NOT public
-                   WHEN 'published' THEN public
-                   WHEN 'recent' THEN updated_at > now() - interval '7 days'
-                   WHEN 'attention' THEN
-                     (public AND NOT EXISTS (SELECT 1 FROM activities a
-                                             WHERE a.course_id = courses.id AND a.published))
-                     OR (NOT public AND created_at < now() - interval '30 days')
-                   ELSE true
-                 END
-             AND ($3::uuid IS NULL OR CASE
-                   WHEN $8::bool
-                   THEN (name, id) > (SELECT c.name, c.id FROM courses c WHERE c.id = $3)
-                   WHEN $11::bool
-                   THEN (coalesce(pct.in_progress, false), coalesce(pct.progress_pct, 0), updated_at, id)
-                        < (SELECT coalesce(p.in_progress, false), coalesce(p.progress_pct, 0), c.updated_at, c.id
-                           FROM courses c LEFT JOIN pct p ON p.course_id = c.id WHERE c.id = $3)
-                   ELSE (updated_at, id) < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = $3)
-                 END)
-           ORDER BY CASE WHEN $8 THEN name END ASC,
-                    CASE WHEN $8 THEN id END ASC,
-                    CASE WHEN $11 THEN coalesce(pct.in_progress, false) END DESC,
-                    CASE WHEN $11 THEN coalesce(pct.progress_pct, 0) END DESC,
-                    CASE WHEN NOT $8 THEN updated_at END DESC,
-                    id DESC
-           LIMIT $4"#,
-        filter.see_all,
-        filter.viewer.map(|v| v.0),
-        cursor.map(|c| c.0),
-        limit,
-        filter.mine,
-        &patterns.words,
-        filter.preset,
-        by_name,
-        &patterns.letters,
-        &patterns.excluded,
-        by_progress
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
+    let by_progress = !by_name && filter.sort == "progress";
+    let mut qb = QueryBuilder::<Postgres>::new(prefix);
+    if by_progress {
+        qb.push(
+            "WITH pct AS (
+                 SELECT cp.course_id, cp.progress_pct,
+                        cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
+                 FROM course_progress cp
+                 JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
+                 WHERE cp.user_id = ",
+        )
+        .push_bind(viewer)
+        .push(") ");
+    }
+    qb.push(crate::search::COURSE_COLUMNS).push(" FROM courses");
+    if by_progress {
+        qb.push(" LEFT JOIN pct ON pct.course_id = courses.id");
+    }
+    qb.push(" WHERE course_visible(courses, ")
+        .push_bind(viewer)
+        .push(", ")
+        .push_bind(filter.see_all)
+        .push(")");
+    if filter.mine && !filter.see_all {
+        qb.push(" AND (creator_id = ")
+            .push_bind(viewer)
+            .push(
+                " OR EXISTS (SELECT 1 FROM course_staff ra
+                             WHERE ra.course_id = courses.id AND ra.user_id = ",
+            )
+            .push_bind(viewer)
+            .push(" AND ra.status = 'active' AND ra.authorship <> 'reporter'))");
+    }
+    // UX-222: `q` matches like `/search` (the same trigram-indexed terms);
+    // UX-143: metacharacters are literal.
+    crate::search::push_terms(
+        &mut qb,
+        crate::search::COURSE_HAY,
+        &crate::search::word_patterns(filter.q.unwrap_or("")),
+    );
+    qb.push(if filter.preset == "archived" {
+        " AND archived_at IS NOT NULL"
+    } else {
+        " AND archived_at IS NULL"
+    });
+    qb.push(match filter.preset {
+        "drafts" => " AND NOT public",
+        "published" => " AND public",
+        "recent" => " AND courses.updated_at > now() - interval '7 days'",
+        "attention" => {
+            " AND ((public AND NOT EXISTS (SELECT 1 FROM activities a
+                                           WHERE a.course_id = courses.id AND a.published))
+                   OR (NOT public AND courses.created_at < now() - interval '30 days'))"
+        }
+        _ => "",
+    });
+    if let Some(cursor) = cursor {
+        qb.push(if by_name {
+            " AND (name, courses.id) > (SELECT c.name, c.id FROM courses c WHERE c.id = "
+        } else if by_progress {
+            " AND (coalesce(pct.in_progress, false), coalesce(pct.progress_pct, 0),
+                   courses.updated_at, courses.id)
+                  < (SELECT coalesce(p.in_progress, false), coalesce(p.progress_pct, 0),
+                            c.updated_at, c.id
+                     FROM courses c LEFT JOIN pct p ON p.course_id = c.id WHERE c.id = "
+        } else {
+            " AND (courses.updated_at, courses.id)
+                  < (SELECT c.updated_at, c.id FROM courses c WHERE c.id = "
+        })
+        .push_bind(cursor.0)
+        .push(")");
+    }
+    qb.push(if by_name {
+        " ORDER BY name, courses.id"
+    } else if by_progress {
+        " ORDER BY coalesce(pct.in_progress, false) DESC, coalesce(pct.progress_pct, 0) DESC,
+                   courses.updated_at DESC, courses.id DESC"
+    } else {
+        " ORDER BY courses.updated_at DESC, courses.id DESC"
+    })
+    .push(" LIMIT ")
+    .push_bind(limit);
+    qb
 }
 
 /// Counts over the editable set (`mine`), ignoring `q`/`preset`/paging.

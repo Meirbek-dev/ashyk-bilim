@@ -372,10 +372,10 @@ One migration set for the database `ashyq`. Rules:
    (courses, assessments). The one soft delete is a course's (`deleted_at`, always archived): reads skip it
    (`get_course`, `course_visible`), the retention purge cascades it after the grace period (COURSE_ARCHIVING 6.2).
 6. Search: `search_fold` (`migrations/20260926000001_search_matches.sql`, Kazakh folding since 2026-10) and one
-   word-match rule for `/search`, `courses?q=` and collections. `/search` writes it as one
-   `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`), answered by the
-   `pg_trgm` GIN indexes `*_search_trgm_idx` for words of 3+ characters; the listings' `q` still calls
-   `search_matches` (no index, REWRITE §5.6 n11). A changed `search_fold` body needs a REINDEX of those indexes.
+   word-match rule for `/search`, `courses?q=` and `collections?q=`, written as one
+   `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`, so these queries are
+   `QueryBuilder`s), answered by the `pg_trgm` GIN indexes `*_search_trgm_idx` for words of 3+ characters
+   (`schema_review::*_trigram_ind*` check the plans). A changed `search_fold` body needs a REINDEX of those indexes.
    The `tsvector` generated columns on courses/collections only rank (`ts_rank_cd`), so they carry no GIN index
    (dropped 2026-11). Course material search uses pgvector on `content_chunks` (§12 "AI-first foundation").
 7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the

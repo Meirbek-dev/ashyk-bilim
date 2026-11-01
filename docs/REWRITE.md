@@ -737,9 +737,10 @@ in the order it can be done, each step a forward migration on the current schema
     (`ab_db::search::push_terms`), answered by `pg_trgm` GIN indexes on `search_fold(hay)` of courses,
     collections and activities (users: on `search_fold(username)` / `search_fold(display_name)` for the
     existing `LIKE`); `course_search_walks_the_trigram_index` checks the bitmap index scan over 10 000 courses.
-    Left: the catalog listings' `q` filter (`list_courses`, `list_collections`) still calls `search_matches`
-    inside their static keyset queries; moving them to the same predicates needs those queries as
-    `QueryBuilder` too. The tsvector columns stay while ranking uses `ts_rank_cd`.
+    Done for the listings too (review 3, item 35 rest): `list_courses` / `list_collections` are `QueryBuilder`
+    queries with the same terms (`listing_filters_walk_the_trigram_indexes`), people search's one-letter rule
+    is inline, and `20261103072100` (contract) drops `search_matches`. The tsvector columns stay while ranking
+    uses `ts_rank_cd`.
 12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
     `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
     batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids
