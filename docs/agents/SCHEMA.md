@@ -56,6 +56,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
 - [`course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
 - [`course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
+- [`course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
 - [`course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
 - [`course_update_activities`](#course_update_activities): Activities a course update links to, in order; a deleted activity leaves the update
 - [`course_updates`](#course_updates): An announcement a teacher posts in a course
@@ -1287,6 +1288,20 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 - Primary key `course_progress_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+
+## course_progress_v (view)
+
+A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8).
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| course_id | uuid | null |  |
+| user_id | uuid | null |  |
+| total_required_count | integer | null |  |
+| completed_required_count | integer | null |  |
+| progress_pct | double precision | null |  |
+| certificate_eligible | boolean | null |  |
+| completed_at | timestamp with time zone | null |  |
 
 ## course_staff
 

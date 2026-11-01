@@ -453,23 +453,35 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   setting `ab.time_zone`, which every pool passes from the config at connect (`ab_db::with_platform_zone`, the
   test pools too); a session without it (psql, `just db sql`) uses `Asia/Almaty`. The functions are STABLE:
   never use them in an index or a generated column. Today's XP (`daily_xp_earned` in the API) is summed from
-  `xp_transactions` at read time, never stored (the column is written for the previous release until the lane C
-  contract drops it).
+  `xp_transactions` at read time, never stored: the server no longer writes the column; the trigger
+  `gamification_profiles_daily_xp` (`20261102071100`) keeps it as the previous release reads it (UTC day, from the
+  journal) until the lane C2 contract drops both.
 - **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
   written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
   leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
-  analytics, notifications, `course_visible` for archived courses) reads it, never the staff. A trigger mirrors the
-  previous release's trail-run inserts/deletes into it until the lane C contract drops it.
+  analytics, notifications, `course_visible` for archived courses), the roster (`GET /courses/{id}/learners`, keyset
+  `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; a trail run id from the previous release still resolves) and
+  the learner's list (`GET /trail`, `/enrollments`: one run per enrolment, cursor = course id, a run id still works)
+  read it, never the staff. The trail tables only lend their legacy `id`s to those DTOs (the course / activity id
+  stands in without a row). A trigger mirrors the previous release's trail-run inserts/deletes into it until the
+  lane C contract drops it.
 - **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
-  user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still kept for the trail listing),
-  un-marking and leaving delete it; the lesson projection reads it, never `trail_steps`. Graded kinds complete
-  through their projection: a trigger on `activity_progress.completed_at` inserts/deletes the row (for both
-  releases), until the grade transaction writes it itself.
+  user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still written for the previous
+  release), un-marking and leaving delete it; the lesson projection and the trail's steps read it, never
+  `trail_steps`. Graded kinds complete through their projection: the projector's graded write keeps the row equal
+  to `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); the trigger
+  `activity_progress_sync_completion` does the same for the previous release until the lane C2 contract drops it.
 - **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
   (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required activity done and
   `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the
   counts are `0 <= completed <= total` and `completed_at` only on a completed course. The lane C contract turns
   both into virtual generated columns.
+- **`course_progress_v` computes the completion half of `course_progress`** (`20261102071000`, REWRITE 5.6 n8
+  step 4) from enrolments (members only), published required activities (graded always; others unless
+  `settings.required` is false; never an assessment restricted away from the member) and completions. Nothing
+  reads it yet: `maintenance:reconcile` logs `view_drift` (`course_progress_view_drift`: members whose counts,
+  percent, flag or `completed_at` (within a second) differ from the stored row), and the progress tests assert it is 0
+  on every scenario and on the e2e seed.
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a
   surrogate key.

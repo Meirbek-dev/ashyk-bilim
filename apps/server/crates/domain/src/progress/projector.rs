@@ -380,13 +380,16 @@ impl ProgressProjector {
         let mut hooks = AfterCommit::default();
         if let Some(activity_id) = activity_id
             && let Some(activity) = ab_db::catalog::get_activity(&mut *tx, activity_id).await?
-            && let Some(write) = projection_for(&mut tx, &activity, user_id).await?
+            && let Some((write, graded)) = projection_for(&mut tx, &activity, user_id).await?
         {
             let was_completed =
                 ab_db::progress::get_activity_progress(&mut *tx, activity_id, user_id)
                     .await?
                     .is_some_and(|row| row.state == ActivityProgressState::Completed);
             ab_db::progress::upsert_activity_progress(&mut *tx, &write).await?;
+            if graded {
+                ab_db::progress::sync_graded_completion(&mut tx, activity_id, user_id).await?;
+            }
             if write.state == ActivityProgressState::Completed && !was_completed {
                 hooks.activity_completed = Some((course_id, activity_id, user_id));
             }
@@ -783,8 +786,12 @@ impl ProgressProjector {
             if !activity.published {
                 continue;
             }
-            if let Some(write) = projection_for(&mut *conn, &activity, user_id).await? {
+            if let Some((write, graded)) = projection_for(&mut *conn, &activity, user_id).await? {
                 ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
+                if graded {
+                    ab_db::progress::sync_graded_completion(&mut *conn, activity.id, user_id)
+                        .await?;
+                }
                 rows += 1;
             }
         }
@@ -800,11 +807,14 @@ impl ProgressProjector {
     }
 }
 
+/// The activity's projection row for `user_id`, and whether it is a graded
+/// kind (completed through its submissions: the writer then owns the
+/// `completions` row, REWRITE 5.6 n8 step 1).
 async fn projection_for(
     conn: &mut PgConnection,
     activity: &ActivityRow,
     user_id: UserId,
-) -> Result<Option<ActivityProgressWrite>> {
+) -> Result<Option<(ActivityProgressWrite, bool)>> {
     if activity.activity_type == "file_submission" {
         let Some(fs) =
             ab_db::file_submissions::get_file_submission_by_activity(&mut *conn, activity.id)
@@ -814,8 +824,9 @@ async fn projection_for(
         };
         let attempts =
             ab_db::file_submissions::list_user_attempts(&mut *conn, fs.id, user_id, false).await?;
-        return Ok(Some(project_file_attempts(
-            activity, user_id, fs.due_at, &attempts,
+        return Ok(Some((
+            project_file_attempts(activity, user_id, fs.due_at, &attempts),
+            true,
         )));
     }
     let Some(assessment) =
@@ -829,21 +840,17 @@ async fn projection_for(
         };
         let existing =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
-        return Ok(Some(completed_write(
-            activity,
-            user_id,
-            existing.as_ref(),
-            at,
+        return Ok(Some((
+            completed_write(activity, user_id, existing.as_ref(), at),
+            false,
         )));
     };
     let submissions =
         ab_db::submissions::list_user_submissions(&mut *conn, assessment.id, user_id, false)
             .await?;
-    Ok(Some(project_submissions(
-        activity,
-        user_id,
-        &assessment,
-        &submissions,
+    Ok(Some((
+        project_submissions(activity, user_id, &assessment, &submissions),
+        true,
     )))
 }
 

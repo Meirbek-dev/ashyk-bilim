@@ -41,6 +41,8 @@ pub enum LearningStatus {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TrailRun {
+    /// The legacy trail run's id (the course id where none exists). The
+    /// paging cursor is the course id now; a run id still works as one.
     pub id: TrailRunId,
     pub course_id: CourseId,
     pub status: TrailRunStatus,
@@ -65,6 +67,7 @@ pub struct TrailRun {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TrailStep {
+    /// The legacy trail step's id (the activity id where none exists).
     pub id: TrailStepId,
     pub activity_id: ActivityId,
     pub course_id: CourseId,
@@ -89,6 +92,8 @@ pub struct Enrollments {
 /// One course the caller is enrolled in.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Enrollment {
+    /// The legacy trail run's id (the course id where none exists); page
+    /// with `next_cursor`, not this.
     pub id: TrailRunId,
     pub course_id: CourseId,
     pub course: EnrolledCourse,
@@ -173,7 +178,7 @@ impl TrailRun {
         Self {
             learning_status,
             next_activity_id: r.next_activity_id,
-            id: r.row.id,
+            id: r.row.run_id.unwrap_or(TrailRunId(r.row.course_id.0)),
             course_id: r.row.course_id,
             status: r.row.status,
             course: Course::for_actor(r.course, actor),
@@ -184,7 +189,7 @@ impl TrailRun {
                 .into_iter()
                 .map(|s| TrailStep::new(s, editable))
                 .collect(),
-            created_at_unix: r.row.created_at,
+            created_at_unix: r.row.enrolled_at,
             updated_at_unix: r.row.updated_at,
         }
     }
@@ -193,10 +198,11 @@ impl TrailRun {
 impl TrailStep {
     fn new(s: domain::TrailStep, editable: bool) -> Self {
         Self {
-            id: s.row.id,
+            id: s.row.step_id.unwrap_or(TrailStepId(s.row.activity_id.0)),
             activity_id: s.row.activity_id,
             course_id: s.row.course_id,
-            complete: s.row.complete,
+            // Listed steps are completions.
+            complete: true,
             teacher_verified: s.row.teacher_verified,
             grade: s.row.grade,
             // Trail views offer no delete: advertise none (the server re-checks anyway).

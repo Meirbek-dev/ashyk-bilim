@@ -457,9 +457,13 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     let granted = results.iter().filter(|r| r.is_ok()).count();
     assert_eq!(granted, 2, "200 XP each under a 500 cap");
 
-    let (total, ledger): (i32, i64) = sqlx::query_as(
+    // `stored`: the column the previous release reads (UTC day), kept by the
+    // `gamification_profiles_daily_xp` trigger now that the server does not
+    // write it (review item 16).
+    let (total, ledger, stored): (i32, i64, i32) = sqlx::query_as(
         "SELECT p.total_xp,
-                (SELECT COALESCE(sum(amount), 0) FROM xp_transactions t WHERE t.user_id = p.user_id)
+                (SELECT COALESCE(sum(amount), 0) FROM xp_transactions t WHERE t.user_id = p.user_id),
+                p.daily_xp_earned
          FROM gamification_profiles p WHERE p.user_id = $1",
     )
     .bind(user.0)
@@ -470,7 +474,10 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!((total, profile.daily_xp_earned, ledger), (400, 400, 400));
+    assert_eq!(
+        (total, profile.daily_xp_earned, ledger, stored),
+        (400, 400, 400, 400)
+    );
 }
 
 /// The daily cap, the streaks and the login bonus count platform days

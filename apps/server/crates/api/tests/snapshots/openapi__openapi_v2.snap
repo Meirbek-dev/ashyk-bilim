@@ -8519,7 +8519,8 @@ expression: json
             "$ref": "#/components/schemas/UnixTime"
           },
           "id": {
-            "$ref": "#/components/schemas/TrailRunId"
+            "$ref": "#/components/schemas/TrailRunId",
+            "description": "The legacy trail run's id (the course id where none exists); page\nwith `next_cursor`, not this."
           },
           "learning_status": {
             "$ref": "#/components/schemas/LearningStatus"
@@ -20043,7 +20044,8 @@ expression: json
             "$ref": "#/components/schemas/UnixTime"
           },
           "id": {
-            "$ref": "#/components/schemas/TrailRunId"
+            "$ref": "#/components/schemas/TrailRunId",
+            "description": "The legacy trail run's id (the course id where none exists). The\npaging cursor is the course id now; a run id still works as one."
           },
           "learning_status": {
             "$ref": "#/components/schemas/LearningStatus",
@@ -20132,7 +20134,8 @@ expression: json
             "type": "integer"
           },
           "id": {
-            "$ref": "#/components/schemas/TrailStepId"
+            "$ref": "#/components/schemas/TrailStepId",
+            "description": "The legacy trail step's id (the activity id where none exists)."
           },
           "teacher_verified": {
             "type": "boolean"

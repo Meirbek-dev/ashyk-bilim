@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"drift!\"\n           FROM course_progress_v v\n           LEFT JOIN course_progress p ON p.course_id = v.course_id AND p.user_id = v.user_id\n           WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,\n                  p.certificate_eligible, p.completed_at IS NULL)\n                 IS DISTINCT FROM\n                 (v.total_required_count, v.completed_required_count, v.progress_pct,\n                  v.certificate_eligible, v.completed_at IS NULL)\n              OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "drift!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "9d87e33c7648a45d937b20d960b8d854ef69ab07f4429cdb47683b5d12fa6886"
+}
