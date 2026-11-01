@@ -1,6 +1,10 @@
 {
   "db_name": "PostgreSQL",
+<<<<<<<< HEAD:apps/server/.sqlx/query-1ea1242dc43aa19d5bdc721d9431ef2223fafbd8689fe450325eab28f1b2b749.json
   "query": "SELECT u.id AS \"user_id: UserId\", u.username, u.display_name, u.email,\n                  u.disabled_at IS NULL AS \"active!\",\n                  EXISTS (SELECT 1 FROM trail_runs tr\n                          WHERE tr.course_id = $1 AND tr.user_id = u.id) AS \"member!\",\n                  is_course_staff($1, u.id) AS \"staff!\"\n           FROM users u\n           WHERE lower(u.email) = ANY($2) OR lower(u.username) = ANY($2)",
+========
+  "query": "SELECT u.id AS \"user_id: UserId\", u.username, u.display_name, u.email,\n                  u.status = 'active' AS \"active!\",\n                  EXISTS (SELECT 1 FROM enrolments e\n                          WHERE e.course_id = $1 AND e.user_id = u.id) AS \"member!\",\n                  is_course_staff($1, u.id) AS \"staff!\"\n           FROM users u\n           WHERE lower(u.email) = ANY($2) OR lower(u.username) = ANY($2)",
+>>>>>>>> wt/db-c~1:apps/server/.sqlx/query-dda6e1a95022bd93e6cebbf71c99498eb44d02c26e60f8225d517e52c9d85404.json
   "describe": {
     "columns": [
       {
@@ -82,5 +86,9 @@
       null
     ]
   },
+<<<<<<<< HEAD:apps/server/.sqlx/query-1ea1242dc43aa19d5bdc721d9431ef2223fafbd8689fe450325eab28f1b2b749.json
   "hash": "1ea1242dc43aa19d5bdc721d9431ef2223fafbd8689fe450325eab28f1b2b749"
+========
+  "hash": "dda6e1a95022bd93e6cebbf71c99498eb44d02c26e60f8225d517e52c9d85404"
+>>>>>>>> wt/db-c~1:apps/server/.sqlx/query-dda6e1a95022bd93e6cebbf71c99498eb44d02c26e60f8225d517e52c9d85404.json
 }

@@ -4,10 +4,7 @@
 
 use ab_core::Result;
 use ab_core::assessments::{ActivityProgressState, TrailRunStatus};
-use ab_core::id::{
-    ActivityId, ActivityProgressId, CourseId, CourseProgressId, SubmissionId, TrailId, TrailRunId,
-    TrailStepId, UserId,
-};
+use ab_core::id::{ActivityId, CourseId, SubmissionId, TrailId, TrailRunId, TrailStepId, UserId};
 use sqlx::{PgConnection, PgPool};
 
 /// `to_timestamp($n)` wants double precision; epoch seconds fit exactly.
@@ -22,8 +19,8 @@ const fn epoch(t: Option<i64>) -> Option<f64> {
 // ── Activity progress ───────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+/// Keyed by `(activity_id, user_id)` (REWRITE 5.6 n12).
 pub struct ActivityProgressRow {
-    pub id: ActivityProgressId,
     pub course_id: CourseId,
     pub activity_id: ActivityId,
     pub user_id: UserId,
@@ -126,7 +123,7 @@ pub async fn get_activity_progress<'e>(
 ) -> Result<Option<ActivityProgressRow>> {
     let row = sqlx::query_as!(
         ActivityProgressRow,
-        r#"SELECT id AS "id: ActivityProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
                   state AS "state: ActivityProgressState", required, score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
@@ -158,7 +155,7 @@ pub async fn list_course_progress_rows<'e>(
 ) -> Result<Vec<ActivityProgressRow>> {
     let rows = sqlx::query_as!(
         ActivityProgressRow,
-        r#"SELECT id AS "id: ActivityProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
                   state AS "state: ActivityProgressState", required, score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
@@ -296,8 +293,8 @@ pub async fn list_assessment_weights<'e>(
 // ── Course progress ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+/// Keyed by `(course_id, user_id)` (REWRITE 5.6 n12).
 pub struct CourseProgressRow {
-    pub id: CourseProgressId,
     pub course_id: CourseId,
     pub user_id: UserId,
     pub completed_required_count: i32,
@@ -314,18 +311,22 @@ pub struct CourseProgressRow {
 }
 
 #[derive(Debug, Clone)]
+/// What the projector writes. `progress_pct` and `certificate_eligible`
+/// are not written: the database derives them from the counts and
+/// `completed_at` (`course_progress_derive`, items 14/15).
 pub struct CourseProgressWrite {
     pub course_id: CourseId,
     pub user_id: UserId,
     pub completed_required_count: i32,
     pub total_required_count: i32,
-    pub progress_pct: f64,
     pub grade_average: Option<f64>,
     pub weighted_grade_average: Option<f64>,
     pub missing_required_count: i32,
     pub needs_grading_count: i32,
     pub last_activity_at: Option<i64>,
+    /// The course completion; set exactly when `certificate_eligible`.
     pub completed_at: Option<i64>,
+    /// Every required activity done by a member: the stored flag's rule.
     pub certificate_eligible: bool,
 }
 
@@ -336,31 +337,28 @@ pub async fn upsert_course_progress<'e>(
     sqlx::query!(
         r#"INSERT INTO course_progress
                (course_id, user_id, completed_required_count, total_required_count,
-                progress_pct, grade_average, weighted_grade_average, missing_required_count,
-                needs_grading_count, last_activity_at, completed_at, certificate_eligible)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, to_timestamp($10), to_timestamp($11), $12)
+                grade_average, weighted_grade_average, missing_required_count,
+                needs_grading_count, last_activity_at, completed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_timestamp($9), to_timestamp($10))
            ON CONFLICT (course_id, user_id) DO UPDATE SET
                completed_required_count = EXCLUDED.completed_required_count,
                total_required_count = EXCLUDED.total_required_count,
-               progress_pct = EXCLUDED.progress_pct, grade_average = EXCLUDED.grade_average,
+               grade_average = EXCLUDED.grade_average,
                weighted_grade_average = EXCLUDED.weighted_grade_average,
                missing_required_count = EXCLUDED.missing_required_count,
                needs_grading_count = EXCLUDED.needs_grading_count,
                last_activity_at = EXCLUDED.last_activity_at,
-               completed_at = EXCLUDED.completed_at,
-               certificate_eligible = EXCLUDED.certificate_eligible"#,
+               completed_at = EXCLUDED.completed_at"#,
         w.course_id.0,
         w.user_id.0,
         w.completed_required_count,
         w.total_required_count,
-        w.progress_pct,
         w.grade_average,
         w.weighted_grade_average,
         w.missing_required_count,
         w.needs_grading_count,
         epoch(w.last_activity_at),
-        epoch(w.completed_at),
-        w.certificate_eligible
+        epoch(w.completed_at)
     )
     .execute(db)
     .await?;
@@ -374,7 +372,7 @@ pub async fn get_course_progress<'e>(
 ) -> Result<Option<CourseProgressRow>> {
     let row = sqlx::query_as!(
         CourseProgressRow,
-        r#"SELECT id AS "id: CourseProgressId", course_id AS "course_id: CourseId",
+        r#"SELECT course_id AS "course_id: CourseId",
                   user_id AS "user_id: UserId", completed_required_count, total_required_count,
                   progress_pct, grade_average, weighted_grade_average, missing_required_count,
                   needs_grading_count,
@@ -391,7 +389,7 @@ pub async fn get_course_progress<'e>(
     Ok(row)
 }
 
-/// The course's members - learners with a trail run.
+/// The course's members - learners with an enrolment.
 ///
 /// The same predicate [`has_trail_run`] applies per learner (BUG-260). Course-wide
 /// recalculations and backfills cover members only: a leaver's (or a staff
@@ -400,7 +398,7 @@ pub async fn get_course_progress<'e>(
 /// with a run left from before they joined it (BUG-287/288).
 pub async fn course_members(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT user_id AS "user_id!: UserId" FROM trail_runs
+        r#"SELECT user_id AS "user_id!: UserId" FROM enrolments
            WHERE course_id = $1 AND NOT is_course_staff(course_id, user_id)"#,
         course_id.0
     )
@@ -409,10 +407,10 @@ pub async fn course_members(pool: &PgPool, course_id: CourseId) -> Result<Vec<Us
     Ok(ids)
 }
 
-/// Every course the user holds a run in, staffed or not (BUG-291).
+/// Every course the user is enrolled in, staffed or not (BUG-291).
 pub async fn user_run_course_ids(pool: &PgPool, user_id: UserId) -> Result<Vec<CourseId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT course_id AS "course_id!: CourseId" FROM trail_runs WHERE user_id = $1"#,
+        r#"SELECT course_id AS "course_id!: CourseId" FROM enrolments WHERE user_id = $1"#,
         user_id.0
     )
     .fetch_all(pool)
@@ -519,16 +517,16 @@ pub async fn get_trail_run<'e>(
     Ok(row)
 }
 
-/// Whether the learner is a member: a run for the course, and not one of
-/// its staff - a learner who joined the staff keeps a run but is no member
-/// (BUG-288).
+/// Whether the learner is a member: an enrolment in the course, and not one
+/// of its staff - a learner who joined the staff keeps the enrolment but is
+/// no member (BUG-288).
 pub async fn has_trail_run<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<bool> {
     let exists = sqlx::query_scalar!(
-        r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2
+        r#"SELECT EXISTS(SELECT 1 FROM enrolments WHERE course_id = $1 AND user_id = $2
                          AND NOT is_course_staff(course_id, user_id))
            AS "exists!""#,
         course_id.0,
@@ -540,15 +538,15 @@ pub async fn has_trail_run<'e>(
 }
 
 /// Enrolled for taking assessments (`courses.assessments_require_enrollment`):
-/// a run on the course, or membership of a usergroup linked to it - the
-/// teacher enrolled the group.
+/// an enrolment in the course, or membership of a usergroup linked to it -
+/// the teacher enrolled the group.
 pub async fn takes_assessments<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<bool> {
     let enrolled = sqlx::query_scalar!(
-        r#"SELECT EXISTS(SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2)
+        r#"SELECT EXISTS(SELECT 1 FROM enrolments WHERE course_id = $1 AND user_id = $2)
                OR EXISTS(SELECT 1 FROM usergroup_courses uc
                          JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
                          WHERE uc.course_id = $1 AND m.user_id = $2)
@@ -577,7 +575,7 @@ pub async fn is_course_staff<'e>(
     Ok(staff)
 }
 
-/// [`has_trail_run`] holding the run `FOR SHARE` until the caller's
+/// [`has_trail_run`] holding the enrolment `FOR SHARE` until the caller's
 /// transaction ends: a concurrent leave (which deletes it) lands wholly
 /// before (→ `false`) or after the caller's commit (BUG-281).
 pub async fn has_trail_run_locked<'e>(
@@ -586,7 +584,7 @@ pub async fn has_trail_run_locked<'e>(
     user_id: UserId,
 ) -> Result<bool> {
     let row = sqlx::query_scalar!(
-        "SELECT 1 FROM trail_runs
+        "SELECT 1 FROM enrolments
          WHERE course_id = $1 AND user_id = $2 AND NOT is_course_staff(course_id, user_id)
          FOR SHARE",
         course_id.0,
@@ -597,15 +595,15 @@ pub async fn has_trail_run_locked<'e>(
     Ok(row.is_some())
 }
 
-/// Hold the (user, course) run row `FOR UPDATE` until the caller's
+/// Hold the (user, course) enrolment row `FOR UPDATE` until the caller's
 /// transaction ends: waits out a `set_access` that checked it `FOR SHARE`
-/// (BUG-303). No run → nothing to hold.
+/// (BUG-303). No enrolment → nothing to hold.
 pub async fn lock_trail_run_row(
     conn: &mut PgConnection,
     course_id: CourseId,
     user_id: UserId,
 ) -> Result<()> {
-    sqlx::query("SELECT 1 FROM trail_runs WHERE course_id = $1 AND user_id = $2 FOR UPDATE")
+    sqlx::query("SELECT 1 FROM enrolments WHERE course_id = $1 AND user_id = $2 FOR UPDATE")
         .bind(course_id.0)
         .bind(user_id.0)
         .fetch_optional(conn)
@@ -635,6 +633,40 @@ pub async fn ensure_trail_run(
         .await?
         .ok_or_else(|| ab_core::Error::not_found("trail run"))?;
     Ok((run, created))
+}
+
+/// Enrol `user_id` in the course (the membership fact, REWRITE 5.6 n5);
+/// `true` when this call created it. Written with the trail run, in the
+/// same transaction.
+pub async fn enrol(conn: &mut PgConnection, course_id: CourseId, user_id: UserId) -> Result<bool> {
+    let created = sqlx::query!(
+        "INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        course_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?
+    .rows_affected()
+        == 1;
+    Ok(created)
+}
+
+/// End the membership (leave, roster removal); `true` when there was one.
+pub async fn unenrol(
+    conn: &mut PgConnection,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM enrolments WHERE course_id = $1 AND user_id = $2",
+        course_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?
+    .rows_affected()
+        > 0;
+    Ok(deleted)
 }
 
 /// Try to serialize trail writes for one (user, course) pair (BUG-210).
@@ -714,22 +746,78 @@ pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tr
     Ok(rows)
 }
 
-/// When `user_id` completed `activity_id` explicitly (a complete trail step),
-/// if they did - the backfill source for non-submission activities.
-pub async fn completed_step_at(
+/// When `user_id` completed `activity_id`, if they did (the `completions`
+/// row) - what the projection of a lesson-type activity reads.
+pub async fn completed_at(
     conn: &mut PgConnection,
     activity_id: ActivityId,
     user_id: UserId,
 ) -> Result<Option<i64>> {
     let at = sqlx::query_scalar!(
-        r#"SELECT (extract(epoch FROM min(created_at)))::bigint
-           FROM trail_steps WHERE activity_id = $1 AND user_id = $2 AND complete"#,
+        r#"SELECT (extract(epoch FROM completed_at))::bigint AS "at!"
+           FROM completions WHERE activity_id = $1 AND user_id = $2"#,
         activity_id.0,
         user_id.0
     )
-    .fetch_one(conn)
+    .fetch_optional(conn)
     .await?;
     Ok(at)
+}
+
+/// Record that `user_id` completed `activity_id` now; `false` when they
+/// already had.
+pub async fn insert_completion(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<bool> {
+    let inserted = sqlx::query!(
+        "INSERT INTO completions (activity_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(inserted.rows_affected() == 1)
+}
+
+/// Withdraw a completion; `false` when there was none.
+pub async fn delete_completion(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM completions WHERE activity_id = $1 AND user_id = $2",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+/// How many completions and projection rows disagree.
+///
+/// A completed `activity_progress` row with no `completions` row, or a
+/// completion whose projection row is missing or not completed.
+/// `maintenance:reconcile` logs it after the re-projection; a month of zeros
+/// is the signal REWRITE 5.6 n8 waits for.
+pub async fn completion_drift(pool: &PgPool) -> Result<i64> {
+    let drift = sqlx::query_scalar!(
+        r#"SELECT
+             (SELECT count(*) FROM activity_progress p
+              WHERE p.completed_at IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM completions c
+                                WHERE c.activity_id = p.activity_id AND c.user_id = p.user_id))
+           + (SELECT count(*) FROM completions c
+              WHERE NOT EXISTS (SELECT 1 FROM activity_progress p
+                                WHERE p.activity_id = c.activity_id AND p.user_id = c.user_id
+                                  AND p.completed_at IS NOT NULL)) AS "drift!""#
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(drift)
 }
 
 /// Insert a completed step; `false` when it already existed.
@@ -955,7 +1043,7 @@ pub struct EnrolTargetRow {
     pub display_name: String,
     pub email: String,
     pub active: bool,
-    /// Holds a run on the course.
+    /// Holds an enrolment in the course.
     pub member: bool,
     /// `is_course_staff`: never enrolled (BUG-287).
     pub staff: bool,
@@ -972,8 +1060,8 @@ pub async fn resolve_enrol_targets(
         EnrolTargetRow,
         r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.email,
                   u.disabled_at IS NULL AS "active!",
-                  EXISTS (SELECT 1 FROM trail_runs tr
-                          WHERE tr.course_id = $1 AND tr.user_id = u.id) AS "member!",
+                  EXISTS (SELECT 1 FROM enrolments e
+                          WHERE e.course_id = $1 AND e.user_id = u.id) AS "member!",
                   is_course_staff($1, u.id) AS "staff!"
            FROM users u
            WHERE lower(u.email) = ANY($2) OR lower(u.username) = ANY($2)"#,

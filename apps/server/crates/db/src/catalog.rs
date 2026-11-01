@@ -15,7 +15,7 @@ pub struct CourseRow {
     pub tags: Vec<String>,
     pub public: bool,
     pub open_to_contributors: bool,
-    /// Only learners with a run on the course (or in a linked usergroup)
+    /// Only learners enrolled in the course (or in a linked usergroup)
     /// take its assessments (cluster G, 2026-10-10).
     pub assessments_require_enrollment: bool,
     /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
@@ -188,8 +188,8 @@ pub async fn list_courses(
     limit: i64,
 ) -> Result<Vec<CourseRow>> {
     let by_name = filter.sort == "name";
-    // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on a
-    // trail run) first, then by `course_progress.progress_pct`, then newest
+    // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on an
+    // enrolment) first, then by `course_progress.progress_pct`, then newest
     // update - one keyset over the whole catalog, not a per-page re-sort.
     let by_progress = filter.sort == "progress";
     // UX-222: `q` matches like `/search` (`search_matches`); UX-143: metacharacters are literal.
@@ -200,7 +200,7 @@ pub async fn list_courses(
                SELECT cp.course_id, cp.progress_pct,
                       cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
                FROM course_progress cp
-               JOIN trail_runs tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
+               JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
                WHERE $11 AND cp.user_id = $2
            )
            SELECT id AS "id: CourseId", name, description, about, tags,
@@ -510,10 +510,10 @@ pub async fn course_archive_preview(
     let row = sqlx::query_as!(
         CourseArchivePreviewRow,
         r#"SELECT
-             (SELECT count(*) FROM trail_runs tr
+             (SELECT count(*) FROM enrolments tr
               WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id))
                  AS "learners_enrolled!",
-             (SELECT count(*) FROM trail_runs tr
+             (SELECT count(*) FROM enrolments tr
               LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
               WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id)
                 AND coalesce(cp.progress_pct, 0) < 100)

@@ -68,16 +68,6 @@ pub fn level_for(total_xp: i32) -> i32 {
     level.clamp(1, MAX_LEVEL)
 }
 
-fn now_unix() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
-}
-
-const fn day_of(unix: i64) -> i64 {
-    unix.div_euclid(86_400)
-}
-
 /// Resolved policy: defaults overlaid with the config row.
 #[derive(Debug, Clone)]
 pub struct Policy {
@@ -163,12 +153,12 @@ pub struct Dashboard {
     pub daily_xp: DailyXp,
 }
 
-/// Today's XP against the daily cap, as `award` judges it (UTC day, admin awards
-/// excluded from the cap but counted, like the stored total).
+/// Today's XP against the daily cap, as `award` judges it (the platform day,
+/// Asia/Almaty; admin awards excluded from the cap but counted, like the
+/// stored total).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DailyXp {
-    /// XP earned since 00:00 UTC; 0 when the last award was on an earlier day
-    /// (the stored `daily_xp_earned` resets only on the next award).
+    /// XP earned since the platform day began (`ProfileRow::daily_xp_earned`).
     pub earned_today: i32,
     /// The effective cap; `None` when unlimited.
     pub limit: Option<i32>,
@@ -176,13 +166,14 @@ pub struct DailyXp {
 
 impl DailyXp {
     #[must_use]
-    pub fn of(profile: &ProfileRow, policy_limit: i32, now: i64) -> Self {
-        let same_day = profile
-            .last_xp_award_at
-            .is_some_and(|at| day_of(at) == day_of(now));
+    pub const fn of(profile: &ProfileRow, policy_limit: i32) -> Self {
         Self {
-            earned_today: if same_day { profile.daily_xp_earned } else { 0 },
-            limit: (policy_limit > 0).then_some(policy_limit),
+            earned_today: profile.daily_xp_earned,
+            limit: if policy_limit > 0 {
+                Some(policy_limit)
+            } else {
+                None
+            },
         }
     }
 }
@@ -320,32 +311,17 @@ impl GamificationService {
         self.record_streak(user_id, kind).await
     }
 
-    /// Legacy `update_streak`: same day keeps, next day extends, a gap resets.
+    /// Legacy `update_streak`: same day keeps, next day extends, a gap
+    /// resets - days are platform days (Asia/Almaty), decided in SQL.
     pub async fn record_streak(&self, user_id: UserId, kind: StreakKind) -> Result<StreakUpdate> {
-        let profile = ab_db::gamification::ensure_profile(&self.pool, user_id).await?;
-        let (last, current) = match kind {
-            StreakKind::Login => (profile.last_login_at, profile.login_streak),
-            StreakKind::Learning => (profile.last_learning_at, profile.learning_streak),
-        };
-        let today = day_of(now_unix());
-        let next = match last.map(|t| today - day_of(t)) {
-            Some(0) => current.max(1),
-            Some(1) => current + 1,
-            _ => 1,
-        };
-        ab_db::gamification::set_streak(&self.pool, user_id, kind, next).await?;
-        let fresh = ab_db::gamification::ensure_profile(&self.pool, user_id).await?;
-        Ok(match kind {
-            StreakKind::Login => StreakUpdate {
-                kind,
-                current: fresh.login_streak,
-                longest: fresh.longest_login_streak,
-            },
-            StreakKind::Learning => StreakUpdate {
-                kind,
-                current: fresh.learning_streak,
-                longest: fresh.longest_learning_streak,
-            },
+        ab_db::gamification::ensure_profile(&self.pool, user_id).await?;
+        let (current, longest) = ab_db::gamification::touch_streak(&self.pool, user_id, kind)
+            .await?
+            .ok_or_else(|| Error::not_found("gamification profile"))?;
+        Ok(StreakUpdate {
+            kind,
+            current,
+            longest,
         })
     }
 
@@ -396,7 +372,7 @@ impl GamificationService {
     }
 
     /// S-05 keyset page: `cursor` is the previous page's `next_cursor`
-    /// (`"<total_xp>.<profile id>"`, opaque to clients).
+    /// (`"<total_xp>.<user id>"`, opaque to clients).
     pub async fn leaderboard_page(
         &self,
         limit: i64,
@@ -419,8 +395,7 @@ impl GamificationService {
         let mut rows = ab_db::gamification::leaderboard_after(&self.pool, limit + 1, after).await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            rows.last()
-                .map(|r| format!("{}.{}", r.total_xp, r.profile_id))
+            rows.last().map(|r| format!("{}.{}", r.total_xp, r.user_id))
         } else {
             None
         };
@@ -478,7 +453,7 @@ impl GamificationService {
         // UX-189: the same opt-out as `GET gamification/rank`.
         let user_rank = self.rank_of(&profile).await?;
         let leaderboard = self.leaderboard(10, 0).await?;
-        let daily_xp = DailyXp::of(&profile, self.policy().await?.daily_limit, now_unix());
+        let daily_xp = DailyXp::of(&profile, self.policy().await?.daily_limit);
         Ok(Dashboard {
             profile,
             recent_transactions,
@@ -575,7 +550,7 @@ impl GamificationService {
 
 /// Best-effort side effects other slices call; failures are logged.
 pub mod hooks {
-    use super::{AwardRequest, GamificationService, StreakKind, XpSource, day_of, now_unix};
+    use super::{AwardRequest, GamificationService, StreakKind, XpSource};
     use ab_core::assessments::AssessmentKind;
     use ab_core::id::{ActivityId, CourseId, SubmissionId, UserId};
     use sqlx::PgPool;
@@ -697,7 +672,14 @@ pub mod hooks {
             "login_streak",
             service.record_streak(user_id, StreakKind::Login).await,
         );
-        let day = day_of(now_unix()).to_string();
+        // The key is the platform day's number, so one bonus per Almaty day.
+        let day = match ab_db::gamification::platform_day_number(pool).await {
+            Ok(day) => day.to_string(),
+            Err(err) => {
+                log_err::<()>("login_bonus", Err(err));
+                return;
+            }
+        };
         log_err(
             "login_bonus",
             service
@@ -749,9 +731,8 @@ mod tests {
     }
 
     #[test]
-    fn daily_xp_counts_only_today_and_reads_the_cap() {
+    fn daily_xp_reads_the_ledger_sum_and_the_cap() {
         let profile = |earned: i32, last: Option<i64>| ProfileRow {
-            id: ab_core::id::GamificationProfileId(uuid::Uuid::nil()),
             user_id: UserId(uuid::Uuid::nil()),
             total_xp: 500,
             level: 3,
@@ -769,19 +750,13 @@ mod tests {
             created_at: 0,
             updated_at: 0,
         };
-        let noon = 20_000 * 86_400 + 43_200;
         assert_eq!(
-            DailyXp::of(&profile(120, Some(noon - 3_600)), 500, noon),
+            DailyXp::of(&profile(120, Some(0)), 500),
             DailyXp {
                 earned_today: 120,
                 limit: Some(500)
             }
         );
-        // Yesterday's total is not today's: the stored counter resets only on the next award.
-        assert_eq!(
-            DailyXp::of(&profile(120, Some(noon - 86_400)), 500, noon).earned_today,
-            0
-        );
-        assert_eq!(DailyXp::of(&profile(0, None), 0, noon).limit, None);
+        assert_eq!(DailyXp::of(&profile(0, None), 0).limit, None);
     }
 }

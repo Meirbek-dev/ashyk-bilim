@@ -45,6 +45,18 @@
 //!   on new rows; it validates after the repair.
 //! - review 3, item 20: every submission / file-attempt arc table names
 //!   exactly one of the two.
+//! - lane C, item 17: one platform day (Asia/Almaty): `platform_date` and
+//!   `platform_day_start` cut days at local midnight, and a date binds as
+//!   `date` both ways.
+//! - lane C, item 11: membership is an `enrolments` row; the previous
+//!   release's trail-run writes are mirrored into it until the contract.
+//! - lane C, items 14/15: course_progress derives its percent and the
+//!   certificate flag from the counts and completed_at; the counts cohere.
+//! - lane C, item 40: projections and rollups are keyed by their natural key.
+//! - lane C, item 38: the event prune removes events past 400 days and
+//!   keeps the rest, whether or not analytics_events is partitioned.
+//! - lane C, item 12: a completion the previous release projects (or
+//!   clears) in activity_progress is mirrored into completions.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -1285,4 +1297,223 @@ async fn user_with_opt_out(pool: &PgPool) -> uuid::Uuid {
     .await
     .unwrap();
     id
+}
+
+#[ab_testdb::test]
+async fn the_platform_day_is_almatys(pool: PgPool) {
+    use ab_core::time::Date;
+    let (before, after, start): (String, String, String) = sqlx::query_as(
+        "SELECT platform_date('2026-11-01 18:59:59Z')::text,
+                platform_date('2026-11-01 19:00:00Z')::text,
+                to_char(platform_day_start('2026-11-02') AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (before.as_str(), after.as_str()),
+        ("2026-11-01", "2026-11-02")
+    );
+    assert_eq!(start, "2026-11-01 19:00");
+    // A date binds and decodes as Postgres `date` (binary on the wire).
+    let day = Date::parse("2024-02-29").unwrap();
+    let (text, back): (String, Date) = sqlx::query_as("SELECT $1::text, $1")
+        .bind(day)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!((text.as_str(), back), ("2024-02-29", day));
+}
+
+#[ab_testdb::test]
+async fn trail_runs_of_the_previous_release_mirror_into_enrolments(pool: PgPool) {
+    let w = world(&pool).await;
+    let trail: Uuid = sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)")
+        .bind(trail)
+        .bind(w.course)
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let enrolled = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM enrolments WHERE course_id = $1 AND user_id = $2",
+        )
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(enrolled().await, 1);
+    sqlx::query("DELETE FROM trail_runs WHERE trail_id = $1")
+        .bind(trail)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(enrolled().await, 0);
+}
+
+#[ab_testdb::test]
+async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
+    let w = world(&pool).await;
+    let derived = || async {
+        sqlx::query_as::<_, (f64, bool)>(
+            "SELECT progress_pct, certificate_eligible FROM course_progress
+             WHERE course_id = $1 AND user_id = $2",
+        )
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    sqlx::query(
+        "INSERT INTO course_progress (course_id, user_id, completed_required_count,
+                                      total_required_count)
+         VALUES ($1, $2, 1, 32)",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // 3.125 rounds away from zero, as the projector's round2.
+    assert_eq!(derived().await, (3.13, false));
+    let set = |sql: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(sql)
+                .bind(w.course)
+                .bind(w.user)
+                .execute(&pool)
+                .await
+        }
+    };
+    // All done but no completion stamp (a leaver): not eligible.
+    set("UPDATE course_progress SET completed_required_count = 32
+         WHERE course_id = $1 AND user_id = $2")
+    .await
+    .unwrap();
+    assert_eq!(derived().await, (100.0, false));
+    set("UPDATE course_progress SET completed_at = now() WHERE course_id = $1 AND user_id = $2")
+        .await
+        .unwrap();
+    assert_eq!(derived().await, (100.0, true));
+    // More done than required, or a completion before the end, is refused.
+    let over = set("UPDATE course_progress SET completed_required_count = 33
+                    WHERE course_id = $1 AND user_id = $2")
+    .await;
+    assert!(over.is_err(), "completed <= total");
+    let early = set("UPDATE course_progress SET completed_required_count = 31
+                     WHERE course_id = $1 AND user_id = $2")
+    .await;
+    assert!(early.is_err(), "completed_at only on a completed course");
+}
+
+#[ab_testdb::test]
+async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
+    let keys: Vec<(String, String)> = sqlx::query_as(
+        "SELECT c.conrelid::regclass::text,
+                string_agg(a.attname, ',' ORDER BY k.ord)
+         FROM pg_constraint c
+         CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+         WHERE c.contype = 'p'
+           AND c.conrelid::regclass::text IN ('activity_progress', 'course_progress',
+               'gamification_profiles', 'daily_course_metrics', 'daily_course_engagement',
+               'daily_assessment_metrics', 'daily_user_course_progress', 'learner_risk_snapshots')
+         GROUP BY 1 ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let keys: Vec<(&str, &str)> = keys.iter().map(|(t, k)| (t.as_str(), k.as_str())).collect();
+    assert_eq!(
+        keys,
+        [
+            ("activity_progress", "activity_id,user_id"),
+            ("course_progress", "course_id,user_id"),
+            ("daily_assessment_metrics", "metric_date,assessment_id"),
+            ("daily_course_engagement", "metric_date,activity_id"),
+            ("daily_course_metrics", "metric_date,course_id"),
+            (
+                "daily_user_course_progress",
+                "metric_date,user_id,course_id"
+            ),
+            ("gamification_profiles", "user_id"),
+            ("learner_risk_snapshots", "snapshot_date,user_id,course_id"),
+        ]
+    );
+}
+
+#[ab_testdb::test]
+async fn the_event_prune_keeps_400_days(pool: PgPool) {
+    sqlx::query(
+        "INSERT INTO analytics_events (event_type, occurred_at)
+         VALUES ('login', now() - interval '401 days'), ('login', now() - interval '399 days'),
+                ('login', now())",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let pruned = ab_db::analytics::prune_retention(&pool).await.unwrap();
+    assert_eq!(pruned.events + pruned.event_partitions, 1, "{pruned:?}");
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM analytics_events")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 2);
+}
+
+#[ab_testdb::test]
+async fn completions_mirror_the_previous_releases_projection(pool: PgPool) {
+    let w = world(&pool).await;
+    let completions = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM completions WHERE activity_id = $1 AND user_id = $2",
+        )
+        .bind(w.activity)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let write = |sql: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(sql)
+                .bind(w.course)
+                .bind(w.activity)
+                .bind(w.user)
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+    };
+    write(
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, state)
+         VALUES ($1, $2, $3, 'submitted')",
+    )
+    .await;
+    assert_eq!(completions().await, 0);
+    // A passing grade released: the old binary sets completed_at.
+    write(
+        "UPDATE activity_progress SET state = 'completed', completed_at = now()
+         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
+    )
+    .await;
+    assert_eq!(completions().await, 1);
+    // A regrade below the pass mark clears it again.
+    write(
+        "UPDATE activity_progress SET state = 'failed', completed_at = NULL
+         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
+    )
+    .await;
+    assert_eq!(completions().await, 0);
 }

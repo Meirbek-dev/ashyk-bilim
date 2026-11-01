@@ -11,7 +11,7 @@ export const DailyXp = zod.object({
   earned_today: zod
     .int()
     .describe(
-      'XP earned since 00:00 UTC; 0 after a day without awards (unlike\n`Profile.daily_xp_earned`, which resets only on the next award).',
+      'XP earned since 00:00 Asia/Almaty (the same sum as\n`Profile.daily_xp_earned`); 0 after a day without awards.',
     ),
   limit: zod.int().nullable().describe('The effective daily cap (admin awards are not capped); `null` = unlimited.'),
 })

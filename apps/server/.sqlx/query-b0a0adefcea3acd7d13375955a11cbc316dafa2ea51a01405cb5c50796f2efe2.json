@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM daily_course_metrics WHERE metric_date = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b0a0adefcea3acd7d13375955a11cbc316dafa2ea51a01405cb5c50796f2efe2"
+}

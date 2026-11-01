@@ -33,6 +33,7 @@ const AUDIT: &str = "security log: kept, ages out after AB__RETENTION__AUTH_AUDI
 const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("activities", "creator_id", ACTOR),
     ("activity_progress", "user_id", RECORD),
+    ("completions", "user_id", RECORD),
     ("ai_approvals", "requested_by", ACTOR),
     ("ai_approvals", "resolved_by", ACTOR),
     ("ai_course_analyses", "triggered_by", ACTOR),
@@ -80,6 +81,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("daily_user_course_progress", "user_id", ERASED),
     ("discussion_reactions", "user_id", SETTING),
     ("file_grading_entries", "graded_by", ACTOR),
+    ("enrolments", "user_id", RECORD),
     ("file_submission_attempts", "graded_by", ACTOR),
     ("file_submission_attempts", "user_id", RECORD),
     ("file_submission_overrides", "granted_by", ACTOR),

@@ -274,12 +274,18 @@ async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct
         .execute(pool)
         .await
         .unwrap();
+    // progress_pct is derived from the counts: `pct` of 100 required.
+    #[allow(clippy::cast_possible_truncation)]
+    let (done, total) = (pct.round() as i32, if pct > 0.0 { 100 } else { 0 });
     sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, progress_pct) VALUES ($1, $2, $3)",
+        "INSERT INTO course_progress (course_id, user_id, completed_required_count,
+                                      total_required_count)
+         VALUES ($1, $2, $3, $4)",
     )
     .bind(course_uuid)
     .bind(user_id.0)
-    .bind(pct)
+    .bind(done)
+    .bind(total)
     .execute(pool)
     .await
     .unwrap();
@@ -2288,7 +2294,8 @@ async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
         enrol(&pool, &course_id, who.user_id, 100.0).await;
         learners.push(who);
     }
-    sqlx::query("UPDATE course_progress SET certificate_eligible = true WHERE course_id = $1")
+    // Eligibility is derived: every required activity done, completion stamped.
+    sqlx::query("UPDATE course_progress SET completed_at = now() WHERE course_id = $1")
         .bind(course_uuid)
         .execute(&pool)
         .await

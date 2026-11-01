@@ -16,6 +16,7 @@ use ab_core::id::{
     ActivityId, AssessmentId, BulkActionId, ChapterId, CourseId, FileAttemptId, GradingEntryId,
     InterventionId, SavedViewId, SubmissionId, TrailRunId, UserId, UsergroupId,
 };
+use ab_core::time::Date;
 use sqlx::PgPool;
 
 /// Epoch seconds → `to_timestamp()` argument. Exact below 2^53.
@@ -353,7 +354,8 @@ pub async fn list_activity_progress(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?"
-           FROM activity_progress WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM activity_progress WHERE course_id = ANY($1)
+           ORDER BY created_at, activity_id, user_id"#,
         &ids
     )
     .fetch_all(pool)
@@ -382,7 +384,7 @@ pub async fn list_course_progress(
         r#"SELECT course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   completed_required_count, total_required_count, progress_pct, certificate_eligible,
                   (extract(epoch FROM last_activity_at))::bigint AS "last_activity_at?"
-           FROM course_progress WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM course_progress WHERE course_id = ANY($1) ORDER BY created_at, course_id, user_id"#,
         &ids
     )
     .fetch_all(pool)
@@ -392,7 +394,8 @@ pub async fn list_course_progress(
 
 #[derive(Debug, Clone)]
 pub struct TrailRunInfoRow {
-    pub id: TrailRunId,
+    /// `None`: enrolled without a trail run.
+    pub id: Option<TrailRunId>,
     pub course_id: CourseId,
     pub user_id: UserId,
 }
@@ -438,7 +441,8 @@ pub async fn count_excluded_attempts(
     Ok(row)
 }
 
-/// The analytics member set: trail runs, never the course's staff (BUG-287).
+/// The analytics member set: enrolments, never the course's staff
+/// (BUG-287), with the member's trail run when there is one.
 pub async fn list_trail_runs(
     pool: &PgPool,
     course_ids: &[CourseId],
@@ -446,11 +450,12 @@ pub async fn list_trail_runs(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         TrailRunInfoRow,
-        r#"SELECT id AS "id: TrailRunId", course_id AS "course_id: CourseId",
-                  user_id AS "user_id: UserId"
-           FROM trail_runs
-           WHERE course_id = ANY($1) AND NOT is_course_staff(course_id, user_id)
-           ORDER BY id"#,
+        r#"SELECT r.id AS "id?: TrailRunId", e.course_id AS "course_id: CourseId",
+                  e.user_id AS "user_id: UserId"
+           FROM enrolments e
+           LEFT JOIN trail_runs r ON r.course_id = e.course_id AND r.user_id = e.user_id
+           WHERE e.course_id = ANY($1) AND NOT is_course_staff(e.course_id, e.user_id)
+           ORDER BY e.enrolled_at, e.course_id, e.user_id"#,
         &ids
     )
     .fetch_all(pool)
@@ -659,44 +664,61 @@ pub async fn list_bulk_actions_for_assessment(
     Ok(rows)
 }
 
+// ── Platform dates ──────────────────────────────────────────────────────────
+
+/// The platform date (Asia/Almaty, `platform_date`) of an instant; `None`
+/// = now. Rollup rows are labelled with it (REWRITE 5.7 n2).
+pub async fn platform_date_at<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    unix: Option<i64>,
+) -> Result<Date> {
+    let date = sqlx::query_scalar!(
+        r#"SELECT platform_date(coalesce(to_timestamp($1::bigint), now())) AS "date!: Date""#,
+        unix
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(date)
+}
+
 // ── Rollups: writes ─────────────────────────────────────────────────────────
 
 /// Remove every rollup row for one `YYYY-MM-DD` date so the day can be
 /// rebuilt from scratch inside the caller's transaction.
-pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: &str) -> Result<()> {
+pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: Date) -> Result<()> {
     sqlx::query!(
-        "DELETE FROM daily_teacher_metrics WHERE metric_date = ($1::text)::date",
-        date
+        "DELETE FROM daily_teacher_metrics WHERE metric_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
-        "DELETE FROM daily_course_metrics WHERE metric_date = ($1::text)::date",
-        date
+        "DELETE FROM daily_course_metrics WHERE metric_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
-        "DELETE FROM daily_course_engagement WHERE metric_date = ($1::text)::date",
-        date
+        "DELETE FROM daily_course_engagement WHERE metric_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
-        "DELETE FROM daily_assessment_metrics WHERE metric_date = ($1::text)::date",
-        date
+        "DELETE FROM daily_assessment_metrics WHERE metric_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
-        "DELETE FROM daily_user_course_progress WHERE metric_date = ($1::text)::date",
-        date
+        "DELETE FROM daily_user_course_progress WHERE metric_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
-        "DELETE FROM learner_risk_snapshots WHERE snapshot_date = ($1::text)::date",
-        date
+        "DELETE FROM learner_risk_snapshots WHERE snapshot_date = $1",
+        date as _
     )
     .execute(&mut *conn)
     .await?;
@@ -706,7 +728,12 @@ pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: &str) 
 /// Rows removed by [`prune_retention`].
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PruneCounts {
+    /// Event rows deleted one batch at a time (the default partition, the
+    /// expired part of the oldest month, or the whole table before it is
+    /// partitioned).
     pub events: u64,
+    /// Monthly event partitions dropped whole.
+    pub event_partitions: u64,
     pub daily_rows: u64,
     pub risk_snapshots: u64,
 }
@@ -715,8 +742,14 @@ pub struct PruneCounts {
 ///
 /// Removes `analytics_events` older than 400 days and every `daily_*` /
 /// `learner_risk_snapshots` row older than 2 years, in 5 000-row batches
-/// through the primary key so a first run over a large backlog never holds
-/// one long lock.
+/// so a first run over a large backlog never holds one long lock. Rollup
+/// batches go by `ctid`: those tables are keyed by their natural key, the
+/// surrogate `id` is on its way out (REWRITE 5.6 n12).
+///
+/// Events are partitioned by month once the lane C contract ran (item 38):
+/// the months wholly past the window are dropped, the next months'
+/// partitions created, and only the rest is deleted by batch. On the plain
+/// table both partition functions do nothing.
 pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
     macro_rules! prune {
         ($sql:literal) => {{
@@ -730,39 +763,48 @@ pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
             }
         }};
     }
+    sqlx::query_scalar!(r#"SELECT analytics_events_ensure_partitions(3) AS "made!""#)
+        .fetch_one(pool)
+        .await?;
+    let event_partitions = sqlx::query_scalar!(
+        r#"SELECT analytics_events_drop_partitions(now() - interval '400 days') AS "dropped!""#
+    )
+    .fetch_one(pool)
+    .await?;
     let events = prune!(
-        "DELETE FROM analytics_events WHERE id IN (
-            SELECT id FROM analytics_events
+        "DELETE FROM analytics_events WHERE (id, occurred_at) IN (
+            SELECT id, occurred_at FROM analytics_events
             WHERE occurred_at < now() - interval '400 days' LIMIT 5000)"
     );
     let daily_rows = prune!(
-        "DELETE FROM daily_teacher_metrics WHERE id IN (
-            SELECT id FROM daily_teacher_metrics
-            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_teacher_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_teacher_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_course_metrics WHERE id IN (
-            SELECT id FROM daily_course_metrics
-            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_course_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_course_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_course_engagement WHERE id IN (
-            SELECT id FROM daily_course_engagement
-            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_course_engagement WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_course_engagement
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_assessment_metrics WHERE id IN (
-            SELECT id FROM daily_assessment_metrics
-            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_assessment_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_assessment_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
-        "DELETE FROM daily_user_course_progress WHERE id IN (
-            SELECT id FROM daily_user_course_progress
-            WHERE metric_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM daily_user_course_progress WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_user_course_progress
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     );
     let risk_snapshots = prune!(
-        "DELETE FROM learner_risk_snapshots WHERE id IN (
-            SELECT id FROM learner_risk_snapshots
-            WHERE snapshot_date < current_date - interval '2 years' LIMIT 5000)"
+        "DELETE FROM learner_risk_snapshots WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM learner_risk_snapshots
+            WHERE snapshot_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     );
     Ok(PruneCounts {
         events,
+        event_partitions: u64::try_from(event_partitions).unwrap_or(0),
         daily_rows,
         risk_snapshots,
     })
@@ -786,7 +828,7 @@ pub struct TeacherMetricsWrite {
 
 pub async fn insert_teacher_metrics(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &TeacherMetricsWrite,
 ) -> Result<()> {
@@ -796,7 +838,7 @@ pub async fn insert_teacher_metrics(
                active_learners_28d, active_learners_90d, returning_learners_28d, completion_rate,
                avg_progress_pct, at_risk_learners, ungraded_submissions,
                courses_with_negative_engagement, certificates_issued_28d, generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
                   to_timestamp($14))
           ON CONFLICT (metric_date, teacher_user_id) DO UPDATE SET
               managed_course_count = EXCLUDED.managed_course_count,
@@ -811,7 +853,7 @@ pub async fn insert_teacher_metrics(
               courses_with_negative_engagement = EXCLUDED.courses_with_negative_engagement,
               certificates_issued_28d = EXCLUDED.certificates_issued_28d,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.teacher_user_id.map(|u| u.0),
         w.managed_course_count,
         w.active_learners_7d,
@@ -850,7 +892,7 @@ pub struct CourseMetricsWrite {
 
 pub async fn insert_course_metrics(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &CourseMetricsWrite,
 ) -> Result<()> {
@@ -860,7 +902,7 @@ pub async fn insert_course_metrics(
                active_learners_28d, completion_rate, avg_progress_pct, at_risk_learners,
                ungraded_submissions, certificates_issued, content_health_score,
                engagement_delta_pct, last_content_update_at, generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
                   to_timestamp($14), to_timestamp($15))
           ON CONFLICT (metric_date, course_id) DO UPDATE SET
               teacher_user_id = EXCLUDED.teacher_user_id,
@@ -876,7 +918,7 @@ pub async fn insert_course_metrics(
               engagement_delta_pct = EXCLUDED.engagement_delta_pct,
               last_content_update_at = EXCLUDED.last_content_update_at,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.course_id.0,
         w.teacher_user_id.map(|u| u.0),
         w.enrolled_learners,
@@ -910,7 +952,7 @@ pub struct EngagementWrite {
 
 pub async fn insert_engagement(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &EngagementWrite,
 ) -> Result<()> {
@@ -918,7 +960,7 @@ pub async fn insert_engagement(
         r"INSERT INTO daily_course_engagement
               (metric_date, course_id, chapter_id, activity_id, step_order, started_learners,
                completed_learners, dropoff_from_previous_pct, generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, to_timestamp($9))
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, to_timestamp($9))
           ON CONFLICT (metric_date, activity_id) DO UPDATE SET
               chapter_id = EXCLUDED.chapter_id,
               step_order = EXCLUDED.step_order,
@@ -926,7 +968,7 @@ pub async fn insert_engagement(
               completed_learners = EXCLUDED.completed_learners,
               dropoff_from_previous_pct = EXCLUDED.dropoff_from_previous_pct,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.course_id.0,
         w.chapter_id.map(|c| c.0),
         w.activity_id.0,
@@ -962,7 +1004,7 @@ pub struct AssessmentMetricsWrite {
 
 pub async fn insert_assessment_metrics(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &AssessmentMetricsWrite,
 ) -> Result<()> {
@@ -972,7 +1014,7 @@ pub async fn insert_assessment_metrics(
                eligible_learners, submitted_learners, submission_rate, completion_rate, pass_rate,
                median_score, avg_score, avg_attempts, grading_latency_hours_p50,
                grading_latency_hours_p90, difficulty_score, generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
                   $16, to_timestamp($17))
           ON CONFLICT (metric_date, assessment_id) DO UPDATE SET
               course_id = EXCLUDED.course_id,
@@ -990,7 +1032,7 @@ pub async fn insert_assessment_metrics(
               grading_latency_hours_p90 = EXCLUDED.grading_latency_hours_p90,
               difficulty_score = EXCLUDED.difficulty_score,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.assessment_id.0,
         w.course_id.0,
         w.activity_id.map(|a| a.0),
@@ -1028,7 +1070,7 @@ pub struct UserCourseProgressWrite {
 
 pub async fn insert_user_course_progress(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &UserCourseProgressWrite,
 ) -> Result<()> {
@@ -1036,7 +1078,7 @@ pub async fn insert_user_course_progress(
         r"INSERT INTO daily_user_course_progress
               (metric_date, user_id, course_id, trail_run_id, progress_pct, completed_steps,
                total_steps, last_activity_at, is_completed, has_certificate, generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10,
                   to_timestamp($11))
           ON CONFLICT (metric_date, user_id, course_id) DO UPDATE SET
               trail_run_id = EXCLUDED.trail_run_id,
@@ -1047,7 +1089,7 @@ pub async fn insert_user_course_progress(
               is_completed = EXCLUDED.is_completed,
               has_certificate = EXCLUDED.has_certificate,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.user_id.0,
         w.course_id.0,
         w.trail_run_id.map(|t| t.0),
@@ -1082,7 +1124,7 @@ pub struct RiskSnapshotWrite {
 
 pub async fn insert_risk_snapshot(
     conn: &mut sqlx::PgConnection,
-    date: &str,
+    date: Date,
     generated_at: i64,
     w: &RiskSnapshotWrite,
 ) -> Result<()> {
@@ -1092,7 +1134,7 @@ pub async fn insert_risk_snapshot(
                days_since_last_activity, failed_assessments, missing_required_assessments,
                open_grading_blocks, risk_score, risk_level, reason_codes, recommended_action,
                generated_at)
-          VALUES (($1::text)::date, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
                   to_timestamp($14))
           ON CONFLICT (snapshot_date, user_id, course_id) DO UPDATE SET
               teacher_user_id = EXCLUDED.teacher_user_id,
@@ -1106,7 +1148,7 @@ pub async fn insert_risk_snapshot(
               reason_codes = EXCLUDED.reason_codes,
               recommended_action = EXCLUDED.recommended_action,
               generated_at = EXCLUDED.generated_at",
-        date,
+        date as _,
         w.user_id.0,
         w.course_id.0,
         w.teacher_user_id.map(|u| u.0),
@@ -1151,7 +1193,7 @@ pub struct TeacherMetricsRow {
 pub async fn latest_teacher_metrics_before(
     pool: &PgPool,
     teacher_user_id: Option<UserId>,
-    before: &str,
+    before: Date,
 ) -> Result<Option<TeacherMetricsRow>> {
     let row = sqlx::query_as!(
         TeacherMetricsRow,
@@ -1162,10 +1204,10 @@ pub async fn latest_teacher_metrics_before(
                   certificates_issued_28d,
                   (extract(epoch FROM generated_at))::bigint AS "generated_at!"
            FROM daily_teacher_metrics
-           WHERE teacher_user_id IS NOT DISTINCT FROM $1 AND metric_date < ($2::text)::date
+           WHERE teacher_user_id IS NOT DISTINCT FROM $1 AND metric_date < $2
            ORDER BY metric_date DESC LIMIT 1"#,
         teacher_user_id.map(|u| u.0),
-        before
+        before as _
     )
     .fetch_optional(pool)
     .await?;
@@ -1187,7 +1229,7 @@ pub struct CourseMetricsRow {
 pub async fn course_metrics_before(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: &str,
+    before: Date,
 ) -> Result<Vec<CourseMetricsRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
@@ -1198,9 +1240,9 @@ pub async fn course_metrics_before(
            FROM daily_course_metrics
            WHERE course_id = ANY($1)
              AND metric_date = (SELECT max(metric_date) FROM daily_course_metrics
-                                WHERE course_id = ANY($1) AND metric_date < ($2::text)::date)"#,
+                                WHERE course_id = ANY($1) AND metric_date < $2)"#,
         &ids,
-        before
+        before as _
     )
     .fetch_all(pool)
     .await?;
@@ -1220,7 +1262,7 @@ pub struct RiskSnapshotRow {
 pub async fn previous_risk_snapshots(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: &str,
+    before: Date,
 ) -> Result<Vec<RiskSnapshotRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
@@ -1229,10 +1271,10 @@ pub async fn previous_risk_snapshots(
                   snapshot_date::text AS "snapshot_date!", user_id AS "user_id: UserId",
                   course_id AS "course_id: CourseId", risk_score, risk_level
            FROM learner_risk_snapshots
-           WHERE course_id = ANY($1) AND snapshot_date < ($2::text)::date
+           WHERE course_id = ANY($1) AND snapshot_date < $2
            ORDER BY course_id, user_id, snapshot_date DESC"#,
         &ids,
-        before
+        before as _
     )
     .fetch_all(pool)
     .await?;
@@ -1245,7 +1287,7 @@ pub async fn previous_risk_snapshots(
 pub async fn previous_at_risk_count(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: &str,
+    before: Date,
 ) -> Result<Option<i64>> {
     let ids = uuids(course_ids);
     let row = sqlx::query!(
@@ -1253,17 +1295,17 @@ pub async fn previous_at_risk_count(
            FROM learner_risk_snapshots
            WHERE course_id = ANY($1) AND risk_level IN ('medium', 'high')
              AND snapshot_date = (SELECT max(snapshot_date) FROM learner_risk_snapshots
-                                  WHERE course_id = ANY($1) AND snapshot_date < ($2::text)::date)"#,
+                                  WHERE course_id = ANY($1) AND snapshot_date < $2)"#,
         &ids,
-        before
+        before as _
     )
     .fetch_one(pool)
     .await?;
     let has_date = sqlx::query_scalar!(
         r#"SELECT max(snapshot_date)::text AS "d?" FROM learner_risk_snapshots
-           WHERE course_id = ANY($1) AND snapshot_date < ($2::text)::date"#,
+           WHERE course_id = ANY($1) AND snapshot_date < $2"#,
         &ids,
-        before
+        before as _
     )
     .fetch_one(pool)
     .await?;
@@ -1299,16 +1341,16 @@ pub struct RollupCounts {
     pub risk_rows: i64,
 }
 
-pub async fn rollup_counts(pool: &PgPool, date: &str) -> Result<RollupCounts> {
+pub async fn rollup_counts(pool: &PgPool, date: Date) -> Result<RollupCounts> {
     let row = sqlx::query!(
         r#"SELECT
-             (SELECT count(*) FROM daily_teacher_metrics WHERE metric_date = ($1::text)::date) AS "teacher_rows!",
-             (SELECT count(*) FROM daily_course_metrics WHERE metric_date = ($1::text)::date) AS "course_rows!",
-             (SELECT count(*) FROM daily_course_engagement WHERE metric_date = ($1::text)::date) AS "engagement_rows!",
-             (SELECT count(*) FROM daily_assessment_metrics WHERE metric_date = ($1::text)::date) AS "assessment_rows!",
-             (SELECT count(*) FROM daily_user_course_progress WHERE metric_date = ($1::text)::date) AS "progress_rows!",
-             (SELECT count(*) FROM learner_risk_snapshots WHERE snapshot_date = ($1::text)::date) AS "risk_rows!""#,
-        date
+             (SELECT count(*) FROM daily_teacher_metrics WHERE metric_date = $1) AS "teacher_rows!",
+             (SELECT count(*) FROM daily_course_metrics WHERE metric_date = $1) AS "course_rows!",
+             (SELECT count(*) FROM daily_course_engagement WHERE metric_date = $1) AS "engagement_rows!",
+             (SELECT count(*) FROM daily_assessment_metrics WHERE metric_date = $1) AS "assessment_rows!",
+             (SELECT count(*) FROM daily_user_course_progress WHERE metric_date = $1) AS "progress_rows!",
+             (SELECT count(*) FROM learner_risk_snapshots WHERE snapshot_date = $1) AS "risk_rows!""#,
+        date as _
     )
     .fetch_one(pool)
     .await?;

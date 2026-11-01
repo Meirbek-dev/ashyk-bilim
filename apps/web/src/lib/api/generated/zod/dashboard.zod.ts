@@ -13,14 +13,14 @@ export const Dashboard = zod.object({
       earned_today: zod
         .int()
         .describe(
-          'XP earned since 00:00 UTC; 0 after a day without awards (unlike\n`Profile.daily_xp_earned`, which resets only on the next award).',
+          'XP earned since 00:00 Asia/Almaty (the same sum as\n`Profile.daily_xp_earned`); 0 after a day without awards.',
         ),
       limit: zod
         .int()
         .nullable()
         .describe('The effective daily cap (admin awards are not capped); `null` = unlimited.'),
     })
-    .describe("Today's XP against the daily cap (UTC day, as awards judge it)."),
+    .describe("Today's XP against the daily cap (the platform day, Asia/Almaty, as\nawards judge it)."),
   leaderboard: zod.object({
     entries: zod.array(
       zod.object({

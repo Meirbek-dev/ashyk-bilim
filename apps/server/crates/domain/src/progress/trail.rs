@@ -1,7 +1,8 @@
 //! The personal trail (legacy `services/trail/trail.py`).
 //!
 //! One trail per user, one run per course, one step per activity the
-//! learner marked done. Adding an activity step also records an explicit
+//! learner marked done. Membership is the `enrolments` row, written with
+//! the run in the same transaction (REWRITE 5.6 n5). Adding an activity step also records an explicit
 //! completion in the canonical projection for lesson-type activities;
 //! assessment and file-submission activities are projected by their own
 //! pipelines and the step is UX-only there.
@@ -153,7 +154,7 @@ pub(crate) async fn lock_member(
         .map(|(tx, _)| tx))
 }
 
-/// [`lock_member`], plus whether this call created the run (a (re)join):
+/// [`lock_member`], plus whether this call created the enrolment (a (re)join):
 /// the caller then re-projects the whole member on the returned
 /// transaction (BUG-289) - `ProgressProjector::project` does.
 pub(crate) async fn lock_member_joined(
@@ -164,9 +165,9 @@ pub(crate) async fn lock_member_joined(
 ) -> Result<Option<(Transaction<'static, Postgres>, bool)>> {
     let mut tx = lock_trail_run(pool, user_id, course_id, MEMBER_WAIT).await?;
     if enrol && !ab_db::progress::is_course_staff(&mut *tx, course_id, user_id).await? {
+        let joined = ab_db::progress::enrol(&mut tx, course_id, user_id).await?;
         let trail = ab_db::progress::ensure_trail(&mut tx, user_id).await?;
-        let (_, joined) =
-            ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
+        ab_db::progress::ensure_trail_run(&mut tx, trail.id, course_id, user_id).await?;
         return Ok(Some((tx, joined)));
     }
     if !ab_db::progress::has_trail_run(&mut *tx, course_id, user_id).await? {
@@ -411,31 +412,48 @@ impl TrailService {
     /// tells the caller nothing about the course itself.
     pub async fn remove_course(&self, actor: &Actor, course_id: CourseId) -> Result<Trail> {
         Self::require_write(actor)?;
-        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
-            .await?
-            .ok_or_else(|| Error::not_found("trail"))?;
+        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id).await?;
         // Leaving deletes the run and its steps - frozen with the course.
         if ab_db::progress::has_trail_run(&self.pool, course_id, actor.user_id).await? {
             self.course_open(course_id).await?;
         }
-        if !self.drop_run(trail.id, actor.user_id, course_id).await? {
+        if !self
+            .drop_run(trail.as_ref().map(|t| t.id), actor.user_id, course_id)
+            .await?
+        {
             return Err(Error::not_found("trail run"));
         }
-        self.hydrate(actor, trail).await
+        match trail {
+            Some(trail) => self.hydrate(actor, trail).await,
+            None => Ok(Trail {
+                row: None,
+                user_id: actor.user_id,
+                runs: Vec::new(),
+            }),
+        }
     }
 
-    /// Delete `user_id`'s run in a course and un-project it (`false`: no
-    /// such run). Shared by leaving and a teacher removing a learner.
+    /// End `user_id`'s membership of a course - the enrolment, the run and
+    /// its steps - and un-project it (`false`: neither existed). Shared by
+    /// leaving and a teacher removing a learner.
     async fn drop_run(
         &self,
-        trail_id: ab_core::id::TrailId,
+        trail_id: Option<ab_core::id::TrailId>,
         user_id: UserId,
         course_id: CourseId,
     ) -> Result<bool> {
         // BUG-210: leave and mark for this (user, course) run one at a time;
         // BUG-221: the run and the un-projection commit together.
         let mut tx = self.lock(user_id, course_id).await?;
-        if !ab_db::progress::delete_trail_run(&mut *tx, trail_id, course_id).await? {
+        let had_run = match trail_id {
+            Some(trail_id) => {
+                ab_db::progress::delete_trail_run(&mut *tx, trail_id, course_id).await?
+            }
+            None => false,
+        };
+        // The previous release's trigger may already have removed it with the run.
+        let was_member = ab_db::progress::unenrol(&mut tx, course_id, user_id).await?;
+        if !had_run && !was_member {
             return Ok(false);
         }
         let dropped = ab_db::assessments::drop_member_access(&mut tx, course_id, user_id).await?;
@@ -502,10 +520,11 @@ impl TrailService {
         self.courses
             .require_roster_manager(actor, course_id)
             .await?;
-        let trail = ab_db::progress::get_trail(&self.pool, user_id)
+        let trail = ab_db::progress::get_trail(&self.pool, user_id).await?;
+        if !self
+            .drop_run(trail.map(|t| t.id), user_id, course_id)
             .await?
-            .ok_or_else(|| Error::not_found("learner"))?;
-        if !self.drop_run(trail.id, user_id, course_id).await? {
+        {
             return Err(Error::not_found("learner"));
         }
         Ok(())
@@ -565,8 +584,8 @@ impl TrailService {
         Ok(results)
     }
 
-    /// Create `user_id`'s run (never for staff) and project it; `true` when
-    /// this call created it.
+    /// Enrol `user_id` with a run (never for staff) and project it; `true`
+    /// when this call created the enrolment.
     // ponytail: one lock + projection per learner; a 1000-row import of a
     // big course takes a while - batch the projection if it bites.
     async fn enrol_member(&self, course_id: CourseId, user_id: UserId) -> Result<bool> {
@@ -615,8 +634,9 @@ impl TrailService {
         // BUG-221: all three are one transaction, so they land or vanish
         // together.
         let mut tx = self.lock(actor.user_id, course.id).await?;
+        let joined = ab_db::progress::enrol(&mut tx, course.id, actor.user_id).await?;
         let trail = ab_db::progress::ensure_trail(&mut tx, actor.user_id).await?;
-        let (run, joined) =
+        let (run, _) =
             ab_db::progress::ensure_trail_run(&mut tx, trail.id, course.id, actor.user_id).await?;
         // BUG-275: a (re)joining mark re-projects what changed while away.
         let mut hooks = if joined {
@@ -627,7 +647,11 @@ impl TrailService {
         } else {
             AfterCommit::default()
         };
-        let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
+        // The step stays for the trail listing and the previous release;
+        // the completion is the fact and decides whether this mark is new.
+        ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
+        let created =
+            ab_db::progress::insert_completion(&mut tx, activity.id, actor.user_id).await?;
         if created {
             hooks = hooks.and(
                 self.projector
@@ -662,7 +686,10 @@ impl TrailService {
             self.course_open(activity.course_id).await?;
         }
         let mut tx = self.lock(actor.user_id, activity.course_id).await?;
-        if ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await? {
+        let had_step = ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await?;
+        let had_completion =
+            ab_db::progress::delete_completion(&mut tx, activity.id, actor.user_id).await?;
+        if had_step || had_completion {
             let hooks = self
                 .projector
                 .unmark_complete(&mut tx, &activity, actor.user_id)

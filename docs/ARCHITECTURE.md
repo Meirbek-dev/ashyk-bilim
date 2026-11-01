@@ -442,9 +442,33 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   jobs through `jobs_status_kind_idx`), so a heartbeat is a HOT update.
 - **Derived aggregates are reconciled** weekly (`maintenance:reconcile`): every member's progress projection
   is re-projected (the `progress-backfill` pass; changed members are logged) and gamification totals/level
-  are re-derived from `xp_transactions` / `gamification_completions` (`daily_xp_earned` excepted).
+  are re-derived from `xp_transactions` / `gamification_completions`.
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
+- **One platform day** (Asia/Almaty, `20261102030000_platform_day.sql`): `platform_date(ts)` and
+  `platform_day_start(date)` decide the XP daily cap, the login/learning streaks (in the UPDATE itself), the
+  login bonus key and the rollup/risk snapshot dates; the zone lives only in `platform_time_zone()`. Dates
+  bind as `date` (`ab_core::time::Date`, `day as _` in `query!`). Today's XP (`daily_xp_earned` in the API)
+  is summed from `xp_transactions` at read time, never stored (the column is written for the previous release
+  until the lane C contract drops it).
+- **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
+  written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
+  leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
+  analytics, notifications, `course_visible` for archived courses) reads it, never the staff. A trigger mirrors the
+  previous release's trail-run inserts/deletes into it until the lane C contract drops it.
+- **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
+  user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still kept for the trail listing),
+  un-marking and leaving delete it; the lesson projection reads it, never `trail_steps`. Graded kinds complete
+  through their projection: a trigger on `activity_progress.completed_at` inserts/deletes the row (for both
+  releases), until the grade transaction writes it itself.
+- **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
+  (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required activity done and
+  `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the
+  counts are `0 <= completed <= total` and `completed_at` only on a completed course. The lane C contract turns
+  both into virtual generated columns.
+- **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
+  `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a
+  surrogate key.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
@@ -544,6 +568,14 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
   last 180 days.
 - Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes failed/dead jobs, old sign-in audit rows
+  `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches
+  (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
+  last 180 days. Once `analytics_events` is partitioned by UTC month of `occurred_at` (the lane C contract
+  migration swaps it in, the old table becoming the first partition), the prune first keeps three months of
+  partitions ahead (`analytics_events_ensure_partitions`) and drops whole months past the window
+  (`analytics_events_drop_partitions`); the batch delete then covers the partial month. On a plain table both
+  functions do nothing.
+- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows
   and AI event logs and clears old practice code-run output; windows in §8 "Schema guarantees".
 - Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects
   every member's progress, logging what it changed (§8 "Schema guarantees"); a steady non-zero count is a projector

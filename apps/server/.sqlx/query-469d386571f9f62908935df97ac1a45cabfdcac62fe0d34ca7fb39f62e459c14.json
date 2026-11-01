@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT platform_date(coalesce(to_timestamp($1::bigint), now())) AS \"date!: Date\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "date!: Date",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "469d386571f9f62908935df97ac1a45cabfdcac62fe0d34ca7fb39f62e459c14"
+}

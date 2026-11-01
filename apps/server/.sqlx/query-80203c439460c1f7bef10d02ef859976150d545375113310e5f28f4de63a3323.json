@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT analytics_events_drop_partitions(now() - interval '400 days') AS \"dropped!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dropped!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "80203c439460c1f7bef10d02ef859976150d545375113310e5f28f4de63a3323"
+}

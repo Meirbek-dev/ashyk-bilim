@@ -2169,8 +2169,9 @@ async fn a_learner_off_the_allowlist_still_reads_their_attempts(pool: PgPool) {
     assert_eq!(one.json()["final_score"], 100.0, "{}", one.text());
 }
 
-/// ETL-loaded learners arrive with trail steps but no projection rows: the
-/// backfill turns each complete step into a `completed` lesson row and the
+/// ETL-loaded learners arrive with completions (the 20261102030500 backfill
+/// turned their complete steps into rows) but no projection rows: the
+/// backfill turns each completion into a `completed` lesson row and the
 /// course aggregate, and pays no XP for those old completions.
 #[ab_testdb::test]
 async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
@@ -2508,4 +2509,181 @@ async fn learner_state_reads_each_learners_extended_due_date(pool: PgPool) {
     let alices = app.get_as(&alice, &path).await.json();
     assert!(activity(&alices, &quiz_activity)["due_at_unix"].is_null());
     assert_eq!(activity(&alices, &task_activity)["due_at_unix"], task_due);
+}
+
+/// Delete every trail (runs, steps) as if trails were gone, keeping the
+/// enrolments: the previous release's sync trigger is off for the delete.
+async fn empty_trails(pool: &PgPool) {
+    let mut tx = pool.begin().await.unwrap();
+    for sql in [
+        "ALTER TABLE trail_runs DISABLE TRIGGER trail_runs_sync_enrolment",
+        "DELETE FROM trails",
+        "ALTER TABLE trail_runs ENABLE TRIGGER trail_runs_sync_enrolment",
+    ] {
+        sqlx::query(sql).execute(&mut *tx).await.unwrap();
+    }
+    tx.commit().await.unwrap();
+}
+
+/// REWRITE 5.6 n5: membership is the `enrolments` row. With the trails
+/// emptied a learner stays enrolled, course-wide recalculations still reach
+/// them, a mark needs no re-join, and leaving works without a trail.
+#[ab_testdb::test]
+async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Enrolments 101").await;
+    let l1 = lesson(&app, &teacher, &chapter_id, "One").await;
+    let l2 = lesson(&app, &teacher, &chapter_id, "Two").await;
+    let alice = learner(&app, "alice").await;
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{l1}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    empty_trails(&pool).await;
+
+    let state = || async {
+        app.get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json()
+    };
+    let counts = || async {
+        sqlx::query_as::<_, (i32, i32)>(
+            "SELECT completed_required_count, total_required_count FROM course_progress
+             WHERE user_id = $1",
+        )
+        .bind(alice.user_id.0)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(state().await["enrolled"], true);
+    assert_eq!(counts().await, (1, 2));
+    // A course-wide recalculation (a new published lesson) reaches the member.
+    lesson(&app, &teacher, &chapter_id, "Three").await;
+    assert_eq!(counts().await, (1, 3));
+    // Marking needs no re-join: the enrolment is there, a run is recreated.
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{l2}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    assert_eq!(counts().await, (2, 3));
+
+    // Leaving without any trail ends the membership; a second leave is 404.
+    empty_trails(&pool).await;
+    let left = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(left.status, StatusCode::OK, "{}", left.text());
+    assert_eq!(state().await["enrolled"], false);
+    let again = app
+        .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
+        .await;
+    assert_eq!(again.status, StatusCode::NOT_FOUND, "{}", again.text());
+    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments WHERE user_id = $1")
+        .bind(alice.user_id.0)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0);
+}
+
+/// REWRITE 5.6 n8, review item 12: a lesson completion is its `completions`
+/// row. With the trail steps and the projection wiped, the backfill rebuilds
+/// the lesson from the completion; a re-mark is no new completion (no XP
+/// again), and un-marking withdraws it.
+#[ab_testdb::test]
+async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher, "Completions 101").await;
+    let l1 = lesson(&app, &teacher, &chapter_id, "One").await;
+    lesson(&app, &teacher, &chapter_id, "Two").await;
+    let alice = learner(&app, "alice").await;
+    let mark = || async {
+        app.post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{l1}"),
+            &serde_json::json!({}),
+        )
+        .await
+    };
+    let marked = mark().await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    let facts = || async {
+        sqlx::query_as::<_, (i64, i64, i64)>(
+            "SELECT (SELECT count(*) FROM completions WHERE user_id = $1),
+                    (SELECT count(*) FROM activity_progress
+                     WHERE user_id = $1 AND completed_at IS NOT NULL),
+                    (SELECT count(*) FROM xp_transactions WHERE user_id = $1)",
+        )
+        .bind(alice.user_id.0)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let (completions, completed, xp) = facts().await;
+    assert_eq!((completions, completed), (1, 1));
+
+    empty_trails(&pool).await;
+    for sql in [
+        "DELETE FROM activity_progress",
+        "DELETE FROM course_progress",
+    ] {
+        sqlx::query(sql).execute(&pool).await.unwrap();
+    }
+    let report = ab_domain::progress::ProgressProjector::new(pool.clone())
+        .backfill(None)
+        .await
+        .unwrap();
+    assert_eq!(report.changed, 1, "{report:?}");
+    assert_eq!(facts().await, (1, 1, xp), "rebuilt from the completion");
+    let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
+    assert_eq!(drift, 0, "what maintenance:reconcile logs");
+    let counts: (i32, i32) = sqlx::query_as(
+        "SELECT completed_required_count, total_required_count FROM course_progress
+         WHERE user_id = $1",
+    )
+    .bind(alice.user_id.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(counts, (1, 2));
+
+    // A re-mark finds the completion: nothing new, no second XP award.
+    let again = mark().await;
+    assert_eq!(again.status, StatusCode::OK, "{}", again.text());
+    assert_eq!(facts().await, (1, 1, xp));
+
+    let unmarked = app
+        .delete_as(&alice, &format!("/api/v2/trail/activities/{l1}"))
+        .await;
+    assert_eq!(unmarked.status, StatusCode::OK, "{}", unmarked.text());
+    assert_eq!(facts().await, (0, 0, xp));
+    // A projection the previous release left completed without a fact.
+    sqlx::query("ALTER TABLE activity_progress DISABLE TRIGGER activity_progress_sync_completion")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE activity_progress SET completed_at = now() WHERE user_id = $1 AND activity_id = $2",
+    )
+    .bind(alice.user_id.0)
+    .bind(uuid::Uuid::parse_str(&l1).unwrap())
+    .execute(&pool)
+    .await
+    .unwrap();
+    let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
+    assert_eq!(drift, 1);
 }

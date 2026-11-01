@@ -18,6 +18,8 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
 | enrolled learner                  | `trail_runs` (`user_id`, `course_id`); per activity: `trail_steps`, `activity_progress` |
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`)                      |
+| enrolled learner                  | `enrolments` (`course_id`, `user_id`; staff excluded by `is_course_staff`); the learner's list: `trail_runs`; per activity: `completions` (the fact), `activity_progress` (projection), `trail_steps` (legacy marks) |
+| course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `kind`, `lifecycle`) + `assessment_items` (`body` json)   |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / pending / graded / published / returned)            |
@@ -45,7 +47,7 @@ Published activities of a type in courses a user is enrolled in (types: dynamic,
 code_challenge, file_submission):
 
 ```sql
-select a.course_id, a.id, a.name from activities a join trail_runs t on t.course_id = a.course_id
+select a.course_id, a.id, a.name from activities a join enrolments t on t.course_id = a.course_id
 join users u on u.id = t.user_id where u.username = '<login>'
 and a.activity_type = 'code_challenge' and a.published limit 5
 ```

@@ -668,6 +668,19 @@ in the order it can be done, each step a forward migration on the current schema
    `trail_runs JOIN trails`; `has_trail_run` / `course_members` / `takes_assessments` read it; trail writers
    insert/delete it in the same transaction; then `trail_runs`/`trails` lose their membership role (steps stay
    until 7). Done when: `progress_flow` and `permission_matrix` pass with `trails` emptied in a test.
+4. **Upload references** (item 10). Add `upload_id uuid REFERENCES uploads ON DELETE SET NULL` next to each key
+   column (`users.avatar_key`, `courses.thumbnail_image_key`/`thumbnail_video_key`, `chapters.thumbnail_key`,
+   `collections.cover_key`, `platforms.logo_key`/`thumbnail_key`, `item_feedback.annotation_key`) and a
+   `block_uploads (block_id → blocks ON DELETE CASCADE, upload_id → uploads)` table for `blocks.content->>'file_key'`;
+   backfill by `uploads.key`. Writers set the id with the key; the reaper's "referenced" test becomes `EXISTS` over
+   those columns and `block_uploads` instead of `referenced_count`; drop the counter (and BUG-209/263's
+   repair code) once a release ran with both. Done when: the reaper test that drifts the counter by hand still
+   keeps the file.
+5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
+   `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
+   Left: the roster (`list_course_learners`, keyset cursor = trail run id in the API), `GET /trail` and
+   `/enrollments` still list trail runs (their DTOs carry the run id/status); moving them to `enrolments` needs an
+   additive cursor/DTO change. The sync trigger goes in the contract.
 6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
    `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
    overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
@@ -679,10 +692,34 @@ in the order it can be done, each step a forward migration on the current schema
    published; `submissions.assessment_version_id` replaces `items_snapshot`/`policy_snapshot` (backfill: one
    version per distinct snapshot pair, by md5). The 45 `assessments` columns split into identity/lifecycle
    (stay) and policy (move to the version's typed `policy`). Same scheduling constraint as 6.
-8. **Projections** (items 15, 16 long term). `maintenance:reconcile` logs drift weekly now; when it reports
-   zero for a month, replace `course_progress` with the 5.4 view over `completions` and compute
-   gamification totals from the journals in the leaderboard query (an index on `xp_transactions (user_id)`
-   already exists), dropping the counters.
+8. **Projections** (items 15, 16 long term). Done: `completions` is the progress fact
+   (`20261102030500_completions.sql`, ARCHITECTURE §8): lesson marks write it, un-marks and leaves delete it,
+   the lesson projection reads it instead of `trail_steps`, and a trigger mirrors `activity_progress.completed_at`
+   of graded kinds (both releases). `maintenance:reconcile` re-projects weekly and logs `changed` and
+   `completion_drift` (`ab_db::progress::completion_drift`). Remaining, in order, one release apart:
+   1. Graded writers own their completion: where the projector upserts a graded row
+      (`project_submissions` / `project_file_attempts` results), insert the `completions` row when
+      `completed_at` is set and delete it when cleared, in the same transaction; then a contract drops
+      `activity_progress_sync_completion`.
+   2. `trail_steps` readers move to `completions` (`Trail::hydrate` for `GET /trail`, the `completed_steps`
+      of the user/course rollup, exports and drillthrough); the writers stop inserting steps; a contract drops
+      `trail_steps` (and `trails` / `trail_runs` once n5's roster and listing moved to `enrolments`).
+   3. `required` per activity: the 5.4 view counts `a.required`, today a projection column
+      (`activity_progress.required`, always true for graded kinds and for a new lesson row). Add
+      `activities.required boolean NOT NULL DEFAULT true`, backfill from the projection, and have the
+      projector read it.
+   4. When `changed` and `completion_drift` are zero for a month (four weekly runs), add the 5.4 view as
+      `course_progress_v` (enrolments ⨝ published activities ⨝ completions; `progress_pct` and
+      `certificate_eligible` computed in it, `completed_at` = the last completion when all are done) and move
+      every reader to it in one release (`course_progress_pcts`, learner-state, analytics context and
+      rollups, certificate eligibility, the work queue) while the projector still writes the table; compare
+      both in `maintenance:reconcile` for that release. The view reads no score column, so it never blocks
+      an `ALTER COLUMN ... TYPE` on `activity_progress.score`.
+   5. Then the projector stops writing `course_progress`; a contract drops the table and renames the view
+      to `course_progress`. `activity_progress` stays a table (score, attempts, lateness are its own facts
+      until 5.6 n6 folds submissions into `attempts`).
+   Gamification: compute the totals from the journals in the leaderboard query (an index on
+   `xp_transactions (user_id)` already exists), dropping the counters, under the same month-of-zero rule.
 9. **Settings and translations** (item 17). Four mechanisms today: `platforms` columns + `description_kk/_en`,
    `about_kk/_en` (column per language), `activities.settings` / `file_submissions.settings` JSONB,
    `gamification_config` (versioned row), `ai_feature_switches` / `feature_activations`. Target: one typed
@@ -717,6 +754,18 @@ in the order it can be done, each step a forward migration on the current schema
     Switch each reader to the natural key first (prune by `ctid` batches or by date), then promote the unique
     constraint to the PK and drop `id`. `daily_teacher_metrics` keeps a surrogate key (nullable teacher, `NULLS
     NOT DISTINCT`).
+11. **Search index** (item 23). `search_matches(hay, words, letters, negated)` applies its regexes inside a
+    function over arrays, so no index applies. Rewrite the search queries with `QueryBuilder`: one `search_fold(title || ' ' || ...) ~ $n` predicate
+    per term in the WHERE clause, then `CREATE INDEX ... USING gin (search_fold(...) gin_trgm_ops)` per
+    searched table (`pg_trgm`, trusted, can be created by `ashyq`). Terms under 3 characters fall back to a scan
+    (trigram limit). Then drop the tsvector columns if ranking moves to `similarity()`. Done when: the
+    existing `search.rs` tests pass and `EXPLAIN` shows a bitmap index scan on a 10 000-course fixture.
+12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
+    `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
+    batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids
+    `learner-<kind>-<activity>` / `teacher-<kind>-<activity>.<user>`), the unique index is the primary key. `id`
+    stays (NOT NULL, default) for the previous release; the lane C contract drops it. `daily_teacher_metrics`
+    keeps a surrogate key (nullable teacher, `NULLS NOT DISTINCT`).
 13. **One touch trigger** (item 27). `touch_row()` BEFORE UPDATE: `updated_at = now()` unless
     `ab.bookkeeping`, `version = OLD.version + 1` when the table has `version` and the caller did not set it;
     replaces `set_updated_at` + `bump_version` pairs (trigger order by name today). Version columns stay their
@@ -782,6 +831,13 @@ Decided, not done:
    the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
 2. **Day boundaries**: one platform time zone (`Asia/Almaty`, config) for the XP daily cap, streaks and rollup
    dates; date parameters bind as `date`; past daily rows are rebuilt once.
+1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
+   production host (FINDINGS 3, reconfirmed).
+2. **Day boundaries**: done (ARCHITECTURE §8 "One platform day"): `platform_date()` in SQL for the XP daily
+   cap, streaks, login bonus and rollup dates; date parameters bind as `date`. The zone is one SQL function,
+   not runtime config (changing it is a migration). Past daily rows are not rebuilt: a rollup is today's state
+   labelled with a date, so re-running an old date would overwrite history with today's numbers; rows written
+   between 19:00 and 24:00 UTC carry the UTC date, one day behind the platform date.
 3. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
    certificate row; verification shows them; a name change re-issues.
 4. **Learner search and AI context check visibility at query time** (activity published, course not archived,

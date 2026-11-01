@@ -11,7 +11,9 @@
 //! from their sources and fixed where they drifted (schema review items 15,
 //! 16): every member's progress projection (the `backfill` command's pass)
 //! and every gamification profile's totals from its journals. Changes are
-//! logged; a steady non-zero count is a projector bug to look into.
+//! logged; a steady non-zero count is a projector bug to look into. Then
+//! `completion_drift`: completions and completed projection rows that
+//! disagree (REWRITE 5.6 n8 waits for a month of zeros).
 
 use ab_core::Result;
 use ab_core::config::RetentionConfig;
@@ -93,13 +95,15 @@ impl JobHandler for Reconcile {
                     "gamification totals drifted from the journals; fixed"
                 );
             }
-            let progress = ab_domain::progress::ProgressProjector::new(pool)
+            let progress = ab_domain::progress::ProgressProjector::new(pool.clone())
                 .backfill(None)
                 .await?;
+            let completion_drift = ab_db::progress::completion_drift(&pool).await?;
             tracing::info!(
                 courses = progress.courses,
                 learners = progress.learners,
                 changed = progress.changed,
+                completion_drift,
                 gamification_fixed = profiles.len(),
                 "reconciled"
             );

@@ -646,7 +646,7 @@ impl GradebookCellRow {
 
 /// One gradebook page of course members, keyset on the user id.
 ///
-/// Members are the course's trail runs (the UX-150 enrolment predicate): a
+/// Members are the course's enrolments (the UX-150 enrolment predicate): a
 /// member without attempts is listed, a leaver is not (UX-169). A page is
 /// whole learner rows (BUG-265): the page count follows the learners, not
 /// learners × activities, and a course without graded activities still
@@ -675,7 +675,7 @@ pub async fn gradebook_members(
         .map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_scalar!(
         r#"SELECT u.id AS "user_id!: UserId"
-           FROM (SELECT DISTINCT course_id, user_id FROM trail_runs WHERE course_id = $1) t
+           FROM (SELECT DISTINCT course_id, user_id FROM enrolments WHERE course_id = $1) t
            JOIN users u ON u.id = t.user_id
            WHERE ($2::uuid IS NULL
                   OR (lower(COALESCE(NULLIF(u.display_name, ''), u.username)), u.id)
@@ -848,7 +848,7 @@ pub struct ReviewRow {
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
     pub version: i64,
-    /// A course member (trail run) - per-learner actions target members only.
+    /// A course member (enrolment) - per-learner actions target members only.
     pub enrolled: bool,
     /// On the course staff (`is_course_staff`) - never a member (UX-199).
     pub staff: bool,
@@ -885,7 +885,7 @@ pub async fn list_for_review(
                   (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
                   s.version,
-                  EXISTS (SELECT 1 FROM trail_runs r
+                  EXISTS (SELECT 1 FROM enrolments r
                           WHERE r.course_id = s.course_id AND r.user_id = s.user_id
                             AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
                   is_course_staff(s.course_id, s.user_id) AS "staff!",

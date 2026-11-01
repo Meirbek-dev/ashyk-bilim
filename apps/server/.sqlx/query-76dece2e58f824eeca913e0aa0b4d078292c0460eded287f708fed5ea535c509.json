@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH next AS (\n                       SELECT CASE platform_date(now()) - platform_date(last_learning_at)\n                                  WHEN 0 THEN GREATEST(learning_streak, 1)\n                                  WHEN 1 THEN learning_streak + 1\n                                  ELSE 1 END AS streak\n                       FROM gamification_profiles WHERE user_id = $1 FOR UPDATE)\n                   UPDATE gamification_profiles g SET learning_streak = n.streak,\n                       longest_learning_streak = GREATEST(g.longest_learning_streak, n.streak),\n                       last_learning_at = now()\n                   FROM next n\n                   WHERE g.user_id = $1\n                   RETURNING g.learning_streak AS \"current!\",\n                             g.longest_learning_streak AS \"longest!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "learning_streak"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "longest!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "longest_learning_streak"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "76dece2e58f824eeca913e0aa0b4d078292c0460eded287f708fed5ea535c509"
+}

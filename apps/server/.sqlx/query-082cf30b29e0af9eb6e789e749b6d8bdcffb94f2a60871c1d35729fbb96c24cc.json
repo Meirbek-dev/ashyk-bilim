@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\"\n           FROM learner_risk_snapshots\n           WHERE course_id = ANY($1) AND risk_level IN ('medium', 'high')\n             AND snapshot_date = (SELECT max(snapshot_date) FROM learner_risk_snapshots\n                                  WHERE course_id = ANY($1) AND snapshot_date < $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "082cf30b29e0af9eb6e789e749b6d8bdcffb94f2a60871c1d35729fbb96c24cc"
+}

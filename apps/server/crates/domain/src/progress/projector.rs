@@ -270,8 +270,9 @@ impl ProgressProjector {
     // ── Explicit completion (non-submission activities) ─────────────────
 
     /// Mark a lesson/video/document complete (legacy
-    /// `mark_manual_activity_complete`). Assessment and file-submission
-    /// activities are owned by their pipelines and are left alone.
+    /// `mark_manual_activity_complete`): the `completions` row, then its
+    /// projection. Assessment and file-submission activities are owned by
+    /// their pipelines and are left alone.
     ///
     /// Runs on the caller's connection (the trail lock transaction, BUG-220 /
     /// BUG-221): the step and the projection commit together; the caller
@@ -285,6 +286,7 @@ impl ProgressProjector {
         if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(AfterCommit::default());
         }
+        ab_db::progress::insert_completion(&mut *conn, activity.id, user_id).await?;
         let existing =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
         let write = completed_write(activity, user_id, existing.as_ref(), now_unix());
@@ -298,7 +300,8 @@ impl ProgressProjector {
         })
     }
 
-    /// Undo an explicit completion (same connection rule as `mark_complete`).
+    /// Undo an explicit completion: the `completions` row and its projection
+    /// (same connection rule as `mark_complete`).
     pub async fn unmark_complete(
         &self,
         conn: &mut PgConnection,
@@ -308,6 +311,7 @@ impl ProgressProjector {
         if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(AfterCommit::default());
         }
+        ab_db::progress::delete_completion(&mut *conn, activity.id, user_id).await?;
         let Some(existing) =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?
         else {
@@ -446,6 +450,8 @@ impl ProgressProjector {
         if !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
             write.certificate_eligible = false;
             write.completed_at = None;
+        } else if write.certificate_eligible && write.completed_at.is_none() {
+            write.completed_at = Some(now_unix());
         }
         ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
         if write.certificate_eligible {
@@ -815,9 +821,9 @@ async fn projection_for(
     let Some(assessment) =
         ab_db::assessments::get_assessment_by_activity(&mut *conn, activity.id).await?
     else {
-        // Lessons, videos, documents: an explicit completion is a complete
-        // trail step (ETL-migrated steps have no projection row yet).
-        let Some(at) = ab_db::progress::completed_step_at(&mut *conn, activity.id, user_id).await?
+        // Lessons, videos, documents: an explicit completion is a
+        // `completions` row (ETL-migrated ones have no projection row yet).
+        let Some(at) = ab_db::progress::completed_at(&mut *conn, activity.id, user_id).await?
         else {
             return Ok(None);
         };
@@ -1146,8 +1152,15 @@ pub(crate) fn aggregate_course(
         .count();
     let last_activity_at = required.iter().filter_map(|r| r.last_activity_at).max();
     let all_completed = total > 0 && completed >= total;
+    // The course completion needs a time (the stored flag reads it): rows
+    // completed by state alone (legacy `passed` without a stamp) fall back
+    // to the last activity.
     let completed_at = if all_completed {
-        required.iter().filter_map(|r| r.completed_at).max()
+        required
+            .iter()
+            .filter_map(|r| r.completed_at)
+            .max()
+            .or(last_activity_at)
     } else {
         None
     };
@@ -1166,12 +1179,6 @@ pub(crate) fn aggregate_course(
     }
     let count = |n: usize| i32::try_from(n).unwrap_or(i32::MAX);
     #[allow(clippy::cast_precision_loss)]
-    let pct = if total == 0 {
-        0.0
-    } else {
-        round2(completed as f64 / total as f64 * 100.0)
-    };
-    #[allow(clippy::cast_precision_loss)]
     let grade_average = if scored.is_empty() {
         None
     } else {
@@ -1182,7 +1189,6 @@ pub(crate) fn aggregate_course(
         user_id,
         completed_required_count: count(completed),
         total_required_count: count(total),
-        progress_pct: pct,
         grade_average,
         // BUG-208: inf/inf is NaN → JSON null; skip the average instead.
         weighted_grade_average: (denominator > 0.0)

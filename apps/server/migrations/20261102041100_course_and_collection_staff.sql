@@ -121,8 +121,8 @@ AS $function$
                  JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
                  WHERE uc.course_id = c.id AND m.user_id = p_viewer)
       OR (c.archived_at IS NOT NULL
-          AND EXISTS (SELECT 1 FROM trail_runs tr
-                      WHERE tr.course_id = c.id AND tr.user_id = p_viewer))
+          AND EXISTS (SELECT 1 FROM enrolments e
+                      WHERE e.course_id = c.id AND e.user_id = p_viewer))
 $function$;
 
 CREATE OR REPLACE FUNCTION is_course_staff(p_course uuid, p_user uuid)
