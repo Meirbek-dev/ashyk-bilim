@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT analytics_events_ensure_partitions(3) AS \"made!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "made!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "dc0809ac996f38eec5ab2d5fde3de638f692fac397284518f3884434e0fd3beb"
+}

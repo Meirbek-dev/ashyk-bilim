@@ -33,6 +33,8 @@
 //! - lane C, items 14/15: course_progress derives its percent and the
 //!   certificate flag from the counts and completed_at; the counts cohere.
 //! - lane C, item 40: projections and rollups are keyed by their natural key.
+//! - lane C, item 38: the event prune removes events past 400 days and
+//!   keeps the rest, whether or not analytics_events is partitioned.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -850,4 +852,23 @@ async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
             ("learner_risk_snapshots", "snapshot_date,user_id,course_id"),
         ]
     );
+}
+
+#[ab_testdb::test]
+async fn the_event_prune_keeps_400_days(pool: PgPool) {
+    sqlx::query(
+        "INSERT INTO analytics_events (event_type, occurred_at)
+         VALUES ('login', now() - interval '401 days'), ('login', now() - interval '399 days'),
+                ('login', now())",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let pruned = ab_db::analytics::prune_retention(&pool).await.unwrap();
+    assert_eq!(pruned.events + pruned.event_partitions, 1, "{pruned:?}");
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM analytics_events")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 2);
 }

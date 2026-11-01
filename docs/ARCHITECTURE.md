@@ -498,9 +498,13 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   date) for unsubmitted work due within 24 h (dedupe key, so ticks and restarts never repeat it; an extension
   reminds again); `notifications:prune` deletes notifications older than **90 days**.
 - Analytics retention: `analytics:rollup` ends by pruning `analytics_events` older than **400 days** and the
-  `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches through the
-  primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
-  last 180 days.
+  `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches
+  (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
+  last 180 days. Once `analytics_events` is partitioned by UTC month of `occurred_at` (the lane C contract
+  migration swaps it in, the old table becoming the first partition), the prune first keeps three months of
+  partitions ahead (`analytics_events_ensure_partitions`) and drops whole months past the window
+  (`analytics_events_drop_partitions`); the batch delete then covers the partial month. On a plain table both
+  functions do nothing.
 - Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows
   and AI event logs and clears old practice code-run output; windows in §8 "Schema guarantees".
 - Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects

@@ -727,7 +727,12 @@ pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: Date) 
 /// Rows removed by [`prune_retention`].
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PruneCounts {
+    /// Event rows deleted one batch at a time (the default partition, the
+    /// expired part of the oldest month, or the whole table before it is
+    /// partitioned).
     pub events: u64,
+    /// Monthly event partitions dropped whole.
+    pub event_partitions: u64,
     pub daily_rows: u64,
     pub risk_snapshots: u64,
 }
@@ -739,6 +744,11 @@ pub struct PruneCounts {
 /// so a first run over a large backlog never holds one long lock. Rollup
 /// batches go by `ctid`: those tables are keyed by their natural key, the
 /// surrogate `id` is on its way out (REWRITE 5.6 n12).
+///
+/// Events are partitioned by month once the lane C contract ran (item 38):
+/// the months wholly past the window are dropped, the next months'
+/// partitions created, and only the rest is deleted by batch. On the plain
+/// table both partition functions do nothing.
 pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
     macro_rules! prune {
         ($sql:literal) => {{
@@ -752,9 +762,17 @@ pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
             }
         }};
     }
+    sqlx::query_scalar!(r#"SELECT analytics_events_ensure_partitions(3) AS "made!""#)
+        .fetch_one(pool)
+        .await?;
+    let event_partitions = sqlx::query_scalar!(
+        r#"SELECT analytics_events_drop_partitions(now() - interval '400 days') AS "dropped!""#
+    )
+    .fetch_one(pool)
+    .await?;
     let events = prune!(
-        "DELETE FROM analytics_events WHERE id IN (
-            SELECT id FROM analytics_events
+        "DELETE FROM analytics_events WHERE (id, occurred_at) IN (
+            SELECT id, occurred_at FROM analytics_events
             WHERE occurred_at < now() - interval '400 days' LIMIT 5000)"
     );
     let daily_rows = prune!(
@@ -785,6 +803,7 @@ pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
     );
     Ok(PruneCounts {
         events,
+        event_partitions: u64::try_from(event_partitions).unwrap_or(0),
         daily_rows,
         risk_snapshots,
     })

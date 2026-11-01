@@ -57,6 +57,7 @@ impl JobHandler for AnalyticsRollup {
             let pruned = ab_db::analytics::prune_retention(&pool).await?;
             tracing::info!(
                 events = pruned.events,
+                event_partitions = pruned.event_partitions,
                 daily_rows = pruned.daily_rows,
                 risk_snapshots = pruned.risk_snapshots,
                 "analytics retention pruned"
