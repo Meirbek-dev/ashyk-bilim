@@ -191,8 +191,9 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     let submission: Uuid = sqlx::query_scalar(
-        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, submitted_at)
-         VALUES ($1, $2, $3, 'graded', 1, now()) RETURNING id",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, submitted_at,
+                                  items_snapshot, policy_snapshot)
+         VALUES ($1, $2, $3, 'graded', 1, now(), '{}', '{}') RETURNING id",
     )
     .bind(assessment)
     .bind(course)
@@ -201,7 +202,10 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score) VALUES ($1, 90, 90)",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
+                    VALUES ($1, 90, 90) RETURNING submission_id, effective_breakdown)
+         UPDATE submissions s SET final_score = 90, grading = e.effective_breakdown
+         FROM e WHERE s.id = e.submission_id",
     )
     .bind(submission)
     .execute(&pool)

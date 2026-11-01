@@ -424,6 +424,15 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   Chosen over `rust_decimal` because it changes no Rust type, no DTO and no contract, and the same SQL runs on
   the old double columns (the expand release) and the numeric ones (after the contract). A new query on these
   columns needs the casts: the SQLx macros refuse `NUMERIC` (no decimal feature).
+- **A handed-in attempt keeps what it answered** (`20261102020200_submission_snapshots`): a submission that is
+  inserted as, or moves from `draft` to, any other status has `items_snapshot` and `policy_snapshot`, checked at
+  COMMIT (`submissions_handed_in_snapshots_*`, deferred: the hand-in statement writes them, the previous release
+  a statement later); once written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
+  Rows handed in before 2026-11-02 are not re-checked (legacy imports may lack snapshots).
+- **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
+  `submissions.final_score` / `grading` its one current value. At COMMIT a submission with entries has its
+  latest entry's (highest id) `final_score` and `effective_breakdown`; checked when an entry is appended or the
+  submission's score or breakdown changes. A write that changes one without the other fails the transaction.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the

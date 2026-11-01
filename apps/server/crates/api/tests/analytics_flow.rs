@@ -2033,7 +2033,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     enrol(&pool, &course_id, bob.user_id, 100.0).await;
     // Submitted 20 days ago: idle enough to be at risk and listed (UX-240).
     let submission_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at) VALUES ($1, $2, $3, 'graded', 1, 10, now() - interval '20 days', now() - interval '20 days') RETURNING id",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at, items_snapshot, policy_snapshot) VALUES ($1, $2, $3, 'graded', 1, 10, now() - interval '20 days', now() - interval '20 days', '{}', '{}') RETURNING id",
     )
     .bind(code_id)
     .bind(course_uuid)
@@ -2098,9 +2098,10 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
         // Bob awaits grading; Ann was released, late.
         sqlx::query(
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                      final_score, is_late, submitted_at, graded_at)
-             VALUES ($1, $2, $3, 'pending', 1, NULL, false, now(), NULL),
-                    ($1, $2, $4, 'published', 1, 80, true, now(), now())",
+                                      final_score, is_late, submitted_at, graded_at,
+                                      items_snapshot, policy_snapshot)
+             VALUES ($1, $2, $3, 'pending', 1, NULL, false, now(), NULL, '{}', '{}'),
+                    ($1, $2, $4, 'published', 1, 80, true, now(), now(), '{}', '{}')",
         )
         .bind(id)
         .bind(course_uuid)
@@ -2545,9 +2546,12 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
     let preview = submit_attempt(&app, &teacher, &quiz_id, &choice_id, &essay_id).await;
     grade_and_publish(&app, &teacher, &quiz_id, &learner_sub, &essay_id).await;
+    // The submission's current grade follows its journal (one statement: checked at commit).
     sqlx::query(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score, published_at)
-         VALUES ($1::uuid, 0, 0, now())",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score, published_at)
+                    VALUES ($1::uuid, 0, 0, now()) RETURNING submission_id, effective_breakdown)
+         UPDATE submissions s SET final_score = 0, grading = e.effective_breakdown
+         FROM e WHERE s.id = e.submission_id",
     )
     .bind(&preview)
     .execute(&pool)
@@ -2747,8 +2751,9 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
         ] });
         sqlx::query(
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                      final_score, grading, submitted_at, graded_at)
-             VALUES ($1, $2, $3, 'published', 1, $4, $5, now(), now())",
+                                      final_score, grading, submitted_at, graded_at,
+                                      items_snapshot, policy_snapshot)
+             VALUES ($1, $2, $3, 'published', 1, $4, $5, now(), now(), '{}', '{}')",
         )
         .bind(exam_id)
         .bind(course_uuid)

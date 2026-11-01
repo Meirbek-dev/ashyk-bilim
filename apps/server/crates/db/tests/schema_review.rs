@@ -27,6 +27,11 @@
 //! - a deleted account cannot be active again.
 //! - review 2, item 25: a code-run case stores the platform's own verdict;
 //!   the previous release's Judge0 code and the verdict fill each other.
+//! - review 2, item 9: a handed-in attempt has both snapshots (checked at
+//!   commit, so they may follow the hand-in within its transaction), and a
+//!   snapshot once written never changes.
+//! - review 2, item 8: a submission's current grade is its latest journal
+//!   entry's; a grade written to only one side fails at commit.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -99,8 +104,8 @@ async fn world(pool: &PgPool) -> World {
 async fn submission(pool: &PgPool, w: &World, number: i32, preview: bool) -> sqlx::Result<Uuid> {
     sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                  preview, submitted_at)
-         VALUES ($1, $2, $3, 'pending', $4, $5, now()) RETURNING id",
+                                  preview, submitted_at, items_snapshot, policy_snapshot)
+         VALUES ($1, $2, $3, 'pending', $4, $5, now(), '{}', '{}') RETURNING id",
     )
     .bind(w.assessment)
     .bind(w.course)
@@ -537,8 +542,11 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     let w = world(&pool).await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score)
-         VALUES ($1, 80, 80) RETURNING id",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
+                    VALUES ($1, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+                          FROM e WHERE s.id = e.submission_id)
+         SELECT id FROM e",
     )
     .bind(submission)
     .fetch_one(&pool)
@@ -608,8 +616,11 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     let grader = user(&pool, "grader").await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
-         VALUES ($1, $2, 80, 80) RETURNING id",
+        "WITH e AS (INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
+                    VALUES ($1, $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_score = 80, grading = e.effective_breakdown
+                          FROM e WHERE s.id = e.submission_id)
+         SELECT id FROM e",
     )
     .bind(submission)
     .bind(grader)
@@ -761,4 +772,115 @@ async fn a_code_run_case_keeps_its_verdict_and_the_legacy_code_in_step(pool: PgP
     .execute(&pool)
     .await;
     assert!(unknown.is_err(), "verdicts are a closed list");
+}
+
+#[ab_testdb::test]
+async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
+    let w = world(&pool).await;
+    let draft: Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number)
+         VALUES ($1, $2, $3, 1) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let hand_in = "UPDATE submissions SET status = 'pending', submitted_at = now() WHERE id = $1";
+
+    // Without snapshots the hand-in fails at commit.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(hand_in)
+        .bind(draft)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    assert!(tx.commit().await.is_err(), "handed in without snapshots");
+
+    // The previous release's order: hand in, then write the snapshots.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(hand_in)
+        .bind(draft)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE submissions SET items_snapshot = '{\"items\": []}', policy_snapshot = '{}'
+         WHERE id = $1",
+    )
+    .bind(draft)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    for rewrite in [
+        "UPDATE submissions SET items_snapshot = '{}' WHERE id = $1",
+        "UPDATE submissions SET policy_snapshot = '{\"passing_score\": 0}' WHERE id = $1",
+        "UPDATE submissions SET policy_snapshot = NULL WHERE id = $1",
+    ] {
+        let refused = sqlx::query(rewrite).bind(draft).execute(&pool).await;
+        assert!(refused.is_err(), "{rewrite}");
+    }
+    // Grading the attempt still works.
+    sqlx::query("UPDATE submissions SET status = 'graded', final_score = 50 WHERE id = $1")
+        .bind(draft)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let not_object = sqlx::query(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, items_snapshot)
+         VALUES ($1, $2, $3, 2, '[]')",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .execute(&pool)
+    .await;
+    assert!(not_object.is_err(), "a snapshot is an object");
+}
+
+#[ab_testdb::test]
+async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
+    let w = world(&pool).await;
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    // No entry yet: the current value is free (a hand-in awaiting review).
+    sqlx::query("UPDATE submissions SET final_score = 40 WHERE id = $1")
+        .bind(sub)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let entry =
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown)
+                 VALUES ($1, 80, $2, '{\"feedback\": \"ok\"}')";
+    let refused = sqlx::query(entry).bind(sub).bind(80.0).execute(&pool).await;
+    assert!(
+        refused.is_err(),
+        "a journal entry the submission does not show"
+    );
+
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(entry)
+        .bind(sub)
+        .bind(80.0)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE submissions SET final_score = 80, grading = '{\"feedback\": \"ok\"}' WHERE id = $1",
+    )
+    .bind(sub)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    for drift in [
+        "UPDATE submissions SET final_score = 90 WHERE id = $1",
+        "UPDATE submissions SET grading = '{}' WHERE id = $1",
+    ] {
+        let refused = sqlx::query(drift).bind(sub).execute(&pool).await;
+        assert!(refused.is_err(), "{drift}");
+    }
 }

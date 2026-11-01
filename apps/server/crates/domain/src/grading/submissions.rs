@@ -1080,6 +1080,7 @@ impl SubmissionsService {
         // (N concurrent hand-ins used to deadlock an N-connection pool). A
         // start landing during the grade itself precedes the hand-in, as if
         // it had been issued before the submit.
+        let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
         let mut attempts = pool.begin().await?;
         ab_db::submissions::lock_attempts(&mut attempts, assessment.id, submission.user_id).await?;
         let written = ab_db::submissions::persist_submit(
@@ -1102,6 +1103,8 @@ impl SubmissionsService {
                 submitted_at: opts.submitted_at,
                 read_draft_version: submission.draft_version,
                 read_violation_count: submission.violation_count,
+                items_snapshot: &items_snapshot,
+                policy_snapshot: &policy_snapshot,
             },
         )
         .await?;
@@ -1113,16 +1116,8 @@ impl SubmissionsService {
             }
             return Err(Error::conflict("submission was already submitted"));
         }
-        // The hand-in, its snapshots, grade entry, audit row and the progress it owes commit together: a crash
-        // in between used to leave a submitted attempt with no grade entry.
-        let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
-        ab_db::submissions::set_snapshots(
-            &mut *attempts,
-            submission.id,
-            &items_snapshot,
-            &policy_snapshot,
-        )
-        .await?;
+        // The hand-in (with its snapshots), grade entry, audit row and the progress it owes commit together: a
+        // crash in between used to leave a submitted attempt with no grade entry.
         if !verdict.manual {
             ab_db::submissions::insert_grading_entry(
                 &mut *attempts,

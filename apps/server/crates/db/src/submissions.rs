@@ -332,25 +332,6 @@ pub async fn record_violation(
     Ok(count)
 }
 
-/// Write-once snapshots of what the learner answered against.
-pub async fn set_snapshots(
-    db: impl sqlx::PgExecutor<'_>,
-    id: SubmissionId,
-    items: &serde_json::Value,
-    policy: &serde_json::Value,
-) -> Result<()> {
-    sqlx::query!(
-        r#"UPDATE submissions SET items_snapshot = $2, policy_snapshot = $3
-           WHERE id = $1 AND items_snapshot IS NULL"#,
-        id.0,
-        items,
-        policy
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
 /// Everything the submit pipeline decides, written in one statement.
 pub struct SubmitOutcome<'a> {
     pub status: SubmissionStatus,
@@ -372,6 +353,10 @@ pub struct SubmitOutcome<'a> {
     /// violation report since then leaves the row untouched.
     pub read_draft_version: i64,
     pub read_violation_count: i32,
+    /// What the learner answered against, written once with the hand-in
+    /// (`submissions_handed_in_snapshots`, `submissions_snapshots_frozen`).
+    pub items_snapshot: &'a serde_json::Value,
+    pub policy_snapshot: &'a serde_json::Value,
 }
 
 /// Draft → submitted. `false` when the row is no longer a draft (a
@@ -390,7 +375,9 @@ pub async fn persist_submit<'e>(
                auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,
                submitted_at = COALESCE(to_timestamp($13::bigint), now()),
                graded_at = CASE WHEN $11 THEN now() ELSE NULL END,
-               duration_seconds = $12
+               duration_seconds = $12,
+               items_snapshot = COALESCE(items_snapshot, $16),
+               policy_snapshot = COALESCE(policy_snapshot, $17)
            WHERE id = $1 AND status = 'draft'
              AND draft_version = $14 AND violation_count = $15"#,
         id.0,
@@ -407,7 +394,9 @@ pub async fn persist_submit<'e>(
         o.duration_seconds,
         o.submitted_at,
         o.read_draft_version,
-        o.read_violation_count
+        o.read_violation_count,
+        o.items_snapshot,
+        o.policy_snapshot
     )
     .execute(db)
     .await?;
