@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE gamification_profiles SET\n               total_xp = total_xp + $2,\n               level = LEAST(100, GREATEST(1,\n                   floor((-1 + sqrt(1 + 0.08 * (total_xp + $2))) / 2)::int + 1)),\n               last_xp_award_at = now()\n           WHERE user_id = $1\n           RETURNING level AS \"level!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "level!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "gamification_profiles",
+            "name": "level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1f2e39ac54046da1911974aabc3f998fe0d767aa74cdaa7e2350be3532bd9688"
+}

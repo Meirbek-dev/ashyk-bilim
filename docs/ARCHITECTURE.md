@@ -449,8 +449,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `platform_day_start(date)` decide the XP daily cap, the login/learning streaks (in the UPDATE itself), the
   login bonus key and the rollup/risk snapshot dates; the zone lives only in `platform_time_zone()`. Dates
   bind as `date` (`ab_core::time::Date`, `day as _` in `query!`). Today's XP (`daily_xp_earned` in the API)
-  is summed from `xp_transactions` at read time, never stored (the column is written for the previous release
-  until the lane C contract drops it).
+  is summed from `xp_transactions` at read time, never stored: the server no longer writes the column; the trigger
+  `gamification_profiles_daily_xp` (`20261102071100`) keeps it as the previous release reads it (UTC day, from the
+  journal) until the lane C2 contract drops both.
 - **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
   written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
   leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
